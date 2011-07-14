@@ -383,9 +383,9 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
-			       uint32_t context_id,
-			       uint64_t fid)
+_PUBLIC_ int mapistore_folder_open_folder(struct mapistore_context *mstore_ctx,
+					  uint32_t context_id,
+					  uint64_t fid)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -397,41 +397,11 @@ _PUBLIC_ int mapistore_opendir(struct mapistore_context *mstore_ctx,
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend opendir */
-	ret = mapistore_backend_opendir(backend_ctx, fid);
+	/* Step 2. Call backend open_folder */
+	ret = mapistore_backend_folder_open_folder(backend_ctx, fid);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
-
-
-/**
-   \details Close a directory in mapistore
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the directory has to be closed/released
-   \param fid the folder identifier referencing the folder to close
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
-				uint32_t context_id,
-				uint64_t fid)
-{
-	struct backend_context		*backend_ctx;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 0. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* mapistore_backend_closedir() */
-
-	return MAPISTORE_SUCCESS;
-}
-
 
 /**
    \details Create a directory in mapistore
@@ -446,11 +416,11 @@ _PUBLIC_ int mapistore_closedir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
-			     uint32_t context_id,
-			     uint64_t parent_fid,
-			     uint64_t fid,
-			     struct SRow *aRow)
+_PUBLIC_ int mapistore_folder_create_folder(struct mapistore_context *mstore_ctx,
+					    uint32_t context_id,
+					    uint64_t parent_fid,
+					    uint64_t fid,
+					    struct SRow *aRow)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -462,8 +432,8 @@ _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
 	
-	/* Step 2. Call backend mkdir */
-	ret = mapistore_backend_mkdir(backend_ctx, parent_fid, fid, aRow);
+	/* Step 2. Call backend create_folder */
+	ret = mapistore_backend_folder_create_folder(backend_ctx, parent_fid, fid, aRow);
 
 	return ret;
 }
@@ -480,11 +450,11 @@ _PUBLIC_ int mapistore_mkdir(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
-			     uint32_t context_id,
-			     uint64_t parent_fid,
-			     uint64_t fid,
-			     uint8_t flags)
+_PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx,
+					    uint32_t context_id,
+					    uint64_t parent_fid,
+					    uint64_t fid,
+					    uint8_t flags)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -492,7 +462,7 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-	DEBUG(4, ("mapistore_rmdir interface, fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
+	DEBUG(4, ("mapistore_delete_folder interface, fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -508,20 +478,18 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 		uint32_t	i;
 
 		/* Get subfolders list */
-		retval = mapistore_get_child_fids(mstore_ctx, context_id, mem_ctx, fid,
-						  &childFolders, &childFolderCount);
-		DEBUG(4, ("mapistore_rmdir fid: 0x%"PRIx64", child count: %d\n", fid, childFolderCount));
+		retval = mapistore_folder_get_child_fids(mstore_ctx, context_id, mem_ctx, fid,
+							 &childFolders, &childFolderCount);
 		if (retval) {
-			DEBUG(4, ("mapistore_rmdir bad retval: 0x%x", retval));
+			DEBUG(4, ("mapistore_delete_folder bad retval: 0x%x", retval));
 			return MAPI_E_NOT_FOUND;
 		}
 
 		/* Delete each subfolder in mapistore */
 		for (i = 0; i < childFolderCount; ++i) {
-			DEBUG(4, ("mapistore_rmdir child: %d, FID: 0x%"PRIx64", parent: 0x%"PRIx64"\n", i, childFolders[i], fid));
-			retval = mapistore_rmdir(mstore_ctx, context_id, fid, childFolders[i], flags);
+			retval = mapistore_folder_delete_folder(mstore_ctx, context_id, fid, childFolders[i], flags);
 			if (retval) {
-				  DEBUG(4, ("mapistore_rmdir failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
+				  DEBUG(4, ("mapistore_delete_folder failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
 				  talloc_free(mem_ctx);
 				  return MAPI_E_NOT_FOUND;
 			}
@@ -529,79 +497,12 @@ _PUBLIC_ int mapistore_rmdir(struct mapistore_context *mstore_ctx,
 
 	}
 	
-	/* Step 3. Call backend rmdir */
-	DEBUG(4, ("mapistore_rmdir backend delete of fid 0x%"PRIx64" from parent 0x%"PRIx64"\n", fid, parent_fid));
-	ret = mapistore_backend_rmdir(backend_ctx, parent_fid, fid);
+	/* Step 3. Call backend delete_folder */
+	ret = mapistore_backend_folder_delete_folder(backend_ctx, parent_fid, fid);
 
 	talloc_free(mem_ctx);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
-
-/**
-   \details Retrieve the number of child folders within a mapistore
-   folder
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   \param fid the folder identifier
-   \param RowCount pointer to the count result to return
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_get_folder_count(struct mapistore_context *mstore_ctx,
-					uint32_t context_id,
-					uint64_t fid,
-					uint32_t *RowCount)
-{
-	struct backend_context		*backend_ctx;
-	int				ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 0. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 1. Call backend readdir */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, RowCount);
-
-	return ret;
-}
-
-
-/**
-   \details Retrieve the number of child messages within a mapistore folder
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   \param fid the folder identifier
-   \param RowCount pointer to the count result to return
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
-					 uint32_t context_id,
-					 uint64_t fid,
-					 uint8_t table_type,
-					 uint32_t *RowCount)
-{
-	struct backend_context		*backend_ctx;
-	int				ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 0. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend readdir_count */
-	ret = mapistore_backend_readdir_count(backend_ctx, fid, table_type, RowCount);
-
-	return ret;
 }
 
 /**
@@ -616,9 +517,9 @@ _PUBLIC_ int mapistore_get_message_count(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx, 
-				   uint64_t parent_fid, uint64_t mid,
-				   void **messagep, struct mapistore_message **msg)
+_PUBLIC_ int mapistore_folder_open_message(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx, 
+					   uint64_t parent_fid, uint64_t mid,
+					   void **messagep, struct mapistore_message **msg)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -630,8 +531,8 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend openmessage */
-	ret = mapistore_backend_openmessage(backend_ctx, mem_ctx, parent_fid, mid, messagep, msg);
+	/* Step 2. Call backend open_message */
+	ret = mapistore_backend_folder_open_message(backend_ctx, mem_ctx, parent_fid, mid, messagep, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -649,8 +550,8 @@ _PUBLIC_ int mapistore_openmessage(struct mapistore_context *mstore_ctx, uint32_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx, uint32_t context_id, 
-				     TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, uint8_t associated, void **messagep)
+_PUBLIC_ int mapistore_folder_create_message(struct mapistore_context *mstore_ctx, uint32_t context_id, 
+					     TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, uint8_t associated, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -662,8 +563,8 @@ _PUBLIC_ int mapistore_createmessage(struct mapistore_context *mstore_ctx, uint3
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	
-	/* Step 2. Call backend createmessage */
-	ret = mapistore_backend_createmessage(backend_ctx, mem_ctx, parent_fid, mid, associated, messagep);
+	/* Step 2. Call backend create_message */
+	ret = mapistore_backend_folder_create_message(backend_ctx, mem_ctx, parent_fid, mid, associated, messagep);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -738,6 +639,104 @@ _PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
 }
 
 /**
+   \details Delete a message from mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the message's to be located is stored
+   \param mid the message identifier of the folder to delete
+   \param flags flags that control the behaviour of the operation (MAPISTORE_SOFT_DELETE
+   or MAPISTORE_PERMANENT_DELETE)
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ctx,
+					     uint32_t context_id,
+					     uint64_t fid, uint64_t mid,
+					     uint8_t flags)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_folder_delete_message(backend_ctx, fid, mid, flags);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+/**
+   \details Retrieve the number of child folders within a mapistore
+   folder
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fid the folder identifier
+   \param RowCount pointer to the count result to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_folder_get_folder_count(struct mapistore_context *mstore_ctx,
+					       uint32_t context_id,
+					       uint64_t fid,
+					       uint32_t *RowCount)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Call backend readdir */
+	ret = mapistore_backend_folder_get_child_count(backend_ctx, fid, MAPISTORE_FOLDER_TABLE, RowCount);
+
+	return ret;
+}
+
+
+/**
+   \details Retrieve the number of child messages within a mapistore folder
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param fid the folder identifier
+   \param RowCount pointer to the count result to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_folder_get_message_count(struct mapistore_context *mstore_ctx,
+						uint32_t context_id,
+						uint64_t fid,
+						uint8_t table_type,
+						uint32_t *RowCount)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 0. Ensure the context exists */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend get_child_count */
+	ret = mapistore_backend_folder_get_child_count(backend_ctx, fid, table_type, RowCount);
+
+	return ret;
+}
+
+/**
    \details Retrieve the folder IDs of child folders within a mapistore
    folder
 
@@ -752,12 +751,12 @@ _PUBLIC_ int mapistore_setprops(struct mapistore_context *mstore_ctx,
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
-				      uint32_t context_id,
-				      TALLOC_CTX *mem_ctx,
-				      uint64_t fid,
-				      uint64_t *child_fids[],
-				      uint32_t *child_fid_count)
+_PUBLIC_ int mapistore_folder_get_child_fids(struct mapistore_context *mstore_ctx,
+					     uint32_t context_id,
+					     TALLOC_CTX *mem_ctx,
+					     uint64_t fid,
+					     uint64_t *child_fids[],
+					     uint32_t *child_fid_count)
 {
 	DEBUG(0, ("unimplemented\n"));
 	abort();
@@ -765,22 +764,8 @@ _PUBLIC_ int mapistore_get_child_fids(struct mapistore_context *mstore_ctx,
 	return 0;
 }
 
-/**
-   \details Delete a message from mapistore
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the message's to be located is stored
-   \param mid the message identifier of the folder to delete
-   \param flags flags that control the behaviour of the operation (MAPISTORE_SOFT_DELETE
-   or MAPISTORE_PERMANENT_DELETE)
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
-				     uint32_t context_id,
-				     uint64_t fid, uint64_t mid,
-				     uint8_t flags)
+_PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx,
+					 uint64_t folder_id, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -793,71 +778,7 @@ _PUBLIC_ int mapistore_deletemessage(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_deletemessage(backend_ctx, fid, mid, flags);
-
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
-}
-
-/**
-   \details Does something
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   where the message's to be located is stored
-   \param fmid the folder/message identifier at the end of the list
-   \param folder_list the destination of the list
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ struct backend_context *mapistore_find_container_backend(struct mapistore_context *mstore_ctx,
-								  uint64_t fmid)
-{
-        char                    *path;
-	struct backend_context_list *el;
-	struct backend_context	*bctx = NULL;
-        
-	/* SANITY checks */
-	if (!mstore_ctx) return NULL;
-
-	/* Step 1. Search the context */
-        path = NULL;
-        if (!mstore_ctx->context_list)
-                return NULL;
-	for (el = mstore_ctx->context_list; el; el = el->next) {
-		if (el->ctx && el->ctx->uri) {
-                        if ((mapistore_get_path (el->ctx, NULL, fmid, MAPISTORE_MESSAGE, &path)
-                             == MAPISTORE_SUCCESS)
-                            || (mapistore_get_path (el->ctx, NULL, fmid, MAPISTORE_FOLDER, &path)
-                                == MAPISTORE_SUCCESS)) {
-				talloc_free(path);
-				bctx = el->ctx;
-				return bctx;
-				break;
-			}
-		}
-	}
-
-	DEBUG(5, ("[%s:%d] %lld NOT FOUND\n", __FUNCTION__, __LINE__, (unsigned long long) fmid));
-
-	return NULL;
-}
-
-/* proof of concept */
-int mapistore_pocop_open_table(struct mapistore_context *mstore_ctx, uint32_t context_id, TALLOC_CTX *mem_ctx,
-			       uint64_t folder_id, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
-{
-	struct backend_context	*backend_ctx;
-	int			ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_open_table(backend_ctx, mem_ctx, folder_id, table_type, handle_id, table, row_count);
+	ret = mapistore_backend_folder_open_table(backend_ctx, mem_ctx, folder_id, table_type, handle_id, table, row_count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -874,7 +795,7 @@ int mapistore_pocop_open_table(struct mapistore_context *mstore_ctx, uint32_t co
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-int mapistore_pocop_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct ModifyRecipientRow *rows, uint16_t count)
+int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct ModifyRecipientRow *rows, uint16_t count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -887,7 +808,7 @@ int mapistore_pocop_message_modify_recipients(struct mapistore_context *mstore_c
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend modifyrecipients */
-	ret = mapistore_backend_pocop_message_modify_recipients(backend_ctx, message, rows, count);
+	ret = mapistore_backend_message_modify_recipients(backend_ctx, message, rows, count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -903,8 +824,8 @@ int mapistore_pocop_message_modify_recipients(struct mapistore_context *mstore_c
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_pocop_message_save(struct mapistore_context *mstore_ctx, uint32_t context_id,
-					  void *message)
+_PUBLIC_ int mapistore_message_save(struct mapistore_context *mstore_ctx, uint32_t context_id,
+				    void *message)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -917,7 +838,7 @@ _PUBLIC_ int mapistore_pocop_message_save(struct mapistore_context *mstore_ctx, 
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend savechangesmessage */
-	ret = mapistore_backend_pocop_message_save(backend_ctx, message);
+	ret = mapistore_backend_message_save(backend_ctx, message);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -934,8 +855,8 @@ _PUBLIC_ int mapistore_pocop_message_save(struct mapistore_context *mstore_ctx, 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_pocop_message_submit(struct mapistore_context *mstore_ctx, uint32_t context_id,
-					    void *message, enum SubmitFlags flags)
+_PUBLIC_ int mapistore_message_submit(struct mapistore_context *mstore_ctx, uint32_t context_id,
+				      void *message, enum SubmitFlags flags)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -948,13 +869,13 @@ _PUBLIC_ int mapistore_pocop_message_submit(struct mapistore_context *mstore_ctx
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend submitmessage */
-	ret = mapistore_backend_pocop_message_submit(backend_ctx, message, flags);
+	ret = mapistore_backend_message_submit(backend_ctx, message, flags);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id,
-						  void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
+_PUBLIC_ int mapistore_message_get_attachment_table(struct mapistore_context *mstore_ctx, uint32_t context_id,
+						    void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -967,13 +888,13 @@ _PUBLIC_ int mapistore_pocop_get_attachment_table(struct mapistore_context *msto
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_attachment_table(backend_ctx, message, mem_ctx, table, row_count);
+	ret = mapistore_backend_message_get_attachment_table(backend_ctx, message, mem_ctx, table, row_count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
-                                            void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
+_PUBLIC_ int mapistore_message_open_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+					       void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -986,13 +907,13 @@ _PUBLIC_ int mapistore_pocop_get_attachment(struct mapistore_context *mstore_ctx
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_attachment(backend_ctx, message, mem_ctx, aid, attachment);
+	ret = mapistore_backend_message_open_attachment(backend_ctx, message, mem_ctx, aid, attachment);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
-					       void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
+_PUBLIC_ int mapistore_message_create_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+						 void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1005,12 +926,12 @@ _PUBLIC_ int mapistore_pocop_create_attachment(struct mapistore_context *mstore_
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
+	ret = mapistore_backend_message_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+_PUBLIC_ int mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1023,12 +944,12 @@ _PUBLIC_ int mapistore_pocop_open_embedded_message(struct mapistore_context *mst
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_open_embedded_message(backend_ctx, message, mem_ctx, embedded_message, mid, msg);
+	ret = mapistore_backend_message_attachment_open_embedded_message(backend_ctx, message, mem_ctx, embedded_message, mid, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_available_table_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+_PUBLIC_ int mapistore_table_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1041,12 +962,12 @@ _PUBLIC_ int mapistore_pocop_get_available_table_properties(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_available_table_properties(backend_ctx, table, mem_ctx, propertiesp);
+	ret = mapistore_backend_table_get_available_properties(backend_ctx, table, mem_ctx, propertiesp);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_set_table_columns(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, uint16_t count, enum MAPITAGS *properties)
+_PUBLIC_ int mapistore_table_set_columns(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, uint16_t count, enum MAPITAGS *properties)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1059,12 +980,12 @@ _PUBLIC_ int mapistore_pocop_set_table_columns(struct mapistore_context *mstore_
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_set_table_columns(backend_ctx, table, count, properties);
+	ret = mapistore_backend_table_set_columns(backend_ctx, table, count, properties);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_set_restrictions(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct mapi_SRestriction *restrictions, uint8_t *table_status)
+_PUBLIC_ int mapistore_table_set_restrictions(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct mapi_SRestriction *restrictions, uint8_t *table_status)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1077,12 +998,12 @@ _PUBLIC_ int mapistore_pocop_set_restrictions(struct mapistore_context *mstore_c
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_set_table_restrictions(backend_ctx, table, restrictions, table_status);
+	ret = mapistore_backend_table_set_restrictions(backend_ctx, table, restrictions, table_status);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_set_sort_order(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct SSortOrderSet *sort_order, uint8_t *table_status)
+_PUBLIC_ int mapistore_table_set_sort_order(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, struct SSortOrderSet *sort_order, uint8_t *table_status)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1095,13 +1016,13 @@ _PUBLIC_ int mapistore_pocop_set_sort_order(struct mapistore_context *mstore_ctx
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_set_table_sort_order(backend_ctx, table, sort_order, table_status);
+	ret = mapistore_backend_table_set_sort_order(backend_ctx, table, sort_order, table_status);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_table_row(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx,
-                                           enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data **data)
+_PUBLIC_ int mapistore_table_get_row(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx,
+				     enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data **data)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1114,12 +1035,12 @@ _PUBLIC_ int mapistore_pocop_get_table_row(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_table_row(backend_ctx, table, mem_ctx, query_type, rowid, data);
+	ret = mapistore_backend_table_get_row(backend_ctx, table, mem_ctx, query_type, rowid, data);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+_PUBLIC_ int mapistore_properties_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1132,16 +1053,16 @@ _PUBLIC_ int mapistore_pocop_get_available_properties(struct mapistore_context *
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_available_properties(backend_ctx, object, mem_ctx, propertiesp);
+	ret = mapistore_backend_properties_get_available_properties(backend_ctx, object, mem_ctx, propertiesp);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
 
-_PUBLIC_ int mapistore_pocop_get_properties(struct mapistore_context *mstore_ctx, uint32_t context_id,
-                                            void *object, TALLOC_CTX *mem_ctx,
-                                            uint16_t count, enum MAPITAGS *properties,
-                                            struct mapistore_property_data *data)
+_PUBLIC_ int mapistore_properties_get_properties(struct mapistore_context *mstore_ctx, uint32_t context_id,
+						 void *object, TALLOC_CTX *mem_ctx,
+						 uint16_t count, enum MAPITAGS *properties,
+						 struct mapistore_property_data *data)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1154,15 +1075,15 @@ _PUBLIC_ int mapistore_pocop_get_properties(struct mapistore_context *mstore_ctx
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_get_properties(backend_ctx, object, mem_ctx, count, properties, data);
+	ret = mapistore_backend_properties_get_properties(backend_ctx, object, mem_ctx, count, properties, data);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
-_PUBLIC_ int mapistore_pocop_set_properties(struct mapistore_context
-                                            *mstore_ctx, uint32_t context_id,
-                                            void *object,
-                                            struct SRow *aRow)
+_PUBLIC_ int mapistore_properties_set_properties(struct mapistore_context
+						 *mstore_ctx, uint32_t context_id,
+						 void *object,
+						 struct SRow *aRow)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -1175,7 +1096,7 @@ _PUBLIC_ int mapistore_pocop_set_properties(struct mapistore_context
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_pocop_set_properties(backend_ctx, object, aRow);
+	ret = mapistore_backend_properties_set_properties(backend_ctx, object, aRow);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

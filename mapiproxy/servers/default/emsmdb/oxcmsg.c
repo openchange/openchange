@@ -269,7 +269,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = message_handle->handle;
 
 		message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
-		mapistore_createmessage(emsmdbp_ctx->mstore_ctx, contextID, message_object, folderID, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->poc_backend_object);
+		mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, message_object, folderID, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->poc_backend_object);
 		message_object->poc_api = true;
 
 		/* Add default properties to message MS-OXCMSG 3.2.5.2 */
@@ -401,7 +401,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
 		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
-		mapistore_pocop_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
+		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->poc_backend_object);
                 mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;
 	}
@@ -480,8 +480,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 		}
 
 		contextID = emsmdbp_get_contextID(object);
-		mapistore_pocop_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-							  object->poc_backend_object, NULL, 0);
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
+						    object->poc_backend_object, NULL, 0);
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
@@ -558,8 +558,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 		}
 
 		contextID = emsmdbp_get_contextID(object);
-		mapistore_pocop_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-							  object->poc_backend_object, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
+						    object->poc_backend_object, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
 		/* mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags); */
 	}
 	else {
@@ -646,7 +646,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 
-		mapistore_openmessage(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, folderID, messageID, &backend_object, &msg);
+		mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, mem_ctx, folderID, messageID, &backend_object, &msg);
 
 		/* Build the ReloadCachedInformation reply */
 		subject = (char *) find_SPropValue_data(msg->properties, PR_SUBJECT);
@@ -907,8 +907,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
 								   message_object->object.message->messageID, message_object);
 		if (attachment_object) {
-			retval = mapistore_pocop_get_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->poc_backend_object,
-								attachment_object, attachmentID, &attachment_object->poc_backend_object);
+			retval = mapistore_message_open_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->poc_backend_object,
+								   attachment_object, attachmentID, &attachment_object->poc_backend_object);
 			if (retval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
 				talloc_free(attachment_object);
@@ -1012,8 +1012,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
 								   messageID, message_object);
 		if (attachment_object) {
-			retval = mapistore_pocop_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->poc_backend_object,
-								   attachment_object, &attachment_object->poc_backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
+			retval = mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->poc_backend_object,
+								     attachment_object, &attachment_object->poc_backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
 			if (retval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
 				talloc_free(attachment_object);
@@ -1156,10 +1156,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                 }
 
 		contextID = emsmdbp_get_contextID(attachment_object);
-		retval = mapistore_pocop_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->poc_backend_object,
-							       NULL, &backend_attachment_message,
-                                                               &messageID,
-                                                               &msg);
+		retval = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->poc_backend_object,
+									    NULL, &backend_attachment_message,
+									    &messageID,
+									    &msg);
                 if (retval != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;

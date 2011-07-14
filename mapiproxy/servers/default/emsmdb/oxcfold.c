@@ -613,9 +613,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 	case true:
 		/* handled by mapistore */
 		DEBUG(0, ("Deleting mapistore folder\n"));
-		retval = mapistore_rmdir(emsmdbp_ctx->mstore_ctx, context_id, parent_fid,
-					 mapi_req->u.mapi_DeleteFolder.FolderId,
-					 mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, parent_fid,
+							mapi_req->u.mapi_DeleteFolder.FolderId,
+							mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (0x%x)",
 				    mapi_req->u.mapi_DeleteFolder.FolderId, retval));
@@ -702,7 +702,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 		int ret;
 		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
 		DEBUG(0, ("MID %i to delete: 0x%.16"PRIx64"\n", i, mid));
-		ret = mapistore_deletemessage(emsmdbp_ctx->mstore_ctx, contextID, parent_folderID, mid, MAPISTORE_SOFT_DELETE);
+		ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, parent_folderID, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;
@@ -847,8 +847,8 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	retval = mapistore_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, local_mem_ctx, fid,
-					  &childFolders, &childFolderCount);
+	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, local_mem_ctx, fid,
+						 &childFolders, &childFolderCount);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder fid: 0x%.16"PRIx64", count: %d\n", fid, childFolderCount));
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
@@ -857,8 +857,8 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_rmdir(emsmdbp_ctx->mstore_ctx, context_id, fid, childFolders[i],
-					 flags);
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, fid, childFolders[i],
+							flags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));
 			  talloc_free(local_mem_ctx);

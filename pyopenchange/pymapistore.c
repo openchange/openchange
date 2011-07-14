@@ -137,7 +137,7 @@ static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyO
 	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id));
 }
 
-static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_open_folder(PyMAPIStoreObject *self, PyObject *args)
 {
 	uint32_t	context_id;
 	uint64_t	fid;
@@ -146,22 +146,10 @@ static PyObject *py_MAPIStore_opendir(PyMAPIStoreObject *self, PyObject *args)
 		return NULL;
 	}
 
-	return PyInt_FromLong(mapistore_opendir(self->mstore_ctx, context_id, fid));
+	return PyInt_FromLong(mapistore_folder_open_folder(self->mstore_ctx, context_id, fid));
 }
 
-static PyObject *py_MAPIStore_closedir(PyMAPIStoreObject *self, PyObject *args)
-{
-	uint32_t	context_id;
-	uint64_t	fid;
-
-	if (!PyArg_ParseTuple(args, "kK", &context_id, &fid)) {
-		return NULL;
-	}
-
-	return PyInt_FromLong(mapistore_closedir(self->mstore_ctx, context_id, fid));
-}
-
-static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_create_folder(PyMAPIStoreObject *self, PyObject *args)
 {
 	uint32_t		context_id;
 	uint64_t		parent_fid;
@@ -194,10 +182,10 @@ static PyObject *py_MAPIStore_mkdir(PyMAPIStoreObject *self, PyObject *args)
 	aRow.cValues = SPropValue->cValues;
 	aRow.lpProps = SPropValue->SPropValue;
 
-	return PyInt_FromLong(mapistore_mkdir(self->mstore_ctx, context_id, parent_fid, fid, &aRow));
+	return PyInt_FromLong(mapistore_folder_create_folder(self->mstore_ctx, context_id, parent_fid, fid, &aRow));
 }
 
-static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_delete_folder(PyMAPIStoreObject *self, PyObject *args)
 {
 	uint32_t	context_id;
 	uint64_t	parent_fid;
@@ -208,7 +196,7 @@ static PyObject *py_MAPIStore_rmdir(PyMAPIStoreObject *self, PyObject *args)
 		return NULL;
 	}
 
-	return PyInt_FromLong(mapistore_rmdir(self->mstore_ctx, context_id, parent_fid, fid, flags));
+	return PyInt_FromLong(mapistore_folder_delete_folder(self->mstore_ctx, context_id, parent_fid, fid, flags));
 }
 
 static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args)
@@ -260,12 +248,12 @@ static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject
 
 	switch (object_type) {
 	case MAPISTORE_FOLDER:
-		mapistore_get_folder_count(self->mstore_ctx, context_id, 
-					   fid, &RowCount);
+		mapistore_folder_get_folder_count(self->mstore_ctx, context_id, 
+						  fid, &RowCount);
 		break;
 	case MAPISTORE_MESSAGE:
-		mapistore_get_message_count(self->mstore_ctx, context_id, 
-					    fid, MAPISTORE_MESSAGE_TABLE, &RowCount);
+		mapistore_folder_get_message_count(self->mstore_ctx, context_id, 
+						   fid, MAPISTORE_MESSAGE_TABLE, &RowCount);
 		break;
 	default:
 		RowCount = 0;
@@ -281,10 +269,9 @@ static PyMethodDef mapistore_methods[] = {
 	{ "add_context_idexing", (PyCFunction)py_MAPIStore_add_context_indexing, METH_VARARGS },
 	{ "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS },
 	{ "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS },
-	{ "opendir", (PyCFunction)py_MAPIStore_opendir, METH_VARARGS },
-	{ "closedir", (PyCFunction)py_MAPIStore_closedir, METH_VARARGS },
-	{ "mkdir", (PyCFunction)py_MAPIStore_mkdir, METH_VARARGS },
-	{ "rmdir", (PyCFunction)py_MAPIStore_rmdir, METH_VARARGS },
+	{ "open_folder", (PyCFunction)py_MAPIStore_open_folder, METH_VARARGS },
+	{ "create_folder", (PyCFunction)py_MAPIStore_create_folder, METH_VARARGS },
+	{ "delete_folder", (PyCFunction)py_MAPIStore_delete_folder, METH_VARARGS },
 	{ "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS },
 	{ "get_folder_count", (PyCFunction)py_MAPIStore_get_folder_count, METH_VARARGS },
 	{ NULL },

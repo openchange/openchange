@@ -69,9 +69,9 @@ _PUBLIC_ extern int mapistore_backend_register(const void *_backend)
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend && backend && 
-		    backend->name && backends[i].backend->name &&
-		    !strcmp(backends[i].backend->name, backend->name)) {
-			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->name));
+		    backend->backend.name && backends[i].backend->backend.name &&
+		    !strcmp(backends[i].backend->backend.name, backend->backend.name)) {
+			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->backend.name));
 			return MAPISTORE_SUCCESS;
 		}
 	}
@@ -82,11 +82,11 @@ _PUBLIC_ extern int mapistore_backend_register(const void *_backend)
 	}
 
 	backends[num_backends].backend = smb_xmemdup(backend, sizeof (*backend));
-	backends[num_backends].backend->name = smb_xstrdup(backend->name);
+	backends[num_backends].backend->backend.name = smb_xstrdup(backend->backend.name);
 
 	num_backends++;
 
-	DEBUG(3, ("MAPISTORE backend '%s' registered\n", backend->name));
+	DEBUG(3, ("MAPISTORE backend '%s' registered\n", backend->backend.name));
 
 	return MAPISTORE_SUCCESS;
 }
@@ -253,21 +253,12 @@ int mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend) {
-			DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->name));
-			retval = backends[i].backend->init();
+			DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
+			retval = backends[i].backend->backend.init();
 		}
 	}
 
 	return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
-}
-
-static int delete_context(void *data)
-{
-	struct backend_context		*context = (struct backend_context *) data;
-
-	context->backend->delete_context(context->private_data);
-
-	return 0;
 }
 
 /**
@@ -290,10 +281,10 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 
 	DEBUG(0, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
 	for (i = 0; i < num_backends; i++) {
-		if (backends[i].backend->namespace && 
-		    !strcmp(namespace, backends[i].backend->namespace)) {
+		if (backends[i].backend->backend.namespace && 
+		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
 			found = true;
-			retval = backends[i].backend->create_context(mem_ctx, conn_info, uri, fid, &private_data);
+			retval = backends[i].backend->backend.create_context(mem_ctx, conn_info, uri, fid, &private_data);
 			if (retval != MAPISTORE_SUCCESS) {
 				return NULL;
 			}
@@ -307,7 +298,6 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 	}
 
 	context = talloc_zero(mem_ctx, struct backend_context);
-	talloc_set_destructor((void *)context, (int (*)(void *))delete_context);
 	context->backend = backends[i].backend;
 	context->private_data = private_data;
 	context->ref_count = 0;
@@ -347,7 +337,7 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
 	int	ret;
 
-	if (!bctx->backend->delete_context) return MAPISTORE_ERROR;
+	if (!bctx->backend->backend.delete_context) return MAPISTORE_ERROR;
 
 	if (bctx->indexing) {
 		mapistore_indexing_del_ref_count(bctx->indexing);
@@ -358,7 +348,7 @@ _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 		return MAPISTORE_ERR_REF_COUNT;
 	}
 
-	ret = bctx->backend->delete_context(bctx->private_data);
+	ret = bctx->backend->backend.delete_context(bctx->private_data);
 	talloc_set_destructor((void *)bctx, NULL);
 	
 	return ret;
@@ -418,15 +408,15 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_
 	return NULL;
 }
 
-int mapistore_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, uint8_t type, char **path)
+int mapistore_backend_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, uint8_t type, char **path)
 {
 	int	ret;
 	char	*bpath = NULL;
 
-	ret = bctx->backend->get_path(bctx->private_data, mem_ctx, fmid, type, &bpath);
+	ret = bctx->backend->backend.get_path(bctx->private_data, mem_ctx, fmid, type, &bpath);
 
 	if (!ret) {
-		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->namespace, bpath);
+		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->backend.namespace, bpath);
 	} else {
 		*path = NULL;
 	}
@@ -434,154 +424,150 @@ int mapistore_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64
 	return ret;
 }
 
-int mapistore_backend_opendir(struct backend_context *bctx, uint64_t fid)
-{
-	return bctx->backend->op_opendir(bctx->private_data, fid);
-}
-
-
-int mapistore_backend_mkdir(struct backend_context *bctx, 
-			    uint64_t parent_fid, 
-			    uint64_t fid,
-			    struct SRow *aRow)
-{
-	return bctx->backend->op_mkdir(bctx->private_data, parent_fid, fid, aRow);
-}
-
-int mapistore_backend_rmdir(struct backend_context *bctx,
-			    uint64_t parent_fid,
-			    uint64_t fid)
-{
-	return bctx->backend->op_rmdir(bctx->private_data, parent_fid, fid);
-}
-
-int mapistore_backend_readdir_count(struct backend_context *bctx, uint64_t fid, uint8_t table_type, 
-				    uint32_t *RowCount)
-{
-	int		ret;
-
-	ret = bctx->backend->op_readdir_count(bctx->private_data, fid, table_type, RowCount);
-
-	return ret;
-}
-
-
-int mapistore_backend_openmessage(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, 
-				  void **messagep, struct mapistore_message **msg)
-{
-	return bctx->backend->op_openmessage(bctx->private_data, mem_ctx, parent_fid, mid, messagep, msg);
-}
-
-
-int mapistore_backend_createmessage(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, uint8_t associated, void **messagep)
-{
-	return bctx->backend->op_createmessage(bctx->private_data, mem_ctx, parent_fid, mid, associated, messagep);
-}
-
-
 int mapistore_backend_getprops(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, uint8_t type, 
 			       struct SPropTagArray *SPropTagArray, struct SRow *aRow)
 {
-	return bctx->backend->op_getprops(bctx->private_data, mem_ctx, fmid, type, SPropTagArray, aRow);
+	return bctx->backend->getprops(bctx->private_data, mem_ctx, fmid, type, SPropTagArray, aRow);
 }
 
 int mapistore_backend_setprops(struct backend_context *bctx, uint64_t fmid, uint8_t type, struct SRow *aRow)
 {
-	return bctx->backend->op_setprops(bctx->private_data, fmid, type, aRow);
+	return bctx->backend->setprops(bctx->private_data, fmid, type, aRow);
 }
 
-int mapistore_backend_deletemessage(struct backend_context *bctx, uint64_t fid, uint64_t mid, uint8_t flags)
+int mapistore_backend_folder_open_folder(struct backend_context *bctx, uint64_t fid)
 {
-        return bctx->backend->op_deletemessage(bctx->private_data, fid, mid, flags);
+	return bctx->backend->folder.open_folder(bctx->private_data, fid);
 }
 
-/* proof of concept */
-int mapistore_backend_pocop_open_table(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fid, uint8_t table_type,
-                                       uint32_t handle_id, void **table, uint32_t *row_count)
+int mapistore_backend_folder_create_folder(struct backend_context *bctx, 
+					   uint64_t parent_fid, 
+					   uint64_t fid,
+					   struct SRow *aRow)
+{
+	return bctx->backend->folder.create_folder(bctx->private_data, parent_fid, fid, aRow);
+}
+
+int mapistore_backend_folder_delete_folder(struct backend_context *bctx,
+					   uint64_t parent_fid,
+					   uint64_t fid)
+{
+	return bctx->backend->folder.delete_folder(bctx->private_data, parent_fid, fid);
+}
+
+int mapistore_backend_folder_open_message(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, 
+					  void **messagep, struct mapistore_message **msg)
+{
+	return bctx->backend->folder.open_message(bctx->private_data, mem_ctx, parent_fid, mid, messagep, msg);
+}
+
+
+int mapistore_backend_folder_create_message(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t parent_fid, uint64_t mid, uint8_t associated, void **messagep)
+{
+	return bctx->backend->folder.create_message(bctx->private_data, mem_ctx, parent_fid, mid, associated, messagep);
+}
+
+int mapistore_backend_folder_delete_message(struct backend_context *bctx, uint64_t fid, uint64_t mid, uint8_t flags)
+{
+        return bctx->backend->folder.delete_message(bctx->private_data, fid, mid, flags);
+}
+
+int mapistore_backend_folder_get_child_count(struct backend_context *bctx, uint64_t fid, uint8_t table_type, 
+					     uint32_t *RowCount)
+{
+	int		ret;
+
+	ret = bctx->backend->folder.get_child_count(bctx->private_data, fid, table_type, RowCount);
+
+	return ret;
+}
+
+int mapistore_backend_folder_open_table(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fid, uint8_t table_type,
+					uint32_t handle_id, void **table, uint32_t *row_count)
 {
         return bctx->backend->folder.open_table(bctx->private_data, mem_ctx, fid, table_type, handle_id, table, row_count);
 }
 
-int mapistore_backend_pocop_message_modify_recipients(struct backend_context *bctx, void *message, struct ModifyRecipientRow *row, uint16_t count)
+int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct ModifyRecipientRow *row, uint16_t count)
 {
 	return bctx->backend->message.modify_recipients(message, row, count);
 }
 
-int mapistore_backend_pocop_message_save(struct backend_context *bctx, void *message)
+int mapistore_backend_message_save(struct backend_context *bctx, void *message)
 {
 	return bctx->backend->message.save(message);
 }
 
-int mapistore_backend_pocop_message_submit(struct backend_context *bctx, void *message, enum SubmitFlags flags)
+int mapistore_backend_message_submit(struct backend_context *bctx, void *message, enum SubmitFlags flags)
 {
 	return bctx->backend->message.submit(message, flags);
 }
 
-int mapistore_backend_pocop_get_attachment_table(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
+int mapistore_backend_message_open_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
 {
-        return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
+        return bctx->backend->message.open_attachment(message, mem_ctx, aid, attachment);
 }
 
-int mapistore_backend_pocop_get_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
-{
-        return bctx->backend->message.get_attachment(message, mem_ctx, aid, attachment);
-}
-
-int mapistore_backend_pocop_create_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
+int mapistore_backend_message_create_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
 {
         return bctx->backend->message.create_attachment(message, mem_ctx, attachment, aid);
 }
 
-int mapistore_backend_pocop_open_embedded_message(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+int mapistore_backend_message_get_attachment_table(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
+{
+        return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
+}
+
+int mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
         return bctx->backend->message.open_embedded_message(message, mem_ctx, embedded_message, mid, msg);
 }
 
-int mapistore_backend_pocop_get_available_table_properties(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+int mapistore_backend_table_get_available_properties(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
         return bctx->backend->table.get_available_properties(table, mem_ctx, propertiesp);
 }
 
-int mapistore_backend_pocop_set_table_columns(struct backend_context *bctx, void *table,
-                                              uint16_t count, enum MAPITAGS *properties)
+int mapistore_backend_table_set_columns(struct backend_context *bctx, void *table,
+					uint16_t count, enum MAPITAGS *properties)
 {
         return bctx->backend->table.set_columns(table, count, properties);
 }
 
-int mapistore_backend_pocop_set_table_restrictions(struct backend_context *bctx, void *table,
-                                                   struct mapi_SRestriction *restrictions, uint8_t *table_status)
+int mapistore_backend_table_set_restrictions(struct backend_context *bctx, void *table,
+					     struct mapi_SRestriction *restrictions, uint8_t *table_status)
 {
         return bctx->backend->table.set_restrictions(table, restrictions, table_status);
 }
 
-int mapistore_backend_pocop_set_table_sort_order(struct backend_context *bctx, void *table,
-                                                 struct SSortOrderSet *sort_order, uint8_t *table_status)
+int mapistore_backend_table_set_sort_order(struct backend_context *bctx, void *table,
+					   struct SSortOrderSet *sort_order, uint8_t *table_status)
 {
         return bctx->backend->table.set_sort_order(table, sort_order, table_status);
 }
 
-int mapistore_backend_pocop_get_table_row(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx,
-                                          enum table_query_type query_type, uint32_t rowid,
-                                          struct mapistore_property_data **data)
+int mapistore_backend_table_get_row(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx,
+				    enum table_query_type query_type, uint32_t rowid,
+				    struct mapistore_property_data **data)
 {
         return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
 }
 
-int mapistore_backend_pocop_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+int mapistore_backend_properties_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
         return bctx->backend->properties.get_available_properties(object, mem_ctx, propertiesp);
 }
 
-int mapistore_backend_pocop_get_properties(struct backend_context *bctx,
-                                           void *object, TALLOC_CTX *mem_ctx,
-                                           uint16_t count, enum MAPITAGS
-                                           *properties,
-                                           struct mapistore_property_data *data)
+int mapistore_backend_properties_get_properties(struct backend_context *bctx,
+						void *object, TALLOC_CTX *mem_ctx,
+						uint16_t count, enum MAPITAGS
+						*properties,
+						struct mapistore_property_data *data)
 {
         return bctx->backend->properties.get_properties(object, mem_ctx, count, properties, data);
 }
 
-int mapistore_backend_pocop_set_properties(struct backend_context *bctx, void *object, struct SRow *aRow)
+int mapistore_backend_properties_set_properties(struct backend_context *bctx, void *object, struct SRow *aRow)
 {
         return bctx->backend->properties.set_properties(object, aRow);
 }

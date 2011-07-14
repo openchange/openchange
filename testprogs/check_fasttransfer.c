@@ -86,20 +86,20 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 					   mapistore->proplist);
 		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
                         struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
-			mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-					mapistore->parent_fids->fid, mapistore->current_id,
-					mapistore->proplist);
+			mapistore_folder_create_folder(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+						       mapistore->parent_fids->fid, mapistore->current_id,
+						       mapistore->proplist);
                         element->fid = mapistore->current_id;
 			DLIST_ADD(mapistore->parent_fids, element);
 		} else {
 			mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-			mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false,
-						&message);
-			mapistore_pocop_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						       message, mapistore->proplist);
-			mapistore_pocop_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id,
-						     message);
+			mapistore_folder_create_message(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+							mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false,
+							&message);
+			mapistore_properties_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+							    message, mapistore->proplist);
+			mapistore_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id,
+					       message);
 			talloc_free(mem_ctx);
 		}
 		talloc_free(mapistore->proplist);

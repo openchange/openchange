@@ -485,7 +485,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 		table_object->object.table->properties = prop_tags;
 		table_object->object.table->prop_count = prop_count;
 		if (table_object->poc_api) {
-			mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, prop_count, prop_tags);
+			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, prop_count, prop_tags);
 		}
 
 		for (i = 0; i < table_object->object.table->denominator; i++) {
@@ -542,7 +542,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	table_object->object.table->prop_count = sync_data->properties.cValues;
 	table_object->object.table->properties = sync_data->properties.aulPropTag;
 	if (table_object->poc_api) {
-		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
 	}
 	for (i = 0; i < table_object->object.table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
@@ -796,10 +796,10 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	}
 
 	if (table_object->poc_api) {
-		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
-						  table_object->poc_backend_object,
-						  sync_data->properties.cValues,
-						  sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
+					    table_object->poc_backend_object,
+					    sync_data->properties.cValues,
+					    sync_data->properties.aulPropTag);
 	}
 	table_object->object.table->prop_count = sync_data->properties.cValues;
 	table_object->object.table->properties = sync_data->properties.aulPropTag;
@@ -1481,8 +1481,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	message_object = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, &msg);
 	if (!message_object) {
 		message_object = emsmdbp_object_message_init(message_object_handle, emsmdbp_ctx, messageID, synccontext_object->parent_object);
-		if (mapistore_createmessage(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object->parent_object), message_object,
-					    folderID, messageID, (request->ImportFlag & ImportFlag_Associated), &message_object->poc_backend_object)) {
+		if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object->parent_object), message_object,
+						    folderID, messageID, (request->ImportFlag & ImportFlag_Associated), &message_object->poc_backend_object)) {
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
 			talloc_free(message_object);
 			DEBUG(5, ("could not open nor create mapistore message\n"));
@@ -1726,7 +1726,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	for (i = 0; i < object_array->cValues; i++) {
 		ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, object_array->bin + i, &objectID);
 		if (ret == MAPISTORE_SUCCESS) {
-			ret = mapistore_deletemessage(emsmdbp_ctx->mstore_ctx, contextID, folderID, objectID, delete_type);
+			ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, folderID, objectID, delete_type);
 			if (ret != MAPISTORE_SUCCESS) {
 				DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
 			}
@@ -2279,7 +2279,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	table_object->object.table->prop_count = sync_data->properties.cValues;
 	table_object->object.table->properties = sync_data->properties.aulPropTag;
 	if (table_object->poc_api) {
-		mapistore_pocop_set_table_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->poc_backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
 	}
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {

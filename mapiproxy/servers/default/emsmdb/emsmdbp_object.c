@@ -725,6 +725,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 	struct emsmdbp_object	*table_object;
 	uint64_t		folderID;
 	uint8_t			mstore_type;
+	int			ret;
 
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
 		folderID = parent_object->object.folder->folderID;
@@ -756,7 +757,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 				abort();
 			}
 
-			mapistore_folder_open_table(parent_object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_object), parent_object->backend_object, table_object, mstore_type, handle_id, &table_object->backend_object, &table_object->object.table->denominator);
+			ret = mapistore_folder_open_table(parent_object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_object), parent_object->backend_object, table_object, mstore_type, handle_id, &table_object->backend_object, &table_object->object.table->denominator);
+			if (ret != MAPISTORE_SUCCESS) {
+				talloc_free(table_object);
+				table_object = NULL;
+			}
 		}
 		else {
 			if (table_type == EMSMDBP_TABLE_FOLDER_TYPE) {

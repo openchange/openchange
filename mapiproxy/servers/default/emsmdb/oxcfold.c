@@ -602,7 +602,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Deleting mapistore folder\n"));
 		/* handled by mapistore */
 		context_id = emsmdbp_get_contextID(handle_object);
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, handle_object,
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, handle_object->backend_object,
 							mapi_req->u.mapi_DeleteFolder.FolderId,
 							mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
 		if (retval) {

@@ -95,7 +95,6 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 	talloc_free(mstore_ctx->nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);
 	talloc_free(mstore_ctx->context_list);
-	talloc_free(mstore_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

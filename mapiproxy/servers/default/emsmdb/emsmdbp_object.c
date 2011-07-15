@@ -423,6 +423,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *me
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
 		&& fid == context_object->object.folder->folderID)) {
+		(void) talloc_reference(mem_ctx, context_object);
 		return context_object;
 	}
 

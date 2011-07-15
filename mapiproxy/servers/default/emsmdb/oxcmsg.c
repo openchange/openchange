@@ -249,7 +249,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, context_object, folderID);
+	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID);
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
 
@@ -312,7 +312,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	else {
 		/* system/special folder */
 		DEBUG(0, ("[%s] - not implemented yet - shouldn't occur\n", __location__));
-		talloc_free(folder_object);
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}

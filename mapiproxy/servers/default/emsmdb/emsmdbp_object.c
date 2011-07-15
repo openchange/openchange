@@ -274,6 +274,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 
 		talloc_free(local_mem_ctx);
 	}
+	*new_folderp = new_folder;
 
 	return MAPI_E_SUCCESS;
 }

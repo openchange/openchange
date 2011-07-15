@@ -349,7 +349,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	}
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_GetProps(nspi_ctx, mem_ctx, SPropTagArray, pMId, &SRowSet);
+	retval = nspi_GetProps(nspi_ctx, SRowSet, SPropTagArray, pMId, &SRowSet);
 	if (allocated == true) {
 		MAPIFreeBuffer(SPropTagArray);
 	}

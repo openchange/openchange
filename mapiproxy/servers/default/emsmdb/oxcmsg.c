@@ -888,7 +888,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 								   attachment_object, attachmentID, &attachment_object->backend_object);
 			if (retval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
-				talloc_free(attachment_object);
 				DEBUG(5, ("could not open nor create mapistore message\n"));
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			}
@@ -987,7 +986,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 								     attachment_object, &attachment_object->backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
 			if (retval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
-				talloc_free(attachment_object);
 				DEBUG(5, ("could not open nor create mapistore message\n"));
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			}

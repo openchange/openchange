@@ -454,14 +454,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 4. Do effective work here */
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	handles[mapi_repl->handle_idx] = rec->handle;
-
 	retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		mapi_repl->error_code = retval;
 		goto end;
 	}
+	handles[mapi_repl->handle_idx] = rec->handle;
 	mapi_handles_set_private_data(rec, object);
 
 	mapi_repl->u.mapi_CreateFolder.folder_id = fid;

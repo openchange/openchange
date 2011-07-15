@@ -48,12 +48,12 @@ struct GLOBSET_parser {
 */
 _PUBLIC_ uint64_t exchange_globcnt(uint64_t globcnt)
 {
-	return ((globcnt & 0x00000000000000ff)		<< 40
-		| (globcnt & 0x000000000000ff00)	<< 24
-		| (globcnt & 0x0000000000ff0000)	<< 8
-		| (globcnt & 0x00000000ff000000)	>> 8
-		| (globcnt & 0x000000ff00000000)	>> 24
-		| (globcnt & 0x0000ff0000000000)	>> 40);
+	return ((globcnt & 0x00000000000000ffLL)	<< 40
+		| (globcnt & 0x000000000000ff00LL)	<< 24
+		| (globcnt & 0x0000000000ff0000LL)	<< 8
+		| (globcnt & 0x00000000ff000000LL)	>> 8
+		| (globcnt & 0x000000ff00000000LL)	>> 24
+		| (globcnt & 0x0000ff0000000000LL)	>> 40);
 }
 
 static inline void GLOBSET_parser_do_push(struct GLOBSET_parser *parser, uint8_t count);

@@ -1820,7 +1820,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_
 	synccontext_object->object.synccontext->cnset_seen->range_count = 1;
 	synccontext_object->object.synccontext->cnset_seen->ranges->next = NULL;
 	synccontext_object->object.synccontext->cnset_seen->ranges->prev = synccontext_object->object.synccontext->cnset_seen->ranges;
-	synccontext_object->object.synccontext->cnset_seen->ranges->low = 0xffffffffffffffff;
+	synccontext_object->object.synccontext->cnset_seen->ranges->low = 0xffffffffffffffffLL;
 	synccontext_object->object.synccontext->cnset_seen->ranges->high = 0x0;
 
         /* synccontext_object->object.synccontext->property_tags.cValues = 0; */

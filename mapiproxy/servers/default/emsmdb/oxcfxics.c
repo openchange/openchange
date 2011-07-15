@@ -583,7 +583,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			if (unix_time < oc_version_time) {
 				unix_time = oc_version_time;
 			}
-			cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+			cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
 			if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
@@ -852,7 +852,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			if (unix_time < oc_version_time) {
 				unix_time = oc_version_time;
 			}
-			cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+			cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
 			if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
@@ -2288,7 +2288,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			if (unix_time < oc_version_time) {
 				unix_time = oc_version_time;
 			}
-			cn = ((eid & 0xffff000000000000) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+			cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
 			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 			
 			talloc_free(retvals);

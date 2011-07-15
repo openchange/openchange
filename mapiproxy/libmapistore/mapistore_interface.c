@@ -667,10 +667,36 @@ _PUBLIC_ int mapistore_folder_get_message_count(struct mapistore_context *mstore
 _PUBLIC_ int mapistore_folder_get_child_fids(struct mapistore_context *mstore_ctx, uint32_t context_id,
 					     void *folder, TALLOC_CTX *mem_ctx, uint64_t *child_fids[], uint32_t *child_fid_count)
 {
-	DEBUG(0, ("unimplemented\n"));
-	abort();
+	TALLOC_CTX	*local_mem_ctx;
+	int		ret;
+	void		*backend_table;
+	uint32_t	i, row_count;
+	uint64_t	*fids, *current_fid;
+	enum MAPITAGS	fid_column;
+	struct mapistore_property_data *row_data;
 
-	return 0;
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	ret = mapistore_folder_open_table(mstore_ctx, context_id,
+					  folder, local_mem_ctx, MAPISTORE_FOLDER_TABLE, -1, &backend_table, &row_count);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+	fid_column = PR_FID;
+	ret = mapistore_table_set_columns(mstore_ctx, context_id, backend_table, 1, &fid_column);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+
+	*child_fid_count = row_count;
+	fids = talloc_array(mem_ctx, uint64_t, row_count);
+	*child_fids = fids;
+	current_fid = fids;
+	for (i = 0; i < row_count; i++) {
+		mapistore_table_get_row(mstore_ctx, context_id, backend_table, local_mem_ctx,
+					MAPISTORE_PREFILTERED_QUERY, i, &row_data);
+		*current_fid = *(uint64_t *) row_data->data;
+		current_fid++;
+	}
+	talloc_free(local_mem_ctx);
+
+	return ret;
 }
 
 _PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, uint32_t context_id,

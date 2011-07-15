@@ -784,10 +784,10 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	local_mem_ctx = talloc_zero(NULL, void);
 
 	/* 2b. we build the stream */
-	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, MAPISTORE_FOLDER_TABLE, 0); 
+	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0); 
 	if (!table_object) {
-		DEBUG(5, ("could not open folder table\n"));
-		abort();
+		DEBUG(5, ("folder does not handle hierarchy tables\n"));
+		return;
 	}
 
 	mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
@@ -2253,6 +2253,10 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	else {
 		DEBUG(5, ("could not retrieve number of rows in table\n"));
 		abort();
+	}
+
+	if (!nr_eid) {
+		return;
 	}
 
 	/* Fetch the actual table data */

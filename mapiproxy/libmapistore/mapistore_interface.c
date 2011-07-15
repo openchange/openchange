@@ -451,7 +451,8 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
-	TALLOC_CTX			*mem_ctx;
+	TALLOC_CTX			*mem_ctx, *sub_mem_ctx;
+	void				*subfolder;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -460,17 +461,21 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
 
 	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);	
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, mem_ctx);
+
+	sub_mem_ctx = talloc_zero(mem_ctx, TALLOC_CTX);
+	ret = mapistore_folder_open_folder(mstore_ctx, context_id, folder, sub_mem_ctx, fid, &subfolder);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, mem_ctx);
 
 	/* Step 2. Handle deletion of child folders / messages */
-	if (flags | DEL_FOLDERS) {
+	if ((flags & DEL_FOLDERS)) {
 		uint64_t	*childFolders;
 		uint32_t	childFolderCount;
 		int		retval;
 		uint32_t	i;
 
 		/* Get subfolders list */
-		retval = mapistore_folder_get_child_fids(mstore_ctx, context_id, folder, mem_ctx, &childFolders, &childFolderCount);
+		retval = mapistore_folder_get_child_fids(mstore_ctx, context_id, subfolder, mem_ctx, &childFolders, &childFolderCount);
 		if (retval) {
 			DEBUG(4, ("mapistore_delete_folder bad retval: 0x%x", retval));
 			return MAPI_E_NOT_FOUND;
@@ -478,7 +483,7 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
 
 		/* Delete each subfolder in mapistore */
 		for (i = 0; i < childFolderCount; ++i) {
-			retval = mapistore_folder_delete_folder(mstore_ctx, context_id, folder, childFolders[i], flags);
+			retval = mapistore_folder_delete_folder(mstore_ctx, context_id, subfolder, childFolders[i], flags);
 			if (retval) {
 				  DEBUG(4, ("mapistore_delete_folder failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
 				  talloc_free(mem_ctx);
@@ -486,6 +491,7 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
 			}
 		}
 	}
+	talloc_free(sub_mem_ctx);
 	
 	/* Step 3. Call backend delete_folder */
 	ret = mapistore_backend_folder_delete_folder(backend_ctx, folder, fid);

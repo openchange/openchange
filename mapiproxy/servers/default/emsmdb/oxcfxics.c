@@ -1135,7 +1135,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 				cutbuffer_pos = object->object.synccontext->cutmarks[mark_ptr];
 				mark_ptr++;
 			}
-			if (object->object.ftcontext->stream.position < cutbuffer_pos) {
+			if (object->object.synccontext->stream.position < cutbuffer_pos) {
 				cutbuffer_size = cutbuffer_pos - object->object.synccontext->stream.position;
 				if (cutbuffer_size > 0 && cutbuffer_size < buffer_size) {
 					buffer_size = cutbuffer_size;

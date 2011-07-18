@@ -203,7 +203,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			else {
 				oxcfxics_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
 			}
-                }
+		}
         }
 
 	talloc_free(mem_ctx);

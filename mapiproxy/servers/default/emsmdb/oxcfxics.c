@@ -1033,7 +1033,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct emsmdbp_object			*object = NULL;
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
-	uint16_t				buffer_size, cutbuffer_size, cutbuffer_pos, mark_ptr, max_cutmark;
+	size_t					cutbuffer_pos;
+	uint16_t				buffer_size, cutbuffer_size, mark_ptr, max_cutmark;
 	void					*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e)\n"));

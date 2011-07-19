@@ -32,6 +32,8 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
+extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
+
 /**
    \details Retrieve the mailbox FolderID for given recipient from
    openchange dispatcher database
@@ -720,6 +722,8 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 	struct FILETIME		*ft;
 	struct Binary_r		*bin;
 	struct BinaryArray_r	*bin_array;
+	struct ldb_val		val;
+	TALLOC_CTX		*local_mem_ctx;
 
 	switch (proptag & 0xFFFF) {
 	case PT_BOOLEAN:
@@ -740,7 +744,10 @@ static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
 	case PT_STRING8:
 	case PT_UNICODE:
 		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, NULL);
-		data = (char *) talloc_strdup(mem_ctx, str);
+		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		val = ldb_binary_decode(local_mem_ctx, str);
+		data = (char *) talloc_strndup(mem_ctx, (char *) val.data, val.length);
+		talloc_free(local_mem_ctx);
 		break;
 	case PT_SYSTIME:
 		ft = talloc_zero(mem_ctx, struct FILETIME);

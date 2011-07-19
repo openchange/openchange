@@ -862,7 +862,7 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
 				abort();
 			}
-			DEBUG(0, ("  [0x%." PRIx64 ":0x%." PRIx64 "]\n", range->low, range->high));
+			DEBUG(0, ("  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]\n", range->low, range->high));
 			range = range->next;
 		}
 

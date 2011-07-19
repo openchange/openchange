@@ -922,6 +922,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 					else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
 						retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
 					else {
+						retvals[i] = MAPI_E_NO_SUPPORT;
 						DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
 					}
 				}

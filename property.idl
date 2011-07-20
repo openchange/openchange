@@ -132,6 +132,20 @@ interface property
 		uint32						StartDate;
 		uint32						EndDate;
 	} RecurrencePattern;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {	
+		uint32						ReservedBlockEE1Size;
+		[size_is(ReservedBlockEE1Size)] uint8		ReservedBlockEE1[];
+		uint32						StartDateTime;			
+		uint32						EndDateTime;
+		uint32						OriginalStartDate;
+		uint16						WideCharSubjectLength;
+		[size_is(WideCharSubjectLength+1)] uint16	WideCharSubject[];
+		uint16						WideCharLocationLength;
+		[size_is(WideCharLocationLength+1)] uint16	WideCharLocation[];
+		uint32						ReservedBlockEE2Size;
+		[size_is(ReservedBlockEE2Size)]	uint8		ReservedBlockEE2[];
+	} OldExtendedException;
 	
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32						ChangeHighlightSize;
@@ -190,19 +204,25 @@ interface property
 			[switch_is(OverrideFlags & 0x0100)]	Exception_Value			AppointmentColor;
 	} ExceptionInfo;
 
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(0x3008)] OldExtendedException	OldExtendedException;
+		[default] ExtendedException		ExtendedException;
+	} ExtendedExceptionData;
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
-		RecurrencePattern				RecurrencePattern;
-		uint32						ReaderVersion2;
-		uint32						WriterVersion2;
-		uint32						StartTimeOffset;
-		uint32						EndTimeOffset;
-		uint16						ExceptionCount;
-		ExceptionInfo					ExceptionInfo[ExceptionCount];
-		uint32						ReservedBlock1Size;
-		[size_is(ReservedBlock1Size)]	uint32		ReservedBlock1[];
-		ExtendedException				ExtendedException[ExceptionCount];
-		uint32						ReservedBlock2Size;
-		[size_is(ReservedBlock2Size)]	uint32		ReservedBlock2[];
+		RecurrencePattern					RecurrencePattern;
+		uint32							ReaderVersion2;
+		uint32							WriterVersion2;
+		uint32							StartTimeOffset;
+		uint32							EndTimeOffset;
+		uint16							ExceptionCount;
+		ExceptionInfo						ExceptionInfo[ExceptionCount];
+		uint32							ReservedBlock1Size;
+		uint32							ReservedBlock1[ReservedBlock1Size];
+		// // ExtendedException					ExtendedException;
+		[switch_is(WriterVersion2)] ExtendedExceptionData	ExtendedExceptionData[ExceptionCount];
+		uint32							ReservedBlock2Size;
+		uint32							ReservedBlock2[ReservedBlock2Size];
 	} AppointmentRecurrencePattern;
 	
 	/* [MS-DIF].pdf Section 2.3.6 */

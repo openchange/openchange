@@ -628,7 +628,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 
-		mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, object->parent_object->backend_object, mem_ctx, messageID, &backend_object, &msg);
+		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, object->parent_object->backend_object, mem_ctx, messageID, &backend_object, &msg)) {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			goto end;
+		}
 
 		/* Build the ReloadCachedInformation reply */
 		subject = (char *) find_SPropValue_data(msg->properties, PR_SUBJECT);

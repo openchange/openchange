@@ -1969,7 +1969,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	switch (synccontext->state_property) {
 	case PidTagIdsetGiven:
 		if (parsed_idset && parsed_idset->range_count == 0) {
-			abort();
+			DEBUG(5, ("empty idset, ignored\n"));
 		}
 		old_idset = synccontext->idset_given;
 		if (old_idset) {

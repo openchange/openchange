@@ -100,7 +100,7 @@ _PUBLIC_ uint16_t libmapiserver_RopTransportSend_size(struct EcDoRpc_MAPI_REPL *
 	}
 
 	/* The length of the strings is variable, but given by the size parameter */
-	size += response->u.mapi_AddressTypes.size;
+	/* size += response->u.mapi_AddressTypes.size; */
 
 	return size;
 }

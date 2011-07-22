@@ -531,6 +531,11 @@ int mapistore_backend_table_get_row(struct backend_context *bctx, void *table, T
         return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
 }
 
+int mapistore_backend_table_get_row_count(struct backend_context *bctx, void *table, enum table_query_type query_type, uint32_t *row_countp)
+{
+        return bctx->backend->table.get_row_count(table, query_type, row_countp);
+}
+
 int mapistore_backend_properties_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
         return bctx->backend->properties.get_available_properties(object, mem_ctx, propertiesp);

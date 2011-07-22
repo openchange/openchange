@@ -980,6 +980,24 @@ _PUBLIC_ int mapistore_table_get_row(struct mapistore_context *mstore_ctx, uint3
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
+_PUBLIC_ int mapistore_table_get_row_count(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, enum table_query_type query_type, uint32_t *row_countp)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_table_get_row_count(backend_ctx, table, query_type, row_countp);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
 _PUBLIC_ int mapistore_properties_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;

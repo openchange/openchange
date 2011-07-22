@@ -58,7 +58,7 @@ MarkerTags = { 0x40090003: "PidTagStartTopFld",
 ICSStateProperties = { 0x40170003: "PidTagIdsetGiven",
                        0x67960102: "PidTagCnsetSeen",
                        0x67da0102: "PidTagCnsetSeenFAI",
-                       0x67d20102: "PidTagCnsetRead"  }
+                       0x67d20102: "PidTagCnsetRead" }
 DeltaStateProperties = { 0x67e50102: "PidTagIdsetDeleted",
                          0x40210102: "PidTagIdsetNoLongerInScope",
                          0x67930102: "PidTagIdsetExpired",
@@ -200,7 +200,7 @@ class SyncBufferPrinter:
         elif DeltaStateProperties.has_key(tag):
             property_name = DeltaStateProperties[tag]
             print "Delta %.8x (%s):" % (tag, property_name),
-            consumed = self._printIDSet(pos)
+            consumed = self._printIDSet(pos, True)
         else:
             colType = tag & 0x0fff
             # print "  pos: %d, length: %d, TAG: %.8x, " % (pos, len(self.data), tag)
@@ -446,7 +446,7 @@ class SyncBufferPrinter:
 
         return consumed
 
-    def _printIDSet(self, pos):
+    def _printIDSet(self, pos, short = False):
         length = struct.unpack_from("<L", self.data, pos)[0]
         print "(%d bytes)" % length
         pos = pos + 4
@@ -454,8 +454,12 @@ class SyncBufferPrinter:
         count = 0
         while pos < limit:
             print "  IDSET %s:" % count
-            print "    ReplGUID:",
-            pos = pos + self._printGUID(pos)
+            if short:
+                print "    ReplID:",
+                pos = pos + self._printShort(pos)
+            else:
+                print "    ReplGUID:",
+                pos = pos + self._printGUID(pos)
             print "     GLOBSET:"
             pos = pos + self._printGLOBSET(pos)
             count = count + 1

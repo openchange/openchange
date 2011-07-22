@@ -278,14 +278,13 @@ class SyncBufferPrinter:
         if namedPropType == 0x00:
             print "    dispid:",
             consumed = consumed + self._printValue(pos + consumed, 0x0003)
-            print " ",
         elif namedPropType == 0x01:
             print "    name:",
             consumed = consumed + self._printNamedPropName(pos + consumed)
-            print " ",
         else:
             raise Exception, "Invalid named prop type: %d" % namedPropType
 
+        print "        ",
         consumed = consumed + self._printValue(pos + consumed, colType)
 
         return consumed
@@ -394,8 +393,11 @@ class SyncBufferPrinter:
     def _printSysTime(self, pos):
         nano100Seconds = struct.unpack_from("<Q", self.data, pos)[0]
         if nano100Seconds > 0:
-            seconds = (nano100Seconds / 10000000) - 11644473600
-            print time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds))
+            seconds = (nano100Seconds / 10000000)
+            if (seconds > 11644473600):
+                print time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds - 11644473600))
+            else:
+                print "%d seconds" % seconds
         else:
             print "empty time"
 

@@ -592,7 +592,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 				DEBUG(5, ("WARNING: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
 			}
-			/* The "cnset_seen" range is going to be merged later with the one from emsmdb_ctx since the ids are not sorted */
+			/* The "cnset_seen" range is going to be merged later with the one from synccontext since the ids are not sorted */
 			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */

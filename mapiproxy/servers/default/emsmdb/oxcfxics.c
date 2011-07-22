@@ -557,6 +557,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			/* source key */
 			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+			if (eid == 0x7fffffffffffffffLL) {
+				DEBUG(0, ("message without a valid eid\n"));
+				talloc_free(header_data_pointers);
+				continue;
+			}
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
@@ -828,6 +833,11 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			
 			/* source key */
 			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+			if (eid == 0x7fffffffffffffffLL) {
+				DEBUG(0, ("folder without a valid eid\n"));
+				talloc_free(header_data_pointers);
+				continue;
+			}
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 

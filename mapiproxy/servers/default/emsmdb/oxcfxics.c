@@ -575,7 +575,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			if (retvals[sync_data->prop_index.last_modification_time]) {
 				unix_time = oc_version_time;
 				unix_to_nt_time(&nt_time, unix_time);
-				lm_time = talloc_zero(data_pointers, struct FILETIME);
+				lm_time = talloc_zero(header_data_pointers, struct FILETIME);
 				lm_time->dwLowDateTime = (nt_time & 0xffffffff);
 				lm_time->dwHighDateTime = nt_time >> 32;
 			}
@@ -677,8 +677,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 		end_row:
 			talloc_free(header_data_pointers);
-			talloc_free(retvals);
 			talloc_free(data_pointers);
+			talloc_free(retvals);
 		}
 		else {
 			DEBUG(5, ("no data returned for message row %d\n", i));
@@ -812,7 +812,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
-			header_retvals = talloc_array(NULL, uint32_t, 8);
+			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
 			memset(header_retvals, 0, 8 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
 				
@@ -933,7 +933,6 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 
 		end_row:
 			talloc_free(header_data_pointers);
-			talloc_free(header_retvals);
 			talloc_free(data_pointers);
 			talloc_free(retvals);
 

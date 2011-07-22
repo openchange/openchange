@@ -43,7 +43,6 @@
  - "PR_LAST_MODIFICATION_TIME" is left to the backend, maybe setprops operations could provide an optional one, for reference...
  ? idea: getprops on tables and objects without property array = get all props
  * no deletions yet
- * no CUT markers!
  * no conflict resolution
  * ImportHierarchyChange require the same changes as RopOpenFolder with regards to opening folder and mapistore v2 functionality
 

@@ -177,6 +177,8 @@ struct emsmdbp_object_synccontext {
 	struct emsmdbp_stream	state_stream;
 	struct idset		*idset_given;
 	struct idset		*cnset_seen;
+	struct idset		*cnset_seen_fai;
+	struct idset		*cnset_read;
 
 	struct emsmdbp_stream	stream;
 	uint16_t		steps;

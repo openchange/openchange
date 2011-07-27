@@ -119,7 +119,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
 	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, &msg);
 	if (!object) {
-		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, object_handle->handle);
+		if ((request->OpenModeFlags & Create)) {
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		}
 		goto end;
 	}
 	handles[mapi_repl->handle_idx] = object_handle->handle;

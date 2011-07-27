@@ -199,7 +199,8 @@ bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 /* definitions from openchangedb.c */
 enum MAPISTATUS openchangedb_get_next_folderID(void *, uint64_t *);
 enum MAPISTATUS openchangedb_get_new_folderID(void *, uint64_t *);
-enum MAPISTATUS openchangedb_reserve_fmid_range(void *ldb_ctx, uint64_t, uint64_t *);
+enum MAPISTATUS openchangedb_get_new_changeNumber(void *, uint64_t *);
+enum MAPISTATUS openchangedb_reserve_fmid_range(void *, uint64_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_PublicFolderID(void *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, void *, uint64_t, char **);

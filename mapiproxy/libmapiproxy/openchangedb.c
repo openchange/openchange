@@ -915,6 +915,44 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx, uint64_t *
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details Allocates a new change number and returns it
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param cn pointer to the cn value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(void *ldb_ctx, uint64_t *cn)
+{
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+
+	/* Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_changeNumber");
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*cn = ldb_msg_find_attr_as_uint64(res->msgs[0], "ChangeNumber", 1);
+
+	/* Update GlobalCount value */
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "ChangeNumber", "%"PRId64, ((*cn) + 1));
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	*cn = (exchange_globcnt(*cn) << 16) | 0x0001;
+
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details Reserve a range of FMID

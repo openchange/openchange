@@ -595,6 +595,38 @@ _PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ct
 }
 
 /**
+   \details Get the array of deleted items following a specific change number
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where the message's to be located is stored
+   \param folder the folder backend object
+   \param mem_ctx the TALLOC_CTX that should be used as parent for the returned array
+   \param table_type the type of object that we want to take into account
+   \param change_num the reference change number
+   \param fmidsp a pointer to the returned array
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+_PUBLIC_ int mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_folder_get_deleted_fmids(backend_ctx, folder, mem_ctx, table_type, change_num, fmidsp);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+/**
    \details Retrieve the number of child folders within a mapistore
    folder
 

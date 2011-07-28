@@ -454,6 +454,11 @@ int mapistore_backend_folder_delete_message(struct backend_context *bctx, void *
         return bctx->backend->folder.delete_message(folder, mid, flags);
 }
 
+int mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp)
+{
+        return bctx->backend->folder.get_deleted_fmids(folder, mem_ctx, table_type, change_num, fmidsp);
+}
+
 int mapistore_backend_folder_get_child_count(struct backend_context *bctx, void *folder, uint8_t table_type, uint32_t *RowCount)
 {
 	int		ret;

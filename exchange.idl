@@ -303,7 +303,7 @@ System Attendant Private Interface
 
 	typedef struct {
 		[range(0,100000)] uint32	cValues;
-		[size_is(cValues)] dlong	*lpl; 
+		[size_is(cValues)] dlong	*lpi8; 
 	} I8Array_r;
 
 	typedef struct {

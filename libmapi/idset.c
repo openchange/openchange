@@ -930,6 +930,84 @@ _PUBLIC_ bool IDSET_includes_guid_glob(const struct idset *idset, struct GUID *r
 	return false;
 }
 
+static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
+	struct globset_range *range, *new_range;
+	bool done = false;
+	uint64_t work_eid;
+
+	work_eid = exchange_globcnt(eid);
+
+	range = idset->ranges;
+	while (!done && range) {
+		if (range->low == eid) {
+			if (range->high == eid) {
+				DLIST_REMOVE(idset->ranges, range);
+				talloc_free(range);
+			}
+			else {
+				range->low = exchange_globcnt(work_eid + 1);
+			}
+			done = true;
+		}
+		else if (range->high == eid) {
+			range->high = exchange_globcnt(work_eid + 1);
+			done = true;
+		}
+		else if ((exchange_globcnt(range->low) < work_eid) && (exchange_globcnt(range->high) > work_eid)) {
+			new_range = talloc_zero(idset, struct globset_range);
+			new_range->low = exchange_globcnt(work_eid + 1);
+			new_range->high = range->high;
+			range->high = exchange_globcnt(work_eid - 1);
+			new_range->next = range->next;
+			range->next = new_range;
+			done = true;
+		}
+		else {
+			range = range->next;
+		}
+	}
+}
+
+_PUBLIC_ void IDSET_remove_rawidset(struct idset *idset, const struct rawidset *rawidset)
+{
+	struct idset *current_idset;
+	int i;
+
+	if (!idset || !rawidset) {
+		return;
+	}
+
+	if (idset->single) {
+		return;
+	}
+
+	if (idset->idbased != rawidset->idbased) {
+		return;
+	}
+
+	if (rawidset->next) {
+		DEBUG(5, (__location__ ": warning, only first rawidset will be taken into account\n"));
+	}
+
+	current_idset = idset;
+	if (idset->idbased) {
+		while (current_idset && (current_idset->repl.id != rawidset->repl.id)) {
+			current_idset = current_idset->next;
+		}
+	}
+	else {
+		while (current_idset && !GUID_equal(&current_idset->repl.guid, &rawidset->repl.guid)) {
+			current_idset = current_idset->next;
+		}
+	}
+
+	if (current_idset) {
+		for (i = 0; i < rawidset->count; i++) {
+			IDSET_ranges_remove_globcnt(current_idset, rawidset->globcnts[i]);
+		}
+	}
+}
+
 /**
   \details dump an idset structure
 */

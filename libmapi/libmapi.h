@@ -509,7 +509,7 @@ struct idset *		IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *, co
 struct Binary_r *	IDSET_serialize(TALLOC_CTX *, const struct idset *);
 bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, uint64_t);
 bool			IDSET_includes_eid(const struct idset *, uint64_t);
-bool			IDSET_remove_ids(const struct idset *, const struct rawidset *);
+void			IDSET_remove_rawidset(struct idset *, const struct rawidset *);
 void			IDSET_dump(const struct idset *, const char *);
 void			ndr_push_idset(struct ndr_push *, struct idset *);
 

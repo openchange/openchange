@@ -303,6 +303,11 @@ System Attendant Private Interface
 
 	typedef struct {
 		[range(0,100000)] uint32	cValues;
+		[size_is(cValues)] dlong	*lpl; 
+	} I8Array_r;
+
+	typedef struct {
+		[range(0,100000)] uint32	cValues;
 		[size_is(cValues)] Binary_r	*lpbin;
 	} BinaryArray_r;
 
@@ -331,6 +336,7 @@ System Attendant Private Interface
 		[case(PT_ERROR)]		MAPISTATUS		err;
 		[case(PT_MV_I2)]		ShortArray_r		MVi;
 		[case(PT_MV_LONG)]		LongArray_r		MVl;
+		[case(PT_MV_I8)]		I8Array_r		MVi8;
 		[case(PT_MV_STRING8)]		StringArray_r		MVszA;
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		FlatUIDArray_r		MVguid;

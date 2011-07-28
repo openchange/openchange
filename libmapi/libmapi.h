@@ -499,14 +499,17 @@ void			fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
 /* The following public definitions come from libmapi/idset.c */
 uint64_t		exchange_globcnt(uint64_t);
 
-struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool);
-void			RAWIDSET_push_glob(struct rawidset *, const struct GUID *, uint64_t);
+struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool, bool);
+void			RAWIDSET_push_eid(struct rawidset *, uint64_t);
+void			RAWIDSET_push_guid_glob(struct rawidset *, const struct GUID *, uint64_t);
 struct idset *		RAWIDSET_convert_to_idset(TALLOC_CTX *, const struct rawidset *);
 
-struct idset *		IDSET_parse(TALLOC_CTX *, DATA_BLOB);
+struct idset *		IDSET_parse(TALLOC_CTX *, DATA_BLOB, bool);
 struct idset *		IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *, const struct idset *);
 struct Binary_r *	IDSET_serialize(TALLOC_CTX *, const struct idset *);
-bool			IDSET_includes_id(const struct idset *, struct GUID *, uint64_t);
+bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, uint64_t);
+bool			IDSET_includes_eid(const struct idset *, uint64_t);
+bool			IDSET_remove_ids(const struct idset *, const struct rawidset *);
 void			IDSET_dump(const struct idset *, const char *);
 void			ndr_push_idset(struct ndr_push *, struct idset *);
 

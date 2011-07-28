@@ -23,7 +23,11 @@
 #include <gen_ndr/misc.h>
 
 struct idset {
-	struct GUID		guid;
+	bool			idbased; /* replid-/replguid based */
+	union {
+		uint16_t	id;
+		struct GUID	guid;
+	} repl;
 	bool			single; /* single range */
 	uint32_t		range_count;
 	struct globset_range	*ranges;
@@ -39,7 +43,11 @@ struct globset_range {
 
 struct rawidset {
 	TALLOC_CTX	*mem_ctx;
-	struct GUID	guid;
+	bool		idbased; /* replid-/replguid based */
+	union {
+		uint16_t	id;
+		struct GUID	guid;
+	} repl;
 	bool		single; /* single range */
 	uint64_t	*globcnts;
 	int		count;

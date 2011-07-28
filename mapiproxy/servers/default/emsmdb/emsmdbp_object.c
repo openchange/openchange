@@ -1816,7 +1816,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_
         synccontext_object->object.synccontext->stream.buffer.data = NULL;
 
 	synccontext_object->object.synccontext->cnset_seen = talloc_zero(emsmdbp_ctx, struct idset);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &synccontext_object->object.synccontext->cnset_seen->guid);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &synccontext_object->object.synccontext->cnset_seen->repl.guid);
 	synccontext_object->object.synccontext->cnset_seen->ranges = talloc_zero(synccontext_object->object.synccontext->cnset_seen, struct globset_range);
 	synccontext_object->object.synccontext->cnset_seen->range_count = 1;
 	synccontext_object->object.synccontext->cnset_seen->ranges->next = NULL;

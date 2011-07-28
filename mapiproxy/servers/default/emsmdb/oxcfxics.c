@@ -541,7 +541,7 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 	}
 
 	local_cnset = cnset_seen;
-	while (local_cnset && (emsmdbp_guid_to_replid(emsmdbp_ctx, &local_cnset->guid, &repl_id) != MAPI_E_SUCCESS || repl_id != 1)) {
+	while (local_cnset && (emsmdbp_guid_to_replid(emsmdbp_ctx, &local_cnset->repl.guid, &repl_id) != MAPI_E_SUCCESS || repl_id != 1)) {
 		local_cnset = local_cnset->next;
 	}
 
@@ -629,7 +629,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 				continue;
 			}
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
 			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
@@ -664,12 +664,12 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			else {
 				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
 			}
-			if (IDSET_includes_id(original_cnset_seen, &sync_data->replica_guid, cn)) {
+			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
 			}
 			/* The "cnset_seen" range is going to be merged later with the one from synccontext since the ids are not sorted */
-			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
 			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
@@ -788,12 +788,12 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->cutmarks_ndr->offset = 0;
-	sync_data->cnset_read = RAWIDSET_make(sync_data, false);
-	sync_data->eid_set = RAWIDSET_make(sync_data, false);
+	sync_data->cnset_read = RAWIDSET_make(sync_data, false, true);
+	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	/* 2a. we build the message stream (normal messages) */
 	if (synccontext->request.normal) {
-		sync_data->cnset_seen = RAWIDSET_make(NULL, true);
+		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
 		sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
@@ -806,7 +806,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 
 	/* 2b. we build the message stream (FAI messages) */
 	if (synccontext->request.fai) {
-		sync_data->cnset_seen = RAWIDSET_make(NULL, true);
+		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
 		sync_data->table_type = EMSMDBP_TABLE_FAI_TYPE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
@@ -926,7 +926,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 				continue;
 			}
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
 			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
@@ -961,11 +961,11 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			else {
 				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
 			}
-			if (IDSET_includes_id(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
+			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, (__location__": folder changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
 			}
-			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
 			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
@@ -1068,8 +1068,8 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->cutmarks_ndr->offset = 0;
-	sync_data->cnset_seen = RAWIDSET_make(sync_data, true);
-	sync_data->eid_set = RAWIDSET_make(sync_data, false);
+	sync_data->cnset_seen = RAWIDSET_make(sync_data, false, true);
+	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	oxcfxics_push_folderChange(sync_data, emsmdbp_ctx, synccontext, synccontext_object->parent_object, sync_data, synccontext_object->parent_object);
 
@@ -2066,7 +2066,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 
 	/* parse IDSET */
 	synccontext = synccontext_object->object.synccontext;
-	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer);
+	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
 	switch (synccontext->state_property) {
 	case PidTagIdsetGiven:
@@ -2403,7 +2403,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 		if (data_pointers) {
 			eid = *(uint64_t *) data_pointers[0];
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 			
 			if (retvals[1]) {
 				unix_time = oc_version_time;
@@ -2418,7 +2418,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 				unix_time = oc_version_time;
 			}
 			cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
-			RAWIDSET_push_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 			
 			talloc_free(retvals);
 			talloc_free(data_pointers);
@@ -2459,8 +2459,8 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->cutmarks_ndr->offset = 0;
-	sync_data->cnset_seen = RAWIDSET_make(sync_data, true);
-	sync_data->eid_set = RAWIDSET_make(sync_data, false);
+	sync_data->cnset_seen = RAWIDSET_make(sync_data, false, true);
+	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	if (synccontext->request.contents_mode) {
 		sync_data->properties.aulPropTag[0] = PR_MID;

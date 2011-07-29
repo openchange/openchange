@@ -1133,9 +1133,14 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 
 	glob_idset = RAWIDSET_find_by_ID(rawidset, eid_id, &last_glob_idset);
 	if (!glob_idset) {
-		glob_idset = RAWIDSET_make(rawidset->mem_ctx, true, rawidset->single);
+		if (last_glob_idset == rawidset) {
+			glob_idset = rawidset;
+		}
+		else {
+			glob_idset = RAWIDSET_make(rawidset->mem_ctx, true, rawidset->single);
+			last_glob_idset->next = glob_idset;
+		}
 		glob_idset->repl.id = eid_id;
-		last_glob_idset->next = glob_idset;
 	}
 
 	if (glob_idset->count + 1 > glob_idset->max_count) {

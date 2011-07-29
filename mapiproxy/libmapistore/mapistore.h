@@ -124,7 +124,7 @@ struct mapistore_backend {
 		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 		int		(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		int		(*delete_message)(void *, uint64_t, uint8_t flags);
-		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **);
+		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 		int		(*get_child_count)(void *, uint8_t, uint32_t *);
 
 		/* constructor: open_folder */
@@ -226,7 +226,7 @@ int mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *,
 int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 int mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
-int mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **);
+int mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 int mapistore_folder_get_folder_count(struct mapistore_context *, uint32_t, void *, uint32_t *);
 int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, void *, uint8_t, uint32_t *);
 int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t **, uint32_t *);

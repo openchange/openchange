@@ -608,7 +608,7 @@ _PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ct
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ int mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp)
+_PUBLIC_ int mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -621,7 +621,7 @@ _PUBLIC_ int mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_folder_get_deleted_fmids(backend_ctx, folder, mem_ctx, table_type, change_num, fmidsp);
+	ret = mapistore_backend_folder_get_deleted_fmids(backend_ctx, folder, mem_ctx, table_type, change_num, fmidsp, cnp);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

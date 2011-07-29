@@ -183,48 +183,45 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 
 static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 {
-	uint8_t startValue, mask, bit, i;
-	DATA_BLOB *combined;
+	uint8_t mask, bit, i;
+	DATA_BLOB *combined, additional;
 	uint64_t baseValue, lowValue, highValue;
 	struct globset_range *range;
 	bool blank = false;
 
-	startValue = parser->buffer.data[parser->buffer_position];
 	mask = parser->buffer.data[parser->buffer_position+1];
 	parser->buffer_position += 2;
 
-	combined = GLOBSET_parser_stack_combine(NULL, parser, NULL);
-	baseValue = GLOBSET_parser_range_value(combined) << 8;
+	additional.length = 1;
+	additional.data = parser->buffer.data + parser->buffer_position;
+
+	combined = GLOBSET_parser_stack_combine(NULL, parser, &additional);
+	baseValue = GLOBSET_parser_range_value(combined);
 	talloc_free(combined);
 
-        lowValue = startValue;
-	highValue = startValue;
+	lowValue = baseValue;
+	highValue = baseValue;
+
 	for (i = 0; i < 8; i++) {
 		bit = 1 << i;
 		if (blank) {
 			if ((mask & bit)) {
 				blank = false;
-				lowValue = startValue + 1 + i;
+				lowValue = baseValue | ((uint64_t) bit << 40);
 				highValue = lowValue;
 			}
 		}
 		else {
-			if ((mask & bit)) {
-				highValue = startValue + 1 + i;
-				if (i == 7) {
-					range = talloc_zero(parser, struct globset_range);
-					range->low = baseValue | lowValue;
-					range->high = baseValue | highValue;
-					DLIST_ADD_END(parser->ranges, range, void);
-				}
-			}
-			else {
+			if ((mask & bit) == 0 || i == 7) {
 				range = talloc_zero(parser, struct globset_range);
-				range->low = baseValue | lowValue;
-				range->high = baseValue | highValue;
+				range->low = lowValue;
+				range->high = highValue;
 				DLIST_ADD_END(parser->ranges, range, void);
 				parser->range_count++;
 				blank = true;
+			}
+			else {
+				highValue = baseValue | ((uint64_t) bit << 40);
 			}
 		}
 	}

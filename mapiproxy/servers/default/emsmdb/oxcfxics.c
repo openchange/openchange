@@ -1219,7 +1219,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		if (object->object.ftcontext->stream.position == 0) {
 			object->object.ftcontext->steps = 0;
 			object->object.ftcontext->total_steps = (object->object.ftcontext->stream.buffer.length / buffer_size) + 1;
-			DEBUG(5, ("fast transfer buffer is %ld bytes long\n", object->object.ftcontext->stream.buffer.length));
+			DEBUG(5, ("fast transfer buffer is %d bytes long\n", (uint32_t) object->object.ftcontext->stream.buffer.length));
 		}
 		object->object.ftcontext->steps += 1;
 
@@ -1260,7 +1260,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 			}
 			object->object.synccontext->steps = 0;
 			object->object.synccontext->total_steps = (object->object.synccontext->stream.buffer.length / buffer_size) + 1;
-			DEBUG(5, ("synccontext buffer is %ld bytes long\n", object->object.synccontext->stream.buffer.length));
+			DEBUG(5, ("synccontext buffer is %d bytes long\n", (uint32_t) object->object.synccontext->stream.buffer.length));
 		}
 		object->object.synccontext->steps += 1;
 

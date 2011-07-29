@@ -3414,6 +3414,14 @@ System Attendant Private Interface
 		PidTagCnsetRead		= 0x67d20102
 	} StateProperty;
 
+	typedef [v1_enum,flag(NDR_PAHEX)] enum {
+		PidTagIdsetDeleted		= 0x67e50102,
+		PidTagIdsetNoLongerInScope	= 0x40210102,
+		PidTagIdsetExpired		= 0x67930102,
+		PidTagIdsetRead			= 0x402d0102,
+		PidTagIdsetUnread		= 0x402e0102
+	} DeltaProperty;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		StateProperty		StateProperty;
 		uint32			TransferBufferSize;

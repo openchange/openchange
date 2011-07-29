@@ -76,6 +76,8 @@ struct oxcfxics_sync_data {
 	struct rawidset			*eid_set;
 	struct rawidset			*cnset_seen;
 	struct rawidset			*cnset_read;
+
+	struct rawidset			*deleted_eid_set;
 };
 
 /** ndr helpers */
@@ -580,6 +582,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct mapistore_message	*msg;
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
+	struct I8Array_r		*deleted_eids;
 
 	/* we only push "messageChangeFull" since we don't handle property-based changes */
 	/* messageChangeFull = IncrSyncChg messageChangeHeader IncrSyncMessage propList messageChildren */
@@ -758,6 +761,23 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		}
 	}
 
+	if (emsmdbp_is_mapistore(folder_object)) {
+		if (original_cnset_seen && original_cnset_seen->range_count > 0) {
+			cn = (original_cnset_seen->ranges[0].high << 16) | 0x0001;
+		}
+		else {
+			cn = 0;
+		}
+		if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
+			for (i = 0; i < deleted_eids->cValues; i++) {
+				RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, deleted_eids->lpi8[i] >> 16);
+			}
+			if (deleted_eids->cValues > 0) {
+				RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn >> 16);
+			}
+		}
+	}
+
 	talloc_free(local_mem_ctx);
 }
 
@@ -790,6 +810,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	sync_data->cutmarks_ndr->offset = 0;
 	sync_data->cnset_read = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
+	sync_data->deleted_eid_set = RAWIDSET_make(sync_data, false, false);
 
 	/* 2a. we build the message stream (normal messages) */
 	if (synccontext->request.normal) {
@@ -815,6 +836,20 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		talloc_free(old_idset);
 		talloc_free(new_idset);
 		talloc_free(sync_data->cnset_seen);
+	}
+
+	/* deletions */
+	if (sync_data->deleted_eid_set->count > 0 && !synccontext->request.no_deletions) {
+		IDSET_remove_rawidset(synccontext->idset_given, sync_data->deleted_eid_set);
+		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->deleted_eid_set);
+		/* FIXME: we "convert" the idset hackishly */
+		new_idset->idbased = true;
+		new_idset->repl.id = 1;
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_DEL);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetDeleted);
+		ndr_push_idset(sync_data->ndr, new_idset);
+		talloc_free(new_idset);
 	}
 
 	/* state */

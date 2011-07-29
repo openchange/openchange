@@ -44,28 +44,27 @@ class GLOBSetRunner:
         self.stackByteLength = self.stackByteLength - nbr
 
     def _doBitmask(self):
-        startValue = ord(self.buffer[self.pos])
+        combined = self._rangeValue("".join(self.stack) + self.buffer[self.pos])
         mask = ord(self.buffer[self.pos+1])
         self.pos = self.pos + 2
 
-        combined = self._rangeValue("".join(self.stack)) << 8
-
         blank = False
-        lowValue = startValue + 1
-        highValue = startValue + 1
+        lowValue = combined
+        highValue = lowValue
+
         for x in xrange(8):
             bit = 1 << x
             if blank:
                 if (mask & bit) != 0:
                     blank = False
-                    lowValue = startValue + 1 + x
+                    lowValue = combined | (bit << 40)
                     highValue = lowValue
             else:
                 if (mask & bit) == 0 or x == 7:
-                    self.ranges.append((combined | lowValue, combined | highValue))
+                    self.ranges.append((lowValue, highValue))
                     blank = True
                 else:
-                    highValue = startValue + 1 + x
+                    highValue = combined | (bit << 40)
 
     def _doRange(self):
         nbr = 6 - self.stackByteLength

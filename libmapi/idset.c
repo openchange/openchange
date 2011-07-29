@@ -764,7 +764,7 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	struct idset *merged_idset, *clone_right, *current, *next;
 	uint16_t current_id, next_id;
 	struct GUID *current_guid, *next_guid;
-	bool added_ranges = false, same_id;
+	bool added_ranges = false, same_id, idbased;
 	struct globset_range *range;
 
 	if (!left) return IDSET_clone(mem_ctx, right);
@@ -782,7 +782,8 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	IDSET_reorder_idset(&merged_idset);
 
 	current = merged_idset;
-	if (current->idbased) {
+	idbased = current->idbased;
+	if (idbased) {
 		current_id = current->repl.id;
 	} else {
 		current_guid = &current->repl.guid;
@@ -790,7 +791,7 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	while (current->next) {
 		next = current->next;
 
-		if (next->idbased) {
+		if (idbased) {
 			next_id = next->repl.id;
 			same_id = (current_id == next_id);
 		} else {
@@ -1133,7 +1134,7 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 
 	glob_idset = RAWIDSET_find_by_ID(rawidset, eid_id, &last_glob_idset);
 	if (!glob_idset) {
-		if (last_glob_idset == rawidset) {
+		if (last_glob_idset == rawidset && rawidset->repl.id == 0) {
 			glob_idset = rawidset;
 		}
 		else {

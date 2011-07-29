@@ -997,7 +997,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				retval = MAPI_E_SUCCESS;
 			}
 			else {
-				retval = openchangedb_get_table_property(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, 
+				retval = openchangedb_get_table_property(data_pointers, emsmdbp_ctx->oc_ctx, 
 									 emsmdbp_ctx->username,
 									 table_filter, table->properties[i], 
 									 row_id, data_pointers + i);

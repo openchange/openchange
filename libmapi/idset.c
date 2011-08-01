@@ -207,12 +207,12 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 		if (blank) {
 			if ((mask & bit)) {
 				blank = false;
-				lowValue = baseValue | ((uint64_t) bit << 40);
+				lowValue = baseValue + ((uint64_t) (bit + 1) << 40);
 				highValue = lowValue;
 			}
 		}
 		else {
-			if ((mask & bit) == 0 || i == 7) {
+			if ((mask & bit) == 0) {
 				range = talloc_zero(parser, struct globset_range);
 				range->low = lowValue;
 				range->high = highValue;
@@ -221,9 +221,17 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 				blank = true;
 			}
 			else {
-				highValue = baseValue | ((uint64_t) bit << 40);
+				highValue = baseValue + ((uint64_t) (bit + 1) << 40);
 			}
 		}
+	}
+
+	if (!blank) {
+		range = talloc_zero(parser, struct globset_range);
+		range->low = lowValue;
+		range->high = highValue;
+		DLIST_ADD_END(parser->ranges, range, void);
+		parser->range_count++;
 	}
 }
 

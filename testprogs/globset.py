@@ -51,20 +51,28 @@ class GLOBSetRunner:
         blank = False
         lowValue = combined
         highValue = lowValue
+        # print "doBitmask: start (start: %x)" % lowValue
 
         for x in xrange(8):
             bit = 1 << x
+            # print "mask: %s; bit: %s" % (bin(mask), bin(bit))
             if blank:
                 if (mask & bit) != 0:
                     blank = False
-                    lowValue = combined | (bit << 40)
+                    lowValue = combined + ((x + 1) << 40)
                     highValue = lowValue
+                    # print "doBitmask: new record (ends: %x)" % lowValue
             else:
-                if (mask & bit) == 0 or x == 7:
+                if (mask & bit) == 0:
+                    # print "doBitmask: commit: [%.12x:%.12x]" % (lowValue, highValue)
                     self.ranges.append((lowValue, highValue))
                     blank = True
                 else:
-                    highValue = combined | (bit << 40)
+                    highValue = combined + ((x + 1) << 40)
+                    # print "doBitmask: extending range (highValue: %x)" % highValue
+
+        if not blank:
+            self.ranges.append((lowValue, highValue))
 
     def _doRange(self):
         nbr = 6 - self.stackByteLength
@@ -84,6 +92,8 @@ class GLOBSetRunner:
             highValue = lowValue
         else:
             raise Exception, "reached negative range count"
+
+        # print "doRange: [%.12x:%.12x]" % (lowValue, highValue)
 
         self.ranges.append((lowValue, highValue))
 
@@ -122,6 +132,9 @@ class GLOBSetRunner:
                 command_method = command_methods[command]
                 command_method()
             else:
+                # print "buffer: %s..." % ["%.2x" % ord(x) for x in self.buffer[self.start_pos:self.pos]]
+                # for x in self.ranges:
+                #     print "[%.12x:%.12x]" % x
                 raise Exception, "unknown command: %x at pos %d" % (command, self.pos)
 
         return (self.pos - self.start_pos)

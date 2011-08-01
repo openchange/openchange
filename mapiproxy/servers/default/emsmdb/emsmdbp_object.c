@@ -477,8 +477,8 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 		}
 		else {
 			/* PT_UNICODE */
-			string_size = strlen_m_ext((char *) stream->stream.buffer.data, CH_UTF16LE, CH_UTF8) / 2;
-			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, string_size + 1);
+			string_size = stream->stream.buffer.length / 2;
+			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, string_size);
 			memset(utf8_buffer, 0, string_size);
 			convert_string(CH_UTF16LE, CH_UTF8,
 				       stream->stream.buffer.data, stream->stream.buffer.length,

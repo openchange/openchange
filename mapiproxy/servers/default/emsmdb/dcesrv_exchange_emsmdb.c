@@ -270,13 +270,14 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	return MAPI_E_SUCCESS;
 }
 
-static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx, 
+static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx, 
                                       struct emsmdbp_context *emsmdbp_ctx,
                                       struct EcDoRpc_MAPI_REPL *mapi_repl,
                                       struct mapistore_subscription *subscription,
                                       struct mapistore_notification *notification,
                                       uint16_t *sizep)
 {
+	bool			success = true;	
         struct Notify_repl      *reply;
         struct emsmdbp_object   *handle_object;
         struct emsmdbp_object_table *table;
@@ -381,9 +382,15 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, handle_object,
                                                                                    notification->parameters.table_parameters.row_id,
                                                                                    &retvals);
-                                emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
-                                talloc_free(data_pointers);
-                                talloc_free(retvals);
+				if (data_pointers) {
+					emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+					talloc_free(data_pointers);
+					talloc_free(retvals);
+				}
+				else {
+					success = false;
+					DEBUG(5, (__location__": no data returned for row, notification ignored\n"));
+				}
                         }
 
                         /* FIXME: for some reason, TABLE_ROW_MODIFIED and TABLE_ROW_DELETED do not work... */
@@ -448,9 +455,15 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                 data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, handle_object,
                                                                                    notification->parameters.table_parameters.row_id,
                                                                                    &retvals);
-                                emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
-                                talloc_free(data_pointers);
-                                talloc_free(retvals);
+				if (data_pointers) {
+					emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, table_row, table->prop_count, (enum MAPITAGS *) table->properties, data_pointers, retvals);
+					talloc_free(data_pointers);
+					talloc_free(retvals);
+				}
+				else {
+					success = false;
+					DEBUG(5, (__location__": no data returned for row, notification ignored\n"));
+				}
                         }
 
                         /* FIXME: for some reason, TABLE_ROW_MODIFIED and TABLE_ROW_DELETED do not work... */
@@ -566,6 +579,8 @@ static void emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 
 end:
 	*sizep += libmapiserver_RopNotify_size(mapi_repl);
+
+	return success;
 }
 
 static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
@@ -580,6 +595,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	uint16_t		size = 0;
 	uint32_t		i;
 	uint32_t		idx;
+	bool			needs_realloc = true;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
@@ -1132,8 +1148,10 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
         while ((notification_holder = emsmdbp_ctx->mstore_ctx->notifications)) {
                 subscription_list = mapistore_find_matching_subscriptions(emsmdbp_ctx->mstore_ctx, notification_holder->notification);
                 while ((subscription_holder = subscription_list)) {
-                        mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, struct EcDoRpc_MAPI_REPL, idx + 2);
-                        emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, &(mapi_response->mapi_repl[idx]), subscription_holder->subscription, notification_holder->notification, &size);
+			if (needs_realloc) {
+				mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, struct EcDoRpc_MAPI_REPL, idx + 2);
+			}
+                        needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, &(mapi_response->mapi_repl[idx]), subscription_holder->subscription, notification_holder->notification, &size);
                         DLIST_REMOVE(subscription_list, subscription_holder);
                         talloc_free(subscription_holder);
                         idx++;

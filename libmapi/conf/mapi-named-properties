@@ -456,11 +456,13 @@ PidNameOMSGScheduleTime                                NULL                     
 PidNameOMSServiceType                                  NULL                          0x0000 OMSServiceType                PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
 PidNameOMSSourceType                                   NULL                          0x0000 OMSSourceType                 PT_LONG       MNID_STRING PS_PUBLIC_STRINGS
 PidNamePhishingStamp                                   NULL                          0x0000 http://schemas.microsoft.com/outlook/phishingstamp       PT_LONG       MNID_STRING PS_PUBLIC_STRINGS 0x936f
+PidNameSpoofingStamp                                   NULL                          0x0000 http://schemas.microsoft.com/outlook/spoofingstamp       PT_LONG       MNID_STRING PS_PUBLIC_STRINGS 0x9526
 PidNamePageCount                                       NULL                          0x0000 PageCount                     PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x90e4
 PidNameParagraphCount                                  NULL                          0x0000 ParCount                      PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x90ee
 PidNamePresentationFormat                              NULL                          0x0000 PresFormat                    PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90eb
 PidNameSecurity                                        NULL                          0x0000 Security                      PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x90e9
 PidNameSlideCount                                      NULL                          0x0000 SlideCount                    PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x90ef
+PidNameSTSId                                           NULL                          0x0000 STS_Id                        PT_NULL 	MNID_STRING PS_PUBLIC_STRINGS	   0x9521
 PidNameSubject                                         NULL                          0x0000 Subject                       PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90d9
 PidNameTemplate                                        NULL                          0x0000 Template                      PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90dd
 PidNameTitle                                           NULL                          0x0000 Title                         PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90d8
@@ -491,6 +493,7 @@ PidNameContentLocation				       NULL			     0x0000 Content-Location		  PT_UNICO
 PidNameContentTransferEncoding                         NULL                          0x0000 Content-Transfer-Encoding     PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x905f
 PidNameContentType                                     NULL                          0x0000 Content-Type                  PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x905a
 PidNameCrossReference                                  NULL                          0x0000 Xref                          PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x9089
+PidNameXMSExchangeOrganizationAuthdomain        	NULL                         0x0000 X-MS-Exchange-Organization-AuthDomain	PT_UNICODE	MNID_STRING	PS_INTERNET_HEADERS	0x951a
 PidNameXSharingBrowseUrl                               NULL                          0x0000 X-Sharing-Browse-Url          PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x9463
 PidNameXSharingCapabilities                            NULL                          0x0000 X-Sharing-Capabilities        PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS         0x9457
 PidNameXSharingConfigUrl                               NULL                          0x0000 X-Sharing-Config-Url          PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS		0x9462
@@ -559,10 +562,16 @@ PidLidUnknownProperty8591	LID_UNKNOWN_PROPERTY_8591	0x8591	NULL	PT_UNICODE	MNID_
 PidLidUnknownProperty8596	LID_UNKNOWN_PROPERTY_8596	0x8596	NULL	PT_UNICODE	MNID_ID	PSETID_Common	0x94f0
 PidLidUnknownProperty859a	LID_UNKNOWN_PROPERTY_859a	0x859a	NULL	PT_LONG		MNID_ID	PSETID_Common	0x94f1
 PidLidUnknownProperty859b	LID_UNKNOWN_PROPERTY_859b	0x859b	NULL	PT_BOOLEAN	MNID_ID	PSETID_Common	0x94f2
-PidLidUnknownProperty8808	LID_UNKNOWN_PROPERTY_8808	0x8808	NULL	PT_BOOLEAN	MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f3
-PidLidUnknownProperty8809	LID_UNKNOWN_PROPERTY_8809	0x8809	NULL	PT_LONG		MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f4
+PidLidUnknownProperty859f	LID_UNKNOWN_PROPERTY_859f	0x859f	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9520
+PidLidUnknownProperty85b2	LID_UNKNOWN_PROPERTY_85b2	0x85b2	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9522
+PidLidUnknownProperty85b3	LID_UNKNOWN_PROPERTY_85b3	0x85b3	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9523
+PidLidUnknownProperty85b9	LID_UNKNOWN_PROPERTY_85b9	0x85b9	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9524
+PidLidUnknownProperty85bc	LID_UNKNOWN_PROPERTY_85bc	0x85bc	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9525
+PidLidUnknownProperty85be	LID_UNKNOWN_PROPERTY_85be	0x85be	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9527
+PidLidUnknownProperty85c1	LID_UNKNOWN_PROPERTY_85c1	0x85c1	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9528
+PidLidUnknownProperty85c2	LID_UNKNOWN_PROPERTY_85c2	0x85c2	NULL	PT_NULL	MNID_ID	PSETID_Common	0x9529
+PidLidUnknownProperty85c3	LID_UNKNOWN_PROPERTY_85c3	0x85c3	NULL	PT_NULL	MNID_ID	PSETID_Common	0x952a
 PidLidUnknownProperty858d	LID_UNKNOWN_PROPERTY_858d	0x858d	NULL	PT_UNICODE	MNID_ID	PSETID_Common	0x94f5
-
 PidLidUnknownProperty850f	LID_UNKNOWN_PROPERTY_850f	0x850f	NULL	PT_NULL		MNID_ID	PSETID_Common	0x94df
 PidLidUnknownProperty8541	LID_UNKNOWN_PROPERTY_8541	0x8541	NULL	PT_NULL		MNID_ID	PSETID_Common	0x94e3
 PidLidUnknownProperty823d	LID_UNKNOWN_PROPERTY_823d	0x823d	NULL	PT_NULL		MNID_ID	PSETID_Appointment	0x94f8
@@ -573,9 +582,14 @@ PidLidUnknownProperty0019	LID_UNKNOWN_PROPERTY_0019	0x0019	NULL	PT_NULL		MNID_ID
 PidLidUnknownProperty812b	LID_UNKNOWN_PROPERTY_812b	0x812b	NULL	PT_NULL		MNID_ID	PSETID_Task	0x94fd
 PidLidUnknownProperty812f	LID_UNKNOWN_PROPERTY_812f	0x812f	NULL	PT_NULL		MNID_ID	PSETID_Task	0x94fe
 PidLidUnknownProperty811d	LID_UNKNOWN_PROPERTY_811d	0x811d	NULL	PT_NULL		MNID_ID	PSETID_Task	0x94ff
+PidLidUnknownProperty8137	LID_UNKNOWN_PROPERTY_8137	0x8137	NULL	PT_NULL	MNID_ID	PSETID_Task	0x951c
+PidLidUnknownProperty8138	LID_UNKNOWN_PROPERTY_8138	0x8138	NULL	PT_NULL	MNID_ID	PSETID_Task	0x951d
+PidLidUnknownProperty8132	LID_UNKNOWN_PROPERTY_8132	0x8132	NULL	PT_NULL	MNID_ID	PSETID_Task	0x951e
+PidLidUnknownProperty8134	LID_UNKNOWN_PROPERTY_8134	0x8134	NULL	PT_NULL	MNID_ID	PSETID_Task	0x951f
 PidLidUnknownProperty800b	LID_UNKNOWN_PROPERTY_800b	0x800b	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9500
 PidLidUnknownProperty802a	LID_UNKNOWN_PROPERTY_802a	0x802a	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9501
 PidLidUnknownProperty8016	LID_UNKNOWN_PROPERTY_8016	0x8016	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9502
+PidLidUnknownProperty8043	LID_UNKNOWN_PROPERTY_8043	0x8043	NULL	PT_NULL	MNID_ID	PSETID_Address	0x951b
 PidLidUnknownProperty8081	LID_UNKNOWN_PROPERTY_8081	0x8081	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9503
 PidLidUnknownProperty80b0	LID_UNKNOWN_PROPERTY_80b0	0x80b0	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9504
 PidLidUnknownProperty80b1	LID_UNKNOWN_PROPERTY_80b1	0x80b1	NULL	PT_NULL		MNID_ID	PSETID_Address	0x9505
@@ -597,3 +611,23 @@ PidLidUnknownProperty8f06	LID_UNKNOWN_PROPERTY_8f06	0x8f06	NULL	PT_NULL 	MNID_ID
 PidLidUnknownProperty8f03	LID_UNKNOWN_PROPERTY_8f03	0x8f03	NULL	PT_NULL 	MNID_ID	PSETID_Remote	0x9517
 PidLidUnknownProperty8f04       LID_UNKNOWN_PROPERTY_8f04       0x8f04  NULL    PT_NULL 	MNID_ID PSETID_Remote   0x9518
 PidLidUnknownProperty85a8	LID_UNKNOWN_PROPERTY_85a8	0x85a8	NULL	PT_NULL 	MNID_ID	PSETID_Common	0x9519
+
+
+PidLidUnknownProperty8808	LID_UNKNOWN_PROPERTY_8808	0x8808	NULL	PT_BOOLEAN	MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f3
+PidLidUnknownProperty8809	LID_UNKNOWN_PROPERTY_8809	0x8809	NULL	PT_LONG		MNID_ID	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046	0x94f4
+PidLidUnknownProperty0001	LID_UNKNOWN_PROPERTY_0001	0x0001	NULL	PT_NULL	MNID_ID	PSETID_CalendarAssistant	0x952b
+PidLidUnknownProperty0003	LID_UNKNOWN_PROPERTY_0003	0x0003	NULL	PT_NULL	MNID_ID	PSETID_CalendarAssistant	0x952c
+
+PidLidUnknownProperty8a5e	LID_UNKNOWN_PROPERTY_8a5e	0x8a5e	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x952d
+PidLidUnknownProperty8a30	LID_UNKNOWN_PROPERTY_8a30	0x8a30	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x952e
+PidLidUnknownProperty8a31	LID_UNKNOWN_PROPERTY_8a31	0x8a31	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x952f
+PidLidUnknownProperty8a33	LID_UNKNOWN_PROPERTY_8a33	0x8a33	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9530
+PidLidUnknownProperty8a32	LID_UNKNOWN_PROPERTY_8a32	0x8a32	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9531
+PidLidUnknownProperty8a57	LID_UNKNOWN_PROPERTY_8a57	0x8a57	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9532
+PidLidUnknownProperty8a61	LID_UNKNOWN_PROPERTY_8a61	0x8a61	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9533
+PidLidUnknownProperty8a62	LID_UNKNOWN_PROPERTY_8a62	0x8a62	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9534
+PidLidUnknownProperty8a5a	LID_UNKNOWN_PROPERTY_8a5a	0x8a5a	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9535
+PidLidUnknownProperty8a5d	LID_UNKNOWN_PROPERTY_8a5d	0x8a5d	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9536
+PidLidUnknownProperty8a5f	LID_UNKNOWN_PROPERTY_8a5f	0x8a5f	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9537
+PidLidUnknownProperty8a64	LID_UNKNOWN_PROPERTY_8a64	0x8a64	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9538
+PidLidUnknownProperty8a20	LID_UNKNOWN_PROPERTY_8a20	0x8a20	NULL	PT_NULL	MNID_ID	PSETID_Sharing	0x9539

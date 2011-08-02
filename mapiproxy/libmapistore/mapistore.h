@@ -56,6 +56,7 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_FAI_TABLE             3
 #define	MAPISTORE_RULE_TABLE            4
 #define	MAPISTORE_ATTACHMENT_TABLE      5
+#define	MAPISTORE_PERMISSIONS_TABLE	6
 
 #define MAPISTORE_FOLDER        1
 #define	MAPISTORE_MESSAGE	2

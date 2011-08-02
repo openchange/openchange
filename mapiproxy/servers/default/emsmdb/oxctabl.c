@@ -306,10 +306,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
-	else if (table->ulType == EMSMDBP_TABLE_PERMISSIONS_TYPE) {
-		DEBUG(5, ("  query on permissions table are all faked right now\n"));
-		goto end;
-	}
  
 	/* If parent folder has a mapistore context */
 	if (emsmdbp_is_mapistore(object)) {
@@ -414,10 +410,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	count = 0;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
-		goto finish;
-	}
-	else if (table->ulType == EMSMDBP_TABLE_PERMISSIONS_TYPE) {	
-		DEBUG(5, ("  query on permissions table are all faked right now\n"));
 		goto finish;
 	}
 
@@ -745,10 +737,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
-	else if (table->ulType == EMSMDBP_TABLE_PERMISSIONS_TYPE) {
-		DEBUG(5, ("  query on permissions table are all faked right now\n"));
-		goto end;
-	}
 
 	if (mapi_req->u.mapi_FindRow.origin == BOOKMARK_BEGINNING) {
 		table->numerator = 0;
@@ -912,9 +900,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
-	}
-	else if (table->ulType == EMSMDBP_TABLE_PERMISSIONS_TYPE) {
-		DEBUG(5, ("  query on permissions table are all faked right now\n"));
 	}
 	else {
 		/* 1.1. removes the existing column set */

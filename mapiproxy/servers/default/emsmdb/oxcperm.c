@@ -55,7 +55,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec;
-	struct emsmdbp_object	*object;
+	struct emsmdbp_object	*parent_object, *object;
 	void			*data = NULL;
 	uint32_t		handle;
 
@@ -88,10 +88,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	object = (struct emsmdbp_object *) data;
-	if (object->type != EMSMDBP_OBJECT_FOLDER) {
+	parent_object = (struct emsmdbp_object *) data;
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  unhandled object type: %d\n", object->type));
+		DEBUG(5, ("  unhandled object type: %d\n", parent_object->type));
 		goto end;
 	}
 
@@ -99,13 +99,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
-
-	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, object);
+	
+	if (emsmdbp_is_mapistore(parent_object)) {
+		object = emsmdbp_folder_open_table(rec, parent_object, EMSMDBP_TABLE_PERMISSIONS_TYPE, mapi_repl->handle_idx);
+	}
+	else {
+		object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);
+	}
 	if (object) {
 		retval = mapi_handles_set_private_data(rec, object);
-		/* permissions tables are stub objects for now */
-		object->object.table->denominator = 0;
-		object->object.table->ulType = EMSMDBP_TABLE_PERMISSIONS_TYPE;
+	}
+	else {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
 	}
 
 end:

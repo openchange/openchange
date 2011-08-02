@@ -752,6 +752,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 			case EMSMDBP_TABLE_FOLDER_TYPE:
 				mstore_type = MAPISTORE_FOLDER_TABLE;
 				break;
+			case EMSMDBP_TABLE_PERMISSIONS_TYPE:
+				mstore_type = MAPISTORE_PERMISSIONS_TABLE;
+				break;
 			default:
 				DEBUG(5, ("Unhandled table type for folders: %d\n", table_type));
 				abort();

@@ -246,6 +246,7 @@ struct emsmdbp_object {
 #define EMSMDBP_PF_LOCALOAB		0x8
 
 
+/* Note: would be nice to keep this compatible with the equivalent list in mapistore.h, maybe remove one of them... */
 #define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
 #define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
 #define	EMSMDBP_TABLE_FAI_TYPE		0x3

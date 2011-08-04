@@ -1560,7 +1560,6 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	uint32_t			pulFlags = 0x0;
 	uint32_t			pulTransTime = 0;
 	DATA_BLOB			rgbIn;
-	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt2 (0xB)\n"));
 
@@ -1577,11 +1576,8 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	/* Retrieve the emsmdbp_context from the session management system */
         session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-        if (session) {
-                emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-                found = true;
-	}
-	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(session == NULL, MAPI_E_LOGON_FAILED, NULL);
+	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;

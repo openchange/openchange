@@ -386,13 +386,11 @@ static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, uint64_t 
 	char		*uri, *parent_uri;
 
 	mem_ctx = talloc_zero(NULL, void);
-	retval = openchangedb_get_parent_fid(mem_ctx, emsmdbp_ctx->oc_ctx, 
-					     fid, parent_fidp, true);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, parent_fidp, true);
 	if (retval == MAPISTORE_SUCCESS) {
 		goto end;
 	}
-	retval = openchangedb_get_parent_fid(mem_ctx, emsmdbp_ctx->oc_ctx, 
-					     fid, parent_fidp, false);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, parent_fidp, false);
 	if (retval == MAPISTORE_SUCCESS) {
 		goto end;
 	}

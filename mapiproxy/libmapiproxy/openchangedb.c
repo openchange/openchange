@@ -366,7 +366,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
    \details Retrieve the parent fid associated to a mailbox system
    folder.
 
-   \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
    \param fid the Folder identifier to search for
    \param parent_fidp pointer to the parent_fid the function returns
@@ -375,8 +374,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(TALLOC_CTX *parent_ctx,
-						     void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(void *ldb_ctx,
 						     uint64_t fid,
 						     uint64_t *parent_fidp,
 						     bool mailboxstore)
@@ -406,7 +404,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(TALLOC_CTX *parent_ctx,
 /**
    \details Retrieve the fid associated with a mapistore URI.
 
-   \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
    \param fid the Folder identifier to search for
    \param mapistoreURL pointer on pointer to the mapistore URI the

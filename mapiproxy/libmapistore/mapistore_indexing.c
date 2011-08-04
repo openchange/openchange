@@ -551,20 +551,3 @@ _PUBLIC_ int mapistore_indexing_record_del_mid(struct mapistore_context *mstore_
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, mid, flags);
 }
-
-_PUBLIC_ struct tdb_wrap *mapistore_indexing_get_tdb_wrap(struct mapistore_context *mstore_ctx, const char *username)
-{
-	struct indexing_context_list *list;
-	int retval;
-
-	/* Sanity checks */
-	if (!mstore_ctx) return NULL;
-	if (!username) return NULL;
-
-	retval = mapistore_indexing_add(mstore_ctx, username);
-	if (retval) return NULL;
-	list = mapistore_indexing_search(mstore_ctx, username);
-	if (!list) return NULL;
-
-	return list->index_ctx;
-}

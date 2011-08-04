@@ -270,7 +270,6 @@ int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, uint64_t *, bool *);
-struct tdb_wrap *mapistore_indexing_get_tdb_wrap(struct mapistore_context *, const char *);
 
 /* definitions from mapistore_replica_mapping.c */
 _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *);

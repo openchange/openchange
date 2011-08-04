@@ -305,12 +305,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 			if (retval == MAPISTORE_SUCCESS) {
 				retval = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
 			} else {
-				/* Initialize connection info struct */
-				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
+				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}
-				mapistore_add_context_indexing(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, contextID);
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
 			}
 			folder_object->object.folder->contextID = contextID;

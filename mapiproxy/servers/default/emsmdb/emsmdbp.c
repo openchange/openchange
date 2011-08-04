@@ -146,14 +146,6 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
-	/* Initialize the mapistore user's indexing database */
-	ret = mapistore_indexing_add(emsmdbp_ctx->mstore_ctx, username);
-	if (ret != MAPI_E_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: MAPISTORE indexing database initialization failed\n", __FUNCTION__, __LINE__));
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
 	/* Initialize the mapistore user's replica mapping database */
 	ret = mapistore_replica_mapping_add(emsmdbp_ctx->mstore_ctx, username);
 	if (ret != MAPI_E_SUCCESS) {

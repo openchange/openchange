@@ -65,7 +65,7 @@ struct indexing_context_list *mapistore_indexing_search(struct mapistore_context
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
-				    const char *username)
+				    const char *username, struct indexing_context_list **ictxp)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct indexing_context_list	*ictx;
@@ -77,6 +77,7 @@ _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 
 	/* Step 1. Search if the context already exists */
 	ictx = mapistore_indexing_search(mstore_ctx, username);
+	*ictxp = ictx;
 	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
@@ -96,44 +97,13 @@ _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 	ictx->username = talloc_strdup(ictx, username);
 	ictx->ref_count = 0;
 	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);
-	mstore_ctx->conn_info->indexing = ictx->index_ctx;
+	(void) talloc_reference(mstore_ctx->indexing_list, ictx);
+
+	*ictxp = ictx;
 
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
-}
-
-
-/**
-   \details Close connection to indexing database for a given user
-
-   \param mstore_ctx pointer to the mapistore context
-   \param username name for which the indexing database has to be
-   deleted
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ int mapistore_indexing_del(struct mapistore_context *mstore_ctx,
-				    const char *username)
-{
-	struct indexing_context_list	*ictx;
-	
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
-
-	/* Step 1. Search for the context */
-	ictx = mapistore_indexing_search(mstore_ctx, username);
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-
-	/* Step 2. Return if ref_count is not 0 */
-	MAPISTORE_RETVAL_IF(ictx->ref_count, MAPISTORE_SUCCESS, NULL);
-
-	/* Step 3. Remove it from the list and free if 0 */
-	DLIST_REMOVE(mstore_ctx->indexing_list, ictx);
-	talloc_free(ictx);
-
-	return MAPISTORE_SUCCESS;
 }
 
 /**
@@ -380,9 +350,8 @@ _PUBLIC_ int mapistore_indexing_record_get_uri(struct mapistore_context *mstore_
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Check if the fmid exists within the database */
-	ret = mapistore_indexing_add(mstore_ctx, username);
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
-	ictx = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	key.dptr = (unsigned char *) talloc_asprintf(mstore_ctx, "0x%.16"PRIx64, fmid);
@@ -475,9 +444,8 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Check if the fmid exists within the database */
-	ret = mapistore_indexing_add(mstore_ctx, username);
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
-	ictx = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	tdb_data.found = false;

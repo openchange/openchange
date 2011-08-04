@@ -109,7 +109,7 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
+_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const char *username,
 				   const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
 {
 	TALLOC_CTX				*mem_ctx;
@@ -119,6 +119,7 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 	char					*namespace;
 	char					*namespace_start;
 	char					*backend_uri;
+	struct indexing_context_list		*ictx;
 
 	/* Step 1. Perform Sanity Checks on URI */
 	if (!uri || strlen(uri) < 4) {
@@ -138,12 +139,17 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 	if (namespace[1] && namespace[1] == '/' &&
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
+		mapistore_indexing_add(mstore_ctx, username, &ictx);
+		mapistore_indexing_add_ref_count(ictx);
+
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
-		backend_ctx = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, namespace_start, backend_uri, fid);
+		backend_ctx = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx->index_ctx, namespace_start, backend_uri, fid);
 		if (!backend_ctx) {
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
+
+		backend_ctx->indexing = ictx;
 
 		backend_list = talloc_zero((TALLOC_CTX *) mstore_ctx, struct backend_context_list);
 		backend_list->ctx = backend_ctx;
@@ -155,7 +161,6 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx,
 		*context_id = backend_list->ctx->context_id;
 		*backend_object = backend_list->ctx->root_folder_object;
 		DLIST_ADD_END(mstore_ctx->context_list, backend_list, struct backend_context_list *);
-
 	} else {
 		DEBUG(0, ("[%s:%d]: Error - Invalid URI '%s'\n", __FUNCTION__, __LINE__, uri));
 		talloc_free(mem_ctx);
@@ -266,8 +271,20 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 		return MAPISTORE_ERROR;
 	}
 
-	/* Step 1. Delete the context within backend */
+	/* Step 1. Release the indexing context within backend */
+	if (backend_ctx->indexing) {
+		mapistore_indexing_del_ref_count(backend_ctx->indexing);
+		if (backend_ctx->indexing->ref_count == 0) {
+			DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
+			DLIST_REMOVE(mstore_ctx->indexing_list, backend_ctx->indexing);
+			talloc_unlink(mstore_ctx->indexing_list, backend_ctx->indexing);
+			backend_ctx->indexing = NULL;
+		}
+	}
+
+	/* Step 2. Delete the context within backend */
 	retval = mapistore_backend_delete_context(backend_ctx);
+	
 	switch (retval) {
 	case MAPISTORE_ERR_REF_COUNT:
 		return MAPISTORE_SUCCESS;
@@ -281,50 +298,6 @@ _PUBLIC_ int mapistore_del_context(struct mapistore_context *mstore_ctx,
 	}
 
 	return retval;
-}
-
-
-/**
-   \details Associate an indexing context to a mapistore context
-
-   \param mstore_ctx pointer to the mapistore context
-   \param username account name referencing the indexing record
-   \param context_id the context identifier referencing the context to
-   alter
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ int mapistore_add_context_indexing(struct mapistore_context *mstore_ctx,
-					    const char *username,
-					    uint32_t context_id)
-{
-	struct indexing_context_list	*indexing_ctx;
-	struct backend_context		*backend_ctx;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(context_id == -1, MAPISTORE_ERROR, NULL);
-
-	/* Step 0. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	/* If the indexing pointer is already existing, return success */
-	MAPISTORE_RETVAL_IF(backend_ctx->indexing, MAPISTORE_SUCCESS, NULL);
-
-	/* Step 1. Search the indexing record */
-	indexing_ctx = mapistore_indexing_search(mstore_ctx, username);
-	MAPISTORE_RETVAL_IF(!indexing_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Reference the indexing record within backend context */
-	backend_ctx->indexing = indexing_ctx;
-
-	/* Step 3. Increment the indexing ref counter */
-	mapistore_indexing_add_ref_count(indexing_ctx);
-
-	DEBUG(0, ("mapistore_add_context_indexing username: %s\n", backend_ctx->indexing->username));
-
-	return MAPISTORE_SUCCESS;
 }
 
 

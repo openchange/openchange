@@ -270,8 +270,8 @@ int mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, const char *namespace, 
-							 const char *uri, uint64_t fid)
+struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct tdb_wrap *tdbwrap,
+							 const char *namespace, const char *uri, uint64_t fid)
 {
 	struct backend_context		*context;
 	int				retval;
@@ -284,7 +284,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 		if (backends[i].backend->backend.namespace && 
 		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
 			found = true;
-			retval = backends[i].backend->backend.create_context(NULL, conn_info, uri, &backend_object);
+			retval = backends[i].backend->backend.create_context(NULL, conn_info, tdbwrap, uri, &backend_object);
 			if (retval != MAPISTORE_SUCCESS) {
 				return NULL;
 			}
@@ -337,10 +337,6 @@ _PUBLIC_ int mapistore_backend_add_ref_count(struct backend_context *bctx)
  */
 _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
-	if (bctx->indexing) {
-		mapistore_indexing_del_ref_count(bctx->indexing);
-	}
-
 	if (bctx->ref_count) {
 		bctx->ref_count -= 1;
 		return MAPISTORE_ERR_REF_COUNT;

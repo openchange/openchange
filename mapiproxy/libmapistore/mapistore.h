@@ -93,8 +93,9 @@ struct mapistore_connection_info {
 	uint16_t			repl_id;
 	struct mapistore_context	*mstore_ctx;
 	void				*oc_ctx;
-	struct tdb_wrap			*indexing;
 };
+
+struct tdb_wrap;
 
 /* notes:
    openfolder takes the folderid alone as argument
@@ -108,7 +109,7 @@ struct mapistore_backend {
 		const char	*namespace;
 
 		int		(*init)(void);
-		int		(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, const char *, void **);
+		int		(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, void **);
 	} backend;
 
 	/** context operations */
@@ -214,12 +215,11 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
-int mapistore_add_context(struct mapistore_context *, const char *, uint64_t, uint32_t *, void **);
+int mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
 int mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *, void **);
 const char *mapistore_errstr(int);
-int mapistore_add_context_indexing(struct mapistore_context *, const char *, uint32_t);
 
 int mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 int mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
@@ -264,8 +264,6 @@ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_l
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_indexing.c */
-int mapistore_indexing_add(struct mapistore_context *, const char *);
-int mapistore_indexing_del(struct mapistore_context *, const char *);
 int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);

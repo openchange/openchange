@@ -47,6 +47,21 @@ static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *u
 	return found_session;
 }
 
+static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session_by_server_id(const struct server_id *server_id, uint32_t context_id)
+{
+	struct exchange_emsmdb_session	*session;
+
+	for (session = emsmdb_session; session; session = session->next) {
+		if (session->session
+		    && session->session->server_id.id == server_id->id && session->session->server_id.id2 == server_id->id2 && session->session->server_id.node == server_id->node
+		    && session->session->context_id == context_id) {
+			return session;
+		}
+	}
+
+	return NULL;
+}
+
 /**
    \details exchange_emsmdb EcDoConnect (0x0) function
 
@@ -1790,7 +1805,24 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32_t context_id)
 {
+	struct exchange_emsmdb_session	*session;
+	bool ret;
+
 	DEBUG (0, ("dcesrv_exchange_emsmdb_unbind\n"));
+
+	session = dcesrv_find_emsmdb_session_by_server_id(&server_id, context_id);
+	if (session) {
+		ret = mpm_session_release(session->session);
+		if (ret == true) {
+			DLIST_REMOVE(emsmdb_session, session);
+			DEBUG(5, ("[%s:%d]: Session found and released\n", 
+				  __FUNCTION__, __LINE__));
+		} else {
+			DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
+				  __FUNCTION__, __LINE__));
+		}
+	}
+
 	return NT_STATUS_OK;
 }
 

@@ -767,8 +767,8 @@ static struct idset *IDSET_clone(TALLOC_CTX *mem_ctx, const struct idset *source
 _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *left, const struct idset *right)
 {
 	struct idset *merged_idset, *clone_right, *current, *next;
-	uint16_t current_id, next_id;
-	struct GUID *current_guid, *next_guid;
+	uint16_t current_id = 0, next_id;
+	struct GUID *current_guid = NULL, *next_guid;
 	bool added_ranges = false, same_id, idbased;
 	struct globset_range *range;
 
@@ -1128,7 +1128,7 @@ static struct rawidset *RAWIDSET_find_by_GUID(struct rawidset *rawidset, const s
 
 _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 {
-	struct rawidset *glob_idset, *last_glob_idset;
+	struct rawidset *glob_idset, *last_glob_idset = NULL;
 	uint16_t eid_id;
 	uint64_t eid_globcnt;
 

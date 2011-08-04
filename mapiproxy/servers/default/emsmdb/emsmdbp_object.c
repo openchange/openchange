@@ -161,16 +161,12 @@ _PUBLIC_ bool emsmdbp_object_fmid_is_available(struct emsmdbp_context *emsmdbp_c
 
 	mem_ctx = talloc_zero(NULL, void);
 
-	retval = openchangedb_get_distinguishedName(NULL, emsmdbp_ctx->oc_ctx, fmid, &dn);
-	OPENCHANGE_RETVAL_IF(retval == MAPI_E_SUCCESS, false, dn);
+	retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, fmid, &dn);
+	OPENCHANGE_RETVAL_IF(retval == MAPI_E_SUCCESS, false, mem_ctx);
 
 	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, fmid, &record_uri, &soft_deleted);
-	if (!retval) {
-		return false;
-	}
-
-	if (record_uri) {
-		talloc_free(record_uri);
+	talloc_free(mem_ctx);
+	if (!retval || record_uri) {
 		return false;
 	}
 
@@ -318,6 +314,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
 			}
 			folder_object->object.folder->contextID = contextID;
+			(void) talloc_reference(folder_object, folder_object->backend_object);
 		}
 		else {
 			DEBUG(0, ("%s: opening openchangedb folder\n", __FUNCTION__));
@@ -422,7 +419,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *me
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
 		&& fid == context_object->object.folder->folderID)) {
-		(void) talloc_reference(mem_ctx, context_object);
 		return context_object;
 	}
 
@@ -993,7 +989,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			}
 			else if (table->properties[i] == PR_CONTENT_UNREAD || table->properties[i] == PR_DELETED_COUNT_TOTAL) {
 				/* TODO: temporary */
-				obj_count = talloc_zero(NULL, uint32_t);
+				obj_count = talloc_zero(data_pointers, uint32_t);
 				data_pointers[i] = obj_count;
 				retval = MAPI_E_SUCCESS;
 			}
@@ -1117,20 +1113,23 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message **msgp)
 {
-	struct emsmdbp_object *folder_object, *message_object;
+	struct emsmdbp_object *folder_object, *message_object = NULL;
 	bool mapistore;
+	TALLOC_CTX *local_mem_ctx;
 
 	if (!parent_object) return NULL;
 
-	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, parent_object, folderID);
-	if (!folder_object) return NULL;
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	folder_object = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID);
+	if (!folder_object)  {
+		goto end;
+	}
 
 	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("[%s] not implemented yet - shouldn't occur\n", __location__));
-		message_object = NULL;
 		break;
 	case true:
 		/* mapistore implementation goes here */
@@ -1141,6 +1140,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 			message_object = NULL;
 		}
 	}
+
+end:
+	talloc_free(local_mem_ctx);
 
 	return message_object;
 }
@@ -1416,12 +1418,12 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				has_subobj = talloc_zero(data_pointers, uint8_t);
 				*has_subobj = (*obj_count > 0) ? 1 : 0;
 				data_pointers[i] = has_subobj;
-				talloc_free(obj_count);
 			}
+			talloc_free(obj_count);
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
 			/* TODO: temporary hack */
-			obj_count = talloc_zero(NULL, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
@@ -1524,7 +1526,7 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 				}
 				else {
 					data_pointers[i] = prop_data[i].data;
-					talloc_steal(data_pointers, prop_data[i].data);
+					(void) talloc_reference(data_pointers, prop_data[i].data);
 				}
 			}
 		}

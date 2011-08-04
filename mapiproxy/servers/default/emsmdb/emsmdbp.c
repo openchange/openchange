@@ -193,6 +193,7 @@ _PUBLIC_ bool emsmdbp_destructor(void *data)
 	if (!emsmdbp_ctx) return false;
 
 	talloc_unlink(emsmdbp_ctx, emsmdbp_ctx->oc_ctx);
+	talloc_free(emsmdbp_ctx->mem_ctx);
 
 	DEBUG(0, ("[%s:%d]: emsmdbp_ctx found and released\n", __FUNCTION__, __LINE__));
 

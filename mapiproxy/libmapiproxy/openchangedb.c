@@ -869,6 +869,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_folderID(void *ldb_ctx,
 
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -897,7 +899,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx, uint64_t *
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
 
 	/* Update GlobalCount value */
-	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
 	msg = ldb_msg_new(mem_ctx);
 	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
 	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRId64, ((*fid) + 1));

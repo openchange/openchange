@@ -302,7 +302,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 	context->backend_object = backend_object;
 	talloc_reference(context, backend_object);
 	context->backend->context.get_root_folder(backend_object, context, fid, &context->root_folder_object);
-	talloc_free(backend_object);
+	talloc_unlink(NULL, backend_object);
 	context->ref_count = 0;
 	context->uri = talloc_strdup(context, uri);
 

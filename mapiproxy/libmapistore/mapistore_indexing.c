@@ -311,6 +311,7 @@ int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 		dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
 		/* Add new record */
 		ret = tdb_store(ictx->index_ctx->tdb, newkey, dbuf, TDB_INSERT);
+		free(dbuf.dptr);
 		/* Delete previous record */
 		ret = tdb_delete(ictx->index_ctx->tdb, key);
 		talloc_free(key.dptr);
@@ -379,6 +380,7 @@ _PUBLIC_ int mapistore_indexing_record_get_uri(struct mapistore_context *mstore_
 	}
 	dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
 	*urip = talloc_strndup(mem_ctx, (const char *) dbuf.dptr, dbuf.dsize);
+	free(dbuf.dptr);
 	talloc_free(key.dptr);
 	
 	return MAPISTORE_SUCCESS;

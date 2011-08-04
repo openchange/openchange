@@ -113,11 +113,14 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_search(struct mapi_handles_context *handle
 	OPENCHANGE_RETVAL_IF(!dbuf.dptr, MAPI_E_NOT_FOUND, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!dbuf.dsize, MAPI_E_NOT_FOUND, mem_ctx);
 
-	/* Ensure this is not a free'd record */
-	OPENCHANGE_RETVAL_IF(dbuf.dsize == (sizeof(MAPI_HANDLES_NULL) - 1) && !strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize),
-			     MAPI_E_NOT_FOUND, mem_ctx);
-
 	talloc_free(mem_ctx);
+	/* Ensure this is not a free'd record */
+	if (dbuf.dsize == (sizeof(MAPI_HANDLES_NULL) - 1) && !strncmp((char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
+		free(dbuf.dptr);
+		return MAPI_E_NOT_FOUND;
+	}
+	free(dbuf.dptr);
+
 	/* Step 2. Return the record within the double chained list */
 	for (el = handles_ctx->handles; el; el = el->next) {
 		if (el->handle == handle) {

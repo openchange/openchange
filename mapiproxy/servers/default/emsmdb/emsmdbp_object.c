@@ -309,6 +309,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}
+				retval = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
 			}
 			folder_object->object.folder->contextID = contextID;
@@ -918,7 +919,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 						retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
 					else {
 						retvals[i] = MAPI_E_NO_SUPPORT;
-						DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, properties[i].error));
+						DEBUG (4, ("%s: unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, properties[i].error));
 					}
 				}
 				else {
@@ -1515,7 +1516,7 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 				}
 				else {
 					retvals[i] = MAPI_E_NO_SUPPORT;
-					DEBUG (4, ("%s: unknown mapistore error: %.8x", __PRETTY_FUNCTION__, prop_data[i].error));
+					DEBUG (4, ("%s: unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, prop_data[i].error));
 				}
 			}
 			else {

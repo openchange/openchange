@@ -309,7 +309,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}
-				retval = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
 			}
 			folder_object->object.folder->contextID = contextID;

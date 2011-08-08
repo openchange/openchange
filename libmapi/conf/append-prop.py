@@ -102,7 +102,10 @@ def genNewLine(olID, nextID):
         propId = "0x0000"
         propName = olPropID
         OOM = "NULL"
-        canonicalName = "PidName%s" % canonicalizeName(olPropID)
+        if olPropID[0:4] == "urn:":
+            canonicalName = "NULL"
+        else:
+            canonicalName = "PidName%s" % canonicalizeName(olPropID)
     propType = "PT_NULL"
 
     return "%s\t%s\t%s\t%s\t%s\t%s\t%s\t0x%.4x" \

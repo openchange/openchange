@@ -240,6 +240,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_exchange.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_property.h $(DESTDIR)$(includedir)/gen_ndr/
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/*.h
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/socket/*.h
 	@$(SED) $(DESTDIR)$(includedir)/gen_ndr/*.h

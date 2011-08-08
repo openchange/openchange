@@ -63,26 +63,46 @@ guidMapping = {}
 for guidTpl in guidArray:
     guidMapping[guidTpl[1]] = guidTpl[0]
 
-def genNewLine(olID, nextID):
-    olIDArray = olID.split(":")
+def canonicalizeName(name):
+    for sep in [ ":", "/" ]:
+        sepIdx = name.rfind(sep)
+        if sepIdx > -1:
+            name = name[sepIdx+1:]
+    nameArray = name.split("-")
+    name = "".join([x.capitalize() for x in nameArray])
 
-    mappingKey = olIDArray[0].lower()
+    return name
+
+def genNewLine(olID, nextID):
+    colIdx = olID.find(":")
+    if colIdx == -1:
+        raise Exception, "Property line must contain a namespace id and a property name/id"
+
+    mappingKey = olID[0:colIdx]
     if guidMapping.has_key(mappingKey):
         domain = guidMapping[mappingKey]
     else:
         domain = "PS_UNKNOWN_%s" % mappingKey.replace("-", "_")
 
-    olPropID = olIDArray[1]
-    if len(olPropID) == 4:
+    olPropID = olID[colIdx+1:]
+    try:
+        int(olPropID, 16)
+        isdigit = True
+    except:
+        isdigit = False
+
+    if len(olPropID) == 4 and isdigit:
         propKind = "MNID_ID"
         propId = "0x%s" % olPropID.lower()
         propName = "NULL"
+        OOM = "LID_UNKNOWN_PROPERTY_%s" % olPropID.lower()
+        canonicalName = "PidLidUnknownProperty%s" % olPropID.lower()
     else:
         propKind = "MNID_STRING"
         propId = "0x0000"
         propName = olPropID
-    canonicalName = "PidLidUnknownProperty%s" % olPropID.lower()
-    OOM = "LID_UNKNOWN_PROPERTY_%s" % olPropID.lower()
+        OOM = "NULL"
+        canonicalName = "PidName%s" % canonicalizeName(olPropID)
     propType = "PT_NULL"
 
     return "%s\t%s\t%s\t%s\t%s\t%s\t%s\t0x%.4x" \

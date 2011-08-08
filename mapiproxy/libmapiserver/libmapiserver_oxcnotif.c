@@ -184,7 +184,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /*         size += sizeof(struct SearchMessageModifiedNotification); */
         /*         break; */
         default:
-                DEBUG(5, ("unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
+                DEBUG(5, (__location__": unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
         }
 
         return size;

@@ -585,7 +585,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	pPropTags = r->in.pPropTags;
 	if (!pPropTags) {
 		pPropTags = talloc_zero(r, struct SPropTagArray);
-		pPropTags->cValues = 8;
+		pPropTags->cValues = 9;
 		pPropTags->aulPropTag = talloc_array(pPropTags, enum MAPITAGS, pPropTags->cValues + 1);
 		pPropTags->aulPropTag[0] = PR_ADDRTYPE_UNICODE;
 		pPropTags->aulPropTag[1] = PR_SMTP_ADDRESS_UNICODE;
@@ -595,7 +595,9 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		pPropTags->aulPropTag[5] = PR_ORIGINAL_ENTRYID;
 		pPropTags->aulPropTag[6] = PR_SEARCH_KEY;
 		pPropTags->aulPropTag[7] = PR_INSTANCE_KEY;
+		pPropTags->aulPropTag[8] = PR_EMAIL_ADDRESS;
 		pPropTags->aulPropTag[pPropTags->cValues] = 0;
+		r->in.pPropTags = pPropTags;
 	}
 
 	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, r->in.pPropTags);

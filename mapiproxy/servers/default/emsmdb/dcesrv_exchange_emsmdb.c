@@ -681,9 +681,19 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 								  &(mapi_response->mapi_repl[idx]),
 								  mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetPropsAll: 0x8 */
-		/* op_MAPI_GetPropList: 0x9 */
-		case op_MAPI_SetProps: /* 0x09 */
+		case op_MAPI_GetPropsAll: /* 0x8 */
+			retval = EcDoRpc_RopGetPropertiesAll(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[idx]),
+							     mapi_response->handles, &size);
+			break;
+		case op_MAPI_GetPropList: /* 0x9 */
+			retval = EcDoRpc_RopGetPropertiesList(mem_ctx, emsmdbp_ctx,
+							      &(mapi_request->mapi_req[i]),
+							      &(mapi_response->mapi_repl[idx]),	
+							      mapi_response->handles, &size);
+			break;
+		case op_MAPI_SetProps: /* 0x0a */
 			retval = EcDoRpc_RopSetProperties(mem_ctx, emsmdbp_ctx,
 							  &(mapi_request->mapi_req[i]),
 							  &(mapi_response->mapi_repl[idx]),

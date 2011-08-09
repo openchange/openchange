@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
@@ -194,14 +195,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 						     uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum MAPISTATUS			*retvals = NULL;
 	struct GetPropsAll_req		*request;
 	struct GetPropsAll_repl		*response;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
 	void				*private_data = NULL;
 	struct emsmdbp_object		*object;
-	struct SPropTagArray		*properties;
+	struct SPropTagArray		*SPropTagArray;
 	void				**data_pointers;
+	int				i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesAll (0x08)\n"));
 
@@ -241,6 +244,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	retval = emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, object, &SPropTagArray);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, SPropTagArray, &retvals);
+	if (data_pointers) {		
+		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+		response->properties.cValues = 0;
+		for (i = 0; i < SPropTagArray->cValues; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				response->properties.lpProps = add_mapi_SPropValue(mem_ctx, 
+										   response->properties.lpProps,
+										   &response->properties.cValues,
+										   SPropTagArray->aulPropTag[i], 
+										   (void *)data_pointers[i]);
+				
+			}
+		}
+	}
+
 end:
 	*size += libmapiserver_RopGetPropertiesAll_size(mapi_repl);
 	return MAPI_E_SUCCESS;
@@ -274,6 +300,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesList(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
 	struct emsmdbp_object	*object;
+	struct SPropTagArray	*SPropTagArray;
 	
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesList (0x9)\n"));
 
@@ -295,6 +322,33 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesList(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = private_data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, object, &SPropTagArray);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	response->count = SPropTagArray->cValues;
+	response->tags = SPropTagArray->aulPropTag;
+
+end:
 	*size += libmapiserver_RopGetPropertiesList_size(mapi_repl);
 	return MAPI_E_SUCCESS;
 }

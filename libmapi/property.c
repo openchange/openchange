@@ -447,6 +447,93 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, struct SPropValu
 
 	return lpProps;
 }
+
+/*
+  TODO: should this be public?
+*/
+_PUBLIC_ bool set_mapi_SPropValue(struct mapi_SPropValue *lpProps, const void *data)
+{
+	if (data == NULL) {
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+		return false;
+	}
+	switch (lpProps->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		lpProps->value.i = *((const uint16_t *)data);
+		break;
+	case PT_LONG:
+		lpProps->value.l = *((const uint32_t *)data);
+		break;
+	case PT_DOUBLE:
+		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
+		break;
+	case PT_I8:
+		lpProps->value.d = *((const uint64_t *)data);
+		break;
+	case PT_BOOLEAN:
+		lpProps->value.b = *((const uint8_t *)data);
+		break;
+	case PT_STRING8:
+		lpProps->value.lpszA = (const char *) data;
+		break;
+	case PT_BINARY:
+		lpProps->value.bin = *((const struct SBinary_short *)data);
+		break;
+	case PT_UNICODE:
+		lpProps->value.lpszW = (const char *) data;
+		break;
+	case PT_CLSID:
+		lpProps->value.lpguid = *((struct GUID *) data);
+		break;
+	case PT_SYSTIME:
+		lpProps->value.ft = *((const struct FILETIME *) data);
+		break;
+	case PT_ERROR:
+		lpProps->value.err = *((const uint32_t *)data);
+		break;
+	case PT_MV_LONG:
+		lpProps->value.MVl = *((const struct mapi_MV_LONG_STRUCT *)data);
+		break;
+	case PT_MV_STRING8:
+		lpProps->value.MVszA = *((const struct mapi_SLPSTRArray *)data);
+		break;
+	case PT_MV_BINARY:
+		lpProps->value.MVbin = *((const struct mapi_SBinaryArray *)data);
+		break;
+	case PT_MV_CLSID:
+		lpProps->value.MVguid = *((const struct mapi_SGuidArray *)data);
+		break;
+	case PT_MV_UNICODE:
+		lpProps->value.MVszW = *((const struct mapi_SPLSTRArrayW *)data);
+		break;
+	default:
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+
+		return false;
+	}
+
+	return true;
+}
+
+_PUBLIC_ bool set_mapi_SPropValue_proptag(struct mapi_SPropValue *lpProps, uint32_t aulPropTag, const void *data)
+{
+	lpProps->ulPropTag = aulPropTag;
+
+	return (set_mapi_SPropValue(lpProps, data));
+}
+
+_PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint16_t *cValues, uint32_t aulPropTag, const void *data)
+{
+	lpProps = talloc_realloc(mem_ctx, lpProps, struct mapi_SPropValue, *cValues + 2);
+	DEBUG(0, ("%d: setting value for 0x%.8x\n", *cValues, aulPropTag));
+	set_mapi_SPropValue_proptag(&lpProps[*cValues], aulPropTag, data);
+	*cValues = *cValues + 1;
+
+	return lpProps;
+}
+
+
+
 /*
   TODO: should this be public?
 */

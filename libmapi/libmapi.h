@@ -256,6 +256,7 @@ const void		*get_mapi_SPropValue_data(struct mapi_SPropValue *);
 const void		*get_SPropValue_data(struct SPropValue *);
 bool			set_SPropValue_proptag(struct SPropValue *, uint32_t, const void *);
 struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *, uint32_t, const void *);
+struct mapi_SPropValue	*add_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, uint16_t *, uint32_t, const void *);
 bool			set_SPropValue(struct SPropValue *, const void *);
 uint32_t		get_mapi_property_size(struct mapi_SPropValue *);
 uint32_t		cast_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);

@@ -184,8 +184,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 	int				retval;
 	TALLOC_CTX			*local_mem_ctx;
 	struct emsmdbp_object		*new_folder;
-	/* Sanity checks */
 
+	/* Sanity checks */
 	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
 	if (!parent_folder) return MAPI_E_CALL_FAILED;
 	if (!rowp) return MAPI_E_CALL_FAILED;
@@ -1302,6 +1302,7 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 		table_type = MAPISTORE_ATTACHMENT_TABLE;
 		break;
 	default:
+		DEBUG(0, ("Unsupported object type"));
 		abort();
 	}
 	contextID = emsmdbp_get_contextID(object);
@@ -1318,13 +1319,47 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	return retval;
 }
 
+static int source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint64_t fmid, struct Binary_r **source_keyP)
+{
+	struct Binary_r	*source_key;
+	uint64_t	gc;
+	uint16_t	replid;
+	uint8_t		*bytes;
+	int		i;
+
+	replid = fmid & 0xffff;
+	source_key = talloc_zero(NULL, struct Binary_r);
+	source_key->cb = 22;
+	source_key->lpb = talloc_array(source_key, uint8_t, source_key->cb);
+	if (emsmdbp_replid_to_guid(emsmdbp_ctx, replid, (struct GUID *) source_key->lpb)) {
+		talloc_free(source_key);
+		return MAPISTORE_ERROR;
+	}
+
+	(void) talloc_reference(mem_ctx, source_key);
+	//talloc_free(source_key);
+
+	gc = fmid >> 16;
+
+	bytes = source_key->lpb + 16;
+	for (i = 0; i < 6; i++) {
+		bytes[i] = gc & 0xff;
+		gc >>= 8;
+	}
+
+	*source_keyP = source_key;
+
+	return MAPISTORE_SUCCESS;
+}
+
 static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
-	enum MAPISTATUS			retval;
+	enum MAPISTATUS			retval = MAPI_E_NOT_FOUND;
 	struct emsmdbp_object_folder	*folder;
 	int				i;
         uint32_t                        *obj_count;
 	uint8_t				*has_subobj;
+	struct Binary_r			*binr;
 	time_t				unix_time;
 	NTTIME				nt_time;
 	struct FILETIME			*ft;
@@ -1343,6 +1378,11 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			*has_subobj = (*obj_count > 0) ? 1 : 0;
 			data_pointers[i] = has_subobj;
 			talloc_free(obj_count);
+		}
+		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
+			binr = talloc_zero(data_pointers, struct Binary_r);
+			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			data_pointers[i] = binr;
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT
 			 || properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT

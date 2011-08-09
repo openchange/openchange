@@ -92,6 +92,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
+		/* Check if we still have uncommitted streams attached to this message */
+		{
+			struct mapi_handles 	*handles;
+
+			for (handles = emsmdbp_ctx->handles_ctx->handles; handles; handles = handles->next) {
+				if (handles->parent_handle == rec->handle) {
+					struct emsmdbp_object	*object2 = NULL;
+					void			*private_data2;
+					struct mapi_handles	*rec2 = NULL;
+
+					retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handles->handle, &rec2);
+					if (retval) {
+						continue;
+					}
+					retval = mapi_handles_get_private_data(rec2, &private_data2);
+					object2 = (struct emsmdbp_object *)private_data2;
+					if (object2->type == EMSMDBP_OBJECT_STREAM) {
+						emsmdbp_object_stream_commit(object2);
+					}
+				}
+			}
+		}
+
 		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;

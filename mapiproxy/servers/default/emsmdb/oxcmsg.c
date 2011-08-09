@@ -259,68 +259,68 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
 
-	if (mapistore) {
-		/* This should be handled differently here: temporary hack */
-		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
-		if (retval) {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-			goto end;
-		}
-		mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
-		mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
-
-		/* Initialize Message object */
-		handle = handles[mapi_req->handle_idx];
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
-		handles[mapi_repl->handle_idx] = message_handle->handle;
-
-		message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
-		mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->backend_object);
-
-		/* Add default properties to message MS-OXCMSG 3.2.5.2 */
-		retval = mapi_handles_set_private_data(message_handle, message_object);
-
-		/* Set default properties for message: MS-OXCMSG 3.2.5.2 */
-		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
-		aRow.cValues = 0;
-
-		pt_long = 0x1;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
-		pt_long = 0x0;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
-		pt_long = 0x9;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
-		pt_boolean = false;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
-		pt_long = 0x1;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
-		pt_long = 0x3;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
-		pt_long = 0x1;
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
-
-		gettimeofday(&tv, NULL);
-		time = timeval_to_nttime(&tv);
-		ft.dwLowDateTime = (time << 32) >> 32;
-		ft.dwHighDateTime = time >> 32;		
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
-		aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
-
-		/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
-		emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
-	}
-	else {
-		/* system/special folder */
-		DEBUG(0, ("[%s] - not implemented yet - shouldn't occur\n", __location__));
+	/* This should be handled differently here: temporary hack */
+	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+	if (retval) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
+	mapi_repl->u.mapi_CreateMessage.HasMessageId = 1;
+	mapi_repl->u.mapi_CreateMessage.MessageId.MessageId = messageID;
+
+	/* Initialize Message object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
+	handles[mapi_repl->handle_idx] = message_handle->handle;
+
+	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
+	retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->backend_object);
+	DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
+
+	/* Add default properties to message MS-OXCMSG 3.2.5.2 */
+	retval = mapi_handles_set_private_data(message_handle, message_object);
+
+	/* Set default properties for message: MS-OXCMSG 3.2.5.2 */
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	aRow.cValues = 0;
+
+	pt_long = 0x1;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
+	pt_long = 0x0;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
+	pt_long = 0x9;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
+	pt_boolean = false;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
+	pt_long = 0x1;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
+	pt_long = 0x3;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
+	pt_long = 0x1;
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
+
+	gettimeofday(&tv, NULL);
+	time = timeval_to_nttime(&tv);
+	ft.dwLowDateTime = (time << 32) >> 32;
+	ft.dwHighDateTime = time >> 32;		
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
+
+	/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
+	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
+//	}
+//	else {
+//		/* system/special folder */
+//		DEBUG(0, ("[%s] - not implemented yet - shouldn't occur\n", __location__));
+//		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+//		goto end;
+//	}
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, 
 		  emsmdbp_is_mapistore(folder_object) == true ? "true" : "false"));

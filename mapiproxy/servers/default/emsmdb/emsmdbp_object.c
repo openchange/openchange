@@ -1354,7 +1354,7 @@ static int source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *ems
 
 static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
-	enum MAPISTATUS			retval = MAPI_E_NOT_FOUND;
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsmdbp_object_folder	*folder;
 	int				i;
         uint32_t                        *obj_count;
@@ -1383,13 +1383,16 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			binr = talloc_zero(data_pointers, struct Binary_r);
 			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
+			retval = MAPI_E_SUCCESS;
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT
 			 || properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT
 			 || properties->aulPropTag[i] == PR_CONTENT_UNREAD
 			 || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			*obj_count = 0;
 			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
                 }
 		else if (properties->aulPropTag[i] == PR_LOCAL_COMMIT_TIME_MAX) {
 			/* TODO: temporary hack */

@@ -86,7 +86,6 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	const char			*cn;
 	const char			*userDN;
 	char				*dnprefix;
-	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0)\n"));
 
@@ -207,10 +206,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
                 DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
                           session->session->context_id));
                 mpm_session_increment_ref_count(session->session);
-                found = true;
         }
-
-	if (found == false) {
+	else {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
@@ -1204,7 +1201,6 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
-	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
 
@@ -1218,9 +1214,10 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
         session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
         if (session) {
                 emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
-                found = true;
 	}
-	OPENCHANGE_RETVAL_IF(found == false, MAPI_E_LOGON_FAILED, NULL);
+	else {
+		return MAPI_E_LOGON_FAILED;
+	}
 
 	/* Step 1. Process EcDoRpc requests */
 	mapi_request = r->in.mapi_request;
@@ -1397,7 +1394,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	const char			*cn;
 	const char			*userDN;
 	char				*dnprefix;
-	bool				found = false;
 
 	DEBUG(3, ("exchange_emsmdb: EcDoConnectEx (0xA)\n"));
 
@@ -1511,10 +1507,8 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
                 DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
                           session->session->context_id));
                 mpm_session_increment_ref_count(session->session);
-                found = true;
         }
-
-	if (found == false) {
+	else {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
 		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
@@ -1577,7 +1571,9 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	/* Retrieve the emsmdbp_context from the session management system */
         session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-	OPENCHANGE_RETVAL_IF(session == NULL, MAPI_E_LOGON_FAILED, NULL);
+	if (!session) {
+		return MAPI_E_LOGON_FAILED;
+	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
 	/* Extract mapi_request from rgbIn */

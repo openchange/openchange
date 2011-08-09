@@ -90,8 +90,9 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0)\n"));
 
+	/* HACK: Disable authentication */ 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call) && 1 == 0) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 	failure:
 		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
@@ -252,11 +253,12 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_emsmdb: EcDoDisconnect (0x1)\n"));
 
+	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return MAPI_E_LOGON_FAILED;
-	}
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//		return MAPI_E_LOGON_FAILED;
+//	}
 
 	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
@@ -1208,11 +1210,12 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
 
+	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		return MAPI_E_LOGON_FAILED;
-	}
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//		return MAPI_E_LOGON_FAILED;
+//	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
         session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);

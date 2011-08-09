@@ -1207,6 +1207,9 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		r->out.handle->handle_type = 0;
+		r->out.handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
 	}
 
@@ -1216,6 +1219,9 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
                 emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 	}
 	else {
+		r->out.handle->handle_type = 0;
+		r->out.handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
 	}
 
@@ -1566,12 +1572,18 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		r->out.handle->handle_type = 0;
+		r->out.handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
 	}
 
 	/* Retrieve the emsmdbp_context from the session management system */
         session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
 	if (!session) {
+		r->out.handle->handle_type = 0;
+		r->out.handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
 		return MAPI_E_LOGON_FAILED;
 	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;

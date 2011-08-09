@@ -473,6 +473,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = DT_MAILUSER;
 		return data;
+	case PR_SEND_RICH_INFO:
+		data = talloc_zero(mem_ctx, uint8_t);
+		*((uint8_t *)data) = false;
+		return data;
+	case PR_SEND_INTERNET_ENCODING:
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = 0x00160000;
 	case PR_ENTRYID:
 	case PR_ORIGINAL_ENTRYID:
 		bin = talloc(mem_ctx, struct Binary_r);

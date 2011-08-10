@@ -429,11 +429,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%.16"PRIx64"\n", parent_fid));
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", mapi_req->u.mapi_CreateFolder.FolderName.lpszA));
 
-	if (mapi_req->u.mapi_CreateFolder.ulFolderType != FOLDER_GENERIC) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		goto end;
-	}
+	/* if (mapi_req->u.mapi_CreateFolder.ulFolderType != FOLDER_GENERIC) { */
+	/* 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType)); */
+	/* 	mapi_repl->error_code = MAPI_E_NO_SUPPORT; */
+	/* 	goto end; */
+	/* } */
 
 	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
 	if (retval != MAPI_E_SUCCESS) {

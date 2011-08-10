@@ -1350,12 +1350,18 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			data_pointers[i] = has_subobj;
 			talloc_free(obj_count);
 		}
+		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			data_pointers[i] = binr;
+			retval = MAPI_E_SUCCESS;
+		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT
 			 || properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT
 			 || properties->aulPropTag[i] == PR_CONTENT_UNREAD
 			 || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
 			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
                 }
 		else if (properties->aulPropTag[i] == PR_LOCAL_COMMIT_TIME_MAX) {
 			/* TODO: temporary hack */

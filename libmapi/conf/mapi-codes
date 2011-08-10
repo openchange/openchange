@@ -291,3 +291,5 @@
 0x00000A2A  ecFxUnexpectedMarker
 0x00000A2B  ecDuplicateDelivery
 0x00000A2C  ecConditionViolation
+0x00000A2E  ecRpcInvalidHandle
+0x00000A2F  ecEventNotFound

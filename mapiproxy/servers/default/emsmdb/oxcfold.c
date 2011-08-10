@@ -299,14 +299,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (parent_object->type) {
-	case EMSMDBP_OBJECT_FOLDER:
-		folderID = parent_object->object.folder->folderID;
-		break;
-	default:
-		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
 	}
 
+	folderID = parent_object->object.folder->folderID;
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
 		DEBUG(5, ("  table is FAI table\n"));
 		table_type = EMSMDBP_TABLE_FAI_TYPE;

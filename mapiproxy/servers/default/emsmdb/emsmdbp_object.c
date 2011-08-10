@@ -1387,7 +1387,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 
 static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
-	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	enum MAPISTATUS			retval;
 	struct emsmdbp_object_folder	*folder;
 	struct Binary_r			*binr;
 	int				i;
@@ -1409,7 +1409,6 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			binr = talloc_zero(data_pointers, struct Binary_r);
 			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;

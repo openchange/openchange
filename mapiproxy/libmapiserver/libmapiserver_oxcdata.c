@@ -26,6 +26,8 @@
  */
 
 #include "libmapiserver.h"
+#include "libmapi/mapidefs.h"
+#include <util/debug.h>
 
 /**
    \details Calculate the size of a TypedString structure
@@ -174,5 +176,90 @@ _PUBLIC_ uint16_t libmapiserver_PropertyName_size(struct MAPINAMEID *property_na
 		size += property_name->kind.lpwstr.NameSize;
 	}
 
+	return size;
+}
+
+/**
+   \details Calculate the size of a mapi_SPropValue array structure
+
+   \return Size of mapi_SPropValue structure
+ */
+_PUBLIC_ uint16_t libmapiserver_mapi_SPropValue_size(uint16_t cValues, struct mapi_SPropValue *lpProps)
+{
+	uint16_t	size = 0;
+	int		i = 0;
+	int		j = 0;
+
+	for (i = 0; i < cValues; i++) {
+		size += 4; /* ulPropTag */
+
+		switch (lpProps[i].ulPropTag & 0xFFFF) {
+		case PT_I2: /* Equivalent to PT_SHORT */
+			size += sizeof (uint16_t);
+			break;
+		case PT_LONG:
+			size += sizeof (uint32_t);
+			break;
+		case PT_DOUBLE:
+			size += sizeof (double);
+			break;
+		case PT_ERROR:
+			size += sizeof (uint32_t);
+			break;
+		case PT_BOOLEAN:
+			size += sizeof (uint8_t); 
+			break;
+		case PT_I8:
+			size += sizeof (int64_t);
+			break;
+		case PT_STRING8:
+			size += strlen(lpProps[i].value.lpszA) + 1;
+			break;
+		case PT_UNICODE:
+			size += strlen(lpProps[i].value.lpszW) * 2 + 2;
+			break;
+		case PT_SYSTIME:
+			size += sizeof (uint32_t) * 2;
+			break;
+		case PT_CLSID:
+			size += sizeof (struct GUID);
+			break;
+		case PT_SRESTRICT:
+		case PT_ACTIONS:
+			break;
+		case PT_BINARY:
+		case PT_SVREID:
+			size += sizeof (uint16_t);
+			size += lpProps[i].value.bin.cb;
+			break;
+		case PT_MV_LONG:
+			size += sizeof (uint32_t);
+			size += lpProps[i].value.MVl.cValues * sizeof (uint32_t);
+			break;
+		case PT_MV_STRING8:
+			size += sizeof (uint32_t);
+			for (j = 0; j < lpProps[i].value.MVszA.cValues; j++) {
+				size += strlen(lpProps[i].value.MVszA.strings[j].lppszA);
+			}
+			break;
+		case PT_MV_UNICODE:
+			size += sizeof (uint32_t);
+			for (j = 0; j < lpProps[i].value.MVszW.cValues; j++) {
+				size += strlen(lpProps[i].value.MVszW.strings[j].lppszW) * 2 + 2;
+			}
+			break;
+		case PT_MV_CLSID:
+			size += sizeof (uint32_t);
+			size += lpProps[i].value.MVguid.cValues * sizeof (struct GUID);
+			break;
+		case PT_MV_BINARY:
+			size += sizeof (uint32_t);
+			for (j = 0; j < lpProps[i].value.MVbin.cValues; j++) {
+				size += lpProps[i].value.MVbin.bin[j].cb;
+			}
+			break;
+		}
+	}
+	
 	return size;
 }

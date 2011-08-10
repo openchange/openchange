@@ -93,6 +93,18 @@
 #define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	1
 
 /**
+   \details GetPropertiesAllRop has fixed response size for:
+   -# cValues: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPROPERTIESALL		2
+
+/**
+   \details GetPropertiesListRop has fixed response size for:
+   -# count: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPROPERTIESLIST		2
+
+/**
    \details: SetPropertiesRop has fixed response size for:
    -# PropertyProblemCount: uint16_t
  */
@@ -473,11 +485,14 @@ uint16_t libmapiserver_TypedString_size(struct TypedString);
 uint16_t libmapiserver_RecipientRow_size(struct RecipientRow);
 uint16_t libmapiserver_LongTermId_size(void);
 uint16_t libmapiserver_PropertyName_size(struct MAPINAMEID *);
+uint16_t libmapiserver_mapi_SPropValue_size(uint16_t, struct mapi_SPropValue *);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPropertiesAll_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPropertiesList_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);

@@ -29,6 +29,7 @@
 #include <sys/types.h>
 #include <unistd.h>
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
@@ -168,9 +169,189 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
  end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
 
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07) END\n"));
 	return MAPI_E_SUCCESS;
 }
 
+/**
+   \details EcDoRpc GetPropertiesAll (0x08) Rop. This operation gets
+   all the property values for an object.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetPropertiesAll EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the GetPropertiesAll EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	enum MAPISTATUS			*retvals = NULL;
+	struct GetPropsAll_req		*request;
+	struct GetPropsAll_repl		*response;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	void				*private_data = NULL;
+	struct emsmdbp_object		*object;
+	struct SPropTagArray		*SPropTagArray;
+	void				**data_pointers;
+	int				i;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesAll (0x08)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	request = &mapi_req->u.mapi_GetPropsAll;
+	response = &mapi_repl->u.mapi_GetPropsAll;
+
+	/* Initialize GetPropsAll response */
+	response->properties.cValues = 0;
+	response->properties.lpProps = NULL;
+
+	/* Fill EcDoRpc_MAPI_REPL reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	/* mapi_repl->error_code = MAPI_E_NOT_FOUND; */
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = private_data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, object, &SPropTagArray);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, SPropTagArray, &retvals);
+	if (data_pointers) {		
+		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+		response->properties.cValues = 0;
+		for (i = 0; i < SPropTagArray->cValues; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				response->properties.lpProps = add_mapi_SPropValue(mem_ctx, 
+										   response->properties.lpProps,
+										   &response->properties.cValues,
+										   SPropTagArray->aulPropTag[i], 
+										   (void *)data_pointers[i]);
+				
+			}
+		}
+	}
+
+end:
+	*size += libmapiserver_RopGetPropertiesAll_size(mapi_repl);
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc GetPropertiesList (0x9) Rop. This operation
+   retrieves the list of MAPI tags for an object.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SetProperties EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the SetProperties EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesList(TALLOC_CTX *mem_ctx,
+						      struct emsmdbp_context *emsmdbp_ctx,
+						      struct EcDoRpc_MAPI_REQ *mapi_req,
+						      struct EcDoRpc_MAPI_REPL *mapi_repl,
+						      uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	struct GetPropList_repl	*response;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data = NULL;
+	struct emsmdbp_object	*object;
+	struct SPropTagArray	*SPropTagArray;
+	
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesList (0x9)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	response = &mapi_repl->u.mapi_GetPropList;
+
+	/* Initialize GetPropList response */
+	response->count = 0;
+	response->tags = NULL;
+
+	/* Fill EcDoRpc_MAPI_REPL reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+	object = private_data;
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, object, &SPropTagArray);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	response->count = SPropTagArray->cValues;
+	response->tags = SPropTagArray->aulPropTag;
+
+end:
+	*size += libmapiserver_RopGetPropertiesList_size(mapi_repl);
+	return MAPI_E_SUCCESS;
+}
 
 /**
    \details EcDoRpc SetProperties (0x0a) Rop. This operation sets

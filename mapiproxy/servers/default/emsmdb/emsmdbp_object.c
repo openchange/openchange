@@ -954,6 +954,12 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRId64")(PidTagFolderId=*))", folderID);
 		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
+		if (retval == MAPI_E_INVALID_OBJECT) {
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+			return NULL;
+		}
+
 		subfolder = emsmdbp_object_open_folder(NULL, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFolderID);
 
 		/* Lookup for flagged property row */

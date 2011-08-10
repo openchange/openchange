@@ -270,6 +270,7 @@ GlobalCount: %d
                   "PidTagSubFolders": "TRUE",
                   "cn": username,
                   "MailboxGUID": mailboxGUID,
+                  "PidTagAccess": str(63),
                   "ReplicaID": replicaID,
                   "ReplicaGUID": replicaGUID})
         return retdn
@@ -353,6 +354,7 @@ GlobalCount: %d
                           "PidTagContainerClass": "IPF.Note",
                           "PidTagSubFolders": "TRUE",
                           "FolderType": str(1),
+                          "PidTagAccess": str(63),
                           "SystemIdx": str(SystemIdx)})           
         elif (foldername == "To-Do Search"):
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
@@ -369,6 +371,7 @@ GlobalCount: %d
                           "PidTagContainerClass": "IPF.Note",
                           "PidTagSubFolders": "FALSE",
                           "FolderType": str(1),
+                          "PidTagAccess": str(63),
                           "SystemIdx": str(SystemIdx)})
         else:
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),

@@ -1403,7 +1403,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 }
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
 			binr = talloc_zero(data_pointers, struct Binary_r);
-			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		}

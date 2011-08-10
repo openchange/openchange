@@ -1334,6 +1334,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 	time_t				unix_time;
 	NTTIME				nt_time;
 	struct FILETIME			*ft;
+	struct Binary_r			*binr;
 
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {

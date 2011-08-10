@@ -1380,8 +1380,9 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 
 static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
-	enum MAPISTATUS			retval;
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsmdbp_object_folder	*folder;
+	struct Binary_r			*binr;
 	int				i;
         uint32_t                        *obj_count;
 	uint8_t				*has_subobj;
@@ -1400,6 +1401,18 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				data_pointers[i] = obj_count;
 			}
                 }
+		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
+			binr = talloc_zero(data_pointers, struct Binary_r);
+			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			data_pointers[i] = binr;
+			retval = MAPI_E_SUCCESS;
+		}
+		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			*obj_count = FOLDER_GENERIC;
+			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
+		}
                 else if (properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
                         retval = mapistore_folder_get_message_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object,
@@ -1428,6 +1441,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
 			/* TODO: temporary hack */
 			obj_count = talloc_zero(data_pointers, uint32_t);
+			*obj_count = 0;
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}

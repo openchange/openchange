@@ -62,7 +62,7 @@ dn: CASE_INSENSITIVE
 
     def add_rootDSE(self, ocserverdn, firstorg, firstou):
         self.ldb.add({"dn": "@ROOTDSE",
-                      "defaultNamingContext": "CN=%s,%s,%s" % (firstou, firstorg, ocserverdn),
+                      "defaultNamingContext": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
                       "rootDomainNamingContext": ocserverdn,
                       "vendorName": "OpenChange Team (http://www.openchange.org)"})
 

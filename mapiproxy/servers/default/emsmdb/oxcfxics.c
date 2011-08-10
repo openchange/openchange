@@ -505,7 +505,7 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 	uint8_t state;
 
 	if (!emsmdbp_is_mapistore(table_object)) {
-		DEBUG(5, (__location__": table restrictions not supported by non-mapistore tables"));
+		DEBUG(5, (__location__": table restrictions not supported by non-mapistore tables\n"));
 		return;
 	}
 

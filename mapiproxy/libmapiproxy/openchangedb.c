@@ -1106,16 +1106,23 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(void *ldb_ctx, uint6
 	}
 
 	/* We set the last modification time */
-	unix_to_nt_time(&nt_time, unix_time);
 	value = talloc_zero(NULL, struct SPropValue);
+
 	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
+	unix_to_nt_time(&nt_time, unix_time);
 	value->value.ft.dwLowDateTime = nt_time & 0xffffffff;
 	value->value.ft.dwHighDateTime = nt_time >> 32;
 	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
-	talloc_free(value);
-
 	ldb_msg_add_string(msg, "PidTagLastModificationTime", str_value);
 	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
+
+	value->ulPropTag = PR_CHANGE_NUM;
+	openchangedb_get_new_changeNumber(ldb_ctx, (uint64_t *) &value->value.d);
+	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+	ldb_msg_add_string(msg, "PidTagChangeNumber", str_value);
+	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
+
+	talloc_free(value);
 
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);

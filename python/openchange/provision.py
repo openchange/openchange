@@ -287,11 +287,12 @@ def newmailbox(lp, username, firstorg, firstou, backend):
 
     # Step 1. Retrieve current FID index
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+    ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
     ReplicaID = db.get_message_ReplicaID(names.netbiosname)
 
     print "[+] Mailbox for '%s'" % (username)
     print "==================" + "=" * len(username)
-    print "* GlobalCount (0x%x) and ReplicaID (0x%x)" % (GlobalCount, ReplicaID)
+    print "* GlobalCount (0x%x), ChangeNumber (0x%x) and ReplicaID (0x%x)" % (GlobalCount, ChangeNumber, ReplicaID)
 
     # Step 2. Check if the user already exists
     assert not db.user_exists(names.netbiosname, username)
@@ -330,18 +331,22 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         name = path[-1]
 
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+        ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
         url = openchangedb_mapistore_url(lp, backend)
 
         fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
                                          username=username, foldername=name,
-                                         parentfolder=parent_fid, GlobalCount=GlobalCount, 
+                                         parentfolder=parent_fid,
+                                         GlobalCount=GlobalCount, ChangeNumber=ChangeNumber,
                                          ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
                                          mapistoreURL=url,
                                          mapistoreSuffix=openchangedb_suffix_for_mapistore_url(url))
 
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+        ChangeNumber += 1
+        db.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
 
         fids[path] = fid
 
@@ -371,16 +376,19 @@ def newmailbox(lp, username, firstorg, firstou, backend):
 
     for path, foldername, containerclass, pidtag in special_folders:
         GlobalCount = db.get_message_GlobalCount(names.netbiosname)
+        ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
         ReplicaID = db.get_message_ReplicaID(names.netbiosname)
         url = openchangedb_mapistore_url(lp, backend)
         fid = db.add_mailbox_special_folder(username, fids[path], foldername, 
-                                            containerclass, GlobalCount, ReplicaID, 
+                                            containerclass, GlobalCount, ChangeNumber, ReplicaID, 
                                             url, openchangedb_suffix_for_mapistore_url(url))
         entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, GlobalCount)
         db.add_folder_property(fid_inbox, pidtag, entryid.encode("base64").strip())
         db.add_folder_property(fid_mailbox, pidtag, entryid.encode("base64").strip())
         GlobalCount += 1
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+        ChangeNumber += 1
+        db.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
         print "\t* %-40s: %s (%s)" % (foldername, fid, containerclass)
 
     # Step 7. Set default receive folders
@@ -412,6 +420,8 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)
     print "* GlobalCount (0x%.12x)" % GlobalCount
+    ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
+    print "* ChangeNumber (0x%.12x)" % ChangeNumber
 
 
 def newuser(lp, creds, username=None):

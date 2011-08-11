@@ -386,6 +386,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	struct SPropValue		cnValue;
 	struct emsmdbp_object		*parent_object = NULL;
 	struct emsmdbp_object		*object = NULL;
+	struct CreateFolder_req		*request;
+	struct CreateFolder_repl	*response;
 	struct SRow			*aRow = NULL;
 	void				*data;
 	struct mapi_handles		*rec = NULL;
@@ -403,7 +405,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
-	mapi_repl->u.mapi_CreateFolder.IsExistingFolder = false;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
@@ -424,54 +425,82 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
-	parent_fid = parent_object->object.folder->folderID;
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%.16"PRIx64"\n", parent_fid));
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", mapi_req->u.mapi_CreateFolder.FolderName.lpszA));
 
-	/* if (mapi_req->u.mapi_CreateFolder.ulFolderType != FOLDER_GENERIC) { */
-	/* 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType)); */
+	request = &mapi_req->u.mapi_CreateFolder;
+	response = &mapi_repl->u.mapi_CreateFolder;
+
+	/* DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%.16"PRIx64"\n", parent_fid)); */
+	/* DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", request->FolderName.lpszW)); */
+
+	/* if (request->ulFolderType != FOLDER_GENERIC) { */
+	/* 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", request->ulType)); */
 	/* 	mapi_repl->error_code = MAPI_E_NO_SUPPORT; */
 	/* 	goto end; */
 	/* } */
 
-	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
-	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		goto end;
+	response->IsExistingFolder = false;
+
+	retval = emsmdbp_object_get_fid_by_name(emsmdbp_ctx, parent_object, request->FolderName.lpszW, &fid);
+	if (!retval) {
+		if (request->ulFlags != OPEN_IF_EXISTS) {
+			mapi_repl->error_code = MAPI_E_COLLISION;
+			goto end;
+		}
+		response->IsExistingFolder = true;
 	}
-	
-	retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
-	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n"));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		goto end;
-	}
-	
-	/* Step 3. Turn CreateFolder parameters into MAPI property array */
-	aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
-	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
-	cnValue.ulPropTag = PR_CHANGE_NUM;
-	cnValue.value.d = cn;
-	SRow_addprop(aRow, cnValue);
 
 	/* Step 4. Do effective work here */
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
-	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(5, (__location__": folder creation failed\n"));
-		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
-		mapi_repl->error_code = retval;
-		goto end;
+	if (response->IsExistingFolder) {
+		object = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, fid);
+		if (!object) {
+			DEBUG(5, (__location__": failure opening existing folder\n"));
+			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+			mapi_repl->error_code = retval;
+			goto end;
+		}
 	}
+	else {
+		/* Step 3. Turn CreateFolder parameters into MAPI property array */
+		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+			goto end;
+		}
+
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n"));
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+			goto end;
+		}
+
+		parent_fid = parent_object->object.folder->folderID;
+		
+		aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
+		cnValue.ulPropTag = PR_CHANGE_NUM;
+		cnValue.value.d = cn;
+		SRow_addprop(aRow, cnValue);
+
+		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(5, (__location__": folder creation failed\n"));
+			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+			mapi_repl->error_code = retval;
+			goto end;
+		}
+	}
+
 	handles[mapi_repl->handle_idx] = rec->handle;
 	mapi_handles_set_private_data(rec, object);
 
-	mapi_repl->u.mapi_CreateFolder.folder_id = fid;
+	response->folder_id = fid;
 
-	if (mapi_repl->u.mapi_CreateFolder.IsExistingFolder == true) {
-		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.HasRules = false;
-		mapi_repl->u.mapi_CreateFolder.GhostUnion.GhostInfo.IsGhosted = false;
+	if (response->IsExistingFolder == true) {
+		response->GhostUnion.GhostInfo.HasRules = false;
+		response->GhostUnion.GhostInfo.IsGhosted = false;
 	}
 
 end:

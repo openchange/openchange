@@ -253,39 +253,6 @@ static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, st
 	return MAPISTORE_SUCCESS;
 }
 
-static int oxcfxics_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint64_t fmid, struct Binary_r **source_keyP)
-{
-	struct Binary_r	*source_key;
-	uint64_t	gc;
-	uint16_t	replid;
-	uint8_t		*bytes;
-	int		i;
-
-	replid = fmid & 0xffff;
-	source_key = talloc_zero(NULL, struct Binary_r);
-	source_key->cb = 22;
-	source_key->lpb = talloc_array(source_key, uint8_t, source_key->cb);
-	if (emsmdbp_replid_to_guid(emsmdbp_ctx, replid, (struct GUID *) source_key->lpb)) {
-		talloc_free(source_key);
-		return MAPISTORE_ERROR;
-	}
-
-	(void) talloc_reference(mem_ctx, source_key);
-	talloc_free(source_key);
-
-	gc = fmid >> 16;
-
-	bytes = source_key->lpb + 16;
-	for (i = 0; i < 6; i++) {
-		bytes[i] = gc & 0xff;
-		gc >>= 8;
-	}
-
-	*source_keyP = source_key;
-
-	return MAPISTORE_SUCCESS;
-}
-
 static struct Binary_r *oxcfxics_make_xid(TALLOC_CTX *mem_ctx, struct GUID *replica_guid, uint64_t *id, uint8_t idlength)
 {
 	struct ndr_push	*ndr;
@@ -538,7 +505,7 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 	uint8_t state;
 
 	if (!emsmdbp_is_mapistore(table_object)) {
-		DEBUG(5, (__location__": table restrictions not supported by non-mapistore tables"));
+		DEBUG(5, (__location__": table restrictions not supported by non-mapistore tables\n"));
 		return;
 	}
 
@@ -635,7 +602,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
+			emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
 			query_props.aulPropTag[j] = PR_SOURCE_KEY;
 			header_data_pointers[j] = bin_data;
 			j++;
@@ -947,7 +914,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 				bin_data->lpb = (uint8_t *) "";
 			}
 			else {
-				oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, *(uint64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
+				emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, *(uint64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
 			}
 			query_props.aulPropTag[j] = PR_PARENT_SOURCE_KEY;
 			header_data_pointers[j] = bin_data;
@@ -964,7 +931,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-			oxcfxics_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
+			emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, eid, &bin_data);
 			query_props.aulPropTag[j] = PR_SOURCE_KEY;
 			header_data_pointers[j] = bin_data;
 			j++;

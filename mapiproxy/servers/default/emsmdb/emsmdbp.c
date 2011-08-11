@@ -504,3 +504,36 @@ _PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const u
 
 	return MAPI_E_NOT_FOUND;
 }
+
+_PUBLIC_ int emsmdbp_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint64_t fmid, struct Binary_r **source_keyP)
+{
+	struct Binary_r	*source_key;
+	uint64_t	gc;
+	uint16_t	replid;
+	uint8_t		*bytes;
+	int		i;
+
+	replid = fmid & 0xffff;
+	source_key = talloc_zero(NULL, struct Binary_r);
+	source_key->cb = 22;
+	source_key->lpb = talloc_array(source_key, uint8_t, source_key->cb);
+	if (emsmdbp_replid_to_guid(emsmdbp_ctx, replid, (struct GUID *) source_key->lpb)) {
+		talloc_free(source_key);
+		return MAPISTORE_ERROR;
+	}
+
+	(void) talloc_reference(mem_ctx, source_key);
+	talloc_unlink(NULL, source_key);
+
+	gc = fmid >> 16;
+
+	bytes = source_key->lpb + 16;
+	for (i = 0; i < 6; i++) {
+		bytes[i] = gc & 0xff;
+		gc >>= 8;
+	}
+
+	*source_keyP = source_key;
+
+	return MAPISTORE_SUCCESS;
+}

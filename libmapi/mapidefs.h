@@ -298,6 +298,9 @@
 #define PSETID_Report                   "00062013-0000-0000-c000-000000000046"
 #define PSETID_Remote                   "00062014-0000-0000-c000-000000000046"
 #define	PS_UNKNOWN_0006200b_0000_0000_c000_000000000046 "0006200b-0000-0000-c000-000000000046"
+#define	PSETID_Appointment2		"02200600-0000-0000-c000-000000000046"
+#define	PSETID_GoodMessaging		"ef9203ee-b9a5-101b-acc1-00aa00423326"
+
 
 /* FreeBusy strings for Exchange 2003 and below */
 #define	FREEBUSY_FOLDER		"EX:/o=%s/ou=%s"

@@ -270,6 +270,7 @@ enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context 
 const struct GUID *const	MagicGUIDp;
 int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const struct GUID *, uint16_t *);
 int				emsmdbp_replid_to_guid(struct emsmdbp_context *, const uint16_t, struct GUID *);
+int				emsmdbp_source_key_from_fmid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct Binary_r **);
 
 /* definitions from emsmdbp_object.c */
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);

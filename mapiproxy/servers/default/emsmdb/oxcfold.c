@@ -299,14 +299,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (parent_object->type) {
-	case EMSMDBP_OBJECT_FOLDER:
-		folderID = parent_object->object.folder->folderID;
-		break;
-	default:
-		mapi_repl->u.mapi_GetContentsTable.RowCount = 0;
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
 	}
 
+	folderID = parent_object->object.folder->folderID;
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
 		DEBUG(5, ("  table is FAI table\n"));
 		table_type = EMSMDBP_TABLE_FAI_TYPE;
@@ -533,6 +531,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder parent: 0x%.16"PRIx64"\n", parent_fid));
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Creating %s\n", mapi_req->u.mapi_CreateFolder.FolderName.lpszA));
 
+	/* if (mapi_req->u.mapi_CreateFolder.ulFolderType != FOLDER_GENERIC) { */
+	/* 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Unexpected folder type 0x%x\n", mapi_req->u.mapi_CreateFolder.ulType)); */
+	/* 	mapi_repl->error_code = MAPI_E_NO_SUPPORT; */
+	/* 	goto end; */
+	/* } */
+
+	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+	
 	/* Step 3. Turn CreateFolder parameters into MAPI property array */
 	aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));

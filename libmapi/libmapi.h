@@ -274,6 +274,8 @@ struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const str
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
+bool			set_mapi_SPropValue(struct mapi_SPropValue *, const void *);
+bool			set_mapi_SPropValue_proptag(struct mapi_SPropValue *, uint32_t, const void *);
 
 /* The following public definitions come from libmapi/IABContainer.c */
 enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct SRowSet **, struct SPropTagArray **, uint32_t);

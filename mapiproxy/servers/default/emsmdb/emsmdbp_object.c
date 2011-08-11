@@ -954,6 +954,12 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRId64")(PidTagFolderId=*))", folderID);
 		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
+		if (retval == MAPI_E_INVALID_OBJECT) {
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+			return NULL;
+		}
+
 		subfolder = emsmdbp_object_open_folder(NULL, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFolderID);
 
 		/* Lookup for flagged property row */
@@ -1319,39 +1325,6 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	return retval;
 }
 
-static int source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint64_t fmid, struct Binary_r **source_keyP)
-{
-	struct Binary_r	*source_key;
-	uint64_t	gc;
-	uint16_t	replid;
-	uint8_t		*bytes;
-	int		i;
-
-	replid = fmid & 0xffff;
-	source_key = talloc_zero(NULL, struct Binary_r);
-	source_key->cb = 22;
-	source_key->lpb = talloc_array(source_key, uint8_t, source_key->cb);
-	if (emsmdbp_replid_to_guid(emsmdbp_ctx, replid, (struct GUID *) source_key->lpb)) {
-		talloc_free(source_key);
-		return MAPISTORE_ERROR;
-	}
-
-	(void) talloc_reference(mem_ctx, source_key);
-	//talloc_free(source_key);
-
-	gc = fmid >> 16;
-
-	bytes = source_key->lpb + 16;
-	for (i = 0; i < 6; i++) {
-		bytes[i] = gc & 0xff;
-		gc >>= 8;
-	}
-
-	*source_keyP = source_key;
-
-	return MAPISTORE_SUCCESS;
-}
-
 static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
@@ -1380,8 +1353,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			talloc_free(obj_count);
 		}
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			binr = talloc_zero(data_pointers, struct Binary_r);
-			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		}
@@ -1439,8 +1411,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			binr = talloc_zero(data_pointers, struct Binary_r);
-			source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		}

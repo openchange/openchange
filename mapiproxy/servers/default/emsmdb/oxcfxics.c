@@ -783,7 +783,9 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen;
+		/* IDSET_dump (synccontext->cnset_seen, "initial cnset_seen"); */
 		synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+		/* IDSET_dump (synccontext->cnset_seen, "merged cnset_seen"); */
 		talloc_free(old_idset);
 		talloc_free(new_idset);
 		talloc_free(sync_data->cnset_seen);
@@ -796,7 +798,9 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen_fai;
+		/* IDSET_dump (synccontext->cnset_seen, "initial cnset_seen_fai"); */
 		synccontext->cnset_seen_fai = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+		/* IDSET_dump (synccontext->cnset_seen, "merged cnset_seen_fai"); */
 		talloc_free(old_idset);
 		talloc_free(new_idset);
 		talloc_free(sync_data->cnset_seen);
@@ -813,6 +817,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_DEL);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetDeleted);
 		ndr_push_idset(sync_data->ndr, new_idset);
+		/* IDSET_dump (new_idset, "cnset_deleted"); */
 		talloc_free(new_idset);
 	}
 
@@ -821,7 +826,9 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
+	/* IDSET_dump (synccontext->idset_given, "initial idset_given"); */
 	synccontext->idset_given = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+	/* IDSET_dump (synccontext->idset_given, "merged idset_given"); */
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
@@ -1076,7 +1083,9 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 	old_idset = synccontext->cnset_seen;
+	/* IDSET_dump (synccontext->cnset_seen, "initial cnset_seen (folder change)"); */
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+	/* IDSET_dump (synccontext->cnset_seen, "merged cnset_seen (folder change)"); */
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
@@ -1085,7 +1094,9 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
+	/* IDSET_dump (synccontext->idset_given, "initial idset_given (folder change)"); */
 	synccontext->idset_given = IDSET_merge_idsets(synccontext, old_idset, new_idset);
+	/* IDSET_dump (synccontext->idset_given, "merged idset_given (folder change)"); */
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 

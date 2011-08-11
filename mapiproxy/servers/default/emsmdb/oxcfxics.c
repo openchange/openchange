@@ -625,12 +625,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			j++;
 
 			if (retvals[sync_data->prop_index.change_number]) {
-				abort ();
-				if (unix_time < oc_version_time) {
-					unix_time = oc_version_time;
-				}
-				cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
-				DEBUG(5, (__location__": computed change number: %.12"PRIx64"\n", cn));
+				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for message\n"));
+				abort();
 			}
 			else {
 				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
@@ -955,11 +951,8 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			j++;
 
 			if (retvals[sync_data->prop_index.change_number]) {
-				if (unix_time < oc_version_time) {
-					unix_time = oc_version_time;
-				}
-				cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
-				DEBUG(5, (__location__": computed change number: %.12"PRIx64"\n", cn));
+				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for folder\n"));
+				abort();
 			}
 			else {
 				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
@@ -975,7 +968,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			query_props.aulPropTag[j] = PR_CHANGE_KEY;
 			header_data_pointers[j] = bin_data;
 			j++;
-				
+
 			/* predecessor... (already computed) */
 			predecessors_data.cb = bin_data->cb + 1;
 			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
@@ -2429,7 +2422,14 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			if (unix_time < oc_version_time) {
 				unix_time = oc_version_time;
 			}
-			cn = ((eid & 0xffff000000000000LL) >> 16) | (exchange_globcnt(unix_time - oc_version_time) >> 16);
+
+			if (retvals[sync_data->prop_index.change_number]) {
+				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for message\n"));
+				abort();
+			}
+			else {
+				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
+			}
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 			
 			talloc_free(retvals);
@@ -2463,10 +2463,10 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	sync_data = talloc_zero(mem_ctx, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
 	sync_data->prop_index.eid = 0;
-	sync_data->prop_index.last_modification_time = 1;
+	sync_data->prop_index.change_number = 1;
 	sync_data->properties.cValues = 2;
 	sync_data->properties.aulPropTag = talloc_array(sync_data, enum MAPITAGS, 2);
-	sync_data->properties.aulPropTag[1] = PR_LAST_MODIFICATION_TIME;
+	sync_data->properties.aulPropTag[1] = PR_CHANGE_NUM;
 	sync_data->ndr = ndr;
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);

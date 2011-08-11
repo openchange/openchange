@@ -281,6 +281,7 @@ int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 bool		      emsmdbp_object_fmid_is_available(struct emsmdbp_context *, uint64_t);
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
+enum MAPISTATUS       emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
 enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
 struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
 struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);

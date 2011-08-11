@@ -173,6 +173,37 @@ _PUBLIC_ bool emsmdbp_object_fmid_is_available(struct emsmdbp_context *emsmdbp_c
 	return true;
 }
 
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_get_fid_by_name(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, const char *name, uint64_t *fidp)
+{
+	uint64_t	folderID;
+
+	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
+	if (!parent_folder) return MAPI_E_CALL_FAILED;
+	if (!name) return MAPI_E_CALL_FAILED;
+	if (!fidp) return MAPI_E_CALL_FAILED;
+
+	if (parent_folder->type == EMSMDBP_OBJECT_FOLDER) {
+		folderID = parent_folder->object.folder->folderID;
+	}
+	else if (parent_folder->type == EMSMDBP_OBJECT_MAILBOX) {
+		folderID = parent_folder->object.mailbox->folderID;
+	}
+	else {
+		return MAPI_E_CALL_FAILED;
+	}
+
+	if (emsmdbp_is_mapistore(parent_folder)) {
+		if (mapistore_folder_get_child_fid_by_name(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_folder), parent_folder->backend_object, name, fidp)) {
+			return MAPI_E_NOT_FOUND;
+		}
+
+		return MAPI_E_SUCCESS;
+	}
+	else {
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, parent_folder->object.folder->folderID, name, fidp);
+	}
+}
+
 _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
 {
 	uint64_t			parentFolderID, testFolderID;

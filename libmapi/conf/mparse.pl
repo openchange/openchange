@@ -116,7 +116,8 @@ my	%oleguid = (
     "PSETID_Remote"             =>      "00062014-0000-0000-c000-000000000046",
     "PS_UNKNOWN_0006200b_0000_0000_c000_000000000046" => "0006200b-0000-0000-c000-000000000046",
     "PSETID_Appointment2"	=>	"02200600-0000-0000-c000-000000000046",
-    "PSETID_GoodMessaging"	=>	"ef9203ee-b9a5-101b-acc1-00aa00423326"
+    "PSETID_GoodMessaging"	=>	"ef9203ee-b9a5-101b-acc1-00aa00423326",
+    "PS_UNKNOWN_2f733904_5c72_45d7_a476_c4dd9f3f4052" => "2f733904-5c72-45d7-a476-c4dd9f3f4052"
 );
 
 # main program

@@ -258,6 +258,14 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		else {
 			unix_to_nt_time(&nt_time, time(NULL));
 		}
+		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
+		if (value) {
+			ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRId64, value->value.d);
+		}
+		else {
+			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
+			abort();
+		}
 		ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, nt_time);
 		ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRId64, nt_time);
 		ldb_msg_add_string(msg, "FolderType", "1");

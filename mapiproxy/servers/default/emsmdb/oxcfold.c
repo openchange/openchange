@@ -382,7 +382,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	struct mapi_handles		*parent = NULL;
 	uint32_t			handle;
-	uint64_t			parent_fid, fid;
+	uint64_t			parent_fid, fid, cn;
+	struct SPropValue		cnValue;
 	struct emsmdbp_object		*parent_object = NULL;
 	struct emsmdbp_object		*object = NULL;
 	struct SRow			*aRow = NULL;
@@ -440,14 +441,25 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 	
+	retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+	
 	/* Step 3. Turn CreateFolder parameters into MAPI property array */
 	aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
+	cnValue.ulPropTag = PR_CHANGE_NUM;
+	cnValue.value.d = cn;
+	SRow_addprop(aRow, cnValue);
 
 	/* Step 4. Do effective work here */
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_object, rec, fid, aRow, &object);
 	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(5, (__location__": folder creation failed\n"));
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		mapi_repl->error_code = retval;
 		goto end;

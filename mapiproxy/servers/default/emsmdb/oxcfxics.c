@@ -625,6 +625,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			j++;
 
 			if (retvals[sync_data->prop_index.change_number]) {
+				abort ();
 				if (unix_time < oc_version_time) {
 					unix_time = oc_version_time;
 				}
@@ -1532,8 +1533,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	void					*data;
 	struct SyncImportMessageChange_req	*request;
 	struct SyncImportMessageChange_repl	*response;
-	uint64_t				folderID;
-	uint64_t				messageID;
+	uint64_t				folderID, messageID;
 	struct GUID				replica_guid;
 	uint16_t				repl_id;
 	struct mapistore_message		*msg;
@@ -1636,7 +1636,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	struct SyncImportHierarchyChange_req	*request;
 	struct SyncImportHierarchyChange_repl	*response;
 	uint64_t				parentFolderID;
-	uint64_t				folderID;
+	uint64_t				folderID, cn;
 	struct GUID				replica_guid;
 	uint16_t				repl_id;
 	uint32_t				i;
@@ -1691,7 +1691,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	}
 
 	aRow.cValues = request->HierarchyValues.cValues + request->PropertyValues.cValues;
-	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 3);
 	for (i = 0; i < request->HierarchyValues.cValues; i++) {
 		cast_SPropValue(aRow.lpProps, request->HierarchyValues.lpProps + i, aRow.lpProps + i);
 	}
@@ -1711,8 +1711,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 
 	folder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID);
 	if (!folder_object) {
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		if (retval) {
+			DEBUG(5, (__location__": unable to obtain a change number\n"));
+			folder_object = NULL;
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+			goto end;
+		}
+		aRow.lpProps[aRow.cValues].ulPropTag = PR_CHANGE_NUM;
+		aRow.lpProps[aRow.cValues].value.d = cn;
 		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_folder, NULL, folderID, &aRow, &folder_object);
 		if (retval) {
+			DEBUG(5, (__location__": folder creation failed\n"));
 			folder_object = NULL;
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;

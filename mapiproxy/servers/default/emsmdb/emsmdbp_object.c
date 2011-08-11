@@ -901,6 +901,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	uint8_t				*has_subobj;
 	char				*table_filter;
 	void				*odb_ctx;
+	struct Binary_r			*binr;
 
         table = table_object->object.table;
         num_props = table_object->object.table->prop_count;
@@ -990,6 +991,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				obj_count = talloc_zero(data_pointers, uint32_t);
 				retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, subfolder, obj_count);
 				data_pointers[i] = obj_count;
+			}
+			else if (table->properties[i] == PR_SOURCE_KEY) {
+				emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, subfolder->object.folder->folderID, &binr);
+				data_pointers[i] = binr;
 			}
 			else if (table->properties[i] == PR_SUBFOLDERS) {
 				obj_count = talloc_zero(NULL, uint32_t);

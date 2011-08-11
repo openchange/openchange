@@ -1079,7 +1079,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		if (!strcmp(fmt_attr, "anr")) {
 			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(userPrincipalName=%s))(!(objectClass=computer)))", fmt_attr, attr, attr);
 		} else if (!strcmp(fmt_attr, "legacyExchangeDN")) {
-			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(%s%s)(anr=%s))(!(objectClass=computer)))", fmt_attr, attr, fmt_attr, attr, attr);
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(anr=%s))(!(objectClass=computer)))", fmt_attr, attr, attr);
 		} else {
 			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}

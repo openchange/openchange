@@ -464,6 +464,48 @@ int mapistore_backend_folder_get_child_count(struct backend_context *bctx, void 
 	return ret;
 }
 
+int mapistore_backend_folder_get_child_fid_by_name(struct backend_context *bctx, void *folder, const char *name, uint64_t *fidp)
+{
+	int				ret = MAPISTORE_SUCCESS;
+	struct mapi_SRestriction	name_restriction;
+	void				*table;
+	uint8_t				status;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPITAGS			col;
+	struct mapistore_property_data	*data_pointers;
+	uint32_t			row_count;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	
+	if (mapistore_backend_folder_open_table(bctx, folder, mem_ctx, MAPISTORE_FOLDER_TABLE, 0, &table, &row_count)) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	name_restriction.rt = RES_PROPERTY;
+	name_restriction.res.resProperty.relop = RELOP_EQ;
+	name_restriction.res.resProperty.ulPropTag = PR_DISPLAY_NAME_UNICODE;
+	name_restriction.res.resProperty.lpProp.ulPropTag = name_restriction.res.resProperty.ulPropTag;
+	name_restriction.res.resProperty.lpProp.value.lpszW = name;
+
+	col = PR_FID;
+	mapistore_backend_table_set_columns(bctx, table, 1, &col);
+	mapistore_backend_table_set_restrictions(bctx, table, &name_restriction, &status);
+	ret = mapistore_backend_table_get_row(bctx, table, mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0, &data_pointers);
+	if (!ret) {
+		if (data_pointers[0].error) {
+			ret = MAPISTORE_ERROR;
+		}
+		else {
+			*fidp = *(uint64_t *) data_pointers[0].data;
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
 int mapistore_backend_folder_open_table(struct backend_context *bctx, void *folder,
 					TALLOC_CTX *mem_ctx, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {

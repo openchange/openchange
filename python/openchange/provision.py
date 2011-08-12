@@ -453,12 +453,13 @@ homeMDB: CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,
 add: legacyExchangeDN
 legacyExchangeDN: /o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
 add: proxyAddresses
+proxyAddresses: =EX:/o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
 proxyAddresses: smtp:postmaster@%s
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
-""" % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
+""" % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
     db.modify_ldif(extended_user)
 
     print "[+] User %s extended and enabled" % username

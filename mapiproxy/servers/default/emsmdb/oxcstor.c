@@ -252,15 +252,36 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    struct emsmdbp_context *emsmdbp_ctx,
-					    struct EcDoRpc_MAPI_REQ *request,
+					    struct EcDoRpc_MAPI_REQ *mapi_req,
 					    uint32_t *handles,
 					    uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	struct mapi_handles	*parent = NULL;
 	uint32_t		handle;
+	void			*private_data;
+	struct emsmdbp_object	*object = NULL;
 
-	handle = handles[request->handle_idx];
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+	mapi_handles_get_private_data(parent, &private_data);
+        object = private_data;
+	if (!object) {
+		retval = MAPI_E_NOT_FOUND;
+		DEBUG(5, ("  no object found\n"));
+		goto end;
+	}
+
+	if (emsmdbp_is_mapistore(object) && object->type == EMSMDBP_OBJECT_TABLE) {
+		mapistore_table_handle_destructor(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, handle);
+	}
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
+
+end:
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);
 
 	return MAPI_E_SUCCESS;

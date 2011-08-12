@@ -1005,10 +1005,10 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-	}
+	//	if (!dcesrv_call_authenticated(dce_call)) {
+	//	DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+	//	DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	//}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {

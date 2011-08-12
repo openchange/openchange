@@ -231,6 +231,7 @@ int mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, voi
 int mapistore_folder_get_folder_count(struct mapistore_context *, uint32_t, void *, uint32_t *);
 int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, void *, uint8_t, uint32_t *);
 int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t **, uint32_t *);
+int mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
 
 int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct ModifyRecipientRow *, uint16_t);

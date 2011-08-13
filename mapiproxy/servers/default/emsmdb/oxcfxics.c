@@ -165,8 +165,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
-			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
-
                         property = properties->aulPropTag[i];
 			if (property > 0x80000000) {
 				propID = (property & 0xffff0000) >> 16;
@@ -190,6 +188,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			} else {
 				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}
+			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 
 			prop_type = property & 0xffff;
 			if ((prop_type & MV_FLAG)) {
@@ -218,6 +217,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			else {
 				oxcfxics_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
 			}
+			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 		}
         }
 
@@ -414,17 +414,17 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 	enum MAPISTATUS		*retvals;
 	void			*row_ctx;
 
-	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_MESSAGE_RECIPIENTS);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	if (msg && msg->recipients) {
 		for (i = 0; i < msg->recipients->cRows; i++) {
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_START_RECIP);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ROWID);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			row_ctx = talloc_zero(NULL, void);
 
@@ -439,8 +439,8 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 				data_pointers[j] = (void *) get_SPropValue_data(msg->recipients->aRow[i].lpProps + j);
 			}
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &properties, data_pointers, retvals);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_RECIP);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			talloc_free(row_ctx);
 		}
@@ -472,14 +472,16 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 			local_mem_ctx = talloc_zero(NULL, void);
 			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
 			if (data_pointers) {
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_NEW_ATTACH);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ATTACH_NUM);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				query_props.cValues = prop_count;
 				query_props.aulPropTag = prop_tags;
 				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers, (enum MAPISTATUS *) retvals);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_ATTACH);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
 			else {
 				DEBUG(5, ("no data returned for attachment row %d\n", i));
@@ -580,7 +582,6 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		if (data_pointers) {
 			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
@@ -693,9 +694,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			query_props.cValues = j;
 
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 			/** remaining props */
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_MSG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			if (table_object->object.table->prop_count > 7) {
 				query_props.cValues = table_object->object.table->prop_count - 7;
@@ -811,16 +814,19 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		/* FIXME: we "convert" the idset hackishly */
 		new_idset->idbased = true;
 		new_idset->repl.id = 1;
-		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_DEL);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetDeleted);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_idset(sync_data->ndr, new_idset);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		/* IDSET_dump (new_idset, "cnset_deleted"); */
 		talloc_free(new_idset);
 	}
 
 	/* state */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_BEGIN);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
@@ -832,12 +838,16 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 
 	IDSET_dump (synccontext->cnset_seen, "cnset_seen");
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	if (synccontext->request.fai) {
 		IDSET_dump (synccontext->cnset_seen_fai, "cnset_seen_fai");
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeenFAI);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_idset(sync_data->ndr, synccontext->cnset_seen_fai);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	}
 	IDSET_dump (synccontext->idset_given, "idset_given");
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
@@ -848,9 +858,11 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		ndr_push_idset(sync_data->ndr, synccontext->cnset_read);
 	}
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	/* end of stream */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
 	(void) talloc_reference(synccontext, sync_data->ndr->data);
@@ -899,14 +911,12 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	for (i = 0; i < table_object->object.table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
 		if (data_pointers) {
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
 			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
 			memset(header_retvals, 0, 8 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
-				
+
 			j = 0;
 
 			/* parent source key */
@@ -1016,6 +1026,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			query_props.cValues = j;
 
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 
 			/** remaining props */
@@ -1087,7 +1098,9 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(new_idset);
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
@@ -1098,11 +1111,16 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(new_idset);
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->idset_given);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	/* end of stream */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
 	(void) talloc_reference(synccontext, sync_data->ndr->data);
@@ -1139,8 +1157,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct emsmdbp_object			*object = NULL;
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
-	size_t					cutbuffer_pos;
-	uint16_t				buffer_size, cutbuffer_size, mark_ptr, max_cutmark;
+	uint32_t				buffer_size, mark_ptr, max_cutmark;
 	void					*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e)\n"));
@@ -1192,20 +1209,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		}
 		object->object.ftcontext->steps += 1;
 
-		cutbuffer_pos = object->object.ftcontext->stream.position;
-		if (cutbuffer_pos + buffer_size < object->object.ftcontext->stream.buffer.length) {
-			mark_ptr = object->object.ftcontext->next_cutmark_ptr;
+		if (object->object.ftcontext->stream.position + buffer_size < object->object.ftcontext->stream.buffer.length) {
 			max_cutmark = object->object.ftcontext->stream.position + buffer_size;
-			while (object->object.ftcontext->cutmarks[mark_ptr] != 0xffffffff && object->object.ftcontext->cutmarks[mark_ptr] < max_cutmark) {
-				cutbuffer_pos = object->object.ftcontext->cutmarks[mark_ptr];
+			mark_ptr = object->object.ftcontext->next_cutmark_ptr;
+			while (object->object.ftcontext->cutmarks[mark_ptr] < object->object.ftcontext->stream.position) {
 				mark_ptr++;
 			}
-			if (object->object.ftcontext->stream.position < cutbuffer_pos) {
-				cutbuffer_size = cutbuffer_pos - object->object.ftcontext->stream.position;
-				if (cutbuffer_size > 0 && cutbuffer_size < buffer_size) {
-					buffer_size = cutbuffer_size;
-				}
+			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
+
+			while (object->object.ftcontext->cutmarks[mark_ptr] != 0xffffffff && object->object.ftcontext->cutmarks[mark_ptr] < max_cutmark) {
+				buffer_size = object->object.ftcontext->cutmarks[mark_ptr] - object->object.ftcontext->stream.position;
+				mark_ptr++;
 			}
+
+			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
 		}
 
 		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.ftcontext->stream, buffer_size);
@@ -1233,20 +1250,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		}
 		object->object.synccontext->steps += 1;
 
-		cutbuffer_pos = object->object.synccontext->stream.position;
-		if (cutbuffer_pos + buffer_size < object->object.synccontext->stream.buffer.length) {
-			mark_ptr = object->object.synccontext->next_cutmark_ptr;
+		if (object->object.synccontext->stream.position + buffer_size < object->object.synccontext->stream.buffer.length) {
 			max_cutmark = object->object.synccontext->stream.position + buffer_size;
-			while (object->object.synccontext->cutmarks[mark_ptr] != 0xffffffff && object->object.synccontext->cutmarks[mark_ptr] < max_cutmark) {
-				cutbuffer_pos = object->object.synccontext->cutmarks[mark_ptr];
+			mark_ptr = object->object.synccontext->next_cutmark_ptr;
+			while (object->object.synccontext->cutmarks[mark_ptr] < object->object.synccontext->stream.position) {
 				mark_ptr++;
 			}
-			if (object->object.synccontext->stream.position < cutbuffer_pos) {
-				cutbuffer_size = cutbuffer_pos - object->object.synccontext->stream.position;
-				if (cutbuffer_size > 0 && cutbuffer_size < buffer_size) {
-					buffer_size = cutbuffer_size;
-				}
+			object->object.synccontext->next_cutmark_ptr = mark_ptr;
+
+			while (object->object.synccontext->cutmarks[mark_ptr] != 0xffffffff && object->object.synccontext->cutmarks[mark_ptr] < max_cutmark) {
+				buffer_size = object->object.synccontext->cutmarks[mark_ptr] - object->object.synccontext->stream.position;
+				mark_ptr++;
 			}
+
+			object->object.synccontext->next_cutmark_ptr = mark_ptr;
 		}
 
 		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.synccontext->stream, buffer_size);

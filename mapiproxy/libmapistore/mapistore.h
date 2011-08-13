@@ -281,7 +281,7 @@ _PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
-int mapistore_namedprops_get_nameid(TALLOC_CTX *, void *, uint16_t, struct MAPINAMEID **);
+int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

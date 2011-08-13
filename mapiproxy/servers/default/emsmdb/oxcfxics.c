@@ -162,9 +162,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	struct WStringArray_r	*unicode_array;
 	uint16_t		prop_type, propID;
         int                     retval;
-	void			*mem_ctx;
 
-	mem_ctx = talloc_zero(NULL, void);
 
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
@@ -173,7 +171,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
                         property = properties->aulPropTag[i];
 			if (property > 0x80000000) {
 				propID = (property & 0xffff0000) >> 16;
-				retval = mapistore_namedprops_get_nameid(mem_ctx, nprops_ctx, propID, &nameid);
+				retval = mapistore_namedprops_get_nameid(nprops_ctx, propID, &nameid);
 				if (retval != MAPISTORE_SUCCESS) {
 					continue;
 				}
@@ -190,7 +188,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					ndr_push_string(ndr, NDR_SCALARS, nameid->kind.lpwstr.Name);
 					break;
 				}
-				talloc_free(nameid);
 			} else {
 				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}
@@ -225,7 +222,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 		}
         }
 
-	talloc_free(mem_ctx);
 }
 
 static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, struct SBinary_short *source_key, uint64_t *fmidp)

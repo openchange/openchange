@@ -68,7 +68,6 @@ struct oxcfxics_sync_data {
 	struct GUID			replica_guid;
 	uint8_t				table_type;
 	struct oxcfxics_prop_index	prop_index;
-	struct SPropTagArray		properties;
 
 	struct ndr_push			*ndr;
 	struct ndr_push			*cutmarks_ndr;
@@ -546,6 +545,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
 	struct I8Array_r		*deleted_eids;
+	struct SPropTagArray		*properties;
 
 	/* we only push "messageChangeFull" since we don't handle property-based changes */
 	/* messageChangeFull = IncrSyncChg messageChangeHeader IncrSyncMessage propList messageChildren */
@@ -557,18 +557,21 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
 
 	if (sync_data->table_type == EMSMDBP_TABLE_FAI_TYPE) {
 		original_cnset_seen = synccontext->cnset_seen_fai;
+		properties = &synccontext->fai_properties;
 	}
 	else {
 		original_cnset_seen = synccontext->cnset_seen;
+		properties = &synccontext->properties;
 	}
+	table_object->object.table->prop_count = properties->cValues;
+	table_object->object.table->properties = properties->aulPropTag;
+
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, original_cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, properties->cValues, properties->aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	}
 
@@ -755,7 +758,6 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	synccontext = synccontext_object->object.synccontext;
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
-	sync_data->properties = synccontext->properties;
 	SPropTagArray_find(synccontext->properties, PR_MID, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
@@ -885,12 +887,12 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 		return;
 	}
 
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
+	table_object->object.table->prop_count = synccontext->properties.cValues;
+	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, synccontext->cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
 		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
-					    table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+					    table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	}
 
@@ -1054,13 +1056,12 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
-	sync_data->properties = synccontext->properties;
-	SPropTagArray_find(sync_data->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
-	SPropTagArray_find(sync_data->properties, PR_FID, &sync_data->prop_index.eid);
-	SPropTagArray_find(sync_data->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
-	SPropTagArray_find(sync_data->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
-	SPropTagArray_find(sync_data->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
-	SPropTagArray_find(sync_data->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
+	SPropTagArray_find(synccontext->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
+	SPropTagArray_find(synccontext->properties, PR_FID, &sync_data->prop_index.eid);
+	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
+	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
+	SPropTagArray_find(synccontext->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
 	sync_data->ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->ndr->offset = 0;
@@ -1434,7 +1435,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			if (synccontext->request.normal) {
 				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_MESSAGE_TYPE, 0);
 				if (!table_object) {
-					DEBUG(5, ("could not open folder table\n"));
+					DEBUG(5, ("could not open message table\n"));
 					abort();
 				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
@@ -1452,9 +1453,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			}
 
 			if (synccontext->request.fai) {
+				synccontext->fai_properties.cValues = synccontext->properties.cValues;
+				synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
+
 				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FAI_TYPE, 0);
 				if (!table_object) {
-					DEBUG(5, ("could not open folder table\n"));
+					DEBUG(5, ("could not open FAI table\n"));
 					abort();
 				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
@@ -1462,7 +1466,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
 						if (!properties_exclusion[i]) {
 							properties_exclusion[i] = true;
-							SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
+							SPropTagArray_add(synccontext, &synccontext->fai_properties, available_properties->aulPropTag[j]);
 						}
 					}
 					talloc_free(available_properties->aulPropTag);
@@ -2404,10 +2408,10 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
+	table_object->object.table->prop_count = synccontext->properties.cValues;
+	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
 	}
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {
@@ -2471,9 +2475,9 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
 	sync_data->prop_index.eid = 0;
 	sync_data->prop_index.change_number = 1;
-	sync_data->properties.cValues = 2;
-	sync_data->properties.aulPropTag = talloc_array(sync_data, enum MAPITAGS, 2);
-	sync_data->properties.aulPropTag[1] = PR_CHANGE_NUM;
+	synccontext->properties.cValues = 2;
+	synccontext->properties.aulPropTag = talloc_array(synccontext, enum MAPITAGS, 2);
+	synccontext->properties.aulPropTag[1] = PR_CHANGE_NUM;
 	sync_data->ndr = ndr;
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
@@ -2482,7 +2486,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	if (synccontext->request.contents_mode) {
-		sync_data->properties.aulPropTag[0] = PR_MID;
+		synccontext->properties.aulPropTag[0] = PR_MID;
 
 		if (synccontext->request.normal) {
 			sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
@@ -2495,7 +2499,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 		}
 	}
 	else {
-		sync_data->properties.aulPropTag[0] = PR_FID;
+		synccontext->properties.aulPropTag[0] = PR_FID;
 		sync_data->table_type = EMSMDBP_TABLE_FOLDER_TYPE;
 
 		oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);

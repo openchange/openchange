@@ -171,6 +171,7 @@ struct emsmdbp_object_synccontext {
 
 	struct emsmdbp_syncconfigure_request	request;
 	struct SPropTagArray	properties;
+	struct SPropTagArray	fai_properties;
 
 	/* idsets */
 	enum StateProperty	state_property;

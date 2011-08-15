@@ -1366,7 +1366,7 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	else {
 		retval = MAPISTORE_ERROR;
 		DEBUG(5, ("only mapistore is supported at this time\n"));
-		abort();
+		/* abort(); */
 	}
 
 	return retval;

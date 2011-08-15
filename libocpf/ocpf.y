@@ -47,7 +47,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	char				*var;
 	struct LongArray_r		MVl;
 	struct StringArray_r		MVszA;
-	struct WStringArray_r		MVszW;
+	struct StringArrayW_r		MVszW;
 	struct BinaryArray_r		MVbin;
 }
 

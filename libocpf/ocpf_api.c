@@ -235,9 +235,9 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 		}
 		return OCPF_SUCCESS;
 	case PT_MV_UNICODE:
-		*value = (const void *)talloc_zero(ctx, struct WStringArray_r);
-		((struct WStringArray_r *)*value)->cValues = lpProp.MVszW.cValues;
-		((struct WStringArray_r *)*value)->lppszW = talloc_array(ctx, const char *, lpProp.MVszW.cValues);
+		*value = (const void *)talloc_zero(ctx, struct StringArrayW_r);
+		((struct StringArrayW_r *)*value)->cValues = lpProp.MVszW.cValues;
+		((struct StringArrayW_r *)*value)->lppszW = talloc_array(ctx, const char *, lpProp.MVszW.cValues);
 		{
 			uint32_t	i;
 
@@ -247,7 +247,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 				} else {
 					str = (char *)lpProp.MVszW.lppszW[i];
 				}
-				((struct WStringArray_r *)*value)->lppszW[i] = talloc_strdup(ctx, str);
+				((struct StringArrayW_r *)*value)->lppszW[i] = talloc_strdup(ctx, str);
 				talloc_free(str);
 			}
 		}

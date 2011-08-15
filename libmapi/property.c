@@ -298,6 +298,8 @@ _PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 		return (const void *)(struct mapi_MV_LONG_STRUCT *)&lpProp->value.MVl;
 	case PT_MV_STRING8:
 		return (const void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
+	case PT_MV_UNICODE:
+		return (const void *)(struct mapi_SLPSTRArrayW *)&lpProp->value.MVszW;
 	case PT_MV_BINARY:
 		return (const void *)(struct mapi_SBinaryArray *)&lpProp->value.MVbin;
 	default:
@@ -343,7 +345,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_MV_STRING8:
 		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
 	case PT_MV_UNICODE:
-		return (const void *)(struct WStringArray_r *)&lpProps->value.MVszW;
+		return (const void *)(struct StringArrayW_r *)&lpProps->value.MVszW;
 	case PT_MV_BINARY:
 		return (const void *)(struct BinaryArray_r *)&lpProps->value.MVbin;
 	case PT_MV_SYSTIME:
@@ -435,7 +437,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVguid = *((const struct FlatUIDArray_r *)data);
 		break;
 	case PT_MV_UNICODE:
-		lpProps->value.MVszW = *((const struct WStringArray_r *)data);
+		lpProps->value.MVszW = *((const struct StringArrayW_r *)data);
 		break;
 	case PT_MV_SYSTIME:
 		lpProps->value.MVft = *((const struct DateTimeArray_r *)data);
@@ -574,7 +576,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 							       mapi_sprop->value.MVszW.cValues);
 		for (i = 0; i < mapi_sprop->value.MVszW.cValues; i++) {
 			mapi_sprop->value.MVszW.strings[i].lppszW = sprop->value.MVszW.lppszW[i];
-			size += strlen(mapi_sprop->value.MVszW.strings[i].lppszW) + 1;
+			size += get_utf8_utf16_conv_length(mapi_sprop->value.MVszW.strings[i].lppszW);
 		}
 		return size;
 	}
@@ -721,7 +723,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		sprop->value.MVszW.lppszW = talloc_array(mem_ctx, const char*, sprop->value.MVszW.cValues);
 		for (i = 0; i < sprop->value.MVszW.cValues; i++) {
 			sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
-			size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);
+			size += get_utf8_utf16_conv_length(sprop->value.MVszW.lppszW[i]);
 		}
 		return size;
 	}

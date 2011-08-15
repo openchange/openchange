@@ -323,7 +323,7 @@ static char *ocpf_write_mv_string8(struct ocpf_context *ctx, const struct String
 }
 
 
-static char *ocpf_write_mv_unicode(struct ocpf_context *ctx, const struct WStringArray_r *value)
+static char *ocpf_write_mv_unicode(struct ocpf_context *ctx, const struct StringArrayW_r *value)
 {
 	char		*str = NULL;
 	char		*tmp = NULL;
@@ -398,7 +398,7 @@ static char *ocpf_write_property(struct ocpf_context *ctx, bool *found, uint32_t
 		*found = true;
 		break;
 	case PT_MV_UNICODE:
-		line = ocpf_write_mv_unicode(ctx, (const struct WStringArray_r *)value);
+		line = ocpf_write_mv_unicode(ctx, (const struct StringArrayW_r *)value);
 		*found = true;
 		break;
 	case PT_MV_BINARY:

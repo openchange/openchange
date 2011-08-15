@@ -913,8 +913,8 @@ static bool mapitest_no_server_props_mv_unicode(struct mapitest *mt)
 {
 	bool res;
 	struct SPropValue propvalue;
-	struct WStringArray_r unicodearray;
-	const struct WStringArray_r *unicodearrayget;
+	struct StringArrayW_r unicodearray;
+	const struct StringArrayW_r *unicodearrayget;
 
 	// create and initialise unicodearray
 	unicodearray.cValues = 4;
@@ -930,7 +930,7 @@ static bool mapitest_no_server_props_mv_unicode(struct mapitest *mt)
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue set with PT_MV_UNICODE");
 		return false;
 	}
-	unicodearrayget = (const struct WStringArray_r *)get_SPropValue_data(&propvalue);
+	unicodearrayget = (const struct StringArrayW_r *)get_SPropValue_data(&propvalue);
 	if (!unicodearrayget || (unicodearray.cValues != unicodearrayget->cValues) || (unicodearray.lppszW != unicodearrayget->lppszW)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue get/set with PT_MV_UNICODE");

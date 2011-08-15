@@ -884,7 +884,7 @@ static enum MAPISTATUS dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_ca
 	const char			*purportedSearch;
 	struct PropertyTagArray_r	*pMIds = NULL;
 	struct SRowSet			*pRows = NULL;
-	struct WStringsArray_r		*paWStr;
+	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
 	int				ret;
 	bool				found = false;

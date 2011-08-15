@@ -136,6 +136,7 @@ struct emsmdbp_object_message {
 
 struct emsmdbp_object_table {
 	uint8_t					ulType;
+	uint32_t				handle;
 	bool					restricted;
 	uint16_t				prop_count;
 	enum MAPITAGS				*properties;

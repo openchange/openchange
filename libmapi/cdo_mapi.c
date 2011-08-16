@@ -131,7 +131,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_context *mapi_ctx,
 	
 	/* If the session doesn't exist, create a new one */
 	if (!*session) {
-		el = talloc_zero((TALLOC_CTX *)mapi_ctx->session, struct mapi_session);
+		el = talloc_zero(mapi_ctx->mem_ctx, struct mapi_session);
 		memset(el->logon_ids, 0, 255);
 		el->mapi_ctx = mapi_ctx;
 		OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);

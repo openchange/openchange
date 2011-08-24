@@ -165,37 +165,53 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ int mapistore_namedprops_get_nameid(TALLOC_CTX *mem_ctx,
-					     void *ldb_ctx, 
+_PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx, 
 					     uint16_t propID,
 					     struct MAPINAMEID **nameidp)
 {
-	struct ldb_result	*res = NULL;
-	const char * const	attrs[] = { "*", NULL };
-	int			ret;
-	const char		*guid, *oClass, *cn;
-        struct MAPINAMEID       *nameid;
-	int			rc = MAPISTORE_SUCCESS;
-
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+	const char			*guid, *oClass, *cn;
+        struct MAPINAMEID		*nameid;
+	int				rc = MAPISTORE_SUCCESS;
+	static struct MAPINAMEID	**nameids = NULL;
+	uint16_t			propidx;
+					     
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(propID < 0x8000, MAPISTORE_ERROR, NULL);
+
+	if (!nameids) {
+		nameids = talloc_array(NULL, struct MAPINAMEID *, 0x8000);
+		memset(nameids, 0, 0x8000 * sizeof (struct MAPINAMEID *));
+	}
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	propidx = propID - 0x8000;
+	nameid = nameids[propidx];
+	if (nameid) {
+		*nameidp = nameid;
+		return MAPISTORE_SUCCESS;
+	}
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "(mappedId=%d)", propID);
-	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
 
 	guid = ldb_msg_find_attr_as_string(res->msgs[0], "oleguid", 0);
-	MAPISTORE_RETVAL_IF(!guid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!guid, MAPISTORE_ERROR, mem_ctx);
 
 	cn = ldb_msg_find_attr_as_string(res->msgs[0], "cn", 0);
-	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERROR, mem_ctx);
 
 	oClass = ldb_msg_find_attr_as_string(res->msgs[0], "objectClass", 0);
-	MAPISTORE_RETVAL_IF(!propID, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!propID, MAPISTORE_ERROR, mem_ctx);
 
-	nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
+	nameid = talloc_zero(nameids, struct MAPINAMEID);
 	GUID_from_string(guid, &nameid->lpguid);
 	if (strcmp(oClass, "MNID_ID") == 0) {
 		nameid->ulKind = MNID_ID;
@@ -207,12 +223,17 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(TALLOC_CTX *mem_ctx,
 		nameid->kind.lpwstr.Name = talloc_strdup(nameid, cn);
 	}
 	else {
-		talloc_free(nameid);
+		talloc_unlink(nameids, nameid);
 		nameid = NULL;
 		rc = MAPISTORE_ERROR;
 	}
 
-	*nameidp = nameid;
+	if (!rc) {
+		nameids[propidx] = nameid;
+		*nameidp = nameid;
+	}
+
+	talloc_free(mem_ctx);
 
 	return rc;
 }

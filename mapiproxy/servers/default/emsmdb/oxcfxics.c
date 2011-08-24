@@ -68,7 +68,6 @@ struct oxcfxics_sync_data {
 	struct GUID			replica_guid;
 	uint8_t				table_type;
 	struct oxcfxics_prop_index	prop_index;
-	struct SPropTagArray		properties;
 
 	struct ndr_push			*ndr;
 	struct ndr_push			*cutmarks_ndr;
@@ -162,18 +161,14 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	struct WStringArray_r	*unicode_array;
 	uint16_t		prop_type, propID;
         int                     retval;
-	void			*mem_ctx;
 
-	mem_ctx = talloc_zero(NULL, void);
 
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
-			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
-
                         property = properties->aulPropTag[i];
 			if (property > 0x80000000) {
 				propID = (property & 0xffff0000) >> 16;
-				retval = mapistore_namedprops_get_nameid(mem_ctx, nprops_ctx, propID, &nameid);
+				retval = mapistore_namedprops_get_nameid(nprops_ctx, propID, &nameid);
 				if (retval != MAPISTORE_SUCCESS) {
 					continue;
 				}
@@ -190,10 +185,10 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					ndr_push_string(ndr, NDR_SCALARS, nameid->kind.lpwstr.Name);
 					break;
 				}
-				talloc_free(nameid);
 			} else {
 				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}
+			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 
 			prop_type = property & 0xffff;
 			if ((prop_type & MV_FLAG)) {
@@ -222,10 +217,10 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			else {
 				oxcfxics_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
 			}
+			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 		}
         }
 
-	talloc_free(mem_ctx);
 }
 
 static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, struct SBinary_short *source_key, uint64_t *fmidp)
@@ -419,17 +414,17 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 	enum MAPISTATUS		*retvals;
 	void			*row_ctx;
 
-	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_MESSAGE_RECIPIENTS);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	if (msg && msg->recipients) {
 		for (i = 0; i < msg->recipients->cRows; i++) {
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_START_RECIP);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ROWID);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			row_ctx = talloc_zero(NULL, void);
 
@@ -444,8 +439,8 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 				data_pointers[j] = (void *) get_SPropValue_data(msg->recipients->aRow[i].lpProps + j);
 			}
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &properties, data_pointers, retvals);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_RECIP);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			talloc_free(row_ctx);
 		}
@@ -477,14 +472,16 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 			local_mem_ctx = talloc_zero(NULL, void);
 			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
 			if (data_pointers) {
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_NEW_ATTACH);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ATTACH_NUM);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				query_props.cValues = prop_count;
 				query_props.aulPropTag = prop_tags;
 				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers, (enum MAPISTATUS *) retvals);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_ATTACH);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
 			else {
 				DEBUG(5, ("no data returned for attachment row %d\n", i));
@@ -550,6 +547,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
 	struct I8Array_r		*deleted_eids;
+	struct SPropTagArray		*properties;
 
 	/* we only push "messageChangeFull" since we don't handle property-based changes */
 	/* messageChangeFull = IncrSyncChg messageChangeHeader IncrSyncMessage propList messageChildren */
@@ -561,18 +559,21 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
 
 	if (sync_data->table_type == EMSMDBP_TABLE_FAI_TYPE) {
 		original_cnset_seen = synccontext->cnset_seen_fai;
+		properties = &synccontext->fai_properties;
 	}
 	else {
 		original_cnset_seen = synccontext->cnset_seen;
+		properties = &synccontext->properties;
 	}
+	table_object->object.table->prop_count = properties->cValues;
+	table_object->object.table->properties = properties->aulPropTag;
+
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, original_cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, properties->cValues, properties->aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	}
 
@@ -581,7 +582,6 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		if (data_pointers) {
 			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
@@ -694,9 +694,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			query_props.cValues = j;
 
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 			/** remaining props */
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_MSG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			if (table_object->object.table->prop_count > 7) {
 				query_props.cValues = table_object->object.table->prop_count - 7;
@@ -759,7 +761,6 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	synccontext = synccontext_object->object.synccontext;
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
-	sync_data->properties = synccontext->properties;
 	SPropTagArray_find(synccontext->properties, PR_MID, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
@@ -813,16 +814,19 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		/* FIXME: we "convert" the idset hackishly */
 		new_idset->idbased = true;
 		new_idset->repl.id = 1;
-		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_DEL);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetDeleted);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_idset(sync_data->ndr, new_idset);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		/* IDSET_dump (new_idset, "cnset_deleted"); */
 		talloc_free(new_idset);
 	}
 
 	/* state */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_BEGIN);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
@@ -834,12 +838,16 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 
 	IDSET_dump (synccontext->cnset_seen, "cnset_seen");
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	if (synccontext->request.fai) {
 		IDSET_dump (synccontext->cnset_seen_fai, "cnset_seen_fai");
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeenFAI);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_idset(sync_data->ndr, synccontext->cnset_seen_fai);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	}
 	IDSET_dump (synccontext->idset_given, "idset_given");
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
@@ -850,9 +858,11 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 		ndr_push_idset(sync_data->ndr, synccontext->cnset_read);
 	}
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	/* end of stream */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
 	(void) talloc_reference(synccontext, sync_data->ndr->data);
@@ -889,26 +899,24 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 		return;
 	}
 
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
+	table_object->object.table->prop_count = synccontext->properties.cValues;
+	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, synccontext->cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
 		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
-					    table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+					    table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
 		if (data_pointers) {
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
 			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
 			memset(header_retvals, 0, 8 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
-				
+
 			j = 0;
 
 			/* parent source key */
@@ -1018,6 +1026,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			query_props.cValues = j;
 
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_CHG);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 
 			/** remaining props */
@@ -1058,13 +1067,12 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
-	sync_data->properties = synccontext->properties;
-	SPropTagArray_find(sync_data->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
-	SPropTagArray_find(sync_data->properties, PR_FID, &sync_data->prop_index.eid);
-	SPropTagArray_find(sync_data->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
-	SPropTagArray_find(sync_data->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
-	SPropTagArray_find(sync_data->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
-	SPropTagArray_find(sync_data->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
+	SPropTagArray_find(synccontext->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
+	SPropTagArray_find(synccontext->properties, PR_FID, &sync_data->prop_index.eid);
+	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
+	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
+	SPropTagArray_find(synccontext->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
 	sync_data->ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->ndr->flags, LIBNDR_FLAG_NOALIGN);
 	sync_data->ndr->offset = 0;
@@ -1090,7 +1098,9 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(new_idset);
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->eid_set);
 	old_idset = synccontext->idset_given;
@@ -1101,11 +1111,16 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(new_idset);
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->idset_given);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_STATE_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	/* end of stream */
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_END);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
 	(void) talloc_reference(synccontext, sync_data->ndr->data);
@@ -1142,8 +1157,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct emsmdbp_object			*object = NULL;
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
-	size_t					cutbuffer_pos;
-	uint16_t				buffer_size, cutbuffer_size, mark_ptr, max_cutmark;
+	uint32_t				buffer_size, mark_ptr, max_cutmark;
 	void					*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e)\n"));
@@ -1195,20 +1209,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		}
 		object->object.ftcontext->steps += 1;
 
-		cutbuffer_pos = object->object.ftcontext->stream.position;
-		if (cutbuffer_pos + buffer_size < object->object.ftcontext->stream.buffer.length) {
-			mark_ptr = object->object.ftcontext->next_cutmark_ptr;
+		if (object->object.ftcontext->stream.position + buffer_size < object->object.ftcontext->stream.buffer.length) {
 			max_cutmark = object->object.ftcontext->stream.position + buffer_size;
-			while (object->object.ftcontext->cutmarks[mark_ptr] != 0xffffffff && object->object.ftcontext->cutmarks[mark_ptr] < max_cutmark) {
-				cutbuffer_pos = object->object.ftcontext->cutmarks[mark_ptr];
+			mark_ptr = object->object.ftcontext->next_cutmark_ptr;
+			while (object->object.ftcontext->cutmarks[mark_ptr] < object->object.ftcontext->stream.position) {
 				mark_ptr++;
 			}
-			if (object->object.ftcontext->stream.position < cutbuffer_pos) {
-				cutbuffer_size = cutbuffer_pos - object->object.ftcontext->stream.position;
-				if (cutbuffer_size > 0 && cutbuffer_size < buffer_size) {
-					buffer_size = cutbuffer_size;
-				}
+			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
+
+			while (object->object.ftcontext->cutmarks[mark_ptr] != 0xffffffff && object->object.ftcontext->cutmarks[mark_ptr] < max_cutmark) {
+				buffer_size = object->object.ftcontext->cutmarks[mark_ptr] - object->object.ftcontext->stream.position;
+				mark_ptr++;
 			}
+
+			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
 		}
 
 		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.ftcontext->stream, buffer_size);
@@ -1236,20 +1250,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		}
 		object->object.synccontext->steps += 1;
 
-		cutbuffer_pos = object->object.synccontext->stream.position;
-		if (cutbuffer_pos + buffer_size < object->object.synccontext->stream.buffer.length) {
-			mark_ptr = object->object.synccontext->next_cutmark_ptr;
+		if (object->object.synccontext->stream.position + buffer_size < object->object.synccontext->stream.buffer.length) {
 			max_cutmark = object->object.synccontext->stream.position + buffer_size;
-			while (object->object.synccontext->cutmarks[mark_ptr] != 0xffffffff && object->object.synccontext->cutmarks[mark_ptr] < max_cutmark) {
-				cutbuffer_pos = object->object.synccontext->cutmarks[mark_ptr];
+			mark_ptr = object->object.synccontext->next_cutmark_ptr;
+			while (object->object.synccontext->cutmarks[mark_ptr] < object->object.synccontext->stream.position) {
 				mark_ptr++;
 			}
-			if (object->object.synccontext->stream.position < cutbuffer_pos) {
-				cutbuffer_size = cutbuffer_pos - object->object.synccontext->stream.position;
-				if (cutbuffer_size > 0 && cutbuffer_size < buffer_size) {
-					buffer_size = cutbuffer_size;
-				}
+			object->object.synccontext->next_cutmark_ptr = mark_ptr;
+
+			while (object->object.synccontext->cutmarks[mark_ptr] != 0xffffffff && object->object.synccontext->cutmarks[mark_ptr] < max_cutmark) {
+				buffer_size = object->object.synccontext->cutmarks[mark_ptr] - object->object.synccontext->stream.position;
+				mark_ptr++;
 			}
+
+			object->object.synccontext->next_cutmark_ptr = mark_ptr;
 		}
 
 		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.synccontext->stream, buffer_size);
@@ -1438,7 +1452,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			if (synccontext->request.normal) {
 				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_MESSAGE_TYPE, 0);
 				if (!table_object) {
-					DEBUG(5, ("could not open folder table\n"));
+					DEBUG(5, ("could not open message table\n"));
 					abort();
 				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
@@ -1456,9 +1470,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			}
 
 			if (synccontext->request.fai) {
+				synccontext->fai_properties.cValues = synccontext->properties.cValues;
+				synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
+
 				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FAI_TYPE, 0);
 				if (!table_object) {
-					DEBUG(5, ("could not open folder table\n"));
+					DEBUG(5, ("could not open FAI table\n"));
 					abort();
 				}
 				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
@@ -1466,7 +1483,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
 						if (!properties_exclusion[i]) {
 							properties_exclusion[i] = true;
-							SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
+							SPropTagArray_add(synccontext, &synccontext->fai_properties, available_properties->aulPropTag[j]);
 						}
 					}
 					talloc_free(available_properties->aulPropTag);
@@ -2408,10 +2425,10 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 		DEBUG(5, ("could not open folder table\n"));
 		abort();
 	}
-	table_object->object.table->prop_count = sync_data->properties.cValues;
-	table_object->object.table->properties = sync_data->properties.aulPropTag;
+	table_object->object.table->prop_count = synccontext->properties.cValues;
+	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, sync_data->properties.cValues, sync_data->properties.aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
 	}
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {
@@ -2475,9 +2492,9 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
 	sync_data->prop_index.eid = 0;
 	sync_data->prop_index.change_number = 1;
-	sync_data->properties.cValues = 2;
-	sync_data->properties.aulPropTag = talloc_array(sync_data, enum MAPITAGS, 2);
-	sync_data->properties.aulPropTag[1] = PR_CHANGE_NUM;
+	synccontext->properties.cValues = 2;
+	synccontext->properties.aulPropTag = talloc_array(synccontext, enum MAPITAGS, 2);
+	synccontext->properties.aulPropTag[1] = PR_CHANGE_NUM;
 	sync_data->ndr = ndr;
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);
@@ -2486,7 +2503,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
 	if (synccontext->request.contents_mode) {
-		sync_data->properties.aulPropTag[0] = PR_MID;
+		synccontext->properties.aulPropTag[0] = PR_MID;
 
 		if (synccontext->request.normal) {
 			sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
@@ -2499,7 +2516,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, struct emsmdb
 		}
 	}
 	else {
-		sync_data->properties.aulPropTag[0] = PR_FID;
+		synccontext->properties.aulPropTag[0] = PR_FID;
 		sync_data->table_type = EMSMDBP_TABLE_FOLDER_TYPE;
 
 		oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, sync_data, synccontext_object->parent_object);

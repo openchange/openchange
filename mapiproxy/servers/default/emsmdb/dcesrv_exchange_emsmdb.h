@@ -136,6 +136,7 @@ struct emsmdbp_object_message {
 
 struct emsmdbp_object_table {
 	uint8_t					ulType;
+	uint32_t				handle;
 	bool					restricted;
 	uint16_t				prop_count;
 	enum MAPITAGS				*properties;
@@ -171,6 +172,7 @@ struct emsmdbp_object_synccontext {
 
 	struct emsmdbp_syncconfigure_request	request;
 	struct SPropTagArray	properties;
+	struct SPropTagArray	fai_properties;
 
 	/* idsets */
 	enum StateProperty	state_property;

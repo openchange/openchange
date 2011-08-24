@@ -343,7 +343,6 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 	return "Unknown error";
 }
 
-
 /**
    \details Open a directory in mapistore
 
@@ -1017,6 +1016,24 @@ _PUBLIC_ int mapistore_table_get_row_count(struct mapistore_context *mstore_ctx,
 
 	/* Step 2. Call backend operation */
 	ret = mapistore_backend_table_get_row_count(backend_ctx, table, query_type, row_countp);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_table_handle_destructor(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, uint32_t handle_id)
+{
+	struct backend_context		*backend_ctx;
+	int				ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_table_handle_destructor(backend_ctx, table, handle_id);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

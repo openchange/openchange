@@ -1149,10 +1149,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetNamesFromIDs(TALLOC_CTX *mem_ctx,
 			GUID_from_string(PS_MAPI, &response->nameid[i].lpguid);
 			response->nameid[i].kind.lid = (uint32_t) request->PropertyIds[i] << 16 | get_property_type(request->PropertyIds[i]);
 		}
-		else if (mapistore_namedprops_get_nameid(mem_ctx, emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
+		else if (mapistore_namedprops_get_nameid(emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
 			response->nameid[i] = *nameid;
 			response->nameid[i].kind.lpwstr.NameSize *= 2;
-			/* talloc_free(nameid); */
 		}
 		else {
 			response->nameid[i].ulKind = 0xff;

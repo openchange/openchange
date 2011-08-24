@@ -554,6 +554,9 @@ static int emsmdbp_object_destructor(void *data)
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_TABLE:
+		if (emsmdbp_is_mapistore(object) && object->object.table->handle > 0) {
+			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
+		}
                 if (object->object.table->subscription_list) {
                         DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
 			talloc_free(object->object.table->subscription_list);
@@ -771,6 +774,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 
 	table_object = emsmdbp_object_table_init(mem_ctx, parent_object->emsmdbp_ctx, parent_object);
 	if (table_object) {
+		table_object->object.table->handle = handle_id;
 		table_object->object.table->ulType = table_type;
 		if (emsmdbp_is_mapistore(parent_object)) {
 			switch (table_type) {
@@ -1363,7 +1367,7 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	else {
 		retval = MAPISTORE_ERROR;
 		DEBUG(5, ("only mapistore is supported at this time\n"));
-		abort();
+		/* abort(); */
 	}
 
 	return retval;

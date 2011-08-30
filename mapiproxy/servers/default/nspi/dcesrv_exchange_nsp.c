@@ -600,7 +600,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		r->in.pPropTags = pPropTags;
 	}
 
-	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, r->in.pPropTags);
+	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, pPropTags);
 	if (retval != MAPI_E_SUCCESS) {
 		/* Is MId is not found, proceed as if no attributes were found */
 		if (retval == MAPI_E_INVALID_BOOKMARK) {

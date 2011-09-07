@@ -538,7 +538,7 @@ static enum MAPISTATUS DoDeleteSystemFolder(struct emsmdbp_context *emsmdbp_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Create the folder dn record for openchange.ldb */
-	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRId64",%s", fid, parentdn);
+	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", fid, parentdn);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target DN: %s\n", dn_str));
 	dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn_str);
 	talloc_free(dn_str);

@@ -253,7 +253,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		/* This part should be moved into openchangedb.c */
 		local_mem_ctx = talloc_zero(NULL, void);
 		retval = openchangedb_get_distinguishedName(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &parentDN);
-		dn = talloc_asprintf(local_mem_ctx, "CN=%"PRId64",%s", fid, parentDN);
+		dn = talloc_asprintf(local_mem_ctx, "CN=%"PRIu64",%s", fid, parentDN);
 		basedn = ldb_dn_new(local_mem_ctx, emsmdbp_ctx->oc_ctx, dn);
 		talloc_free(dn);
 		if (!ldb_dn_validate(basedn)) {
@@ -265,7 +265,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		msg = ldb_msg_new(local_mem_ctx);
 		msg->dn = ldb_dn_copy(local_mem_ctx, basedn);
 		ldb_msg_add_string(msg, "objectClass", "systemfolder");
-		ldb_msg_add_fmt(msg, "cn", "%"PRId64, fid);
+		ldb_msg_add_fmt(msg, "cn", "%"PRIu64, fid);
 		ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 		ldb_msg_add_string(msg, "PidTagContentCount", "0");
 		ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
@@ -275,8 +275,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		ldb_msg_add_string(msg, "PidTagAccess", "63");
 		ldb_msg_add_string(msg, "PidTagRights", "2043");
 		ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
-		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRId64, parentFolderID);
-		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRId64, fid);
+		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
+		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
 		ldb_msg_add_fmt(msg, "mapistore_uri", "sogo://%s:%s@fallback/0x%.16"PRIx64,
 				emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
 		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
@@ -291,14 +291,14 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		}
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
-			ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRId64, value->value.d);
+			ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, value->value.d);
 		}
 		else {
 			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
 			abort();
 		}
-		ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, nt_time);
-		ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRId64, nt_time);
+		ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
+		ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);
 		ldb_msg_add_string(msg, "FolderType", "1");
 		ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
 
@@ -995,7 +995,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 		odb_ctx = talloc_zero(NULL, void);
 
-		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRId64")(PidTagFolderId=*))", folderID);
+		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID);
 		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
 		if (retval == MAPI_E_INVALID_OBJECT) {

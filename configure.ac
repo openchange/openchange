@@ -11,7 +11,7 @@ PKG_PROG_PKG_CONFIG([0.20])
 
 if test -z "$CFLAGS";
 then
-  CFLAGS="-O2 -g";
+  CFLAGS="-g";
 fi
 
 CFLAGS="-I. $CFLAGS"

@@ -517,6 +517,12 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                 case MAPISTORE_OBJECT_MODIFIED:
                         reply->NotificationType |= fnevObjectModified;
                         break;
+		case MAPISTORE_OBJECT_COPIED:
+		        reply->NotificationType |= fnevObjectCopied;
+			break;
+		case MAPISTORE_OBJECT_MOVED:
+		        reply->NotificationType |= fnevObjectMoved;
+			break;
                 default:
                         reply->NotificationType = fnevCriticalError;
                         DEBUG(5, ("unknown value for notification event: %d\n", notification->event));
@@ -548,6 +554,14 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                         reply->NotificationData.MessageModifiedNotification.NotificationTags.Tags = NULL;
                                 }
                                 break;
+			case MAPISTORE_OBJECT_COPIED:
+			case MAPISTORE_OBJECT_MOVED:
+			        reply->NotificationData.MessageMoveNotification.FID = notification->parameters.object_parameters.folder_id;
+                                reply->NotificationData.MessageMoveNotification.MID = notification->parameters.object_parameters.object_id;
+				reply->NotificationData.MessageMoveNotification.OldFID = notification->parameters.object_parameters.old_folder_id;
+                                reply->NotificationData.MessageMoveNotification.OldMID = notification->parameters.object_parameters.old_object_id;
+				break;
+				
                         default: /* MAPISTORE_OBJECT_DELETED */
                                 reply->NotificationData.MessageDeletedNotification.FID = notification->parameters.object_parameters.folder_id;
                                 reply->NotificationData.MessageDeletedNotification.MID = notification->parameters.object_parameters.object_id;
@@ -884,7 +898,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							  &(mapi_response->mapi_repl[idx]),
 							  mapi_response->handles, &size);
 			break;
-		/* op_MAPI_MoveCopyMessages: 0x33 */
+		case op_MAPI_MoveCopyMessages: /* 0x33 */
+			retval = EcDoRpc_RopMoveCopyMessages(mem_ctx, emsmdbp_ctx,
+							    &(mapi_request->mapi_req[i]),
+							    &(mapi_response->mapi_repl[idx]),
+							    mapi_response->handles, &size);
+		        break;
 		/* op_MAPI_AbortSubmit: 0x34 */
 		/* op_MAPI_MoveFolder: 0x35 */
 		/* op_MAPI_CopyFolder: 0x36 */

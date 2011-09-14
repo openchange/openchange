@@ -225,3 +225,23 @@ _PUBLIC_ uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *re
 	size += SIZE_DFLT_ROPEMPTYFOLDER;
 	return size;
 }
+
+/**
+   \details Calculate MoveCopyMessages rop size
+
+   \param response pointer to the MoveCopyMessags EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of MoveCopyMessages response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopMoveCopyMessages_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPMOVECOPYMESSAGES;
+	return size;
+}

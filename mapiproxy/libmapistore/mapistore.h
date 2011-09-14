@@ -126,6 +126,7 @@ struct mapistore_backend {
 		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 		int		(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		int		(*delete_message)(void *, uint64_t, uint8_t flags);
+	        int		(*move_copy_message)(void *, uint64_t, void *, void *, uint8_t);
 		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 		int		(*get_child_count)(void *, uint8_t, uint32_t *);
 
@@ -228,6 +229,7 @@ int mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *,
 int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 int mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
+int mapistore_folder_move_copy_message(struct mapistore_context *, uint32_t, void *, uint64_t, void *, void *, uint8_t);
 int mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 int mapistore_folder_get_folder_count(struct mapistore_context *, uint32_t, void *, uint32_t *);
 int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, void *, uint8_t, uint32_t *);
@@ -254,6 +256,7 @@ int mapistore_table_handle_destructor(struct mapistore_context *, uint32_t, void
 int mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
+
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
@@ -325,7 +328,9 @@ struct mapistore_notification_list {
 enum mapistore_notification_type {
 	MAPISTORE_OBJECT_CREATED = 1,
 	MAPISTORE_OBJECT_MODIFIED = 2,
-	MAPISTORE_OBJECT_DELETED = 3
+	MAPISTORE_OBJECT_DELETED = 3,
+	MAPISTORE_OBJECT_COPIED = 4,
+	MAPISTORE_OBJECT_MOVED = 5
 };
 
 struct mapistore_table_notification_parameters {
@@ -339,8 +344,10 @@ struct mapistore_table_notification_parameters {
 };
 
 struct mapistore_object_notification_parameters {
-	uint64_t folder_id; /* the parent folder id */
-	uint64_t object_id; /* the folder/message id */
+	uint64_t folder_id;      /* the parent folder id */
+	uint64_t object_id;      /* the folder/message id */
+        uint64_t old_folder_id;  /* used for copy/move notifications */
+        uint64_t old_object_id;  /* used for copy/move notifications */
 	uint16_t tag_count;
 	enum MAPITAGS *tags;
 	bool new_message_count;

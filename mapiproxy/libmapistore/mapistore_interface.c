@@ -567,6 +567,29 @@ _PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ct
 }
 
 /**
+
+ */
+_PUBLIC_ int mapistore_folder_move_copy_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
+						void *folder, uint64_t mid, void *target_folder, void *target_message, uint8_t want_copy)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_folder_move_copy_message(backend_ctx, folder, mid, target_folder, target_message, want_copy);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+
+/**
    \details Get the array of deleted items following a specific change number
 
    \param mstore_ctx pointer to the mapistore context

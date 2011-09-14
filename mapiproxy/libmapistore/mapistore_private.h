@@ -165,6 +165,7 @@ int mapistore_backend_folder_delete_folder(struct backend_context *, void *, uin
 int mapistore_backend_folder_open_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 int mapistore_backend_folder_create_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_backend_folder_delete_message(struct backend_context *, void *, uint64_t, uint8_t);
+int mapistore_backend_folder_move_copy_message(struct backend_context *, void *, uint64_t, void *, void *, uint8_t);
 int mapistore_backend_folder_get_deleted_fmids(struct backend_context *, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 int mapistore_backend_folder_get_child_count(struct backend_context *, void *, uint8_t, uint32_t *);
 int mapistore_backend_folder_get_child_fid_by_name(struct backend_context *, void *, const char *, uint64_t *);

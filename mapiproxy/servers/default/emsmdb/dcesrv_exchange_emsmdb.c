@@ -330,7 +330,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                   reply->NotificationType = fnevTbit;
                 }
                 else {
-                  reply->NotificationType = 0;
+                  reply->NotificationType = 0; // FIXME - THIS IS WRONG - IT'S AN INVALID NOTIFICATION TYPE
                 }
                 break;
         case MAPISTORE_TABLE:

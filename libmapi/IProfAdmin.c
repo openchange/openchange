@@ -1448,17 +1448,18 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile,
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(CN=%s)", profile->profname);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
-	OPENCHANGE_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, res);
+	OPENCHANGE_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, res);
 
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
-	OPENCHANGE_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, res);
 
 	val.data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	val.length = strlen(value);
-	OPENCHANGE_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, res);
 
+	talloc_free(res);
 	return MAPI_E_SUCCESS;
 }
 

@@ -201,7 +201,7 @@ download() {
     echo "Step1: Fetching samba-$SAMBA4_RELEASE tarball"
     if ! test -e samba-$SAMBA4_RELEASE.tar.gz; then
 	rm -rf samba-$SAMBA4_RELEASE.tar.gz
-	wget http://us1.samba.org/samba/ftp/samba4/samba-$SAMBA4_RELEASE.tar.gz
+	wget http://ftp.samba.org/pub/samba/samba4/samba-$SAMBA4_RELEASE.tar.gz
 	error_check $? "Step1"
     fi     
 

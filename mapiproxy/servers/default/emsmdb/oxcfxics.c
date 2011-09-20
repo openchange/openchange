@@ -1574,6 +1574,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	struct GUID				replica_guid;
 	uint16_t				repl_id, i;
 	struct mapistore_message		*msg;
+	struct SRow				aRow;
+
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] RopSyncImportMessageChange (0x72)\n"));
 
@@ -1637,23 +1639,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 	}
-
-	{
-		struct SRow aRow;
-
-		aRow.cValues = request->PropertyValues.cValues;
-		aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
-		for (i = 0; i < request->PropertyValues.cValues; i++) {
-			cast_SPropValue(aRow.lpProps, &request->PropertyValues.lpProps[i],
-					&(aRow.lpProps[i]));
-		}
-
-		emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
-	}
-
 	mapi_handles_set_private_data(message_object_handle, message_object);
 
 	response->MessageId = 0; /* Must be set to 0 */
+
+	aRow.cValues = request->PropertyValues.cValues;
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
+	for (i = 0; i < request->PropertyValues.cValues; i++) {
+		cast_SPropValue(aRow.lpProps, &request->PropertyValues.lpProps[i],
+				&(aRow.lpProps[i]));
+	}
+	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
 end:
 	*size += libmapiserver_RopSyncImportMessageChange_size(mapi_repl);

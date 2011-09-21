@@ -978,19 +978,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 	void			*private_data = NULL;
 	struct emsmdbp_object	*destination_object;
 	struct emsmdbp_object   *source_object;
-	struct emsmdbp_object   *message_object;
-        uint64_t                sourceMID;
-	uint64_t                targetMID;
+	uint64_t                *targetMIDs;
         uint32_t                i;
 	bool			mapistore = false;
-	bool			want_copy = false;
-	uint32_t		pt_long;
-	bool			pt_boolean;
-	struct SRow		aRow;
-	struct timeval			tv;
-	struct FILETIME			ft;
-	NTTIME				time;
-
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] RopMoveCopyMessages (0x33)\n"));
 
@@ -1045,70 +1035,26 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 
 	contextID = emsmdbp_get_contextID(destination_object);
 	mapistore = emsmdbp_is_mapistore(source_object);
-	
-	/* Do we copy or move? (0 == move) */
-	want_copy = mapi_req->u.mapi_MoveCopyMessages.WantCopy;
-	
 	if (mapistore) {
-	  for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++)
-	    {
-	      sourceMID = mapi_req->u.mapi_MoveCopyMessages.message_id[i];
-	      
-	      /* We create a new message. Moving or copying message always imply creating
-		 new messages as MID are NEVER to be reused */
-	      retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMID);
-	      if (retval) {
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		goto end;
-	      }
-	      
-	      message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, targetMID, source_object);
-	      mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, destination_object->backend_object, message_object, targetMID, false, &message_object->backend_object);
-	      
-	      /* Set default properties for message: MS-OXCMSG 3.2.5.2 */
-	      aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
-	      aRow.cValues = 0;
-	      
-	      pt_long = 0x1;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
-	      pt_long = 0x0;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
-	      pt_long = 0x9;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
-	      pt_boolean = false;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
-	      pt_long = 0x1;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
-	      pt_long = 0x3;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
-	      pt_long = 0x1;
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
-	      
-	      gettimeofday(&tv, NULL);
-	      time = timeval_to_nttime(&tv);
-	      ft.dwLowDateTime = (time << 32) >> 32;
-	      ft.dwHighDateTime = time >> 32;		
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
-	      aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
-	      //aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
-	      //aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
-	      
-	      /* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
-	      emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
-	      
-	      /* We move the message */
-	      mapistore_folder_move_copy_message(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, sourceMID, destination_object->backend_object, message_object->backend_object, want_copy);
+		/* We prepare a set of new MIDs for the backend */
+		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
+		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
+			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMIDs[i]);
+		}
 
-	      /* The backend might do this for us. In any case, we try to add it ourselves */
-	      mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID);
-	    }
+		/* We invoke the backend method */
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mapi_req->u.mapi_MoveCopyMessages.count, mapi_req->u.mapi_MoveCopyMessages.message_id, destination_object->backend_object, targetMIDs, mapi_req->u.mapi_MoveCopyMessages.WantCopy);
+		talloc_free(targetMIDs);
+
+		/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */
+		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID); */
 	}
-	
- end:
+	else {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+end:
 	*size += libmapiserver_RopMoveCopyMessages_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

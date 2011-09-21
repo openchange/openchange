@@ -1238,6 +1238,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CopyTo (0x39)\n"));
 
+	abort();
+
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
@@ -1291,15 +1293,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	  b_object->backend_object is the 'destination folder'
 	  b_object->object.message->messageID is the destination MID - the MID generated during the CreateMessage call
 	*/
-	contextID = emsmdbp_get_contextID(a_object);
+	/* contextID = emsmdbp_get_contextID(a_object); */
 	
-	sourceMID = a_object->object.message->messageID;
-	targetMID = b_object->object.message->messageID;
+	/* sourceMID = a_object->object.message->messageID; */
+	/* targetMID = b_object->object.message->messageID; */
 
-	mapistore_folder_move_copy_message(emsmdbp_ctx->mstore_ctx, contextID,  a_object->parent_object->backend_object, sourceMID, b_object->parent_object->backend_object, b_object->backend_object, 1);
+	/* mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID,  a_object->parent_object->backend_object, sourceMID, b_object->parent_object->backend_object, b_object->backend_object, 1); */
 	
-	/* The backend might do this for us. In any case, we try to add it ourselves */
-	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID);
+	/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */
+	/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID); */
 
  end:
 	*size += libmapiserver_RopCopyTo_size(mapi_repl);

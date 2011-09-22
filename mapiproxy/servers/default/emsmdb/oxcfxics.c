@@ -2188,15 +2188,53 @@ end:
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
+static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint32_t size, uint64_t *fmidP)
+{
+	struct GUID	guid;
+	uint64_t	base, fmid;
+	uint32_t	i;
+
+	if (size < 17) {
+		return false;
+	}
+
+	GUID_from_string((char *) data, &guid);
+	if (!GUID_equal(replica_guid, &guid)) {
+		return false;
+	}
+
+	fmid = 0;
+	base = 1;
+	for (i = 16; i < size; i++) {
+		fmid |= (uint64_t) data[i] * base;
+		base <<= 8;
+	}
+	fmid <<= 16;
+	fmid |= 1;
+	*fmidP = fmid;
+
+	return true;
+}
+
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 							  struct emsmdbp_context *emsmdbp_ctx,
 							  struct EcDoRpc_MAPI_REQ *mapi_req,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
+	struct SyncImportMessageMove_req	*request;
 	struct SyncImportMessageMove_repl	*response;
+	struct GUID				replica_guid;
+	uint64_t				sourceFID, sourceMID, destMID;
+	uint32_t				contextID, synccontext_handle;
+	void					*data;
+	struct mapi_handles			*synccontext_rec;
+	struct emsmdbp_object			*synccontext_object;
+	struct emsmdbp_object			*source_folder_object;
+	enum MAPISTATUS				retval;
+	bool					mapistore;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportMessageMove (0x78) - stub\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportMessageMove (0x78)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -2209,13 +2247,64 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	/* TODO effective work here */
+	/* Step 1. Retrieve object handle */
+	synccontext_handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	mapi_handles_get_private_data(synccontext_rec, &data);
+	synccontext_object = (struct emsmdbp_object *) data;
+	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
+		DEBUG(5, ("  object not found or not a synccontext\n"));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_SyncImportMessageMove;
+
+	/* FIXME: we consider the local replica to always have id 1. This is correct for now but might pose problems if the local replica handling changes. */
+	emsmdbp_replid_to_guid(emsmdbp_ctx, 1, &replica_guid);
+	if (!convertIdToFMID(&replica_guid, request->SourceFolderId, request->SourceFolderIdSize, &sourceFID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	if (!convertIdToFMID(&replica_guid, request->SourceMessageId, request->SourceMessageIdSize, &sourceMID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	if (!convertIdToFMID(&replica_guid, request->DestinationMessageId, request->DestinationMessageIdSize, &destMID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	source_folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID);
+	if (!source_folder_object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	contextID = emsmdbp_get_contextID(synccontext_object);
+	mapistore = emsmdbp_is_mapistore(synccontext_object) && emsmdbp_is_mapistore(source_folder_object);
+	if (mapistore) {
+		/* We invoke the backend method */
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, 1, &sourceMID, &destMID, false);
+	}
+	else {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+	talloc_free(source_folder_object);
+
 	response = &mapi_repl->u.mapi_SyncImportMessageMove;
 	response->MessageId = 0;
 
+end:
 	*size += libmapiserver_RopSyncImportMessageMove_size(mapi_repl);
-
-	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;
 }

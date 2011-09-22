@@ -1043,7 +1043,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 		}
 
 		/* We invoke the backend method */
-		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mapi_req->u.mapi_MoveCopyMessages.count, mapi_req->u.mapi_MoveCopyMessages.message_id, destination_object->backend_object, targetMIDs, mapi_req->u.mapi_MoveCopyMessages.WantCopy);
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, destination_object->backend_object, source_object->backend_object, mapi_req->u.mapi_MoveCopyMessages.count, mapi_req->u.mapi_MoveCopyMessages.message_id, targetMIDs, mapi_req->u.mapi_MoveCopyMessages.WantCopy);
 		talloc_free(targetMIDs);
 
 		/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */

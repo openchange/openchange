@@ -1226,19 +1226,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
                                            struct EcDoRpc_MAPI_REPL *mapi_repl,
                                            uint32_t *handles, uint16_t *size)
 {
+	struct CopyTo_req	*request;
+	struct CopyTo_repl	*response;
 	enum MAPISTATUS		retval;
 	uint32_t		handle;
-	uint32_t                contextID;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
-	struct emsmdbp_object	*a_object;
-	struct emsmdbp_object	*b_object;
-        uint64_t                sourceMID;
-	uint64_t                targetMID;
+	struct emsmdbp_object	*source_object;
+	struct emsmdbp_object	*dest_object;
+	uint32_t		i;
+	bool			*properties_exclusion;
+	struct SPropTagArray	*properties, *needed_properties;
+        void                    **data_pointers;
+        enum MAPISTATUS         *retvals = NULL;
+	struct SRow		*aRow;
+	struct SPropValue	newValue;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CopyTo (0x39)\n"));
-
-	abort();
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1247,63 +1251,138 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_CopyTo;
+	response = &mapi_repl->u.mapi_CopyTo;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	
-	mapi_repl->u.mapi_CopyTo.PropertyProblemCount = 0;
-	mapi_repl->u.mapi_CopyTo.PropertyProblem = NULL;
+	response->PropertyProblemCount = 0;
+	response->PropertyProblem = NULL;
 
-	/* Get the destination information */
+	if (request->WantAsynchronous) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		DEBUG(0, ("  asynchronous operations are not supported\n"));
+                goto end;
+	}
+	if (request->WantSubObjects) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		DEBUG(0, ("  copying of subobjects is not supported\n"));
+                goto end;
+        }
+	if ((request->CopyFlags & CopyFlagsMove)) {
+		DEBUG(0, ("  moving properties is not supported\n"));
+                goto end;
+        }
+	if ((request->CopyFlags & CopyFlagsNoOverwrite)) {
+		DEBUG(0, ("  properties WILL BE overwriten despite the operation flags\n"));
+                goto end;
+        }
+
+	/* Get the source object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		DEBUG(0, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
-        a_object = private_data;
-	if (!a_object) {
+        source_object = private_data;
+	if (!source_object) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		DEBUG(0, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
+	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
+	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
+	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
+		DEBUG(0, ("  received invalid source object type: %d\n", source_object->type));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+        }
 
-	/* Get the source information - this is the information we get from the CreateMessage */
-	handle = handles[mapi_req->u.mapi_CopyTo.handle_idx];
+	/* Get the destination object */
+	handle = handles[request->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		DEBUG(0, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &private_data);
-        b_object = private_data;
-	if (!b_object) {
+        dest_object = private_data;
+	if (!dest_object) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		DEBUG(0, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
-	
-	/*
-	  a_object->backend_object is the 'source object' - the message to be copied
-	  b_object->backend_object is the 'destination folder'
-	  b_object->object.message->messageID is the destination MID - the MID generated during the CreateMessage call
-	*/
-	/* contextID = emsmdbp_get_contextID(a_object); */
-	
-	/* sourceMID = a_object->object.message->messageID; */
-	/* targetMID = b_object->object.message->messageID; */
+	if (dest_object->type != source_object->type) {
+		DEBUG(0, ("  received invalid destination object type: %d\n", dest_object->type));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+        }
 
-	/* mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID,  a_object->parent_object->backend_object, sourceMID, b_object->parent_object->backend_object, b_object->backend_object, 1); */
-	
-	/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */
-	/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID); */
+	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
 
- end:
+	/* 1. Exclusions */
+	properties_exclusion = talloc_array(mem_ctx, bool, 65536);
+	memset(properties_exclusion, 0, 65536 * sizeof(bool));
+
+	/* 1a. Explicit exclusions */
+	properties_exclusion[PR_ROW_TYPE >> 16] = true;
+	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
+	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
+	properties_exclusion[PR_INST_ID >> 16] = true;
+	properties_exclusion[PR_FID >> 16] = true;
+	properties_exclusion[PR_MID >> 16] = true;
+	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
+	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
+	properties_exclusion[PR_PARENT_FID >> 16] = true;
+
+	/* 1b. Request exclusions */
+	for (i = 0; i < request->ExcludedTags.cValues; i++) {
+		properties_exclusion[request->ExcludedTags.aulPropTag[i] >> 16] = true;
+	}
+
+	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	for (i = 0; i < properties->cValues; i++) {
+		if (!properties_exclusion[properties->aulPropTag[i] >> 16]) {
+			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
+		}
+	}
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
+	if (data_pointers) {
+		aRow = talloc_zero(mem_ctx, struct SRow);
+		for (i = 0; i < needed_properties->cValues; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				/* _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue) */
+				set_SPropValue_proptag(&newValue, needed_properties->aulPropTag[i], data_pointers[i]);
+				SRow_addprop(aRow, newValue);
+			}
+		}
+		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+			goto end;
+		}
+		if (emsmdbp_is_mapistore(dest_object) && dest_object->type == EMSMDBP_OBJECT_MESSAGE) {
+			mapistore_message_save(emsmdbp_ctx->mstore_ctx, emsmdbp_is_mapistore(dest_object), dest_object->backend_object);
+		}
+	}
+	else {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+end:
 	*size += libmapiserver_RopCopyTo_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

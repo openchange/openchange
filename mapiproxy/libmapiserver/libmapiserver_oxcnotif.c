@@ -166,10 +166,10 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /* case 0x3010: */
         /*         size += sizeof(struct FolderModifiedNotification_3010); */
         /*         break; */
-        /* case 0x8020: */
-        /* case 0x8040: */
-        /*         size += sizeof(struct MessageMoveCopyNotification); */
-        /*         break; */
+        case 0x8020:
+        case 0x8040:
+                 size += sizeof(struct MessageMoveCopyNotification);
+                 break; 
         /* case 0x8100: */
         /* case 0xc100: */
         /*         size += sizeof(struct ContentsTableChange); */

@@ -104,7 +104,11 @@ static bool notification_matches_subscription(struct mapistore_notification *not
                     || ((subscription->notification_types & fnevObjectModified)
                         && notification->event == MAPISTORE_OBJECT_MODIFIED)
                     || ((subscription->notification_types & fnevObjectDeleted)
-                        && notification->event == MAPISTORE_OBJECT_DELETED)) {
+                        && notification->event == MAPISTORE_OBJECT_DELETED)
+		    || ((subscription->notification_types & fnevObjectCopied)
+                        && notification->event == MAPISTORE_OBJECT_COPIED)
+		    || ((subscription->notification_types & fnevObjectMoved)
+                        && notification->event == MAPISTORE_OBJECT_MOVED)) {
                         n_object_parameters = &notification->parameters.object_parameters;
                         s_object_parameters = &subscription->parameters.object_parameters;
                         if (s_object_parameters->whole_store)

@@ -538,7 +538,7 @@ static enum MAPISTATUS DoDeleteSystemFolder(struct emsmdbp_context *emsmdbp_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Create the folder dn record for openchange.ldb */
-	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRId64",%s", fid, parentdn);
+	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", fid, parentdn);
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target DN: %s\n", dn_str));
 	dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn_str);
 	talloc_free(dn_str);
@@ -958,6 +958,104 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *mem_ctx,
 	*size += libmapiserver_RopEmptyFolder_size(mapi_repl);
 
 	/* reply filled in above */
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	uint32_t                contextID;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data = NULL;
+	struct emsmdbp_object	*destination_object;
+	struct emsmdbp_object   *source_object;
+	uint64_t                *targetMIDs;
+        uint32_t                i;
+	bool			mapistore = false;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] RopMoveCopyMessages (0x33)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	mapi_repl->u.mapi_MoveCopyMessages.PartialCompletion = 0;
+
+	/* Get the destionation information */
+	handle = handles[mapi_req->u.mapi_MoveCopyMessages.handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+
+	/* object is our destination folder */
+        destination_object = private_data;
+	if (!destination_object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+	
+	/* Get the source folder information */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+        source_object = private_data;
+	if (!source_object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->u.mapi_MoveCopyMessages.handle_idx));
+		goto end;
+	}
+
+	contextID = emsmdbp_get_contextID(destination_object);
+	mapistore = emsmdbp_is_mapistore(source_object);
+	if (mapistore) {
+		/* We prepare a set of new MIDs for the backend */
+		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
+		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
+			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMIDs[i]);
+		}
+
+		/* We invoke the backend method */
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, destination_object->backend_object, source_object->backend_object, mapi_req->u.mapi_MoveCopyMessages.count, mapi_req->u.mapi_MoveCopyMessages.message_id, targetMIDs, mapi_req->u.mapi_MoveCopyMessages.WantCopy);
+		talloc_free(targetMIDs);
+
+		/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */
+		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID); */
+	}
+	else {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+end:
+	*size += libmapiserver_RopMoveCopyMessages_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

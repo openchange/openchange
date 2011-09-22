@@ -74,6 +74,8 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 		f = fopen(filename, "r");
 		talloc_free(filename);
 		MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERROR, NULL);
+		
+		ldb_transaction_start(ldb_ctx);
 
 		while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 			struct ldb_message *normalized_msg;
@@ -87,6 +89,8 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 			}
 			ldb_ldif_read_free(ldb_ctx, ldif);
 		}
+
+		ldb_transaction_commit(ldb_ctx);
 		fclose(f);
 
 	} else {

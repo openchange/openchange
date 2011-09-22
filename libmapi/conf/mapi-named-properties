@@ -448,7 +448,7 @@ PidNameCompany                                         NULL                     
 PidNameCreateDateTimeReadOnly                          NULL                          0x0000 CreateDtmRo                   PT_SYSTIME    MNID_STRING PS_PUBLIC_STRINGS	   0x90e2
 PidNameRightsManagementLicense                         NULL                          0x0000 DRMLicense                    PT_MV_BINARY  MNID_STRING PS_PUBLIC_STRINGS	   0x9370
 PidNameEditTime                                        NULL                          0x0000 EditTime                      PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90e0
-PidNameJunkEmailMoveStamp                              NULL                          0x0000 http://schemas.microsoft.com/exchange/junkemailmovestamp PT_LONG     MNID_STRING PS_PUBLIC_STRINGS 0x917e
+###PidNameJunkEmailMoveStamp                              NULL                          0x0000 http://schemas.microsoft.com/exchange/junkemailmovestamp PT_LONG     MNID_STRING PS_PUBLIC_STRINGS 0x917e
 PidNameHiddenCount                                     NULL                          0x0000 HiddenCount                   PT_LONG       MNID_STRING PS_PUBLIC_STRINGS	   0x90f1
 PidNameKeywords                                        NULL                          0x0000 Keywords                      PT_MV_STRING8 MNID_STRING PS_PUBLIC_STRINGS	   0x90db
 PidNameLastAuthor                                      NULL                          0x0000 LastAuthor                    PT_UNICODE    MNID_STRING PS_PUBLIC_STRINGS	   0x90de

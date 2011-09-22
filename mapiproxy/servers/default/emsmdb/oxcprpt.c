@@ -1226,7 +1226,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
                                            struct EcDoRpc_MAPI_REPL *mapi_repl,
                                            uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CopyTo (0x39) -- stub\n"));
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	uint32_t                contextID;
+	struct mapi_handles	*rec = NULL;
+	void			*private_data = NULL;
+	struct emsmdbp_object	*a_object;
+	struct emsmdbp_object	*b_object;
+        uint64_t                sourceMID;
+	uint64_t                targetMID;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CopyTo (0x39)\n"));
+
+	abort();
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1242,6 +1254,56 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	mapi_repl->u.mapi_CopyTo.PropertyProblemCount = 0;
 	mapi_repl->u.mapi_CopyTo.PropertyProblem = NULL;
 
+	/* Get the destination information */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+        a_object = private_data;
+	if (!a_object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	/* Get the source information - this is the information we get from the CreateMessage */
+	handle = handles[mapi_req->u.mapi_CopyTo.handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &private_data);
+        b_object = private_data;
+	if (!b_object) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+	
+	/*
+	  a_object->backend_object is the 'source object' - the message to be copied
+	  b_object->backend_object is the 'destination folder'
+	  b_object->object.message->messageID is the destination MID - the MID generated during the CreateMessage call
+	*/
+	/* contextID = emsmdbp_get_contextID(a_object); */
+	
+	/* sourceMID = a_object->object.message->messageID; */
+	/* targetMID = b_object->object.message->messageID; */
+
+	/* mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID,  a_object->parent_object->backend_object, sourceMID, b_object->parent_object->backend_object, b_object->backend_object, 1); */
+	
+	/* /\* The backend might do this for us. In any case, we try to add it ourselves *\/ */
+	/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, targetMID); */
+
+ end:
 	*size += libmapiserver_RopCopyTo_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

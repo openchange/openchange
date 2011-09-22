@@ -36,9 +36,9 @@
  * conventions:
  - binary data must be returned as Binary_r
  - PR_CHANGE_NUM is computed
- - PR_CHANGE_KEY, PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY are deduced automatically from PR_CHANGE_NUM, PR_MID/PR_FID and PR_PARENT_FID
+ - PR_CHANGE_KEY and PR_PREDECESSOR_CHANGE_LIST *must* be handled by the backend code
+ - PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY are deduced automatically from PR_MID/PR_FID and PR_PARENT_FID
  * PR_*KEY should be computed in the same manner in oxcprpt and oxctabl
- - PR_PREDECESSOR_CHANGE_LIST is only a copy or PR_CHANGE_KEY for now
  - all string properties are fetched via their _UNICODE version
  - "PR_LAST_MODIFICATION_TIME" is left to the backend, maybe setprops operations could provide an optional one, for reference...
  ? idea: getprops on tables and objects without property array = get all props
@@ -57,7 +57,8 @@ struct oxcfxics_prop_index {
 	uint32_t	parent_fid;
 	uint32_t	eid;
 	uint32_t	change_number; /* PR_CHANGE_NUM */
-	uint32_t	precedessor_change_list;
+	uint32_t	change_key; /* PR_CHANGE_KEY */
+	uint32_t	predecessor_change_list;
 	uint32_t	last_modification_time;
 	uint32_t	display_name;
 	uint32_t	associated;
@@ -584,10 +585,10 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
 
 			/** fixed header props */
-			header_data_pointers = talloc_array(NULL, void *, 8);
-			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
-			memset(header_retvals, 0, 8 * sizeof(uint32_t));
-			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
+			header_data_pointers = talloc_array(NULL, void *, 9);
+			header_retvals = talloc_array(header_data_pointers, uint32_t, 9);
+			memset(header_retvals, 0, 9 * sizeof(uint32_t));
+			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
 			j = 0;
 
@@ -628,9 +629,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for message\n"));
 				abort();
 			}
-			else {
-				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
-			}
+			cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
 			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
@@ -639,18 +638,33 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
-			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
+			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn); */
+			if (retvals[sync_data->prop_index.change_key]) {
+				DEBUG(5, (__location__": mandatory property PR_CHANGE_KEY not returned for message\n"));
+				abort();
+			}
 			query_props.aulPropTag[j] = PR_CHANGE_KEY;
+			bin_data = data_pointers[sync_data->prop_index.change_key];
 			header_data_pointers[j] = bin_data;
 			j++;
-				
-			/* predecessor... (already computed) */
-			predecessors_data.cb = bin_data->cb + 1;
-			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
-			*predecessors_data.lpb = bin_data->cb & 0xff;
-			memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
-			query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
-			header_data_pointers[j] = &predecessors_data;
+
+			/* predecessor change list */
+			if (retvals[sync_data->prop_index.predecessor_change_list]) {
+				DEBUG(5, (__location__": mandatory property PR_PREDECESSOR_CHANGE_LIST not returned for message\n"));
+				/* abort(); */
+
+				query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
+				predecessors_data.cb = bin_data->cb + 1;
+				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
+				*predecessors_data.lpb = bin_data->cb & 0xff;
+				memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
+				header_data_pointers[j] = &predecessors_data;
+			}
+			else {
+				query_props.aulPropTag[j] = PR_PREDECESSOR_CHANGE_LIST;
+				bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
+				header_data_pointers[j] = bin_data;
+			}
 			j++;
 
 			/* associated (could be based on table type ) */
@@ -700,10 +714,10 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_INCR_SYNC_MSG);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-			if (table_object->object.table->prop_count > 7) {
-				query_props.cValues = table_object->object.table->prop_count - 7;
-				query_props.aulPropTag = table_object->object.table->properties + 7;
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 7, (enum MAPISTATUS *) retvals + 7);
+			if (table_object->object.table->prop_count > 9) {
+				query_props.cValues = table_object->object.table->prop_count - 9;
+				query_props.aulPropTag = table_object->object.table->properties + 9;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 9, (enum MAPISTATUS *) retvals + 9);
 			}
 
 			/* messageChildren:
@@ -763,8 +777,9 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &sync_data->replica_guid);
 	SPropTagArray_find(synccontext->properties, PR_MID, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PR_CHANGE_KEY, &sync_data->prop_index.change_key);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
-	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
+	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.predecessor_change_list);
 	SPropTagArray_find(synccontext->properties, PR_ASSOCIATED, &sync_data->prop_index.associated);
 	SPropTagArray_find(synccontext->properties, PR_MESSAGE_SIZE, &sync_data->prop_index.message_size);
 	sync_data->ndr = ndr_push_init_ctx(sync_data);
@@ -1070,7 +1085,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	SPropTagArray_find(synccontext->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
 	SPropTagArray_find(synccontext->properties, PR_FID, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
-	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.precedessor_change_list);
+	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.predecessor_change_list);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
 	sync_data->ndr = ndr_push_init_ctx(sync_data);
@@ -1410,6 +1425,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	}
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_CHANGE_NUM);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_CHANGE_KEY);
+	SPropTagArray_add(synccontext, &synccontext->properties, PR_PREDECESSOR_CHANGE_LIST);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_LAST_MODIFICATION_TIME);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_DISPLAY_NAME_UNICODE);
 	for (j = 0; j < synccontext->properties.cValues; j++) {
@@ -1556,8 +1572,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageChange_repl	*response;
 	uint64_t				folderID, messageID;
 	struct GUID				replica_guid;
-	uint16_t				repl_id;
+	uint16_t				repl_id, i;
 	struct mapistore_message		*msg;
+	struct SRow				aRow;
+
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] RopSyncImportMessageChange (0x72)\n"));
 
@@ -1624,6 +1642,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	mapi_handles_set_private_data(message_object_handle, message_object);
 
 	response->MessageId = 0; /* Must be set to 0 */
+
+	aRow.cValues = request->PropertyValues.cValues;
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, aRow.cValues + 2);
+	for (i = 0; i < request->PropertyValues.cValues; i++) {
+		cast_SPropValue(aRow.lpProps, &request->PropertyValues.lpProps[i],
+				&(aRow.lpProps[i]));
+	}
+	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
 end:
 	*size += libmapiserver_RopSyncImportMessageChange_size(mapi_repl);
@@ -2162,15 +2188,53 @@ end:
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
+static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint32_t size, uint64_t *fmidP)
+{
+	struct GUID	guid;
+	uint64_t	base, fmid;
+	uint32_t	i;
+
+	if (size < 17) {
+		return false;
+	}
+
+	GUID_from_string((char *) data, &guid);
+	if (!GUID_equal(replica_guid, &guid)) {
+		return false;
+	}
+
+	fmid = 0;
+	base = 1;
+	for (i = 16; i < size; i++) {
+		fmid |= (uint64_t) data[i] * base;
+		base <<= 8;
+	}
+	fmid <<= 16;
+	fmid |= 1;
+	*fmidP = fmid;
+
+	return true;
+}
+
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 							  struct emsmdbp_context *emsmdbp_ctx,
 							  struct EcDoRpc_MAPI_REQ *mapi_req,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
+	struct SyncImportMessageMove_req	*request;
 	struct SyncImportMessageMove_repl	*response;
+	struct GUID				replica_guid;
+	uint64_t				sourceFID, sourceMID, destMID;
+	uint32_t				contextID, synccontext_handle;
+	void					*data;
+	struct mapi_handles			*synccontext_rec;
+	struct emsmdbp_object			*synccontext_object;
+	struct emsmdbp_object			*source_folder_object;
+	enum MAPISTATUS				retval;
+	bool					mapistore;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportMessageMove (0x78) - stub\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportMessageMove (0x78)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -2183,13 +2247,64 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	/* TODO effective work here */
+	/* Step 1. Retrieve object handle */
+	synccontext_handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	mapi_handles_get_private_data(synccontext_rec, &data);
+	synccontext_object = (struct emsmdbp_object *) data;
+	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
+		DEBUG(5, ("  object not found or not a synccontext\n"));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_SyncImportMessageMove;
+
+	/* FIXME: we consider the local replica to always have id 1. This is correct for now but might pose problems if the local replica handling changes. */
+	emsmdbp_replid_to_guid(emsmdbp_ctx, 1, &replica_guid);
+	if (!convertIdToFMID(&replica_guid, request->SourceFolderId, request->SourceFolderIdSize, &sourceFID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	if (!convertIdToFMID(&replica_guid, request->SourceMessageId, request->SourceMessageIdSize, &sourceMID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+	if (!convertIdToFMID(&replica_guid, request->DestinationMessageId, request->DestinationMessageIdSize, &destMID)) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	source_folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID);
+	if (!source_folder_object) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	contextID = emsmdbp_get_contextID(synccontext_object);
+	mapistore = emsmdbp_is_mapistore(synccontext_object) && emsmdbp_is_mapistore(source_folder_object);
+	if (mapistore) {
+		/* We invoke the backend method */
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, 1, &sourceMID, &destMID, false);
+	}
+	else {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+	}
+
+	talloc_free(source_folder_object);
+
 	response = &mapi_repl->u.mapi_SyncImportMessageMove;
 	response->MessageId = 0;
 
+end:
 	*size += libmapiserver_RopSyncImportMessageMove_size(mapi_repl);
-
-	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;
 }

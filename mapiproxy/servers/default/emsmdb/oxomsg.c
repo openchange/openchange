@@ -398,28 +398,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetTransportFolder(TALLOC_CTX *mem_ctx,
 						       struct EcDoRpc_MAPI_REPL *mapi_repl,
 						       uint32_t *handles, uint16_t *size)
 {
-	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	void			*private_data = NULL;
+	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXOMSG] GetTransportFolder (0x6d) -- hack\n"));
+ 	DEBUG(4, ("exchange_emsmdb: [OXOMSG] GetTransportFolder (0x6d)\n"));
 
-	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Step 1. Ensure the referring MAPI handle is mailbox one */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	/* TODO: check if the login is a valid (private?) login */
-	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->error_code = retval;
-	/* TODO: find the real FID */
-	mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x1500000000000001LL;
-	/* mapi_repl->u.mapi_GetTransportFolder.FolderId = 0x12345678; */
+	retval = mapi_handles_get_private_data(rec, (void **)&private_data);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	object = (struct emsmdbp_object *) private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_MAILBOX) {
+		mapi_repl->error_code = ecNullObject;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
+	}
 
-	*size += libmapiserver_RopGetTransportFolder_size(mapi_repl);
+	/* Step 2. Search for the specified MessageClass substring within user mailbox */
+	retval = openchangedb_get_TransportFolder(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
+						  &mapi_repl->u.mapi_GetTransportFolder.FolderId);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+	}
 
-	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+end:
+ 	*size += libmapiserver_RopGetTransportFolder_size(mapi_repl);
 
-	return retval;
+ 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
 }

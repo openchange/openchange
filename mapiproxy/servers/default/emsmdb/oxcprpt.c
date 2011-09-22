@@ -1262,21 +1262,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	response->PropertyProblem = NULL;
 
 	if (request->WantSubObjects) {
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		DEBUG(0, ("  copying of subobjects is not supported\n"));
-                goto end;
+		DEBUG(0, ("  warning: copying of subobjects is not supported\n"));
         }
 	if (request->WantAsynchronous) {
-		DEBUG(0, ("  asynchronous operations are not supported\n"));
-                goto end;
+		DEBUG(0, ("  warning: asynchronous operations are not supported\n"));
 	}
 	if ((request->CopyFlags & CopyFlagsMove)) {
 		DEBUG(0, ("  moving properties is not supported\n"));
-                goto end;
         }
 	if ((request->CopyFlags & CopyFlagsNoOverwrite)) {
 		DEBUG(0, ("  properties WILL BE overwriten despite the operation flags\n"));
-                goto end;
         }
 
 	/* Get the source object */

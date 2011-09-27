@@ -144,35 +144,6 @@ _PUBLIC_ uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 	return -1;
 }
 
-/* if fmid has no entry in indexing.tdb or in openchangedb and is < GlobalCount, then it's reserved or has been hard deleted */
-_PUBLIC_ bool emsmdbp_object_fmid_is_available(struct emsmdbp_context *emsmdbp_ctx, uint64_t fmid)
-{
-	int		retval;
-	uint64_t	next_fmid;
-	char		*dn, *record_uri;
-	bool		soft_deleted;
-	TALLOC_CTX	*mem_ctx;
-
-	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, false, NULL);
-
-	retval = openchangedb_get_next_folderID(emsmdbp_ctx->oc_ctx, &next_fmid);
-	OPENCHANGE_RETVAL_IF(retval, false, NULL);
-	OPENCHANGE_RETVAL_IF(fmid >= next_fmid, false, NULL);
-
-	mem_ctx = talloc_zero(NULL, void);
-
-	retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, fmid, &dn);
-	OPENCHANGE_RETVAL_IF(retval == MAPI_E_SUCCESS, false, mem_ctx);
-
-	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, fmid, &record_uri, &soft_deleted);
-	talloc_free(mem_ctx);
-	if (!retval || record_uri) {
-		return false;
-	}
-
-	return true;
-}
-
 _PUBLIC_ enum MAPISTATUS emsmdbp_object_get_fid_by_name(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, const char *name, uint64_t *fidp)
 {
 	uint64_t	folderID;

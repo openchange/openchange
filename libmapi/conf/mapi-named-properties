@@ -817,3 +817,4 @@ PidNameWcviewwidth	NULL	0x0000	http://schemas.microsoft.com/exchange/wcviewwidth
 PidNameWcviewheight	NULL	0x0000	http://schemas.microsoft.com/exchange/wcviewheight	PT_NULL	MNID_STRING	PS_PUBLIC_STRINGS	0x95f0
 PidNamePreview	NULL	0x0000	http://schemas.microsoft.com/exchange/preview	PT_NULL	MNID_STRING	PS_PUBLIC_STRINGS	0x95f1
 PidNameWebclientlastusedsortcols	NULL	0x0000	http://schemas.microsoft.com/exchange/webclientlastusedsortcols	PT_NULL	MNID_STRING	PS_PUBLIC_STRINGS	0x95f2
+PidLidUnknownProperty85d9   LID_UNKNOWN_PROPERTY_85d9       0x85d9  NULL    PT_NULL MNID_ID PSETID_CalendarAssistant 0x95f3

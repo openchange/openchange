@@ -2226,6 +2226,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageMove_repl	*response;
 	struct GUID				replica_guid;
 	uint64_t				sourceFID, sourceMID, destMID;
+	struct Binary_r				*change_key;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
 	struct mapi_handles			*synccontext_rec;
@@ -2289,9 +2290,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 
 	contextID = emsmdbp_get_contextID(synccontext_object);
 	mapistore = emsmdbp_is_mapistore(synccontext_object) && emsmdbp_is_mapistore(source_folder_object);
+
+	change_key = talloc_zero(mem_ctx, struct Binary_r);
+	change_key->cb = request->ChangeNumberSize;
+	change_key->lpb = request->ChangeNumber;
 	if (mapistore) {
 		/* We invoke the backend method */
-		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, 1, &sourceMID, &destMID, false);
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, 1, &sourceMID, &destMID, &change_key, false);
 	}
 	else {
 		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));

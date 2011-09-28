@@ -157,17 +157,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	response->RecipientColumns.aulPropTag = SPropTagArray->aulPropTag;
 	if (msg->recipients) {
 		response->RecipientCount = msg->recipients->cRows;
-		response->recipients = talloc_array(mem_ctx,
-						    struct OpenMessage_recipients,
-						    msg->recipients->cRows + 1);
+		response->RecipientRows = talloc_array(mem_ctx,
+						       struct OpenRecipientRow,
+						       msg->recipients->cRows + 1);
 		for (i = 0; i < msg->recipients->cRows; i++) {
-			response->recipients[i].RecipClass = msg->recipients->aRow[i].lpProps[0].value.l;
-			response->recipients[i].codepage = CP_USASCII;
-			response->recipients[i].Reserved = 0;
+			response->RecipientRows[i].RecipientType = msg->recipients->aRow[i].lpProps[0].value.l;
+			response->RecipientRows[i].CodePageId = CP_USASCII;
+			response->RecipientRows[i].Reserved = 0;
 			emsmdbp_resolve_recipient(mem_ctx, emsmdbp_ctx,
 						  (char *)msg->recipients->aRow[i].lpProps[2].value.lpszA,
 						  &(response->RecipientColumns),
-						  &(response->recipients[i].RecipientRow));
+						  &(response->RecipientRows[i].RecipientRow));
 		}
 	}
 	else {

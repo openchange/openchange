@@ -1272,20 +1272,13 @@ System Attendant Private Interface
 	} RecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		ulRecipClass	RecipClass;
-		CODEPAGEID	codepage;
-		uint16		Reserved;
-		[subcontext(2)] RecipientRow	RecipientRow;
-	} OpenMessage_recipients;
-
-	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8		HasNamedProperties;
 		TypedString		SubjectPrefix;
 		TypedString		NormalizedSubject;
 		uint16			RecipientCount;
 		mapi_SPropTagArray	RecipientColumns;
 		uint8			RowCount;
-		OpenMessage_recipients	recipients[RowCount];
+		OpenRecipientRow	RecipientRows[RowCount];
 	} OpenMessage_repl;
 
 	/**************************/
@@ -1472,8 +1465,8 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32				RowId;
-		ulRecipClass			RecipientType;
-		uint16				CodePageId;
+		ulRecipClass			RecipClass;
+		CODEPAGEID			CodePageId;
 		uint16				ulReserved;
 		[subcontext(2)] RecipientRow	RecipientRow;
 	} ReadRecipientRow;
@@ -1485,9 +1478,9 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x10 */
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [public,flag(NDR_NOALIGN)] struct {
 		ulRecipClass		RecipientType;
-		uint16			CodePageId;
+		CODEPAGEID		CodePageId;
 		uint16			Reserved;
 		uint16			RecipientRowSize;
 		[subcontext(0),subcontext_size(RecipientRowSize),flag(NDR_REMAINING)]RecipientRow      	RecipientRow;

@@ -1,0 +1,3 @@
+include ocsmanager/config/deployment.ini_tmpl
+recursive-include ocsmanager/public *
+recursive-include ocsmanager/templates *

@@ -409,42 +409,72 @@ end:
 
 static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *message_object, struct mapistore_message *msg)
 {
-	uint32_t		i, j;
-	struct SPropTagArray	properties;
-	void			**data_pointers;
-	enum MAPISTATUS		*retvals;
-	void			*row_ctx;
+	TALLOC_CTX				*local_mem_ctx;
+	enum MAPISTATUS				*retvals;
+	struct mapistore_message_recipient	*recipient;
+	uint32_t				i, j;
+	uint32_t				cn_idx = (uint32_t) -1, email_idx = (uint32_t) -1;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_MESSAGE_RECIPIENTS);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-	if (msg && msg->recipients) {
-		for (i = 0; i < msg->recipients->cRows; i++) {
+	if (msg) {
+		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+		if (SPropTagArray_find(*msg->columns, PR_DISPLAY_NAME_UNICODE, &cn_idx) == MAPI_E_NOT_FOUND
+		    && SPropTagArray_find(*msg->columns, PR_7BIT_DISPLAY_NAME_UNICODE, &cn_idx) == MAPI_E_NOT_FOUND
+		    && SPropTagArray_find(*msg->columns, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &cn_idx) == MAPI_E_NOT_FOUND) {
+			cn_idx = (uint32_t) -1;;
+		}
+		if (SPropTagArray_find(*msg->columns, PR_EMAIL_ADDRESS_UNICODE, &email_idx) == MAPI_E_NOT_FOUND
+		    && SPropTagArray_find(*msg->columns, PR_SMTP_ADDRESS_UNICODE, &email_idx) == MAPI_E_NOT_FOUND) {
+			email_idx = (uint32_t) -1;;
+		}
+
+		retvals = talloc_array(local_mem_ctx, enum MAPISTATUS, msg->columns->cValues);
+		for (i = 0; i < msg->recipients_count; i++) {
+			recipient = msg->recipients[i];
+
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_START_RECIP);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ROWID);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-			row_ctx = talloc_zero(NULL, void);
-
-			properties.cValues = msg->recipients->aRow[i].cValues;
-			properties.aulPropTag = talloc_array(mem_ctx, enum MAPITAGS, properties.cValues);
-
-			data_pointers = talloc_array(row_ctx, void *, properties.cValues);
-			retvals = talloc_array(row_ctx, enum MAPISTATUS, properties.cValues);
-			memset(retvals, 0, properties.cValues * sizeof(enum MAPISTATUS));
-			for (j = 0; j < msg->recipients->aRow[i].cValues; j++) {
-				properties.aulPropTag[j] = msg->recipients->aRow[i].lpProps[j].ulPropTag;
-				data_pointers[j] = (void *) get_SPropValue_data(msg->recipients->aRow[i].lpProps + j);
+			if (email_idx != (uint32_t) -1 && recipient->data[email_idx]) {
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ADDRTYPE_UNICODE);
+				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, "SMTP");
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_EMAIL_ADDRESS_UNICODE);
+				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, recipient->data[email_idx]);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
-			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &properties, data_pointers, retvals);
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_RECIP);
+			if (cn_idx != (uint32_t) -1 && recipient->data[cn_idx]) {
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_DISPLAY_NAME_UNICODE);
+				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, recipient->data[cn_idx]);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+			}
+
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_RECIPIENT_TYPE);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, recipient->type);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-			talloc_free(row_ctx);
+			for (j = 0; j < msg->columns->cValues; j++) {
+				if (msg->recipients[i]->data[j] == NULL) {
+					retvals[j] = MAPISTORE_ERR_NOT_FOUND;
+				}
+				else {
+					retvals[j] = MAPISTORE_SUCCESS;
+				}
+			}
+
+			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, msg->columns, recipient->data, retvals);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_RECIP);
+			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		}
+
+		talloc_free(local_mem_ctx);
 	}
 }
 

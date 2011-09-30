@@ -67,8 +67,20 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_PERMANENT_DELETE	2
 
 struct mapistore_message {
-	struct SRowSet			*recipients;
-	struct SRow			*properties;
+	/* message props */
+	char					*subject_prefix;
+	char					*normalized_subject;
+
+	/* recipients */
+	struct SPropTagArray			*columns;
+	uint32_t				recipients_count;
+	struct mapistore_message_recipient	**recipients;
+};
+
+struct mapistore_message_recipient {
+	enum ulRecipClass	type;
+	char			*username;
+	void			**data;
 };
 
 struct indexing_folders_list {

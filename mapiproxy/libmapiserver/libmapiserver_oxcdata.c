@@ -81,11 +81,11 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientr
 	/* RecipientFlags */
 	size += sizeof (uint16_t);
 
-	/* /\* recipient_type *\/ */
-	/* if (recipientrow.RecipientFlags & 0x1) { */
-	/* 	size += sizeof (uint8_t) * 2; /\* AddressPrefixUsed + DisplayType *\/ */
-	/* 	size += strlen(recipientrow.X500DN.recipient_x500name) + 1; */
-	/* } */
+	/* recipient_type */
+	if ((recipientrow.RecipientFlags & 0x7) == 0x1) {
+		size += sizeof (uint8_t) * 2; /* AddressPrefixUsed + DisplayType */
+		size += strlen(recipientrow.X500DN.recipient_x500name) + 1;
+	}
 
 	/* recipient_EmailAddress */
 	switch (recipientrow.RecipientFlags & 0x208) {

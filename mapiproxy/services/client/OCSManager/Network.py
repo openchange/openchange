@@ -60,18 +60,16 @@ class Network(object):
         string = error.text
         return (code, string)
 
-    def __post(self, url=None, postfields=None, headers=None):
-        """Make a HTTP POST request.
+    def __make_request(self, url=None, postfields=None, headers=None, data=None):
+        """Build common part of the PyCurl request.
         """
-        data = StringIO.StringIO()
-
-        if url is None: return (False, 'Missing URL')
-        if postfields is None: return (False, 'Empty POST data')
+        if data is None: return (True, 'Invalid StringIO buffer')
+        if url is None: return (True, 'Missing URL')
+        if postfields is None: return (True, 'Empty PUT data')
 
         if self.verbose is True: print postfields
 
         self.curl.setopt(pycurl.URL, url)
-        self.curl.setopt(pycurl.POST, 1)
         self.curl.setopt(pycurl.POSTFIELDS, postfields)
         if headers is not None:
             self.curl.setopt(pycurl.HTTPHEADER, headers)
@@ -82,6 +80,11 @@ class Network(object):
         self.curl.setopt(pycurl.COOKIEJAR, self.cookie)
         self.curl.setopt(pycurl.WRITEFUNCTION, data.write)
         self.curl.setopt(pycurl.VERBOSE, self.verbose)
+        return (False, None)
+
+    def __exec_request(self, data=None):
+        """Execute the request and perform HTTP error code and error
+        XML payload sanity checks. Return response payload on success"""
         try:
             self.curl.perform()
         except pycurl.error, e:
@@ -96,6 +99,26 @@ class Network(object):
         if code is not None and int(code) != 200:
             return (True, "[%s]: %s" % (code, string))
         return (False, data.getvalue())
+        
+
+    def __put(self, url=None, postfields=None, headers=None):
+        """Make a HTTP PUT request.
+        """
+        data = StringIO.StringIO()
+        (error, msg) = self.__make_request(url, postfields, headers, data)
+        if error is True: return (error, msg)
+        self.curl.setopt(pycurl.PUT, 1)
+        return self.__exec_request(data)
+
+
+    def __post(self, url=None, postfields=None, headers=None):
+        """Make a HTTP POST request.
+        """
+        data = StringIO.StringIO()
+        (error, msg) = self.__make_request(url, postfields, headers, data)
+        if error is True: return (error, msg)
+        self.curl.setopt(pycurl.POST, 1)
+        return self.__exec_request(data)
 
     def __login_token(self, login):
         """First stage of the authentication process.
@@ -131,5 +154,13 @@ class Network(object):
         d["username"] = username
         d["password"] = password
         d["encryption"] = encryption
-        return self.__login(d)
 
+        (error, data) = self.__login(d)
+        if error is True: return (error, data)
+
+        (error,tokenLogin) = self.auth.getTokenLogin(data)
+        if error is True: return (error, data)
+        d["tokenLogin"] = tokenLogin
+
+        return (False, None)
+        

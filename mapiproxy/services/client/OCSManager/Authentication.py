@@ -21,6 +21,18 @@ class Authentication(object):
         self.password = None
         self.salt = None
 
+    def _check_document(self, payload):
+        """Perform common preliminary XML checks on payload and return
+        lxml object."""
+        try:
+            xmlData = etree.XML(payload)
+        except etree.XMLSyntacError:
+            return (True, 'Invalid document')
+
+        if xmlData.tag != "ocsmanager": return (True, 'Incorrect root element %s' % xmlData.tag)
+
+        return (False, xmlData)
+
     def setTokenPayload(self, login=None):
         """Prepare the payload for token authentication phase.
         """
@@ -32,12 +44,8 @@ class Authentication(object):
     def getTokenPayload(self, payload=None):
         """Extract content from the token payload returned by the server.
         """
-        try:
-            xmlData = etree.XML(payload)
-        except etree.XMLSyntaxError:
-            return (True, 'Invalid document')
-
-        if xmlData.tag != "ocsmanager": return (True, 'Incorrect root element %s' % xmlData.tag)
+        (error, xmlData) = self._check_document(payload)
+        if error is True: return (error, xmlData)
 
         d = {}
         token = xmlData.find('token')
@@ -56,6 +64,18 @@ class Authentication(object):
         d["ttl"] = int(ttl.text)
 
         return (False, d)
+
+    def getTokenLogin(self, payload=None):
+        """Extract token login from login response payload.
+        """
+        (error, xmlData) = self._check_document(payload)
+        if error is True: return (error, xmlData)
+
+        token = xmlData.find('token')
+        if token is None: return (True, 'No token parameter received')
+        if token.text is None: return (True, 'Empty token received')
+
+        return (False, token.text)
 
     def setLoginPayload(self, d=None):
         """Prepare the payload for the login authentication stage.

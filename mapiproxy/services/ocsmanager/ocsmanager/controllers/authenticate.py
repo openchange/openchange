@@ -86,7 +86,8 @@ class AuthenticateController(BaseController):
         # Authentication was successful, remove auth token - no longer needed
         session['token'] = None
         response.delete_cookie('token')
-        session['tokenLogin'] = hashlib.sha1(os.urandom(8)).hexdigest()        
+        session['tokenLogin'] = hashlib.sha1(os.urandom(8)).hexdigest()
+        session.save()
         c.tokenLogin = encode(session['tokenLogin'])
         c.ttl = 10
         return render('/login.xml')

@@ -2,6 +2,9 @@ from pylons import config
 from lxml import etree
 import re
 
+from base64 import urlsafe_b64encode as encode
+from base64 import urlsafe_b64decode as decode
+
 from ocsmanager.model.auth import SingleAuthenticateModel as single
 #from ocsmanager.model.auth import LDAPAuthenticateModel as ldap
 #from ocsmanager.model.auth import FileAuthenticateModel as mfile
@@ -36,7 +39,7 @@ class AuthenticateModel:
 
         token = xmlData.find('token')
         if token is None: return None
-        return token.text
+        return decode(token.text)
 
         
 

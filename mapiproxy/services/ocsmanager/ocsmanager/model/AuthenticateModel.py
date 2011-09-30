@@ -25,6 +25,21 @@ class AuthenticateModel:
         otherwise None."""
         return self.model.getSalt(login)
 
+    def getSessionToken(self, payload):
+        """Validate XML document and extract authentication token from
+        the payload."""
+        try:
+            xmlData = etree.XML(payload)
+        except etree.XMLSyntaxError:
+            return None
+        if xmlData.tag != "ocsmanager": return None
+
+        token = xmlData.find('token')
+        if token is None: return None
+        return token.text
+
+        
+
     def getTokenLogin(self, payload):
         """Validate XML document and retrieve the login from XML payload."""
         try:

@@ -69,16 +69,21 @@ def parse_arguments():
 
     return cfg
 
+def error_check(function):
+    (error, code) = function
+    if error is True:
+        print '[!] Error: %s' % msg
+        sys.exit()
+
 def main():
     cfg = parse_arguments()
     conn = Network.Network(cfg['host'], cfg['port'], cfg['verbose'])
 
-    (error, msg) = conn.login(cfg['username'], cfg['password'], cfg['encryption'])
-    if error is True:
-        print '[!] Error: %s' % msg
-        sys.exit()
-    else:
-        print '[I] Authentication successful'
+    error_check(conn.login(cfg['username'], cfg['password'], cfg['encryption']))
+    print '[I] Authentication successful'
+
+    error_check(conn.newmail())
+    print '[I] NewMail notification sent'
 
 if __name__ == "__main__":
     main()

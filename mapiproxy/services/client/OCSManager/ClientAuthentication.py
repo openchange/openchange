@@ -8,10 +8,10 @@ from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 """
-OCSManager Authentication documentation
+OCSManager Client Authentication documentation
 """
 
-class Authentication(object):
+class ClientAuthentication(object):
     """Authentication class documentation. Prepare XML request
     payloads and analyze response payloads.
     """

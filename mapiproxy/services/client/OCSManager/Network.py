@@ -6,7 +6,8 @@ import StringIO
 import pycurl
 import urllib
 from lxml import etree
-from OCSManager import Authentication
+from OCSManager import ClientAuthentication
+from OCSManager import ClientNotification
 
 """
 OCSManager Network documentation
@@ -24,11 +25,12 @@ class Network(object):
         if host is None: return None
         if port is None: return None
 
-        self.auth = Authentication.Authentication()
+        self.auth = ClientAuthentication.ClientAuthentication()
         self.curl = pycurl.Curl()
         self.host = host
         self.port = port
         self.verbose = verbose
+        self.token = None
         self.base_uri = 'http://%s:%s' % (host, port)
         (self.fp,self.cookie) = tempfile.mkstemp()
 
@@ -65,12 +67,10 @@ class Network(object):
         """
         if data is None: return (True, 'Invalid StringIO buffer')
         if url is None: return (True, 'Missing URL')
-        if postfields is None: return (True, 'Empty PUT data')
 
         if self.verbose is True: print postfields
 
         self.curl.setopt(pycurl.URL, url)
-        self.curl.setopt(pycurl.POSTFIELDS, postfields)
         if headers is not None:
             self.curl.setopt(pycurl.HTTPHEADER, headers)
         else:
@@ -104,19 +104,26 @@ class Network(object):
     def __put(self, url=None, postfields=None, headers=None):
         """Make a HTTP PUT request.
         """
+        if postfields is None: return (True, 'Empty PUT payload')
+
         data = StringIO.StringIO()
         (error, msg) = self.__make_request(url, postfields, headers, data)
         if error is True: return (error, msg)
         self.curl.setopt(pycurl.PUT, 1)
+        self.curl.setopt(pycurl.INFILESIZE, len(postfields))
+        self.curl.setopt(pycurl.READFUNCTION, StringIO.StringIO(postfields).read)
         return self.__exec_request(data)
 
 
     def __post(self, url=None, postfields=None, headers=None):
         """Make a HTTP POST request.
         """
+        if postfields is None: return (True, 'Empty POST payload')
+
         data = StringIO.StringIO()
         (error, msg) = self.__make_request(url, postfields, headers, data)
         if error is True: return (error, msg)
+        self.curl.setopt(pycurl.POSTFIELDS, postfields)
         self.curl.setopt(pycurl.POST, 1)
         return self.__exec_request(data)
 
@@ -137,8 +144,8 @@ class Network(object):
         return self.__post(url, payload, None)
 
     def login(self, username=None, password=None, encryption=None):
-        """Log onto OCSManager service. Returns (True, None) tupple on
-        success, otherwise (False, msg)
+        """Log onto OCSManager service. Returns (False, None) tupple on
+        success, otherwise (True, reason)
         """
         if username is None: return (True, 'Missing username parameter')
         if password is None: return (True, 'Missing password parameter')
@@ -160,7 +167,21 @@ class Network(object):
 
         (error,tokenLogin) = self.auth.getTokenLogin(data)
         if error is True: return (error, data)
-        d["tokenLogin"] = tokenLogin
+        self.token = tokenLogin
 
         return (False, None)
+        
+    def newmail(self):
+        """Sends a newmail notification to OCSManager service.
+        """
+        
+        if self.token is None: return (True, 'User not authenticated')
+
+        notif = ClientNotification.ClientNotification()
+        (error, payload) = notif.setNewMailPayload(self.token)
+        if error is True: return (error, payload)
+
+        url = self.__make_url('notification/newmail')
+        return self.__put(url, payload, None)
+        
         

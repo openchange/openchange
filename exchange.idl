@@ -1482,8 +1482,7 @@ System Attendant Private Interface
 		ulRecipClass		RecipientType;
 		CODEPAGEID		CodePageId;
 		uint16			Reserved;
-		uint16			RecipientRowSize;
-		[subcontext(0),subcontext_size(RecipientRowSize),flag(NDR_REMAINING)]RecipientRow      	RecipientRow;
+		[subcontext(2)]RecipientRow      	RecipientRow;
 	} OpenRecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {

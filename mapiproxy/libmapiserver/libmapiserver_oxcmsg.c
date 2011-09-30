@@ -28,22 +28,6 @@
 #include "libmapiserver.h"
 
 /**
-   \details Calculate OpenRecipientRow struct size
-
-   \param row pointer to the OpenRecipientRow structure
-
-   \return Size of the struct
- */
-_PUBLIC_ uint16_t libmapiserver_OpenRecipientRow_size(struct OpenRecipientRow *row)
-{
-        uint16_t        size = 7;
-
-        size += row->RecipientRowSize;
-
-        return size;
-}
-
-/**
    \details Calculate OpenMessage (0x3) Rop size
 
    \param response pointer to the OpenMessage EcDoRpc_MAPI_REPL
@@ -55,7 +39,6 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *re
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 	uint8_t		i;
-	uint16_t	RecipientRowSize = 0;
 
 	if (!response || response->error_code) {
 		return size;
@@ -77,10 +60,7 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *re
 		size += sizeof (uint8_t);
 		size += sizeof (uint16_t);
 		size += sizeof (uint16_t);
-		size += sizeof (uint16_t);
-		RecipientRowSize = libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.RecipientRows[i].RecipientRow);
-		response->u.mapi_OpenMessage.RecipientRows[i].RecipientRowSize = RecipientRowSize;
-		size += RecipientRowSize;
+		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.RecipientRows[i].RecipientRow);
 	}
 
 	return size;
@@ -174,7 +154,6 @@ _PUBLIC_ uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_M
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 	uint8_t		i;
-	uint16_t	RecipientRowSize = 0;
 
 	if (!response || response->error_code) {
 		return size;
@@ -196,10 +175,7 @@ _PUBLIC_ uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_M
 		size += sizeof (uint8_t);
 		size += sizeof (uint16_t);
 		size += sizeof (uint16_t);
-		size += sizeof (uint16_t);
-		RecipientRowSize = libmapiserver_RecipientRow_size(response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow);
-		response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRowSize = RecipientRowSize;
-		size += RecipientRowSize;
+		size += libmapiserver_RecipientRow_size(response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow);
 	}
 
 	return size;
@@ -301,7 +277,6 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_
 {
         uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
         uint8_t         i;
-	uint16_t	RecipientRowSize = 0;
 
 	if (!response || response->error_code) {
 		return size;
@@ -322,10 +297,7 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_
 		size += sizeof (uint8_t);
 		size += sizeof (uint16_t);
 		size += sizeof (uint16_t);
-		size += sizeof (uint16_t);
-		RecipientRowSize = libmapiserver_RecipientRow_size(response->u.mapi_OpenEmbeddedMessage.RecipientRows[i].RecipientRow);
-		response->u.mapi_OpenEmbeddedMessage.RecipientRows[i].RecipientRowSize = RecipientRowSize;
-		size += RecipientRowSize;
+		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenEmbeddedMessage.RecipientRows[i].RecipientRow);
 	}
         
         return size;

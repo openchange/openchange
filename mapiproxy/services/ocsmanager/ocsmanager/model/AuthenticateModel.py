@@ -6,6 +6,7 @@ from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 from ocsmanager.model.auth import SingleAuthenticateModel as single
+from ocsmanager.lib.utils import validateDocXML
 #from ocsmanager.model.auth import LDAPAuthenticateModel as ldap
 #from ocsmanager.model.auth import FileAuthenticateModel as mfile
 
@@ -31,11 +32,8 @@ class AuthenticateModel:
     def getSessionToken(self, payload):
         """Validate XML document and extract authentication token from
         the payload."""
-        try:
-            xmlData = etree.XML(payload)
-        except etree.XMLSyntaxError:
-            return None
-        if xmlData.tag != "ocsmanager": return None
+        (error, xmlData) = validateDocXML(payload)
+        if error is True: return None
 
         token = xmlData.find('token')
         if token is None: return None
@@ -45,11 +43,8 @@ class AuthenticateModel:
 
     def getTokenLogin(self, payload):
         """Validate XML document and retrieve the login from XML payload."""
-        try:
-            xmlData = etree.XML(payload)
-        except etree.XMLSyntaxError:
-            return None
-        if xmlData.tag != "ocsmanager": return None
+        (error, xmlData) = validateDocXML(payload)
+        if error is True: return None
 
         login = xmlData.find('login')
         if login is None: return None
@@ -62,11 +57,8 @@ class AuthenticateModel:
     def verifyPassword(self, login, token_salt, salt, payload):
         """Check if the supplied login hash is correct.
         """
-        try:
-            xmlData = etree.XML(payload)
-        except etree.XMLSyntaxError:
-            return None
-        if xmlData.tag != "ocsmanager": return (True, 'Invalid Hash')
+        (error, xmlData) = validateDocXML(payload)
+        if error is True: return (error, xmlData)
 
         token = xmlData.find('token')
         if token is None: return (True, 'No token parameter found')

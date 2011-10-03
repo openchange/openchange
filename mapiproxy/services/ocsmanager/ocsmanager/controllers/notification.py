@@ -28,9 +28,3 @@ class NotificationController(BaseController):
 
         return render('/notification.xml')
         
-
-    def index(self):
-        # Return a rendered template
-        #return render('/notification.mako')
-        # or, return a string
-        return 'Hello World'

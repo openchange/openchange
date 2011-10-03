@@ -26,7 +26,7 @@ class ClientAuthentication(object):
         lxml object."""
         try:
             xmlData = etree.XML(payload)
-        except etree.XMLSyntacError:
+        except etree.XMLSyntaxError:
             return (True, 'Invalid document')
 
         if xmlData.tag != "ocsmanager": return (True, 'Incorrect root element %s' % xmlData.tag)

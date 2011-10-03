@@ -517,9 +517,9 @@ int mapistore_backend_folder_open_table(struct backend_context *bctx, void *fold
         return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
 }
 
-int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct ModifyRecipientRow *row, uint16_t count)
+int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *row, uint16_t count)
 {
-	return bctx->backend->message.modify_recipients(message, row, count);
+	return bctx->backend->message.modify_recipients(message, columns, row, count);
 }
 
 int mapistore_backend_message_save(struct backend_context *bctx, void *message)

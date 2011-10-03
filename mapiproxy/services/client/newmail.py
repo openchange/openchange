@@ -43,6 +43,10 @@ def parse_arguments():
     parser.add_argument('--password', action='store', help='Specify the password for the service')
     parser.add_argument('--host', action='store', help='Specify the host running the service')
     parser.add_argument('--port', action='store', type=int, help='Specify the port where the service is running')
+    parser.add_argument('--backend', action='store', required=True, help='Specify the backend that will handle this notification')
+    parser.add_argument('--user', action='store', required=True, help='Specify the destination user for this notification')
+    parser.add_argument('--folder', action='store', required=True, help='Specify the destination folder for this notification')
+    parser.add_argument('--msgid', action='store', required=True, help='Specify the message identifier for this notification')
     parser.add_argument('--verbose', action='store_true', help='Enable verbosity on network transactions')
     args = parser.parse_args()
 
@@ -67,12 +71,19 @@ def parse_arguments():
         print '[I] Assuming plain password'
         cfg['encryption'] = "plain"
 
+    # Retrieve nemail notification parameters
+    cfg['newmail'] = {}
+    cfg['newmail']['backend'] = args.backend
+    cfg['newmail']['username'] = args.user
+    cfg['newmail']['folder'] = args.folder
+    cfg['newmail']['msgid'] = args.msgid
+
     return cfg
 
 def error_check(function):
     (error, code) = function
     if error is True:
-        print '[!] Error: %s' % msg
+        print '[!] Error: %s' % code
         sys.exit()
 
 def main():
@@ -82,7 +93,7 @@ def main():
     error_check(conn.login(cfg['username'], cfg['password'], cfg['encryption']))
     print '[I] Authentication successful'
 
-    error_check(conn.newmail())
+    error_check(conn.newmail(cfg['newmail']))
     print '[I] NewMail notification sent'
 
 if __name__ == "__main__":

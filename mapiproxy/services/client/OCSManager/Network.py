@@ -171,14 +171,14 @@ class Network(object):
 
         return (False, None)
         
-    def newmail(self):
+    def newmail(self, newmail):
         """Sends a newmail notification to OCSManager service.
         """
         
         if self.token is None: return (True, 'User not authenticated')
 
         notif = ClientNotification.ClientNotification()
-        (error, payload) = notif.setNewMailPayload(self.token)
+        (error, payload) = notif.setNewMailPayload(self.token, newmail)
         if error is True: return (error, payload)
 
         url = self.__make_url('notification/newmail')

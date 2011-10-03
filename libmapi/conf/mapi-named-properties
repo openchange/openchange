@@ -320,7 +320,6 @@ PidLidConversationActionMaxDeliveryTime		       ConversationActionMaxDeliveryTim
 PidLidConversationProcessed			       ConversationProcessed		    0x85C9 NULL			  PT_LONG	MNID_ID	    PSETID_Common
 PidLidConversationActionLastAppliedTime		       ConversationActionLastAppliedTime    0x85CA NULL			  PT_SYSTIME	MNID_ID	    PSETID_Common
 PidLidConversationActionVersion			       ConversationActionVersion	    0x85CB NULL			  PT_LONG	MNID_ID	    PSETID_Common
-PidLidServerProcessed				       ExchangeProcessed		    0x85CC NULL			  PT_BOOLEAN	MNID_ID	    PSETID_Common
 
 ### Log Named Properties
 PidLidLogType                                          LogType                       0x8700 NULL                          PT_UNICODE    MNID_ID     PSETID_Log             0x92b6
@@ -513,7 +512,9 @@ PidNameXSieve                                          NULL                     
 PidNameXVirusScanned                                   NULL                          0x0000 X-Virus-Scanned               PT_UNICODE    MNID_STRING PS_INTERNET_HEADERS         0x9514
 
 ### PSETID_CalendarAssistant
-#PidLidClientIntent				       ClientIntent		     0x0015 ClientIntent		  PT_LONG       MNID_STRING PSETID_CalendarAssistant
+PidLidClientIntent				       ClientIntent		     0x0015 ClientIntent		  PT_LONG       MNID_ID     PSETID_CalendarAssistant    0x95f4
+PidLidServerProcessed				       ServerProcessed               0x85CC NULL			  PT_BOOLEAN	MNID_ID	    PSETID_CalendarAssistant    0x95f5
+PidLidServerProcessingActions			       ServerProcessingActions	     0x85CD NULL			  PT_LONG	MNID_ID	    PSETID_CalendarAssistant    0x95f6
 
 ### PSETID_Attachment
 PidNameAttachmentMacContentType                        NULL                          0x0000 AttachmentMacContentType      PT_UNICODE    MNID_STRING PSETID_Attachment

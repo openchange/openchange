@@ -67,8 +67,20 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_PERMANENT_DELETE	2
 
 struct mapistore_message {
-	struct SRowSet			*recipients;
-	struct SRow			*properties;
+	/* message props */
+	char					*subject_prefix;
+	char					*normalized_subject;
+
+	/* recipients */
+	struct SPropTagArray			*columns;
+	uint32_t				recipients_count;
+	struct mapistore_message_recipient	**recipients;
+};
+
+struct mapistore_message_recipient {
+	enum ulRecipClass	type;
+	char			*username;
+	void			**data;
 };
 
 struct indexing_folders_list {
@@ -126,7 +138,7 @@ struct mapistore_backend {
 		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 		int		(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		int		(*delete_message)(void *, uint64_t, uint8_t flags);
-	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, uint8_t);
+	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
 		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 		int		(*get_child_count)(void *, uint8_t, uint32_t *);
 
@@ -229,7 +241,7 @@ int mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *,
 int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
 int mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
-int mapistore_folder_move_copy_messages(struct mapistore_context *, uint32_t, void *, void *, uint32_t, uint64_t *, uint64_t *, uint8_t);
+int mapistore_folder_move_copy_messages(struct mapistore_context *, uint32_t, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
 int mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 int mapistore_folder_get_folder_count(struct mapistore_context *, uint32_t, void *, uint32_t *);
 int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, void *, uint8_t, uint32_t *);

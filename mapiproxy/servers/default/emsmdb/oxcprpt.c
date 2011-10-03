@@ -1368,9 +1368,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
-		if (emsmdbp_is_mapistore(dest_object) && dest_object->type == EMSMDBP_OBJECT_MESSAGE) {
-			mapistore_message_save(emsmdbp_ctx->mstore_ctx, emsmdbp_is_mapistore(dest_object), dest_object->backend_object);
-		}
 	}
 	else {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;

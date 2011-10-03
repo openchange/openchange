@@ -570,7 +570,7 @@ _PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ct
 
  */
 _PUBLIC_ int mapistore_folder_move_copy_messages(struct mapistore_context *mstore_ctx, uint32_t context_id,
-						 void *target_folder, void *source_folder, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, uint8_t want_copy)
+						 void *target_folder, void *source_folder, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, struct Binary_r **target_change_keys, uint8_t want_copy)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -583,7 +583,7 @@ _PUBLIC_ int mapistore_folder_move_copy_messages(struct mapistore_context *mstor
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	ret = mapistore_backend_folder_move_copy_messages(backend_ctx, target_folder, source_folder, mid_count, source_mids, target_mids, want_copy);
+	ret = mapistore_backend_folder_move_copy_messages(backend_ctx, target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

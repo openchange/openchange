@@ -242,7 +242,7 @@ class GetPropsParser:
                 ordX = ord(self.response[pos + x])
                 codes.append("%.2x" % ordX)
                 if ordX > 31 and ordX < 128:
-                    chars = chars + "%3s  " % x
+                    chars = chars + "%3s  " % self.response[pos + x]
                 else:
                     chars = chars + "\\x%.2x " % ordX
             print "%s  %s|  %s" % (" ".join(codes), deltaSpace, chars)

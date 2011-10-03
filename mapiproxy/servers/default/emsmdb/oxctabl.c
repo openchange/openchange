@@ -684,7 +684,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	uint32_t			property;
 	uint8_t				flagged;
 	uint8_t				status = 0;
-	uint32_t			i,j;
+	uint32_t			i;
 	bool				found = false;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] FindRow (0x4f)\n"));
@@ -755,14 +755,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 
-		for (i = 0; !found && table->numerator < table->denominator; i++) {
+		while (!found && table->numerator < table->denominator) {
                         flagged = 0;
 
-			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, i, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, &retvals);
 			if (data_pointers) {
 				found = true;
-				for (j = 0; j < table->prop_count; j++) {
-					if (retvals[j] != MAPI_E_SUCCESS) {
+				for (i = 0; i < table->prop_count; i++) {
+					if (retvals[i] != MAPI_E_SUCCESS) {
 						flagged = 1;
 					}
 				}
@@ -779,15 +779,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 				}
                                 
 				/* Push the properties */
-				for (j = 0; j < table->prop_count; j++) {
-					property = table->properties[j];
-					retval = retvals[j];
+				for (i = 0; i < table->prop_count; i++) {
+					property = table->properties[i];
+					retval = retvals[i];
 					if (retval == MAPI_E_NOT_FOUND) {
 						property = (property & 0xFFFF0000) + PT_ERROR;
 						data = &retval;
 					}
 					else {
-						data = data_pointers[j];
+						data = data_pointers[i];
 					}
                                 
 					libmapiserver_push_property(mem_ctx,

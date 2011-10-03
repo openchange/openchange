@@ -471,7 +471,6 @@ uint16_t libmapiserver_RopMoveCopyMessages_size(struct EcDoRpc_MAPI_REPL *);
 
 
 /* definitions from libmapiserver_oxcmsg.c */
-uint16_t libmapiserver_OpenRecipientRow_size(struct OpenRecipientRow *);
 uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesMessage_size(struct EcDoRpc_MAPI_REPL *);

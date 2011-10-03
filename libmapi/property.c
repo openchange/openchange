@@ -451,7 +451,7 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx, struct SPropValu
 /*
   TODO: should this be public?
 */
-_PUBLIC_ bool set_mapi_SPropValue(struct mapi_SPropValue *lpProps, const void *data)
+_PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
 		lpProps->value.err = MAPI_E_NOT_FOUND;
@@ -477,10 +477,25 @@ _PUBLIC_ bool set_mapi_SPropValue(struct mapi_SPropValue *lpProps, const void *d
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
-		lpProps->value.bin = *((const struct SBinary_short *)data);
+		lpProps->value.bin.cb = *((uint16_t *)data);
+		lpProps->value.bin.lpb = (void *) ((char *)data + 2);
 		break;
-	case PT_UNICODE:
-		lpProps->value.lpszW = (const char *) data;
+	case PT_UNICODE: {
+		const uint16_t	*unicode_char = data;
+		size_t		src_size = 0, dest_size, dest_len;
+		char		*unicode_str;
+
+		while (*unicode_char++)
+			src_size++;
+		dest_size = src_size * 3 + 3;
+		unicode_str = talloc_array(mem_ctx, char, dest_size);
+		convert_string(CH_UTF16LE, CH_UTF8,
+			       data, src_size * 2,
+			       unicode_str, dest_size,
+			       &dest_len);
+		unicode_str[dest_len] = 0;
+		lpProps->value.lpszW = unicode_str;
+	}
 		break;
 	case PT_CLSID:
 		lpProps->value.lpguid = *((struct GUID *) data);
@@ -491,6 +506,8 @@ _PUBLIC_ bool set_mapi_SPropValue(struct mapi_SPropValue *lpProps, const void *d
 	case PT_ERROR:
 		lpProps->value.err = *((const uint32_t *)data);
 		break;
+
+#warning all the PT_MV_X conversions here are wrong
 	case PT_MV_LONG:
 		lpProps->value.MVl = *((const struct mapi_MV_LONG_STRUCT *)data);
 		break;
@@ -515,18 +532,18 @@ _PUBLIC_ bool set_mapi_SPropValue(struct mapi_SPropValue *lpProps, const void *d
 	return true;
 }
 
-_PUBLIC_ bool set_mapi_SPropValue_proptag(struct mapi_SPropValue *lpProps, uint32_t aulPropTag, const void *data)
+_PUBLIC_ bool set_mapi_SPropValue_proptag(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint32_t aulPropTag, const void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
 
-	return (set_mapi_SPropValue(lpProps, data));
+	return (set_mapi_SPropValue(mem_ctx, lpProps, data));
 }
 
 _PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint16_t *cValues, uint32_t aulPropTag, const void *data)
 {
 	lpProps = talloc_realloc(mem_ctx, lpProps, struct mapi_SPropValue, *cValues + 2);
 	DEBUG(0, ("%d: setting value for 0x%.8x\n", *cValues, aulPropTag));
-	set_mapi_SPropValue_proptag(&lpProps[*cValues], aulPropTag, data);
+	set_mapi_SPropValue_proptag(mem_ctx, &lpProps[*cValues], aulPropTag, data);
 	*cValues = *cValues + 1;
 
 	return lpProps;

@@ -169,7 +169,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
  end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
 
-	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesSpecific (0x07) END\n"));
 	return MAPI_E_SUCCESS;
 }
 

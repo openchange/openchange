@@ -562,6 +562,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	uint32_t		contextID;
+	struct SPropTagArray	columns;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] RemoveAllRecipients (0x0d)\n"));
 
@@ -594,8 +595,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	if (mapistore) {
 		contextID = emsmdbp_get_contextID(object);
+		memset(&columns, 0, sizeof(struct SPropTagArray));
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-						    object->backend_object, NULL, 0);
+						    &columns, object->backend_object, NULL, 0);
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
@@ -635,6 +637,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	uint32_t		contextID;
+	struct SPropTagArray	*columns;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ModifyRecipients (0x0e)\n"));
 
@@ -667,8 +670,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	if (mapistore) {
 		contextID = emsmdbp_get_contextID(object);
+		columns = talloc_zero(mem_ctx, struct SPropTagArray);
+		columns->cValues = mapi_req->u.mapi_ModifyRecipients.prop_count;
+		columns->aulPropTag = mapi_req->u.mapi_ModifyRecipients.properties;
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-						    object->backend_object, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
+						    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
 		/* mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags); */
 	}
 	else {

@@ -54,7 +54,7 @@ _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_init");
+	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_add");
 
 	/* Step 1. Open/Create the replica_mapping database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING,

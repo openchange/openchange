@@ -48,14 +48,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
 
 	retval = mapistore_backend_init(mstore_ctx, path);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -65,11 +65,10 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	mstore_ctx->replica_mapping_ctx = NULL;
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
+	mstore_ctx->conn_info = NULL;
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
-
-	DEBUG(5, ("initted mstore_ctx ref: %p\n", mstore_ctx));
 
 	return mstore_ctx;
 }
@@ -99,6 +98,41 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Set connection info for current mapistore context
+
+   \param mstore_ctx pointer to the mapistore context
+   \param oc_ctx pointer to the openchange ldb database
+   \param username pointer to the current username
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
+					   void *ocdb_ctx, const char *username)
+{
+	int	ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ocdb_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mstore_ctx->conn_info = talloc_zero(mstore_ctx, struct mapistore_connection_info);
+	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
+	mstore_ctx->conn_info->oc_ctx = ocdb_ctx;
+	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
+	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
+
+	ret = mapistore_replica_mapping_add(mstore_ctx, username);
+	if (ret != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[%s:%d] MAPIStore replica mapping database initialization failed\n", \
+			  __FUNCTION__, __LINE__));
+		talloc_free(mstore_ctx->conn_info);
+		return MAPISTORE_ERR_DATABASE_INIT;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Add a new connection context to mapistore
@@ -780,7 +814,7 @@ _PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, u
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct ModifyRecipientRow *rows, uint16_t count)
+int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *rows, uint16_t count)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -793,7 +827,7 @@ int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, ui
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend modifyrecipients */
-	ret = mapistore_backend_message_modify_recipients(backend_ctx, message, rows, count);
+	ret = mapistore_backend_message_modify_recipients(backend_ctx, message, columns, rows, count);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

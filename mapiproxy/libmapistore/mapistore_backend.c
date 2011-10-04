@@ -91,6 +91,30 @@ _PUBLIC_ extern int mapistore_backend_register(const void *_backend)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Check if the specified backend is registered given its
+   name.
+
+   \param name backend's name to lookup
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_backend_registered(const char *name)
+{
+	int	i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && !strcmp(backends[i].backend->backend.name, name)) {
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
 
 /**
    \details Return the full path where mapistore backends are
@@ -102,6 +126,7 @@ _PUBLIC_ const char *mapistore_backend_get_installdir(void)
 {
 	return MAPISTORE_BACKEND_INSTALLDIR;
 }
+
 
 
 /**
@@ -517,9 +542,9 @@ int mapistore_backend_folder_open_table(struct backend_context *bctx, void *fold
         return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
 }
 
-int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct ModifyRecipientRow *row, uint16_t count)
+int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *row, uint16_t count)
 {
-	return bctx->backend->message.modify_recipients(message, row, count);
+	return bctx->backend->message.modify_recipients(message, columns, row, count);
 }
 
 int mapistore_backend_message_save(struct backend_context *bctx, void *message)

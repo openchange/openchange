@@ -1,9 +1,9 @@
 /*
    OpenChange MAPI implementation.
 
-   Python interface to mapistore
+   Python interface to mapistore management
 
-   Copyright (C) Julien Kerihuel 2010.
+   Copyright (C) Julien Kerihuel 2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,33 +19,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef	__PYMAPISTORE_H_
-#define	__PYMAPISTORE_H_
+#ifndef	__PYMAPISTORE_MGMT_H_
+#define	__PYMAPISTORE_MGMT_H_
 
 #include <Python.h>
 #include "mapiproxy/libmapistore/mapistore.h"
-#include "mapiproxy/libmapiproxy/libmapiproxy.h"
-#include <tevent.h>
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
-	struct mapistore_context	*mstore_ctx;
-	void				*ocdb_ctx;
+	struct mapistore_mgmt_context	*mgmt_ctx;
 } PyMAPIStoreObject;
 
-typedef struct {
-	PyObject_HEAD
-	TALLOC_CTX			*mem_ctx;
-	struct mapistore_context	*mstore_ctx;
-	void				*ocdb_ctx;
-	uint64_t			fid;
-	void				*folder_object;
-	uint32_t			context_id;
-	PyMAPIStoreObject		*parent;
-} PyMAPIStoreContextObject;
-
-PyAPI_DATA(PyTypeObject)	PyMAPIStore;
-PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 
 #endif	/* ! __PYMAPISTORE_H_ */

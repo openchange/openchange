@@ -148,7 +148,7 @@ struct mapistore_backend {
 
         /** oxcmsg operations */
         struct {
-		int		(*modify_recipients)(void *, struct ModifyRecipientRow *, uint16_t);
+		int		(*modify_recipients)(void *, struct SPropTagArray *, struct ModifyRecipientRow *, uint16_t);
 		int		(*save)(void *);
 		int		(*submit)(void *, enum SubmitFlags);
                 int		(*open_attachment)(void *, TALLOC_CTX *, uint32_t, void **);
@@ -209,6 +209,10 @@ struct mapistore_context {
 	struct mapistore_connection_info	*conn_info;
 };
 
+struct mapistore_mgmt_context {
+	struct mapistore_context		*mstore_ctx;
+};
+
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -229,6 +233,7 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
+int mapistore_set_connection_info(struct mapistore_context *, void *, const char *);
 int mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
@@ -249,7 +254,7 @@ int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *
 int mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
 
-int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct ModifyRecipientRow *, uint16_t);
+int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, struct ModifyRecipientRow *, uint16_t);
 int mapistore_message_save(struct mapistore_context *, uint32_t, void *);
 int mapistore_message_submit(struct mapistore_context *, uint32_t, void *, enum SubmitFlags);
 int mapistore_message_open_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint32_t, void **);
@@ -269,6 +274,9 @@ int mapistore_properties_get_available_properties(struct mapistore_context *, ui
 int mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
 
+/* definitions from mapistore_mgmt.c */
+struct mapistore_mgmt_context *mapistore_mgmt_init(TALLOC_CTX *, const char *);
+int mapistore_mgmt_registered_backend(const char *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

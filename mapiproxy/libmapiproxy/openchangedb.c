@@ -355,7 +355,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
-	*mapistoreURL = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "mapistore_uri", NULL));
+	*mapistoreURL = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "MAPIStoreURI", NULL));
 
 	talloc_free(mem_ctx);
 
@@ -420,10 +420,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(void *ldb_ctx, const char *mapisto
 	const char * const	attrs[] = { "*", NULL };
 	int			ret;
 
-	mem_ctx = talloc_named(NULL, 0, "openchangedb_get_gid");
+	mem_ctx = talloc_named(NULL, 0, "openchangedb_get_fid");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(mapistore_uri=%s)", mapistoreURL);
+			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", mapistoreURL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 	*fidp = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 

@@ -434,7 +434,11 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    db = Ldb(url=os.path.join(lp.get("private dir"), lp.get("sam database")), 
+    if dir(lp).index("samdb_url") > -1: # samba 4a17
+samDb = lp.samdb_url()[6:]
+    else:
+        samDb = os.path.join(lp.get("private dir"), lp.get("sam database"))
+    db = Ldb(url=samDb,
              session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)

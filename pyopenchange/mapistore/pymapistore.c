@@ -20,7 +20,7 @@
 */
 
 #include <Python.h>
-#include "pyopenchange/pymapistore.h"
+#include "pyopenchange/mapistore/pymapistore.h"
 #include "pyopenchange/pymapi.h"
 
 static PyTypeObject *SPropValue_Type;
@@ -148,16 +148,16 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	/* Initialize connection info */
 	ret = mapistore_set_connection_info(self->mstore_ctx, self->ocdb_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
-		return NULL;
+		return Py_None;
 	}
 
 	/* Get FID given mapistore_uri and username */
 	ret = openchangedb_get_fid(self->ocdb_ctx, uri, &fid);
-	if (ret != MAPISTORE_SUCCESS) return NULL;
+	if (ret != MAPISTORE_SUCCESS) return Py_None;
 
 	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
 	if (ret != MAPISTORE_SUCCESS) {
-		return NULL;
+		return Py_None;
 	}
 
 	context = PyObject_New(PyMAPIStoreContextObject, &PyMAPIStoreContext);
@@ -185,15 +185,6 @@ static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *
 	mapistore_del_context(context->mstore_ctx, context->context_id);
 	Py_CLEAR(context);
 	return PyInt_FromLong(ret);
-}
-
-static void py_MAPIStoreContext_dealloc(PyObject *_self)
-{
-	PyMAPIStoreContextObject *self = (PyMAPIStoreContextObject *) _self;
-
-	mapistore_del_context(self->mstore_ctx, self->context_id);
-	Py_XDECREF(self->parent);
-	PyObject_Del(_self);
 }
 
 /* static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyObject *args) */
@@ -224,19 +215,6 @@ static void py_MAPIStoreContext_dealloc(PyObject *_self)
 /* 	} */
 
 /* 	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_open_folder(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t	context_id; */
-/* 	uint64_t	fid; */
-
-/* 	if (!PyArg_ParseTuple(args, "kK", &context_id, &fid)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(mapistore_folder_open_folder(self->mstore_ctx, context_id, folder_object,  */
-/* 							   self->mem_ctx, fid, &child_object)); */
 /* } */
 
 /* static PyObject *py_MAPIStore_create_folder(PyMAPIStoreObject *self, PyObject *args) */
@@ -353,14 +331,6 @@ static void py_MAPIStoreContext_dealloc(PyObject *_self)
 /* 	return PyInt_FromLong(RowCount); */
 /* } */
 
-static PyMethodDef mapistore_context_methods[] = {
-	{ NULL }
-};
-
-static PyGetSetDef mapistore_context_getsetters[] = {
-	{ NULL }
-};
-
 static PyMethodDef mapistore_methods[] = {
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS },
@@ -376,17 +346,6 @@ static PyMethodDef mapistore_methods[] = {
 
 static PyGetSetDef mapistore_getsetters[] = {
 	{ NULL }
-};
-
-PyTypeObject PyMAPIStoreContext = {
-	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "mapistore context",
-	.tp_basicsize = sizeof (PyMAPIStoreContextObject),
-	.tp_methods = mapistore_context_methods,
-	.tp_getset = mapistore_context_getsetters,
-	.tp_doc = "mapistore context object",
-	.tp_dealloc = (destructor)py_MAPIStoreContext_dealloc,
-	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 PyTypeObject PyMAPIStore = {
@@ -434,6 +393,14 @@ void initmapistore(void)
 	PyObject	*m;
 
 	if (PyType_Ready(&PyMAPIStore) < 0) {
+		return;
+	}
+
+	if (PyType_Ready(&PyMAPIStoreContext) < 0) {
+		return;
+	}
+
+	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
 		return;
 	}
 

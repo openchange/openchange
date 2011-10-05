@@ -45,7 +45,15 @@ typedef struct {
 	PyMAPIStoreObject		*parent;
 } PyMAPIStoreContextObject;
 
+typedef struct {
+	PyObject_HEAD
+	PyMAPIStoreContextObject	*context;
+	void				*folder_object;
+	uint64_t			fid;
+} PyMAPIStoreFolderObject;
+
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 
 #endif	/* ! __PYMAPISTORE_H_ */

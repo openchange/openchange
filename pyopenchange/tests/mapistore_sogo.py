@@ -12,6 +12,10 @@
 # sshfs openchange@ip_addr:/usr/local/samba/private private
 # We have also adjusted the permissions to allow openchange user to
 # read/write openchange.ldb file remotely.
+#
+# Do not forget to run memcached with the user account running the
+# script.
+#
 
 import os
 import sys
@@ -26,7 +30,13 @@ if not os.path.exists(dirname):
 
 mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="private")
-MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator")
-MAPIStore.delete_context(MAPICtx)
+Inbox = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator").open()
+dir(Inbox.fid)
+print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count, 
+                                                                                  Inbox.message_count, 
+                                                                                  Inbox.fai_message_count,
+                                                                                  hex(Inbox.fid))
 
 MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@calendar/", "Administrator")
+MAPIStore.delete_context(MAPICtx)
+

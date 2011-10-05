@@ -1517,7 +1517,9 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
 
- $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore.c				\
+ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
+							pyopenchange/mapistore/context.c			\
+							pyopenchange/mapistore/folder.c				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

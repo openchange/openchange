@@ -362,16 +362,30 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 		return "Already initialized";
 	case MAPISTORE_ERR_NOT_INITIALIZED:
 		return "Not initialized";
+	case MAPISTORE_ERR_CORRUPTED:
+		return "Corrupted";
+	case MAPISTORE_ERR_INVALID_PARAMETER:
+		return "Invalid Parameter";
 	case MAPISTORE_ERR_NO_DIRECTORY:
 		return "No such file or directory";
 	case MAPISTORE_ERR_DATABASE_INIT:
 		return "Database initialization failed";
 	case MAPISTORE_ERR_DATABASE_OPS:
-		return "database operation failed";
+		return "Database operation failed";
 	case MAPISTORE_ERR_BACKEND_REGISTER:
-		return "storage backend registration failed";
+		return "Storage backend registration failed";
 	case MAPISTORE_ERR_BACKEND_INIT:
-		return "storage backend initialization failed";
+		return "Storage backend initialization failed";
+	case MAPISTORE_ERR_CONTEXT_FAILED:
+		return "Failed creating the context";
+	case MAPISTORE_ERR_INVALID_NAMESPACE:
+		return "Invalid Namespace";
+	case MAPISTORE_ERR_NOT_FOUND:
+		return "Not Found";
+	case MAPISTORE_ERR_REF_COUNT:
+		return "Reference counter not NULL";
+	case MAPISTORE_ERR_EXIST:
+		return "Already Exists";
 	}
 
 	return "Unknown error";

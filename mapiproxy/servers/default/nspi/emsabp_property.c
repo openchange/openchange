@@ -35,11 +35,20 @@ struct emsabp_property {
 };
 
 static const struct emsabp_property emsabp_property[] = {
+	{ PR_ANR,				"anr",			false,	NULL			},
 	{ PR_ACCOUNT,				"sAMAccountName",	false,	NULL			},
+	{ PR_GIVEN_NAME,			"givenName",		false,	NULL			},
+	{ PR_SURNAME,				"sn",			false,	NULL			},
+	{ PR_TRANSMITTABLE_DISPLAY_NAME,	"displayName",		false,	NULL			},
+	{ PR_7BIT_DISPLAY_NAME,			"displayName",		false,	NULL			},
+	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_HOME_MTA_UNICODE,		"homeMTA",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
 	{ PR_COMPANY_NAME,			"company",		false,	NULL			},
 	{ PR_DISPLAY_NAME,			"displayName",		false,	NULL			},
 	{ PR_EMAIL_ADDRESS,			"legacyExchangeDN",	false,	NULL			},
 	{ PR_EMS_AB_HOME_MDB,			"homeMDB",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_HOME_MDB_UNICODE,		"homeMDB",		true,	"legacyExchangeDN"	},
 	{ PR_EMS_AB_PROXY_ADDRESSES,		"proxyAddresses",	false,	NULL			},
 	{ PR_EMS_AB_PROXY_ADDRESSES_UNICODE,	"proxyAddresses",	false,	NULL			},
 	{ PR_EMS_AB_NETWORK_ADDRESS,		"networkAddress",	false,	NULL			},
@@ -60,6 +69,12 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 {
 	int		i;
 
+	for (i = 0; emsabp_property[i].attribute; i++) {
+		if (ulPropTag == emsabp_property[i].ulPropTag) {
+			return emsabp_property[i].attribute;
+		}
+	}
+	
 	/* if ulPropTag type is PT_UNICODE, turn it to PT_STRING8 */
 	if ((ulPropTag & 0xFFFF) == PT_UNICODE) {
 		ulPropTag &= 0xFFFF0000;
@@ -114,6 +129,13 @@ _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 
 	if (!ulPropTag) return -1;
 
+	for (i = 0; emsabp_property[i].attribute; i++) {
+		if (ulPropTag == emsabp_property[i].ulPropTag) {
+			return (emsabp_property[i].ref == true) ? 1 : 0;
+		}
+	}
+
+	ulPropTag = (ulPropTag & 0xFFFF) + 0x001e;
 	for (i = 0; emsabp_property[i].attribute; i++) {
 		if (ulPropTag == emsabp_property[i].ulPropTag) {
 			return (emsabp_property[i].ref == true) ? 1 : 0;

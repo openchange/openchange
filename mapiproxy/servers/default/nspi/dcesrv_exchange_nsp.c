@@ -585,7 +585,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	pPropTags = r->in.pPropTags;
 	if (!pPropTags) {
 		pPropTags = talloc_zero(r, struct SPropTagArray);
-		pPropTags->cValues = 8;
+		pPropTags->cValues = 9;
 		pPropTags->aulPropTag = talloc_array(pPropTags, enum MAPITAGS, pPropTags->cValues + 1);
 		pPropTags->aulPropTag[0] = PR_ADDRTYPE_UNICODE;
 		pPropTags->aulPropTag[1] = PR_SMTP_ADDRESS_UNICODE;
@@ -595,7 +595,9 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		pPropTags->aulPropTag[5] = PR_ORIGINAL_ENTRYID;
 		pPropTags->aulPropTag[6] = PR_SEARCH_KEY;
 		pPropTags->aulPropTag[7] = PR_INSTANCE_KEY;
+		pPropTags->aulPropTag[8] = PR_EMAIL_ADDRESS;
 		pPropTags->aulPropTag[pPropTags->cValues] = 0;
+		r->in.pPropTags = pPropTags;
 	}
 
 	retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, r->out.ppRows[0], MId, r->in.dwFlags, pPropTags);
@@ -871,11 +873,104 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 				    TALLOC_CTX *mem_ctx,
 				    struct NspiResolveNames *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13) not implemented\n"));
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	struct emsabp_context	*emsabp_ctx = NULL;
+	struct ldb_message	*ldb_msg_ab;
+	struct SPropTagArray	*pPropTags;
+	const char		*purportedSearch;
+	struct SPropTagArray	*pMIds = NULL;
+	struct SRowSet		*pRows = NULL;
+	struct StringsArray_r	*paStr;
+	uint32_t		i;
+	int			ret;
+	const char * const	recipient_attrs[] = { "*", NULL };
+	const char * const	search_attr[] = { "mailNickName", "mail", "name",
+						  "displayName", "givenName", "sAMAccountName", "proxyAddresses" };
+
+	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13)\n"));
+
+	/* HACK: Disable authentication */
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//	}
+
+	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
+	if (!emsabp_ctx) {
+		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
 	}
-	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
+
+	/* Step 1. Prepare in/out data */
+	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &ldb_msg_ab);
+	if (!MAPI_STATUS_IS_OK(retval)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
+	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
+	if (!purportedSearch) {
+		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
+	}
+
+	/* Set the default list of property tags if none were provided in input */
+	if (!r->in.pPropTags) {
+		pPropTags = set_SPropTagArray(mem_ctx, 0x7,
+					      PR_EMS_AB_CONTAINERID,
+					      PR_OBJECT_TYPE,
+					      PR_DISPLAY_TYPE,
+					      PR_DISPLAY_NAME,
+					      PR_OFFICE_TELEPHONE_NUMBER,
+					      PR_COMPANY_NAME,
+					      PR_OFFICE_LOCATION);
+	} else {
+		pPropTags = r->in.pPropTags;
+	}
+
+	/* Allocate output MIds */
+	paStr = r->in.paStr;
+	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds->cValues = paStr->Count;
+	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pRows = talloc(mem_ctx, struct SRowSet);
+	pRows->cRows = 0;
+	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
+
+	/* Step 2. Fetch AB container records */
+	for (i = 0; i < paStr->Count; i++) {
+		struct ldb_result	*ldb_res;
+		char			*filter = talloc_strdup(mem_ctx, "");
+		int			j;
+
+		/* Build search filter */
+		for (j = 0; j < ARRAY_SIZE(search_attr); j++) {
+			char *attr_filter = talloc_asprintf(mem_ctx, "(%s=%s)", search_attr[j], paStr->Strings[i]);
+			filter = talloc_strdup_append(filter, attr_filter);
+			talloc_free(attr_filter);
+		}
+
+		/* Search AD */
+		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", purportedSearch, filter);
+		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
+				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
+
+		/* Determine name resolution status and fetch object upon success */
+		if (ret != LDB_SUCCESS || ldb_res->count == 0) {
+			pMIds->aulPropTag[i] = MAPI_UNRESOLVED;
+		} else if (ldb_res->count > 1) {
+			pMIds->aulPropTag[i] = MAPI_AMBIGUOUS;
+		} else {
+			pMIds->aulPropTag[i] = MAPI_RESOLVED;
+			emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
+						    ldb_res->msgs[0], 0, 0, pPropTags);
+			pRows->cRows++;
+		}
+	}
+
+	*r->out.ppMIds = pMIds;
+	if (pRows->cRows) {
+		*r->out.ppRows = pRows;
+	}
+
+	DCESRV_NSP_RETURN(r, retval, NULL);
 }
 
 

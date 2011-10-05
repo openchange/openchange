@@ -21,6 +21,7 @@
 
 #include <Python.h>
 #include "pyopenchange/mapistore/pymapistore.h"
+#include "gen_ndr/exchange.h"
 
 static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 {
@@ -28,6 +29,37 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 
 	Py_DECREF(self->context);
 	PyObject_Del(_self);
+}
+
+static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	int			ret;
+	/* PyMAPIStoreFolderObject	*folder; */
+	char			*kwnames[] = { "name", "description", "foldertype", "flags" };
+	const char		*name;
+	const char		*desc = NULL;
+	uint16_t		foldertype = FOLDER_GENERIC;
+	uint16_t		flags = NONE;
+	uint64_t		fid;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|shh", kwnames, &name, &desc, &foldertype, &flags)) {
+		return NULL;
+	}
+
+	/* Step 1. Check if the folder already exists */
+	ret = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx,
+						     self->context->context_id,
+						     self->context->folder_object, 
+						     name, &fid);
+	if (ret == MAPISTORE_SUCCESS) {
+		if (flags != OPEN_IF_EXISTS) {
+			PyErr_MAPIStore_IS_ERR_RAISE(MAPISTORE_ERR_EXIST);
+			Py_RETURN_NONE;
+		}
+	}
+	
+
+	return Py_None;
 }
 
 static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
@@ -85,6 +117,7 @@ static PyObject *py_MAPIStoreFolder_get_fai_message_count(PyMAPIStoreFolderObjec
 }
 
 static PyMethodDef mapistore_folder_methods[] = {
+	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
 

@@ -29,6 +29,12 @@ void initmapistore(void);
 
 static void	*openchange_ldb_ctx = NULL;
 
+void PyErr_SetMAPIStoreError(uint32_t retval)
+{
+	PyErr_SetObject(PyExc_RuntimeError,
+			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
+}
+
 static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 {
 	char			*ldb_path;
@@ -336,7 +342,6 @@ static PyMethodDef mapistore_methods[] = {
 	{ "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS },
 	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
 	/* { "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS }, */
-	/* { "open_folder", (PyCFunction)py_MAPIStore_open_folder, METH_VARARGS }, */
 	/* { "create_folder", (PyCFunction)py_MAPIStore_create_folder, METH_VARARGS }, */
 	/* { "delete_folder", (PyCFunction)py_MAPIStore_delete_folder, METH_VARARGS }, */
 	/* { "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS }, */
@@ -410,12 +415,11 @@ void initmapistore(void)
 		return;
 	}
 
-	PyModule_AddObject(m, "DEL_MESSAGES", PyInt_FromLong(0x1));
-	PyModule_AddObject(m, "DEL_FOLDERS", PyInt_FromLong(0x4));
-	PyModule_AddObject(m, "DELETE_HARD_DELETE", PyInt_FromLong(0x10));
+	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));
 
-	PyModule_AddObject(m, "MAPISTORE_FOLDER", PyInt_FromLong(MAPISTORE_FOLDER));
-	PyModule_AddObject(m, "MAPISTORE_MESSAGE", PyInt_FromLong(MAPISTORE_MESSAGE));
+	PyModule_AddObject(m, "NONE", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "OPEN_IF_EXISTS", PyInt_FromLong(0x1));
 
 	Py_INCREF(&PyMAPIStore);
 

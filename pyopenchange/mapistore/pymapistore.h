@@ -24,6 +24,7 @@
 
 #include <Python.h>
 #include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <tevent.h>
 
@@ -55,5 +56,25 @@ typedef struct {
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
+
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+__BEGIN_DECLS
+void PyErr_SetMAPIStoreError(uint32_t);
+__END_DECLS
+
+#define PyErr_MAPIStore_IS_ERR_RAISE(retval)		\
+	if (ret != MAPISTORE_SUCCESS) {			\
+		PyErr_SetMAPIStoreError(retval);	\
+		return NULL;				\
+        }
 
 #endif	/* ! __PYMAPISTORE_H_ */

@@ -31,11 +31,11 @@ if not os.path.exists(dirname):
 mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="private")
 Inbox = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator").open()
-dir(Inbox.fid)
 print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count, 
                                                                                   Inbox.message_count, 
                                                                                   Inbox.fai_message_count,
                                                                                   hex(Inbox.fid))
+Inbox.create_folder(name="Test")
 
 MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@calendar/", "Administrator")
 MAPIStore.delete_context(MAPICtx)

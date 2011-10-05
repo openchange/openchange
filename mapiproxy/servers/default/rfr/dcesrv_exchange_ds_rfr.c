@@ -50,15 +50,16 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 
 	DEBUG(5, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
 
+	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-
-		r->out.ppszUnused = NULL;
-		r->out.ppszServer = NULL;
-		r->out.result = MAPI_E_LOGON_FAILED;
-		return MAPI_E_LOGON_FAILED;
-	}
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//
+//		r->out.ppszUnused = NULL;
+//		r->out.ppszServer = NULL;
+//		r->out.result = MAPI_E_LOGON_FAILED;
+//		return MAPI_E_LOGON_FAILED;
+//	}
 
 	/* Step 1. We don't have load-balancing support yet, just return Samba FQDN name */
 	netbiosname = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
@@ -100,21 +101,21 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 
 	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)\n"));
 
-	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
-	failure:
-		r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
-		r->out.ppszServerFQDN[0] = NULL;
-		r->out.result = MAPI_E_LOGON_FAILED;
-		return MAPI_E_LOGON_FAILED;
-	}
+//	failure:
+//		r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
+//		r->out.ppszServerFQDN[0] = NULL;
+//		r->out.result = MAPI_E_LOGON_FAILED;
+//		return MAPI_E_LOGON_FAILED;
+//	}
 
-	netbiosname = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
-	realm = lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx);
-	if (!netbiosname || !realm) {
-		goto failure;
-	}
+//	netbiosname = lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx);
+//	realm = lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx);
+//	if (!netbiosname || !realm) {
+//		goto failure;
+//	}
 
 	fqdn = talloc_asprintf(mem_ctx, "%s.%s", netbiosname, realm);
 	r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);

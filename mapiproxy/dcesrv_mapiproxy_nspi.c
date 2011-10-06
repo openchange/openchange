@@ -102,7 +102,7 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	slpstr->lppszA[0] = talloc_asprintf(dce_call, "ncacn_ip_tcp:%s.%s", 
 					    lpcfg_netbios_name(dce_call->conn->dce_ctx->lp_ctx), 
 					    lpcfg_realm(dce_call->conn->dce_ctx->lp_ctx));
-	strlower_m((char *)slpstr->lppszA[0]);
+	slpstr->lppszA[0] = strlower_talloc(dce_call, slpstr->lppszA[0]);
 
 	return true;
 }

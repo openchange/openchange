@@ -63,6 +63,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	tevent_loop_allow_nesting(ev);
 
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;

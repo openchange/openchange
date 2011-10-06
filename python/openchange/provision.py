@@ -148,11 +148,8 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    if "samdb_url" in dir(lp): # samba 4a17
-        url = None
-    else:
-        url = lp.get("sam database")
-    db = SamDB(url=url, session_info=session_info, credentials=creds, lp=lp)
+    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
+               credentials=creds, lp=lp)
 
     db.transaction_start()
 
@@ -189,11 +186,8 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    if "samdb_url" in dir(lp): # samba 4a17
-        url = None
-    else:
-        url = lp.get("sam database")
-    db = SamDB(url=url, session_info=session_info, credentials=creds, lp=lp)
+    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
+               credentials=creds, lp=lp)
 
     db.transaction_start()
 
@@ -221,11 +215,8 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     session_info = system_session()
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    if "samdb_url" in dir(lp): # samba 4a17
-        url = None
-    else:
-        url = lp.get("sam database")
-    db = SamDB(url=url, session_info=session_info, credentials=creds, lp=lp)
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+                  credentials=creds, lp=lp)
 
     prefixmap = open(setup_path("AD/prefixMap.txt"), 'r').read()
 
@@ -443,12 +434,8 @@ def newuser(lp, creds, username=None):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    if "samdb_url" in dir(lp): # samba 4a17
-        url = lp.samdb_url()[6:]
-    else:
-        url = os.path.join(lp.get("private dir"), lp.get("sam database"))
-    db = Ldb(url=url,
-             session_info=system_session(), credentials=creds, lp=lp)
+    db = Ldb(url=lp.samdb_url(), session_info=system_session(), 
+             credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
 
@@ -489,11 +476,7 @@ def accountcontrol(lp, creds, username=None, value=0):
 
     names = guess_names_from_smbconf(lp, None, None)
 
-    if "samdb_url" in dir(lp): # samba 4a17
-        url = lp.samdb_url()[6:]
-    else:
-        url = os.path.join(lp.get("private dir"), lp.get("sam database"))
-    db = Ldb(url=url,
+    db = Ldb(url=os.path.join(lp.get("private dir"), lp.samdb_url()), 
              session_info=system_session(), credentials=creds, lp=lp)
 
     user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
@@ -547,6 +530,7 @@ def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
     openchange_ldb.setup()
 
+    print "Adding root DSE"
     openchange_ldb.add_rootDSE(names.ocserverdn, names.firstorg, names.firstou)
 
     # Add a server object

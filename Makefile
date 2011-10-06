@@ -1520,6 +1520,7 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
  $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
 							pyopenchange/mapistore/context.c			\
 							pyopenchange/mapistore/folder.c				\
+							pyopenchange/mapistore/table.c				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

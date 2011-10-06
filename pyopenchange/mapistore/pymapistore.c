@@ -409,6 +409,10 @@ void initmapistore(void)
 		return;
 	}
 
+	if (PyType_Ready(&PyMAPIStoreTable) < 0) {
+		return;
+	}
+
 	m = Py_InitModule3("mapistore", py_mapistore_global_methods,
 			   "An interface to OpenChange MAPIStore");
 	if (m == NULL) {

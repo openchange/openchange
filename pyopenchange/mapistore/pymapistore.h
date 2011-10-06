@@ -53,9 +53,14 @@ typedef struct {
 	uint64_t			fid;
 } PyMAPIStoreFolderObject;
 
+typedef struct {
+	PyObject_HEAD	
+} PyMAPIStoreTableObject;
+
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

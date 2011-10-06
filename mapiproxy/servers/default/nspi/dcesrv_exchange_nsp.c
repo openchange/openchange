@@ -312,9 +312,11 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
 	}
 	else {
+		row += r->in.pStat->Delta;
 		r->in.pStat->CurrentRec = mids->aulPropTag[row];
 	}
 
+	r->in.pStat->Delta = 0;
 	r->in.pStat->NumPos = row;
 	r->in.pStat->TotalRecs = row_max;
 

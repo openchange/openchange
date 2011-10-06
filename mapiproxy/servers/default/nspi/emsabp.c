@@ -1082,31 +1082,31 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		} else {
 			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}
-
-		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx, &res,
-				ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				LDB_SCOPE_SUBTREE, recipient_attrs, fmt_str, attr);
-		talloc_free(fmt_str);			
-
-		if (ret != LDB_SUCCESS) {
-			return MAPI_E_NOT_FOUND;
-		}
-		if (res == NULL) {
-			return MAPI_E_INVALID_OBJECT;
-		}
-		if (!res->count) {
-			return MAPI_E_NOT_FOUND;
-		}
 	} else {
-		/* FIXME Check restriction == NULL */
+		fmt_str = talloc_strdup(mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		attr = NULL;
+	}
+
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx, &res,
+			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs, fmt_str, attr);
+	talloc_free(fmt_str);			
+	
+	if (ret != LDB_SUCCESS) {
+		return MAPI_E_NOT_FOUND;
+	}
+	if (res == NULL) {
 		return MAPI_E_INVALID_OBJECT;
+	}
+	if (!res->count) {
+		return MAPI_E_NOT_FOUND;
 	}
 
 	if (limit && res->count > limit) {
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */

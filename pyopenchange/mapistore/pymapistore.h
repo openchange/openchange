@@ -38,6 +38,13 @@ typedef struct {
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
+	struct mapistore_mgmt_context	*mgmt_ctx;
+	PyMAPIStoreObject		*parent;
+} PyMAPIStoreMGMTObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;
 	void				*ocdb_ctx;
 	uint64_t			fid;
@@ -58,6 +65,7 @@ typedef struct {
 } PyMAPIStoreTableObject;
 
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;

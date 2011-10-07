@@ -65,8 +65,8 @@ static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 	if (ret != LDB_SUCCESS) return NULL;
 
 	/* Step 3. Search for rootDSE record */
-	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, NULL,
-			 LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=@ROOTDSE)");
+	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, openchange_ldb_ctx, "@ROOTDSE"),
+			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) return NULL;
 	if (res->count != 1) return NULL;
 
@@ -106,6 +106,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize ldb context on openchange.ldb */
 	ocdb_ctx = openchange_ldb_init(mem_ctx, syspath);
 	if (ocdb_ctx == NULL) {
+		printf("Error in openchange_ldb_init\n");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -113,6 +114,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(mem_ctx, path);
 	if (mstore_ctx == NULL) {
+		printf("Error in mapistore_init\n");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -133,6 +135,21 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 	mapistore_release(self->mstore_ctx);
 	talloc_free(self->mem_ctx);
 	PyObject_Del(_self);
+}
+
+static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
+{
+	PyMAPIStoreMGMTObject	*obj;
+
+	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
+	obj->mgmt_ctx = talloc_zero(self->mem_ctx, struct mapistore_mgmt_context);
+	obj->mgmt_ctx->mstore_ctx = self->mstore_ctx;
+	obj->mem_ctx = self->mem_ctx;
+	obj->parent = self;
+
+	Py_INCREF(obj->parent);
+
+	return (PyObject *) obj;
 }
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
@@ -338,6 +355,7 @@ static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *
 /* } */
 
 static PyMethodDef mapistore_methods[] = {
+	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	{ "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS },
 	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
@@ -398,6 +416,10 @@ void initmapistore(void)
 	PyObject	*m;
 
 	if (PyType_Ready(&PyMAPIStore) < 0) {
+		return;
+	}
+
+	if (PyType_Ready(&PyMAPIStoreMGMT) < 0) {
 		return;
 	}
 

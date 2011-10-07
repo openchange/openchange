@@ -9,6 +9,7 @@ import ocsmanager.lib.app_globals as app_globals
 import ocsmanager.lib.helpers
 import ocsmanager.lib.config as OCSConfig
 from ocsmanager.config.routing import make_map
+import openchange.mapistore as mapistore
 
 def load_environment(global_conf, app_conf):
     """Configure the Pylons environment via the ``pylons.config``
@@ -46,7 +47,9 @@ def load_environment(global_conf, app_conf):
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
     ocsconfig = OCSConfig.OCSConfig(os.path.join(config.get('here'), 'ocsmanager.ini'))
-    config['plop'] = 'plop'
     config['ocsmanager'] = ocsconfig.load()
+
+    mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
+    config['mapistore'] = mapistore.mapistore(config['ocsmanager']['main']['mapistore_root'])
     
     return config

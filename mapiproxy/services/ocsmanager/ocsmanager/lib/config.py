@@ -54,6 +54,8 @@ class OCSConfig(object):
 
         self.__get_section('main')
         self.__get_option('main', 'auth', 'auth', 'type')
+        self.__get_option('main', 'mapistore_root')
+        self.__get_option('main', 'mapistore_data')
         
         if not self.cfg.has_section('auth:%s' % self.d['auth']['type']):
             log.error("%s: Missing [auth:%s] section", self.config, self.d['auth']['type'])
@@ -103,5 +105,5 @@ class OCSConfig(object):
 
         self.__parse_main()
         self.__parse_auth()
-
+        
         return self.d

@@ -14,17 +14,6 @@ curl http://pylonshq.com/download/1.0/go-pylons.py | python - mydevenv
 echo '[*] Activating the virtual environment'
 source mydevenv/bin/activate
 
-echo '[*] Installing posix_ipc python module'
-mkdir mydevenv/dist
-cd mydevenv/dist
-wget http://semanchuk.com/philip/posix_ipc/${PACKAGE}.tar.gz
-tar xzf ${PACKAGE}.tar.gz
-cd ${PACKAGE}
-python setup.py install
-cd ..
-rm -rf ${PACKAGE}
-cd ../../
-
 echo '[*] Reconfiguring ocsmanager'
 cd ocsmanager
 python setup.py develop

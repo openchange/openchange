@@ -257,7 +257,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
 	}
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
@@ -265,8 +265,8 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		goto end;
 	}
 
-	mids = talloc_zero(mem_ctx, struct SPropTagArray);
-	if (emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
+	mids = talloc_zero(local_mem_ctx, struct SPropTagArray);
+	if (emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		row_max = 0;
 	}
 	else {
@@ -289,9 +289,11 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		}
 		else {
 			retval = MAPI_E_NOT_FOUND;
+			row = 0;
 			while (row < row_max) {
 				if ((uint32_t) mids->aulPropTag[row] == (uint32_t) r->in.pStat->CurrentRec) {
 					retval = MAPI_E_SUCCESS;
+					break;
 				}
 				else {
 					row++;

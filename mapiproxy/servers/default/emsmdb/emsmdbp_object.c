@@ -728,17 +728,10 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, struct emsmdbp_object *parent_object, uint32_t table_type, uint32_t handle_id)
 {
 	struct emsmdbp_object	*table_object;
-	uint64_t		folderID;
 	uint8_t			mstore_type;
 	int			ret;
 
-	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-		folderID = parent_object->object.folder->folderID;
-	}
-	else if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
-		folderID = parent_object->object.mailbox->folderID;
-	}
-	else {
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER && parent_object->type != EMSMDBP_OBJECT_MAILBOX) {
 		DEBUG(5, ("[%s:%d] unhandled object type: %d\n", __FUNCTION__, __LINE__, parent_object->type));
 		return NULL;
 	}
@@ -831,7 +824,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, struct SPropTagArray **propertiesp)
 {
 	int				retval;
-	struct emsmdbp_object_table	*table;
 	struct SPropTagArray		*properties;
 	uint32_t			contextID;
 
@@ -839,7 +831,6 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		return MAPISTORE_ERROR;
 	}
 
-	table = table_object->object.table;
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
 		retval = mapistore_table_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, mem_ctx, propertiesp);
@@ -1312,19 +1303,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray **propertiesp)
 {
 	uint32_t contextID;
-	uint8_t table_type;
 	int retval;
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
-		table_type = MAPISTORE_FOLDER_TABLE;
-		break;
 	case EMSMDBP_OBJECT_MESSAGE:
-		/* FIXME: the assumption here is wrong because we don't test the nature of the message */
-		table_type = MAPISTORE_MESSAGE_TABLE;
-		break;
 	case EMSMDBP_OBJECT_ATTACHMENT:
-		table_type = MAPISTORE_ATTACHMENT_TABLE;
 		break;
 	default:
 		abort();

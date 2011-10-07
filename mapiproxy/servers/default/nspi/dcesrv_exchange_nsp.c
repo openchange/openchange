@@ -452,8 +452,85 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
 					      struct NspiSeekEntries *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4) not implemented\n"));
-	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS, ret;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	uint32_t			row;
+	struct SPropTagArray		*mids, *all_mids;
+	struct Restriction_r		*seek_restriction;
+
+	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
+
+	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
+	if (!emsabp_ctx) {
+		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
+	}
+
+	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
+		retval = MAPI_E_INVALID_BOOKMARK;
+		goto end;
+	}
+
+	if (!r->in.pTarget) {
+		retval = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
+	if (r->in.lpETable) {
+		all_mids = r->in.lpETable;
+	}
+	else {
+		all_mids = talloc_zero(mem_ctx, struct SPropTagArray);
+		emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
+	}
+
+	/* find the records matching the qualifier */
+	seek_restriction = talloc_zero(mem_ctx, struct Restriction_r);
+	seek_restriction->rt = RES_PROPERTY;
+	seek_restriction->res.resProperty.relop = RELOP_GE;
+	seek_restriction->res.resProperty.ulPropTag = r->in.pTarget->ulPropTag;
+	seek_restriction->res.resProperty.lpProp = r->in.pTarget;
+
+	mids = talloc_zero(mem_ctx, struct SPropTagArray);
+	if (emsabp_search(mem_ctx, emsabp_ctx, mids, seek_restriction, r->in.pStat, 0) != MAPI_E_SUCCESS) {
+		mids = all_mids;
+		retval = MAPI_E_NOT_FOUND;
+	}
+
+	r->in.pStat->CurrentRec = MID_END_OF_TABLE;
+	r->in.pStat->NumPos = r->in.pStat->TotalRecs = all_mids->cValues;
+	for (row = 0; row < all_mids->cValues; row++) {
+		if (all_mids->aulPropTag[row] == mids->aulPropTag[0]) {
+			r->in.pStat->CurrentRec = mids->aulPropTag[0];
+			r->in.pStat->NumPos = row;
+			break;
+		}
+	}
+
+	/* now we need to populate the rows, if properties were requested */
+	r->out.pStat = r->in.pStat;
+	if (!r->in.pPropTags || !r->in.pPropTags->cValues) {
+		*r->out.pRows = NULL;
+		goto end;
+	}
+
+	r->out.pRows = talloc_zero(mem_ctx, struct SRowSet *);
+	r->out.pRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	r->out.pRows[0]->cRows = mids->cValues;
+	r->out.pRows[0]->aRow = talloc_array(mem_ctx, struct SRow, mids->cValues);
+	for (row = 0; row < mids->cValues; row++) {
+		ret = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.pRows[0]->aRow[row]), 
+					    mids->aulPropTag[row], fEphID, r->in.pPropTags);
+		if (ret) {
+			retval = ret;
+			DEBUG(5, ("failure looking up value %d\n", row));
+			goto end;
+		}
+	}
+
+end:
+
+	DCESRV_NSP_RETURN(r, retval, NULL);
 }
 
 
@@ -512,7 +589,6 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
 	r->out.ppRows[0]->cRows = ppOutMIds->cValues;
 	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, ppOutMIds->cValues);
-	
 
 	for (i = 0; i < ppOutMIds->cValues; i++) {
 		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 

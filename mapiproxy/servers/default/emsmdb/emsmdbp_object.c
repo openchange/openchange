@@ -171,7 +171,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_get_fid_by_name(struct emsmdbp_context *
 		return MAPI_E_SUCCESS;
 	}
 	else {
-		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, parent_folder->object.folder->folderID, name, fidp);
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, folderID, name, fidp);
 	}
 }
 
@@ -448,14 +448,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *me
 
 _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 {
-	int rc;
-	struct emsmdbp_object_stream *stream;
-        void *stream_data;
-        uint8_t *utf8_buffer;
-        struct Binary_r *binary_data;
-        struct SRow aRow;
-        uint32_t string_size;
-	uint16_t propType;
+	int				rc;
+	struct emsmdbp_object_stream	*stream;
+        void				*stream_data;
+        uint8_t				*utf8_buffer;
+        struct Binary_r			*binary_data;
+        struct SRow			aRow;
+        uint32_t			string_size;
+	size_t				converted_size;
+	uint16_t			propType;
 
 	if (!stream_object || stream_object->type != EMSMDBP_OBJECT_STREAM) return MAPISTORE_ERROR;
 
@@ -484,8 +485,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 			memset(utf8_buffer, 0, string_size);
 			convert_string(CH_UTF16LE, CH_UTF8,
 				       stream->stream.buffer.data, stream->stream.buffer.length,
-				       utf8_buffer, string_size,
-				       false);
+				       utf8_buffer, string_size, &converted_size);
 			stream_data = utf8_buffer;
 		}
 		set_SPropValue_proptag(aRow.lpProps, stream->property, stream_data);
@@ -728,17 +728,10 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, struct emsmdbp_object *parent_object, uint32_t table_type, uint32_t handle_id)
 {
 	struct emsmdbp_object	*table_object;
-	uint64_t		folderID;
 	uint8_t			mstore_type;
 	int			ret;
 
-	if (parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-		folderID = parent_object->object.folder->folderID;
-	}
-	else if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
-		folderID = parent_object->object.mailbox->folderID;
-	}
-	else {
+	if (parent_object->type != EMSMDBP_OBJECT_FOLDER && parent_object->type != EMSMDBP_OBJECT_MAILBOX) {
 		DEBUG(5, ("[%s:%d] unhandled object type: %d\n", __FUNCTION__, __LINE__, parent_object->type));
 		return NULL;
 	}
@@ -831,7 +824,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, struct SPropTagArray **propertiesp)
 {
 	int				retval;
-	struct emsmdbp_object_table	*table;
 	struct SPropTagArray		*properties;
 	uint32_t			contextID;
 
@@ -839,7 +831,6 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		return MAPISTORE_ERROR;
 	}
 
-	table = table_object->object.table;
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
 		retval = mapistore_table_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, mem_ctx, propertiesp);
@@ -1312,19 +1303,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray **propertiesp)
 {
 	uint32_t contextID;
-	uint8_t table_type;
 	int retval;
 
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FOLDER:
-		table_type = MAPISTORE_FOLDER_TABLE;
-		break;
 	case EMSMDBP_OBJECT_MESSAGE:
-		/* FIXME: the assumption here is wrong because we don't test the nature of the message */
-		table_type = MAPISTORE_MESSAGE_TABLE;
-		break;
 	case EMSMDBP_OBJECT_ATTACHMENT:
-		table_type = MAPISTORE_ATTACHMENT_TABLE;
 		break;
 	default:
 		DEBUG(0, ("Unsupported object type"));
@@ -1734,8 +1718,9 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
 
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)
 {
-	uint16_t prop_type;
-	struct emsmdbp_stream_data *stream_data;
+	uint16_t			prop_type;
+	struct emsmdbp_stream_data	*stream_data;
+	size_t				converted_size;
 
 	stream_data = talloc_zero(mem_ctx, struct emsmdbp_stream_data);
         stream_data->prop_tag = prop_tag;
@@ -1751,7 +1736,7 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 		convert_string(CH_UTF8, CH_UTF16LE,
 			       value, strlen(value),
 			       stream_data->data.data, stream_data->data.length,
-			       false);
+			       &converted_size);
 		memset(stream_data->data.data + stream_data->data.length - 2, 0, 2 * sizeof(uint8_t));
 	}
 	else if (prop_type == PT_BINARY) {

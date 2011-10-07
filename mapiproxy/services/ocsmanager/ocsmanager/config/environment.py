@@ -50,6 +50,6 @@ def load_environment(global_conf, app_conf):
     config['ocsmanager'] = ocsconfig.load()
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
-    config['mapistore'] = mapistore.mapistore(config['ocsmanager']['main']['mapistore_root'])
+    config['mapistore'] = mapistore.mapistore(config['ocsmanager']['main']['mapistore_root']).management()
     
     return config

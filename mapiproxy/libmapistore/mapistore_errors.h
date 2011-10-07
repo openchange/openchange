@@ -121,4 +121,19 @@
  */
 #define	MAPISTORE_ERR_EXIST			16
 
+/**
+   The function failed to generate requested data/payload
+ */
+#define	MAPISTORE_ERR_INVALID_DATA		17
+
+/**
+   The function failed to send message
+ */
+#define	MAPISTORE_ERR_MSG_SEND			18
+
+/**
+   The function failed to receive message
+ */
+#define	MAPISTORE_ERR_MSG_RCV			19
+
 #endif /* ! __MAPISTORE_ERRORS_H */

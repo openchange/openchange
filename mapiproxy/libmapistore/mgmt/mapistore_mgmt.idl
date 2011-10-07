@@ -1,0 +1,22 @@
+/*
+  IDL struct for mapistore mgmt interface
+ */
+
+[
+ pointer_default(unique)
+]
+
+interface mapistore_mgmt
+{
+	typedef [enum16bit] enum {
+		MAPISTORE_MGMT_USER_REGISTER	= 0x1,
+		MAPISTORE_MGMT_USER_UNREGISTER	= 0x2
+	} mapistore_mgmt_user_status;
+
+	typedef [public] struct {
+		mapistore_mgmt_user_status	status;
+		[string, charset(UTF16)] uint16	*backend;
+		[string, charset(UTF16)] uint16	*username;
+		[string, charset(UTF16)] uint16	*vuser;
+	} mapistore_mgmt_user_cmd;
+}

@@ -151,6 +151,7 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	obj->parent = self;
 
 	Py_INCREF(obj->parent);
+	Py_INCREF(obj);
 
 	return (PyObject *) obj;
 }

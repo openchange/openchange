@@ -8,8 +8,8 @@
 # connect to this remote server.
 #
 # Finally we are accessing the openchange.ldb file through sshfs and
-# map it at the top of the checkout within private folder:
-# sshfs openchange@ip_addr:/usr/local/samba/private private
+# map it to expected /usr/local/samba/private folder.
+# sshfs openchange@ip_addr:/usr/local/samba/private /usr/local/samba/private
 # We have also adjusted the permissions to allow openchange user to
 # read/write openchange.ldb file remotely.
 #
@@ -24,14 +24,15 @@ sys.path.append("python")
 
 import openchange.mapistore as mapistore
 
-dirname = "private/mapistore"
+dirname = "/usr/local/samba/private/mapistore"
 if not os.path.exists(dirname):
-    os.mkdir("private/mapistore")
+    os.mkdir("/usr/local/samba/private/mapistore")
 
 mapistore.set_mapping_path(dirname)
-MAPIStore = mapistore.mapistore(syspath="private")
-
+MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 mgmt = MAPIStore.management()
 
 print "Is SOGo backend registered: %s" % mgmt.registered_backend("SOGo")
 print "Is NonExistent backend registered: %s" % mgmt.registered_backend("NonExistent")
+
+

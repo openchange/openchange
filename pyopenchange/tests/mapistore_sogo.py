@@ -24,12 +24,12 @@ sys.path.append("python")
 
 import openchange.mapistore as mapistore
 
-dirname = "private/mapistore"
+dirname = "/usr/local/samba/private/mapistore"
 if not os.path.exists(dirname):
-    os.mkdir("private/mapistore")
+    os.mkdir("/usr/local/samba/private/mapistore")
 
 mapistore.set_mapping_path(dirname)
-MAPIStore = mapistore.mapistore(syspath="private")
+MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 Inbox = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator").open()
 print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count, 
                                                                                   Inbox.message_count, 

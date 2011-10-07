@@ -37,6 +37,9 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <fcntl.h>
+#include <mqueue.h>
+#include <signal.h>
 
 #include <tdb.h>
 #include <ldb.h>
@@ -207,10 +210,12 @@ struct mapistore_context {
 	struct tdb_wrap				*replica_mapping_ctx;
 	void					*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
+	mqd_t					mq_users;
 };
 
 struct mapistore_mgmt_context {
 	struct mapistore_context		*mstore_ctx;
+	mqd_t					mq_users;
 };
 
 #ifndef __BEGIN_DECLS
@@ -277,6 +282,8 @@ int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, vo
 /* definitions from mapistore_mgmt.c */
 struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *);
 int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const char *);
+int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

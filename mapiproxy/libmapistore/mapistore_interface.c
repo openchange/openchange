@@ -70,6 +70,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
 
+	mstore_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+	if (mstore_ctx->mq_users == -1) {
+		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_USER));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
+
 	return mstore_ctx;
 }
 
@@ -386,6 +393,12 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 		return "Reference counter not NULL";
 	case MAPISTORE_ERR_EXIST:
 		return "Already Exists";
+	case MAPISTORE_ERR_INVALID_DATA:
+		return "Invalid Data";
+	case MAPISTORE_ERR_MSG_SEND:
+		return "Error while sending message";
+	case MAPISTORE_ERR_MSG_RCV:
+		return "Error receiving message";
 	}
 
 	return "Unknown error";

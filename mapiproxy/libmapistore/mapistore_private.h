@@ -143,6 +143,11 @@ struct indexing_context_list {
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
 #define	MAPISTORE_DB_NAME_FREE_ID	"mapistore_id_mapping_free.tdb"
 
+/**
+   MAPIStore management defines
+ */
+#define	MAPISTORE_MQUEUE_USER		"/mapistore_users"
+
 __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */

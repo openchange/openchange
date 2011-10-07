@@ -448,14 +448,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *me
 
 _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 {
-	int rc;
-	struct emsmdbp_object_stream *stream;
-        void *stream_data;
-        uint8_t *utf8_buffer;
-        struct Binary_r *binary_data;
-        struct SRow aRow;
-        uint32_t string_size;
-	uint16_t propType;
+	int				rc;
+	struct emsmdbp_object_stream	*stream;
+        void				*stream_data;
+        uint8_t				*utf8_buffer;
+        struct Binary_r			*binary_data;
+        struct SRow			aRow;
+        uint32_t			string_size;
+	size_t				converted_size;
+	uint16_t			propType;
 
 	if (!stream_object || stream_object->type != EMSMDBP_OBJECT_STREAM) return MAPISTORE_ERROR;
 
@@ -484,8 +485,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 			memset(utf8_buffer, 0, string_size);
 			convert_string(CH_UTF16LE, CH_UTF8,
 				       stream->stream.buffer.data, stream->stream.buffer.length,
-				       utf8_buffer, string_size,
-				       false);
+				       utf8_buffer, string_size, &converted_size);
 			stream_data = utf8_buffer;
 		}
 		set_SPropValue_proptag(aRow.lpProps, stream->property, stream_data);
@@ -1732,8 +1732,9 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
 
 _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)
 {
-	uint16_t prop_type;
-	struct emsmdbp_stream_data *stream_data;
+	uint16_t			prop_type;
+	struct emsmdbp_stream_data	*stream_data;
+	size_t				converted_size;
 
 	stream_data = talloc_zero(mem_ctx, struct emsmdbp_stream_data);
         stream_data->prop_tag = prop_tag;
@@ -1749,7 +1750,7 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 		convert_string(CH_UTF8, CH_UTF16LE,
 			       value, strlen(value),
 			       stream_data->data.data, stream_data->data.length,
-			       false);
+			       &converted_size);
 		memset(stream_data->data.data + stream_data->data.length - 2, 0, 2 * sizeof(uint8_t));
 	}
 	else if (prop_type == PT_BINARY) {

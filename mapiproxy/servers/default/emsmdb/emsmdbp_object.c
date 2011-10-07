@@ -171,7 +171,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_get_fid_by_name(struct emsmdbp_context *
 		return MAPI_E_SUCCESS;
 	}
 	else {
-		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, parent_folder->object.folder->folderID, name, fidp);
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, folderID, name, fidp);
 	}
 }
 

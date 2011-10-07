@@ -362,7 +362,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
-	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
+	if (r->in.pStat->ContainerID && r->in.lpETable == NULL && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
 		retval = MAPI_E_INVALID_BOOKMARK;
 		goto failure;
 	}
@@ -393,27 +393,35 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		if (!MAPI_STATUS_IS_OK(retval))  {
 			goto failure;
 		}
+
 		if (ldb_res->count) {
-			pRows->cRows = ldb_res->count;
-			pRows->aRow = talloc_array(mem_ctx, struct SRow, ldb_res->count);
+			pRows->cRows = ldb_res->count - r->in.pStat->NumPos;
+			pRows->aRow = talloc_array(mem_ctx, struct SRow, pRows->cRows);
 		}
 
 		/* fetch required attributes for every entry found */
-		for (i = 0; i < ldb_res->count; i++) {
-			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &(pRows->aRow[i]),
+		for (i = r->in.pStat->NumPos; i < ldb_res->count; i++) {
+			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &(pRows->aRow[i-r->in.pStat->NumPos]),
 							     ldb_res->msgs[i], 0, r->in.dwFlags, pPropTags);
 			if (!MAPI_STATUS_IS_OK(retval)) {
 				goto failure;
 			}
 		}
+		r->in.pStat->NumPos = r->in.pStat->Delta + pRows->cRows;
+		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
+		r->in.pStat->TotalRecs = pRows->cRows;
+		r->in.pStat->Delta = 0;
 	} else {
 		/* Step 2.2 Fill ppRows for supplied table of MIds */
 		pRows->cRows = r->in.dwETableCount;
 		pRows->aRow = talloc_array(mem_ctx, struct SRow, r->in.dwETableCount);
-		for (i = 0; i < r->in.dwETableCount; i++) {
-			retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
-			if (retval != MAPI_E_SUCCESS) {
-				goto failure;
+		if (pRows->cRows) {
+			r->in.pStat->CurrentRec = r->in.lpETable[0];
+			for (i = r->in.pStat->NumPos; i < r->in.dwETableCount; i++) {
+				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
+				if (retval != MAPI_E_SUCCESS) {
+					goto failure;
+				}
 			}
 		}
 	}
@@ -422,9 +430,6 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	*r->out.ppRows = pRows;
 
 	memcpy(r->out.pStat, r->in.pStat, sizeof (struct STAT));
-	r->out.pStat->TotalRecs = pRows->cRows;
-	r->out.pStat->NumPos = r->out.pStat->Delta + pRows->cRows;
-	r->out.pStat->CurrentRec = MID_END_OF_TABLE;
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 failure:

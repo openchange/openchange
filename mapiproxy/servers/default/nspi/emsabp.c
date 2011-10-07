@@ -382,7 +382,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
 	OPENCHANGE_RETVAL_IF(!bin, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Remove const char * size and replace it with effective dn string length */
-	bin->cb = sizeof (*permEntryID) - 4 + strlen(permEntryID->dn) + 1;
+	bin->cb = 28 + strlen(permEntryID->dn) + 1;
 	bin->lpb = talloc_array(mem_ctx, uint8_t, bin->cb);
 
 	/* Copy PermanantEntryID intro bin->lpb */

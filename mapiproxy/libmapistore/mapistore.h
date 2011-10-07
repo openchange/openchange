@@ -276,7 +276,7 @@ int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, vo
 
 /* definitions from mapistore_mgmt.c */
 struct mapistore_mgmt_context *mapistore_mgmt_init(TALLOC_CTX *, const char *);
-int mapistore_mgmt_registered_backend(const char *);
+int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const char *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

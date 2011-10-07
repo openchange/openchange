@@ -1652,6 +1652,18 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 	}
 }
 
+_PUBLIC_ void ndr_print_Binary_r(struct ndr_print *ndr, const char *name, const struct Binary_r *r)
+{
+	ndr->print(ndr, "%-25s: Binary_r cb=%u", name, (unsigned)r->cb);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		dump_data(0, r->lpb, r->cb);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
 
 _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint32_t r)
 {

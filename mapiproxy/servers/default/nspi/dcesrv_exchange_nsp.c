@@ -235,12 +235,95 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
    \return MAPI_E_SUCCESS on success
 */
-static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, 
-					     TALLOC_CTX *mem_ctx,
-					     struct NspiUpdateStat *r)
+static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2) not implemented\n"));
-	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	uint32_t			row, row_max;
+	TALLOC_CTX			*local_mem_ctx;
+	struct SPropTagArray		*mids;
+
+	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
+
+	/* HACK: Disable authentication */
+	/* Step 0. Ensure incoming user is authenticated */
+//	if (!dcesrv_call_authenticated(dce_call)) {
+//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+//	}
+
+	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
+	if (!emsabp_ctx) {
+		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
+	}
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
+		retval = MAPI_E_INVALID_BOOKMARK;
+		goto end;
+	}
+
+	mids = talloc_zero(mem_ctx, struct SPropTagArray);
+	if (emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
+		row_max = 0;
+	}
+	else {
+		row_max = mids->cValues;
+	}
+
+	if (r->in.pStat->CurrentRec == MID_CURRENT) {
+		/* Fractional positioning (3.1.1.4.2) */
+		row = r->in.pStat->NumPos * row_max / r->in.pStat->TotalRecs;
+		if (row > row_max) {
+			row = row_max;
+		}
+	}
+	else {
+		if (r->in.pStat->CurrentRec == MID_BEGINNING_OF_TABLE) {
+			row = 0;
+		}
+		else if (r->in.pStat->CurrentRec == MID_END_OF_TABLE) {
+			row = row_max;
+		}
+		else {
+			retval = MAPI_E_NOT_FOUND;
+			while (row < row_max) {
+				if ((uint32_t) mids->aulPropTag[row] == (uint32_t) r->in.pStat->CurrentRec) {
+					retval = MAPI_E_SUCCESS;
+				}
+				else {
+					row++;
+				}
+			}
+			if (retval == MAPI_E_NOT_FOUND) {
+				goto end;
+			}
+		}
+	}
+
+	if (-r->in.pStat->Delta > row) {
+		row = 0;
+		r->in.pStat->CurrentRec = mids->aulPropTag[row];
+	}
+	else if (r->in.pStat->Delta + row >= row_max) {
+		row = row_max;
+		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
+	}
+	else {
+		row += r->in.pStat->Delta;
+		r->in.pStat->CurrentRec = mids->aulPropTag[row];
+	}
+
+	r->in.pStat->Delta = 0;
+	r->in.pStat->NumPos = row;
+	r->in.pStat->TotalRecs = row_max;
+
+end:
+	r->out.pStat = r->in.pStat;
+
+	DCESRV_NSP_RETURN(r, retval, local_mem_ctx);
 }
 
 /**

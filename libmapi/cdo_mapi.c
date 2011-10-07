@@ -249,7 +249,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const c
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Initialize dcerpc subsystem */
-	dcerpc_init(mapi_ctx->lp_ctx);
+	dcerpc_init();
 
 	errno = 0;
 	

@@ -61,6 +61,9 @@ dn: CASE_INSENSITIVE
         self.reopen()
 
     def add_rootDSE(self, ocserverdn, firstorg, firstou):
+	print ocserverdn
+	print firstorg
+	print firstou
         self.ldb.add({"dn": "@ROOTDSE",
                       "defaultNamingContext": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
                       "rootDomainNamingContext": ocserverdn,

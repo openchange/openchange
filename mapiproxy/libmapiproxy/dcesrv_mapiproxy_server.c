@@ -233,7 +233,7 @@ _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 	init_module_fn		*servers;
 	NTSTATUS		ret;
 
-	servers = load_samba_modules(NULL, dce_ctx->lp_ctx, "dcerpc_mapiproxy_server");
+	servers = load_samba_modules(NULL, "dcerpc_mapiproxy_server");
 
 	run_init_functions(servers);
 	talloc_free(servers);
@@ -367,8 +367,8 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	}
 
 	/* Step 2. Search for the rootDSE record */
-	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, NULL,
-			 LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=@ROOTDSE)");
+	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, openchange_ldb_ctx, "@ROOTDSE"),
+			  LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return NULL;

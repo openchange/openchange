@@ -229,11 +229,17 @@ System Attendant Private Interface
 		SortTypeDisplayName_W		= 0x000003E9
 	} TableSortOrders;
 
+	typedef [v1_enum] enum {
+		MID_BEGINNING_OF_TABLE	= 0x0,
+		MID_END_OF_TABLE	= 0x2,
+		MID_CURRENT		= 0x1
+	} NSPI_MID;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		TableSortOrders	SortType;
 		uint32		ContainerID;
-		uint32		CurrentRec;
-		uint32		Delta;
+		NSPI_MID	CurrentRec;
+		int32		Delta;
 		uint32		NumPos;
 		uint32		TotalRecs;
 		uint32		CodePage;
@@ -281,7 +287,7 @@ System Attendant Private Interface
 		[size_is(cValues+1),length_is(cValues)] MAPITAGS	aulPropTag[];
 	} SPropTagArray;
 
-	typedef [public] struct {
+	typedef [public,noprint] struct {
 		[range(0,2097152)] uint32      	cb;
 		[size_is(cb)] uint8		*lpb;
 	} Binary_r;

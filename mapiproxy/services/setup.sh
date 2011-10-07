@@ -1,7 +1,5 @@
 #!/bin/bash
 
-PACKAGE="posix_ipc-0.9.1"
-
 echo '[*] Installing virtualenv'
 sudo easy_install virtualenv
 

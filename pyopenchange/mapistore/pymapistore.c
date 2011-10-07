@@ -142,8 +142,11 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	PyMAPIStoreMGMTObject	*obj;
 
 	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
-	obj->mgmt_ctx = talloc_zero(self->mem_ctx, struct mapistore_mgmt_context);
-	obj->mgmt_ctx->mstore_ctx = self->mstore_ctx;
+	obj->mgmt_ctx = mapistore_mgmt_init(self->mstore_ctx);
+	if (obj->mgmt_ctx == NULL) {
+		PyErr_MAPIStore_IS_ERR_RAISE(MAPISTORE_ERR_NOT_INITIALIZED);
+		return NULL;
+	}
 	obj->mem_ctx = self->mem_ctx;
 	obj->parent = self;
 

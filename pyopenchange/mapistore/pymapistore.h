@@ -85,7 +85,7 @@ void PyErr_SetMAPIStoreError(uint32_t);
 __END_DECLS
 
 #define PyErr_MAPIStore_IS_ERR_RAISE(retval)		\
-	if (ret != MAPISTORE_SUCCESS) {			\
+	if (retval != MAPISTORE_SUCCESS) {		\
 		PyErr_SetMAPIStoreError(retval);	\
 		return NULL;				\
         }

@@ -35,23 +35,22 @@
 /**
    \details Initialize a mapistore manager context.
 
-   \param mem_ctx pointer to the memory context
-   \param path pointer to folder where mapistore backends are
-   installed
+   \param mstore_ctx Pointer to an existing mapistore_context
 
    \return allocated mapistore_mgmt context on success, otherwise NULL
  */
-_PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(TALLOC_CTX *mem_ctx, const char *path)
+_PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *mstore_ctx)
 {
 	struct mapistore_mgmt_context	*mgmt_ctx;
 
-	mgmt_ctx = talloc_zero(mem_ctx, struct mapistore_mgmt_context);
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mgmt_ctx = talloc_zero(mstore_ctx, struct mapistore_mgmt_context);
 	if (!mgmt_ctx) {
 		return NULL;
 	}
 
-	mgmt_ctx->mstore_ctx = mapistore_init(mem_ctx, NULL);
-	if (!mgmt_ctx->mstore_ctx) return NULL;
+	mgmt_ctx->mstore_ctx = mstore_ctx;
 
 	return mgmt_ctx;
 }

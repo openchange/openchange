@@ -10,6 +10,9 @@ class NotificationModel:
         (error, xmlData) = validateDocXML(payload)
         if error is True: return (error, xmlData)
 
+        # Retrieve MAPIStore management object
+        mgmt = config['mapistore']
+
         # Initialize dictionary
         params = {}
 
@@ -22,6 +25,7 @@ class NotificationModel:
         # backend parameter
         param = notification.find('backend')
         if param is None or param.text is None: return (True, 'Invalid/Missing backend parameter')
+        if mgmt.registered_backend(param.text) is False: return (True, 'Specified backend is invalid')
         params['backend'] = param.text
 
         # username parameter

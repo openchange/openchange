@@ -131,7 +131,6 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 {
 	PyMAPIStoreObject *self = (PyMAPIStoreObject *)_self;
 
-	printf("py_MAPIStore_dealloc\n");
 	mapistore_release(self->mstore_ctx);
 	talloc_free(self->mem_ctx);
 	PyObject_Del(_self);
@@ -150,8 +149,7 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	obj->mem_ctx = self->mem_ctx;
 	obj->parent = self;
 
-	Py_INCREF(obj->parent);
-	Py_INCREF(obj);
+	Py_INCREF(self);
 
 	return (PyObject *) obj;
 }
@@ -175,16 +173,21 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	/* Initialize connection info */
 	ret = mapistore_set_connection_info(self->mstore_ctx, self->ocdb_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
-		return Py_None;
+		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		return NULL;
 	}
 
 	/* Get FID given mapistore_uri and username */
 	ret = openchangedb_get_fid(self->ocdb_ctx, uri, &fid);
-	if (ret != MAPISTORE_SUCCESS) return Py_None;
+	if (ret != MAPISTORE_SUCCESS) {
+		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		return NULL;
+	}
 
 	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
 	if (ret != MAPISTORE_SUCCESS) {
-		return Py_None;
+		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		return NULL;
 	}
 
 	context = PyObject_New(PyMAPIStoreContextObject, &PyMAPIStoreContext);

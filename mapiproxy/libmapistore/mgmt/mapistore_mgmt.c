@@ -34,30 +34,12 @@
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
+static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
+				    DATA_BLOB data)
 {
-	struct mapistore_mgmt_context	*mgmt_ctx;
 	struct mapistore_mgmt_user_cmd	user_cmd;
-	struct mq_attr			attr;
-	DATA_BLOB			data;
-	unsigned int			prio;
 	struct ndr_pull			*ndr_pull = NULL;
 	struct ndr_print		*ndr_print;
-
-	printf("NOTIFIED\n");
-
-	mgmt_ctx = (struct mapistore_mgmt_context *)info->si_value.sival_ptr;
-
-	if (mq_getattr(mgmt_ctx->mq_users, &attr) != 0) {
-		perror("mq_getattr");
-		return;
-	}
-
-	data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio);
-	if (data.length == -1) {
-		perror("mq_receive");
-		return;
-	}
 
 	ndr_pull = ndr_pull_init_blob(&data, (TALLOC_CTX *)mgmt_ctx);
 	ndr_pull_mapistore_mgmt_user_cmd(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &user_cmd);
@@ -71,6 +53,55 @@ static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
 	talloc_free(ndr_pull);
 }
 
+static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
+{
+	struct mapistore_mgmt_context	*mgmt_ctx;
+	struct mq_attr			attr;
+	struct sigevent			se;
+	DATA_BLOB			data;
+	unsigned int			prio;
+
+	mgmt_ctx = (struct mapistore_mgmt_context *)info->si_value.sival_ptr;
+
+	if (mq_getattr(mgmt_ctx->mq_users, &attr) != 0) {
+		perror("mq_getattr");
+		return;
+	}
+
+	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
+	data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio);
+	if (data.length == -1) {
+		talloc_free(data.data);
+		perror("mq_receive");
+		return;
+	}
+	mgmt_user_process_notif(mgmt_ctx, data);
+	talloc_free(data.data);
+
+	/* Reset notification as it resets each time */
+	se.sigev_signo = info->si_signo;
+	se.sigev_value = info->si_value;
+	se.sigev_notify = SIGEV_SIGNAL;
+	if (mq_notify(mgmt_ctx->mq_users, &se) == -1) {
+		perror("mq_notify");
+		return;
+	}
+
+	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
+	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, NULL)) != -1) {
+		if (data.length == -1) {
+			talloc_free(data.data);
+			return;
+		} else {
+			mgmt_user_process_notif(mgmt_ctx, data);
+			talloc_free(data.data);
+			data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
+		}
+	}
+
+	talloc_free(data.data);
+}
+
 /**
    \details Initialize a mapistore manager context.
 
@@ -81,6 +112,10 @@ static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
 _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *mstore_ctx)
 {
 	struct mapistore_mgmt_context	*mgmt_ctx;
+	int				ret;
+	unsigned int			prio;
+	DATA_BLOB			data;
+	struct mq_attr			attr;
 	struct sigaction		sa;
 	struct sigevent			se;
 
@@ -117,9 +152,53 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 		return NULL;
 	}
 
+	/* Empty queue since new notification only occurs flushed/empty queue */
+	ret = mq_getattr(mgmt_ctx->mq_users, &attr);
+	if (ret == -1) {
+		perror("mq_getattr");
+		return mgmt_ctx;
+	}
+	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
+
+	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		mgmt_user_process_notif(mgmt_ctx, data);
+		talloc_free(data.data);
+		data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
+	}
+	talloc_free(data.data);
+
 	return mgmt_ctx;
 }
 
+
+/**
+   \details Release  the mapistore management context  and destory any
+   data associated.
+
+   \param mgmt_ctx pointer to the mapistore management context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mgmt_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	if (mq_close(mgmt_ctx->mq_users) == -1) {
+		perror("mq_close");
+		talloc_free(mgmt_ctx);
+		return MAPISTORE_SUCCESS;
+	}
+
+	if (mq_unlink(MAPISTORE_MQUEUE_USER) == -1) {
+		perror("mq_unlink");
+	}
+
+	talloc_free(mgmt_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Check if the specified backend is registered in mapistore

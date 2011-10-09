@@ -28,6 +28,8 @@ static void py_MAPIStoreMGMT_dealloc(PyObject *_self)
 {
 	PyMAPIStoreMGMTObject *self = (PyMAPIStoreMGMTObject *)_self;
 
+	mapistore_mgmt_release(self->mgmt_ctx);
+
 	Py_DECREF(self->parent);
 	PyObject_Del(_self);
 }

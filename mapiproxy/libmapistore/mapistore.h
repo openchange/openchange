@@ -37,9 +37,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
-#include <fcntl.h>
 #include <mqueue.h>
-#include <signal.h>
 
 #include <tdb.h>
 #include <ldb.h>
@@ -213,11 +211,6 @@ struct mapistore_context {
 	mqd_t					mq_users;
 };
 
-struct mapistore_mgmt_context {
-	struct mapistore_context		*mstore_ctx;
-	mqd_t					mq_users;
-};
-
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -278,13 +271,6 @@ int mapistore_table_handle_destructor(struct mapistore_context *, uint32_t, void
 int mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
-
-/* definitions from mapistore_mgmt.c */
-struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *);
-int mapistore_mgmt_release(struct mapistore_mgmt_context *);
-int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const char *);
-int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
-int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);

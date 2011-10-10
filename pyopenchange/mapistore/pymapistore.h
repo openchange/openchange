@@ -25,6 +25,7 @@
 #include <Python.h>
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <tevent.h>
 

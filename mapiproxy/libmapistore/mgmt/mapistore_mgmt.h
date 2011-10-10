@@ -73,9 +73,9 @@ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *);
 int mapistore_mgmt_release(struct mapistore_mgmt_context *);
 int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const char *);
 struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struct mapistore_mgmt_context *, const char *, const char *);
-int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
-int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *, bool);
+
+int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, char **);
 
 __END_DECLS
 

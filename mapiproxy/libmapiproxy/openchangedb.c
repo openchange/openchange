@@ -1187,7 +1187,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	/* Step 2. Ensure position is within search results range */
-	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);
+	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, mem_ctx);
 
 	/* Step 3. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
@@ -1364,5 +1364,30 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 	talloc_free(mem_ctx);
 
+	return MAPI_E_SUCCESS;
+}
+
+
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *ldb_ctx,
+							       const char *partialURI,
+							       uint64_t *fid)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_fid_from_partial_uri");
+
+	/* Search mapistoreURI given partial URI */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", partialURI);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(res->count > 1, MAPI_E_COLLISION, mem_ctx);
+
+	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
+	talloc_free(mem_ctx);
+	
 	return MAPI_E_SUCCESS;
 }

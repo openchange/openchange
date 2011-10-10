@@ -460,3 +460,48 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
 	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_UNREGISTER,
 					  31, conn_info, backend, vuser);
 }
+
+
+/**
+   \details Retrieves a partial or complete URI from the backend
+   depending on the specified parameters. This function is used by the
+   mapistore management interface to get from backend either the
+   expected URI for further registration or a partial (backend
+   compliant) URI for partial search.
+
+   \param mgmt_ctx Pointer to the mapistore management context
+   \param backend the name of the backend
+   \param username the name of the user in the backend
+   \param folder the name of the folder in the backend
+   \param message the name of the message in the backend
+   \param uri pointer on pointer to the URI to return
+
+   \note The returned uri is allocated and needs to be free'd using
+   talloc_free() upon end of use.
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx,
+					 const char *backend, const char *username,
+					 const char *folder, const char *message, 
+					 char **uri)
+{
+	struct backend_context *backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	backend_ctx = mapistore_backend_lookup_by_name((TALLOC_CTX *)mgmt_ctx, backend);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mapistore_backend_manager_generate_uri(backend_ctx, (TALLOC_CTX *)mgmt_ctx, username, 
+					       folder, message, uri);
+
+	/* We are not really deleting a context, but freeing the
+	 * allocated memory to backend_ctx */
+	mapistore_backend_delete_context(backend_ctx);
+
+	return MAPISTORE_SUCCESS;
+}

@@ -177,6 +177,11 @@ struct mapistore_backend {
                 int		(*get_properties)(void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 int		(*set_properties)(void *, struct SRow *);
         } properties;
+
+	/** manager operations */
+	struct {
+		int		(*generate_uri)(TALLOC_CTX *, const char *, const char *, const char *, char **);
+	} manager;
 };
 
 struct indexing_context_list;
@@ -281,6 +286,7 @@ const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
+struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const char *);
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_indexing.c */
@@ -299,6 +305,10 @@ _PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
 int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
+
+/* definitions from mapistore_mgmt.c */
+int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

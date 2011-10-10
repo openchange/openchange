@@ -86,6 +86,35 @@ static PyObject *py_MAPIStoreMGMT_registered_users(PyMAPIStoreMGMTObject *self, 
 	return (PyObject *)dict;
 }
 
+static PyObject *py_MAPIStoreMGMT_get_folderID(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	int		ret;
+	const char	*backend;
+	const char	*sysuser;
+	const char	*user;
+	const char	*folder;
+	char		*uri;
+	uint64_t	fid;
+
+	if (!PyArg_ParseTuple(args, "ssss", &backend, &sysuser, &user, &folder)) {
+		return NULL;
+	}
+
+	ret = mapistore_mgmt_generate_uri(self->mgmt_ctx, backend, user, folder, NULL, &uri);
+	printf("uri = %s\n", uri);
+	if (ret != MAPISTORE_SUCCESS) {
+		return PyLong_FromLongLong(-1);
+	}
+
+	ret = openchangedb_get_fid_from_partial_uri(self->parent->ocdb_ctx,
+						    uri, &fid);
+	if (ret != MAPI_E_SUCCESS) {
+		return PyLong_FromLongLong(-1);
+	}
+
+	return PyLong_FromLongLong(fid);
+}
+
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
 {
 	return PyBool_FromLong(self->mgmt_ctx->verbose);
@@ -102,6 +131,7 @@ static int obj_set_verbose(PyMAPIStoreMGMTObject *self, PyObject *verbose, void 
 static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
+	{ "folderID", (PyCFunction)py_MAPIStoreMGMT_get_folderID, METH_VARARGS },
 	{ NULL },
 };
 

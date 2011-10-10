@@ -353,6 +353,55 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	return MAPISTORE_SUCCESS;	
 }
 
+/**
+   \details Retrieve the list of registered usernames
+
+   \param mgmt_ctx pointer to the mapistore management context
+   \param backend the name of the backend to lookup
+   \param vuser the name of the virtual user to lookup
+
+   \return Allocated mapistore management user list on success, otherwise NULL
+ */
+_PUBLIC_ struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struct mapistore_mgmt_context *mgmt_ctx,
+									   const char *backend,
+									   const char *vuser)
+{
+	struct mapistore_mgmt_users_list	*ulist = NULL;
+	struct mapistore_mgmt_users		*el;
+	bool					found = false;
+	int					i;
+
+	/* Sanity checks */
+	if (!mgmt_ctx) return NULL;
+	if (!mgmt_ctx->users) return NULL;
+	if (!backend) return NULL;
+	if (!vuser) return NULL;
+	
+	ulist = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users_list);
+	ulist->count = 0;
+	ulist->user = (const char **) talloc_array((TALLOC_CTX *)ulist, char *, ulist->count + 1);
+	for (el = mgmt_ctx->users; el; el = el->next) {
+		if (!strcmp(el->info->backend, backend) && !strcmp(el->info->vuser, vuser)) {
+			/* Check if the user hasn't already been inserted */
+			for (i = 0; i != ulist->count; i++) {
+				if (ulist->user && !strcmp(ulist->user[i], el->info->username)) {
+					found = true;
+					break;
+				}
+			}
+			if (found == false) {
+				ulist->user = (const char **) talloc_realloc(ulist->user, ulist->user, 
+									     char *, ulist->count + 1);
+				ulist->user[ulist->count] = talloc_strdup((TALLOC_CTX *) ulist->user, 
+									  el->info->username);
+				ulist->count += 1;
+			}
+		}
+	}
+
+	return (ulist);
+}
+
 
 /**
    \details Register the mapping between a system user and a backend

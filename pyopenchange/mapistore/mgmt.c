@@ -28,6 +28,7 @@ static void py_MAPIStoreMGMT_dealloc(PyObject *_self)
 {
 	PyMAPIStoreMGMTObject *self = (PyMAPIStoreMGMTObject *)_self;
 
+	printf("deallocate MGMT object\n");
 	mapistore_mgmt_release(self->mgmt_ctx);
 
 	Py_DECREF(self->parent);
@@ -48,8 +49,46 @@ static PyObject *py_MAPIStoreMGMT_registered_backend(PyMAPIStoreMGMTObject *self
 
 }
 
+static PyObject *py_MAPIStoreMGMT_registered_users(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	PyObject				*dict;
+	PyObject				*userlist;
+	const char				*backend;
+	const char				*vuser;
+	struct mapistore_mgmt_users_list	*ulist;
+	int					i;
+
+	if (!PyArg_ParseTuple(args, "ss", &backend, &vuser)) {
+		return NULL;
+	}
+
+	dict = PyDict_New();
+	PyDict_SetItemString(dict, "backend", PyString_FromString(backend));
+	PyDict_SetItemString(dict, "user", PyString_FromString(vuser));
+	
+	ulist = mapistore_mgmt_registered_users(self->mgmt_ctx, backend, vuser);
+	userlist = PyList_New(0);
+
+	if (ulist && ulist->count != 0) {
+		PyDict_SetItem(dict, PyString_FromString("count"), PyLong_FromLong(ulist->count));
+		for (i = 0; i < ulist->count; i++) {
+			PyList_Append(userlist, PyString_FromString(ulist->user[i]));
+		}
+	} else {
+		PyDict_SetItem(dict, PyString_FromString("count"), PyLong_FromLong(0));
+	}
+	PyDict_SetItem(dict, PyString_FromString("usernames"), userlist);
+
+	if (ulist) {
+		talloc_free(ulist);
+	}
+
+	return (PyObject *)dict;
+}
+
 static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
+	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
 	{ NULL },
 };
 

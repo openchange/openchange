@@ -28,6 +28,7 @@
 #include <mqueue.h>
 #include <stdint.h>
 #include <signal.h>
+#include <stdbool.h>
 
 #include <dlinklist.h>
 
@@ -52,6 +53,7 @@ struct mapistore_mgmt_context {
 	struct mapistore_context	*mstore_ctx;
 	struct mapistore_mgmt_users	*users;
 	mqd_t				mq_users;
+	bool				verbose;
 };
 
 #ifndef __BEGIN_DECLS
@@ -73,6 +75,7 @@ int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const cha
 struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struct mapistore_mgmt_context *, const char *, const char *);
 int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
 int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *, bool);
 
 __END_DECLS
 

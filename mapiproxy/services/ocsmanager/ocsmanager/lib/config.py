@@ -56,6 +56,10 @@ class OCSConfig(object):
         self.__get_option('main', 'auth', 'auth', 'type')
         self.__get_option('main', 'mapistore_root')
         self.__get_option('main', 'mapistore_data')
+        self.__get_option('main', 'debug')
+        if self.d['main']['debug'] != "yes" and self.d['main']['debug'] != "no":
+            log.error("%s: invalid debug value: %s. Must be set to yes or no", self.config, self.d['main']['debug'])
+            sys.exit()
         
         if not self.cfg.has_section('auth:%s' % self.d['auth']['type']):
             log.error("%s: Missing [auth:%s] section", self.config, self.d['auth']['type'])

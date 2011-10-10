@@ -40,17 +40,20 @@ static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 	struct mapistore_mgmt_user_cmd	user_cmd;
 	struct mapistore_mgmt_users	*el;
 	struct ndr_pull			*ndr_pull = NULL;
-	struct ndr_print		*ndr_print;
 	bool				found = false;
 
 	ndr_pull = ndr_pull_init_blob(&data, (TALLOC_CTX *)mgmt_ctx);
 	ndr_pull_mapistore_mgmt_user_cmd(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &user_cmd);
 
-	ndr_print = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct ndr_print);
-	ndr_print->print = ndr_print_printf_helper;
-	ndr_print->depth = 1;
-	ndr_print_mapistore_mgmt_user_cmd(ndr_print, "user command", &user_cmd);
-	talloc_free(ndr_print);
+	if (mgmt_ctx->verbose == true) {
+		struct ndr_print	*ndr_print;
+
+		ndr_print = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_printf_helper;
+		ndr_print->depth = 1;
+		ndr_print_mapistore_mgmt_user_cmd(ndr_print, "user command", &user_cmd);
+		talloc_free(ndr_print);
+	}
 
 	if (user_cmd.backend == NULL ||
 	    user_cmd.username == NULL ||
@@ -219,6 +222,7 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	}
 
 	mgmt_ctx->mstore_ctx = mstore_ctx;
+	mgmt_ctx->verbose = false;
 	mgmt_ctx->users = NULL;
 	mgmt_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mgmt_ctx->mq_users == -1) {
@@ -290,6 +294,23 @@ _PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
 
 	talloc_free(mgmt_ctx);
 
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Set mapistore management verbosity
+
+   \param mgmt_ctx pointer to the mapistore management context
+   \param verbose boolean value that sets or unset verbosity
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *mgmt_ctx, bool verbose)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	mgmt_ctx->verbose = verbose;
 	return MAPISTORE_SUCCESS;
 }
 

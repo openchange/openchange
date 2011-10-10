@@ -86,6 +86,19 @@ static PyObject *py_MAPIStoreMGMT_registered_users(PyMAPIStoreMGMTObject *self, 
 	return (PyObject *)dict;
 }
 
+static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
+{
+	return PyBool_FromLong(self->mgmt_ctx->verbose);
+}
+
+static int obj_set_verbose(PyMAPIStoreMGMTObject *self, PyObject *verbose, void *closure)
+{
+	if (!PyBool_Check(verbose))
+		return -1;
+	if (mapistore_mgmt_set_verbosity(self->mgmt_ctx, PyLong_AsLong(verbose)) != MAPISTORE_SUCCESS) return -1;
+	return 0;
+}
+
 static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
@@ -93,6 +106,8 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 };
 
 static PyGetSetDef mapistore_mgmt_getsetters[] = {
+	{ (char *)"verbose", (getter)obj_get_verbose, (setter)obj_set_verbose, 
+	  "Enable/Disable verbosity for management object" },
 	{ NULL }
 };
 

@@ -31,7 +31,10 @@ class NotificationModel:
         # username parameter
         param = notification.find('username')
         if param is None or param.text is None: return (True, 'Invalid/Missing username parameter')
-        params['username'] = param.text
+        d = mgmt.registered_users(params['backend'], param.text)
+        if d["count"] == 0: return (True, 'Unregistered user')
+        params['vuser'] = param.text
+        params['usernames'] = d["usernames"]
 
         # folder parameter
         param = notification.find('folder')

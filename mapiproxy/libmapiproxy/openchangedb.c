@@ -418,13 +418,23 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(void *ldb_ctx, const char *mapisto
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
 	const char * const	attrs[] = { "*", NULL };
+	char			*slashLessURL;
+	size_t			len;
 	int			ret;
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_get_fid");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", mapistoreURL);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	if (ret != LDB_SUCCESS || !res->count) {
+		len = strlen(mapistoreURL);
+		if (mapistoreURL[len-1] == '/') {
+			slashLessURL = talloc_strdup(mem_ctx, mapistoreURL);
+			slashLessURL[len-1] = 0;
+			ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", slashLessURL);
+		}
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	}
 	*fidp = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 
 	talloc_free(mem_ctx);

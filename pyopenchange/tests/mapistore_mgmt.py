@@ -38,5 +38,6 @@ mgmt = MAPIStore.management()
 #    print d
 print "Is SOGo backend registered: %s" % mgmt.registered_backend("SOGo")
 print "Is NonExistent backend registered: %s" % mgmt.registered_backend("NonExistent")
-print "%s" % hex(mgmt.folderID("SOGo", "Administrator", "Administrator", "calendar"))
+print "Registered message: %s" % mgmt.registered_message("SOGo", "Administrator", "Administrator", "inbox", "61")
+print "Registered message: %s" % mgmt.registered_message("SOGo", "Administrator", "Administrator", "inbox", "74")
 

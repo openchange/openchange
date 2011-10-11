@@ -352,7 +352,7 @@ _PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const
 
 	ret = openchangedb_get_fid(emsmdbp_ctx->oc_ctx, uri, fidp);
 	if (ret != MAPI_E_SUCCESS) {
-		ret = mapistore_indexing_record_get_fmid(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, uri, fidp, &soft_deleted);
+		ret = mapistore_indexing_record_get_fmid(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, uri, false, fidp, &soft_deleted);
 	}
 
 	return ret;

@@ -295,7 +295,7 @@ int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
-int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, uint64_t *, bool *);
+int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 
 /* definitions from mapistore_replica_mapping.c */
 _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *);

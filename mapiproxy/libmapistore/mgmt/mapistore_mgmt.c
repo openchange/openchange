@@ -505,3 +505,53 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
 
 	return MAPISTORE_SUCCESS;
 }
+
+
+/**
+   \details Check if a message is already registered within indexing
+   database for the user.
+
+   \param mgmt_ctx Pointer to the mapistore management context
+   \param backend the name of the backend
+   \param sysuser the name of the mapistore user (openchange)
+   \param username the name of the user on the remote system the
+   backend manages
+   \param folder the name of the folder on the remote system the
+   backend manages
+   \param message the name of the message on the remote system the
+   backend manages
+
+   \return true if the message is registered, otherwise false
+ */
+_PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mgmt_ctx,
+					       const char *backend, const char *sysuser,
+					       const char *username,
+					       const char *folder, const char *message)
+{
+	struct indexing_context_list	*ictxp;
+	char				*uri;
+	int				ret;
+	uint64_t			mid;
+	bool				retval;
+	bool				softdeleted;
+
+	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, username, folder, message, &uri);
+	if (ret != MAPISTORE_SUCCESS) return false;
+	
+	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
+	if (ret != MAPISTORE_SUCCESS) {
+		talloc_free(uri);
+		return false;
+	}
+
+	ret = mapistore_indexing_record_get_fmid(mgmt_ctx->mstore_ctx, sysuser, uri, true, &mid, &softdeleted);
+	if (ret == MAPISTORE_SUCCESS) {
+		retval = true;
+	} else {
+		retval = false;
+	}
+
+	talloc_free(uri);
+	talloc_free(ictxp);
+	return retval;
+}

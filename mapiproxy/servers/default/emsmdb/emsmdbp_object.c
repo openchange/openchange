@@ -248,7 +248,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
 		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
 		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
-		ldb_msg_add_fmt(msg, "mapistore_uri", "sogo://%s:%s@fallback/0x%.16"PRIx64,
+		ldb_msg_add_fmt(msg, "MAPIStoreURI", "sogo://%s:%s@fallback/0x%.16"PRIx64,
 				emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
 		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
 

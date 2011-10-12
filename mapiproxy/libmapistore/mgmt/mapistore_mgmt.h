@@ -72,11 +72,12 @@ __BEGIN_DECLS
 struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_context *);
 int mapistore_mgmt_release(struct mapistore_mgmt_context *);
 int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *, const char *);
+struct mapistore_mgmt_users_list *mapistore_mgmt_existing_users(struct mapistore_mgmt_context *, void *, const char *, const char *, const char *);
 struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struct mapistore_mgmt_context *, const char *, const char *);
 int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *, bool);
 
-int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, char **);
-int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *, const char *, const char *, const char *,const char *, const char *);
+int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, const char *, char **);
+int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *, const char *, const char *, const char *,const char *, const char *, const char *);
 
 __END_DECLS
 

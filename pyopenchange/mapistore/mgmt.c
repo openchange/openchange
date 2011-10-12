@@ -93,15 +93,62 @@ static PyObject *py_MAPIStoreMGMT_registered_message(PyMAPIStoreMGMTObject *self
 	const char	*vuser;
 	const char	*folder;
 	const char	*message;
+	const char	*rootURI;
 	int		ret;
 
-	if (!PyArg_ParseTuple(args, "sssss", &backend, &sysuser, &vuser, &folder, &message)) {
+	if (!PyArg_ParseTuple(args, "ssszzs", &backend, &sysuser, &vuser, &folder, &rootURI, &message)) {
 		return NULL;
 	}
 
-	ret = mapistore_mgmt_registered_message(self->mgmt_ctx, backend, sysuser, vuser, folder, message);
+	ret = mapistore_mgmt_registered_message(self->mgmt_ctx, backend, sysuser, vuser, folder, rootURI, message);
 
 	return PyBool_FromLong(ret);
+}
+
+static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	PyObject	*dict;
+	PyObject	*userlist;
+	PyObject	*item;
+	char		**MAPIStoreURI;
+	char		**users;
+	uint32_t	count;
+	char		*uri;
+	const char	*backend;
+	const char	*vuser;
+	const char	*folder;
+	int		ret;
+	int		i;
+
+	if (!PyArg_ParseTuple(args, "sss", &backend, &vuser, &folder)) {
+		return NULL;
+	}	
+
+	dict = PyDict_New();
+	userlist = PyList_New(0);
+	PyDict_SetItemString(dict, "backend", PyString_FromString(backend));
+	PyDict_SetItemString(dict, "user", PyString_FromString(vuser));
+	PyDict_SetItemString(dict, "count", PyLong_FromLong(0));
+	PyDict_SetItem(dict, PyString_FromString("infos"), userlist);
+
+	ret = mapistore_mgmt_generate_uri(self->mgmt_ctx, backend, vuser, folder, NULL, NULL, &uri);
+	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
+	printf("uri: %s\n", uri);
+
+	ret = openchangedb_get_users_from_partial_uri(self->mgmt_ctx, self->parent->ocdb_ctx, uri, 
+						      &count, &MAPIStoreURI, &users);
+	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
+
+	PyDict_SetItemString(dict, "count", PyLong_FromLong(count));
+	for (i = 0; i != count; i++) {
+		item = PyDict_New();
+		PyDict_SetItemString(item, "username", PyString_FromString(users[i]));
+		PyDict_SetItemString(item, "mapistoreURI", PyString_FromString(MAPIStoreURI[i]));
+		PyList_Append(userlist, item);
+	}
+	PyDict_SetItem(dict, PyString_FromString("infos"), userlist);
+
+	return (PyObject *)dict;
 }
 
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
@@ -121,6 +168,7 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
 	{ "registered_message", (PyCFunction)py_MAPIStoreMGMT_registered_message, METH_VARARGS },
+	{ "existing_users", (PyCFunction)py_MAPIStoreMGMT_existing_users, METH_VARARGS },
 	{ NULL },
 };
 

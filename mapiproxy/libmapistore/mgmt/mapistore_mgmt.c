@@ -375,6 +375,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	return MAPISTORE_SUCCESS;	
 }
 
+
 /**
    \details Retrieve the list of registered usernames
 
@@ -484,8 +485,8 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
  */
 _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx,
 					 const char *backend, const char *username,
-					 const char *folder, const char *message, 
-					 char **uri)
+					 const char *folder, const char *message,
+					 const char *rootURI, char **uri)
 {
 	struct backend_context *backend_ctx;
 
@@ -498,7 +499,7 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mapistore_backend_manager_generate_uri(backend_ctx, (TALLOC_CTX *)mgmt_ctx, username, 
-					       folder, message, uri);
+					       folder, message, rootURI, uri);
 
 	/* We are not really deleting a context, but freeing the
 	 * allocated memory to backend_ctx */
@@ -526,8 +527,8 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
  */
 _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mgmt_ctx,
 					       const char *backend, const char *sysuser,
-					       const char *username,
-					       const char *folder, const char *message)
+					       const char *username, const char *folder, 
+					       const char *rootURI, const char *message)
 {
 	struct indexing_context_list	*ictxp;
 	char				*uri;
@@ -536,7 +537,7 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 	bool				retval;
 	bool				softdeleted;
 
-	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, username, folder, message, &uri);
+	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, username, folder, message, rootURI, &uri);
 	if (ret != MAPISTORE_SUCCESS) return false;
 
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
@@ -545,7 +546,13 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 		return false;
 	}
 
-	ret = mapistore_indexing_record_get_fmid(mgmt_ctx->mstore_ctx, sysuser, uri, true, &mid, &softdeleted);
+	if (rootURI) {
+		ret = mapistore_indexing_record_get_fmid(mgmt_ctx->mstore_ctx, sysuser, uri, false, 
+							 &mid, &softdeleted);
+	} else {
+		ret = mapistore_indexing_record_get_fmid(mgmt_ctx->mstore_ctx, sysuser, uri, true, 
+							 &mid, &softdeleted);
+	}
 	if (ret == MAPISTORE_SUCCESS) {
 		retval = true;
 	} else {

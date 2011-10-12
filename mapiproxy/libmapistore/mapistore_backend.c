@@ -666,7 +666,7 @@ int mapistore_backend_properties_set_properties(struct backend_context *bctx, vo
 
 int mapistore_backend_manager_generate_uri(struct backend_context *bctx, TALLOC_CTX *mem_ctx, 
 					   const char *username, const char *folder, 
-					   const char *message, char **uri)
+					   const char *message, const char *root_uri, char **uri)
 {
-	return bctx->backend->manager.generate_uri(mem_ctx, username, folder, message, uri);
+	return bctx->backend->manager.generate_uri(mem_ctx, username, folder, message, root_uri, uri);
 }

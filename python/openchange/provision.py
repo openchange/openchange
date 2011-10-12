@@ -381,7 +381,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         url = openchangedb_mapistore_url(lp, backend)
         fid = db.add_mailbox_special_folder(username, fids[path], foldername, 
                                             containerclass, GlobalCount, ChangeNumber, ReplicaID, 
-                                            url, openchangedb_suffix_for_mapistore_url(url))
+                                            url, openchangedb_suffix_for_mapistore_url(url), retdn)
         entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, GlobalCount)
         db.add_folder_property(fid_inbox, pidtag, entryid.encode("base64").strip())
         db.add_folder_property(fid_mailbox, pidtag, entryid.encode("base64").strip())

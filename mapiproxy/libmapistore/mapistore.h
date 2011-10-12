@@ -180,7 +180,7 @@ struct mapistore_backend {
 
 	/** manager operations */
 	struct {
-		int		(*generate_uri)(TALLOC_CTX *, const char *, const char *, const char *, char **);
+		int		(*generate_uri)(TALLOC_CTX *, const char *, const char *, const char *, const char *, char **);
 	} manager;
 };
 

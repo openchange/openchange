@@ -398,7 +398,8 @@ ChangeNumber: %d
                           "PidTagSubFolders": "TRUE",
                           "FolderType": str(1),
                           "PidTagAccess": str(63),
-                          "SystemIdx": str(SystemIdx)})           
+                          "SystemIdx": str(SystemIdx),
+                          "mailboxDN": str(ocuserdn)})           
         elif (foldername == "To-Do Search"):
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                           "objectClass": ["systemfolder", "container"],
@@ -416,7 +417,8 @@ ChangeNumber: %d
                           "PidTagSubFolders": "FALSE",
                           "FolderType": str(1),
                           "PidTagAccess": str(63),
-                          "SystemIdx": str(SystemIdx)})
+                          "SystemIdx": str(SystemIdx),
+                          "mailboxDN": str(ocuserdn)})           
         else:
             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
                           "objectClass": ["systemfolder"],
@@ -438,13 +440,14 @@ ChangeNumber: %d
                           "FolderType": str(1),
                           "PidTagAccess": str(63),
                           "PidTagRights":str(2043),
-                          "SystemIdx": str(SystemIdx)})
+                          "SystemIdx": str(SystemIdx),
+                          "mailboxDN": str(ocuserdn)})           
 
         return FID
 
     def add_mailbox_special_folder(self, username, parentfolder, 
                                    foldername, containerclass, GlobalCount, ChangeNumber, ReplicaID, 
-                                   mapistoreURL, mapistoreSuffix):
+                                   mapistoreURL, mapistoreSuffix, mailboxDN):
         """Add a special folder to the user mailbox
 
         :param username: Username object
@@ -456,6 +459,7 @@ ChangeNumber: %d
         :param ReplicaID: replica identifier for message database
         :param mapistoreURL: mapistore default content repository URI
         :param mapistoreSuffix: file type suffix to use with mapistore
+        :param mailboxDN: the DN of the user's mailbox
         """
 
         FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
@@ -486,7 +490,8 @@ ChangeNumber: %d
                       "PidTagRights": str(2043),
                       "PidTagContentUnreadCount": str(0),
                       "PidTagSubFolders": str(0),
-                      "FolderType": str(1)})
+                      "FolderType": str(1),
+                      "mailboxDN": str(mailboxDN)})
 
         return FID
 

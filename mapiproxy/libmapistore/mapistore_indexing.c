@@ -491,7 +491,7 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
 
 	tdb_data.startswith = NULL;
 	tdb_data.endswith = NULL;
-	tdb_data.wildcard_count = NULL;
+	tdb_data.wildcard_count = 0;
 
 	slash_ptr = tdb_data.uri + tdb_data.uri_len - 1;
 	if (*slash_ptr == '/') {

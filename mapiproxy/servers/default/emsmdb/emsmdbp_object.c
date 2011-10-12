@@ -177,8 +177,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_get_fid_by_name(struct emsmdbp_context *
 
 _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
 {
-	uint64_t			parentFolderID, testFolderID;
-	char				*parentDN, *dn;
+	uint64_t			parentFolderID;
+	uint64_t			testFolderID;
+	char				*parentDN;
+	char				*dn;
+	char				*mailboxDN;
 	struct ldb_dn			*basedn;
 	struct ldb_message		*msg;
 	struct SPropValue		*value;
@@ -224,6 +227,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		/* This part should be moved into openchangedb.c */
 		local_mem_ctx = talloc_zero(NULL, void);
 		retval = openchangedb_get_distinguishedName(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &parentDN);
+		retval = openchangedb_get_mailboxDN(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &mailboxDN);
 		dn = talloc_asprintf(local_mem_ctx, "CN=%"PRIu64",%s", fid, parentDN);
 		basedn = ldb_dn_new(local_mem_ctx, emsmdbp_ctx->oc_ctx, dn);
 		talloc_free(dn);
@@ -248,6 +252,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
 		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
 		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
+		ldb_msg_add_fmt(msg, "mailboxDN", mailboxDN);
 		ldb_msg_add_fmt(msg, "MAPIStoreURI", "sogo://%s:%s@fallback/0x%.16"PRIx64,
 				emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
 		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");

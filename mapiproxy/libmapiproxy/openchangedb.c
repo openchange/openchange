@@ -176,6 +176,43 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
 
 
 /**
+   \details Retrieve the mailboxDN associated to a mailbox system
+   folder.
+
+   \param parent_ctx pointer to the parent memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the folder identifier to search for
+   \param mailboxDN pointer on pointer to the mailboxDN string the
+   function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx, 
+						    void *ldb_ctx, 
+						    uint64_t fid, 
+						    char **mailboxDN)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mailboxDN");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*mailboxDN = talloc_strdup(parent_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "mailboxDN", NULL));
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
    \details Retrieve the mailbox GUID for given recipient from
    openchange dispatcher database
 
@@ -1399,5 +1436,61 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *ldb_ctx,
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
 	talloc_free(mem_ctx);
 	
+	return MAPI_E_SUCCESS;
+}
+
+
+_PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
+								 void *ldb_ctx,
+								 const char *partialURI,
+								 uint32_t *count,
+								 char ***MAPIStoreURI,
+								 char ***users)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_result	*mres = NULL;
+	const char		*mailboxDN;
+	struct ldb_dn		*dn;
+	const char * const	attrs[] = { "*", NULL };
+	const char		*tmp;
+	int			i;
+	int			ret;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!partialURI, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!MAPIStoreURI, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!users, MAPI_E_INVALID_PARAMETER, NULL);
+	
+	mem_ctx = talloc_named(NULL, 0, "get_users_from_partial_uri");
+
+	/* Search mapistoreURI given partial URI */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", partialURI);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*count = res->count;
+	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count);
+	*users = talloc_array(parent_ctx, char *, *count);
+
+	for (i = 0; i != *count; i++) {
+		tmp = ldb_msg_find_attr_as_string(res->msgs[i], "MAPIStoreURI", NULL);
+		*MAPIStoreURI[i] = talloc_strdup((TALLOC_CTX *)*MAPIStoreURI, tmp);
+
+		/* Retrieve the system user name */
+		mailboxDN = ldb_msg_find_attr_as_string(res->msgs[i], "mailboxDN", NULL);
+		dn = ldb_dn_new(mem_ctx, ldb_ctx, mailboxDN);
+		ret = ldb_search(ldb_ctx, mem_ctx, &mres, dn, LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=%s)", mailboxDN);
+		/* This should NEVER happen */
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+		tmp = ldb_msg_find_attr_as_string(mres->msgs[0], "cn", NULL);
+		*users[i] = talloc_strdup((TALLOC_CTX *)*users, tmp);
+		talloc_free(mres);
+	}
+
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }

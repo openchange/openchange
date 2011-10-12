@@ -203,6 +203,7 @@ enum MAPISTATUS openchangedb_reserve_fmid_range(void *, uint64_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(void *, char *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_PublicFolderID(void *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, void *, uint64_t, char **);
+enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *, void *, uint64_t, char **);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(void *, char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(void *, char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *, uint16_t *, struct GUID *);
@@ -219,6 +220,7 @@ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, void *, char *, ch
 enum MAPISTATUS openchangedb_get_fid_by_name(void *, uint64_t, const char*, uint64_t *);
 enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t);
 enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *, const char *, uint64_t *);
+enum MAPISTATUS	openchangedb_get_users_from_partial_uri(TALLOC_CTX *, void *, const char *, uint32_t *, char ***, char ***);
 
 /* definitions from auto-generated openchangedb_property.c */
 const char *openchangedb_property_get_attribute(uint32_t);

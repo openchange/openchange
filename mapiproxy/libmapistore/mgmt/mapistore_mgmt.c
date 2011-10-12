@@ -84,6 +84,7 @@ static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 			DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
 		} else {
 			DEBUG(0, ("[%s:%d] Trying to unregister user in empty list\n", __FUNCTION__, __LINE__));
+			return;
 		}
 	} else {
 		/* Search the users list and perform action */
@@ -537,7 +538,7 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 
 	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, username, folder, message, &uri);
 	if (ret != MAPISTORE_SUCCESS) return false;
-	
+
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
 	if (ret != MAPISTORE_SUCCESS) {
 		talloc_free(uri);
@@ -552,6 +553,5 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 	}
 
 	talloc_free(uri);
-	talloc_free(ictxp);
 	return retval;
 }

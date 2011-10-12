@@ -44,6 +44,7 @@ struct indexing_context_list *mapistore_indexing_search(struct mapistore_context
 
 	/* Sanity checks */
 	if (!mstore_ctx) return NULL;
+	if (!mstore_ctx->indexing_list);
 	if (!username) return NULL;
 
 	for (el = mstore_ctx->indexing_list; el; el = el->next) {

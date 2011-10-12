@@ -91,6 +91,30 @@ _PUBLIC_ extern int mapistore_backend_register(const void *_backend)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Check if the specified backend is registered given its
+   name.
+
+   \param name backend's name to lookup
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_backend_registered(const char *name)
+{
+	int	i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && !strcmp(backends[i].backend->backend.name, name)) {
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
+}
+
 
 /**
    \details Return the full path where mapistore backends are
@@ -102,6 +126,7 @@ _PUBLIC_ const char *mapistore_backend_get_installdir(void)
 {
 	return MAPISTORE_BACKEND_INSTALLDIR;
 }
+
 
 
 /**
@@ -401,6 +426,37 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_
 	return NULL;
 }
 
+/**
+   \details Return a pointer on backend functions given its name
+
+   \param mem_ctx pointer to the memory context
+   \param name the backend name to lookup
+
+   \return Allocated pointer to the mapistore_backend context on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct backend_context	*context = NULL;
+	int			i;
+
+	/* Sanity checks */
+	if (!name) return NULL;
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && !strcmp(backends[i].backend->backend.name, name)) {
+			context = talloc_zero(mem_ctx, struct backend_context);
+			context->backend = backends[i].backend;
+			context->ref_count = 0;
+			context->uri = NULL;
+
+			return context;
+		}
+	}
+	return NULL;
+}
+
+
 int mapistore_backend_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, char **path)
 {
 	int	ret;
@@ -606,4 +662,11 @@ int mapistore_backend_properties_get_properties(struct backend_context *bctx,
 int mapistore_backend_properties_set_properties(struct backend_context *bctx, void *object, struct SRow *aRow)
 {
         return bctx->backend->properties.set_properties(object, aRow);
+}
+
+int mapistore_backend_manager_generate_uri(struct backend_context *bctx, TALLOC_CTX *mem_ctx, 
+					   const char *username, const char *folder, 
+					   const char *message, char **uri)
+{
+	return bctx->backend->manager.generate_uri(mem_ctx, username, folder, message, uri);
 }

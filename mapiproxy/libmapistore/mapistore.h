@@ -37,6 +37,7 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#include <mqueue.h>
 
 #include <tdb.h>
 #include <ldb.h>
@@ -176,6 +177,11 @@ struct mapistore_backend {
                 int		(*get_properties)(void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 int		(*set_properties)(void *, struct SRow *);
         } properties;
+
+	/** manager operations */
+	struct {
+		int		(*generate_uri)(TALLOC_CTX *, const char *, const char *, const char *, char **);
+	} manager;
 };
 
 struct indexing_context_list;
@@ -207,6 +213,7 @@ struct mapistore_context {
 	struct tdb_wrap				*replica_mapping_ctx;
 	void					*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
+	mqd_t					mq_users;
 };
 
 #ifndef __BEGIN_DECLS
@@ -229,6 +236,7 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
+int mapistore_set_connection_info(struct mapistore_context *, void *, const char *);
 int mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
@@ -269,7 +277,6 @@ int mapistore_properties_get_available_properties(struct mapistore_context *, ui
 int mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
 
-
 /* definitions from mapistore_processing.c */
 int mapistore_set_mapping_path(const char *);
 
@@ -279,6 +286,7 @@ const char	*mapistore_backend_get_installdir(void);
 init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
+struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const char *);
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_indexing.c */
@@ -287,7 +295,7 @@ int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint
 int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
-int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, uint64_t *, bool *);
+int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 
 /* definitions from mapistore_replica_mapping.c */
 _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *);
@@ -297,6 +305,10 @@ _PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
 int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
+
+/* definitions from mapistore_mgmt.c */
+int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

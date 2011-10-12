@@ -143,6 +143,11 @@ struct indexing_context_list {
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
 #define	MAPISTORE_DB_NAME_FREE_ID	"mapistore_id_mapping_free.tdb"
 
+/**
+   MAPIStore management defines
+ */
+#define	MAPISTORE_MQUEUE_USER		"/mapistore_users"
+
 __BEGIN_DECLS
 
 /* definitions from mapistore_processing.c */
@@ -154,6 +159,7 @@ int mapistore_free_context_id(struct processing_context *, uint32_t);
 
 /* definitions from mapistore_backend.c */
 int mapistore_backend_init(TALLOC_CTX *, const char *);
+int mapistore_backend_registered(const char *);
 struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, const char *, uint64_t);
 int mapistore_backend_add_ref_count(struct backend_context *);
 int mapistore_backend_delete_context(struct backend_context *);
@@ -190,6 +196,8 @@ int mapistore_backend_table_handle_destructor(struct backend_context *, void *, 
 int mapistore_backend_properties_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
 int mapistore_backend_properties_get_properties(struct backend_context *, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 int mapistore_backend_properties_set_properties(struct backend_context *, void *, struct SRow *);
+
+int mapistore_backend_manager_generate_uri(struct backend_context *, TALLOC_CTX *, const char *, const char *, const char *, char **);
 
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);

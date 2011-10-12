@@ -48,14 +48,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
 
 	retval = mapistore_backend_init(mstore_ctx, path);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(5, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -65,11 +65,17 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	mstore_ctx->replica_mapping_ctx = NULL;
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
+	mstore_ctx->conn_info = NULL;
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
 
-	DEBUG(5, ("initted mstore_ctx ref: %p\n", mstore_ctx));
+	mstore_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+	if (mstore_ctx->mq_users == -1) {
+		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_USER));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
 
 	return mstore_ctx;
 }
@@ -99,6 +105,41 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Set connection info for current mapistore context
+
+   \param mstore_ctx pointer to the mapistore context
+   \param oc_ctx pointer to the openchange ldb database
+   \param username pointer to the current username
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
+					   void *ocdb_ctx, const char *username)
+{
+	int	ret;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!ocdb_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mstore_ctx->conn_info = talloc_zero(mstore_ctx, struct mapistore_connection_info);
+	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
+	mstore_ctx->conn_info->oc_ctx = ocdb_ctx;
+	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
+	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
+
+	ret = mapistore_replica_mapping_add(mstore_ctx, username);
+	if (ret != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[%s:%d] MAPIStore replica mapping database initialization failed\n", \
+			  __FUNCTION__, __LINE__));
+		talloc_free(mstore_ctx->conn_info);
+		return MAPISTORE_ERR_DATABASE_INIT;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Add a new connection context to mapistore
@@ -328,16 +369,36 @@ _PUBLIC_ const char *mapistore_errstr(int mapistore_err)
 		return "Already initialized";
 	case MAPISTORE_ERR_NOT_INITIALIZED:
 		return "Not initialized";
+	case MAPISTORE_ERR_CORRUPTED:
+		return "Corrupted";
+	case MAPISTORE_ERR_INVALID_PARAMETER:
+		return "Invalid Parameter";
 	case MAPISTORE_ERR_NO_DIRECTORY:
 		return "No such file or directory";
 	case MAPISTORE_ERR_DATABASE_INIT:
 		return "Database initialization failed";
 	case MAPISTORE_ERR_DATABASE_OPS:
-		return "database operation failed";
+		return "Database operation failed";
 	case MAPISTORE_ERR_BACKEND_REGISTER:
-		return "storage backend registration failed";
+		return "Storage backend registration failed";
 	case MAPISTORE_ERR_BACKEND_INIT:
-		return "storage backend initialization failed";
+		return "Storage backend initialization failed";
+	case MAPISTORE_ERR_CONTEXT_FAILED:
+		return "Failed creating the context";
+	case MAPISTORE_ERR_INVALID_NAMESPACE:
+		return "Invalid Namespace";
+	case MAPISTORE_ERR_NOT_FOUND:
+		return "Not Found";
+	case MAPISTORE_ERR_REF_COUNT:
+		return "Reference counter not NULL";
+	case MAPISTORE_ERR_EXIST:
+		return "Already Exists";
+	case MAPISTORE_ERR_INVALID_DATA:
+		return "Invalid Data";
+	case MAPISTORE_ERR_MSG_SEND:
+		return "Error while sending message";
+	case MAPISTORE_ERR_MSG_RCV:
+		return "Error receiving message";
 	}
 
 	return "Unknown error";

@@ -216,8 +216,9 @@ enum MAPISTATUS openchangedb_set_folder_properties(void *, uint64_t, struct SRow
 enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, void *, char *, uint32_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_get_folder_count(void *, uint64_t, uint32_t *);
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, void *, char *, char *, uint32_t, uint32_t, void **);
-enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx, uint64_t, const char*, uint64_t *);
-enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, void *ldb_ctx, const char *, const char *, uint64_t);
+enum MAPISTATUS openchangedb_get_fid_by_name(void *, uint64_t, const char*, uint64_t *);
+enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, void *, const char *, const char *, uint64_t);
+enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *, const char *, uint64_t *);
 
 /* definitions from auto-generated openchangedb_property.c */
 const char *openchangedb_property_get_attribute(uint32_t);

@@ -41,3 +41,4 @@ print "Is NonExistent backend registered: %s" % mgmt.registered_backend("NonExis
 print "Registered message: %s" % mgmt.registered_message("SOGo", "Administrator", "Administrator", "inbox", "61")
 print "Registered message: %s" % mgmt.registered_message("SOGo", "Administrator", "Administrator", "inbox", "74")
 
+mgmt.existing_users("SOGo", "Administrator", "inbox")

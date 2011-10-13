@@ -32,15 +32,15 @@ if not os.path.exists(dirname):
 mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 Inbox = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator").open()
-Inbox.create_folder(name="Test")
-time.sleep(5)
+time.sleep(15)
 
 #Calendar = MAPIStore.add_context("sogo://Administator:Administrator@inbox/", "Administrator").open()
 #time.sleep(5)
 #print Calendar.folder_count
 #time.sleep(5)
-MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "GoodAdmin")
-time.sleep(5)
+#MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "GoodAdmin")
+Inbox.create_folder(name="Test")
+time.sleep(15)
 NewCalender = MAPICtx.open()
 
 print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count, 

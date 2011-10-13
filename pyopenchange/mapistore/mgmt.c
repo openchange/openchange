@@ -105,6 +105,38 @@ static PyObject *py_MAPIStoreMGMT_registered_message(PyMAPIStoreMGMTObject *self
 	return PyBool_FromLong(ret);
 }
 
+static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	const char	*backend;
+	const char	*user;
+	const char	*uri;
+	const char	*messageID;
+	char		*registered_uri;
+	PyObject	*retlist;
+	uint64_t	mid;
+	int		ret;
+
+	if (!PyArg_ParseTuple(args, "ssss", &backend, &user, &uri, &messageID)) {
+		return NULL;
+	}
+
+	retlist = PyList_New(0);
+
+	/* Gets a new message ID */
+	ret = openchangedb_get_new_folderID(self->parent->ocdb_ctx, &mid);
+	if (ret) return (PyObject *)retlist;
+
+	/* Register the message within specified user indexing database */
+	ret = mapistore_mgmt_register_message(self->mgmt_ctx, backend, user, mid, uri, messageID, &registered_uri);
+	if (ret) return (PyObject *)retlist;
+
+	PyList_Append(retlist, PyLong_FromLongLong(mid));
+	PyList_Append(retlist, PyString_FromString(registered_uri));
+	
+	talloc_free(registered_uri);
+	return (PyObject *) retlist;
+}
+
 static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, PyObject *args)
 {
 	PyObject	*dict;
@@ -168,6 +200,7 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
 	{ "registered_message", (PyCFunction)py_MAPIStoreMGMT_registered_message, METH_VARARGS },
+	{ "register_message", (PyCFunction)py_MAPIStoreMGMT_register_message, METH_VARARGS },
 	{ "existing_users", (PyCFunction)py_MAPIStoreMGMT_existing_users, METH_VARARGS },
 	{ NULL },
 };

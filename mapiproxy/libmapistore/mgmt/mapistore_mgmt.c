@@ -492,7 +492,7 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rootURI && !backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	backend_ctx = mapistore_backend_lookup_by_name((TALLOC_CTX *)mgmt_ctx, backend);
@@ -561,4 +561,45 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 
 	talloc_free(uri);
 	return retval;
+}
+
+
+/**
+   \details Register a message in the indexing database of the user
+
+   \param mgmt_ctx Pointer to the mapistore management context
+   \param backend the backend for which we register the message
+   \param sysuser the name of the openchage user
+   \param mid the message ID to register
+   \param uri partial URI without message extension
+   \param messageID the message identifier in the backend
+   \param registered_uri pointer on pointer to the registered MAPIStore URI
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt_ctx,
+					     const char *backend,
+					     const char *sysuser,
+					     uint64_t mid,
+					     const char *rootURI,
+					     const char *messageID,
+					     char **registered_uri)
+{
+	struct indexing_context_list	*ictxp;
+	int				ret;
+	char				*uri;
+
+	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, NULL, NULL, messageID, rootURI, &uri);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
+
+	DEBUG(0, ("mapistore_mgmt_register_message: %s\n", uri));
+
+	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
+	MAPISTORE_RETVAL_IF(ret, ret, uri);
+
+	ret = mapistore_indexing_record_add(mgmt_ctx, ictxp, mid, uri);
+	MAPISTORE_RETVAL_IF(ret, ret, uri);
+
+	*registered_uri = uri;
+	return MAPISTORE_SUCCESS;
 }

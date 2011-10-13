@@ -54,9 +54,13 @@ class NotificationModel:
             if ret is True:
                 print 'Message already registered for user %s' % info['username']
                 count = count + 1
-#            else:
-#                # Register the message in all users indexing databases
-#                ret = mgmt.register_message()
+            else:
+                # Register the message in all users indexing databases
+                message = mgmt.register_message(params['backend'], info['username'], 
+                                                info['mapistoreURI'], params['messageID'])
+                if not message: print "Unable to register URI for user %s" % (info['username'])
+                else:
+                    print "[REGISTERED] user %s: (%s, %s)" % (info['username'], hex(message[0]), message[1])
 
         # Case where all users referencing this folder already got notified
         if count == ed['count']: return (True, 'Message already registered')

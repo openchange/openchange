@@ -30,11 +30,11 @@ struct oc_property {
 	bool			named;
 };
 
-struct ocpf_file {
-	struct ocpf_file	*prev;
-	struct ocpf_file	*next;
-	const char		*filename;
-};
+// struct ocpf_file {
+// 	struct ocpf_file	*prev;
+// 	struct ocpf_file	*next;
+// 	const char		*filename;
+// };
 
 struct attach {
 	const char		*filename;
@@ -81,8 +81,8 @@ struct oclient {
 	bool			pf;
 	const char		*folder;
 	/* OCPF related options */
-	struct ocpf_file	*ocpf_files;
-	const char		*ocpf_dump;
+	// struct ocpf_file	*ocpf_files;
+	// const char		*ocpf_dump;
 };
 
 struct itemfolder {

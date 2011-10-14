@@ -42,11 +42,23 @@ struct mapistore_mgmt_users_list {
 	const char	**user;
 };
 
-struct mapistore_mgmt_users {
-	struct mapistore_mgmt_user_cmd	*info;
+struct mapistore_mgmt_notif {
+	bool				WholeStore;
+	uint16_t			NotificationFlags;
+	uint64_t			FolderID;
+	uint64_t			MessageID;
+	const char			*MAPIStoreURI;
 	uint32_t			ref_count;
-	struct mapistore_mgmt_users	*prev;
-	struct mapistore_mgmt_users	*next;
+	struct mapistore_mgmt_notif	*prev;
+	struct mapistore_mgmt_notif	*next;
+};
+
+struct mapistore_mgmt_users {
+	struct mapistore_mgmt_user_cmd		*info;
+	struct mapistore_mgmt_notif		*notifications;
+	uint32_t				ref_count;
+	struct mapistore_mgmt_users		*prev;
+	struct mapistore_mgmt_users		*next;
 };
 
 struct mapistore_mgmt_context {
@@ -79,9 +91,11 @@ int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *, bool);
 int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, const char *, char **);
 int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *, const char *, const char *, const char *,const char *, const char *, const char *);
 int mapistore_mgmt_register_message(struct mapistore_mgmt_context *, const char *, const char *, uint64_t, const char *, const char *, char **);
+int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *, const char *, const char *, uint16_t);
 
 /* definitions from mapistore_mgmt_messages.c */
 int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_user_cmd);
+int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_notification_cmd);
 
 __END_DECLS
 

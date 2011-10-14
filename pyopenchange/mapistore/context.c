@@ -45,8 +45,87 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 	return (PyObject *)folder;
 }
 
+static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObject *self, PyObject *args)
+{
+	int				ret;
+	struct mapistore_mgmt_notif	n;
+	const char			*mapistoreURI;
+	bool				WholeStore;
+	uint16_t			NotificationFlags;
+	uint64_t			FolderID;
+
+	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
+		return NULL;
+	}
+
+	n.WholeStore = WholeStore;
+	n.NotificationFlags = NotificationFlags;
+
+	if (WholeStore == true) {
+		n.FolderID = 0;
+		n.MessageID = 0;
+		n.MAPIStoreURI = NULL;
+	} else {
+		/* Retrieve folderID from mapistoreURI in openchange.ldb */
+		ret = openchangedb_get_fid(self->parent->ocdb_ctx, mapistoreURI, &FolderID);
+		if (ret != MAPISTORE_SUCCESS) {
+			/* Try to retrieve URI from user indexing.tdb */
+		}
+
+		n.FolderID = FolderID;
+		n.MessageID = 0;
+		n.MAPIStoreURI = mapistoreURI;
+	}
+	
+
+	ret = mapistore_mgmt_interface_register_subscription(self->mstore_ctx->conn_info, &n);
+
+	return PyBool_FromLong(!ret ? true : false);
+}
+
+static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextObject *self, PyObject *args)
+{
+	int				ret;
+	struct mapistore_mgmt_notif	n;
+	const char			*mapistoreURI;
+	bool				WholeStore;
+	uint16_t			NotificationFlags;
+	uint64_t			FolderID;
+
+	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
+		return NULL;
+	}
+
+	n.WholeStore = WholeStore;
+	n.NotificationFlags = NotificationFlags;
+
+	if (WholeStore == true) {
+		n.FolderID = 0;
+		n.MessageID = 0;
+		n.MAPIStoreURI = NULL;
+	} else {
+		/* Retrieve folderID from mapistoreURI in openchange.ldb */
+		ret = openchangedb_get_fid(self->parent->ocdb_ctx, mapistoreURI, &FolderID);
+		if (ret != MAPISTORE_SUCCESS) {
+			/* Try to retrieve URI from user indexing.tdb */
+		}
+
+		n.FolderID = FolderID;
+		n.MessageID = 0;
+		n.MAPIStoreURI = mapistoreURI;
+	}
+	
+
+	ret = mapistore_mgmt_interface_unregister_subscription(self->mstore_ctx->conn_info, &n);
+
+	return PyBool_FromLong(!ret ? true : false);
+}
+
+
 static PyMethodDef mapistore_context_methods[] = {
 	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },
+	{ "add_subscription", (PyCFunction)py_MAPIStoreContext_register_subscription, METH_VARARGS },
+	{ "delete_subscription", (PyCFunction)py_MAPIStoreContext_unregister_subscription, METH_VARARGS },
 	{ NULL },
 };
 

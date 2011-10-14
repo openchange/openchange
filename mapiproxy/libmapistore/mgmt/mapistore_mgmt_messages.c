@@ -42,7 +42,7 @@ static int mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
 	el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
-	if (el->info) {
+	if (!el->info) {
 		talloc_free(el);
 		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
 		return MAPISTORE_ERR_NO_MEMORY;
@@ -68,7 +68,7 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 			    user_cmd.vuser == NULL, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (mgmt_ctx->users == NULL) {
-		if (user_cmd.status == MAPISTORE_MGMT_USER_REGISTER) {
+		if (user_cmd.status == MAPISTORE_MGMT_REGISTER) {
 			return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd);
 		} else {
 			DEBUG(0, ("[%s:%d]: Trying to unregister user %s in empty list\n", 
@@ -84,10 +84,10 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 			    (!strcmp(el->info->vuser, user_cmd.vuser))) {
 				found = true;
 				switch (user_cmd.status) {
-				case MAPISTORE_MGMT_USER_REGISTER:
+				case MAPISTORE_MGMT_REGISTER:
 					el->ref_count += 1;
 					break;
-				case MAPISTORE_MGMT_USER_UNREGISTER:
+				case MAPISTORE_MGMT_UNREGISTER:
 					el->ref_count -= 1;
 					/* Delete record if ref_count is 0 */
 					if (el->ref_count == 0) {
@@ -106,10 +106,10 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 		/* Case where no matching record was found: insert */
 		if (found == false) {
 			switch (user_cmd.status) {
-			case MAPISTORE_MGMT_USER_REGISTER:
+			case MAPISTORE_MGMT_REGISTER:
 				return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd);
 				break;
-			case MAPISTORE_MGMT_USER_UNREGISTER:
+			case MAPISTORE_MGMT_UNREGISTER:
 				DEBUG(0, ("[%s:%d]: Trying to unregister non-existing users %s\n",
 					  __FUNCTION__, __LINE__, user_cmd.username));
 				break;
@@ -121,5 +121,193 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 		}
 	}
 
+	return MAPISTORE_SUCCESS;
+}
+
+static int mapistore_mgmt_message_notification_command_add(struct mapistore_mgmt_users *user_cmd,
+							   struct mapistore_mgmt_notification_cmd notif)
+{
+	struct mapistore_mgmt_notif	*el;
+
+	el = talloc_zero((TALLOC_CTX *)user_cmd, struct mapistore_mgmt_notif);
+	if (!el) {
+		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+	el->WholeStore = notif.WholeStore;
+	el->NotificationFlags = notif.NotificationFlags;
+	el->ref_count = 1;
+	if (el->WholeStore == false) {
+		el->MAPIStoreURI = talloc_strdup((TALLOC_CTX *)el, notif.MAPIStoreURI);
+		el->FolderID = notif.FolderID;
+		el->MessageID = notif.MessageID;
+	}
+	DLIST_ADD_END(user_cmd->notifications, el, struct mapistore_mgmt_notif);
+
+	return MAPISTORE_SUCCESS;
+}
+
+static bool mapistore_mgmt_message_notification_wholestore(struct mapistore_mgmt_users *user_cmd,
+							   struct mapistore_mgmt_notification_cmd notif)
+{
+	struct mapistore_mgmt_notif	*el;
+	bool				found = false;
+
+	if (notif.WholeStore == false) return false;
+
+	switch (notif.status) {
+	case MAPISTORE_MGMT_REGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if ((el->WholeStore == true) && 
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				found = true;
+				el->ref_count += 1;
+				break;
+			}
+		}
+		if (found == false) {
+			mapistore_mgmt_message_notification_command_add(user_cmd, notif);
+		}
+		break;
+	case MAPISTORE_MGMT_UNREGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if ((el->WholeStore == true) &&
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				el->ref_count -= 1;
+				if (!el->ref_count) {
+					DEBUG(0, ("[%s:%d]: Deleting WholeStore subscription\n", 
+						  __FUNCTION__, __LINE__));
+					DLIST_REMOVE(user_cmd->notifications, el);
+					talloc_free(el);
+					return true;
+				}
+			}
+		}
+		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		break;
+	}
+
+	return true;
+}
+
+static bool mapistore_mgmt_message_notification_message(struct mapistore_mgmt_users *user_cmd,
+							struct mapistore_mgmt_notification_cmd notif)
+{
+	struct mapistore_mgmt_notif	*el;
+	bool				found = true;
+
+	if (!notif.MessageID) return false;
+
+	switch (notif.status) {
+	case MAPISTORE_MGMT_REGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if ((el->MessageID == notif.MessageID) &&
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				found = true;
+				el->ref_count += 1;
+				break;
+			}
+		}
+		if (found == false) {
+			mapistore_mgmt_message_notification_command_add(user_cmd, notif);
+		}
+		break;
+	case MAPISTORE_MGMT_UNREGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if ((el->MessageID == notif.MessageID) &&
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				el->ref_count -= 1;
+				if (!el->ref_count) {
+					DEBUG(0, ("[%s:%d]: Deleting Message subscription\n", 
+						  __FUNCTION__, __LINE__));
+					DLIST_REMOVE(user_cmd->notifications, el);
+					talloc_free(el);
+					return true;
+				}
+			}
+		}
+		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		break;
+	}
+
+	return true;
+}
+
+static bool mapistore_mgmt_message_notification_folder(struct mapistore_mgmt_users *user_cmd,
+						       struct mapistore_mgmt_notification_cmd notif)
+{
+	struct mapistore_mgmt_notif	*el;
+	bool				found = true;
+
+	if (!notif.FolderID) return false;
+
+	switch (notif.status) {
+	case MAPISTORE_MGMT_REGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if (!el->MessageID && (el->FolderID == notif.FolderID) &&
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				found = true;
+				el->ref_count += 1;
+				break;
+			}
+		}
+		if (found == false) {
+			mapistore_mgmt_message_notification_command_add(user_cmd, notif);
+		}
+		break;
+	case MAPISTORE_MGMT_UNREGISTER:
+		for (el = user_cmd->notifications; el; el = el->next) {
+			if (!el->MessageID && (el->FolderID == notif.FolderID) &&
+			    (el->NotificationFlags == notif.NotificationFlags)) {
+				el->ref_count -= 1;
+				if (!el->ref_count) {
+					DEBUG(0, ("[%s:%d]: Deleting Folder subscription\n", 
+						  __FUNCTION__, __LINE__));
+					DLIST_REMOVE(user_cmd->notifications, el);
+					talloc_free(el);
+					return true;
+				}
+			}
+		}
+		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		break;
+	}
+
+	return true;
+}
+
+int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *mgmt_ctx,
+						struct mapistore_mgmt_notification_cmd notif)
+{
+	struct mapistore_mgmt_users	*el;
+	bool				ret;
+
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!notif.username || !notif.MAPIStoreURI || 
+			    (!notif.FolderID && notif.WholeStore == false), MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (el = mgmt_ctx->users; el; el = el->next) {
+		if (!strcmp(el->info->username, notif.username)) {
+			/* Case where no notifications has been registered yet */
+			if (el->notifications == NULL) {
+				mapistore_mgmt_message_notification_command_add(el, notif);
+			} else {
+				/* subscription on wholestore case */
+				ret = mapistore_mgmt_message_notification_wholestore(el, notif);
+				if (ret == false) {
+					/* subscription on message case */
+					ret = mapistore_mgmt_message_notification_message(el, notif);
+					if (ret == false) {
+						/* subscription on folder case */
+						ret = mapistore_mgmt_message_notification_folder(el, notif);
+					}
+				}
+			}
+		}
+	}
+	
 	return MAPISTORE_SUCCESS;
 }

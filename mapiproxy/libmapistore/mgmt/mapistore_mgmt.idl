@@ -16,28 +16,30 @@ interface mapistore_mgmt
 	} mapistore_mgmt_command_priority;
 
 	typedef [enum16bit] enum {
-		MAPISTORE_MGMT_USER_REGISTER	= 0x1,
-		MAPISTORE_MGMT_USER_UNREGISTER	= 0x2
-	} mapistore_mgmt_user_status;
+		MAPISTORE_MGMT_REGISTER		= 0x1,
+		MAPISTORE_MGMT_UNREGISTER	= 0x2
+	} mapistore_mgmt_status;
 
 	typedef [public] struct {
-		mapistore_mgmt_user_status	status;
+		mapistore_mgmt_status		status;
 		[string, charset(UTF16)] uint16	*backend;
 		[string, charset(UTF16)] uint16	*username;
 		[string, charset(UTF16)] uint16	*vuser;
 	} mapistore_mgmt_user_cmd;
 
-	typedef [enum16bit] enum {
+	typedef [public,bitmap16bit] bitmap {
 		mgmt_notification_type_newmail	= 0x2
 	} mapistore_mgmt_notification_type;
 
 	typedef [public] struct {
+		mapistore_mgmt_status			status;
 		mapistore_mgmt_notification_type	NotificationFlags;
 		[string, charset(UTF16)] uint16		*username;
+		boolean8				WholeStore;
 		hyper					FolderID;
 		hyper					MessageID;
 		[string, charset(UTF16)] uint16		*MAPIStoreURI;
-	} mapistore_mgmt_notification;
+	} mapistore_mgmt_notification_cmd;
 
 	typedef [enum16bit] enum {
 		MAPISTORE_MGMT_USER	= 0x1,
@@ -46,7 +48,7 @@ interface mapistore_mgmt
 
 	typedef [public,switch_type(uint16)] union {
 		[case(MAPISTORE_MGMT_USER)] mapistore_mgmt_user_cmd		user;
-		[case(MAPISTORE_MGMT_NOTIF)] mapistore_mgmt_notification	notification;
+		[case(MAPISTORE_MGMT_NOTIF)] mapistore_mgmt_notification_cmd	notification;
 	} mapistore_mgmt_commands;
 
 	typedef [public] struct {

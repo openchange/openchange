@@ -71,6 +71,9 @@ class NotificationModel:
         if rd["count"] == 0: return (True, 'User not registered')
         params['usernames'] = rd["usernames"]
 
-        # Trigger newmail notification for registered users (rd)
+        # Trigger newmail notification for registered users (rd) who subscribed for newmail Notification
+        for username in params['usernames']:
+            print 'Searching for fnevNewmail for %s on %s' % (username, info['mapistoreURI'])
+            mgmt.registered_subscription(username, info['mapistoreURI'], 1, 2)
 
         return (False, params)

@@ -58,7 +58,7 @@ static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 		mapistore_mgmt_message_user_command(mgmt_ctx, command.command.user);
 		break;
 	case MAPISTORE_MGMT_NOTIF:
-		DEBUG(0, ("[%s:%d]: Not yet implemented!\n", __FUNCTION__, __LINE__));
+		mapistore_mgmt_message_notification_command(mgmt_ctx, command.command.notification);
 		break;
 	default:
 		DEBUG(0, ("[%s:%d]: Invalid command type: %d\n",
@@ -253,7 +253,7 @@ _PUBLIC_ int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *mg
 	return mapistore_backend_registered(backend);
 }
 
-static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
+static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 				      unsigned msg_prio,
 				      struct mapistore_connection_info *conn_info,
 				      const char *backend, const char *vuser)
@@ -355,13 +355,13 @@ _PUBLIC_ struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struc
    \param backend the name of the backend
    \param vuser the name of the matching user in the backend
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPIStore error
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *conn_info,
 						  const char *backend,
 						  const char *vuser)
 {
-	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_REGISTER, 
+	return mgmt_user_registration_cmd(MAPISTORE_MGMT_REGISTER, 
 					  MAPISTORE_COMMAND_USER_REGISTER_PRIO, 
 					  conn_info, backend, vuser);
 }
@@ -381,7 +381,7 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
 						    const char *backend,
 						    const char *vuser)
 {
-	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_UNREGISTER,
+	return mgmt_user_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
 					  MAPISTORE_COMMAND_USER_UNREGISTER_PRIO, 
 					  conn_info, backend, vuser);
 }
@@ -525,4 +525,136 @@ _PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt
 
 	*registered_uri = uri;
 	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Check if the subscription described by NotificationFlags
+   has been registered for specified folder.
+
+   \param mgmt_ctx pointer to the mapistore management context
+   \param username the username to lookup
+   \param folderURI the mapistore URI to lookup
+   \param NotificationFlags the subscription type
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *mgmt_ctx,
+							   const char *username, const char *folderURI,
+							   uint16_t NotificationFlags)
+{
+	struct mapistore_mgmt_users	*uel;
+	struct mapistore_mgmt_notif	*el;
+	bool				found = false;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folderURI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (uel = mgmt_ctx->users; uel; uel = uel->next) {
+		if (uel->info->username && !strcmp(uel->info->username, username)) {
+			if (uel->notifications) {
+				for (el = uel->notifications; el; el = el->next) {
+					if (!el->MessageID && el->MAPIStoreURI &&
+					    !strcmp(el->MAPIStoreURI, folderURI) &&
+					    (el->NotificationFlags & NotificationFlags)) {
+						DEBUG(0, ("[%s:%d]: Subscription found\n", __FUNCTION__, __LINE__));
+						found = true;
+					} else if ((el->WholeStore == true) && 
+						   (el->NotificationFlags & NotificationFlags)) {
+						DEBUG(0, ("[%s:%d]: WholeStore matching subscription found\n", __FUNCTION__, __LINE__));
+						found = true;
+					}
+				}
+			}
+		}
+	}
+
+	return ((found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND);
+}
+
+static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
+					      unsigned msg_prio,
+					      struct mapistore_connection_info *conn_info,
+					      struct mapistore_mgmt_notif *notification)
+{
+	int				ret;
+	TALLOC_CTX			*mem_ctx;
+	DATA_BLOB			data;
+	struct mapistore_mgmt_command	cmd;
+	enum ndr_err_code		ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!notification, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(notification->WholeStore == false && !notification->MAPIStoreURI,
+			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	cmd.type = MAPISTORE_MGMT_NOTIF;
+	cmd.command.notification.status = status;
+	cmd.command.notification.NotificationFlags = notification->NotificationFlags;
+	cmd.command.notification.username = conn_info->username;
+	cmd.command.notification.WholeStore = notification->WholeStore;
+	if (notification->WholeStore == false) {
+		cmd.command.notification.FolderID = notification->FolderID;
+		cmd.command.notification.MessageID = notification->MessageID;
+		cmd.command.notification.MAPIStoreURI = notification->MAPIStoreURI;
+	} else {
+		cmd.command.notification.FolderID = 0;
+		cmd.command.notification.MessageID = 0;
+		cmd.command.notification.MAPIStoreURI = NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+			  __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
+	if (ret == -1) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_MSG_SEND;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Register a subscription for the given user
+
+   \param conn_info pointer to the connection information
+   \param notification pointer to the structure holding notification data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *conn_info,
+							    struct mapistore_mgmt_notif *notification)
+{
+	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_REGISTER,
+						  MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO,
+						  conn_info, notification);
+}
+
+/**
+   \details Unregister a subscription for the given user
+
+   \param conn_info pointer to the connection information
+   \param notification pointer to the structure holding notification data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *conn_info,
+							      struct mapistore_mgmt_notif *notification)
+{
+	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
+						  MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO,
+						  conn_info, notification);
 }

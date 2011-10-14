@@ -183,6 +183,29 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 	return (PyObject *)dict;
 }
 
+static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	const char	*username;
+	const char	*uri;
+	uint16_t	type;
+	uint16_t	NotificationFlags;
+
+	if (!PyArg_ParseTuple(args, "sshh", &username, &uri, &type, &NotificationFlags)) {
+		return NULL;
+	}
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		mapistore_mgmt_registered_folder_subscription(self->mgmt_ctx, username, uri, NotificationFlags);
+		break;
+	case MAPISTORE_MESSAGE:
+		DEBUG(0, ("[%s:%d]: Unsupported subscription type\n", __FUNCTION__, __LINE__));
+		break;
+	}
+
+	return PyBool_FromLong(true);
+}
+
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
 {
 	return PyBool_FromLong(self->mgmt_ctx->verbose);
@@ -201,6 +224,7 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
 	{ "registered_message", (PyCFunction)py_MAPIStoreMGMT_registered_message, METH_VARARGS },
 	{ "register_message", (PyCFunction)py_MAPIStoreMGMT_register_message, METH_VARARGS },
+	{ "registered_subscription", (PyCFunction)py_MAPIStoreMGMT_registered_subscription, METH_VARARGS },
 	{ "existing_users", (PyCFunction)py_MAPIStoreMGMT_existing_users, METH_VARARGS },
 	{ NULL },
 };

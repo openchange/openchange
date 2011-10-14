@@ -31,8 +31,11 @@ if not os.path.exists(dirname):
 
 mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
-Inbox = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator").open()
+MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator")
+Inbox = MAPICtx.open()
+MAPICtx.add_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
 time.sleep(15)
+MAPICtx.delete_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
 
 #Calendar = MAPIStore.add_context("sogo://Administator:Administrator@inbox/", "Administrator").open()
 #time.sleep(5)

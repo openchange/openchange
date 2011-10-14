@@ -46,6 +46,9 @@
 
 #include "libmapi/libmapi.h"
 
+/* forward declarations */
+struct mapistore_mgmt_notif;
+
 #define	MAPISTORE_SUCCESS	0
 
 typedef	int (*init_backend_fn) (void);
@@ -309,6 +312,8 @@ int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
 /* definitions from mapistore_mgmt.c */
 int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
 int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
+int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

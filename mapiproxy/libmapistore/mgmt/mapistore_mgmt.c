@@ -362,7 +362,8 @@ _PUBLIC_ int mapistore_mgmt_backend_register_user(struct mapistore_connection_in
 						  const char *vuser)
 {
 	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_REGISTER, 
-					  0, conn_info, backend, vuser);
+					  MAPISTORE_COMMAND_USER_REGISTER_PRIO, 
+					  conn_info, backend, vuser);
 }
 
 
@@ -381,7 +382,8 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
 						    const char *vuser)
 {
 	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_UNREGISTER,
-					  31, conn_info, backend, vuser);
+					  MAPISTORE_COMMAND_USER_UNREGISTER_PRIO, 
+					  conn_info, backend, vuser);
 }
 
 

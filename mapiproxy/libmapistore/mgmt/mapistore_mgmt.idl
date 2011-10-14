@@ -8,6 +8,12 @@
 
 interface mapistore_mgmt
 {
+	typedef [enum8bit] enum {
+		MAPISTORE_COMMAND_USER_NOTIF_PRIO		= 29,
+		MAPISTORE_COMMAND_USER_REGISTER_PRIO		= 30,
+		MAPISTORE_COMMAND_USER_UNREGISTER_PRIO		= 31
+	} mapistore_mgmt_command_priority;
+
 	typedef [enum16bit] enum {
 		MAPISTORE_MGMT_USER_REGISTER	= 0x1,
 		MAPISTORE_MGMT_USER_UNREGISTER	= 0x2

@@ -47,12 +47,10 @@ def openchangedb_mapistore_url(lp, backend):
 
 
 def openchangedb_mapistore_url_split(url):
-    if url.startswith("fsocpf://"):
-        return url.partition("fsocpf://")[1:]
-    if url.startswith("sqlite://"):
-        return url.partition("sqlite://")[1:]
-    if url.startswith("sogo://"):
-        return url.partition("sogo://")[1:]
+    css_idx = url.find("://")
+    sep_idx = css_idx + 3
+
+    return (url[0:sep_idx], url[sep_idx:])
 
 
 def openchangedb_suffix_for_mapistore_url(url):

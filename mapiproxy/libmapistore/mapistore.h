@@ -213,7 +213,7 @@ struct mapistore_context {
 	struct tdb_wrap				*replica_mapping_ctx;
 	void					*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
-	mqd_t					mq_users;
+	mqd_t					mq_ipc;
 };
 
 #ifndef __BEGIN_DECLS

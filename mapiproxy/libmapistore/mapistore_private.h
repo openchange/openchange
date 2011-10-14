@@ -146,7 +146,7 @@ struct indexing_context_list {
 /**
    MAPIStore management defines
  */
-#define	MAPISTORE_MQUEUE_USER		"/mapistore_users"
+#define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
 
 __BEGIN_DECLS
 

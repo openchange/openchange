@@ -34,16 +34,14 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
+static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 				    DATA_BLOB data)
 {
-	struct mapistore_mgmt_user_cmd	user_cmd;
-	struct mapistore_mgmt_users	*el;
+	struct mapistore_mgmt_command	command;
 	struct ndr_pull			*ndr_pull = NULL;
-	bool				found = false;
 
 	ndr_pull = ndr_pull_init_blob(&data, (TALLOC_CTX *)mgmt_ctx);
-	ndr_pull_mapistore_mgmt_user_cmd(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &user_cmd);
+	ndr_pull_mapistore_mgmt_command(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &command);
 
 	if (mgmt_ctx->verbose == true) {
 		struct ndr_print	*ndr_print;
@@ -51,105 +49,27 @@ static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 		ndr_print = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct ndr_print);
 		ndr_print->print = ndr_print_printf_helper;
 		ndr_print->depth = 1;
-		ndr_print_mapistore_mgmt_user_cmd(ndr_print, "user command", &user_cmd);
+		ndr_print_mapistore_mgmt_command(ndr_print, "command", &command);
 		talloc_free(ndr_print);
 	}
 
-	if (user_cmd.backend == NULL ||
-	    user_cmd.username == NULL ||
-	    user_cmd.vuser == NULL) {
-		talloc_free(ndr_pull);
-		return;
-	}
-
-	if (mgmt_ctx->users == NULL) {
-		if (user_cmd.status == MAPISTORE_MGMT_USER_REGISTER) {
-			el = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users);
-			if (!el) {
-				talloc_free(ndr_pull);
-				DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-				return;
-			}
-			el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
-			if (!el->info) {
-				talloc_free(el);
-				talloc_free(ndr_pull);
-				DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-				return;
-			}
-			el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
-			el->info->username = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.username);
-			el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
-			el->ref_count = 1;
-			DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
-		} else {
-			DEBUG(0, ("[%s:%d] Trying to unregister user in empty list\n", __FUNCTION__, __LINE__));
-			return;
-		}
-	} else {
-		/* Search the users list and perform action */
-		for (el = mgmt_ctx->users; el; el = el->next) {
-			/* Case where the record exists */
-			if (!strcmp(el->info->backend, user_cmd.backend) && 
-			    (!strcmp(el->info->username, user_cmd.username)) &&
-			    (!strcmp(el->info->vuser, user_cmd.vuser))) {
-				found = true;
-				switch (user_cmd.status) {
-				case MAPISTORE_MGMT_USER_REGISTER:
-					el->ref_count += 1;
-					break;
-				case MAPISTORE_MGMT_USER_UNREGISTER:
-					el->ref_count -= 1;
-					/* Delete record if ref_count is 0 */
-					if (el->ref_count == 0) {
-						DLIST_REMOVE(mgmt_ctx->users, el);
-						talloc_free(el);
-						break;
-					} 
-					break;
-				default:
-					DEBUG(0, ("[%s:%d]: Invalid user command status\n", __FUNCTION__, __LINE__));
-					break;
-				}
-			} 
-		}
-		/* Case where no matching record was found: insert */
-		if (found == false) {
-			switch (user_cmd.status) {
-			case MAPISTORE_MGMT_USER_REGISTER:
-				el = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users);
-				if (!el) {
-					talloc_free(ndr_pull);
-					DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-					return;
-				}
-				el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
-				if (!el->info) {
-					talloc_free(el);
-					talloc_free(ndr_pull);
-					DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-					return;
-				}
-				el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
-				el->info->username = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.username);
-				el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
-				el->ref_count = 1;
-				DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
-				break;
-			case MAPISTORE_MGMT_USER_UNREGISTER:
-				DEBUG(0, ("[%s:%d]: Trying to unregister non-existing user\n", __FUNCTION__, __LINE__));
-				break;
-			default:
-				DEBUG(0, ("[%s:%d]: Invalid user command status\n", __FUNCTION__, __LINE__));
-				break;
-			}
-		}
+	switch (command.type) {
+	case MAPISTORE_MGMT_USER:
+		mapistore_mgmt_message_user_command(mgmt_ctx, command.command.user);
+		break;
+	case MAPISTORE_MGMT_NOTIF:
+		DEBUG(0, ("[%s:%d]: Not yet implemented!\n", __FUNCTION__, __LINE__));
+		break;
+	default:
+		DEBUG(0, ("[%s:%d]: Invalid command type: %d\n",
+			  __FUNCTION__, __LINE__, command.type));
+		break;
 	}
 
 	talloc_free(ndr_pull);
 }
 
-static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
+static void mgmt_ipc_notif_handler(int signo, siginfo_t *info, void *unused)
 {
 	struct mapistore_mgmt_context	*mgmt_ctx;
 	struct mq_attr			attr;
@@ -159,37 +79,37 @@ static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
 
 	mgmt_ctx = (struct mapistore_mgmt_context *)info->si_value.sival_ptr;
 
-	if (mq_getattr(mgmt_ctx->mq_users, &attr) != 0) {
+	if (mq_getattr(mgmt_ctx->mq_ipc, &attr) != 0) {
 		perror("mq_getattr");
 		return;
 	}
 
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
-	data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio);
+	data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, &prio);
 	if (data.length == -1) {
 		talloc_free(data.data);
 		perror("mq_receive");
 		return;
 	}
-	mgmt_user_process_notif(mgmt_ctx, data);
+	mgmt_ipc_process_notif(mgmt_ctx, data);
 	talloc_free(data.data);
 
 	/* Reset notification as it resets each time */
 	se.sigev_signo = info->si_signo;
 	se.sigev_value = info->si_value;
 	se.sigev_notify = SIGEV_SIGNAL;
-	if (mq_notify(mgmt_ctx->mq_users, &se) == -1) {
+	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
 		perror("mq_notify");
 		return;
 	}
 
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
-	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, NULL)) != -1) {
+	while ((data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, NULL)) != -1) {
 		if (data.length == -1) {
 			talloc_free(data.data);
 			return;
 		} else {
-			mgmt_user_process_notif(mgmt_ctx, data);
+			mgmt_ipc_process_notif(mgmt_ctx, data);
 			talloc_free(data.data);
 			data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 		}
@@ -225,15 +145,15 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	mgmt_ctx->mstore_ctx = mstore_ctx;
 	mgmt_ctx->verbose = false;
 	mgmt_ctx->users = NULL;
-	mgmt_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
-	if (mgmt_ctx->mq_users == -1) {
+	mgmt_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+	if (mgmt_ctx->mq_ipc == -1) {
 		perror("mq_open");
 		talloc_free(mgmt_ctx);
 		return NULL;
 	}
 
 	/* Setup asynchronous notification request on this message queue */
-	sa.sa_sigaction = mgmt_user_notif_handler;
+	sa.sa_sigaction = mgmt_ipc_notif_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
 	if (sigaction(SIGIO, &sa, NULL) == -1) {
@@ -244,22 +164,22 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	se.sigev_notify = SIGEV_SIGNAL;
 	se.sigev_signo = SIGIO;
 	se.sigev_value.sival_ptr = (void *) mgmt_ctx;
-	if (mq_notify(mgmt_ctx->mq_users, &se) == -1) {
+	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
 		perror("mq_notify");
 		talloc_free(mgmt_ctx);
 		return NULL;
 	}
 
 	/* Empty queue since new notification only occurs flushed/empty queue */
-	ret = mq_getattr(mgmt_ctx->mq_users, &attr);
+	ret = mq_getattr(mgmt_ctx->mq_ipc, &attr);
 	if (ret == -1) {
 		perror("mq_getattr");
 		return mgmt_ctx;
 	}
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 
-	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
-		mgmt_user_process_notif(mgmt_ctx, data);
+	while ((data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		mgmt_ipc_process_notif(mgmt_ctx, data);
 		talloc_free(data.data);
 		data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 	}
@@ -283,13 +203,13 @@ _PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
-	if (mq_close(mgmt_ctx->mq_users) == -1) {
+	if (mq_close(mgmt_ctx->mq_ipc) == -1) {
 		perror("mq_close");
 		talloc_free(mgmt_ctx);
 		return MAPISTORE_SUCCESS;
 	}
 
-	if (mq_unlink(MAPISTORE_MQUEUE_USER) == -1) {
+	if (mq_unlink(MAPISTORE_MQUEUE_IPC) == -1) {
 		perror("mq_unlink");
 	}
 
@@ -341,7 +261,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	int				ret;
 	TALLOC_CTX			*mem_ctx;
 	DATA_BLOB			data;
-	struct mapistore_mgmt_user_cmd	cmd;
+	struct mapistore_mgmt_command	cmd;
 	enum ndr_err_code		ndr_err;
 
 	/* Sanity checks */
@@ -351,21 +271,22 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!vuser, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	cmd.status = status;
-	cmd.backend = backend;
-	cmd.username = conn_info->username;
-	cmd.vuser = vuser;
-	
+	cmd.type = MAPISTORE_MGMT_USER;
+	cmd.command.user.status = status;
+	cmd.command.user.backend = backend;
+	cmd.command.user.username = conn_info->username;
+	cmd.command.user.vuser = vuser;
+
 	mem_ctx = talloc_new(NULL);
-	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_user_cmd);
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_user_cmd into NDR blob\n", 
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;
 	}
 
-	ret = mq_send(conn_info->mstore_ctx->mq_users, (const char *)data.data, data.length, msg_prio);
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
 	if (ret == -1) {
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_MSG_SEND;

@@ -19,4 +19,31 @@ interface mapistore_mgmt
 		[string, charset(UTF16)] uint16	*username;
 		[string, charset(UTF16)] uint16	*vuser;
 	} mapistore_mgmt_user_cmd;
+
+	typedef [enum16bit] enum {
+		mgmt_notification_type_newmail	= 0x2
+	} mapistore_mgmt_notification_type;
+
+	typedef [public] struct {
+		mapistore_mgmt_notification_type	NotificationFlags;
+		[string, charset(UTF16)] uint16		*username;
+		hyper					FolderID;
+		hyper					MessageID;
+		[string, charset(UTF16)] uint16		*MAPIStoreURI;
+	} mapistore_mgmt_notification;
+
+	typedef [enum16bit] enum {
+		MAPISTORE_MGMT_USER	= 0x1,
+		MAPISTORE_MGMT_NOTIF	= 0x2
+	} mapistore_mgmt_command_type;
+
+	typedef [public,switch_type(uint16)] union {
+		[case(MAPISTORE_MGMT_USER)] mapistore_mgmt_user_cmd		user;
+		[case(MAPISTORE_MGMT_NOTIF)] mapistore_mgmt_notification	notification;
+	} mapistore_mgmt_commands;
+
+	typedef [public] struct {
+		mapistore_mgmt_command_type			type;
+		[switch_is(type)] mapistore_mgmt_commands	command;
+	} mapistore_mgmt_command;
 }

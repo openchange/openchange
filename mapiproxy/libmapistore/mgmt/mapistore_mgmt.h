@@ -52,7 +52,7 @@ struct mapistore_mgmt_users {
 struct mapistore_mgmt_context {
 	struct mapistore_context	*mstore_ctx;
 	struct mapistore_mgmt_users	*users;
-	mqd_t				mq_users;
+	mqd_t				mq_ipc;
 	bool				verbose;
 };
 
@@ -79,6 +79,9 @@ int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *, bool);
 int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, const char *, char **);
 int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *, const char *, const char *, const char *,const char *, const char *, const char *);
 int mapistore_mgmt_register_message(struct mapistore_mgmt_context *, const char *, const char *, uint64_t, const char *, const char *, char **);
+
+/* definitions from mapistore_mgmt_messages.c */
+int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_user_cmd);
 
 __END_DECLS
 

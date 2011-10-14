@@ -206,7 +206,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 	}
 
 	if (!locale || !cpid || !lcid) {
-		printf("Invalid Language supplied or unknown system language '%s\n'", language);
+		printf("Invalid Language supplied or unknown system language '%s'\n", language);
 		printf("Deleting profile\n");
 		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", GetLastError());

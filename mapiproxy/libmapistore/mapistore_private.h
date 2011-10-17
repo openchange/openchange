@@ -147,6 +147,7 @@ struct indexing_context_list {
    MAPIStore management defines
  */
 #define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
+#define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
 
 __BEGIN_DECLS
 

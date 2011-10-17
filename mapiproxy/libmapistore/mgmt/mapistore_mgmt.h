@@ -97,6 +97,9 @@ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context 
 int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_user_cmd);
 int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_notification_cmd);
 
+/* definitions from mapistore_mgmt_send.c */
+int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *, const char *, uint64_t, uint64_t, const char *);
+
 __END_DECLS
 
 #endif /* ! __MAPISTORE_MGMT_H */

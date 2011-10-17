@@ -16,6 +16,7 @@ interface mapistore_mgmt
 	} mapistore_mgmt_command_priority;
 
 	typedef [enum16bit] enum {
+		MAPISTORE_MGMT_SEND		= 0x0,
 		MAPISTORE_MGMT_REGISTER		= 0x1,
 		MAPISTORE_MGMT_UNREGISTER	= 0x2
 	} mapistore_mgmt_status;

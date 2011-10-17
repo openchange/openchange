@@ -74,6 +74,11 @@ class NotificationModel:
         # Trigger newmail notification for registered users (rd) who subscribed for newmail Notification
         for username in params['usernames']:
             print 'Searching for fnevNewmail for %s on %s' % (username, info['mapistoreURI'])
-            mgmt.registered_subscription(username, info['mapistoreURI'], 1, 2)
+            ret = mgmt.registered_subscription(username, info['mapistoreURI'], 1, 2)
+            if ret is True:
+                print 'Sending newmail notif on /%s#newmail' % username
+                ret = mgmt.send_newmail(username, info['mapistoreURI'], message[1])
+                if ret is False:
+                    print 'Error while sending newmail notif'
 
         return (False, params)

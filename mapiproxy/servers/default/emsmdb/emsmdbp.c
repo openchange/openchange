@@ -132,7 +132,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	emsmdbp_ctx->oc_ctx = ldb_ctx;
 
 	/* Initialize the mapistore context */		
-	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, NULL);
+	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!emsmdbp_ctx->mstore_ctx) {
 		DEBUG(0, ("[%s:%d]: MAPISTORE initialization failed\n", __FUNCTION__, __LINE__));
 

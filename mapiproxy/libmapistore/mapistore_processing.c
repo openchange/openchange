@@ -93,7 +93,7 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
  */
 const char *mapistore_get_mapping_path(void)
 {
-	return (!mapping_path) ? MAPISTORE_MAPPING_PATH : (const char *)mapping_path;
+	return (const char *)mapping_path;
 }
 
 

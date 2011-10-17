@@ -33,7 +33,6 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
-       -DMAPISTORE_MAPPING_PATH=\"$(prefix)/private/mapistore\"					\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"						\
        -DHAVE_ICAL_0_46=@have_libical_0_46@

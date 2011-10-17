@@ -86,6 +86,7 @@ static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
+	struct loadparm_context		*lp_ctx;
 	struct mapistore_context	*mstore_ctx;
 	PyMAPIStoreObject		*msobj;
 	char				*kwnames[] = { "syspath", "path", NULL };
@@ -111,8 +112,12 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
+	/* Initialize configuration */
+	lp_ctx = loadparm_init(mem_ctx);
+	lpcfg_load_default(lp_ctx);
+
 	/* Initialize mapistore */
-	mstore_ctx = mapistore_init(mem_ctx, path);
+	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, path);
 	if (mstore_ctx == NULL) {
 		printf("Error in mapistore_init\n");
 		talloc_free(mem_ctx);

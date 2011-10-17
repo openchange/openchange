@@ -34,10 +34,15 @@
 
    \return allocate mapistore context on success, otherwise NULL
  */
-_PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const char *path)
+_PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *path)
 {
 	int				retval;
 	struct mapistore_context	*mstore_ctx;
+	char				*mapping_path;
+
+	if (!lp_ctx) {
+		return NULL;
+	}
 
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
 	if (!mstore_ctx) {
@@ -45,6 +50,10 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 	}
 
 	mstore_ctx->processing_ctx = talloc_zero(mstore_ctx, struct processing_context);
+
+	mapping_path = talloc_asprintf(NULL, "%s/mapistore", lpcfg_private_dir(lp_ctx));
+	mapistore_set_mapping_path(mapping_path);
+	talloc_free(mapping_path);
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {

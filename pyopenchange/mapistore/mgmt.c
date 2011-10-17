@@ -185,6 +185,7 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 
 static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject *self, PyObject *args)
 {
+	int		ret;
 	const char	*username;
 	const char	*uri;
 	uint16_t	type;
@@ -196,14 +197,55 @@ static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject 
 
 	switch (type) {
 	case MAPISTORE_FOLDER:
-		mapistore_mgmt_registered_folder_subscription(self->mgmt_ctx, username, uri, NotificationFlags);
+		ret = mapistore_mgmt_registered_folder_subscription(self->mgmt_ctx, username, uri, 
+								    NotificationFlags);
+		return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
 		break;
 	case MAPISTORE_MESSAGE:
 		DEBUG(0, ("[%s:%d]: Unsupported subscription type\n", __FUNCTION__, __LINE__));
+		return PyBool_FromLong(false);
 		break;
 	}
 
-	return PyBool_FromLong(true);
+	return PyBool_FromLong(false);
+}
+
+static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	int		ret;
+	const char	*username;
+	const char	*FolderURI;
+	const char	*MessageURI;
+	uint64_t	FolderID;
+	uint64_t	MessageID;
+	bool		softdeleted;
+
+	if (!PyArg_ParseTuple(args, "sss", &username, &FolderURI, &MessageURI)) {
+		return NULL;
+	}
+
+	/* Turn MessageURI into MessageID from indexing database */
+	ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, MessageURI, 
+						 false, &MessageID, &softdeleted);
+	if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+		return PyBool_FromLong(false);
+	}
+
+	/* Turn FolderURI into FolderID from openchangedb or indexing database */
+	ret = openchangedb_get_fid(self->parent->ocdb_ctx, FolderURI, &FolderID);
+	if (ret != MAPI_E_SUCCESS) {
+		ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, FolderURI, false,
+							 &FolderID, &softdeleted);
+		if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+			return PyBool_FromLong(false);
+		}
+	}
+
+	/* Send notification on user queue */
+	ret = mapistore_mgmt_send_newmail_notification(self->mgmt_ctx, username, FolderID, 
+						       MessageID, MessageURI);
+
+	return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
 }
 
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
@@ -226,6 +268,7 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "register_message", (PyCFunction)py_MAPIStoreMGMT_register_message, METH_VARARGS },
 	{ "registered_subscription", (PyCFunction)py_MAPIStoreMGMT_registered_subscription, METH_VARARGS },
 	{ "existing_users", (PyCFunction)py_MAPIStoreMGMT_existing_users, METH_VARARGS },
+	{ "send_newmail", (PyCFunction)py_MAPIStoreMGMT_send_newmail, METH_VARARGS },
 	{ NULL },
 };
 

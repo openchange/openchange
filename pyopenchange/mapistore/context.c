@@ -53,6 +53,7 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 	bool				WholeStore;
 	uint16_t			NotificationFlags;
 	uint64_t			FolderID;
+	bool				softdeleted;
 
 	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
 		return NULL;
@@ -70,6 +71,12 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 		ret = openchangedb_get_fid(self->parent->ocdb_ctx, mapistoreURI, &FolderID);
 		if (ret != MAPISTORE_SUCCESS) {
 			/* Try to retrieve URI from user indexing.tdb */
+			ret = mapistore_indexing_record_get_fmid(self->mstore_ctx, 
+								 self->mstore_ctx->conn_info->username,
+								 mapistoreURI, false, &FolderID, &softdeleted);
+			if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+				return PyBool_FromLong(false);
+			}
 		}
 
 		n.FolderID = FolderID;
@@ -120,7 +127,6 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 
 	return PyBool_FromLong(!ret ? true : false);
 }
-
 
 static PyMethodDef mapistore_context_methods[] = {
 	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },

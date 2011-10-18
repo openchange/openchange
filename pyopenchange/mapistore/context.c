@@ -47,13 +47,17 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 
 static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObject *self, PyObject *args)
 {
-	int				ret;
-	struct mapistore_mgmt_notif	n;
-	const char			*mapistoreURI;
-	bool				WholeStore;
-	uint16_t			NotificationFlags;
-	uint64_t			FolderID;
-	bool				softdeleted;
+	int						ret;
+	struct mapistore_mgmt_notif			n;
+	const char					*mapistoreURI;
+	bool						WholeStore;
+	uint16_t					NotificationFlags;
+	uint64_t					FolderID;
+	bool						softdeleted;
+	struct mapistore_subscription_list		*subscription_list;
+	struct mapistore_subscription			*subscription;
+	struct mapistore_object_subscription_parameters	subscription_params;
+	uint32_t					random_int;
 
 	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
 		return NULL;
@@ -87,19 +91,41 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 
 	ret = mapistore_mgmt_interface_register_subscription(self->mstore_ctx->conn_info, &n);
 
-	return PyBool_FromLong(!ret ? true : false);
+	/* Upon success attach subscription to session object using
+	 * existing mapistore_notification.c implementation */
+	if (ret == MAPISTORE_SUCCESS) {
+		subscription_list = talloc_zero(self->mstore_ctx, struct mapistore_subscription_list);
+		DLIST_ADD(self->mstore_ctx->subscriptions, subscription_list);
+
+		subscription_params.folder_id = n.FolderID;
+		subscription_params.object_id = n.MessageID;
+		subscription_params.whole_store = n.WholeStore;
+
+		/* In OpenChange server, we use handle_id of the
+		 * object, just use rand for now in bindings */
+		random_int = rand();
+
+		subscription = mapistore_new_subscription(subscription_list, 
+							  self->mstore_ctx->conn_info->username,
+							  random_int, n.NotificationFlags, 
+							  &subscription_params);
+		subscription_list->subscription = subscription;
+	}
+
+	return PyInt_FromLong(!ret ? random_int : -1);
 }
 
 static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextObject *self, PyObject *args)
 {
-	int				ret;
-	struct mapistore_mgmt_notif	n;
-	const char			*mapistoreURI;
-	bool				WholeStore;
-	uint16_t			NotificationFlags;
-	uint64_t			FolderID;
+	int					ret;
+	struct mapistore_mgmt_notif		n;
+	const char				*mapistoreURI;
+	bool					WholeStore;
+	uint16_t				NotificationFlags;
+	uint64_t				FolderID;
+	uint32_t				identifier;
 
-	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
+	if (!PyArg_ParseTuple(args, "sbhi", &mapistoreURI, &WholeStore, &NotificationFlags, &identifier)) {
 		return NULL;
 	}
 
@@ -125,13 +151,45 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 
 	ret = mapistore_mgmt_interface_unregister_subscription(self->mstore_ctx->conn_info, &n);
 
+	/* Remove matching notifications from mapistore_notification system */
+	if (ret == MAPISTORE_SUCCESS) {
+		ret = mapistore_delete_subscription(self->mstore_ctx, identifier, NotificationFlags);
+	}
+
 	return PyBool_FromLong(!ret ? true : false);
+}
+
+static PyObject *py_MAPIStoreContext_get_notifications(PyMAPIStoreContextObject *self, PyObject *args)
+{
+	int					ret;
+	struct mapistore_subscription_list	*sel;
+	struct mapistore_notification_list	*nlist;
+
+	for (sel = self->mstore_ctx->subscriptions; sel; sel = sel->next) {
+		ret = mapistore_get_queued_notifications(self->mstore_ctx, sel->subscription, &nlist);
+		if (ret == MAPISTORE_SUCCESS) {
+			while (nlist) {
+				printf("notification FolderID: 0x%llx\n", 
+				       nlist->notification->parameters.object_parameters.folder_id);
+				printf("notification MessageID: 0x%llx\n", 
+				       nlist->notification->parameters.object_parameters.object_id);
+				nlist = nlist->next;
+			}
+			talloc_free(nlist);
+		}
+	}
+
+	if (ret != MAPISTORE_SUCCESS) {
+		return Py_None;
+	}
+	return Py_None;
 }
 
 static PyMethodDef mapistore_context_methods[] = {
 	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },
 	{ "add_subscription", (PyCFunction)py_MAPIStoreContext_register_subscription, METH_VARARGS },
 	{ "delete_subscription", (PyCFunction)py_MAPIStoreContext_unregister_subscription, METH_VARARGS },
+	{ "get_notifications", (PyCFunction)py_MAPIStoreContext_get_notifications, METH_VARARGS },
 	{ NULL },
 };
 

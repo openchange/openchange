@@ -510,6 +510,9 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
         }
         else {
                 switch (notification->event) {
+		case MAPISTORE_OBJECT_NEWMAIL:
+			reply->NotificationType |= fnevNewMail;
+			break;
                 case MAPISTORE_OBJECT_CREATED:
                         reply->NotificationType |= fnevObjectCreated;
                         break;
@@ -532,6 +535,14 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                 }
                 if (notification->object_type == MAPISTORE_MESSAGE) {
                         switch (notification->event) {
+			case MAPISTORE_OBJECT_NEWMAIL:
+				reply->NotificationData.NewMailNotification.FID = notification->parameters.object_parameters.folder_id;
+				reply->NotificationData.NewMailNotification.MID = notification->parameters.object_parameters.object_id;
+				/* Hack for now */
+				reply->NotificationData.NewMailNotification.MessageFlags = 0x4;
+				reply->NotificationData.NewMailNotification.UnicodeFlag = true;
+				reply->NotificationData.NewMailNotification.MessageClass.lpszW = "IPF.Note";
+				break;
                         case MAPISTORE_OBJECT_CREATED:
                                 reply->NotificationData.MessageCreatedNotification.FID = notification->parameters.object_parameters.folder_id;
                                 reply->NotificationData.MessageCreatedNotification.MID = notification->parameters.object_parameters.object_id;
@@ -616,10 +627,14 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							 struct emsmdbp_context *emsmdbp_ctx,
 							 struct mapi_request *mapi_request)
 {
-	enum MAPISTATUS		retval;
-	struct mapi_response	*mapi_response;
-        struct mapistore_notification_list *notification_holder;
-        struct mapistore_subscription_list *subscription_list, *subscription_holder;
+	enum MAPISTATUS				retval;
+	struct mapi_response			*mapi_response;
+        struct mapistore_notification_list	*notification_holder;
+	struct mapistore_notification_list	*nlist;
+	struct mapistore_notification_list	*el;
+	struct mapistore_subscription_list	*sel;
+        struct mapistore_subscription_list	*subscription_list;
+	struct mapistore_subscription_list	*subscription_holder;
 	uint32_t		handles_length;
 	uint16_t		size = 0;
 	uint32_t		i;
@@ -1204,6 +1219,25 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                 DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->notifications, notification_holder);
                 talloc_free(notification_holder);
         }
+
+	/* Process notifications available on subscriptions queues */
+	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
+		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
+		if (retval == MAPISTORE_SUCCESS) {
+			el = nlist;
+			while (el) {
+				if (needs_realloc) {
+					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
+										  struct EcDoRpc_MAPI_REPL, idx + 2);
+				}
+				needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
+									  &(mapi_response->mapi_repl[idx]),
+									  sel->subscription, el->notification, &size);
+				el = nlist->next;
+			}
+			talloc_free(nlist);
+		}
+	}
 
         mapi_response->mapi_repl[idx].opnum = 0;
 

@@ -22,19 +22,46 @@
 #include <talloc.h>
 #include <dlinklist.h>
 
-#include "mapistore.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, uint32_t handle,
+static int mapistore_subscription_destructor(void *data)
+{
+	struct mapistore_subscription	*subscription = (struct mapistore_subscription *) data;
+
+	if (!data) return -1;
+
+	if (subscription->mqueue != -1) {
+		if (mq_unlink(subscription->mqueue_name) == -1) {
+			perror("mq_unlink");
+		}
+		DEBUG(0, ("%s unlinked\n", subscription->mqueue_name));
+		talloc_free(subscription->mqueue_name);
+	}
+	return 0;
+}
+
+struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, 
+							  const char *username,
+							  uint32_t handle,
                                                           uint16_t notification_types,
                                                           void *notification_parameters)
 {
-        struct mapistore_subscription *new_subscription;
-        struct mapistore_table_subscription_parameters *table_parameters;
+	int						ret;
+        struct mapistore_subscription			*new_subscription;
+        struct mapistore_table_subscription_parameters	*table_parameters;
         struct mapistore_object_subscription_parameters *object_parameters;
+	unsigned int					prio;
+	struct mq_attr					attr;
+	DATA_BLOB					data;
 
         new_subscription = talloc_zero(mem_ctx, struct mapistore_subscription);
         new_subscription->handle = handle;
         new_subscription->notification_types = notification_types;
+	new_subscription->mqueue = -1;
+	new_subscription->mqueue_name = NULL;
         if (notification_types == fnevTableModified) {
                 table_parameters = notification_parameters;
                 new_subscription->parameters.table_parameters = *table_parameters;
@@ -43,6 +70,37 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, u
                 object_parameters = notification_parameters;
                 new_subscription->parameters.object_parameters = *object_parameters;
         }
+
+	/* NewMail POC: open newmail mail queue */
+	if (notification_types == fnevNewMail) {
+		new_subscription->mqueue_name = talloc_asprintf((TALLOC_CTX *)new_subscription, 
+								MAPISTORE_MQUEUE_NEWMAIL_FMT, username);
+		new_subscription->mqueue = mq_open(new_subscription->mqueue_name, 
+						   O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+		if (new_subscription->mqueue == -1) {
+			perror("mq_open");
+			talloc_free(new_subscription->mqueue_name);
+			return new_subscription;
+		}
+
+		/* Empty queue since we only want to retrieve new data from now */
+		ret = mq_getattr(new_subscription->mqueue, &attr);
+		if (ret == -1) {
+			perror("mq_getattr");
+		} else {
+			data.data = talloc_size(mem_ctx, attr.mq_msgsize);
+			while ((data.length = mq_receive(new_subscription->mqueue, (char *)data.data,
+							 attr.mq_msgsize, &prio)) != -1) {
+				dump_data(0, data.data, data.length);
+				talloc_free(data.data);
+				data.data = talloc_size(mem_ctx, attr.mq_msgsize);
+			}
+			talloc_free(data.data);
+		}
+		
+		/* Set destructor on new_subscription as we want to unlink the queue upon release */
+		talloc_set_destructor((void *)new_subscription, (int (*)(void *))mapistore_subscription_destructor);
+	}
 
         return new_subscription;
 }
@@ -76,6 +134,101 @@ _PUBLIC_ void mapistore_push_notification(struct mapistore_context *mstore_ctx, 
 		}
 	}
 	DLIST_ADD_END(mstore_ctx->notifications, new_list, void);
+}
+
+static struct mapistore_notification_list *mapistore_notification_process_mqueue_notif(TALLOC_CTX *mem_ctx, 
+										       DATA_BLOB data)
+										       
+{
+	struct mapistore_notification_list	*nl;
+	struct mapistore_mgmt_command		command;
+	struct ndr_pull				*ndr_pull = NULL;
+
+	ndr_pull = ndr_pull_init_blob(&data, mem_ctx);
+	ndr_pull_mapistore_mgmt_command(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &command);
+
+	/* verbose */
+	{
+		struct ndr_print	*ndr_print;
+		
+		ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+		ndr_print->print = ndr_print_printf_helper;
+		ndr_print->depth = 1;
+		ndr_print_mapistore_mgmt_command(ndr_print, "command", &command);
+		talloc_free(ndr_print);
+	}
+
+	if (command.type != MAPISTORE_MGMT_NOTIF) {
+		DEBUG(0, ("[%s:%d]: Invalid command type received: 0x%x\n",
+			  __FUNCTION__, __LINE__, command.type));
+		return NULL;
+	}
+
+	if (command.command.notification.status != MAPISTORE_MGMT_SEND) {
+		DEBUG(0, ("[%s:%d]: Invalid notification status: 0x%x\n",
+			  __FUNCTION__, __LINE__, command.command.notification.status));
+		return NULL;
+	}
+
+	nl = talloc_zero(mem_ctx, struct mapistore_notification_list);
+	nl->notification = talloc_zero((TALLOC_CTX *)nl, struct mapistore_notification);
+
+	/* HACK: we only support NewMail notifications for now */
+	nl->notification->object_type = MAPISTORE_MESSAGE;
+	nl->notification->event = MAPISTORE_OBJECT_NEWMAIL;
+	nl->notification->parameters.object_parameters.folder_id = command.command.notification.FolderID;
+	nl->notification->parameters.object_parameters.object_id = command.command.notification.MessageID;
+
+	return nl;
+}
+
+_PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_context *mstore_ctx,
+							    struct mapistore_subscription *s,
+							    struct mapistore_notification_list **nl)
+{
+	int					ret;
+	struct mapistore_notification_list	*nlist = NULL;
+	struct mapistore_notification_list	*el = NULL;
+	unsigned int				prio;
+	struct mq_attr				attr;
+	DATA_BLOB				data;
+	bool					found = false;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!s, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!nl, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	MAPISTORE_RETVAL_IF(s->mqueue == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	/* Retrieve queue attributes */
+	ret = mq_getattr(s->mqueue, &attr);
+	if (ret == -1) {
+		perror("mq_getattr");
+		/* set proper error message here and remove above */
+		MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+	}
+
+	data.data = talloc_size((TALLOC_CTX *)mstore_ctx, attr.mq_msgsize);
+	while ((data.length = mq_receive(s->mqueue, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		if (!nlist) {
+			talloc_zero((TALLOC_CTX *)mstore_ctx, struct mapistore_notification_list);
+		}
+		el = mapistore_notification_process_mqueue_notif((TALLOC_CTX *)mstore_ctx, data);
+		if (el) {
+			DLIST_ADD_END(nlist, el, struct mapistore_notification_list);
+		}
+		talloc_free(data.data);
+		found = true;
+		data.data = talloc_size((TALLOC_CTX *)mstore_ctx, attr.mq_msgsize);
+	}
+	talloc_free(data.data);
+
+	if (found == true) {
+		*nl = nlist;
+	}
+
+	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
 }
 
 static bool notification_matches_subscription(struct mapistore_notification *notification, struct mapistore_subscription *subscription)
@@ -131,6 +284,26 @@ static bool notification_matches_subscription(struct mapistore_notification *not
         }
 
         return result;
+}
+
+_PUBLIC_ int mapistore_delete_subscription(struct mapistore_context *mstore_ctx, uint32_t identifier, 
+					   uint16_t NotificationFlags)
+{
+	struct mapistore_subscription_list *el;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	for (el = mstore_ctx->subscriptions; el; el = el->next) {
+		if ((el->subscription->handle == identifier) &&
+		    (el->subscription->notification_types == NotificationFlags)) {
+			DLIST_REMOVE(mstore_ctx->subscriptions, el);
+			talloc_free(el);
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
 }
 
 _PUBLIC_ struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *mstore_ctx, struct mapistore_notification *notification)

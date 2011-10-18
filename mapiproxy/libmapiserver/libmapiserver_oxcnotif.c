@@ -67,6 +67,14 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 break;
 
         case 0x0004: /* folder created */
+	case 0x0002: /* newmail */
+		size += sizeof (uint64_t) * 2 + sizeof (uint32_t) + sizeof (uint8_t);
+		if (NotificationData->NewMailNotification.UnicodeFlag == false) {
+			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszA);
+		} else {
+			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszW) * 2 + 2;
+		}
+		break;
         case 0x8004: /* message created */ 
         case 0x8010: /* message modified */
                 size += sizeof(uint16_t);

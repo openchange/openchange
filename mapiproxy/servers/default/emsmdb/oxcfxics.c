@@ -103,6 +103,9 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_ty
 	uint32_t	string_len;
 
 	switch (data_type) {
+	case PT_NULL:
+		/* This should never occur in theory, but it might occur when returning the PidNameXXX properties. */
+		break;
 	case PT_I2:
 		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
 		break;

@@ -147,6 +147,8 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_ty
 	case PT_SYSTIME:
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
+	case PT_NULL:
+		break;
 	default:
 		DEBUG(5, ("%s: unsupported property type: %.4x\n", __FUNCTION__, data_type));
 		abort();

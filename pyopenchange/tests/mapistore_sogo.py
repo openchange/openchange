@@ -33,9 +33,13 @@ mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator")
 Inbox = MAPICtx.open()
-MAPICtx.add_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
+identifier = MAPICtx.add_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
+while 1:
+    time.sleep(1)
+    MAPICtx.get_notifications()
+    
 time.sleep(15)
-MAPICtx.delete_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
+MAPICtx.delete_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2, identifier)
 
 #Calendar = MAPIStore.add_context("sogo://Administator:Administrator@inbox/", "Administrator").open()
 #time.sleep(5)

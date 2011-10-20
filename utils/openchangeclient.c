@@ -2326,7 +2326,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 
 	/* Register notification */
 	session = mapi_object_get_session(obj_store);
-	retval = RegisterNotification(session, 0);
+	retval = RegisterNotification(session);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (oclient->pf == true) {

@@ -4116,7 +4116,7 @@ System Attendant Private Interface
 
 	MAPISTATUS EcRRegisterPushNotification(
                [in,out] policy_handle			*handle,
-               [in] NotificationFlags			ulEventMask,
+               [in] uint32				iRpc,
 	       [in,size_is(cbContext)] uint8		rgbContext[*],
                [in] uint16				cbContext,
 	       [in] uint32				grbitAdviseBits,

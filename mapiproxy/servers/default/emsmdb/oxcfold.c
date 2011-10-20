@@ -216,7 +216,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		subscription_parameters.folder_id = folderID;
 
 		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->username,
+		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
+							  emsmdbp_ctx->username,
 							  rec->handle, fnevTableModified, &subscription_parameters);
 		subscription_list->subscription = subscription;
 		object->object.table->subscription_list = subscription_list;
@@ -345,7 +346,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 		subscription_parameters.folder_id = folderID; 
                 
 		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->username,
+		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
+							  emsmdbp_ctx->username,
 							  rec->handle, fnevTableModified, &subscription_parameters);
 		subscription_list->subscription = subscription;
 		object->object.table->subscription_list = subscription_list;

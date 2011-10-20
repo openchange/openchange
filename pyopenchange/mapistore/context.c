@@ -106,6 +106,7 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 		random_int = rand();
 
 		subscription = mapistore_new_subscription(subscription_list, 
+							  self->mstore_ctx,
 							  self->mstore_ctx->conn_info->username,
 							  random_int, n.NotificationFlags, 
 							  &subscription_params);

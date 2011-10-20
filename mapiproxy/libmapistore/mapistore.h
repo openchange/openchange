@@ -346,7 +346,7 @@ struct mapistore_subscription {
 	mqd_t		mqueue;
 };
 
-struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, const char *, uint32_t, uint16_t, void *);
+struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, struct mapistore_context *, const char *, uint32_t, uint16_t, void *);
 
 /* notifications (implementation) */
 

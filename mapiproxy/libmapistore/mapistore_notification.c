@@ -25,6 +25,7 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
 static int mapistore_subscription_destructor(void *data)
@@ -44,12 +45,15 @@ static int mapistore_subscription_destructor(void *data)
 }
 
 struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, 
+							  struct mapistore_context *mstore_ctx,
 							  const char *username,
 							  uint32_t handle,
                                                           uint16_t notification_types,
                                                           void *notification_parameters)
 {
 	int						ret;
+	struct mapistore_connection_info		c;
+	struct mapistore_mgmt_notif			n;
         struct mapistore_subscription			*new_subscription;
         struct mapistore_table_subscription_parameters	*table_parameters;
         struct mapistore_object_subscription_parameters *object_parameters;
@@ -69,37 +73,56 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
         else {
                 object_parameters = notification_parameters;
                 new_subscription->parameters.object_parameters = *object_parameters;
-        }
 
-	/* NewMail POC: open newmail mail queue */
-	if (notification_types == fnevNewMail) {
-		new_subscription->mqueue_name = talloc_asprintf((TALLOC_CTX *)new_subscription, 
-								MAPISTORE_MQUEUE_NEWMAIL_FMT, username);
-		new_subscription->mqueue = mq_open(new_subscription->mqueue_name, 
-						   O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
-		if (new_subscription->mqueue == -1) {
-			perror("mq_open");
-			talloc_free(new_subscription->mqueue_name);
-			return new_subscription;
-		}
-
-		/* Empty queue since we only want to retrieve new data from now */
-		ret = mq_getattr(new_subscription->mqueue, &attr);
-		if (ret == -1) {
-			perror("mq_getattr");
-		} else {
-			data.data = talloc_size(mem_ctx, attr.mq_msgsize);
-			while ((data.length = mq_receive(new_subscription->mqueue, (char *)data.data,
-							 attr.mq_msgsize, &prio)) != -1) {
-				dump_data(0, data.data, data.length);
-				talloc_free(data.data);
-				data.data = talloc_size(mem_ctx, attr.mq_msgsize);
+		/* NewMail POC: open newmail mail queue */
+		if (notification_types & fnevNewMail || notification_types & fnevObjectCreated) {
+			new_subscription->mqueue_name = talloc_asprintf((TALLOC_CTX *)new_subscription, 
+									MAPISTORE_MQUEUE_NEWMAIL_FMT, username);
+			new_subscription->mqueue = mq_open(new_subscription->mqueue_name, 
+							   O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+			if (new_subscription->mqueue == -1) {
+				perror("mq_open");
+				talloc_free(new_subscription->mqueue_name);
+				return new_subscription;
 			}
-			talloc_free(data.data);
+			
+			/* Empty queue since we only want to retrieve new data from now */
+			ret = mq_getattr(new_subscription->mqueue, &attr);
+			if (ret == -1) {
+				perror("mq_getattr");
+			} else {
+				data.data = talloc_size(mem_ctx, attr.mq_msgsize);
+				while ((data.length = mq_receive(new_subscription->mqueue, (char *)data.data,
+								 attr.mq_msgsize, &prio)) != -1) {
+					dump_data(0, data.data, data.length);
+					talloc_free(data.data);
+					data.data = talloc_size(mem_ctx, attr.mq_msgsize);
+				}
+				talloc_free(data.data);
+			}
+			
+			/* Set destructor on new_subscription as we want to unlink the queue upon release */
+			talloc_set_destructor((void *)new_subscription, (int (*)(void *))mapistore_subscription_destructor);
+			
+			/* Send notification to tell about newmail */
+			n.WholeStore = object_parameters->whole_store;
+			if (n.WholeStore == true) {
+				n.FolderID = 0;
+				n.MessageID = 0;
+				n.MAPIStoreURI = NULL;
+			} else {
+				n.FolderID = object_parameters->folder_id;
+				n.MessageID = object_parameters->object_id;
+				/* FIXME */
+				n.MAPIStoreURI = NULL;
+			}
+
+			c.username = username;
+			c.mstore_ctx = mstore_ctx;
+			
+			ret = mapistore_mgmt_interface_register_subscription(&c, &n);
+			DEBUG(0, ("[%s:%d]: registering newmail notification: %d\n", __FUNCTION__, __LINE__, ret));
 		}
-		
-		/* Set destructor on new_subscription as we want to unlink the queue upon release */
-		talloc_set_destructor((void *)new_subscription, (int (*)(void *))mapistore_subscription_destructor);
 	}
 
         return new_subscription;

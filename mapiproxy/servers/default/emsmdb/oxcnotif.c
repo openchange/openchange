@@ -113,7 +113,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
         subscription_parameters.object_id = mapi_req->u.mapi_RegisterNotification.MessageId.ID;
         subscription_parameters.whole_store = mapi_req->u.mapi_RegisterNotification.WantWholeStore;
 
-        subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->username, 
+        subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
+						  emsmdbp_ctx->username, 
 						  subscription_rec->handle,
 						  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
 						  &subscription_parameters);

@@ -179,11 +179,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 {
 	uint64_t			parentFolderID;
 	uint64_t			testFolderID;
-	char				*parentDN;
-	char				*dn;
-	char				*mailboxDN;
-	struct ldb_dn			*basedn;
-	struct ldb_message		*msg;
+	char				*MAPIStoreURI;
 	struct SPropValue		*value;
 	NTTIME				nt_time;
 	int				retval;
@@ -224,39 +220,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			return MAPI_E_COLLISION;
 		}
 
-		/* This part should be moved into openchangedb.c */
 		local_mem_ctx = talloc_zero(NULL, void);
-		retval = openchangedb_get_distinguishedName(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &parentDN);
-		retval = openchangedb_get_mailboxDN(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &mailboxDN);
-		dn = talloc_asprintf(local_mem_ctx, "CN=%"PRIu64",%s", fid, parentDN);
-		basedn = ldb_dn_new(local_mem_ctx, emsmdbp_ctx->oc_ctx, dn);
-		talloc_free(dn);
-		if (!ldb_dn_validate(basedn)) {
-			talloc_free(local_mem_ctx);
-			talloc_free(new_folder);
-			return MAPI_E_BAD_VALUE;
-		}
-	
-		msg = ldb_msg_new(local_mem_ctx);
-		msg->dn = ldb_dn_copy(local_mem_ctx, basedn);
-		ldb_msg_add_string(msg, "objectClass", "systemfolder");
-		ldb_msg_add_fmt(msg, "cn", "%"PRIu64, fid);
-		ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
-		ldb_msg_add_string(msg, "PidTagContentCount", "0");
-		ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
-		ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
-		ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
-		ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
-		ldb_msg_add_string(msg, "PidTagAccess", "63");
-		ldb_msg_add_string(msg, "PidTagRights", "2043");
-		ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
-		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
-		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
-		ldb_msg_add_fmt(msg, "mailboxDN", mailboxDN);
-		ldb_msg_add_fmt(msg, "MAPIStoreURI", "sogo://%s:%s@fallback/0x%.16"PRIx64,
-				emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
-		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
-
 		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
 		if (value) {
 			nt_time = ((NTTIME) value->value.ft.dwHighDateTime << 32
@@ -267,19 +231,19 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		}
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
-			ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, value->value.d);
+			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64,
+						       emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
+			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, 
+							    MAPIStoreURI, nt_time, value->value.d);
+			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
+				abort();
+			}
 		}
 		else {
 			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
 			abort();
 		}
-		ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
-		ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);
-		ldb_msg_add_string(msg, "FolderType", "1");
-		ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
-
-		msg->elements[0].flags = LDB_FLAG_MOD_ADD;
-		ldb_add(emsmdbp_ctx->oc_ctx, msg);
 
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
 
@@ -422,7 +386,20 @@ end:
 	return retval;
 }
 
-_PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, uint64_t fid)
+/**
+   \details Return the folder object associated to specified folder identified
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param context_object pointer to current context object
+   \param fid pointer to the Folder Identifier to lookup
+
+   \return Valid emsmdbp object structure on success, otherwise NULL
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, 
+								  struct emsmdbp_context *emsmdbp_ctx, 
+								  struct emsmdbp_object *context_object, 
+								  uint64_t fid)
 {
 	uint64_t		parent_fid;
 	int			retval;

@@ -1494,3 +1494,89 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details Create a folder in openchangedb
+
+   \param ldb_ctx pointer to the openchangedb LDB context
+   \param parentFolderID the FID of the parent folder
+   \param fid the FID of the folder to create
+   \param MAPIStoreURI the mapistore URI to associate to this folder
+   \param nt_time the creation time of the folder
+   \param changeNumber the change number
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_create_folder(void *ldb_ctx,
+						    uint64_t parentFolderID,
+						    uint64_t fid,
+						    const char *MAPIStoreURI,
+						    NTTIME nt_time,
+						    int64_t changeNumber)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	char			*dn;
+	char			*mailboxDN;
+	char			*parentDN;
+	struct ldb_dn		*basedn;
+	struct ldb_message	*msg;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!MAPIStoreURI, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!fid, MAPI_E_NOT_INITIALIZED, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "openchangedb_create_folder");
+
+	/* Retrieve distinguesName for parent folder */
+	retval = openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, parentFolderID, &parentDN);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	retval = openchangedb_get_mailboxDN(mem_ctx, ldb_ctx, parentFolderID, &mailboxDN);
+	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+
+	dn = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", fid, parentDN);
+	MAPI_RETVAL_IF(!dn, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	basedn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+
+	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, mem_ctx);
+	
+	msg = ldb_msg_new(mem_ctx);
+	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	msg->dn = ldb_dn_copy(mem_ctx, basedn);
+	ldb_msg_add_string(msg, "objectClass", "systemfolder");
+	ldb_msg_add_fmt(msg, "cn", "%"PRIu64, fid);
+	ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
+	ldb_msg_add_string(msg, "PidTagContentCount", "0");
+	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
+	ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
+	ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
+	ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
+	ldb_msg_add_string(msg, "PidTagAccess", "63");
+	ldb_msg_add_string(msg, "PidTagRights", "2043");
+	ldb_msg_add_string(msg, "MAPIStoreURI", MAPIStoreURI);
+	ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
+	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
+	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
+	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
+	ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
+	ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, changeNumber);
+	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
+	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);
+	ldb_msg_add_string(msg, "FolderType", "1");
+	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
+
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
+	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
+		talloc_free(mem_ctx);
+		return MAPI_E_CALL_FAILED;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
+}

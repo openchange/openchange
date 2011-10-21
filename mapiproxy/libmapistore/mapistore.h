@@ -314,6 +314,7 @@ int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, con
 int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
+int mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *, uint16_t, uint8_t *, uint16_t, uint8_t *);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 

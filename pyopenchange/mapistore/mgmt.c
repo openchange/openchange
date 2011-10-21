@@ -214,18 +214,19 @@ static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyOb
 {
 	int		ret;
 	const char	*username;
+	const char	*storeuser;
 	const char	*FolderURI;
 	const char	*MessageURI;
 	uint64_t	FolderID;
 	uint64_t	MessageID;
 	bool		softdeleted;
 
-	if (!PyArg_ParseTuple(args, "sss", &username, &FolderURI, &MessageURI)) {
+	if (!PyArg_ParseTuple(args, "ssss", &username, &storeuser, &FolderURI, &MessageURI)) {
 		return NULL;
 	}
 
 	/* Turn MessageURI into MessageID from indexing database */
-	ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, MessageURI, 
+	ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, storeuser, MessageURI, 
 						 false, &MessageID, &softdeleted);
 	if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
 		return PyBool_FromLong(false);

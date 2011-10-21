@@ -4120,7 +4120,7 @@ System Attendant Private Interface
 	       [in,size_is(cbContext)] uint8		rgbContext[*],
                [in] uint16				cbContext,
 	       [in] uint32				grbitAdviseBits,
-	       [in,size_is(cbCallbackAddress)] uint8	rgCallbackAddress[*],
+	       [in,size_is(cbCallbackAddress)] uint8	rgbCallbackAddress[*],
 	       [in] uint16				cbCallbackAddress,
 	       [out,ref] uint32				*hNotification
 		);

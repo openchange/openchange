@@ -707,11 +707,11 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	request.in.rgbContext = talloc_array(mem_ctx, uint8_t, request.in.cbContext);
 	memcpy(request.in.rgbContext, notifkey->ab, request.in.cbContext);
 	request.in.grbitAdviseBits = 0xffffffff;
-	request.in.rgCallbackAddress = talloc_array(mem_ctx, uint8_t, sizeof (struct sockaddr));
+	request.in.rgbCallbackAddress = talloc_array(mem_ctx, uint8_t, sizeof (struct sockaddr));
 	/* cp address family and length */
-	request.in.rgCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
-	request.in.rgCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
-	memcpy(&request.in.rgCallbackAddress[2], notify_ctx->addr->sa_data, 14);
+	request.in.rgbCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
+	request.in.rgbCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
+	memcpy(&request.in.rgbCallbackAddress[2], notify_ctx->addr->sa_data, 14);
 	request.in.cbCallbackAddress = sizeof (struct sockaddr);
 
 	request.out.handle = &handle;

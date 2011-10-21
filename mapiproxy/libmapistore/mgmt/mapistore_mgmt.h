@@ -53,10 +53,18 @@ struct mapistore_mgmt_notif {
 	struct mapistore_mgmt_notif	*next;
 };
 
+struct mapistore_mgmt_notify_context {
+	int				fd;
+	struct sockaddr			*addr;
+	uint16_t			context_len;
+	uint8_t				*context_data;
+};
+
 struct mapistore_mgmt_users {
 	struct mapistore_mgmt_user_cmd		*info;
 	struct mapistore_mgmt_notif		*notifications;
 	uint32_t				ref_count;
+	struct mapistore_mgmt_notify_context	*notify_ctx;
 	struct mapistore_mgmt_users		*prev;
 	struct mapistore_mgmt_users		*next;
 };
@@ -96,9 +104,11 @@ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context 
 /* definitions from mapistore_mgmt_messages.c */
 int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_user_cmd);
 int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_notification_cmd);
+int mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_bind_cmd);
 
 /* definitions from mapistore_mgmt_send.c */
 int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *, const char *, uint64_t, uint64_t, const char *);
+int mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *, const char *);
 
 __END_DECLS
 

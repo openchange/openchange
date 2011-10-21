@@ -79,7 +79,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 			new_subscription->mqueue_name = talloc_asprintf((TALLOC_CTX *)new_subscription, 
 									MAPISTORE_MQUEUE_NEWMAIL_FMT, username);
 			new_subscription->mqueue = mq_open(new_subscription->mqueue_name, 
-							   O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+							   O_RDONLY|O_NONBLOCK|O_CREAT, 0777, NULL);
 			if (new_subscription->mqueue == -1) {
 				perror("mq_open");
 				talloc_free(new_subscription->mqueue_name);
@@ -106,6 +106,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 			
 			/* Send notification to tell about newmail */
 			n.WholeStore = object_parameters->whole_store;
+			n.NotificationFlags = notification_types;
 			if (n.WholeStore == true) {
 				n.FolderID = 0;
 				n.MessageID = 0;
@@ -117,7 +118,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 				n.MAPIStoreURI = NULL;
 			}
 
-			c.username = username;
+			c.username = (char *)username;
 			c.mstore_ctx = mstore_ctx;
 			
 			ret = mapistore_mgmt_interface_register_subscription(&c, &n);
@@ -205,6 +206,90 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 	return nl;
 }
 
+
+/**
+   \details Return the list of pending mapistore notifications
+   available on the queue name specified in argument.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param mqueue_name the name of the queue to open
+   \param nl pointer on pointer to the list of mapistore notifications to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
+ */
+_PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapistore_context *mstore_ctx,
+								  const char *mqueue_name,
+								  struct mapistore_notification_list **nl)
+{
+	int					ret;
+	mqd_t					mqueue;
+	struct mapistore_notification_list	*nlist = NULL;
+	struct mapistore_notification_list	*el = NULL;
+	unsigned int				prio;
+	struct mq_attr				attr;
+	DATA_BLOB				data;
+	bool					found = false;
+
+	printf("[%s:%d]: queue name = %s\n", __FUNCTION__, __LINE__, ((mqueue_name) ? mqueue_name : NULL));
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!nl, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mqueue = mq_open(mqueue_name, O_RDONLY|O_NONBLOCK|O_CREAT, 0777, NULL);
+	if (mqueue == -1) {
+		perror("mq_open");
+		return MAPISTORE_ERR_NOT_INITIALIZED;
+	}
+
+	/* Retrieve queue attributes */
+	ret = mq_getattr(mqueue, &attr);
+	if (ret == -1) {
+		perror("mq_getattr");
+		/* set proper error message here and remove above */
+		if (mq_close(mqueue) == -1) {
+			perror("mq_close");
+		}
+		MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+	}
+
+	data.data = talloc_size((TALLOC_CTX *)mstore_ctx, attr.mq_msgsize);
+	while ((data.length = mq_receive(mqueue, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		printf("* we received a notification on queue %s\n", mqueue_name);
+		if (!nlist) {
+			nlist = talloc_zero((TALLOC_CTX *)mstore_ctx, struct mapistore_notification_list);
+		}
+		el = mapistore_notification_process_mqueue_notif((TALLOC_CTX *)nlist, data);
+		printf("* processing notification returned %p\n", el);
+		if (el) {
+			DLIST_ADD_END(nlist, el, struct mapistore_notification_list);
+		}
+		talloc_free(data.data);
+		found = true;
+		data.data = talloc_size((TALLOC_CTX *)mstore_ctx, attr.mq_msgsize);
+	}
+	talloc_free(data.data);
+
+	if (found == true) {
+		*nl = nlist;
+	}
+
+	if (mq_close(mqueue) == -1) {
+		perror("mq_close");
+	}
+
+	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Return the list of pending mapistore notifications within
+   the queue pointed by the mapistore subscription structure.
+
+   \param mstore_ctx pointer to the mapistore context
+   \param s pointer to the mapistore subscription where the mqueue file descriptor is stored
+   \param nl pointer on pointer to the list of mapistore noficiations to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
 _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_context *mstore_ctx,
 							    struct mapistore_subscription *s,
 							    struct mapistore_notification_list **nl)
@@ -237,7 +322,7 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 		if (!nlist) {
 			nlist = talloc_zero((TALLOC_CTX *)mstore_ctx, struct mapistore_notification_list);
 		}
-		el = mapistore_notification_process_mqueue_notif((TALLOC_CTX *)mstore_ctx, data);
+		el = mapistore_notification_process_mqueue_notif((TALLOC_CTX *)nlist, data);
 		if (el) {
 			DLIST_ADD_END(nlist, el, struct mapistore_notification_list);
 		}

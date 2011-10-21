@@ -35,6 +35,36 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
+int mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *mgmt_ctx,
+					 const char *username)
+{
+	struct mapistore_mgmt_users	*el;
+	ssize_t				len;
+	bool				found = false;
+
+	printf("mapistore_mgmt_send_udp_notification\n");
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	for (el = mgmt_ctx->users; el; el = el->next) {
+		if (!strcmp(el->info->username, username) && el->notify_ctx) {
+			len = send(el->notify_ctx->fd, (const void *)el->notify_ctx->context_data, 
+				   el->notify_ctx->context_len, MSG_DONTWAIT);
+			if (len == -1) {
+				perror("send");
+			} else {
+				printf("UDP NOTIFICATION SENT, size is: %d\n", len);
+				found = true;
+			}
+		}
+	}
+
+	return (found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND;
+}
+
+
 /** 
     \details Send a newmail notification over irpc to the listener
     process
@@ -62,6 +92,7 @@ int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt
 	char					*queue;
 
 	/* Sanity checks */
+	printf("mapistore_mgmt_send_newmail_notification\n");
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!MAPIStoreURI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -70,8 +101,10 @@ int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt
 
 	/* Try to open the newmail queue for specified user */
 	queue = talloc_asprintf(mem_ctx, MAPISTORE_MQUEUE_NEWMAIL_FMT, username);
-	mqfd = mq_open(queue, O_WRONLY|O_NONBLOCK, 0755, NULL);
+	mqfd = mq_open(queue, O_WRONLY|O_NONBLOCK);
 	if (mqfd == -1) {
+		ret = mapistore_mgmt_send_udp_notification(mgmt_ctx, username);
+		printf("[%s:%d] mapistore_mgmt_send_udp_notification: %d\n", __FUNCTION__, __LINE__, ret);
 		perror("mq_open");
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_NOT_FOUND;
@@ -108,6 +141,10 @@ int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt
 	
 	mq_close(mqfd);
 	talloc_free(mem_ctx);
+
+	/* Send UDP notification */
+	ret = mapistore_mgmt_send_udp_notification(mgmt_ctx, username);
+	printf("[%s:%d] mapistore_mgmt_send_udp_notification: %d\n", __FUNCTION__, __LINE__, ret);
 
 	return MAPISTORE_SUCCESS;
 }

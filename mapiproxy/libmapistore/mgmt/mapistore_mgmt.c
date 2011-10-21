@@ -57,6 +57,10 @@ static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 	case MAPISTORE_MGMT_USER:
 		mapistore_mgmt_message_user_command(mgmt_ctx, command.command.user);
 		break;
+	case MAPISTORE_MGMT_BIND:
+		printf("switch_case: MAPISTORE_MGMT_BIND\n");
+		mapistore_mgmt_message_bind_command(mgmt_ctx, command.command.bind);
+		break;
 	case MAPISTORE_MGMT_NOTIF:
 		mapistore_mgmt_message_notification_command(mgmt_ctx, command.command.notification);
 		break;
@@ -515,7 +519,7 @@ _PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt
 	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, NULL, NULL, messageID, rootURI, &uri);
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
-	DEBUG(0, ("mapistore_mgmt_register_message: %s\n", uri));
+	DEBUG(0, ("mapistore_mgmt_register_message: %s for user %s\n", uri, sysuser));
 
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
@@ -595,6 +599,7 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 
 	cmd.type = MAPISTORE_MGMT_NOTIF;
 	cmd.command.notification.status = status;
+	printf("NotificationFlags = 0x%x\n", notification->NotificationFlags);
 	cmd.command.notification.NotificationFlags = notification->NotificationFlags;
 	cmd.command.notification.username = conn_info->username;
 	cmd.command.notification.WholeStore = notification->WholeStore;
@@ -657,4 +662,74 @@ _PUBLIC_ int mapistore_mgmt_interface_unregister_subscription(struct mapistore_c
 	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
 						  MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO,
 						  conn_info, notification);
+}
+
+
+static int mgmt_bind_registration_command(enum mapistore_mgmt_status status,
+					  unsigned msg_prio,
+					  struct mapistore_connection_info *conn_info,
+					  uint16_t cbContext, uint8_t *rgbContext,
+					  uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+{
+	int				ret;
+	TALLOC_CTX			*mem_ctx;
+	DATA_BLOB			data;
+	struct mapistore_mgmt_command	cmd;
+	enum ndr_err_code		ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!rgbContext, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rgbCallbackAddress, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+
+	cmd.type = MAPISTORE_MGMT_BIND;
+	cmd.command.bind.username = conn_info->username;
+	cmd.command.bind.cbContext = cbContext;
+	cmd.command.bind.rgbContext = rgbContext;
+	cmd.command.bind.cbCallbackAddress = cbCallbackAddress;
+	cmd.command.bind.rgbCallbackAddress = rgbCallbackAddress;
+
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
+			  __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
+	if (ret == -1) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_MSG_SEND;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Register a callback address for UDP notifications to be
+   dispatched for given user
+
+   \param conn_info pointer to the connection information
+   \param cbContext number of bytes in rgbContext
+   \param rgbContext array of bytes holding the notification key
+   \param cbCallbackAddress number of bytes in rgbCallbackAddress
+   \param rgbCallbackAddress array of bytes holding the sockaddr structure to send
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *conn_info,
+						    uint16_t cbContext, uint8_t *rgbContext,
+						    uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+{
+	return mgmt_bind_registration_command(MAPISTORE_MGMT_REGISTER,
+					      MAPISTORE_COMMAND_NOTIF_SOCKET_REGISTER_PRIO, 
+					      conn_info, cbContext, rgbContext, 
+					      cbCallbackAddress, rgbCallbackAddress);
 }

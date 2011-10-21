@@ -32,7 +32,8 @@
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
 static int mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context *mgmt_ctx,
-						   struct mapistore_mgmt_user_cmd user_cmd)
+						   struct mapistore_mgmt_user_cmd user_cmd,
+						   bool populated)
 {
 	struct mapistore_mgmt_users	*el;
 
@@ -47,10 +48,17 @@ static int mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context
 		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
-	el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
+	if (populated == true) {
+		el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
+		el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
+	} else {
+		el->info->backend = NULL;
+		el->info->vuser = NULL;
+	}
 	el->info->username = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.username);
-	el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
 	el->ref_count = 1;
+	el->notify_ctx = NULL;
+
 	DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
 
 	return MAPISTORE_SUCCESS;
@@ -69,7 +77,7 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 
 	if (mgmt_ctx->users == NULL) {
 		if (user_cmd.status == MAPISTORE_MGMT_REGISTER) {
-			return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd);
+			return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd, true);
 		} else {
 			DEBUG(0, ("[%s:%d]: Trying to unregister user %s in empty list\n", 
 				  __FUNCTION__, __LINE__, user_cmd.username));
@@ -78,6 +86,26 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 	} else {
 		/* Search users list and perform action */
 		for (el = mgmt_ctx->users; el; el = el->next) {
+			/* Case where username exists but record is incomplete */
+			if (!strcmp(el->info->username, user_cmd.username) && 
+			    !el->info->backend && !el->info->vuser) {
+				found = true;
+				switch (user_cmd.status) {
+				case MAPISTORE_MGMT_REGISTER:
+					el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
+					el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
+					break;
+				case MAPISTORE_MGMT_UNREGISTER:
+					el->ref_count -= 1;
+					/* Delete record if ref_count is 0 */
+					if (el->ref_count == 0) {
+						DLIST_REMOVE(mgmt_ctx->users, el);
+						talloc_free(el);
+						break;
+					}
+					break;
+				}
+			}
 			/* Case where the record exists */
 			if ((!strcmp(el->info->backend, user_cmd.backend)) &&
 			    (!strcmp(el->info->username, user_cmd.username)) &&
@@ -107,7 +135,7 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 		if (found == false) {
 			switch (user_cmd.status) {
 			case MAPISTORE_MGMT_REGISTER:
-				return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd);
+				return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd, true);
 				break;
 			case MAPISTORE_MGMT_UNREGISTER:
 				DEBUG(0, ("[%s:%d]: Trying to unregister non-existing users %s\n",
@@ -124,6 +152,58 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 	return MAPISTORE_SUCCESS;
 }
 
+int mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *mgmt_ctx,
+					struct mapistore_mgmt_bind_cmd bind)
+{
+	struct mapistore_mgmt_users	*el;
+	bool				found = false;
+	struct mapistore_mgmt_user_cmd	user_cmd;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!bind.username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!bind.cbContext || !bind.cbCallbackAddress, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	
+	/* If bind occurs before any user registration */
+	if (!mgmt_ctx->users) {
+		user_cmd.username = bind.username;
+		mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd, false);
+	}
+
+	for (el = mgmt_ctx->users; el; el = el->next) {
+		if (!strcmp(el->info->username, bind.username)) {
+			/* Return existing notify context when existing */
+			if (el->notify_ctx) {
+				talloc_free(el->notify_ctx);
+			} 
+			found = true;
+			el->notify_ctx = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_notify_context);
+			el->notify_ctx->context_len = bind.cbContext;
+			el->notify_ctx->context_data = talloc_memdup((TALLOC_CTX *)el->notify_ctx, 
+								     bind.rgbContext, bind.cbContext);
+			el->notify_ctx->addr = talloc_memdup((TALLOC_CTX *)el->notify_ctx,
+							     bind.rgbCallbackAddress, 
+							     bind.cbCallbackAddress);
+			
+			/* socket / connect calls */
+			el->notify_ctx->fd = socket(PF_INET, SOCK_DGRAM|SOCK_NONBLOCK, IPPROTO_UDP);
+			if (el->notify_ctx->fd == -1) {
+				perror("socket");
+				talloc_free(el->notify_ctx);
+				found = false;
+			} else {
+				if (connect(el->notify_ctx->fd, el->notify_ctx->addr, sizeof (struct sockaddr)) == -1) {
+					perror("connect");
+					talloc_free(el->notify_ctx);
+					found = false;
+				}
+			}
+		}
+	}
+
+	return (found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND;
+}
+
 static int mapistore_mgmt_message_notification_command_add(struct mapistore_mgmt_users *user_cmd,
 							   struct mapistore_mgmt_notification_cmd notif)
 {
@@ -136,6 +216,7 @@ static int mapistore_mgmt_message_notification_command_add(struct mapistore_mgmt
 	}
 	el->WholeStore = notif.WholeStore;
 	el->NotificationFlags = notif.NotificationFlags;
+
 	el->ref_count = 1;
 	if (el->WholeStore == false) {
 		el->MAPIStoreURI = talloc_strdup((TALLOC_CTX *)el, notif.MAPIStoreURI);
@@ -286,7 +367,7 @@ int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *m
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!notif.username || !notif.MAPIStoreURI || 
+	MAPISTORE_RETVAL_IF(!notif.username || (!notif.MAPIStoreURI && notif.WholeStore == false) || 
 			    (!notif.FolderID && notif.WholeStore == false), MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (el = mgmt_ctx->users; el; el = el->next) {

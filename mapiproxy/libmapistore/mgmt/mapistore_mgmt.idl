@@ -9,8 +9,10 @@
 interface mapistore_mgmt
 {
 	typedef [enum8bit] enum {
-		MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO		= 28,
-		MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO		= 29,
+		MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO		= 26,
+		MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO		= 27,
+		MAPISTORE_COMMAND_NOTIF_SOCKET_REGISTER_PRIO	= 28,
+		MAPISTORE_COMMAND_NOTIF_SOCKET_UNREGISTER_PRIO	= 29,
 		MAPISTORE_COMMAND_USER_REGISTER_PRIO		= 30,
 		MAPISTORE_COMMAND_USER_UNREGISTER_PRIO		= 31
 	} mapistore_mgmt_command_priority;
@@ -28,6 +30,14 @@ interface mapistore_mgmt
 		[string, charset(UTF16)] uint16	*vuser;
 	} mapistore_mgmt_user_cmd;
 
+	typedef [public] struct {
+		[string, charset(UTF16)] uint16		*username;
+		uint16					cbContext;
+		[size_is(cbContext)] uint8		rgbContext[*];
+		uint16					cbCallbackAddress;
+		[size_is(cbCallbackAddress)] uint8	rgbCallbackAddress[*];
+	} mapistore_mgmt_bind_cmd;
+
 	typedef [public,bitmap16bit] bitmap {
 		mgmt_notification_type_newmail	= 0x2
 	} mapistore_mgmt_notification_type;
@@ -44,11 +54,13 @@ interface mapistore_mgmt
 
 	typedef [enum16bit] enum {
 		MAPISTORE_MGMT_USER	= 0x1,
-		MAPISTORE_MGMT_NOTIF	= 0x2
+		MAPISTORE_MGMT_BIND	= 0x2,
+		MAPISTORE_MGMT_NOTIF	= 0x3
 	} mapistore_mgmt_command_type;
 
 	typedef [public,switch_type(uint16)] union {
 		[case(MAPISTORE_MGMT_USER)] mapistore_mgmt_user_cmd		user;
+		[case(MAPISTORE_MGMT_BIND)] mapistore_mgmt_bind_cmd		bind;
 		[case(MAPISTORE_MGMT_NOTIF)] mapistore_mgmt_notification_cmd	notification;
 	} mapistore_mgmt_commands;
 

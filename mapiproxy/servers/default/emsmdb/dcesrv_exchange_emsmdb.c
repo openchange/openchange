@@ -310,19 +310,19 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
         reply->LogonId = 0; /* TODO: seems to be always 0 ? */
 
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, subscription->handle, &handle_object_handle);
-        if (retval) {
-                reply->NotificationType = fnevCriticalError;
-                DEBUG(5, ("notification handle not found\n"));
-                goto end;
-        }
+	if (retval) {
+		reply->NotificationType = fnevCriticalError;
+		DEBUG(5, ("notification handle not found\n"));
+		goto end;
+	}
 	retval = mapi_handles_get_private_data(handle_object_handle, (void **) &handle_object);
 	if (retval) {
-                reply->NotificationType = fnevCriticalError;
-                DEBUG(5, ("object not found for notification handle\n"));
-                goto end;
-        }
+		reply->NotificationType = fnevCriticalError;
+		DEBUG(5, ("object not found for notification handle\n"));
+		goto end;
+	}
 
-        reply->NotificationHandle = subscription->handle;
+	reply->NotificationHandle = subscription->handle;
         switch (notification->object_type) {
         case MAPISTORE_MESSAGE:
                 reply->NotificationType = fnevMbit;
@@ -582,6 +582,14 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                 }
                 else { /* MAPISTORE_FOLDER */
                         switch (notification->event) {
+			case MAPISTORE_OBJECT_NEWMAIL:
+				reply->NotificationData.NewMailNotification.FID = notification->parameters.object_parameters.folder_id;
+				reply->NotificationData.NewMailNotification.MID = notification->parameters.object_parameters.object_id;
+				/* Hack for now */
+				reply->NotificationData.NewMailNotification.MessageFlags = 0x4;
+				reply->NotificationData.NewMailNotification.UnicodeFlag = true;
+				reply->NotificationData.NewMailNotification.MessageClass.lpszW = "IPF.Note";
+				break;
                         case MAPISTORE_OBJECT_CREATED:
                                 reply->NotificationData.FolderCreatedNotification.ParentFID = notification->parameters.object_parameters.folder_id;
                                 reply->NotificationData.FolderCreatedNotification.FID = notification->parameters.object_parameters.object_id;
@@ -652,7 +660,8 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	/* Step 1. Handle Idle requests case */
 	if (mapi_request->mapi_len <= 2) {
 		mapi_response->mapi_len = 2;
-		return mapi_response;
+		idx = 0;
+		goto notif;
 	}
 
 	/* Step 2. Process serialized MAPI requests */
@@ -1202,30 +1211,30 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		}
 	}
 
+notif:
 	/* Step 3. Notifications/Pending calls should be processed here */
 	/* Note: GetProps and GetRows are filled with flag NDR_REMAINING, which may hide the content of the following replies. */
-        while ((notification_holder = emsmdbp_ctx->mstore_ctx->notifications)) {
-                subscription_list = mapistore_find_matching_subscriptions(emsmdbp_ctx->mstore_ctx, notification_holder->notification);
-                while ((subscription_holder = subscription_list)) {
+	while ((notification_holder = emsmdbp_ctx->mstore_ctx->notifications)) {
+		subscription_list = mapistore_find_matching_subscriptions(emsmdbp_ctx->mstore_ctx, notification_holder->notification);
+		while ((subscription_holder = subscription_list)) {
 			if (needs_realloc) {
 				mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, struct EcDoRpc_MAPI_REPL, idx + 2);
 			}
-                        needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, &(mapi_response->mapi_repl[idx]), subscription_holder->subscription, notification_holder->notification, &size);
-                        DLIST_REMOVE(subscription_list, subscription_holder);
-                        talloc_free(subscription_holder);
-                        idx++;
-                }
+			needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, &(mapi_response->mapi_repl[idx]), subscription_holder->subscription, notification_holder->notification, &size);
+			DLIST_REMOVE(subscription_list, subscription_holder);
+			talloc_free(subscription_holder);
+			idx++;
+		}
                 
-                DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->notifications, notification_holder);
-                talloc_free(notification_holder);
-        }
-
+		DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->notifications, notification_holder);
+		talloc_free(notification_holder);
+	}
+	
 	/* Process notifications available on subscriptions queues */
 	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
 		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
 		if (retval == MAPISTORE_SUCCESS) {
-			el = nlist;
-			while (el) {
+			for (el = nlist; el->notification; el = el->next) {
 				if (needs_realloc) {
 					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
 										  struct EcDoRpc_MAPI_REPL, idx + 2);
@@ -1233,14 +1242,16 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 				needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
 									  &(mapi_response->mapi_repl[idx]),
 									  sel->subscription, el->notification, &size);
-				el = nlist->next;
+				idx++;
 			}
 			talloc_free(nlist);
 		}
 	}
 
-        mapi_response->mapi_repl[idx].opnum = 0;
-
+	if (mapi_response->mapi_repl) {
+		mapi_response->mapi_repl[idx].opnum = 0;
+	}
+	
 	/* Step 4. Fill mapi_response structure */
 	handles_length = mapi_request->mapi_len - mapi_request->length;
 	mapi_response->length = size + sizeof (mapi_response->length);
@@ -1340,8 +1351,43 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 							  TALLOC_CTX *mem_ctx,
 							  struct EcRRegisterPushNotification *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcRRegisterPushNotification (0x4) not implemented\n"));
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	int				retval;
+	struct exchange_emsmdb_session	*session;
+	struct emsmdbp_context		*emsmdbp_ctx = NULL;
+
+	DEBUG(3, ("exchange_emsmdb: EcRRegisterPushNotification (0x4)\n"));
+
+	/* HACK: Disable authentication */
+	/* if (!dcesrv_call_authenticated(dce_call)) { */
+	/* 	DEBUG(1, ("No challenge requested by client, cannot authenticate\n")); */
+	/* 	r->out.handle->handle_type = 0; */
+	/* 	r->out.handle->uuid = GUID_zero(); */
+	/* 	r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH; */
+	/* 	return MAPI_E_LOGON_FAILED; */
+	/* } */
+
+	/* Retrieve the emsmdbp_context from the session management system */
+	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+	if (session) {
+		emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+	} else {
+		r->out.handle->handle_type = 0;
+		r->out.handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	retval = mapistore_mgmt_interface_register_bind(emsmdbp_ctx->mstore_ctx->conn_info,
+							r->in.cbContext, r->in.rgbContext,
+							r->in.cbCallbackAddress, r->in.rgbCallbackAddress);
+	DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
+	if (retval == MAPI_E_SUCCESS) {
+		r->out.handle = r->in.handle;
+		/* FIXME: Create a notification object and return associated handle */
+		*r->out.hNotification = 244;
+	} 
+
+	return MAPI_E_SUCCESS;
 }
 
 

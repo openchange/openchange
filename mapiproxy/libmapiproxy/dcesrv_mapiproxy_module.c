@@ -206,6 +206,8 @@ static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 
 _PUBLIC_ NTSTATUS mapiproxy_module_init(struct dcesrv_context *dce_ctx)
 {
+// COMPILE ONLY HACK - this needs public API from Samba to fix it.
+#if 0
 	init_module_fn			*mpm;
 	NTSTATUS			ret;
 
@@ -217,6 +219,7 @@ _PUBLIC_ NTSTATUS mapiproxy_module_init(struct dcesrv_context *dce_ctx)
 	ret = mapiproxy_module_load(dce_ctx);
 
 	return ret;
+#endif
 }
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *name)

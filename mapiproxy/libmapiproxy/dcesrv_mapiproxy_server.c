@@ -230,6 +230,8 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
  */
 _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 {
+// COMPILE ONLY HACK - this needs public API from Samba to fix it.
+#if 0
 	init_module_fn		*servers;
 	NTSTATUS		ret;
 
@@ -241,6 +243,7 @@ _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 	ret = mapiproxy_server_load(dce_ctx);
 
 	return ret;
+#endif
 }
 
 

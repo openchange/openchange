@@ -35,7 +35,7 @@
 #include "mapistore_common.h"
 #include <dlinklist.h>
 
-#include <util.h>
+#include <samba_util.h>
 #include <util/debug.h>
 
 /**

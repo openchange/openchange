@@ -222,6 +222,9 @@ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, void *, const char 
 enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *, const char *, uint64_t *);
 enum MAPISTATUS	openchangedb_get_users_from_partial_uri(TALLOC_CTX *, void *, const char *, uint32_t *, char ***, char ***);
 enum MAPISTATUS openchangedb_create_folder(void *, uint64_t, uint64_t, const char *, NTTIME, int64_t);
+enum MAPISTATUS openchangedb_create_message(TALLOC_CTX *, void *, uint64_t, uint64_t, struct ldb_message **);
+enum MAPISTATUS openchangedb_set_message_properties(TALLOC_CTX *, void *, struct ldb_message *, struct SRow *);
+enum MAPISTATUS openchangedb_save_message(void *, struct ldb_message *);
 
 /* definitions from auto-generated openchangedb_property.c */
 const char *openchangedb_property_get_attribute(uint32_t);

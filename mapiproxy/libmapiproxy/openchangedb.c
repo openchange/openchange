@@ -1580,3 +1580,146 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(void *ldb_ctx,
 	talloc_free(mem_ctx);
 	return MAPI_E_SUCCESS;
 }
+
+_PUBLIC_ enum MAPISTATUS openchangedb_set_message_properties(TALLOC_CTX *mem_ctx,
+							     void *ldb_ctx, 
+							     struct ldb_message *msg, struct SRow *row)
+{
+	char			*PidTagAttr = NULL;
+	struct SPropValue	*value;
+	char			*str_value;
+	time_t			unix_time;
+	NTTIME			nt_time;
+	uint32_t		i;
+
+	unix_time = time(NULL);
+
+	for (i = 0; i < row->cValues; i++) {
+		value = row->lpProps + i;
+
+		switch (value->ulPropTag) {
+		case PR_DEPTH:
+		case PR_SOURCE_KEY:
+		case PR_PARENT_SOURCE_KEY:
+		case PR_CHANGE_KEY:
+		case PR_CREATION_TIME:
+		case PR_LAST_MODIFICATION_TIME:
+			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value->ulPropTag));
+			break;
+		default:
+			/* Step 2. Convert proptag into PidTag attribute */
+			PidTagAttr = (char *) openchangedb_property_get_attribute(value->ulPropTag);
+			if (!PidTagAttr) {
+				PidTagAttr = talloc_asprintf(mem_ctx, "%.8x", value->ulPropTag);
+			}
+
+			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+			if (!str_value) {
+				DEBUG(5, ("Ignored property of unhandled type %.4x\n", (value->ulPropTag & 0xffff)));
+				continue;
+			}
+
+			ldb_msg_add_string(msg, PidTagAttr, str_value);
+			msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
+		}
+	}
+
+	/* We set the last modification time */
+	value = talloc_zero(NULL, struct SPropValue);
+
+	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
+	unix_to_nt_time(&nt_time, unix_time);
+	value->value.ft.dwLowDateTime = nt_time & 0xffffffff;
+	value->value.ft.dwHighDateTime = nt_time >> 32;
+	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+	ldb_msg_add_string(msg, "PidTagLastModificationTime", str_value);
+	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
+
+	talloc_free(value);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Create a message for openchangedb. The message is not
+   saved in LDB until the save function is called.
+
+   \param mem_ctx the memory pointer to use for allocation
+   \param ldb_ctx Pointer to the ldb context
+   \param folderID the parent folder identifier
+   \param messageID the message identifier
+   \param msg pointer on pointer to the LDB message to return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS openchangedb_create_message(TALLOC_CTX *mem_ctx,
+					    void *ldb_ctx,
+					    uint64_t FolderID,
+					    uint64_t MessageID,
+					    struct ldb_message **_msg)
+{
+	enum MAPISTATUS		retval;
+	struct ldb_message	*msg;
+	struct ldb_dn		*basedn;
+	char			*dn;
+	char			*parentDN;
+	char			*mailboxDN;
+
+	/* Retrieve distinguesName for parent folder */
+	retval = openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, FolderID, &parentDN);
+	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	retval = openchangedb_get_mailboxDN(mem_ctx, ldb_ctx, FolderID, &mailboxDN);
+	MAPI_RETVAL_IF(retval, retval, NULL);	
+	printf("retval = 0x%.8x\n", retval);
+	printf("mailboxDN = %s\n", mailboxDN);
+
+	dn = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", MessageID, parentDN);
+	MAPI_RETVAL_IF(!dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	basedn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	talloc_free(dn);
+
+	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, NULL);
+
+	msg = ldb_msg_new(mem_ctx);
+	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	msg->dn = ldb_dn_copy(mem_ctx, basedn);
+
+	ldb_msg_add_string(msg, "objectClass", "systemMessage");
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
+	ldb_msg_add_fmt(msg, "cn", "%"PRIu64, MessageID);
+	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+
+	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, FolderID);
+	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+
+	ldb_msg_add_fmt(msg, "PidTagMessageId", "%"PRIu64, MessageID);
+	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+
+	if (mailboxDN) {
+		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
+		msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+	}
+
+	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
+	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
+
+	*_msg = msg;
+	return MAPI_E_SUCCESS;
+}
+
+
+_PUBLIC_ enum MAPISTATUS openchangedb_save_message(void *ldb_ctx, struct ldb_message *msg)
+{
+	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_INITIALIZED, NULL);
+
+	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
+		return MAPI_E_CALL_FAILED;
+	}
+
+	return MAPI_E_SUCCESS;
+}

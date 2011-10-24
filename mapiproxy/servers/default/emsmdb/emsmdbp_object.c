@@ -1645,6 +1645,11 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 			else if (object->type == EMSMDBP_OBJECT_MAILBOX) {
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.mailbox->folderID, rowp);
 			}
+			else if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+				openchangedb_set_message_properties((TALLOC_CTX *)object->object.message, 
+								    emsmdbp_ctx->oc_ctx, 
+								    object->object.message->msg, rowp);
+			}
 			else {
 				DEBUG(0, ("Setting properties on openchangedb not implemented yet for non-folder object type\n"));
 				return MAPI_E_NO_SUPPORT;

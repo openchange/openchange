@@ -393,9 +393,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
-	retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->backend_object);
-	DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
-
+	switch (mapistore) {
+	case true:
+		retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
+							 folder_object->backend_object, message_object, 
+							 messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
+							 &message_object->backend_object);
+		DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
+		break;
+	case false:
+		retval = openchangedb_create_message((TALLOC_CTX *)message_object->object.message, 
+						     emsmdbp_ctx->oc_ctx, folderID, messageID, 
+						     &message_object->object.message->msg);
+		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
+		DEBUG(5, ("openchangedb_create_message ldb_message = %p\n", message_object->object.message->msg));
+		break;
+	}
+	
 	/* Add default properties to message MS-OXCMSG 3.2.5.2 */
 	retval = mapi_handles_set_private_data(message_handle, message_object);
 
@@ -514,7 +528,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	switch (mapistore) {
 	case false:
-		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+		retval = openchangedb_save_message(emsmdbp_ctx->oc_ctx, object->object.message->msg);
+		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", retval));
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);

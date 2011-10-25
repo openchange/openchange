@@ -726,12 +726,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx,
 
    \return pointer to valid data on success, otherwise NULL
  */
-static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
-						      void *ldb_ctx,
-						      char *recipient,
-						      struct ldb_result *res,
-						      uint32_t proptag,
-						      const char *PidTagAttr)
+void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
+					void *ldb_ctx,
+					char *recipient,
+					struct ldb_result *res,
+					uint32_t proptag,
+					const char *PidTagAttr)
 {
 	uint32_t		*l;
 
@@ -803,11 +803,11 @@ static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *s
 
    \return valid data pointer on success, otherwise NULL
  */
-static void *openchangedb_get_folder_property_data(TALLOC_CTX *mem_ctx,
-						   struct ldb_result *res,
-						   uint32_t pos,
-						   uint32_t proptag,
-						   const char *PidTagAttr)
+void *openchangedb_get_property_data(TALLOC_CTX *mem_ctx,
+				     struct ldb_result *res,
+				     uint32_t pos,
+				     uint32_t proptag,
+				     const char *PidTagAttr)
 {
 	void			*data;
 	const char     		*str;
@@ -1102,11 +1102,11 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 4. Check if this is a "special property" */
-	*data = openchangedb_get_folder_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 5. If this is not a "special property" */
-	*data = openchangedb_get_folder_property_data(parent_ctx, res, 0, proptag, PidTagAttr);
+	*data = openchangedb_get_property_data(parent_ctx, res, 0, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	talloc_free(mem_ctx);
@@ -1244,11 +1244,11 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[pos], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 5. Check if this is a "special property" */
-	*data = openchangedb_get_folder_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 6. Check if this is not a "special property" */
-	*data = openchangedb_get_folder_property_data(parent_ctx, res, pos, proptag, PidTagAttr);
+	*data = openchangedb_get_property_data(parent_ctx, res, pos, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	talloc_free(mem_ctx);
@@ -1320,6 +1320,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 							uint64_t fid)
 {
 	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
 	struct ldb_result		*res = NULL;
 	struct ldb_dn			*dn;
 	char				*dnstr;
@@ -1359,7 +1360,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 3. Delete the old entry if applicable */
 	if (res->count) {
 		/* we already have an entry for this message class, so delete it before creating the new one */
-		enum MAPISTATUS		retval;
 		char			*distinguishedName;
 		struct ldb_message	*msg;
 
@@ -1386,7 +1386,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	
 	/* Step 4. Create the new entry if applicable */
 	if (fid != 0x0) {
-		enum MAPISTATUS		retval;
 		char			*distinguishedName;
 		struct ldb_message	*msg;
 
@@ -1636,6 +1635,45 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_message_properties(TALLOC_CTX *mem_ctx
 	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
 
 	talloc_free(value);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Retrieve the number of messages within the specified folder
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the folder identifier to use for the search
+   \param RowCount pointer to the returned number of results
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(void *ldb_ctx,
+							uint64_t fid,
+							uint32_t *RowCount)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "get_message_count");
+	*RowCount = 0;
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, 
+			 "PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*)", fid);
+	printf("ldb error: %s\n", ldb_errstring(ldb_ctx));
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+	
+	*RowCount = res->count;
+
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

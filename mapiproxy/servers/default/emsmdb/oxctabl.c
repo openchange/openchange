@@ -108,7 +108,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 				DEBUG(5, ("[%s] object: %p, backend_object: %p\n", __FUNCTION__, object, object->backend_object));
 				mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
 							    object->backend_object, request.prop_count, request.properties);
-                        }
+                        } else {
+				/* openchangedb case */
+				DEBUG(5, ("[%s] object: Setting Columns on openchangedb table\n"));
+			}
 		}
 	}
 end:
@@ -219,8 +222,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 		mapi_repl->u.mapi_SortTable.TableStatus = status;
 	} else {
 		/* Parent folder doesn't have any mapistore context associated */
-		DEBUG(0, ("non-mapistore SortTable not implemented yet\n"));
-		goto end;
+		status = TBLSTAT_COMPLETE;
+		mapi_repl->u.mapi_SortTable.TableStatus = status;
+		retval = openchangedb_table_set_sort_order(object->backend_object, &request.lpSortCriteria);
+		if (retval) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
 	}
         
 end:
@@ -817,6 +825,67 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 		break;
 	case false:
+		DEBUG(0, ("FindRow for openchangedb\n"));
+		/* Restrict rows to be fetched */
+		retval = openchangedb_table_set_restrictions(object->backend_object, &request.res);
+		/* Then fetch rows */
+		/* Lookup the properties and check if we need to flag the PropertyRow blob */
+		while (!found && table->numerator < table->denominator) {
+                        flagged = 0;
+
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, &retvals);
+			if (data_pointers) {
+				found = true;
+				for (i = 0; i < table->prop_count; i++) {
+					if (retvals[i] != MAPI_E_SUCCESS) {
+						flagged = 1;
+					}
+				}
+
+				if (flagged) {
+					libmapiserver_push_property(mem_ctx, 
+								    0x0000000b, (const void *)&flagged,
+								    &row, 0, 0, 0);
+				}
+				else {
+					libmapiserver_push_property(mem_ctx, 
+								    0x00000000, (const void *)&flagged,
+								    &row, 0, 1, 0);
+				}
+                                
+				/* Push the properties */
+				for (i = 0; i < table->prop_count; i++) {
+					property = table->properties[i];
+					retval = retvals[i];
+					if (retval == MAPI_E_NOT_FOUND) {
+						property = (property & 0xFFFF0000) + PT_ERROR;
+						data = &retval;
+					}
+					else {
+						data = data_pointers[i];
+					}
+                                
+					libmapiserver_push_property(mem_ctx,
+								    property, data, &row,
+								    flagged?PT_ERROR:0, flagged, 0);
+				}
+				talloc_free(retvals);
+				talloc_free(data_pointers);
+                        }
+                        else {
+				table->numerator++;
+			}
+		}
+		/* Adjust parameters */
+		if (found) {
+			mapi_repl->u.mapi_FindRow.HasRowData = 1;
+		}
+		else {
+                        mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		}
+
+		mapi_repl->u.mapi_FindRow.row.length = row.length;
+		mapi_repl->u.mapi_FindRow.row.data = row.data;
 		break;
 	}
 

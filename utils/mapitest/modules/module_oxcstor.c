@@ -43,12 +43,11 @@
  */
 _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 
 	/* Step 1. Logon Private Mailbox */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(mt->session, &obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -57,7 +56,7 @@ _PUBLIC_ bool mapitest_oxcstor_Logon(struct mapitest *mt)
 
 	/* Step 2. Logon Public Folder store */
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(mt->session, &obj_store);
+	OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -282,7 +281,6 @@ cleanup:
 */
 _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
@@ -293,14 +291,14 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenPublicFolder(mt->session, &obj_store);
+	OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	
 	/* Step 2. Open IPM Subtree folder */
-	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
+	GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
 	mapitest_print_retval(mt, "GetDefaultPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -308,7 +306,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_store, folderId, &obj_folder);
+	OpenFolder(&obj_store, folderId, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -316,7 +314,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 	}
 
 	/* Step 3. Call GetOwningServers */
-	retval = GetOwningServers(&obj_store, &obj_folder, &OwningServersCount, &CheapServersCount, &OwningServers);
+	GetOwningServers(&obj_store, &obj_folder, &OwningServersCount, &CheapServersCount, &OwningServers);
 	mapitest_print_retval(mt, "GetOwningServers");
 	if (GetLastError() != MAPI_E_SUCCESS && GetLastError() != ecNoReplicaAvailable) {
 		ret = false;
@@ -357,7 +355,6 @@ cleanup:
 */
 _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
@@ -368,21 +365,21 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 	mapi_object_init(&obj_store);
 	mapi_object_init(&obj_folder);
 
-	retval = OpenPublicFolder(mt->session, &obj_store);
+	OpenPublicFolder(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 	
 	/* Step 2. Open IPM Subtree folder */
-	retval = GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
+	GetDefaultPublicFolder(&obj_store, &folderId, olFolderPublicIPMSubtree);
 	mapitest_print_retval(mt, "GetDefaultPublicFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
 
-	retval = OpenFolder(&obj_store, folderId, &obj_folder);
+	OpenFolder(&obj_store, folderId, &obj_folder);
 	mapitest_print_retval(mt, "OpenFolder");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -390,7 +387,7 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 	}
 
 	/* Step 3. Call PublicFolderIsGhosted */
-	retval = PublicFolderIsGhosted(&obj_store, &obj_folder, &IsGhosted);
+	PublicFolderIsGhosted(&obj_store, &obj_folder, &IsGhosted);
 	mapitest_print_retval(mt, "PublicFolderIsGhosted");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -419,20 +416,19 @@ cleanup:
  */
 _PUBLIC_ bool mapitest_oxcstor_GetReceiveFolderTable(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 	struct SRowSet		SRowSet;
 	
  	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(mt->session, &obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	mapitest_print_retval(mt, "OpenMsgStore");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. Call the GetReceiveFolderTable operation */
-	retval = GetReceiveFolderTable(&obj_store, &SRowSet);
+	GetReceiveFolderTable(&obj_store, &SRowSet);
 	mapitest_print_retval(mt, "GetReceiveFolderTable");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

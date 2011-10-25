@@ -60,7 +60,6 @@ static enum ndr_err_code ndr_push_lxpress_chunk(struct ndr_push *ndrpush,
 						bool *last)
 {
 	DATA_BLOB	comp_chunk;
-	uint32_t	comp_chunk_size_offset;
 	DATA_BLOB	plain_chunk;
 	uint32_t	plain_chunk_size;
 	uint32_t	plain_chunk_offset;
@@ -80,7 +79,6 @@ static enum ndr_err_code ndr_push_lxpress_chunk(struct ndr_push *ndrpush,
 		*last = true;
 	};
 
-	comp_chunk_size_offset = ndrpush->offset;
 	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
 
 	comp_chunk.data = ndrpush->data + ndrpush->offset;
@@ -317,14 +315,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUX_HEADER(struct ndr_pull *ndr, int ndr_fla
 {
 	struct ndr_pull	*_ndr_buffer;
 	uint32_t	_flags_save_STRUCT = ndr->flags;
-	TALLOC_CTX	*_mem_save_AUX_HEADER_0;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Size));
 
-		_mem_save_AUX_HEADER_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->Size - 2));
 		{
 			NDR_CHECK(ndr_pull_AUX_VERSION(_ndr_buffer, NDR_SCALARS, &r->Version));

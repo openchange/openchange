@@ -135,7 +135,6 @@ static void ocpf_write_propname(struct ocpf_context *ctx, FILE *fp, uint32_t ulP
 {
 	const char	*propname;
 	char		*line;
-	ssize_t		len;
 
 	propname = get_proptag_name(ulPropTag);
 	if (propname) {
@@ -143,7 +142,7 @@ static void ocpf_write_propname(struct ocpf_context *ctx, FILE *fp, uint32_t ulP
 	} else {
 		line = talloc_asprintf(ctx, "\t0x%x = ", ulPropTag);
 	}
-	len = fwrite(line, strlen(line), 1, fp);
+	fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 }
 
@@ -523,7 +522,6 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 			     mapi_object_t *obj_message,
 			     struct mapi_SPropValue_array *mapi_lpProps)
 {
-	enum MAPISTATUS		retval;
 	struct ocpf_context	*ctx;
 	uint32_t		i;
 	uint16_t		propID;
@@ -577,8 +575,8 @@ _PUBLIC_ int ocpf_write_auto(uint32_t context_id,
 			}
 		} else {
 			nameid = talloc_zero(ctx, struct MAPINAMEID);
-			retval = GetNamesFromIDs(obj_message, ((lpProps.ulPropTag & 0xFFFF0000) | PT_NULL),
-						 &count, &nameid);
+			GetNamesFromIDs(obj_message, ((lpProps.ulPropTag & 0xFFFF0000) | PT_NULL),
+					&count, &nameid);
 			memset(&nprop, 0, sizeof (struct ocpf_nprop));
 			switch (nameid->ulKind) {
 			case MNID_ID:
@@ -629,7 +627,6 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 	char			*line;
 	bool			found = false;
 	char			*definition = NULL;
-	ssize_t			len;
 
 	/* Find the context */
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
@@ -649,67 +646,67 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 
 	/* message type */
 	line = talloc_asprintf(ctx, "TYPE   \"%s\"\n\n", ctx->type);
-	len = fwrite(line, strlen(line), 1, fp);
+	fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 
 	/* folder id */
 	line = talloc_asprintf(ctx, "FOLDER D0x%.16"PRIx64"\n\n", ctx->folder);
-	len = fwrite(line, strlen(line), 1, fp);
+	fwrite(line, strlen(line), 1, fp);
 	talloc_free(line);
 
 	/* OLEGUID */
 	for (nguid = ctx->oleguid; nguid->next; nguid = nguid->next) {
 		line = talloc_asprintf(ctx, "OLEGUID %-25s \"%s\"\n", nguid->name, nguid->guid);
-		len = fwrite(line, strlen(line), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
 		talloc_free(line);
 	}
-	len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+	fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 
 	/* RECIPIENT TO */
 	line = ocpf_write_recipients(ctx, OCPF_MAPI_TO);
 	if (line && strlen(line)) {
-		len = fwrite(OCPF_RECIPIENT_TO, strlen(OCPF_RECIPIENT_TO), 1, fp);
-		len = fwrite(line, strlen(line), 1, fp);
-		len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		fwrite(OCPF_RECIPIENT_TO, strlen(OCPF_RECIPIENT_TO), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 		talloc_free(line);
 	}
 
 	/* RECIPIENT CC */
 	line = ocpf_write_recipients(ctx, OCPF_MAPI_CC);
 	if (line && strlen(line)) {
-		len = fwrite(OCPF_RECIPIENT_CC, strlen(OCPF_RECIPIENT_CC), 1, fp);
-		len = fwrite(line, strlen(line), 1, fp);
-		len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		fwrite(OCPF_RECIPIENT_CC, strlen(OCPF_RECIPIENT_CC), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 		talloc_free(line);
 	}
 
 	/* RECIPIENT BCC */
 	line = ocpf_write_recipients(ctx, OCPF_MAPI_BCC);
 	if (line && strlen(line)) {
-		len = fwrite(OCPF_RECIPIENT_BCC, strlen(OCPF_RECIPIENT_BCC), 1, fp);
-		len = fwrite(line, strlen(line), 1, fp);
-		len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+		fwrite(OCPF_RECIPIENT_BCC, strlen(OCPF_RECIPIENT_BCC), 1, fp);
+		fwrite(line, strlen(line), 1, fp);
+		fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 		talloc_free(line);
 	}
 
-	len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+	fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 
 	/* known properties */
-	len = fwrite(OCPF_PROPERTY_BEGIN, strlen(OCPF_PROPERTY_BEGIN), 1, fp);
+	fwrite(OCPF_PROPERTY_BEGIN, strlen(OCPF_PROPERTY_BEGIN), 1, fp);
 	for (element = ctx->props; element->next; element = element->next) {
 		line = ocpf_write_property(ctx, &found, element->aulPropTag, element->value);
 		if (found == true) {
 			ocpf_write_propname(ctx, fp, element->aulPropTag);
-			len = fwrite(line, strlen(line), 1, fp);
+			fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 			found = false;
 		}
 	}
-	len = fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
-	len = fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
+	fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
+	fwrite(OCPF_NEWLINE, strlen(OCPF_NEWLINE), 1, fp);
 
 	/* named properties */
-	len = fwrite(OCPF_NPROPERTY_BEGIN, strlen(OCPF_NPROPERTY_BEGIN), 1, fp);
+	fwrite(OCPF_NPROPERTY_BEGIN, strlen(OCPF_NPROPERTY_BEGIN), 1, fp);
 	for (nelement = ctx->nprops; nelement->next; nelement = nelement->next) {
 		line = ocpf_write_property(ctx, &found, nelement->propType, nelement->value);
 		if (found == true) {
@@ -726,16 +723,16 @@ _PUBLIC_ int ocpf_write_commit(uint32_t context_id)
 			}
 			
 			if (definition) {
-				len = fwrite(definition, strlen(definition), 1, fp);
+				fwrite(definition, strlen(definition), 1, fp);
 				talloc_free(definition);
 			}
 
-			len = fwrite(line, strlen(line), 1, fp);
+			fwrite(line, strlen(line), 1, fp);
 			talloc_free(line);
 			found = false;
 		}
 	}
-	len = fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
+	fwrite(OCPF_END, strlen(OCPF_END), 1, fp);
 
 	return OCPF_SUCCESS;
 }

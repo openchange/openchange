@@ -40,17 +40,17 @@
    \note The function returns a SRow structure with the following
    property tags:
    -# PR_NORMALIZED_SUBJECT
-   -# PR_FREEBUSY_LAST_MODIFIED
-   -# PR_FREEBUSY_START_RANGE
-   -# PR_FREEBUSY_END_RANGE
-   -# PR_FREEBUSY_ALL_MONTHS
-   -# PR_FREEBUSY_ALL_EVENTS
-   -# PR_FREEBUSY_TENTATIVE_MONTHS
-   -# PR_FREEBUSY_TENTATIVE_EVENTS
-   -# PR_FREEBUSY_BUSY_MONTHS
-   -# PR_FREEBUSY_BUSY_EVENTS
-   -# PR_FREEBUSY_OOF_MONTHS
-   -# PR_FREEBUSY_OOF_EVENTS
+   -# PR_FREEBUSY_RANGE_TIMESTAMP
+   -# PR_FREEBUSY_PUBLISH_START
+   -# PR_FREEBUSY_PUBLISH_END
+   -# PR_SCHDINFO_MONTHS_MERGED
+   -# PR_SCHDINFO_FREEBUSY_MERGED
+   -# PR_SCHDINFO_MONTHS_TENTATIVE
+   -# PR_SCHDINFO_FREEBUSY_TENTATIVE
+   -# PR_SCHDINFO_MONTHS_BUSY
+   -# PR_SCHDINFO_FREEBUSY_BUSY
+   -# PR_SCHDINFO_MONTHS_OOF
+   -# PR_SCHDINFO_FREEBUSY_OOF
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
@@ -213,17 +213,17 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	/* Step 11. Get FreeBusy properties */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc, 
 					  PR_NORMALIZED_SUBJECT,
-					  PR_FREEBUSY_LAST_MODIFIED,
-					  PR_FREEBUSY_START_RANGE,
-					  PR_FREEBUSY_END_RANGE,
-					  PR_FREEBUSY_ALL_MONTHS,
-					  PR_FREEBUSY_ALL_EVENTS,
-					  PR_FREEBUSY_TENTATIVE_MONTHS,
-					  PR_FREEBUSY_TENTATIVE_EVENTS,
-					  PR_FREEBUSY_BUSY_MONTHS,
-					  PR_FREEBUSY_BUSY_EVENTS,
-					  PR_FREEBUSY_OOF_MONTHS,
-					  PR_FREEBUSY_OOF_EVENTS);
+					  PR_FREEBUSY_RANGE_TIMESTAMP,
+					  PR_FREEBUSY_PUBLISH_START,
+					  PR_FREEBUSY_PUBLISH_END,
+					  PR_SCHDINFO_MONTHS_MERGED,
+					  PR_SCHDINFO_FREEBUSY_MERGED,
+					  PR_SCHDINFO_MONTHS_TENTATIVE,
+					  PR_SCHDINFO_FREEBUSY_TENTATIVE,
+					  PR_SCHDINFO_MONTHS_BUSY,
+					  PR_SCHDINFO_FREEBUSY_BUSY,
+					  PR_SCHDINFO_MONTHS_OOF,
+					  PR_SCHDINFO_FREEBUSY_OOF);
 	retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
@@ -289,9 +289,9 @@ _PUBLIC_ enum MAPISTATUS IsFreeBusyConflict(mapi_object_t *obj_store,
 	retval = GetUserFreeBusyData(obj_store, session->profile->username, &aRow);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
-	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
-	all_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_MONTHS);
-	all_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_ALL_EVENTS);
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_START);
+	all_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_MERGED);
+	all_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_MERGED);
 
 	if (!all_months || (*(const uint32_t *)all_months) == MAPI_E_NOT_FOUND ||
 	    !all_events || (*(const uint32_t *)all_events) == MAPI_E_NOT_FOUND) {

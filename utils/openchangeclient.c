@@ -2728,14 +2728,14 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 
 	/* Step 2. Dump properties */
 	message_name = (const char *) find_SPropValue_data(&aRow, PR_NORMALIZED_SUBJECT);
-	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
-	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_END_RANGE);
-	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_MONTHS);
-	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_EVENTS);
-	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_MONTHS);
-	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_EVENTS);
-	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_MONTHS);
-	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_EVENTS);
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_START);
+	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_END);
+	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_BUSY);
+	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_BUSY);
+	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_TENTATIVE);
+	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_TENTATIVE);
+	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_OOF);
+	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_OOF);
 
 	year = GetFreeBusyYear(publish_start);
 

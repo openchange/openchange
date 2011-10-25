@@ -318,7 +318,7 @@ static void check_idset(const struct idset *idset)
 	struct globset_range *range, *last_range;
 
 	while (idset) {
-		if (GUID_all_zero(&idset->guid)) {
+		if (!idset->idbased && GUID_all_zero(&idset->repl.guid)) {
 			DEBUG(5, ("idset: invalid guid\n"));
 			abort();
 		}
@@ -948,6 +948,10 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 		if (range->low == eid) {
 			if (range->high == eid) {
 				DLIST_REMOVE(idset->ranges, range);
+				idset->range_count--;
+				if (range->next == NULL) {
+					idset->ranges->prev = range->prev;
+				}
 				talloc_free(range);
 			}
 			else {
@@ -966,6 +970,10 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 			range->high = exchange_globcnt(work_eid - 1);
 			new_range->next = range->next;
 			range->next = new_range;
+			if (new_range->next == NULL) {
+				idset->ranges->prev = new_range;
+			}
+			idset->range_count++;
 			done = true;
 		}
 		else {
@@ -1012,6 +1020,8 @@ _PUBLIC_ void IDSET_remove_rawidset(struct idset *idset, const struct rawidset *
 			IDSET_ranges_remove_globcnt(current_idset, rawidset->globcnts[i]);
 		}
 	}
+
+	check_idset(idset);
 }
 
 /**

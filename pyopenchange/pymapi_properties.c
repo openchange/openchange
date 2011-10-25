@@ -513,6 +513,7 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PR_ATTACH_MIME_TAG", PyInt_FromLong(0x370e001e));
 	PyModule_AddObject(m, "PR_ATTACH_MIME_TAG_UNICODE", PyInt_FromLong(0x370e001f));
 	PyModule_AddObject(m, "PR_ATTACH_ADDITIONAL_INFO", PyInt_FromLong(0x370f0102));
+	PyModule_AddObject(m, "PR_ATTACH_CONTENT_BASE", PyInt_FromLong(0x3711001f));
 	PyModule_AddObject(m, "PR_ATTACH_CONTENT_ID", PyInt_FromLong(0x3712001e));
 	PyModule_AddObject(m, "PR_ATTACH_CONTENT_ID_UNICODE", PyInt_FromLong(0x3712001f));
 	PyModule_AddObject(m, "PR_ATTACH_CONTENT_LOCATION", PyInt_FromLong(0x3713001e));
@@ -1275,6 +1276,7 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PR_EXCEPTION_ENDTIME", PyInt_FromLong(0x7ffc0040));
 	PyModule_AddObject(m, "PR_ATTACHMENT_FLAGS", PyInt_FromLong(0x7ffd0003));
 	PyModule_AddObject(m, "PR_ATTACHMENT_HIDDEN", PyInt_FromLong(0x7ffe000b));
+	PyModule_AddObject(m, "PR_ATTACHMENT_CONTACTPHOTO", PyInt_FromLong(0x7fff000b));
 	PyModule_AddObject(m, "PR_EMS_AB_DISPLAY_NAME_OVERRIDE", PyInt_FromLong(0x8001000b));
 	PyModule_AddObject(m, "PR_EMS_AB_CA_CERTIFICATE", PyInt_FromLong(0x80031102));
 	PyModule_AddObject(m, "PR_EMS_AB_FOLDER_PATHNAME", PyInt_FromLong(0x8004001e));

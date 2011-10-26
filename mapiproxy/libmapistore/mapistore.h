@@ -136,7 +136,7 @@ struct mapistore_backend {
 		int		(*open_folder)(void *, TALLOC_CTX *, uint64_t, void **);
 		int		(*create_folder)(void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
 		int		(*delete_folder)(void *, uint64_t);
-		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
+		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **);
 		int		(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		int		(*delete_message)(void *, uint64_t, uint8_t flags);
 	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
@@ -149,6 +149,7 @@ struct mapistore_backend {
 
         /** oxcmsg operations */
         struct {
+		int		(*get_message_data)(void *, TALLOC_CTX *, struct mapistore_message **);
 		int		(*modify_recipients)(void *, struct SPropTagArray *, struct ModifyRecipientRow *, uint16_t);
 		int		(*save)(void *);
 		int		(*submit)(void *, enum SubmitFlags);
@@ -246,7 +247,7 @@ const char *mapistore_errstr(int);
 int mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 int mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
 int mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
-int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **, struct mapistore_message **);
+int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 int mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
 int mapistore_folder_move_copy_messages(struct mapistore_context *, uint32_t, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
@@ -257,6 +258,7 @@ int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *
 int mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
 
+int mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
 int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, struct ModifyRecipientRow *, uint16_t);
 int mapistore_message_save(struct mapistore_context *, uint32_t, void *);
 int mapistore_message_submit(struct mapistore_context *, uint32_t, void *, enum SubmitFlags);

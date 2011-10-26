@@ -1133,6 +1133,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, struct mapistore_message **msgp)
 {
 	struct emsmdbp_object *folder_object, *message_object = NULL;
+	uint32_t contextID;
 	bool mapistore;
 	TALLOC_CTX *local_mem_ctx;
 
@@ -1153,8 +1154,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	case true:
 		/* mapistore implementation goes here */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
-		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, message_object,
-						  messageID, &message_object->backend_object, msgp) != MAPISTORE_SUCCESS) {
+		contextID = emsmdbp_get_contextID(folder_object);
+		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object,
+						  messageID, &message_object->backend_object) != MAPISTORE_SUCCESS) {
+			talloc_free(message_object);
+			message_object = NULL;
+		}
+
+		if (mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx, msgp) != MAPISTORE_SUCCESS) {
 			talloc_free(message_object);
 			message_object = NULL;
 		}

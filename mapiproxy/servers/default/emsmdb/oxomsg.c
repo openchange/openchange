@@ -298,7 +298,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
-	struct TransportSend_req	 *request;
 	struct TransportSend_repl	 *response;
 	enum MAPISTATUS			retval;
 	uint32_t			handle;
@@ -334,7 +333,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	request = &mapi_req->u.mapi_TransportSend;
 	response = &mapi_repl->u.mapi_TransportSend;
 
 	mapistore = emsmdbp_is_mapistore(object);

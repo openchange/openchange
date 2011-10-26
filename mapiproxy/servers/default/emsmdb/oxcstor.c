@@ -220,9 +220,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	} else {
-		retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
-		mapi_repl->error_code = retval;
-		mailboxstore = false;
+		/* retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl); */
+		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
+		/* mailboxstore = false; */
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	}
 

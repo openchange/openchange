@@ -1169,7 +1169,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	case false:
 		/* system/special folder */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
-		/* openchangedb_open_message(); */
 		if (openchangedb_message_open(mem_ctx, emsmdbp_ctx->oc_ctx, messageID, folderID, &message_object->backend_object, (void **)msgp) != MAPI_E_SUCCESS) {
 			printf("Invalid openchangedb message\n");
 			talloc_free(message_object);

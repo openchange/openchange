@@ -690,7 +690,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 		columns->aulPropTag = mapi_req->u.mapi_ModifyRecipients.properties;
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
 						    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
-		/* mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags); */
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));

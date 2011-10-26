@@ -983,29 +983,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		}
 
 		odb_ctx = talloc_zero(NULL, void);
-
-		/* Setup table_filter for openchangedb */
-		/* switch (table_object->object.table->ulType) { */
-		/* case EMSMDBP_TABLE_MESSAGE_TYPE: */
-		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*))", folderID); */
-		/* 	break; */
-		/* case EMSMDBP_TABLE_FOLDER_TYPE: */
-		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID); */
-		/* 	break; */
-		/* default: */
-		/* 	DEBUG(5, ("[%s:%d]: Unsupported table type for openchangedb: %d\n", __FUNCTION__, __LINE__,  */
-		/* 		      table_object->object.table->ulType)); */
-		/* 	talloc_free(retvals); */
-		/* 	talloc_free(data_pointers); */
-		/* 	return NULL; */
-		/* } */
-
 		retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 		 					 PR_FID, row_id, (void **) &rowFolderID);
-		/* retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, */
-		/* 					 table_filter, PR_FID, row_id, (void **) &rowFolderID); */
 		printf("openchangedb_table_get_property retval = 0x%.8x\n", retval);
-		if (retval == MAPI_E_INVALID_OBJECT) {
+		if (retval == MAPI_E_INVALID_OBJECT || retval == MAPI_E_INVALID_PARAMETER || retval == MAPI_E_NOT_INITIALIZED) {
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 			return NULL;
@@ -1057,12 +1038,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 									 emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 									 table->properties[i], 
 									 row_id, data_pointers + i);
-				/* retval = openchangedb_get_table_property(data_pointers, emsmdbp_ctx->oc_ctx,  */
-				/* 					 emsmdbp_ctx->username, */
-				/* 					 table_filter, table->properties[i],  */
-				/* 					 row_id, data_pointers + i); */
 			}
-			/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
 				talloc_free(retvals);

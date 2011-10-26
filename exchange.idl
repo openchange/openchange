@@ -1060,6 +1060,7 @@ System Attendant Private Interface
 	} RuleAction;
 
 	typedef [public,nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(PT_NULL)];
 		[case(PT_I2)]		uint16			i;
 		[case(PT_LONG)]     	uint32			l;
 		[case(PT_DOUBLE)]	double			dbl;

@@ -949,7 +949,7 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 			if (range->high == eid) {
 				DLIST_REMOVE(idset->ranges, range);
 				idset->range_count--;
-				if (range->next == NULL) {
+				if (range->next == NULL && idset->ranges != NULL) {
 					idset->ranges->prev = range->prev;
 				}
 				talloc_free(range);

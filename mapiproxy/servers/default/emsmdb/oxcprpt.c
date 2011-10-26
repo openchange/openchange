@@ -585,15 +585,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 			else {
 				talloc_free(data_pointers);
 				talloc_free(retvals);
-				if (request->OpenModeFlags == OpenStream_ReadWrite) {
-					object->object.stream->stream.buffer.data = talloc_zero(object->object.stream, uint8_t);
-					object->object.stream->stream.buffer.length = 0;
-				}
-				else {
-					mapi_repl->error_code = retvals[0];
-					talloc_free(object);
-					goto end;
-				}
+				mapi_repl->error_code = retvals[0];
+				talloc_free(object);
+				goto end;
 			}
 		}
 	}

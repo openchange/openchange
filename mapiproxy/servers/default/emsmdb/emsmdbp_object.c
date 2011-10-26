@@ -1155,13 +1155,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 		/* mapistore implementation goes here */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
 		contextID = emsmdbp_get_contextID(folder_object);
-		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object,
-						  messageID, &message_object->backend_object) != MAPISTORE_SUCCESS) {
-			talloc_free(message_object);
-			message_object = NULL;
-		}
-
-		if (mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx, msgp) != MAPISTORE_SUCCESS) {
+		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, &message_object->backend_object) != MAPISTORE_SUCCESS
+		    || mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx, msgp) != MAPISTORE_SUCCESS) {
 			talloc_free(message_object);
 			message_object = NULL;
 		}

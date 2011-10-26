@@ -477,6 +477,79 @@ _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *l
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
+	{
+		struct Binary_r *bin;
+
+		bin = (struct Binary_r *)data;
+		lpProps->value.bin.cb = (uint16_t)bin->cb;
+		lpProps->value.bin.lpb = (void *)bin->lpb;
+	}
+		break;
+	case PT_UNICODE: 
+		lpProps->value.lpszW = (const char *) data;
+		break;
+	case PT_CLSID:
+		lpProps->value.lpguid = *((struct GUID *) data);
+		break;
+	case PT_SYSTIME:
+		lpProps->value.ft = *((const struct FILETIME *) data);
+		break;
+	case PT_ERROR:
+		lpProps->value.err = *((const uint32_t *)data);
+		break;
+	case PT_MV_LONG:
+		lpProps->value.MVl = *((const struct mapi_MV_LONG_STRUCT *)data);
+		break;
+	case PT_MV_STRING8:
+		lpProps->value.MVszA = *((const struct mapi_SLPSTRArray *)data);
+		break;
+	case PT_MV_BINARY:
+		lpProps->value.MVbin = *((const struct mapi_SBinaryArray *)data);
+		break;
+	case PT_MV_CLSID:
+		lpProps->value.MVguid = *((const struct mapi_SGuidArray *)data);
+		break;
+	case PT_MV_UNICODE:
+		lpProps->value.MVszW = *((const struct mapi_SPLSTRArrayW *)data);
+		break;
+	default:
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+
+		return false;
+	}
+
+	return true;
+}
+
+/**
+   temporary hack to make sogo happy with ModifyRecipient row: convert unicode strings into ucs-2
+ */
+_PUBLIC_ bool set_mapi_SPropValue_sogo(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
+{
+	if (data == NULL) {
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+		return false;
+	}
+	switch (lpProps->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		lpProps->value.i = *((const uint16_t *)data);
+		break;
+	case PT_LONG:
+		lpProps->value.l = *((const uint32_t *)data);
+		break;
+	case PT_DOUBLE:
+		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
+		break;
+	case PT_I8:
+		lpProps->value.d = *((const uint64_t *)data);
+		break;
+	case PT_BOOLEAN:
+		lpProps->value.b = *((const uint8_t *)data);
+		break;
+	case PT_STRING8:
+		lpProps->value.lpszA = (const char *) data;
+		break;
+	case PT_BINARY:
 		lpProps->value.bin.cb = *((uint16_t *)data);
 		lpProps->value.bin.lpb = (void *) ((char *)data + 2);
 		break;

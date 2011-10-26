@@ -530,8 +530,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	switch (mapistore) {
 	case false:
 		retval = openchangedb_message_save(object->backend_object, flags);
-		/* retval = openchangedb_save_message(emsmdbp_ctx->oc_ctx, object->object.message->msg); */
-		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", retval));
+		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);

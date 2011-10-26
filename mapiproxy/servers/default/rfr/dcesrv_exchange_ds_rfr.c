@@ -96,8 +96,8 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 						     struct RfrGetFQDNFromLegacyDN *r)
 {
 	char		*fqdn;
-	const char	*netbiosname;
-	const char	*realm;
+	const char	*netbiosname = NULL;
+	const char	*realm = NULL;
 
 	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)\n"));
 
@@ -142,7 +142,6 @@ static NTSTATUS dcesrv_exchange_ds_rfr_dispatch(struct dcesrv_call_state *dce_ca
 						TALLOC_CTX *mem_ctx,
 						void *r, struct mapiproxy *mapiproxy)
 {
-	enum MAPISTATUS				retval;
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
@@ -155,10 +154,10 @@ static NTSTATUS dcesrv_exchange_ds_rfr_dispatch(struct dcesrv_call_state *dce_ca
 
 	switch (opnum) {
 	case NDR_RFRGETNEWDSA:
-		retval = dcesrv_RfrGetNewDSA(dce_call, mem_ctx, (struct RfrGetNewDSA *)r);
+		dcesrv_RfrGetNewDSA(dce_call, mem_ctx, (struct RfrGetNewDSA *)r);
 		break;
 	case NDR_RFRGETFQDNFROMLEGACYDN:
-		retval = dcesrv_RfrGetFQDNFromLegacyDN(dce_call, mem_ctx, (struct RfrGetFQDNFromLegacyDN *)r);
+		dcesrv_RfrGetFQDNFromLegacyDN(dce_call, mem_ctx, (struct RfrGetFQDNFromLegacyDN *)r);
 		break;
 	}
 

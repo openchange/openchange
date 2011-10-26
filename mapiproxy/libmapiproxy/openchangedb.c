@@ -1628,7 +1628,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(void *ldb_ctx,
 	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
 	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
 	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
-	ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
+	if (mailboxDN) {
+		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
+	}
 	ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, changeNumber);
 	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
 	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);

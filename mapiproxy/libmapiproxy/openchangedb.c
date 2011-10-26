@@ -792,8 +792,50 @@ static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *s
 	return bin_array;
 }
 
+static struct LongArray_r *decode_mv_long(TALLOC_CTX *mem_ctx, const char *str)
+{
+	const char *start;
+	char *tmp;
+	size_t i, current, len;
+	uint32_t j;
+	struct LongArray_r *long_array;
+
+	long_array = talloc_zero(mem_ctx, struct LongArray_r);
+
+	start = str;
+	len = strlen(str);
+	i = 0;
+	while (i < len && start[i] != ';') {
+		i++;
+	}
+	if (i < len) {
+		tmp = talloc_memdup(NULL, start, i + 1);
+		tmp[i] = 0;
+		long_array->cValues = strtol(tmp, NULL, 16);
+		long_array->lpl = talloc_array(long_array, uint32_t, long_array->cValues);
+		talloc_free(tmp);
+
+		i++;
+		for (j = 0; j < long_array->cValues; j++) {
+			current = i;
+			while (i < len && start[i] != ';') {
+				i++;
+			}
+
+			tmp = talloc_memdup(long_array, start + current, i - current + 1);
+			tmp[i - current] = 0;
+			i++;
+
+			long_array->lpl[j] = strtol(tmp, NULL, 16);
+			talloc_free(tmp);
+		}
+	}
+
+	return long_array;
+}
+
 /**
-   \details Retrieve a MAPI property from a OpenChange LDB message
+   \details Retrieve a MAPI property from a OpenChange LDB result set
 
    \param mem_ctx pointer to the memory context
    \param res pointer to the LDB results
@@ -809,6 +851,25 @@ void *openchangedb_get_property_data(TALLOC_CTX *mem_ctx,
 				     uint32_t proptag,
 				     const char *PidTagAttr)
 {
+	return openchangedb_get_property_data_message(mem_ctx, res->msgs[pos], 
+						      proptag, PidTagAttr);
+}
+
+/**
+   \details Retrieve a MAPI property from an OpenChange LDB message
+
+   \param mem_ctx pointer to the memory context
+   \param msg pointer to the LDB message
+   \param proptag the MAPI property tag to lookup
+   \param PidTagAttr the mapped MAPI property name
+
+   \return valid data pointer on success, otherwise NULL
+ */
+void *openchangedb_get_property_data_message(TALLOC_CTX *mem_ctx,
+					     struct ldb_message *msg,
+					     uint32_t proptag,
+					     const char *PidTagAttr)
+{
 	void			*data;
 	const char     		*str;
 	uint64_t		*ll;
@@ -817,28 +878,29 @@ void *openchangedb_get_property_data(TALLOC_CTX *mem_ctx,
 	struct FILETIME		*ft;
 	struct Binary_r		*bin;
 	struct BinaryArray_r	*bin_array;
+	struct LongArray_r	*long_array;
 	struct ldb_val		val;
 	TALLOC_CTX		*local_mem_ctx;
 
 	switch (proptag & 0xFFFF) {
 	case PT_BOOLEAN:
 		b = talloc_zero(mem_ctx, int);
-		*b = ldb_msg_find_attr_as_bool(res->msgs[pos], PidTagAttr, 0x0);
+		*b = ldb_msg_find_attr_as_bool(msg, PidTagAttr, 0x0);
 		data = (void *)b;
 		break;
 	case PT_LONG:
 		l = talloc_zero(mem_ctx, uint32_t);
-		*l = ldb_msg_find_attr_as_uint(res->msgs[pos], PidTagAttr, 0x0);
+		*l = ldb_msg_find_attr_as_uint(msg, PidTagAttr, 0x0);
 		data = (void *)l;
 		break;
 	case PT_I8:
 		ll = talloc_zero(mem_ctx, uint64_t);
-		*ll = ldb_msg_find_attr_as_uint64(res->msgs[pos], PidTagAttr, 0x0);
+		*ll = ldb_msg_find_attr_as_uint64(msg, PidTagAttr, 0x0);
 		data = (void *)ll;
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:
-		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, NULL);
+		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, NULL);
 		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 		val = ldb_binary_decode(local_mem_ctx, str);
 		data = (char *) talloc_strndup(mem_ctx, (char *) val.data, val.length);
@@ -847,25 +909,29 @@ void *openchangedb_get_property_data(TALLOC_CTX *mem_ctx,
 	case PT_SYSTIME:
 		ft = talloc_zero(mem_ctx, struct FILETIME);
 		ll = talloc_zero(mem_ctx, uint64_t);
-		*ll = ldb_msg_find_attr_as_uint64(res->msgs[pos], PidTagAttr, 0x0);
+		*ll = ldb_msg_find_attr_as_uint64(msg, PidTagAttr, 0x0);
 		ft->dwLowDateTime = (*ll & 0xffffffff);
 		ft->dwHighDateTime = *ll >> 32;
 		data = (void *)ft;
 		talloc_free(ll);
 		break;
 	case PT_BINARY:
-		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, 0x0);
 		bin = talloc_zero(mem_ctx, struct Binary_r);
 		bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
 		bin->cb = ldb_base64_decode((char *) bin->lpb);
 		data = (void *)bin;
 		break;
 	case PT_MV_BINARY:
-		str = ldb_msg_find_attr_as_string(res->msgs[pos], PidTagAttr, 0x0);
+		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, NULL);
 		bin_array = decode_mv_binary(mem_ctx, str);
 		data = (void *)bin_array;
 		break;
-
+	case PT_MV_LONG:
+		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, NULL);
+		long_array = decode_mv_long(mem_ctx, str);
+		data = (void *)long_array;
+		break;
 	default:
 		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
 		return NULL;
@@ -882,7 +948,8 @@ void *openchangedb_get_property_data(TALLOC_CTX *mem_ctx,
 
    \return valid string pointer on success, otherwise NULL
  */
-static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct SPropValue *value)
+_PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, 
+						     struct SPropValue *value)
 {
 	char			*data, *subdata;
 	struct SPropValue	*subvalue;
@@ -902,10 +969,10 @@ static char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx, struct S
 		data = talloc_asprintf(mem_ctx, "%"PRIu64, value->value.d);
 		break;
 	case PT_STRING8:
-		data = ldb_binary_encode_string(mem_ctx, value->value.lpszA);
+		data = talloc_strdup(mem_ctx, value->value.lpszA);
 		break;
 	case PT_UNICODE:
-		data = ldb_binary_encode_string(mem_ctx, value->value.lpszW);
+		data = talloc_strdup(mem_ctx, value->value.lpszW);
 		break;
 	case PT_SYSTIME:
 		nt_time = ((uint64_t) value->value.ft.dwHighDateTime << 32) | value->value.ft.dwLowDateTime;
@@ -1241,7 +1308,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 4. Ensure the element exists */
-	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[pos], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 5. Check if this is a "special property" */
 	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
@@ -1320,7 +1387,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 							uint64_t fid)
 {
 	TALLOC_CTX			*mem_ctx;
-	enum MAPISTATUS			retval;
 	struct ldb_result		*res = NULL;
 	struct ldb_dn			*dn;
 	char				*dnstr;
@@ -1366,7 +1432,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		uint64_t folderid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, fid to delete from: 0x%.16"PRIx64"\n", folderid));
 
-		retval = openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, folderid, &distinguishedName);
+		openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, folderid, &distinguishedName);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to delete from: %s\n", distinguishedName));
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
 		talloc_free(distinguishedName);
@@ -1389,7 +1455,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		char			*distinguishedName;
 		struct ldb_message	*msg;
 
-		retval = openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, fid, &distinguishedName);
+		openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, fid, &distinguishedName);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to create in: %s\n", distinguishedName));
 
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
@@ -1580,66 +1646,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(void *ldb_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-_PUBLIC_ enum MAPISTATUS openchangedb_set_message_properties(TALLOC_CTX *mem_ctx,
-							     void *ldb_ctx, 
-							     struct ldb_message *msg, struct SRow *row)
-{
-	char			*PidTagAttr = NULL;
-	struct SPropValue	*value;
-	char			*str_value;
-	time_t			unix_time;
-	NTTIME			nt_time;
-	uint32_t		i;
-
-	unix_time = time(NULL);
-
-	for (i = 0; i < row->cValues; i++) {
-		value = row->lpProps + i;
-
-		switch (value->ulPropTag) {
-		case PR_DEPTH:
-		case PR_SOURCE_KEY:
-		case PR_PARENT_SOURCE_KEY:
-		case PR_CHANGE_KEY:
-		case PR_CREATION_TIME:
-		case PR_LAST_MODIFICATION_TIME:
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value->ulPropTag));
-			break;
-		default:
-			/* Step 2. Convert proptag into PidTag attribute */
-			PidTagAttr = (char *) openchangedb_property_get_attribute(value->ulPropTag);
-			if (!PidTagAttr) {
-				PidTagAttr = talloc_asprintf(mem_ctx, "%.8x", value->ulPropTag);
-			}
-
-			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
-			if (!str_value) {
-				DEBUG(5, ("Ignored property of unhandled type %.4x\n", (value->ulPropTag & 0xffff)));
-				continue;
-			}
-
-			ldb_msg_add_string(msg, PidTagAttr, str_value);
-			msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
-		}
-	}
-
-	/* We set the last modification time */
-	value = talloc_zero(NULL, struct SPropValue);
-
-	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
-	unix_to_nt_time(&nt_time, unix_time);
-	value->value.ft.dwLowDateTime = nt_time & 0xffffffff;
-	value->value.ft.dwHighDateTime = nt_time >> 32;
-	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
-	ldb_msg_add_string(msg, "PidTagLastModificationTime", str_value);
-	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_ADD;
-
-	talloc_free(value);
-
-	return MAPI_E_SUCCESS;
-}
-
-
 /**
    \details Retrieve the number of messages within the specified folder
 
@@ -1674,90 +1680,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(void *ldb_ctx,
 	*RowCount = res->count;
 
 	talloc_free(mem_ctx);
-
-	return MAPI_E_SUCCESS;
-}
-
-
-/**
-   \details Create a message for openchangedb. The message is not
-   saved in LDB until the save function is called.
-
-   \param mem_ctx the memory pointer to use for allocation
-   \param ldb_ctx Pointer to the ldb context
-   \param folderID the parent folder identifier
-   \param messageID the message identifier
-   \param msg pointer on pointer to the LDB message to return
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-enum MAPISTATUS openchangedb_create_message(TALLOC_CTX *mem_ctx,
-					    void *ldb_ctx,
-					    uint64_t FolderID,
-					    uint64_t MessageID,
-					    struct ldb_message **_msg)
-{
-	enum MAPISTATUS		retval;
-	struct ldb_message	*msg;
-	struct ldb_dn		*basedn;
-	char			*dn;
-	char			*parentDN;
-	char			*mailboxDN;
-
-	/* Retrieve distinguesName for parent folder */
-	retval = openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, FolderID, &parentDN);
-	MAPI_RETVAL_IF(retval, retval, NULL);
-
-	retval = openchangedb_get_mailboxDN(mem_ctx, ldb_ctx, FolderID, &mailboxDN);
-	MAPI_RETVAL_IF(retval, retval, NULL);	
-	printf("retval = 0x%.8x\n", retval);
-	printf("mailboxDN = %s\n", mailboxDN);
-
-	dn = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", MessageID, parentDN);
-	MAPI_RETVAL_IF(!dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-	basedn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
-	talloc_free(dn);
-
-	MAPI_RETVAL_IF(!ldb_dn_validate(basedn), MAPI_E_BAD_VALUE, NULL);
-
-	msg = ldb_msg_new(mem_ctx);
-	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-
-	msg->dn = ldb_dn_copy(mem_ctx, basedn);
-
-	ldb_msg_add_string(msg, "objectClass", "systemMessage");
-	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
-
-	ldb_msg_add_fmt(msg, "cn", "%"PRIu64, MessageID);
-	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
-
-	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, FolderID);
-	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
-
-	ldb_msg_add_fmt(msg, "PidTagMessageId", "%"PRIu64, MessageID);
-	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
-
-	if (mailboxDN) {
-		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
-		msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
-	}
-
-	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
-	msg->elements[msg->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
-
-	*_msg = msg;
-	return MAPI_E_SUCCESS;
-}
-
-
-_PUBLIC_ enum MAPISTATUS openchangedb_save_message(void *ldb_ctx, struct ldb_message *msg)
-{
-	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_INITIALIZED, NULL);
-
-	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		return MAPI_E_CALL_FAILED;
-	}
 
 	return MAPI_E_SUCCESS;
 }

@@ -402,11 +402,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
 		break;
 	case false:
-		retval = openchangedb_create_message((TALLOC_CTX *)message_object->object.message, 
-						     emsmdbp_ctx->oc_ctx, folderID, messageID, 
-						     &message_object->object.message->msg);
+		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
+						     emsmdbp_ctx->oc_ctx, messageID, folderID,
+						     &message_object->backend_object);
 		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
-		DEBUG(5, ("openchangedb_create_message ldb_message = %p\n", message_object->object.message->msg));
 		break;
 	}
 	
@@ -525,16 +524,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
+
 	mapistore = emsmdbp_is_mapistore(object);
 	switch (mapistore) {
 	case false:
-		retval = openchangedb_save_message(emsmdbp_ctx->oc_ctx, object->object.message->msg);
+		retval = openchangedb_message_save(object->backend_object, flags);
+		/* retval = openchangedb_save_message(emsmdbp_ctx->oc_ctx, object->object.message->msg); */
 		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", retval));
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
-		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
 		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
                 mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;

@@ -148,6 +148,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_save(void *_msg, uint8_t SaveFlags
 		if (ldb_add(msg->ldb_ctx, msg->msg) != LDB_SUCCESS) {
 			return MAPI_E_CALL_FAILED;
 		}
+		break;
 	case OPENCHANGEDB_MESSAGE_OPEN:
 		if (ldb_modify(msg->ldb_ctx, msg->res->msgs[0]) != LDB_SUCCESS) {
 			return MAPI_E_CALL_FAILED;

@@ -490,11 +490,10 @@ int mapistore_backend_folder_delete_folder(struct backend_context *bctx, void *f
 }
 
 int mapistore_backend_folder_open_message(struct backend_context *bctx, void *folder,
-					  TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep, struct mapistore_message **msg)
+					  TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep)
 {
-	return bctx->backend->folder.open_message(folder, mem_ctx, mid, messagep, msg);
+	return bctx->backend->folder.open_message(folder, mem_ctx, mid, messagep);
 }
-
 
 int mapistore_backend_folder_create_message(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)
 {
@@ -571,6 +570,11 @@ int mapistore_backend_folder_open_table(struct backend_context *bctx, void *fold
 					TALLOC_CTX *mem_ctx, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {
         return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
+}
+
+int mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
+{
+	return bctx->backend->message.get_message_data(message, mem_ctx, msg);
 }
 
 int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *row, uint16_t count)

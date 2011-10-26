@@ -730,8 +730,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	bool				mapistore = false;
 	struct mapistore_message	*msg;
 	struct emsmdbp_object		*object;
-	void				*backend_object;
-	uint64_t			messageID;
 	uint32_t			contextID;
 	struct oxcmsg_prop_index	prop_index;
 	int				i;
@@ -769,10 +767,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
 	case true:
-		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 
-		if (mapistore_folder_open_message(emsmdbp_ctx->mstore_ctx, contextID, object->parent_object->backend_object, mem_ctx, messageID, &backend_object, &msg)) {
+		if (mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, mem_ctx, &msg) != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}

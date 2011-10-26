@@ -546,7 +546,7 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_folder_open_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
-					   void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep, struct mapistore_message **msg)
+					   void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -559,7 +559,7 @@ _PUBLIC_ int mapistore_folder_open_message(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend open_message */
-	ret = mapistore_backend_folder_open_message(backend_ctx, folder, mem_ctx, mid, messagep, msg);
+	ret = mapistore_backend_folder_open_message(backend_ctx, folder, mem_ctx, mid, messagep);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
@@ -825,6 +825,36 @@ _PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, u
 
 	/* Step 2. Call backend operation */
 	ret = mapistore_backend_folder_open_table(backend_ctx, folder, mem_ctx, table_type, handle_id, table, row_count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+/**
+   \details Modify recipients of a message in mapistore
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   where properties will be stored
+   \param mid the identifier referencing the message
+   \rows the array of recipient rows
+   \count the number of elements in the array
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
+ */
+int mapistore_message_get_message_data(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend modifyrecipients */
+	ret = mapistore_backend_message_get_message_data(backend_ctx, message, mem_ctx, msg);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

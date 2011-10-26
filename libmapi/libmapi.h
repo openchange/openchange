@@ -275,6 +275,7 @@ struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
+bool			set_mapi_SPropValue_sogo(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
 bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);
 
 /* The following public definitions come from libmapi/IABContainer.c */

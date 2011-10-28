@@ -1198,7 +1198,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeletePropertiesNoReplicate(TALLOC_CTX *mem_
 	return MAPI_E_SUCCESS;
 }
 
-static int oxcprpt_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct mapi_SPropTagArray *excluded_tags)
+_PUBLIC_ int oxcprpt_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct mapi_SPropTagArray *excluded_tags)
 {
 	TALLOC_CTX		*mem_ctx;
 	bool			*properties_exclusion;
@@ -1290,7 +1290,7 @@ static inline void oxcprpt_fill_prop_index(struct oxcprpt_prop_index *prop_index
 	}
 }
 
-static int oxcprpt_copy_message_recipients(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
+_PUBLIC_ int oxcprpt_copy_message_recipients(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_message	*msg_data;
@@ -1349,7 +1349,7 @@ static int oxcprpt_copy_message_recipients(struct emsmdbp_context *emsmdbp_ctx, 
 	return MAPI_E_SUCCESS;
 }
 
-static int oxcprpt_copy_message_attachments(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
+_PUBLIC_ int oxcprpt_copy_message_attachments(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
 {
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		i, count, contextID, dest_num;

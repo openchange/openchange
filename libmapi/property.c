@@ -1456,6 +1456,49 @@ _PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
 }
 
 /**
+   \details Retrieve a MessageEntryId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw
+   MessageEntryId data
+
+   \return Allocated MessageEntryId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated MessageEntryId when
+   finished.
+ */
+_PUBLIC_ struct MessageEntryId *get_MessageEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct MessageEntryId	*MessageEntryId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	MessageEntryId = talloc_zero(mem_ctx, struct MessageEntryId);
+	ndr_err_code = ndr_pull_MessageEntryId(ndr, NDR_SCALARS, MessageEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(MessageEntryId);
+		return NULL;
+	}
+
+	return MessageEntryId;
+}
+
+/**
    \details Return the effective value used in a TypedString
    structure.
 

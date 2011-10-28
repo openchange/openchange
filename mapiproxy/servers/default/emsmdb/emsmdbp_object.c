@@ -52,6 +52,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "table";
 	case EMSMDBP_OBJECT_STREAM:
 		return "stream";
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		return "attachment";
 	case EMSMDBP_OBJECT_SUBSCRIPTION:
 		return "subscription";
 	case EMSMDBP_OBJECT_SYNCCONTEXT:

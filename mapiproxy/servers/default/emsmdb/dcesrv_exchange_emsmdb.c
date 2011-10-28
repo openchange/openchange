@@ -1472,9 +1472,9 @@ static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call,
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx,
-			      struct EcDoRpcExt *r)
+static enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct EcDoRpcExt *r)
 {
 	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt (0x9) not implemented\n"));
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);

@@ -1424,6 +1424,112 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 	ndr->depth--;
 }
 
+_PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int flags, const struct EcDoRpcExt *r)
+{
+	DATA_BLOB		rgbIn;
+	DATA_BLOB		rgbOut;
+	struct ndr_pull		*ndr_pull;
+	struct mapi2k7_request	*mapi_request;
+	struct mapi2k7_response	*mapi_response;
+	TALLOC_CTX		*mem_ctx;
+
+	mem_ctx = talloc_named(NULL, 0, "ndr_print_EcDoRpcExt2");
+
+	ndr_print_struct(ndr, name, "EcDoRpcExt");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "EcDoRpcExt");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulFlags", r->in.pulFlags);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulFlags", *r->in.pulFlags);
+		ndr->depth--;
+
+		/* Put MAPI request blob into a ndr_pull structure */
+		rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+		rgbIn.length = r->in.cbIn;
+		dump_data(0, rgbIn.data, rgbIn.length);
+		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+		mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
+		mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
+		ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request);
+		ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
+		talloc_free(mapi_request);
+		talloc_free(ndr_pull);
+		talloc_free(rgbIn.data);
+
+		ndr_print_uint32(ndr, "cbIn", r->in.cbIn);
+		ndr_print_ptr(ndr, "pcbOut", r->in.pcbOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbOut", *r->in.pcbOut);
+		ndr->depth--;
+		ndr_print_array_uint8(ndr, "Reserved0", r->in.Reserved0, *r->in.Reserved1);
+		ndr_print_ptr(ndr, "Reserved1", r->in.Reserved1);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "Reserved1", *r->in.Reserved1);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "EcDoRpcExt");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->out.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulFlags", r->out.pulFlags);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulFlags", *r->out.pulFlags);
+		ndr->depth--;
+
+		/* Put MAPI response blob into a ndr_pull structure */
+		if (*r->out.pcbOut) {
+			rgbOut.data = talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+			rgbOut.length = *r->out.pcbOut;
+			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
+				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
+				ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
+				ndr_print_mapi2k7_response(ndr, "mapi_response", 
+						   (const struct mapi2k7_response *)mapi_response);
+				talloc_free(mapi_response);
+			}
+			talloc_free(ndr_pull);
+			talloc_free(rgbOut.data);
+		}
+
+		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
+		ndr->depth--;
+		ndr_print_array_uint8(ndr, "Reserved0", r->out.Reserved0, *r->out.Reserved1);
+		ndr_print_ptr(ndr, "Reserved1", r->out.Reserved1);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "Reserved1", *r->out.Reserved1);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulTransTime", r->out.pulTransTime);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
+		ndr->depth--;
+		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+
+	talloc_free(mem_ctx);
+}
+
 _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int flags, const struct EcDoRpcExt2 *r)
 {
 	uint32_t		cntr_rgbAuxOut_0;

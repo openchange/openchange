@@ -4147,7 +4147,17 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0x09 */
-	void EcDoRpcExt();
+	[public,noprint] MAPISTATUS EcDoRpcExt (
+		 [in,out] policy_handle						*handle,
+		 [in,out] uint32						*pulFlags,
+		 [in, size_is(cbIn)] uint8					rgbIn[],
+		 [in] uint32							cbIn,
+		 [out, length_is(*pcbOut), size_is(*pcbOut)] uint8		rgbOut[],
+		 [in,out][range(0x0,0x40000)] uint32				*pcbOut,
+		 [in,out,length_is(*Reserved1),size_is(*Reserved1)] uint8	Reserved0[],
+		 [in,out] uint32						*Reserved1,
+		 [out] uint32							*pulTransTime
+		);
 
 	/*****************/
 	/* Function 0xa  */

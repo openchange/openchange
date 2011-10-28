@@ -437,7 +437,7 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 
 		retvals = talloc_array(local_mem_ctx, enum MAPISTATUS, msg->columns->cValues);
 		for (i = 0; i < msg->recipients_count; i++) {
-			recipient = msg->recipients[i];
+			recipient = msg->recipients + i;
 
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_START_RECIP);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
@@ -464,7 +464,7 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 			for (j = 0; j < msg->columns->cValues; j++) {
-				if (msg->recipients[i]->data[j] == NULL) {
+				if (recipient->data[j] == NULL) {
 					retvals[j] = MAPISTORE_ERR_NOT_FOUND;
 				}
 				else {

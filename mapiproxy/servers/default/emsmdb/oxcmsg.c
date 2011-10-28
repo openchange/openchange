@@ -287,7 +287,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 						       msg->recipients_count + 1);
 		oxcmsg_fill_prop_index(&prop_index, msg->columns);
 		for (i = 0; i < msg->recipients_count; i++) {
-			oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients[i], &prop_index);
+			oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
 		}
 	}
 	else {
@@ -596,8 +596,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	if (mapistore) {
 		contextID = emsmdbp_get_contextID(object);
 		memset(&columns, 0, sizeof(struct SPropTagArray));
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-						    &columns, object->backend_object, NULL, 0);
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, &columns, object->backend_object, 0, NULL);
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
@@ -607,6 +606,126 @@ end:
 	*size += libmapiserver_RopRemoveAllRecipients_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
+}
+
+static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRecipientRow *recipient_row, uint16_t prop_count, enum MAPITAGS *properties, struct mapistore_message_recipient *recipient)
+{
+	int			i, data_pos;
+	uint8_t			*src_value;
+	void			*dest_value;
+	char			*uni_value;
+	struct Binary_r		*bin_value;
+	struct FILETIME		*ft_value;
+	size_t			value_size;
+	const uint16_t		*unicode_char;
+	size_t			dest_size, dest_len;
+
+	recipient->type = recipient_row->RecipClass;
+
+	if ((recipient_row->RecipientRow.RecipientFlags & 0x07) == 1) {
+		recipient->username = (char *) recipient_row->RecipientRow.X500DN.recipient_x500name;
+	}
+	else {
+		recipient->username = NULL;
+	}
+
+	recipient->data = talloc_array(mem_ctx, void *, prop_count + 2);
+
+	/* PR_DISPLAY_NAME_UNICODE */
+	switch ((recipient_row->RecipientRow.RecipientFlags & 0x210)) {
+	case 0x10:
+		recipient->data[0] = (void *) recipient_row->RecipientRow.DisplayName.lpszA;
+		break;
+	case 0x210:
+		recipient->data[0] = (void *) recipient_row->RecipientRow.DisplayName.lpszW;
+		break;
+	default:
+		recipient->data[0] = NULL;
+	}
+
+	/* PR_EMAIL_ADDRESS_UNICODE */
+	switch ((recipient_row->RecipientRow.RecipientFlags & 0x208)) {
+	case 0x08:
+		recipient->data[1] = (void *) recipient_row->RecipientRow.EmailAddress.lpszA;
+		break;
+	case 0x208:
+		recipient->data[1] = (void *) recipient_row->RecipientRow.EmailAddress.lpszW;
+		break;
+	default:
+		recipient->data[1] = NULL;
+	}
+      
+	data_pos = 0;
+	for (i = 0; i < prop_count; i++) {
+		if (properties[i] & MV_FLAG) {
+			DEBUG(0, ("multivalue not supported yet\n"));
+			abort();
+		}
+
+		if (recipient_row->RecipientRow.layout) {
+			if (recipient_row->RecipientRow.prop_values.data[data_pos]) {
+				data_pos += 5;
+				recipient->data[i+2] = NULL;
+				continue;
+			}
+			else {
+				data_pos++;
+			}
+		}
+
+		dest_value = src_value = recipient_row->RecipientRow.prop_values.data + data_pos;
+		switch (properties[i] & 0xffff) {
+		case PT_BOOLEAN:
+			value_size = sizeof(uint8_t);
+			break;
+		case PT_I2:
+			value_size = sizeof(uint16_t);
+			break;
+		case PT_LONG:
+		case PT_ERROR:
+			value_size = sizeof(uint32_t);
+			break;
+		case PT_DOUBLE:
+			value_size = sizeof(double);
+			break;
+		case PT_I8:
+			value_size = sizeof(uint64_t);
+			break;
+		case PT_STRING8:
+			value_size = strlen(dest_value) + 1;
+			break;
+		case PT_SYSTIME:
+			ft_value = talloc_zero(recipient->data, struct FILETIME);
+			ft_value->dwLowDateTime = *(uint32_t *) src_value;
+			ft_value->dwHighDateTime = *(uint32_t *) (src_value + 4);
+			value_size = sizeof(uint64_t);
+			dest_value = ft_value;
+			break;
+		case PT_UNICODE:
+			unicode_char = (const uint16_t *) src_value;
+			value_size = 0;
+			while (*unicode_char++)
+				value_size += 2;
+			dest_size = value_size * 3 + 3;
+			uni_value = talloc_array(recipient->data, char, dest_size);
+			convert_string(CH_UTF16LE, CH_UTF8,
+				       src_value, value_size,
+				       uni_value, dest_size,
+				       &dest_len);
+			uni_value[dest_len] = 0;
+			dest_value = uni_value;
+			break;
+		case PT_BINARY:
+			bin_value = talloc_zero(recipient->data, struct Binary_r);
+			bin_value->cb = *(uint16_t *) src_value;
+			bin_value->lpb = src_value + 2;
+			value_size = (bin_value->cb + sizeof(uint16_t));
+			dest_value = bin_value;
+			break;
+		}
+		recipient->data[i+2] = dest_value;
+		data_pos += value_size;
+	}
 }
 
 /**
@@ -630,14 +749,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 						     struct EcDoRpc_MAPI_REPL *mapi_repl,
 						     uint32_t *handles, uint16_t *size)
 {
-	struct mapi_handles	*rec = NULL;
-	struct emsmdbp_object	*object;
-	enum MAPISTATUS		retval;
-	uint32_t		handle;
-	void			*private_data;
-	bool			mapistore = false;
-	uint32_t		contextID;
-	struct SPropTagArray	*columns;
+	struct mapi_handles			*rec = NULL;
+	struct emsmdbp_object			*object;
+	enum MAPISTATUS				retval;
+	uint32_t				handle;
+	void					*private_data;
+	bool					mapistore = false;
+	uint32_t				contextID;
+	struct mapistore_message_recipient	*recipients;
+	struct SPropTagArray			*columns;
+	int					i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ModifyRecipients (0x0e)\n"));
 
@@ -669,13 +790,23 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 	mapistore = emsmdbp_is_mapistore(object);
 	if (mapistore) {
+		/* Convention: we somewhat flatten the row and provide PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend */
 		contextID = emsmdbp_get_contextID(object);
 		columns = talloc_zero(mem_ctx, struct SPropTagArray);
-		columns->cValues = mapi_req->u.mapi_ModifyRecipients.prop_count;
-		columns->aulPropTag = mapi_req->u.mapi_ModifyRecipients.properties;
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-						    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues);
-		/* mapistore_savechangesmessage(emsmdbp_ctx->mstore_ctx, contextID, messageID, flags); */
+		columns->cValues = mapi_req->u.mapi_ModifyRecipients.prop_count + 2;
+		columns->aulPropTag = talloc_array(columns, enum MAPITAGS, columns->cValues);
+		columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
+		columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
+		memcpy(columns->aulPropTag + 2, mapi_req->u.mapi_ModifyRecipients.properties, mapi_req->u.mapi_ModifyRecipients.prop_count * sizeof(enum MAPITAGS));
+
+		recipients = talloc_array(mem_ctx, struct mapistore_message_recipient, mapi_req->u.mapi_ModifyRecipients.cValues);
+		for (i = 0; i < mapi_req->u.mapi_ModifyRecipients.cValues; i++) {
+			oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i, mapi_req->u.mapi_ModifyRecipients.prop_count, mapi_req->u.mapi_ModifyRecipients.properties, recipients + i);
+		}
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
+
+		/* mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, */
+		/* 				    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues); */
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
@@ -790,7 +921,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 											       msg->recipients_count + 1);
 			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), msg->columns, msg->recipients[i], &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
 			}
 		}
 		break;
@@ -1284,7 +1415,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                                                                                            msg->recipients_count + 1);
 			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientRows[i]), msg->columns, msg->recipients[i], &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
 			}
                 }
 

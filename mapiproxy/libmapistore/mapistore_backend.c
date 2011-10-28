@@ -577,9 +577,9 @@ int mapistore_backend_message_get_message_data(struct backend_context *bctx, voi
 	return bctx->backend->message.get_message_data(message, mem_ctx, msg);
 }
 
-int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *row, uint16_t count)
+int mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, uint16_t count, struct mapistore_message_recipient *recipients)
 {
-	return bctx->backend->message.modify_recipients(message, columns, row, count);
+	return bctx->backend->message.modify_recipients(message, columns, count, recipients);
 }
 
 int mapistore_backend_message_save(struct backend_context *bctx, void *message)

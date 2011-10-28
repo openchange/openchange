@@ -880,7 +880,7 @@ int mapistore_message_get_message_data(struct mapistore_context *mstore_ctx, uin
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct SPropTagArray *columns, struct ModifyRecipientRow *rows, uint16_t count)
+int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, struct SPropTagArray *columns, uint16_t count, struct mapistore_message_recipient *recipients)
 {
 	struct backend_context	*backend_ctx;
 	int			ret;
@@ -893,7 +893,7 @@ int mapistore_message_modify_recipients(struct mapistore_context *mstore_ctx, ui
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend modifyrecipients */
-	ret = mapistore_backend_message_modify_recipients(backend_ctx, message, columns, rows, count);
+	ret = mapistore_backend_message_modify_recipients(backend_ctx, message, columns, count, recipients);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

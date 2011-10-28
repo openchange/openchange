@@ -2090,7 +2090,7 @@ System Attendant Private Interface
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
 	} MessageClass;
 
-	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+	typedef [public,nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x1)] uint8	bytes[6];
 		[default] dlong		value;
 	} GLOBCNT;

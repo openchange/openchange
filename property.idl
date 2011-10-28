@@ -267,10 +267,10 @@ interface property
 		GUID			ProviderUID;
 		uint16			MessageType;
 		GUID			FolderDatabaseGuid;
-		GID			FolderGlobalCounter;
+		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
 		uint16			Pad1;
 		GUID			MessageDatabaseGuid;
-		GID			MessageGlobalCounter;
+		[switch_is(1)] GLOBCNT	MessageGlobalCounter;
 		uint16			Pad2;
 	} MessageEntryId;
 }

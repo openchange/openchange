@@ -55,9 +55,11 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 
 	mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID, old_message_object->backend_object, mem_ctx, 1, &property, &property_data);
 	if (property_data.error) {
-		DEBUG(5, (__location__": PR_TARGET_ENTRYID not found\n"));
 		return;
 	}
+
+	DEBUG(5, (__location__": old message fid: %.16"PRIx64"\n", old_message_object->parent_object->object.folder->folderID));
+	DEBUG(5, (__location__": old message mid: %.16"PRIx64"\n", old_message_object->object.message->messageID));
 
 	bin_data = property_data.data;
 	entryID = get_MessageEntryId(mem_ctx, bin_data);
@@ -79,7 +81,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		DEBUG(5, (__location__": unable to deduce message replID\n"));
 	}
 	messageID = (entryID->MessageGlobalCounter.value << 16) | replID;
-	DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", messageID));
+	DEBUG(5, (__location__": dest message id: %.16"PRIx64"\n", messageID));
 
 	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID);
 	if (!folder_object) {

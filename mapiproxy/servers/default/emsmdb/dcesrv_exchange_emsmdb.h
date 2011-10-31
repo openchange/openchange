@@ -288,6 +288,7 @@ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_c
 struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
+int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);

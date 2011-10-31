@@ -28,17 +28,12 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-/* FIXME: should those really be exported? */
-extern int oxcprpt_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct mapi_SPropTagArray *);
-extern int oxcprpt_copy_message_recipients(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *);
-extern int oxcprpt_copy_message_attachments(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *);
-
 static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPITAGS			property = PR_TARGET_ENTRYID;
 	struct mapistore_property_data	property_data;
-	struct mapi_SPropTagArray	*excluded_tags;
+	struct SPropTagArray		*excluded_tags;
 	enum MAPITAGS			ex_properties[] = { PR_TARGET_ENTRYID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST };
 	struct Binary_r			*bin_data;
 	struct MessageEntryId		*entryID;
@@ -101,9 +96,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	excluded_tags->aulPropTag = ex_properties;
 
 	/* FIXME: (from oxomsg 3.2.5.1.2.8) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
-	oxcprpt_copy_properties(emsmdbp_ctx, old_message_object, message_object, excluded_tags);
-	oxcprpt_copy_message_recipients(emsmdbp_ctx, old_message_object, message_object);
-	oxcprpt_copy_message_attachments(emsmdbp_ctx, old_message_object, message_object);
+	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, excluded_tags, true);
 
 	mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
 	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);

@@ -39,6 +39,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	enum MAPITAGS			property = PR_TARGET_ENTRYID;
 	struct mapistore_property_data	property_data;
 	struct mapi_SPropTagArray	*excluded_tags;
+	enum MAPITAGS			ex_properties[] = { PR_TARGET_ENTRYID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST };
 	struct Binary_r			*bin_data;
 	struct MessageEntryId		*entryID;
 	uint32_t			contextID;
@@ -58,8 +59,8 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		return;
 	}
 
-	DEBUG(5, (__location__": old message fid: %.16"PRIx64"\n", old_message_object->parent_object->object.folder->folderID));
-	DEBUG(5, (__location__": old message mid: %.16"PRIx64"\n", old_message_object->object.message->messageID));
+	/* DEBUG(5, (__location__": old message fid: %.16"PRIx64"\n", old_message_object->parent_object->object.folder->folderID)); */
+	/* DEBUG(5, (__location__": old message mid: %.16"PRIx64"\n", old_message_object->object.message->messageID)); */
 
 	bin_data = property_data.data;
 	entryID = get_MessageEntryId(mem_ctx, bin_data);
@@ -74,14 +75,14 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		return;
 	}
 	folderID = (entryID->FolderGlobalCounter.value << 16) | replID;
-	DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID));
+	/* DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 
 	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, &entryID->MessageDatabaseGuid, &replID);
 	if (ret) {
 		DEBUG(5, (__location__": unable to deduce message replID\n"));
 	}
 	messageID = (entryID->MessageGlobalCounter.value << 16) | replID;
-	DEBUG(5, (__location__": dest message id: %.16"PRIx64"\n", messageID));
+	/* DEBUG(5, (__location__": dest message id: %.16"PRIx64"\n", messageID)); */
 
 	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID);
 	if (!folder_object) {
@@ -96,8 +97,8 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	}
 
 	excluded_tags = talloc_zero(mem_ctx, struct mapi_SPropTagArray);
-	excluded_tags->cValues = 1;
-	excluded_tags->aulPropTag = &property;
+	excluded_tags->cValues = 3;
+	excluded_tags->aulPropTag = ex_properties;
 
 	/* FIXME: (from oxomsg 3.2.5.1.2.8) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
 	oxcprpt_copy_properties(emsmdbp_ctx, old_message_object, message_object, excluded_tags);

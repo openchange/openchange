@@ -582,6 +582,11 @@ int mapistore_backend_message_modify_recipients(struct backend_context *bctx, vo
 	return bctx->backend->message.modify_recipients(message, columns, count, recipients);
 }
 
+int mapistore_backend_message_set_read_flag(struct backend_context *bctx, void *message, uint8_t flag)
+{
+	return bctx->backend->message.set_read_flag(message, flag);
+}
+
 int mapistore_backend_message_save(struct backend_context *bctx, void *message)
 {
 	return bctx->backend->message.save(message);

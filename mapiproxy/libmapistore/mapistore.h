@@ -151,6 +151,7 @@ struct mapistore_backend {
         struct {
 		int		(*get_message_data)(void *, TALLOC_CTX *, struct mapistore_message **);
 		int		(*modify_recipients)(void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
+                int		(*set_read_flag)(void *, uint8_t);
 		int		(*save)(void *);
 		int		(*submit)(void *, enum SubmitFlags);
                 int		(*open_attachment)(void *, TALLOC_CTX *, uint32_t, void **);
@@ -260,6 +261,7 @@ int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TA
 
 int mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
 int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
+int mapistore_message_set_read_flag(struct mapistore_context *, uint32_t, void *, uint8_t);
 int mapistore_message_save(struct mapistore_context *, uint32_t, void *);
 int mapistore_message_submit(struct mapistore_context *, uint32_t, void *, enum SubmitFlags);
 int mapistore_message_open_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint32_t, void **);

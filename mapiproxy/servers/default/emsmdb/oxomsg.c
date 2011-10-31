@@ -33,8 +33,8 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	TALLOC_CTX			*mem_ctx;
 	enum MAPITAGS			property = PR_TARGET_ENTRYID;
 	struct mapistore_property_data	property_data;
-	struct SPropTagArray		*excluded_tags;
 	enum MAPITAGS			ex_properties[] = { PR_TARGET_ENTRYID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST };
+	struct SPropTagArray		excluded_tags = { sizeof(ex_properties) / sizeof(enum MAPITAGS), ex_properties };
 	struct Binary_r			*bin_data;
 	struct MessageEntryId		*entryID;
 	uint32_t			contextID;
@@ -91,12 +91,8 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		return;
 	}
 
-	excluded_tags = talloc_zero(mem_ctx, struct mapi_SPropTagArray);
-	excluded_tags->cValues = 3;
-	excluded_tags->aulPropTag = ex_properties;
-
 	/* FIXME: (from oxomsg 3.2.5.1.2.8) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
-	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, excluded_tags, true);
+	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
 	mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
 	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);

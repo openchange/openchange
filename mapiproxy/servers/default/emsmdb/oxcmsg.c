@@ -956,6 +956,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 						       struct EcDoRpc_MAPI_REPL *mapi_repl,
 						       uint32_t *handles, uint16_t *size)
 {
+	struct SetMessageReadFlag_req	*request;
+	/* struct SetMessageReadFlag_repl	*response; */
+	enum MAPISTATUS			retval;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*message_object = NULL;
+	uint32_t			contextID;
+	void				*data;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11) -- stub\n"));
 
 	/* Sanity checks */
@@ -965,13 +974,49 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_SetMessageReadFlag;
+	/* response = &mapi_repl->u.mapi_SetMessageReadFlag; */
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-	/* TODO: actually implement this */
+	handle = handles[request->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	message_object = (struct emsmdbp_object *) data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		DEBUG(5, ("  no object or object is not a message\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	switch (emsmdbp_is_mapistore(message_object)) {
+	case false:
+		DEBUG(0, ("Not implemented yet\n"));
+		break;
+	case true:
+                contextID = emsmdbp_get_contextID(message_object);
+		mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, request->flags);
+		break;
+	}
+
+	/* TODO: public folders */
 	mapi_repl->u.mapi_SetMessageReadFlag.ReadStatusChanged = false;
 
+end:
 	*size += libmapiserver_RopSetMessageReadFlag_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

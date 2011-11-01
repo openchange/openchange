@@ -3523,15 +3523,14 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x80 */
-// 	typedef [flag(NDR_NOALIGN)] struct {
-// 		uint16		MessageSize;
-// 		uint8		MessageId[MessageSize];
-// 		boolean8	MarkAsRead;
-// 	} MessageReadStates;
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16		MessageIdSize;
+		uint8		MessageId[MessageIdSize];
+		boolean8	MarkAsRead;
+	} MessageReadStates;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		MessageReadStateSize;
-		[subcontext(0),subcontext_size(MessageReadStateSize),flag(NDR_REMAINING)] DATA_BLOB MessageStates;
+		[subcontext(2),flag(NDR_REMAINING)] DATA_BLOB MessageReadStates;
 	} SyncImportReadStateChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

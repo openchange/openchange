@@ -2486,6 +2486,46 @@ end:
 }
 
 /**
+   \details Retrieve a MessageReadStates structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw MessageReadStates data
+
+   \return Allocated MessageReadStates structure on success, otherwise NULL
+
+   \note Developers must free the allocated MessageReadStates when finished.
+ */
+static struct MessageReadStates *get_MessageReadStates(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct MessageReadStates	*message_read_states = NULL;
+	struct ndr_pull			*ndr;
+	enum ndr_err_code		ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	message_read_states = talloc_zero(mem_ctx, struct MessageReadStates);
+	ndr_err_code = ndr_pull_MessageReadStates(ndr, NDR_SCALARS, message_read_states);
+
+	/* talloc_free(ndr); */
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(message_read_states);
+		return NULL;
+	}
+
+	return message_read_states;
+}
+
+/**
    \details EcDoRpc SyncImportReadStateChanges (0x80) Rop.
 
    \param mem_ctx pointer to the memory context
@@ -2503,7 +2543,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 							       struct EcDoRpc_MAPI_REPL *mapi_repl,
 							       uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportReadStateChanges (0x80) - stub\n"));
+	struct SyncImportReadStateChanges_req	*request;
+	struct SyncImportReadStateChanges_repl	*response;
+	uint32_t				contextID, synccontext_handle;
+	void					*data;
+	struct mapi_handles			*synccontext_rec;
+	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
+	enum MAPISTATUS				retval;
+	struct MessageReadStates		*read_states;
+	uint32_t				read_states_size;
+	struct Binary_r				*bin_data;
+	uint64_t				mid, base;
+	uint16_t				replid;
+	int					i;
+	struct mapistore_message		*msg;
+	struct GUID				guid;
+	uint8_t					flag;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportReadStateChanges (0x80)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -2516,8 +2573,73 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	/* TODO effective work here */
+	/* Step 1. Retrieve object handle */
+	synccontext_handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, synccontext_handle, &synccontext_rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", synccontext_handle, mapi_req->handle_idx));
+		goto end;
+	}
 
+	mapi_handles_get_private_data(synccontext_rec, &data);
+	synccontext_object = (struct emsmdbp_object *) data;
+	if (!synccontext_object || synccontext_object->type != EMSMDBP_OBJECT_SYNCCONTEXT) {
+		DEBUG(5, ("  object not found or not a synccontext\n"));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_SyncImportReadStateChanges;
+
+	folder_object = synccontext_object->parent_object;
+
+	if (emsmdbp_is_mapistore(folder_object)) {
+		contextID = emsmdbp_get_contextID(folder_object);
+		bin_data = talloc_zero(mem_ctx, struct Binary_r);
+		bin_data->cb = request->MessageReadStates.length;
+		bin_data->lpb = request->MessageReadStates.data;
+		while (bin_data->cb) {
+			read_states = get_MessageReadStates(mem_ctx, bin_data);
+			read_states_size = read_states->MessageIdSize + 3;
+			if (GUID_from_string((char *) read_states->MessageId, &guid).v != 0) {
+				continue;
+			}
+			if (emsmdbp_guid_to_replid(emsmdbp_ctx, &guid, &replid)) {
+				continue;
+			}
+
+			mid = 0;
+			base = 1;
+			for (i = 16; i < read_states->MessageIdSize; i++) {
+				mid |= (uint64_t) read_states->MessageId[i] * base;
+				base <<= 8;
+			}
+			mid <<= 16;
+			mid |= replid;
+
+			if (read_states->MarkAsRead) {
+				flag = SUPPRESS_RECEIPT | CLEAR_RN_PENDING;
+			}
+			else {
+				flag = CLEAR_READ_FLAG | CLEAR_NRN_PENDING;
+			}
+
+			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, &msg);
+			if (message_object) {
+				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
+				talloc_free(message_object);
+			}
+
+			bin_data->cb -= read_states_size;
+			bin_data->lpb += read_states_size;
+		}
+	}
+	else {
+		DEBUG(0, (__location__ ": operation not supported on non-mapistore objects\n"));
+	}
+
+end:
 	*size += libmapiserver_RopSyncImportReadStateChanges_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];

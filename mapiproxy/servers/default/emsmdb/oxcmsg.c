@@ -965,7 +965,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 	uint32_t			contextID;
 	void				*data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11) -- stub\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

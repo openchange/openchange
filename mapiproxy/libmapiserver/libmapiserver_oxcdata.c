@@ -105,7 +105,7 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientr
 		size += strlen(recipientrow.DisplayName.lpszA);
 		break;
 	case 0x210:
-		size += strlen(recipientrow.DisplayName.lpszW) * 2 + 2;
+		size += strlen_m_ext(recipientrow.DisplayName.lpszW, CH_UTF8, CH_UTF16LE) * 2 + 2;
 		break;
 	default:
 		break;
@@ -117,7 +117,7 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientr
 		size += strlen(recipientrow.SimpleDisplayName.lpszA);
 		break;
 	case 0x600:
-		size += strlen(recipientrow.SimpleDisplayName.lpszW) * 2 + 2;
+		size += strlen_m_ext(recipientrow.SimpleDisplayName.lpszW, CH_UTF8, CH_UTF16LE) * 2 + 2;
 		break;
 	default:
 		break;
@@ -129,7 +129,7 @@ _PUBLIC_ uint16_t libmapiserver_RecipientRow_size(struct RecipientRow recipientr
 		size += strlen(recipientrow.TransmittableDisplayName.lpszA);
 		break;
 	case 0x220:
-		size += strlen(recipientrow.TransmittableDisplayName.lpszW) * 2 + 2;
+		size += strlen_m_ext(recipientrow.TransmittableDisplayName.lpszW, CH_UTF8, CH_UTF16LE) * 2 + 2;
 		break;
 	default:
 		break;

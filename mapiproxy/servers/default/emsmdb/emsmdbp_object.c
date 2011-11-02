@@ -1215,7 +1215,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	uint64_t			*rowFolderID;
 	uint64_t			folderID;
 	uint8_t				*has_subobj;
-	char				*table_filter;
 	void				*odb_ctx;
 	struct Binary_r			*binr;
 

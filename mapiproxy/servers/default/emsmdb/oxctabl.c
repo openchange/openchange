@@ -110,7 +110,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 							    object->backend_object, request.prop_count, request.properties);
                         } else {
 				/* openchangedb case */
-				DEBUG(5, ("[%s] object: Setting Columns on openchangedb table\n"));
+				DEBUG(5, ("[%s] object: Setting Columns on openchangedb table\n", __FUNCTION__));
 			}
 		}
 	}

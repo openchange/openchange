@@ -2549,7 +2549,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 							       uint32_t *handles, uint16_t *size)
 {
 	struct SyncImportReadStateChanges_req	*request;
-	struct SyncImportReadStateChanges_repl	*response;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
 	struct mapi_handles			*synccontext_rec;

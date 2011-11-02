@@ -1477,7 +1477,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
 					 struct EcDoRpcExt *r)
 {
 	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt (0x9) not implemented\n"));
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /* check if a client version is too low to use */

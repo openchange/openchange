@@ -1230,8 +1230,16 @@ notif:
 		talloc_free(notification_holder);
 	}
 	
+	DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
 	/* Process notifications available on subscriptions queues */
 	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
+		DEBUG(0, ("subscription = %p\n", sel->subscription));
+		if (sel->subscription) {
+			DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
+			DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
+			DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
+			DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
+		}
 		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
 		if (retval == MAPISTORE_SUCCESS) {
 			for (el = nlist; el->notification; el = el->next) {

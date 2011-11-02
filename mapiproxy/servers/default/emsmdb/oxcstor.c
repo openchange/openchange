@@ -255,28 +255,49 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    uint32_t *handles,
 					    uint16_t *size)
 {
-        struct mapistore_subscription_list *subscription_list, *subscription_holder;
-        struct mapistore_subscription *subscription;
-	enum MAPISTATUS		retval;
-	uint32_t		handle;
+        /* struct mapistore_subscription_list *subscription_list, *subscription_holder; */
+        /* struct mapistore_subscription *subscription; */
+	struct mapistore_subscription_list	*el;
+	enum MAPISTATUS				retval;
+	uint32_t				handle;
 
 	handle = handles[request->handle_idx];
+next:
+	for (el = emsmdbp_ctx->mstore_ctx->subscriptions; el; el = el->next) {
+		if (handle == el->subscription->handle) {
+			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
+			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
+			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
+			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
+			DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->subscriptions, el);
+			goto next;
+		}
+	}
 
 	/* If we have notification's subscriptions attached to this handle, we
 	   obviously remove them in order to avoid invoking them once all ROPs
 	   are processed */
-	subscription_list = emsmdbp_ctx->mstore_ctx->subscriptions;
-	subscription_holder = subscription_list;
-	while (subscription_holder) {
-	        subscription = subscription_holder->subscription;
+/* retry: */
+/* 	subscription_list = emsmdbp_ctx->mstore_ctx->subscriptions; */
+/* 	subscription_holder = subscription_list; */
+/* 	while (subscription_holder) { */
+/* 	        subscription = subscription_holder->subscription; */
 		  
-		if (handle == subscription->handle)
-		          DLIST_REMOVE(subscription_list, subscription_holder);
+/* 		if (handle == subscription->handle) { */
+/* 			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n")); */
+/* 			DEBUG(0, ("subscription: handle = 0x%x\n", subscription->handle)); */
+/* 			DEBUG(0, ("subscription: types = 0x%x\n", subscription->notification_types)); */
+/* 			DEBUG(0, ("subscription: mqueue = %d\n", subscription->mqueue)); */
+/* 			DEBUG(0, ("subscription: mqueue name = %s\n", subscription->mqueue_name)); */
+/* 			DLIST_REMOVE(subscription_list, subscription_holder); */
+/* 			talloc_free(subscription_holder); */
+/* 			goto retry; */
+/* 		} */
 
 
-		subscription_holder = subscription_holder->next;
-       	}
-
+/* 		subscription_holder = subscription_holder->next; */
+/*        	} */
 	/* We finally really delete the handle */
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);

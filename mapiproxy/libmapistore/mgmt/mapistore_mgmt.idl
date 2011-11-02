@@ -39,7 +39,12 @@ interface mapistore_mgmt
 	} mapistore_mgmt_bind_cmd;
 
 	typedef [public,bitmap16bit] bitmap {
-		mgmt_notification_type_newmail	= 0x2
+		mgmt_notification_type_newmail		= 0x2,
+		mgmt_notification_type_objectcreated	= 0x4,	
+		mgmt_notification_type_objectmodified	= 0x10,
+		mgmt_notification_type_Tbit		= 0x1000,
+		mgmt_notification_type_Ubit		= 0x2000,
+		mgmt_notification_type_Mbit		= 0x8000
 	} mapistore_mgmt_notification_type;
 
 	typedef [public] struct {
@@ -50,6 +55,9 @@ interface mapistore_mgmt
 		hyper					FolderID;
 		hyper					MessageID;
 		[string, charset(UTF16)] uint16		*MAPIStoreURI;
+		uint32					TotalNumberOfMessages;
+		uint32					UnreadNumberOfMessages;
+		
 	} mapistore_mgmt_notification_cmd;
 
 	typedef [enum16bit] enum {

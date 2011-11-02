@@ -550,11 +550,29 @@ _PUBLIC_ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt
 	struct mapistore_mgmt_notif	*el;
 	bool				found = false;
 
+	printf("Looking for 0x%x\n", NotificationFlags);
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!folderURI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* MAPISTORE_RETVAL_IF(!folderURI, MAPISTORE_ERR_INVALID_PARAMETER, NULL); */
+
+	if (!folderURI) {
+		for (uel = mgmt_ctx->users; uel; uel = uel->next) {
+			if (uel->info->username && !strcmp(uel->info->username, username)) {
+				if (uel->notifications) {
+					for (el = uel->notifications; el; el = el->next) {
+						if ((el->WholeStore == true) && 
+						    (el->NotificationFlags & NotificationFlags)) {
+						  DEBUG(0, ("[%s:%d]: WholeStore matching subscription found for 0x%x\n", __FUNCTION__, __LINE__, NotificationFlags));
+							found = true;
+							goto end;
+						}
+					}
+				}
+			}
+		}
+	}
 
 	for (uel = mgmt_ctx->users; uel; uel = uel->next) {
 		if (uel->info->username && !strcmp(uel->info->username, username)) {
@@ -565,16 +583,18 @@ _PUBLIC_ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt
 					    (el->NotificationFlags & NotificationFlags)) {
 						DEBUG(0, ("[%s:%d]: Subscription found\n", __FUNCTION__, __LINE__));
 						found = true;
+						goto end;
 					} else if ((el->WholeStore == true) && 
 						   (el->NotificationFlags & NotificationFlags)) {
 						DEBUG(0, ("[%s:%d]: WholeStore matching subscription found\n", __FUNCTION__, __LINE__));
 						found = true;
+						goto end;
 					}
 				}
 			}
 		}
 	}
-
+ end:
 	return ((found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND);
 }
 

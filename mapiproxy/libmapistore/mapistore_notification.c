@@ -32,7 +32,12 @@ static int mapistore_subscription_destructor(void *data)
 {
 	struct mapistore_subscription	*subscription = (struct mapistore_subscription *) data;
 
+	DEBUG(0, ("#### DELETING SUBSCRIPTION ###\n"));
+
 	if (!data) return -1;
+
+	DEBUG(0, ("### 1. NotificationFlags = 0x%x\n", subscription->notification_types));
+	DEBUG(0, ("### 2. handle = 0x%x\n", subscription->handle));
 
 	if (subscription->mqueue != -1) {
 		if (mq_unlink(subscription->mqueue_name) == -1) {
@@ -122,7 +127,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 			c.mstore_ctx = mstore_ctx;
 			
 			ret = mapistore_mgmt_interface_register_subscription(&c, &n);
-			DEBUG(0, ("[%s:%d]: registering newmail notification: %d\n", __FUNCTION__, __LINE__, ret));
+			DEBUG(0, ("[%s:%d]: registering notification: %d\n", __FUNCTION__, __LINE__, ret));
 		}
 	}
 
@@ -197,12 +202,69 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 	nl = talloc_zero(mem_ctx, struct mapistore_notification_list);
 	nl->notification = talloc_zero((TALLOC_CTX *)nl, struct mapistore_notification);
 
-	/* HACK: we only support NewMail notifications for now */
-	nl->notification->object_type = MAPISTORE_MESSAGE;
-	nl->notification->event = MAPISTORE_OBJECT_NEWMAIL;
-	nl->notification->parameters.object_parameters.folder_id = command.command.notification.FolderID;
-	nl->notification->parameters.object_parameters.object_id = command.command.notification.MessageID;
+	/* On newmail notification received, trigger 3 notifications:
+	   1. FolderModifiedNotification (0x3010)
+	   2. MessageObjectCreated (0x8004)
+	   3. FolderModification (0x10)
+	 */
 
+	switch (command.command.notification.NotificationFlags) {
+	case 0x8004:
+		nl->notification->object_type = MAPISTORE_MESSAGE;
+		nl->notification->event = MAPISTORE_OBJECT_CREATED;
+		nl->notification->parameters.object_parameters.folder_id = command.command.notification.FolderID;
+		nl->notification->parameters.object_parameters.object_id = command.command.notification.MessageID;
+		nl->notification->parameters.object_parameters.tag_count = 24;
+		nl->notification->parameters.object_parameters.tags = talloc_array(nl->notification, enum MAPITAGS, nl->notification->parameters.object_parameters.tag_count);
+		nl->notification->parameters.object_parameters.tags[0] = PR_RCVD_REPRESENTING_ENTRYID;
+		nl->notification->parameters.object_parameters.tags[1] = PR_RCVD_REPRESENTING_ADDRTYPE;
+		nl->notification->parameters.object_parameters.tags[2] = PR_RCVD_REPRESENTING_EMAIL_ADDRESS;
+		nl->notification->parameters.object_parameters.tags[3] = PR_RCVD_REPRESENTING_NAME;
+		nl->notification->parameters.object_parameters.tags[4] = PR_RCVD_REPRESENTING_SEARCH_KEY;
+		nl->notification->parameters.object_parameters.tags[5] = PR_RCVD_REPRESENTING_FLAGS;
+		nl->notification->parameters.object_parameters.tags[6] = 0x67BA0102;
+		nl->notification->parameters.object_parameters.tags[7] = PR_CONTENT_FILTER_SCL;
+		nl->notification->parameters.object_parameters.tags[8] = PR_LAST_MODIFICATION_TIME;
+		nl->notification->parameters.object_parameters.tags[9] = PR_LAST_MODIFIER_ENTRYID;
+		nl->notification->parameters.object_parameters.tags[10] = PR_LAST_MODIFIER_NAME;
+		nl->notification->parameters.object_parameters.tags[11] = PR_MODIFIER_FLAGS;
+		nl->notification->parameters.object_parameters.tags[12] = 0x67BE0102;
+		nl->notification->parameters.object_parameters.tags[13] = PR_LOCAL_COMMIT_TIME;
+		nl->notification->parameters.object_parameters.tags[14] = PR_RECEIVED_BY_SEARCH_KEY;
+		nl->notification->parameters.object_parameters.tags[15] = PR_RECEIVED_BY_ENTRYID;
+		nl->notification->parameters.object_parameters.tags[16] = PR_RECEIVED_BY_ADDRTYPE;
+		nl->notification->parameters.object_parameters.tags[17] = PR_RECEIVED_BY_EMAIL_ADDRESS;
+		nl->notification->parameters.object_parameters.tags[18] = PR_RECEIVED_BY_NAME;
+		nl->notification->parameters.object_parameters.tags[19] = PR_RCVD_BY_FLAGS;
+		nl->notification->parameters.object_parameters.tags[20] = 0x67B90102;
+		nl->notification->parameters.object_parameters.tags[21] = PR_MESSAGE_FLAGS;
+		nl->notification->parameters.object_parameters.tags[22] = PR_MESSAGE_SIZE;
+		nl->notification->parameters.object_parameters.tags[23] = PR_INTERNET_ARTICLE_NUMBER;
+		break;
+	case 0x3010:
+		nl->notification->object_type = MAPISTORE_FOLDER;
+		nl->notification->event = MAPISTORE_OBJECT_MODIFIED;
+		nl->notification->parameters.object_parameters.folder_id = command.command.notification.FolderID;
+		nl->notification->parameters.object_parameters.tag_count = 0x5;
+		nl->notification->parameters.object_parameters.tags = talloc_array(nl->notification, enum MAPITAGS, nl->notification->parameters.object_parameters.tag_count);
+		nl->notification->parameters.object_parameters.tags[0] = PR_CONTENT_COUNT;
+		nl->notification->parameters.object_parameters.tags[1] = PR_CONTENT_UNREAD;
+		nl->notification->parameters.object_parameters.tags[2] = PR_MESSAGE_SIZE;
+		nl->notification->parameters.object_parameters.tags[3] = PR_RECIPIENT_ON_NORMAL_MSG_COUNT;
+		nl->notification->parameters.object_parameters.tags[4] = PR_NORMAL_MESSAGE_SIZE;
+		nl->notification->parameters.object_parameters.message_count = command.command.notification.TotalNumberOfMessages;
+		break;
+	default:
+		DEBUG(3, ("Unsupported Notification Type: 0x%x\n", command.command.notification.NotificationFlags));
+		break;
+
+		/* TODO: Finir de faire les notifications
+		  FIX dcesrv_exchange_emsmdb.c: fill_notification 
+		  Faire le test allelouia */
+	}
+	  
+
+	/* HACK: we only support NewMail notifications for now */
 	return nl;
 }
 
@@ -302,12 +364,15 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 	DATA_BLOB				data;
 	bool					found = false;
 
+	DEBUG(0, ("mapistore_get_queued_notifications: queue name = %s\n", s->mqueue_name));
+	DEBUG(0, ("mapistore_get_queued_notifications: before sanity checks\n"));
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!s, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!nl, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	MAPISTORE_RETVAL_IF(s->mqueue == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+	DEBUG(0, ("mapistore_get_queued_notifications: after sanity checks\n"));
 
 	/* Retrieve queue attributes */
 	ret = mq_getattr(s->mqueue, &attr);
@@ -336,6 +401,8 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 		*nl = nlist;
 	}
 
+	DEBUG(0, ("mapistore_get_queued_notification: found = %s\n", 
+		  (found == false) ? "MAPISTORE_ERR_NOT_FOUND" : "MAPISTORE_SUCCESS"));
 	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
 }
 
@@ -405,6 +472,11 @@ _PUBLIC_ int mapistore_delete_subscription(struct mapistore_context *mstore_ctx,
 	for (el = mstore_ctx->subscriptions; el; el = el->next) {
 		if ((el->subscription->handle == identifier) &&
 		    (el->subscription->notification_types == NotificationFlags)) {
+			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
+			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
+			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
+			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
 			DLIST_REMOVE(mstore_ctx->subscriptions, el);
 			talloc_free(el);
 			return MAPISTORE_SUCCESS;

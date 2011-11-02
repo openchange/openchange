@@ -260,4 +260,17 @@ interface property
 		uint32			Size;
 		uint8			Data[Size];
 	} GlobalObjectId;
+
+	/* PR_ENTRYID/PR_TARGET_ENTRYID (messages) */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			Flags;
+		GUID			ProviderUID;
+		uint16			MessageType;
+		GUID			FolderDatabaseGuid;
+		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
+		uint16			Pad1;
+		GUID			MessageDatabaseGuid;
+		[switch_is(1)] GLOBCNT	MessageGlobalCounter;
+		uint16			Pad2;
+	} MessageEntryId;
 }

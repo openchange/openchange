@@ -249,9 +249,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct emsabp_context *emsa
 	ephEntryID->DisplayType = DisplayType;
 	ephEntryID->MId = MId;
 
-	/* HACK: talloc_abort() received when freeing guid */
-	/* talloc_free(guid);*/
-
 	return MAPI_E_SUCCESS;
 }
 

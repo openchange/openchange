@@ -52,6 +52,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "table";
 	case EMSMDBP_OBJECT_STREAM:
 		return "stream";
+	case EMSMDBP_OBJECT_ATTACHMENT:
+		return "attachment";
 	case EMSMDBP_OBJECT_SUBSCRIPTION:
 		return "subscription";
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
@@ -565,6 +567,295 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	return object;
 }
 
+static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct SPropTagArray *excluded_tags)
+{
+	TALLOC_CTX		*mem_ctx;
+	bool			*properties_exclusion;
+	struct SPropTagArray	*properties, *needed_properties;
+        void                    **data_pointers;
+        enum MAPISTATUS         *retvals = NULL;
+	struct SRow		*aRow;
+	struct SPropValue	newValue;
+	uint32_t		i;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
+		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		talloc_free(mem_ctx);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* 1. Exclusions */
+	properties_exclusion = talloc_array(mem_ctx, bool, 65536);
+	memset(properties_exclusion, 0, 65536 * sizeof(bool));
+
+	/* 1a. Explicit exclusions */
+	properties_exclusion[PR_ROW_TYPE >> 16] = true;
+	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
+	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
+	properties_exclusion[PR_INST_ID >> 16] = true;
+	properties_exclusion[PR_FID >> 16] = true;
+	properties_exclusion[PR_MID >> 16] = true;
+	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
+	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
+	properties_exclusion[PR_PARENT_FID >> 16] = true;
+
+	/* 1b. Request exclusions */
+	if (excluded_tags != NULL) {
+		for (i = 0; i < excluded_tags->cValues; i++) {
+			properties_exclusion[excluded_tags->aulPropTag[i] >> 16] = true;
+		}
+	}
+
+	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
+	for (i = 0; i < properties->cValues; i++) {
+		if (!properties_exclusion[properties->aulPropTag[i] >> 16]) {
+			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
+		}
+	}
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
+	if (data_pointers) {
+		aRow = talloc_zero(mem_ctx, struct SRow);
+		for (i = 0; i < needed_properties->cValues; i++) {
+			if (retvals[i] == MAPI_E_SUCCESS) {
+				/* _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue) */
+				set_SPropValue_proptag(&newValue, needed_properties->aulPropTag[i], data_pointers[i]);
+				SRow_addprop(aRow, newValue);
+			}
+		}
+		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
+			talloc_free(mem_ctx);
+			return MAPI_E_NO_SUPPORT;
+		}
+	}
+	else {
+		talloc_free(mem_ctx);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/* FIXME: this function is already present in oxcmsg... */
+struct emsmdbp_prop_index {
+	uint32_t display_name; /* PR_DISPLAY_NAME_UNICODE or PR_7BIT_DISPLAY_NAME_UNICODE or PR_RECIPIENT_DISPLAY_NAME_UNICODE */
+	uint32_t email_address; /* PR_EMAIL_ADDRESS_UNICODE or PR_SMTP_ADDRESS_UNICODE */
+};
+
+static inline void emsmdbp_fill_prop_index(struct emsmdbp_prop_index *prop_index, struct SPropTagArray *properties)
+{
+	if (SPropTagArray_find(*properties, PR_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_7BIT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND) {
+		prop_index->display_name = (uint32_t) -1;
+	}
+	if (SPropTagArray_find(*properties, PR_EMAIL_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_SMTP_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND) {
+		prop_index->email_address = (uint32_t) -1;
+	}
+}
+
+static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapistore_message	*msg_data;
+	uint32_t			contextID, i;
+	struct emsmdbp_prop_index	prop_index;
+	struct SPropTagArray		*new_columns;
+	void				**new_data;
+
+	if (!emsmdbp_is_mapistore(source_object) || !emsmdbp_is_mapistore(dest_object)) {
+		/* we silently fail for non-mapistore messages */
+		return MAPI_E_SUCCESS;
+	}
+
+	/* Fetch data from source message */
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	contextID = emsmdbp_get_contextID(source_object);
+	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+
+	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each values array */
+	if (msg_data->recipients_count > 0
+	    && (msg_data->columns->cValues < 2 || msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE || msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
+		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
+
+		new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
+		new_columns->cValues = msg_data->columns->cValues + 2;
+		new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS, new_columns->cValues);
+		memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag, sizeof(enum MAPITAGS) * msg_data->columns->cValues);
+		new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
+		new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
+
+		for (i = 0; i < msg_data->recipients_count; i++) {
+			new_data = talloc_array(mem_ctx, void *, new_columns->cValues);
+			memcpy(new_data + 2, msg_data->recipients[i].data, sizeof(void *) * msg_data->columns->cValues);
+			if (prop_index.display_name != (uint32_t) -1) {
+				new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+			}
+			else {
+				new_data[0] = NULL;
+			}
+			if (prop_index.email_address != (uint32_t) -1) {
+				new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
+			}
+			else {
+				new_data[1] = NULL;
+			}
+			msg_data->recipients[i].data = new_data;
+		}
+		msg_data->columns = new_columns;
+
+		/* Copy data into dest message */
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
+{
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		i, count, contextID, dest_num;
+	void			**data_pointers;
+	uint32_t		*retvals, *attach_nums;
+	struct emsmdbp_object	*table_object, *source_attach, *dest_attach;
+	enum MAPITAGS		column;
+	int			ret;
+
+	if (!emsmdbp_is_mapistore(source_object) || !emsmdbp_is_mapistore(dest_object)) {
+		/* we silently fail for non-mapistore messages */
+		return MAPI_E_SUCCESS;
+	}
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	/* we fetch the attachment nums */
+	table_object = emsmdbp_object_message_open_attachment_table(mem_ctx, emsmdbp_ctx, source_object);
+	if (!table_object) {
+		talloc_free(mem_ctx);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	column = PR_ATTACH_NUM;
+	table_object->object.table->prop_count = 1;
+	table_object->object.table->properties = &column;
+
+	contextID = emsmdbp_get_contextID(table_object);
+	mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, 1, &column);
+
+	count = table_object->object.table->denominator;
+	attach_nums = talloc_array(mem_ctx, uint32_t, count);
+	for (i = 0; i < table_object->object.table->denominator; i++) {
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		if (!data_pointers) {
+			talloc_free(mem_ctx);
+			return MAPI_E_CALL_FAILED;
+		}
+		if (retvals[0] != MAPISTORE_SUCCESS) {
+			talloc_free(mem_ctx);
+			DEBUG(5, ("cannot copy attachments without PR_ATTACH_NUM\n"));
+			return MAPI_E_CALL_FAILED;
+		}
+		attach_nums[i] = *(uint32_t *) data_pointers[0];
+	}
+
+	/* we open each attachment manually and copy their props to created dest attachments */
+	for (i = 0; i < count; i++) {
+		source_attach = emsmdbp_object_attachment_init(mem_ctx, emsmdbp_ctx, source_object->object.message->messageID, source_object);
+		if (!source_attach
+		    || mapistore_message_open_attachment(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, source_attach, attach_nums[i], &source_attach->backend_object)) {
+			talloc_free(mem_ctx);
+			return MAPI_E_CALL_FAILED;
+		}
+
+		dest_attach = emsmdbp_object_attachment_init(mem_ctx, emsmdbp_ctx, dest_object->object.message->messageID, dest_object);
+		if (!dest_attach
+		    || mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, dest_attach, &dest_attach->backend_object, &dest_num)) {
+			talloc_free(mem_ctx);
+			return MAPI_E_CALL_FAILED;
+		}
+
+		ret = emsmdbp_copy_properties(emsmdbp_ctx, source_attach, dest_attach, NULL);
+		if (ret != MAPI_E_SUCCESS) {
+			talloc_free(mem_ctx);
+			return ret;
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Copy properties from an object to another object
+
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param source_object pointer to the source object
+   \param target_object pointer to the target object
+   \param excluded_properties pointer to a SPropTagArray listing properties that must not be copied
+   \param deep_copy indicates whether subobjects must be copied
+
+   \return Allocated emsmdbp object on success, otherwise NULL
+ */
+_PUBLIC_ int emsmdbp_object_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *target_object, struct SPropTagArray *excluded_properties, bool deep_copy)
+{
+	int ret;
+
+	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
+	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
+	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
+		DEBUG(0, ("object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
+		ret = MAPI_E_NO_SUPPORT;
+                goto end;
+        }
+	if (target_object->type != source_object->type) {
+		DEBUG(0, ("source and destination objects type must match (type =  %d)\n", target_object->type));
+		ret = MAPI_E_NO_SUPPORT;
+                goto end;
+        }
+
+	/* copy properties (common to all object types) */
+	ret = emsmdbp_copy_properties(emsmdbp_ctx, source_object, target_object, excluded_properties);
+	if (ret != MAPI_E_SUCCESS) {
+                goto end;
+	}
+
+	/* type specific ops */
+	switch (source_object->type) {
+	case EMSMDBP_OBJECT_MESSAGE:
+		if (emsmdbp_is_mapistore(source_object) && emsmdbp_is_mapistore(target_object)) {
+			ret = emsmdbp_copy_message_recipients_mapistore(emsmdbp_ctx, source_object, target_object);
+			if (ret != MAPI_E_SUCCESS) {
+				goto end;
+			}
+			if (deep_copy) {
+				ret = emsmdbp_copy_message_attachments_mapistore(emsmdbp_ctx, source_object, target_object);
+				if (ret != MAPI_E_SUCCESS) {
+					goto end;
+				}
+			}
+		}
+		else {
+			DEBUG(0, ("Cannot copy recipients or attachments to or from non-mapistore messages\n"));
+		}
+		break;
+	default:
+		if (deep_copy) {
+			DEBUG(0, ("Cannot deep copy non-message objects\n"));
+		}
+	}
+
+end:
+
+	return ret;
+}
 
 /**
    \details Initialize a mailbox object

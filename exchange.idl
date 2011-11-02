@@ -2091,7 +2091,7 @@ System Attendant Private Interface
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
 	} MessageClass;
 
-	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+	typedef [public,nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x1)] uint8	bytes[6];
 		[default] dlong		value;
 	} GLOBCNT;
@@ -3524,15 +3524,14 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x80 */
-// 	typedef [flag(NDR_NOALIGN)] struct {
-// 		uint16		MessageSize;
-// 		uint8		MessageId[MessageSize];
-// 		boolean8	MarkAsRead;
-// 	} MessageReadStates;
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint16		MessageIdSize;
+		uint8		MessageId[MessageIdSize];
+		boolean8	MarkAsRead;
+	} MessageReadStates;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint16		MessageReadStateSize;
-		[subcontext(0),subcontext_size(MessageReadStateSize),flag(NDR_REMAINING)] DATA_BLOB MessageStates;
+		[subcontext(2),flag(NDR_REMAINING)] DATA_BLOB MessageReadStates;
 	} SyncImportReadStateChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

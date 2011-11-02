@@ -1227,13 +1227,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	void			*private_data = NULL;
 	struct emsmdbp_object	*source_object;
 	struct emsmdbp_object	*dest_object;
-	uint32_t		i;
-	bool			*properties_exclusion;
-	struct SPropTagArray	*properties, *needed_properties;
-        void                    **data_pointers;
-        enum MAPISTATUS         *retvals = NULL;
-	struct SRow		*aRow;
-	struct SPropValue	newValue;
+	struct SPropTagArray	excluded_tags;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] CopyTo (0x39)\n"));
 
@@ -1254,9 +1248,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 	response->PropertyProblemCount = 0;
 	response->PropertyProblem = NULL;
 
-	if (request->WantSubObjects) {
-		DEBUG(0, ("  warning: copying of subobjects is not supported\n"));
-        }
 	if (request->WantAsynchronous) {
 		DEBUG(0, ("  warning: asynchronous operations are not supported\n"));
 	}
@@ -1283,13 +1274,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
-	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
-	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
-	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, ("  received invalid source object type: %d\n", source_object->type));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-                goto end;
-        }
 
 	/* Get the destination object */
 	handle = handles[request->handle_idx];
@@ -1307,64 +1291,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCopyTo(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("  object (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
-	if (dest_object->type != source_object->type) {
-		DEBUG(0, ("  received invalid destination object type: %d\n", dest_object->type));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-                goto end;
-        }
 
-	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
-		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-                goto end;
-	}
+	excluded_tags.cValues = request->ExcludedTags.cValues;
+	excluded_tags.aulPropTag = request->ExcludedTags.aulPropTag;
 
-	/* 1. Exclusions */
-	properties_exclusion = talloc_array(mem_ctx, bool, 65536);
-	memset(properties_exclusion, 0, 65536 * sizeof(bool));
-
-	/* 1a. Explicit exclusions */
-	properties_exclusion[PR_ROW_TYPE >> 16] = true;
-	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
-	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
-	properties_exclusion[PR_INST_ID >> 16] = true;
-	properties_exclusion[PR_FID >> 16] = true;
-	properties_exclusion[PR_MID >> 16] = true;
-	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_FID >> 16] = true;
-
-	/* 1b. Request exclusions */
-	for (i = 0; i < request->ExcludedTags.cValues; i++) {
-		properties_exclusion[request->ExcludedTags.aulPropTag[i] >> 16] = true;
-	}
-
-	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
-	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
-	for (i = 0; i < properties->cValues; i++) {
-		if (!properties_exclusion[properties->aulPropTag[i] >> 16]) {
-			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
-		}
-	}
-
-	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, source_object, needed_properties, &retvals);
-	if (data_pointers) {
-		aRow = talloc_zero(mem_ctx, struct SRow);
-		for (i = 0; i < needed_properties->cValues; i++) {
-			if (retvals[i] == MAPI_E_SUCCESS) {
-				/* _PUBLIC_ enum MAPISTATUS SRow_addprop(struct SRow *aRow, struct SPropValue spropvalue) */
-				set_SPropValue_proptag(&newValue, needed_properties->aulPropTag[i], data_pointers[i]);
-				SRow_addprop(aRow, newValue);
-			}
-		}
-		if (emsmdbp_object_set_properties(emsmdbp_ctx, dest_object, aRow) != MAPISTORE_SUCCESS) {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-			goto end;
-		}
-	}
-	else {
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-	}
+	mapi_repl->error_code = emsmdbp_object_copy_properties(emsmdbp_ctx, source_object, dest_object, &excluded_tags, request->WantSubObjects);
 
 end:
 	*size += libmapiserver_RopCopyTo_size(mapi_repl);

@@ -28,6 +28,78 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
+static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
+{
+	TALLOC_CTX			*mem_ctx;
+	enum MAPITAGS			property = PR_TARGET_ENTRYID;
+	struct mapistore_property_data	property_data;
+	enum MAPITAGS			ex_properties[] = { PR_TARGET_ENTRYID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST };
+	struct SPropTagArray		excluded_tags = { sizeof(ex_properties) / sizeof(enum MAPITAGS), ex_properties };
+	struct Binary_r			*bin_data;
+	struct MessageEntryId		*entryID;
+	uint32_t			contextID;
+	uint64_t			folderID;
+	uint64_t			messageID;
+	uint16_t			replID;
+	int				ret;
+	struct emsmdbp_object		*folder_object;
+	struct emsmdbp_object		*message_object;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	contextID = emsmdbp_get_contextID(old_message_object);
+
+	mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID, old_message_object->backend_object, mem_ctx, 1, &property, &property_data);
+	if (property_data.error) {
+		return;
+	}
+
+	/* DEBUG(5, (__location__": old message fid: %.16"PRIx64"\n", old_message_object->parent_object->object.folder->folderID)); */
+	/* DEBUG(5, (__location__": old message mid: %.16"PRIx64"\n", old_message_object->object.message->messageID)); */
+
+	bin_data = property_data.data;
+	entryID = get_MessageEntryId(mem_ctx, bin_data);
+	if (!entryID) {
+		DEBUG(5, (__location__": invalid entryID\n"));
+		return;
+	}
+
+	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, &entryID->FolderDatabaseGuid, &replID);
+	if (ret) {
+		DEBUG(5, (__location__": unable to deduce folder replID\n"));
+		return;
+	}
+	folderID = (entryID->FolderGlobalCounter.value << 16) | replID;
+	/* DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
+
+	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, &entryID->MessageDatabaseGuid, &replID);
+	if (ret) {
+		DEBUG(5, (__location__": unable to deduce message replID\n"));
+	}
+	messageID = (entryID->MessageGlobalCounter.value << 16) | replID;
+	/* DEBUG(5, (__location__": dest message id: %.16"PRIx64"\n", messageID)); */
+
+	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID);
+	if (!folder_object) {
+		DEBUG(5, (__location__": unable to open folder\n"));
+		return;
+	}
+
+	message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
+	if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, false, &message_object->backend_object)) {
+		DEBUG(5, (__location__": unable to create message in backend\n"));
+		return;
+	}
+
+	/* FIXME: (from oxomsg 3.2.5.1.2.8) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
+	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
+
+	mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
+	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
+
+	talloc_free(mem_ctx);
+}
+
 /**
    \details EcDoRpc SubmitMessage (0x32) Rop. This operation marks a message
    as being ready to send (subject to some flags).
@@ -298,7 +370,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
-	struct TransportSend_repl	 *response;
+	struct TransportSend_req	*request;
+	struct TransportSend_repl	*response;
 	enum MAPISTATUS			retval;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
@@ -342,6 +415,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 		break;
 	case true:
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
+
+		oxomsg_mapistore_handle_target_entryid(emsmdbp_ctx, object);
 		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}

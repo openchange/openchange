@@ -832,9 +832,10 @@ _PUBLIC_ int emsmdbp_object_copy_properties(struct emsmdbp_context *emsmdbp_ctx,
 	int ret;
 
 	if (!(source_object->type == EMSMDBP_OBJECT_FOLDER
+	      || source_object->type == EMSMDBP_OBJECT_MAILBOX
 	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
 	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, ("object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
+		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
 		ret = MAPI_E_NO_SUPPORT;
                 goto end;
         }
@@ -1027,8 +1028,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 	uint8_t			mstore_type;
 	int			ret;
 
-	if (parent_object->type != EMSMDBP_OBJECT_FOLDER && parent_object->type != EMSMDBP_OBJECT_MAILBOX) {
-		DEBUG(5, ("[%s:%d] unhandled object type: %d\n", __FUNCTION__, __LINE__, parent_object->type));
+	if (!(parent_object->type == EMSMDBP_OBJECT_FOLDER || parent_object->type == EMSMDBP_OBJECT_MAILBOX)) {
+		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type));
 		return NULL;
 	}
 
@@ -1601,28 +1602,23 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem
 _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray **propertiesp)
 {
 	uint32_t contextID;
-	int retval;
 
-	switch (object->type) {
-	case EMSMDBP_OBJECT_FOLDER:
-	case EMSMDBP_OBJECT_MESSAGE:
-	case EMSMDBP_OBJECT_ATTACHMENT:
-		break;
-	default:
-		abort();
+	if (!(object->type == EMSMDBP_OBJECT_FOLDER
+	      || object->type == EMSMDBP_OBJECT_MAILBOX
+	      || object->type == EMSMDBP_OBJECT_MESSAGE
+	      || object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
+		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type));
+		return MAPISTORE_ERROR;
+        }
+
+	if (!emsmdbp_is_mapistore(object)) {
+		DEBUG(5, (__location__": only mapistore is supported at this time\n"));
+		return MAPISTORE_ERROR;
 	}
+
 	contextID = emsmdbp_get_contextID(object);
 
-	if (emsmdbp_is_mapistore(object)) {
-		retval = mapistore_properties_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, mem_ctx, propertiesp);
-	}
-	else {
-		retval = MAPISTORE_ERROR;
-		DEBUG(5, ("only mapistore is supported at this time\n"));
-		/* abort(); */
-	}
-
-	return retval;
+	return mapistore_properties_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, mem_ctx, propertiesp);
 }
 
 static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
@@ -1932,13 +1928,14 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
 	if (!object) return MAPI_E_CALL_FAILED;
 	if (!rowp) return MAPI_E_CALL_FAILED;
-	if (object->type != EMSMDBP_OBJECT_MESSAGE
-	    && object->type != EMSMDBP_OBJECT_FOLDER
-	    && object->type != EMSMDBP_OBJECT_MAILBOX
-	    && object->type != EMSMDBP_OBJECT_ATTACHMENT) {
-		DEBUG(5, ("  object type %d not implemented\n", object->type));
+
+	if (!(object->type == EMSMDBP_OBJECT_FOLDER
+	      || object->type == EMSMDBP_OBJECT_MAILBOX
+	      || object->type == EMSMDBP_OBJECT_MESSAGE
+	      || object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
+		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type));
 		return MAPI_E_NO_SUPPORT;
-	}
+        }
 
 	/* Temporary hack: If this is a mapistore root container
 	 * (e.g. Inbox, Calendar etc.), directly stored under
@@ -2117,16 +2114,19 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmd
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_ctx,
 								struct emsmdbp_context *emsmdbp_ctx,
-								struct emsmdbp_object *parent)
+								struct emsmdbp_object *parent_object)
 {
 	struct emsmdbp_object	*synccontext_object;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
-	if (!parent) return NULL;
-	if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MAILBOX) return NULL;
+	if (!parent_object) return NULL;
+	if (!(parent_object->type == EMSMDBP_OBJECT_FOLDER || parent_object->type == EMSMDBP_OBJECT_MAILBOX)) {
+		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type));
+		return NULL;
+        }
 
-	synccontext_object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx, parent);
+	synccontext_object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx, parent_object);
 	if (!synccontext_object) return NULL;
 
 	synccontext_object->object.synccontext = talloc_zero(synccontext_object, struct emsmdbp_object_synccontext);
@@ -2137,7 +2137,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_
 
 	synccontext_object->type = EMSMDBP_OBJECT_SYNCCONTEXT;
 
-	(void) talloc_reference(synccontext_object->object.synccontext, parent);
+	(void) talloc_reference(synccontext_object->object.synccontext, parent_object);
         synccontext_object->object.synccontext->state_property = 0;
         synccontext_object->object.synccontext->state_stream.buffer.length = 0;
         synccontext_object->object.synccontext->state_stream.buffer.data = talloc_zero(synccontext_object->object.synccontext, uint8_t);

@@ -864,7 +864,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, folder_object, local_mem_ctx,
+	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, local_mem_ctx,
 						 &childFolders, &childFolderCount);
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
@@ -873,7 +873,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object, childFolders[i],
+		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, childFolders[i],
 							flags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));

@@ -191,6 +191,9 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 	int				retval;
 	TALLOC_CTX			*local_mem_ctx;
 	struct emsmdbp_object		*new_folder;
+	uint32_t			contextID;
+	char				*path;
+
 	/* Sanity checks */
 
 	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
@@ -255,8 +258,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
 		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
 		ldb_msg_add_fmt(msg, "mailboxDN", mailboxDN);
-		ldb_msg_add_fmt(msg, "MAPIStoreURI", "sogo://%s:%s@fallback/0x%.16"PRIx64,
-				emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
+		path = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64, emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
+		ldb_msg_add_fmt(msg, "MAPIStoreURI", path);
 		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
 
 		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
@@ -284,6 +287,15 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		ldb_add(emsmdbp_ctx->oc_ctx, msg);
 
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
+
+		/* Created top folders are always using a mapistore backend */
+		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, path, new_folder->object.folder->folderID, &contextID, &new_folder->backend_object);
+		if (retval != MAPISTORE_SUCCESS) {
+			abort();
+		}
+		mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
+		new_folder->object.folder->mapistore_root = true;
+		new_folder->object.folder->contextID = contextID;
 
 		talloc_free(local_mem_ctx);
 	}

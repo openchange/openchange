@@ -394,7 +394,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 			return false;
 		}
 
-		from = talloc_asprintf(mt->mem_ctx, "[MT] Dummy%i", i);
+		from = talloc_asprintf(mt->mem_ctx, "MT Dummy%i", i);
 		set_SPropValue_proptag(&lpProp[0], PR_SENDER_NAME, (const void *)from);
 		body = talloc_asprintf(mt->mem_ctx, "Body of message %i", i);
 		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);
@@ -417,7 +417,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 	/* Create 5 test messages in the test folder with the same sender */
 	for (i = 5; i < 10; ++i) {
 		mapi_object_init(&(context->obj_test_msg[i]));
-		subject = talloc_asprintf(mt->mem_ctx, "[MT] Subject%i", i);
+		subject = talloc_asprintf(mt->mem_ctx, "MT Subject%i", i);
 		ret = mapitest_common_message_create(mt, &(context->obj_test_folder),
 							&(context->obj_test_msg[i]), subject);
 		if (! ret){
@@ -425,7 +425,7 @@ _PUBLIC_ bool mapitest_common_create_filled_test_folder(struct mapitest *mt)
 			return false;
 		}
 
-		from = talloc_asprintf(mt->mem_ctx, "[MT] Dummy From");
+		from = talloc_asprintf(mt->mem_ctx, "MT Dummy From");
 		set_SPropValue_proptag(&lpProp[0], PR_SENDER_NAME, (const void *)from);
 		body = talloc_asprintf(mt->mem_ctx, "Body of message %i", i);
 		set_SPropValue_proptag(&lpProp[1], PR_BODY, (const void *)body);

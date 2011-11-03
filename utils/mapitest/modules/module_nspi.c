@@ -636,7 +636,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	/* Build the SRow and SPropTagArray for NspiModProps */
 	pRow = talloc_zero(mem_ctx, struct SRow);
 	modProp.ulPropTag = PR_OFFICE_LOCATION;
-	modProp.value.lpszA = "[MT] office location";
+	modProp.value.lpszA = "MT office location";
 	SRow_addprop(pRow, modProp);
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_OFFICE_LOCATION);
@@ -668,7 +668,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 		talloc_free(mem_ctx);
 		return false;
 	}
-	if (strcmp((const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION), "[MT] office location") != 0) {
+	if (strcmp((const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION), "MT office location") != 0) {
 		mapitest_print(mt, "PR_OFFICE_LOCATION string value mismatch: %s", (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION));
 		ret = false;
 	} else {

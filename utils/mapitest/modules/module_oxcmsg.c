@@ -1018,7 +1018,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 	/* Fetch the first email */
 	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
 	mapitest_print_retval_clean(mt, "QueryRows", retval);
-	if (retval != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_SUCCESS || SRowSet.cRows == 0) {
 		ret = false;
 		goto release;
 	}
@@ -1288,7 +1288,7 @@ _PUBLIC_ bool mapitest_oxcmsg_OpenEmbeddedMessage(struct mapitest *mt)
 		return false;
 	}
 
-	ret = mapitest_common_message_fill(mt, &obj_embeddedmsg, "[MT] EmbeddedMessage");
+	ret = mapitest_common_message_fill(mt, &obj_embeddedmsg, "MT EmbeddedMessage");
 	if (ret == false) {
 		mapi_object_release(&obj_embeddedmsg);
 		mapi_object_release(&obj_attach);

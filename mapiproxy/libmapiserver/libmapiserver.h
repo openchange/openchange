@@ -371,6 +371,11 @@
  */
 #define	SIZE_DFLT_ROPGETPERUSERGUID		16
 
+/**
+   \details GetStoreState has fixed response size for:
+   -# StoreState: uin32_t
+ */
+#define SIZE_DFLT_ROPGETSTORESTATE		4
 
 /**
    \details LogonRop has a fixed size for mailbox:
@@ -525,6 +530,7 @@ uint16_t libmapiserver_RopIdFromLongTermId_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadPerUserInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetStoreState_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */

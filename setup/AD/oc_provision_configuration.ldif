@@ -513,6 +513,7 @@ msExchTemplateRDNs: 404
 msExchTemplateRDNs: 804
 msExchTemplateRDNs: 412
 msExchTemplateRDNs: 40c
+msExchTemplateRDNs: c0c
 msExchTemplateRDNs: 407
 msExchTemplateRDNs: 411
 msExchTemplateRDNs: 409
@@ -798,6 +799,29 @@ showInAdvancedViewOnly: TRUE
 adminDisplayName: French
 name: 40c
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40c
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# French (Canada) Address-Templates
+#
+dn: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=c0c
 objectCategory: CN=Container,${SCHEMADN}
 msExchTemplateRDNs: EX
 msExchTemplateRDNs: SMTP
@@ -1589,6 +1613,23 @@ showInAdvancedViewOnly: TRUE
 adminDisplayName: French
 name: 40c
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40c
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# French (Canada) Display-Templates (cocorico)
+#
+dn: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French (Canada)
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=c0c
 objectCategory: CN=Container,${SCHEMADN}
 
 

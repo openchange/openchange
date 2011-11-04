@@ -552,7 +552,6 @@ _PUBLIC_ bool mapitest_oxcmsg_RemoveAllRecipients(struct mapitest *mt)
 _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	bool			ret = false;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_message;
@@ -669,8 +668,6 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 		return false;
 	}
 
-	ret = true;
-
 	/* Step 4. Save the message */
 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
 	mapitest_print_retval(mt, "SaveChangesMessage");
@@ -688,7 +685,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
-		ret = false;
+		return false;
 	}
 
 	/* Step 6. Delete the message */
@@ -699,7 +696,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SRowSet);
 		MAPIFreeBuffer(flaglist);
-		ret = false;
+		return false;
 	}
 
 	/* Release */
@@ -709,7 +706,7 @@ _PUBLIC_ bool mapitest_oxcmsg_ReadRecipients(struct mapitest *mt)
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 
-	return ret;
+	return true;
 }
 
 

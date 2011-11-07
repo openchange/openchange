@@ -322,7 +322,7 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h: \
+libmapi/mapi_nameid.h libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h mapiproxy/libmapistore/mapistore_nameid.h: \
 	libmapi/conf/mapi-properties								\
 	libmapi/conf/mapi-codes									\
 	libmapi/conf/mapi-named-properties							\

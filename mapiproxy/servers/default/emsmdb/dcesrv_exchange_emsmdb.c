@@ -1152,7 +1152,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 									&(mapi_response->mapi_repl[idx]),
 									mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetStoreState: 0x7b */
+		case op_MAPI_GetStoreState: /* 0x7b */
+			retval = EcDoRpc_RopGetStoreState(mem_ctx, emsmdbp_ctx,
+							  &(mapi_request->mapi_req[i]),
+							  &(mapi_response->mapi_repl[idx]),
+							  mapi_response->handles, &size);
+			break;
 		case op_MAPI_SyncOpenCollector: /* 0x7e */
 			retval = EcDoRpc_RopSyncOpenCollector(mem_ctx, emsmdbp_ctx,
 							      &(mapi_request->mapi_req[i]),

@@ -1405,7 +1405,8 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 		lpProps->cValues = reply->properties.lpProps.cValues;
 		lpProps->lpProps = talloc_steal((TALLOC_CTX *)session, reply->properties.lpProps.lpProps);
 	} else {
-		lpProps = NULL;
+		lpProps->cValues = 0;
+		lpProps->lpProps = NULL;
 	}
 
 	talloc_free(mapi_response);

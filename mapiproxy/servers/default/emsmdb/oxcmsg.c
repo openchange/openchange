@@ -678,13 +678,13 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 		}
 
 		if (recipient_row->RecipientRow.layout) {
-			if (recipient_row->RecipientRow.prop_values.data[data_pos]) {
-				data_pos += 5;
+			data_pos++;
+			if (recipient_row->RecipientRow.prop_values.data[data_pos] != 0) {
 				recipient->data[i+2] = NULL;
+				if (recipient_row->RecipientRow.prop_values.data[data_pos] == 0xa) {
+					data_pos += 4;
+				}
 				continue;
-			}
-			else {
-				data_pos++;
 			}
 		}
 

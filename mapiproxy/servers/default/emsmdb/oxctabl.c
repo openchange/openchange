@@ -263,7 +263,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	struct Restrict_req		request;
-	uint32_t			handle;
+	uint32_t			handle, contextID;
 	void				*data = NULL;
 	uint8_t				status;
 
@@ -318,13 +318,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	/* If parent folder has a mapistore context */
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.restrictions, &status);
+		contextID = emsmdbp_get_contextID(object);
+		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, &request.restrictions, &status);
                 if (retval) {
                         mapi_repl->error_code = retval;
 			goto end;
 		}
+
+		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		
 		mapi_repl->u.mapi_Restrict.TableStatus = status;
+
 		/* Parent folder doesn't have any mapistore context associated */
 	} else {
 		DEBUG(0, ("not mapistore Restrict: Not implemented yet\n"));
@@ -927,7 +931,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	void				*data;
-	uint32_t			handle;
+	uint32_t			handle, contextID;
 	uint8_t				status; /* ignored */
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] ResetTable (0x81)\n"));
@@ -983,7 +987,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 
 		/* 1.2. empty restrictions */
 		if (emsmdbp_is_mapistore(object)) {
-			retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
+			contextID = emsmdbp_get_contextID(object);
+			retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, NULL, &status);
+			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));
 			goto end;

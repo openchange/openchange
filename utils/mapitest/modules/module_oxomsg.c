@@ -499,7 +499,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	}
 
 	/* Step 6. Dump the properties */
-	if (&lpProps != NULL) {
+	if (lpProps.lpProps != NULL) {
 		uint32_t		i;
 		struct SPropValue	lpProp;
 

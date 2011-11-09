@@ -473,7 +473,6 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
         uint8_t				*utf8_buffer;
         struct Binary_r			*binary_data;
         struct SRow			aRow;
-        uint32_t			string_size;
 	size_t				converted_size;
 	uint16_t			propType;
 
@@ -499,12 +498,11 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 		}
 		else {
 			/* PT_UNICODE */
-			string_size = stream->stream.buffer.length / 2;
-			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, string_size);
-			memset(utf8_buffer, 0, string_size);
+			utf8_buffer = talloc_array(aRow.lpProps, uint8_t, stream->stream.buffer.length + 2);
 			convert_string(CH_UTF16LE, CH_UTF8,
 				       stream->stream.buffer.data, stream->stream.buffer.length,
-				       utf8_buffer, string_size, &converted_size);
+				       utf8_buffer, stream->stream.buffer.length, &converted_size);
+			utf8_buffer[converted_size] = 0;
 			stream_data = utf8_buffer;
 		}
 		set_SPropValue_proptag(aRow.lpProps, stream->property, stream_data);
@@ -2036,13 +2034,13 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
                 (void) talloc_reference(stream_data, stream_data->data.data);
 	}
 	else if (prop_type == PT_UNICODE) {
-		stream_data->data.length = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
-		stream_data->data.data = talloc_array(stream_data, uint8_t, stream_data->data.length);
+		stream_data->data.length = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2;
+		stream_data->data.data = talloc_array(stream_data, uint8_t, stream_data->data.length + 2);
 		convert_string(CH_UTF8, CH_UTF16LE,
 			       value, strlen(value),
 			       stream_data->data.data, stream_data->data.length,
 			       &converted_size);
-		memset(stream_data->data.data + stream_data->data.length - 2, 0, 2 * sizeof(uint8_t));
+		memset(stream_data->data.data + stream_data->data.length, 0, 2 * sizeof(uint8_t));
 	}
 	else if (prop_type == PT_BINARY) {
 		stream_data->data.length = ((struct Binary_r *) value)->cb;

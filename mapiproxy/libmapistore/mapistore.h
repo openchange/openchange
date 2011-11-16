@@ -142,9 +142,8 @@ struct mapistore_backend {
 	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
 		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 		int		(*get_child_count)(void *, uint8_t, uint32_t *);
-
-		/* constructor: open_folder */
                 int		(*open_table)(void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
+		int		(*modify_permissions)(void *, uint8_t, uint16_t, struct PermissionData *);
         } folder;
 
         /** oxcmsg operations */
@@ -258,6 +257,7 @@ int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, voi
 int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t **, uint32_t *);
 int mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
+int mapistore_folder_modify_permissions(struct mapistore_context *, uint32_t, void *, uint8_t, uint16_t, struct PermissionData *);
 
 int mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
 int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);

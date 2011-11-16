@@ -157,7 +157,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mapi_repl->opnum = mapi_req->opnum;
-	mapi_repl->handle_idx = mapi_req->u.mapi_GetPermissionsTable.handle_idx;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
 	/* Ensure handle references a folder object */
@@ -171,7 +171,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(folder, &data);
 	if (retval || !data) {
-		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
 		goto end;
 	}
@@ -193,7 +193,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	}
 
 end:
-	*size += libmapiserver_RopGetPermissionsTable_size(mapi_repl);
+	*size += libmapiserver_RopModifyPermissions_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

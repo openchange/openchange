@@ -557,6 +557,7 @@ uint16_t libmapiserver_RopModifyRules_size(void);
 
 /* definitions from libmapiserver_oxcperm.c */
 uint16_t libmapiserver_RopGetPermissionsTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopModifyPermissions_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcfxics.c */
 uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *);

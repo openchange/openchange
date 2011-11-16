@@ -934,6 +934,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							      &(mapi_request->mapi_req[i]),
 							      &(mapi_response->mapi_repl[idx]),
 							      mapi_response->handles, &size);
+			break;
 		case op_MAPI_ModifyRules: /* 0x41 */
 			retval = EcDoRpc_RopModifyRules(mem_ctx, emsmdbp_ctx,
 							&(mapi_request->mapi_req[i]),

@@ -105,7 +105,7 @@ struct mapistore_connection_info {
 	struct GUID			replica_guid;
 	uint16_t			repl_id;
 	struct mapistore_context	*mstore_ctx;
-	void				*oc_ctx;
+	struct ldb_context		*oc_ctx; /* openchangedb */
 };
 
 struct tdb_wrap;

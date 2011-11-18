@@ -44,7 +44,7 @@
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, struct ldb_context *ldb_ctx,
 						     uint64_t messageID, uint64_t folderID,
 						     void **message_object)
 {
@@ -173,7 +173,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_save(void *_msg, uint8_t SaveFlags
 
    \return MAPI_E_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx, void *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx, struct ldb_context *ldb_ctx,
 						   uint64_t messageID, uint64_t folderID, 
 						   void **message_object, void **msgp)
 {

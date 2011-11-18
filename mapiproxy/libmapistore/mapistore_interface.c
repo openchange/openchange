@@ -829,6 +829,24 @@ _PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, u
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }
 
+_PUBLIC_ int mapistore_folder_modify_permissions(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, uint8_t flags, uint16_t pcount, struct PermissionData *permissions)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
 /**
    \details Modify recipients of a message in mapistore
 

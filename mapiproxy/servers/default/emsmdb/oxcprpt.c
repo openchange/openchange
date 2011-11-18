@@ -541,6 +541,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_OpenStream;
 
+	if (request->PropertyTag == PR_NT_SECURITY_DESCRIPTOR_AS_XML) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
+
 	/* TODO: implementation status:
 	   - OpenStream_ReadOnly (supported)
 	   - OpenStream_ReadWrite (supported)
@@ -994,7 +999,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
                                            struct EcDoRpc_MAPI_REPL *mapi_repl,
                                            uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetStreamSize (0x2f) -- stub\n"));
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*parent = NULL;
+	void				*private_data;
+	struct emsmdbp_object		*object;
+	uint32_t			handle;
+	struct SetStreamSize_req	*request;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetStreamSize (0x2f)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1006,7 +1018,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	
+	mapi_repl->u.mapi_WriteStream.WrittenSize = 0;
+
+	/* Step 1. Retrieve parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(parent, &private_data);
+	object = (struct emsmdbp_object *) private_data;
+	if (!object || object->type != EMSMDBP_OBJECT_STREAM) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  invalid object\n"));
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_SetStreamSize;
+	object->object.stream->stream.buffer.length = request->SizeStream;
+
+end:
 	*size += libmapiserver_RopSetStreamSize_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;

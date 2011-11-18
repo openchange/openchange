@@ -82,7 +82,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	}
 
 	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) {
+	if (retval || !data) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
 		goto end;
@@ -96,7 +96,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Initialize Table object */
-	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 	
@@ -117,6 +116,84 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 
 end:
 	*size += libmapiserver_RopGetPermissionsTable_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc ModifyPermissions (0x40) Rop. This operation
+   gets the GUID of a public folder's per-user information.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetPerUserLongTermIds EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
+						      struct emsmdbp_context *emsmdbp_ctx,
+						      struct EcDoRpc_MAPI_REQ *mapi_req,
+						      struct EcDoRpc_MAPI_REPL *mapi_repl,
+						      uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS			retval;
+	struct mapi_handles		*folder;
+	struct emsmdbp_object		*folder_object;
+	void				*data = NULL;
+	uint32_t			handle;
+	struct ModifyPermissions_req	*request;
+
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ModifyPermissions (0x40)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	/* Ensure handle references a folder object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &folder);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(folder, &data);
+	if (retval || !data) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	folder_object = (struct emsmdbp_object *) data;
+	if (folder_object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  unhandled object type: %d\n", folder_object->type));
+		goto end;
+	}
+
+	request = &mapi_req->u.mapi_ModifyPermissions;
+
+	if (emsmdbp_is_mapistore(folder_object)) {
+		retval = mapistore_folder_modify_permissions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, request->rowList.ModifyFlags, request->rowList.ModifyCount, request->rowList.PermissionsData);
+	}
+	else {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+	}
+
+end:
+	*size += libmapiserver_RopModifyPermissions_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
 }

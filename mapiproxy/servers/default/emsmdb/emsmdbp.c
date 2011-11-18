@@ -139,21 +139,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	emsmdbp_ctx->mstore_ctx->conn_info = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_connection_info);
-	emsmdbp_ctx->mstore_ctx->conn_info->mstore_ctx = emsmdbp_ctx->mstore_ctx;
-	emsmdbp_ctx->mstore_ctx->conn_info->oc_ctx = emsmdbp_ctx->oc_ctx;
-	talloc_reference(emsmdbp_ctx->mstore_ctx->conn_info, emsmdbp_ctx->mstore_ctx->conn_info->oc_ctx);
-	emsmdbp_ctx->mstore_ctx->conn_info->username = talloc_strdup(emsmdbp_ctx->mstore_ctx->conn_info, username);
 
-	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
-
-	/* Initialize the mapistore user's replica mapping database */
-	ret = mapistore_replica_mapping_add(emsmdbp_ctx->mstore_ctx, username);
+	ret = mapistore_set_connection_info(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->samdb_ctx, emsmdbp_ctx->oc_ctx, username);
 	if (ret != MAPI_E_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: MAPISTORE replica mapping database initialization failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("[%s:%d]: MAPISTORE connection info initialization failed\n", __FUNCTION__, __LINE__));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
 	/* Initialize MAPI handles context */
 	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);

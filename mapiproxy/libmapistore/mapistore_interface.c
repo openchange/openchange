@@ -115,18 +115,20 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
-					   void *ocdb_ctx, const char *username)
+					   struct ldb_context *sam_ctx, struct ldb_context *oc_ctx, const char *username)
 {
 	int	ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!ocdb_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!oc_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mstore_ctx->conn_info = talloc_zero(mstore_ctx, struct mapistore_connection_info);
 	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
-	mstore_ctx->conn_info->oc_ctx = ocdb_ctx;
+	mstore_ctx->conn_info->sam_ctx = sam_ctx;
+	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
 
@@ -825,6 +827,24 @@ _PUBLIC_ int mapistore_folder_open_table(struct mapistore_context *mstore_ctx, u
 
 	/* Step 2. Call backend operation */
 	ret = mapistore_backend_folder_open_table(backend_ctx, folder, mem_ctx, table_type, handle_id, table, row_count);
+
+	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+}
+
+_PUBLIC_ int mapistore_folder_modify_permissions(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, uint8_t flags, uint16_t pcount, struct PermissionData *permissions)
+{
+	struct backend_context	*backend_ctx;
+	int			ret;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	ret = mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
 
 	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
 }

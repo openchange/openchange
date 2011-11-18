@@ -576,12 +576,6 @@ int mapistore_backend_folder_open_table(struct backend_context *bctx, void *fold
         return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
 }
 
-int mapistore_backend_folder_modify_permissions(struct backend_context *bctx, void *folder,
-						uint8_t flags, uint16_t pcount, struct PermissionData *permissions)
-{
-        return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
-}
-
 int mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
 {
 	return bctx->backend->message.get_message_data(message, mem_ctx, msg);

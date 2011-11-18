@@ -108,8 +108,7 @@ struct mapistore_connection_info {
 	struct GUID			replica_guid;
 	uint16_t			repl_id;
 	struct mapistore_context	*mstore_ctx;
-	struct ldb_context		*sam_ctx; /* samdb */
-	struct ldb_context		*oc_ctx; /* openchangedb */
+	void				*oc_ctx;
 };
 
 struct tdb_wrap;
@@ -146,8 +145,9 @@ struct mapistore_backend {
 	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
 		int		(*get_deleted_fmids)(void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
 		int		(*get_child_count)(void *, uint8_t, uint32_t *);
+
+		/* constructor: open_folder */
                 int		(*open_table)(void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
-		int		(*modify_permissions)(void *, uint8_t, uint16_t, struct PermissionData *);
         } folder;
 
         /** oxcmsg operations */
@@ -241,7 +241,7 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, const char *);
 int mapistore_release(struct mapistore_context *);
-int mapistore_set_connection_info(struct mapistore_context *, struct ldb_context *, struct ldb_context *, const char *);
+int mapistore_set_connection_info(struct mapistore_context *, void *, const char *);
 int mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);
 int mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 int mapistore_del_context(struct mapistore_context *, uint32_t);
@@ -261,7 +261,6 @@ int mapistore_folder_get_message_count(struct mapistore_context *, uint32_t, voi
 int mapistore_folder_get_child_fids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t **, uint32_t *);
 int mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 int mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
-int mapistore_folder_modify_permissions(struct mapistore_context *, uint32_t, void *, uint8_t, uint16_t, struct PermissionData *);
 
 int mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
 int mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);

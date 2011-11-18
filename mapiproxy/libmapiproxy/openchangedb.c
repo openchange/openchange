@@ -45,7 +45,7 @@ extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(void *ldb_ctx,
 							 char *recipient, uint32_t SystemIdx,
 							 uint64_t *FolderId)
 {
@@ -108,7 +108,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *ldb
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(void *ldb_ctx,
 							 uint32_t SystemIdx,
 							 uint64_t *FolderId)
 {
@@ -151,7 +151,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct ldb_context *ldb
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_ctx, 
-							    struct ldb_context *ldb_ctx, 
+							    void *ldb_ctx, 
 							    uint64_t fid, 
 							    char **distinguishedName)
 {
@@ -188,7 +188,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx, 
-						    struct ldb_context *ldb_ctx, 
+						    void *ldb_ctx, 
 						    uint64_t fid, 
 						    char **mailboxDN)
 {
@@ -222,7 +222,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(void *ldb_ctx,
 						      char *recipient,
 						      struct GUID *MailboxGUID)
 {
@@ -267,7 +267,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(struct ldb_context *ldb_ct
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(void *ldb_ctx,
 							 char *recipient, uint16_t *ReplID,
 							 struct GUID *ReplGUID)
 {
@@ -316,7 +316,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(struct ldb_context *ldb
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(void *ldb_ctx,
 							      uint16_t *ReplID,
 							      struct GUID *ReplGUID)
 {
@@ -370,7 +370,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct ldb_context
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
-						       struct ldb_context *ldb_ctx,
+						       void *ldb_ctx,
 						       uint64_t fid,
 						       char **mapistoreURL,
 						       bool mailboxstore)
@@ -411,7 +411,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(void *ldb_ctx,
 						     uint64_t fid,
 						     uint64_t *parent_fidp,
 						     bool mailboxstore)
@@ -450,7 +450,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct ldb_context *ldb_ctx
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_fid(struct ldb_context *ldb_ctx, const char *mapistoreURL, uint64_t *fidp)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid(void *ldb_ctx, const char *mapistoreURL, uint64_t *fidp)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -494,7 +494,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(struct ldb_context *ldb_ctx, const
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
-							struct ldb_context *ldb_ctx,
+							void *ldb_ctx,
 							const char *recipient,
 							const char *MessageClass,
 							uint64_t *fid,
@@ -594,7 +594,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(struct ldb_context *ldb_ctx, const char *recipient, uint64_t *FolderId)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(void *ldb_ctx, const char *recipient, uint64_t *FolderId)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
@@ -645,7 +645,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(struct ldb_context *ld
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(void *ldb_ctx,
 						       uint64_t fid,
 						       uint32_t *RowCount)
 {
@@ -684,7 +684,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_c
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context *ldb_ctx, 
+_PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(void *ldb_ctx, 
 							     uint32_t proptag, 
 							     uint64_t fid)
 {
@@ -726,12 +726,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
    \return pointer to valid data on success, otherwise NULL
  */
-static void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
-						      struct ldb_context *ldb_ctx,
-						      char *recipient,
-						      struct ldb_result *res,
-						      uint32_t proptag,
-						      const char *PidTagAttr)
+void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
+					void *ldb_ctx,
+					char *recipient,
+					struct ldb_result *res,
+					uint32_t proptag,
+					const char *PidTagAttr)
 {
 	uint32_t		*l;
 
@@ -1015,7 +1015,7 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(struct ldb_context *ldb_ctx, uint64_t *fid)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(void *ldb_ctx, uint64_t *fid)
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
@@ -1054,7 +1054,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(struct ldb_context *ldb_c
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *ldb_ctx, uint64_t *cn)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(void *ldb_ctx, uint64_t *cn)
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
@@ -1093,7 +1093,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *l
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(void *ldb_ctx,
 							 uint64_t range_len,
 							 uint64_t *first_fmidp)
 {
@@ -1142,7 +1142,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
-							  struct ldb_context *ldb_ctx,
+							  void *ldb_ctx,
 							  char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
@@ -1181,7 +1181,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	return MAPI_E_NOT_FOUND;
 }
 
-_PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *ldb_ctx, uint64_t fid, struct SRow *row)
+_PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(void *ldb_ctx, uint64_t fid, struct SRow *row)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -1280,7 +1280,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
-							 struct ldb_context *ldb_ctx,
+							 void *ldb_ctx,
 							 char *recipient,
 							 char *ldb_filter,
 							 uint32_t proptag,
@@ -1338,7 +1338,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(void *ldb_ctx,
 						      uint64_t parent_fid,
 						      const char* foldername,
 						      uint64_t *fid)
@@ -1381,7 +1381,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *ldb_ct
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
-							struct ldb_context *ldb_ctx,
+							void *ldb_ctx,
 							const char *recipient,
 							const char *MessageClass,
 							uint64_t fid)
@@ -1480,7 +1480,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 }
 
 
-_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct ldb_context *ldb_ctx,
+_PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(void *ldb_ctx,
 							       const char *partialURI,
 							       uint64_t *fid)
 {
@@ -1506,7 +1506,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct ldb_contex
 
 
 _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
-								 struct ldb_context *ldb_ctx,
+								 void *ldb_ctx,
 								 const char *partialURI,
 								 uint32_t *count,
 								 char ***MAPIStoreURI,

@@ -273,13 +273,4 @@ interface property
 		[switch_is(1)] GLOBCNT	MessageGlobalCounter;
 		uint16			Pad2;
 	} MessageEntryId;
-
-	/* AddressBookEntryId */
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint32			Flags;
-		GUID			ProviderUID;
-		uint32			Version;
-		uint32			Type;
-		astring			X500DN;
-	} AddressBookEntryId;
 }

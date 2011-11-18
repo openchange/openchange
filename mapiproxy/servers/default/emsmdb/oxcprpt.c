@@ -545,6 +545,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_OpenStream;
 	response = &mapi_repl->u.mapi_OpenStream;
 
+	if (request->PropertyTag == PR_NT_SECURITY_DESCRIPTOR_AS_XML) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
+
 	/* TODO: implementation status:
 	   - OpenStream_ReadOnly (supported)
 	   - OpenStream_ReadWrite (supported)

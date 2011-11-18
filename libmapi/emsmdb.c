@@ -679,14 +679,11 @@ retry:
    
    \param session Pointer to the current MAPI session
    \param notifkey The opaque client-generated context data
-   \param ulEventMask Notification flags. Exchange completely ignores
-   this value and it should be set to 0
 
    \return NTSTATUS_OK on success, otherwise NT status error
  */
 NTSTATUS emsmdb_register_notification(struct mapi_session *session,
-				      struct NOTIFKEY *notifkey, 
-				      uint16_t ulEventMask)
+				      struct NOTIFKEY *notifkey)
 {
 	struct EcRRegisterPushNotification	request;
 	NTSTATUS				status;
@@ -705,16 +702,16 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	mem_ctx = talloc_named(NULL, 0, "emsmdb_register_notification");
 
 	request.in.handle = &emsmdb_ctx->handle;
-	request.in.ulEventMask = ulEventMask;
+	request.in.iRpc = 0x0;
 	request.in.cbContext = notifkey->cb;
 	request.in.rgbContext = talloc_array(mem_ctx, uint8_t, request.in.cbContext);
 	memcpy(request.in.rgbContext, notifkey->ab, request.in.cbContext);
 	request.in.grbitAdviseBits = 0xffffffff;
-	request.in.rgCallbackAddress = talloc_array(mem_ctx, uint8_t, sizeof (struct sockaddr));
+	request.in.rgbCallbackAddress = talloc_array(mem_ctx, uint8_t, sizeof (struct sockaddr));
 	/* cp address family and length */
-	request.in.rgCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
-	request.in.rgCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
-	memcpy(&request.in.rgCallbackAddress[2], notify_ctx->addr->sa_data, 14);
+	request.in.rgbCallbackAddress[0] = (notify_ctx->addr->sa_family & 0xFF);
+	request.in.rgbCallbackAddress[1] = (notify_ctx->addr->sa_family & 0xFF00) >> 8;
+	memcpy(&request.in.rgbCallbackAddress[2], notify_ctx->addr->sa_data, 14);
 	request.in.cbCallbackAddress = sizeof (struct sockaddr);
 
 	request.out.handle = &handle;

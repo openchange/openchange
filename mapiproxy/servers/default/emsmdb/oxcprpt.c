@@ -195,7 +195,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	enum MAPISTATUS			*retvals = NULL;
-	struct GetPropsAll_req		*request;
 	struct GetPropsAll_repl		*response;
 	uint32_t			handle;
 	struct mapi_handles		*rec = NULL;
@@ -214,7 +213,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	request = &mapi_req->u.mapi_GetPropsAll;
 	response = &mapi_repl->u.mapi_GetPropsAll;
 
 	/* Initialize GetPropsAll response */
@@ -502,7 +500,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object = NULL;
 	struct emsmdbp_object		*parent_object = NULL;
 	struct OpenStream_req		*request;
-	struct OpenStream_repl		*response;
 	uint32_t			handle;
 	void				*data;
         struct SPropTagArray		properties;
@@ -543,7 +540,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
         }
 
 	request = &mapi_req->u.mapi_OpenStream;
-	response = &mapi_repl->u.mapi_OpenStream;
 
 	if (request->PropertyTag == PR_NT_SECURITY_DESCRIPTOR_AS_XML) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;

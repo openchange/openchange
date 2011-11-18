@@ -60,16 +60,15 @@ _PUBLIC_ bool mapitest_common_folder_open(struct mapitest *mt,
 					  mapi_object_t *obj_child,
 					  uint32_t olNum)
 {
-	enum MAPISTATUS	retval;
 	mapi_id_t	id_child;
 
-	retval = GetDefaultFolder(obj_parent, &id_child, olNum);
+	GetDefaultFolder(obj_parent, &id_child, olNum);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "GetDefaultFolder", GetLastError());
 		return false;
 	}
 
-	retval = OpenFolder(obj_parent, id_child, obj_child);
+	OpenFolder(obj_parent, id_child, obj_child);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		mapitest_print(mt, "* %-35s: 0x%.8x\n", "OpenFolder", GetLastError());
 		return false;

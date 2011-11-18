@@ -322,7 +322,7 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h: \
+libmapi/mapi_nameid.h libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h mapiproxy/libmapistore/mapistore_nameid.h: \
 	libmapi/conf/mapi-properties								\
 	libmapi/conf/mapi-codes									\
 	libmapi/conf/mapi-named-properties							\
@@ -764,6 +764,8 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
 							mapiproxy/libmapiproxy/openchangedb.po			\
+							mapiproxy/libmapiproxy/openchangedb_table.po		\
+							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
@@ -887,6 +889,8 @@ distclean:: libmapistore-distclean
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
 							mapiproxy/libmapistore/mapistore_interface.po			\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po		\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
 							mapiproxy/libmapistore/mapistore_processing.po			\
 							mapiproxy/libmapistore/mapistore_backend.po			\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\

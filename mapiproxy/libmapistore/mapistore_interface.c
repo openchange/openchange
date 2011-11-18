@@ -79,9 +79,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
 
-	mstore_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
-	if (mstore_ctx->mq_users == -1) {
-		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_USER));
+	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+	if (mstore_ctx->mq_ipc == -1) {
+		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}

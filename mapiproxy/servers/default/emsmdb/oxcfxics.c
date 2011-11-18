@@ -609,6 +609,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	if (emsmdbp_is_mapistore(table_object)) {
 		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, properties->cValues, properties->aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
+	} else {
+		/* FIXME: openchangedb case */
+		/* set columns */
+		/* get row count */
+		table_object->object.table->denominator = 0;
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {
@@ -627,6 +632,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			/* source key */
 			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+
 			if (eid == 0x7fffffffffffffffLL) {
 				DEBUG(0, ("message without a valid eid\n"));
 				talloc_free(header_data_pointers);
@@ -2544,7 +2550,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 							       uint32_t *handles, uint16_t *size)
 {
 	struct SyncImportReadStateChanges_req	*request;
-	struct SyncImportReadStateChanges_repl	*response;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
 	struct mapi_handles			*synccontext_rec;

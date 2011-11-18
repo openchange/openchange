@@ -132,6 +132,7 @@ struct emsmdbp_object_folder {
 struct emsmdbp_object_message {
 	uint64_t			folderID;
 	uint64_t			messageID;
+	struct ldb_message		*msg;
 };
 
 struct emsmdbp_object_table {

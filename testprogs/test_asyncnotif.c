@@ -184,7 +184,6 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct mapi_session		*session = NULL;
-	struct mapi_profile		*profile;
 	struct mapi_context		*mapi_ctx;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_inbox;
@@ -196,17 +195,12 @@ int main(int argc, const char *argv[])
 	const char			*opt_profdb = NULL;
 	char				*opt_profname = NULL;
 	const char			*opt_password = NULL;
-	uint32_t			opt_maxsize = 0;
-	const char			*opt_mapistore = NULL;
-	bool				opt_showprogress = false;
 	bool				opt_dumpdata = false;
 	const char			*opt_debug = NULL;
 	int				exit_code = 0;
-//	uint16_t			ulEventMask;
-//	uint32_t			ulConnection;
 	uint32_t			notificationFlag = 0;
 
-	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_MAXDATA, OPT_SHOWPROGRESS, OPT_MAPISTORE, OPT_DEBUG, OPT_DUMPDATA};
+	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_DEBUG, OPT_DUMPDATA};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -233,15 +227,6 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_PASSWORD:
 			opt_password = poptGetOptArg(pc);
-			break;
-		case OPT_MAXDATA:
-			opt_maxsize = *poptGetOptArg(pc);
-			break;
-		case OPT_SHOWPROGRESS:
-			opt_showprogress = true;
-			break;
-		case OPT_MAPISTORE:
-			opt_mapistore = poptGetOptArg(pc);
 			break;
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
@@ -294,7 +279,6 @@ int main(int argc, const char *argv[])
 		exit_code = 1;
 		goto cleanup;
 	}
-	profile = session->profile;
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);

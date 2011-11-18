@@ -237,8 +237,6 @@ propvalue	: STRING
 		}
 		| OBRACE mvlong_contents INTEGER EBRACE
 		{
-			TALLOC_CTX	*mem_ctx;
-
 			if (!ctx->lpProp.MVl.cValues) {
 				ctx->lpProp.MVl.cValues = 0;
 				ctx->lpProp.MVl.lpl = talloc_array(ctx, uint32_t, 2);
@@ -247,7 +245,6 @@ propvalue	: STRING
 								     uint32_t,
 								     ctx->lpProp.MVl.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVl.lpl;
 			ctx->lpProp.MVl.lpl[ctx->lpProp.MVl.cValues] = $3;
 			ctx->lpProp.MVl.cValues += 1;
 

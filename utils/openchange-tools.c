@@ -187,7 +187,6 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	struct SPropValue		*lpProps;
 	struct SRow			aRow;
 	uint32_t			count;
-	ssize_t				len;
 	/* common email fields */
 	const char			*msgid;
 	const char			*from, *to, *cc, *bcc;
@@ -283,8 +282,8 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	printf("Body:\n");
 	fflush(0);
 	if (body.length) {
-		len = write(1, body.data, body.length);
-		len = write(1, "\n", 1);
+		write(1, body.data, body.length);
+		write(1, "\n", 1);
 		fflush(0);
 		talloc_free(body.data);
 	} 

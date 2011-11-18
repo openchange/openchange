@@ -34,16 +34,14 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
+static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 				    DATA_BLOB data)
 {
-	struct mapistore_mgmt_user_cmd	user_cmd;
-	struct mapistore_mgmt_users	*el;
+	struct mapistore_mgmt_command	command;
 	struct ndr_pull			*ndr_pull = NULL;
-	bool				found = false;
 
 	ndr_pull = ndr_pull_init_blob(&data, (TALLOC_CTX *)mgmt_ctx);
-	ndr_pull_mapistore_mgmt_user_cmd(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &user_cmd);
+	ndr_pull_mapistore_mgmt_command(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &command);
 
 	if (mgmt_ctx->verbose == true) {
 		struct ndr_print	*ndr_print;
@@ -51,105 +49,31 @@ static void mgmt_user_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 		ndr_print = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct ndr_print);
 		ndr_print->print = ndr_print_printf_helper;
 		ndr_print->depth = 1;
-		ndr_print_mapistore_mgmt_user_cmd(ndr_print, "user command", &user_cmd);
+		ndr_print_mapistore_mgmt_command(ndr_print, "command", &command);
 		talloc_free(ndr_print);
 	}
 
-	if (user_cmd.backend == NULL ||
-	    user_cmd.username == NULL ||
-	    user_cmd.vuser == NULL) {
-		talloc_free(ndr_pull);
-		return;
-	}
-
-	if (mgmt_ctx->users == NULL) {
-		if (user_cmd.status == MAPISTORE_MGMT_USER_REGISTER) {
-			el = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users);
-			if (!el) {
-				talloc_free(ndr_pull);
-				DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-				return;
-			}
-			el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
-			if (!el->info) {
-				talloc_free(el);
-				talloc_free(ndr_pull);
-				DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-				return;
-			}
-			el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
-			el->info->username = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.username);
-			el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
-			el->ref_count = 1;
-			DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
-		} else {
-			DEBUG(0, ("[%s:%d] Trying to unregister user in empty list\n", __FUNCTION__, __LINE__));
-			return;
-		}
-	} else {
-		/* Search the users list and perform action */
-		for (el = mgmt_ctx->users; el; el = el->next) {
-			/* Case where the record exists */
-			if (!strcmp(el->info->backend, user_cmd.backend) && 
-			    (!strcmp(el->info->username, user_cmd.username)) &&
-			    (!strcmp(el->info->vuser, user_cmd.vuser))) {
-				found = true;
-				switch (user_cmd.status) {
-				case MAPISTORE_MGMT_USER_REGISTER:
-					el->ref_count += 1;
-					break;
-				case MAPISTORE_MGMT_USER_UNREGISTER:
-					el->ref_count -= 1;
-					/* Delete record if ref_count is 0 */
-					if (el->ref_count == 0) {
-						DLIST_REMOVE(mgmt_ctx->users, el);
-						talloc_free(el);
-						break;
-					} 
-					break;
-				default:
-					DEBUG(0, ("[%s:%d]: Invalid user command status\n", __FUNCTION__, __LINE__));
-					break;
-				}
-			} 
-		}
-		/* Case where no matching record was found: insert */
-		if (found == false) {
-			switch (user_cmd.status) {
-			case MAPISTORE_MGMT_USER_REGISTER:
-				el = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users);
-				if (!el) {
-					talloc_free(ndr_pull);
-					DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-					return;
-				}
-				el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
-				if (!el->info) {
-					talloc_free(el);
-					talloc_free(ndr_pull);
-					DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
-					return;
-				}
-				el->info->backend = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.backend);
-				el->info->username = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.username);
-				el->info->vuser = talloc_strdup((TALLOC_CTX *)el->info, user_cmd.vuser);
-				el->ref_count = 1;
-				DLIST_ADD_END(mgmt_ctx->users, el, struct mapistore_mgmt_users);
-				break;
-			case MAPISTORE_MGMT_USER_UNREGISTER:
-				DEBUG(0, ("[%s:%d]: Trying to unregister non-existing user\n", __FUNCTION__, __LINE__));
-				break;
-			default:
-				DEBUG(0, ("[%s:%d]: Invalid user command status\n", __FUNCTION__, __LINE__));
-				break;
-			}
-		}
+	switch (command.type) {
+	case MAPISTORE_MGMT_USER:
+		mapistore_mgmt_message_user_command(mgmt_ctx, command.command.user);
+		break;
+	case MAPISTORE_MGMT_BIND:
+		printf("switch_case: MAPISTORE_MGMT_BIND\n");
+		mapistore_mgmt_message_bind_command(mgmt_ctx, command.command.bind);
+		break;
+	case MAPISTORE_MGMT_NOTIF:
+		mapistore_mgmt_message_notification_command(mgmt_ctx, command.command.notification);
+		break;
+	default:
+		DEBUG(0, ("[%s:%d]: Invalid command type: %d\n",
+			  __FUNCTION__, __LINE__, command.type));
+		break;
 	}
 
 	talloc_free(ndr_pull);
 }
 
-static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
+static void mgmt_ipc_notif_handler(int signo, siginfo_t *info, void *unused)
 {
 	struct mapistore_mgmt_context	*mgmt_ctx;
 	struct mq_attr			attr;
@@ -159,37 +83,37 @@ static void mgmt_user_notif_handler(int signo, siginfo_t *info, void *unused)
 
 	mgmt_ctx = (struct mapistore_mgmt_context *)info->si_value.sival_ptr;
 
-	if (mq_getattr(mgmt_ctx->mq_users, &attr) != 0) {
+	if (mq_getattr(mgmt_ctx->mq_ipc, &attr) != 0) {
 		perror("mq_getattr");
 		return;
 	}
 
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
-	data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio);
+	data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, &prio);
 	if (data.length == -1) {
 		talloc_free(data.data);
 		perror("mq_receive");
 		return;
 	}
-	mgmt_user_process_notif(mgmt_ctx, data);
+	mgmt_ipc_process_notif(mgmt_ctx, data);
 	talloc_free(data.data);
 
 	/* Reset notification as it resets each time */
 	se.sigev_signo = info->si_signo;
 	se.sigev_value = info->si_value;
 	se.sigev_notify = SIGEV_SIGNAL;
-	if (mq_notify(mgmt_ctx->mq_users, &se) == -1) {
+	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
 		perror("mq_notify");
 		return;
 	}
 
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
-	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, NULL)) != -1) {
+	while ((data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, NULL)) != -1) {
 		if (data.length == -1) {
 			talloc_free(data.data);
 			return;
 		} else {
-			mgmt_user_process_notif(mgmt_ctx, data);
+			mgmt_ipc_process_notif(mgmt_ctx, data);
 			talloc_free(data.data);
 			data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 		}
@@ -225,15 +149,15 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	mgmt_ctx->mstore_ctx = mstore_ctx;
 	mgmt_ctx->verbose = false;
 	mgmt_ctx->users = NULL;
-	mgmt_ctx->mq_users = mq_open(MAPISTORE_MQUEUE_USER, O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
-	if (mgmt_ctx->mq_users == -1) {
+	mgmt_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_RDONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
+	if (mgmt_ctx->mq_ipc == -1) {
 		perror("mq_open");
 		talloc_free(mgmt_ctx);
 		return NULL;
 	}
 
 	/* Setup asynchronous notification request on this message queue */
-	sa.sa_sigaction = mgmt_user_notif_handler;
+	sa.sa_sigaction = mgmt_ipc_notif_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
 	if (sigaction(SIGIO, &sa, NULL) == -1) {
@@ -244,22 +168,22 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	se.sigev_notify = SIGEV_SIGNAL;
 	se.sigev_signo = SIGIO;
 	se.sigev_value.sival_ptr = (void *) mgmt_ctx;
-	if (mq_notify(mgmt_ctx->mq_users, &se) == -1) {
+	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
 		perror("mq_notify");
 		talloc_free(mgmt_ctx);
 		return NULL;
 	}
 
 	/* Empty queue since new notification only occurs flushed/empty queue */
-	ret = mq_getattr(mgmt_ctx->mq_users, &attr);
+	ret = mq_getattr(mgmt_ctx->mq_ipc, &attr);
 	if (ret == -1) {
 		perror("mq_getattr");
 		return mgmt_ctx;
 	}
 	data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 
-	while ((data.length = mq_receive(mgmt_ctx->mq_users, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
-		mgmt_user_process_notif(mgmt_ctx, data);
+	while ((data.length = mq_receive(mgmt_ctx->mq_ipc, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		mgmt_ipc_process_notif(mgmt_ctx, data);
 		talloc_free(data.data);
 		data.data = talloc_size(mgmt_ctx, attr.mq_msgsize);
 	}
@@ -283,13 +207,13 @@ _PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
-	if (mq_close(mgmt_ctx->mq_users) == -1) {
+	if (mq_close(mgmt_ctx->mq_ipc) == -1) {
 		perror("mq_close");
 		talloc_free(mgmt_ctx);
 		return MAPISTORE_SUCCESS;
 	}
 
-	if (mq_unlink(MAPISTORE_MQUEUE_USER) == -1) {
+	if (mq_unlink(MAPISTORE_MQUEUE_IPC) == -1) {
 		perror("mq_unlink");
 	}
 
@@ -333,7 +257,7 @@ _PUBLIC_ int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *mg
 	return mapistore_backend_registered(backend);
 }
 
-static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
+static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 				      unsigned msg_prio,
 				      struct mapistore_connection_info *conn_info,
 				      const char *backend, const char *vuser)
@@ -341,7 +265,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	int				ret;
 	TALLOC_CTX			*mem_ctx;
 	DATA_BLOB			data;
-	struct mapistore_mgmt_user_cmd	cmd;
+	struct mapistore_mgmt_command	cmd;
 	enum ndr_err_code		ndr_err;
 
 	/* Sanity checks */
@@ -351,21 +275,22 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_user_status status,
 	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!vuser, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	cmd.status = status;
-	cmd.backend = backend;
-	cmd.username = conn_info->username;
-	cmd.vuser = vuser;
-	
+	cmd.type = MAPISTORE_MGMT_USER;
+	cmd.command.user.status = status;
+	cmd.command.user.backend = backend;
+	cmd.command.user.username = conn_info->username;
+	cmd.command.user.vuser = vuser;
+
 	mem_ctx = talloc_new(NULL);
-	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_user_cmd);
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_user_cmd into NDR blob\n", 
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;
 	}
 
-	ret = mq_send(conn_info->mstore_ctx->mq_users, (const char *)data.data, data.length, msg_prio);
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
 	if (ret == -1) {
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_MSG_SEND;
@@ -434,14 +359,15 @@ _PUBLIC_ struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struc
    \param backend the name of the backend
    \param vuser the name of the matching user in the backend
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPIStore error
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *conn_info,
 						  const char *backend,
 						  const char *vuser)
 {
-	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_REGISTER, 
-					  0, conn_info, backend, vuser);
+	return mgmt_user_registration_cmd(MAPISTORE_MGMT_REGISTER, 
+					  MAPISTORE_COMMAND_USER_REGISTER_PRIO, 
+					  conn_info, backend, vuser);
 }
 
 
@@ -459,8 +385,9 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
 						    const char *backend,
 						    const char *vuser)
 {
-	return mgmt_user_registration_cmd(MAPISTORE_MGMT_USER_UNREGISTER,
-					  31, conn_info, backend, vuser);
+	return mgmt_user_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
+					  MAPISTORE_COMMAND_USER_UNREGISTER_PRIO, 
+					  conn_info, backend, vuser);
 }
 
 
@@ -492,7 +419,7 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rootURI && !backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	backend_ctx = mapistore_backend_lookup_by_name((TALLOC_CTX *)mgmt_ctx, backend);
@@ -561,4 +488,268 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 
 	talloc_free(uri);
 	return retval;
+}
+
+
+/**
+   \details Register a message in the indexing database of the user
+
+   \param mgmt_ctx Pointer to the mapistore management context
+   \param backend the backend for which we register the message
+   \param sysuser the name of the openchage user
+   \param mid the message ID to register
+   \param uri partial URI without message extension
+   \param messageID the message identifier in the backend
+   \param registered_uri pointer on pointer to the registered MAPIStore URI
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt_ctx,
+					     const char *backend,
+					     const char *sysuser,
+					     uint64_t mid,
+					     const char *rootURI,
+					     const char *messageID,
+					     char **registered_uri)
+{
+	struct indexing_context_list	*ictxp;
+	int				ret;
+	char				*uri;
+
+	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, NULL, NULL, messageID, rootURI, &uri);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
+
+	DEBUG(0, ("mapistore_mgmt_register_message: %s for user %s\n", uri, sysuser));
+
+	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
+	MAPISTORE_RETVAL_IF(ret, ret, uri);
+
+	ret = mapistore_indexing_record_add(mgmt_ctx, ictxp, mid, uri);
+	MAPISTORE_RETVAL_IF(ret, ret, uri);
+
+	*registered_uri = uri;
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Check if the subscription described by NotificationFlags
+   has been registered for specified folder.
+
+   \param mgmt_ctx pointer to the mapistore management context
+   \param username the username to lookup
+   \param folderURI the mapistore URI to lookup
+   \param NotificationFlags the subscription type
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *mgmt_ctx,
+							   const char *username, const char *folderURI,
+							   uint16_t NotificationFlags)
+{
+	struct mapistore_mgmt_users	*uel;
+	struct mapistore_mgmt_notif	*el;
+	bool				found = false;
+
+	printf("Looking for 0x%x\n", NotificationFlags);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* MAPISTORE_RETVAL_IF(!folderURI, MAPISTORE_ERR_INVALID_PARAMETER, NULL); */
+
+	if (!folderURI) {
+		for (uel = mgmt_ctx->users; uel; uel = uel->next) {
+			if (uel->info->username && !strcmp(uel->info->username, username)) {
+				if (uel->notifications) {
+					for (el = uel->notifications; el; el = el->next) {
+						if ((el->WholeStore == true) && 
+						    (el->NotificationFlags & NotificationFlags)) {
+						  DEBUG(0, ("[%s:%d]: WholeStore matching subscription found for 0x%x\n", __FUNCTION__, __LINE__, NotificationFlags));
+							found = true;
+							goto end;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	for (uel = mgmt_ctx->users; uel; uel = uel->next) {
+		if (uel->info->username && !strcmp(uel->info->username, username)) {
+			if (uel->notifications) {
+				for (el = uel->notifications; el; el = el->next) {
+					if (!el->MessageID && el->MAPIStoreURI &&
+					    !strcmp(el->MAPIStoreURI, folderURI) &&
+					    (el->NotificationFlags & NotificationFlags)) {
+						DEBUG(0, ("[%s:%d]: Subscription found\n", __FUNCTION__, __LINE__));
+						found = true;
+						goto end;
+					} else if ((el->WholeStore == true) && 
+						   (el->NotificationFlags & NotificationFlags)) {
+						DEBUG(0, ("[%s:%d]: WholeStore matching subscription found\n", __FUNCTION__, __LINE__));
+						found = true;
+						goto end;
+					}
+				}
+			}
+		}
+	}
+ end:
+	return ((found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND);
+}
+
+static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
+					      unsigned msg_prio,
+					      struct mapistore_connection_info *conn_info,
+					      struct mapistore_mgmt_notif *notification)
+{
+	int				ret;
+	TALLOC_CTX			*mem_ctx;
+	DATA_BLOB			data;
+	struct mapistore_mgmt_command	cmd;
+	enum ndr_err_code		ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!notification, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(notification->WholeStore == false && !notification->MAPIStoreURI,
+			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	cmd.type = MAPISTORE_MGMT_NOTIF;
+	cmd.command.notification.status = status;
+	printf("NotificationFlags = 0x%x\n", notification->NotificationFlags);
+	cmd.command.notification.NotificationFlags = notification->NotificationFlags;
+	cmd.command.notification.username = conn_info->username;
+	cmd.command.notification.WholeStore = notification->WholeStore;
+	if (notification->WholeStore == false) {
+		cmd.command.notification.FolderID = notification->FolderID;
+		cmd.command.notification.MessageID = notification->MessageID;
+		cmd.command.notification.MAPIStoreURI = notification->MAPIStoreURI;
+	} else {
+		cmd.command.notification.FolderID = 0;
+		cmd.command.notification.MessageID = 0;
+		cmd.command.notification.MAPIStoreURI = NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+			  __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
+	if (ret == -1) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_MSG_SEND;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Register a subscription for the given user
+
+   \param conn_info pointer to the connection information
+   \param notification pointer to the structure holding notification data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *conn_info,
+							    struct mapistore_mgmt_notif *notification)
+{
+	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_REGISTER,
+						  MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO,
+						  conn_info, notification);
+}
+
+/**
+   \details Unregister a subscription for the given user
+
+   \param conn_info pointer to the connection information
+   \param notification pointer to the structure holding notification data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *conn_info,
+							      struct mapistore_mgmt_notif *notification)
+{
+	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
+						  MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO,
+						  conn_info, notification);
+}
+
+
+static int mgmt_bind_registration_command(enum mapistore_mgmt_status status,
+					  unsigned msg_prio,
+					  struct mapistore_connection_info *conn_info,
+					  uint16_t cbContext, uint8_t *rgbContext,
+					  uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+{
+	int				ret;
+	TALLOC_CTX			*mem_ctx;
+	DATA_BLOB			data;
+	struct mapistore_mgmt_command	cmd;
+	enum ndr_err_code		ndr_err;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!conn_info->username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!rgbContext, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!rgbCallbackAddress, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+
+	cmd.type = MAPISTORE_MGMT_BIND;
+	cmd.command.bind.username = conn_info->username;
+	cmd.command.bind.cbContext = cbContext;
+	cmd.command.bind.rgbContext = rgbContext;
+	cmd.command.bind.cbCallbackAddress = cbCallbackAddress;
+	cmd.command.bind.rgbCallbackAddress = rgbCallbackAddress;
+
+	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
+	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
+		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
+			  __FILE__, __LINE__, __FUNCTION__));
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
+	ret = mq_send(conn_info->mstore_ctx->mq_ipc, (const char *)data.data, data.length, msg_prio);
+	if (ret == -1) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_MSG_SEND;
+	}
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Register a callback address for UDP notifications to be
+   dispatched for given user
+
+   \param conn_info pointer to the connection information
+   \param cbContext number of bytes in rgbContext
+   \param rgbContext array of bytes holding the notification key
+   \param cbCallbackAddress number of bytes in rgbCallbackAddress
+   \param rgbCallbackAddress array of bytes holding the sockaddr structure to send
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ int mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *conn_info,
+						    uint16_t cbContext, uint8_t *rgbContext,
+						    uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+{
+	return mgmt_bind_registration_command(MAPISTORE_MGMT_REGISTER,
+					      MAPISTORE_COMMAND_NOTIF_SOCKET_REGISTER_PRIO, 
+					      conn_info, cbContext, rgbContext, 
+					      cbCallbackAddress, rgbCallbackAddress);
 }

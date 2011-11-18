@@ -72,7 +72,7 @@ _PUBLIC_ bool mapitest_oxcnotif_RegisterNotification(struct mapitest *mt)
 
 	/* Step 3. Register notification */
 	session = mapi_object_get_session(&obj_store);
-	retval = RegisterNotification(session, fnevObjectCopied);
+	retval = RegisterNotification(session);
 	mapitest_print_retval(mt, "RegisterNotification");
 	if ( retval != MAPI_E_SUCCESS) {
 		return false;

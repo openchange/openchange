@@ -52,6 +52,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /* TODO: to be completed... */
 
         NotificationData = &response->u.mapi_Notify.NotificationData;
+	printf("Looking for: 0x%x\n", response->u.mapi_Notify.NotificationType);
         switch (response->u.mapi_Notify.NotificationType) {
                 /* Folders */
         case 0x3010: /* different forms of folder modifications */
@@ -67,6 +68,16 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 break;
 
         case 0x0004: /* folder created */
+		break;
+	case 0x0002: /* newmail */
+	case 0x8002:
+		size += sizeof (uint64_t) * 2 + sizeof (uint32_t) + sizeof (uint8_t);
+		if (NotificationData->NewMailNotification.UnicodeFlag == false) {
+			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszA);
+		} else {
+			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszW) * 2 + 2;
+		}
+		break;
         case 0x8004: /* message created */ 
         case 0x8010: /* message modified */
                 size += sizeof(uint16_t);

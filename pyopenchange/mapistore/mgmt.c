@@ -105,6 +105,38 @@ static PyObject *py_MAPIStoreMGMT_registered_message(PyMAPIStoreMGMTObject *self
 	return PyBool_FromLong(ret);
 }
 
+static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	const char	*backend;
+	const char	*user;
+	const char	*uri;
+	const char	*messageID;
+	char		*registered_uri;
+	PyObject	*retlist;
+	uint64_t	mid;
+	int		ret;
+
+	if (!PyArg_ParseTuple(args, "ssss", &backend, &user, &uri, &messageID)) {
+		return NULL;
+	}
+
+	retlist = PyList_New(0);
+
+	/* Gets a new message ID */
+	ret = openchangedb_get_new_folderID(self->parent->ocdb_ctx, &mid);
+	if (ret) return (PyObject *)retlist;
+
+	/* Register the message within specified user indexing database */
+	ret = mapistore_mgmt_register_message(self->mgmt_ctx, backend, user, mid, uri, messageID, &registered_uri);
+	if (ret) return (PyObject *)retlist;
+
+	PyList_Append(retlist, PyLong_FromLongLong(mid));
+	PyList_Append(retlist, PyString_FromString(registered_uri));
+	
+	talloc_free(registered_uri);
+	return (PyObject *) retlist;
+}
+
 static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, PyObject *args)
 {
 	PyObject	*dict;
@@ -151,6 +183,72 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 	return (PyObject *)dict;
 }
 
+static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	int		ret;
+	const char	*username;
+	const char	*uri;
+	uint16_t	type;
+	uint16_t	NotificationFlags;
+
+	if (!PyArg_ParseTuple(args, "sshh", &username, &uri, &type, &NotificationFlags)) {
+		return NULL;
+	}
+
+	switch (type) {
+	case MAPISTORE_FOLDER:
+		ret = mapistore_mgmt_registered_folder_subscription(self->mgmt_ctx, username, uri, 
+								    NotificationFlags);
+		return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
+		break;
+	case MAPISTORE_MESSAGE:
+		DEBUG(0, ("[%s:%d]: Unsupported subscription type\n", __FUNCTION__, __LINE__));
+		return PyBool_FromLong(false);
+		break;
+	}
+
+	return PyBool_FromLong(false);
+}
+
+static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyObject *args)
+{
+	int		ret;
+	const char	*username;
+	const char	*storeuser;
+	const char	*FolderURI;
+	const char	*MessageURI;
+	uint64_t	FolderID;
+	uint64_t	MessageID;
+	bool		softdeleted;
+
+	if (!PyArg_ParseTuple(args, "ssss", &username, &storeuser, &FolderURI, &MessageURI)) {
+		return NULL;
+	}
+
+	/* Turn MessageURI into MessageID from indexing database */
+	ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, storeuser, MessageURI, 
+						 false, &MessageID, &softdeleted);
+	if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+		return PyBool_FromLong(false);
+	}
+
+	/* Turn FolderURI into FolderID from openchangedb or indexing database */
+	ret = openchangedb_get_fid(self->parent->ocdb_ctx, FolderURI, &FolderID);
+	if (ret != MAPI_E_SUCCESS) {
+		ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, FolderURI, false,
+							 &FolderID, &softdeleted);
+		if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+			return PyBool_FromLong(false);
+		}
+	}
+
+	/* Send notification on user queue */
+	ret = mapistore_mgmt_send_newmail_notification(self->mgmt_ctx, username, FolderID, 
+						       MessageID, MessageURI);
+
+	return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
+}
+
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)
 {
 	return PyBool_FromLong(self->mgmt_ctx->verbose);
@@ -168,7 +266,10 @@ static PyMethodDef mapistore_mgmt_methods[] = {
 	{ "registered_backend", (PyCFunction)py_MAPIStoreMGMT_registered_backend, METH_VARARGS },
 	{ "registered_users", (PyCFunction)py_MAPIStoreMGMT_registered_users, METH_VARARGS },
 	{ "registered_message", (PyCFunction)py_MAPIStoreMGMT_registered_message, METH_VARARGS },
+	{ "register_message", (PyCFunction)py_MAPIStoreMGMT_register_message, METH_VARARGS },
+	{ "registered_subscription", (PyCFunction)py_MAPIStoreMGMT_registered_subscription, METH_VARARGS },
 	{ "existing_users", (PyCFunction)py_MAPIStoreMGMT_existing_users, METH_VARARGS },
+	{ "send_newmail", (PyCFunction)py_MAPIStoreMGMT_send_newmail, METH_VARARGS },
 	{ NULL },
 };
 

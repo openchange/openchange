@@ -278,8 +278,12 @@ int mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend) {
-			DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
 			retval = backends[i].backend->backend.init();
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(3, ("[!] MAPISTORE backend '%s' initialization failed\n", backends[i].backend->backend.name));
+			} else {
+				DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
+			}
 		}
 	}
 

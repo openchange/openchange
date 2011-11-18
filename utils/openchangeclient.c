@@ -283,7 +283,6 @@ static const char *get_filename(const char *filename)
 static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 			    mapi_object_t *obj_message)
 {
-	enum MAPISTATUS		retval;
 	char			*id;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
@@ -293,14 +292,14 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 
 	/* retrieve the folder ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
-	retval = GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
+	GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	fid = (const uint64_t *)get_SPropValue_data(lpProps);
 
 	/* retrieve the message ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_MID);
-	retval = GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
+	GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	mid = (const uint64_t *)get_SPropValue_data(lpProps);
@@ -322,7 +321,6 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
-	ssize_t		len;
 	char		*path;
 	mapi_object_t	obj_stream;
 	uint16_t	read_size;
@@ -355,7 +353,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	do {
 		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
 		if (retval != MAPI_E_SUCCESS) goto error;
-		len = write(fd, buf, read_size);
+		write(fd, buf, read_size);
 	} while (read_size);
 	
 	close(fd);
@@ -2183,7 +2181,6 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 	struct HierarchyTableChange    	*htable;
 	struct ContentsTableChange     	*ctable;
 	struct ContentsTableChange     	*stable;
-	enum MAPISTATUS			retval;
 
 	switch(NotificationType) {
 	case fnevNewMail:
@@ -2191,7 +2188,7 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 		DEBUG(0, ("[+] New mail Received\n"));
 		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
-		retval = openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
+		openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
 		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
@@ -2326,7 +2323,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 
 	/* Register notification */
 	session = mapi_object_get_session(obj_store);
-	retval = RegisterNotification(session, 0);
+	retval = RegisterNotification(session);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (oclient->pf == true) {
@@ -2461,14 +2458,13 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 {
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		*SRowSet;
-	enum MAPISTATUS		retval;
 	uint32_t		i;
 	uint32_t		count;
 	uint8_t			ulFlags;
 	uint32_t		rowsFetched = 0;
 	uint32_t		totalRecs = 0;
 
-	retval = GetGALTableCount(session, &totalRecs);
+	GetGALTableCount(session, &totalRecs);
 	printf("Total Number of entries in GAL: %d\n", totalRecs);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
@@ -2489,7 +2485,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	ulFlags = TABLE_START;
 	do {
 		count += 0x2;
-		retval = GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
+		GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
 		if ((!SRowSet) || (!(SRowSet->aRow))) {
 			return false;
 		}
@@ -2728,14 +2724,14 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 
 	/* Step 2. Dump properties */
 	message_name = (const char *) find_SPropValue_data(&aRow, PR_NORMALIZED_SUBJECT);
-	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
-	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_END_RANGE);
-	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_MONTHS);
-	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_EVENTS);
-	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_MONTHS);
-	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_EVENTS);
-	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_MONTHS);
-	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_EVENTS);
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_START);
+	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_END);
+	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_BUSY);
+	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_BUSY);
+	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_TENTATIVE);
+	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_TENTATIVE);
+	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_OOF);
+	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_OOF);
 
 	year = GetFreeBusyYear(publish_start);
 

@@ -48,7 +48,6 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 					struct EcDoRpc_MAPI_REQ *mapi_req,
 					struct EcDoRpc_MAPI_REPL *mapi_repl)
 {
-	enum MAPISTATUS		retval;
 	char			*recipient;
 	struct Logon_req	request;
 	struct Logon_repl	response;
@@ -74,30 +73,30 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response.LogonFlags = request.LogonFlags;
 
 	/* Step 3. Build FolderIds list */
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_MAILBOX_ROOT, &response.LogonType.store_mailbox.FolderIds[0]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DEFERRED_ACTIONS, &response.LogonType.store_mailbox.FolderIds[1]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SPOOLER_QUEUE, &response.LogonType.store_mailbox.FolderIds[2]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_TOP_INFORMATION_STORE, &response.LogonType.store_mailbox.FolderIds[3]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_INBOX, &response.LogonType.store_mailbox.FolderIds[4]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_OUTBOX, &response.LogonType.store_mailbox.FolderIds[5]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SENT_ITEMS, &response.LogonType.store_mailbox.FolderIds[6]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DELETED_ITEMS, &response.LogonType.store_mailbox.FolderIds[7]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_COMMON_VIEWS, &response.LogonType.store_mailbox.FolderIds[8]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SCHEDULE, &response.LogonType.store_mailbox.FolderIds[9]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SEARCH, &response.LogonType.store_mailbox.FolderIds[10]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_VIEWS, &response.LogonType.store_mailbox.FolderIds[11]);
-	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SHORTCUTS, &response.LogonType.store_mailbox.FolderIds[12]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_MAILBOX_ROOT, &response.LogonType.store_mailbox.FolderIds[0]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DEFERRED_ACTIONS, &response.LogonType.store_mailbox.FolderIds[1]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SPOOLER_QUEUE, &response.LogonType.store_mailbox.FolderIds[2]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_TOP_INFORMATION_STORE, &response.LogonType.store_mailbox.FolderIds[3]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_INBOX, &response.LogonType.store_mailbox.FolderIds[4]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_OUTBOX, &response.LogonType.store_mailbox.FolderIds[5]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SENT_ITEMS, &response.LogonType.store_mailbox.FolderIds[6]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DELETED_ITEMS, &response.LogonType.store_mailbox.FolderIds[7]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_COMMON_VIEWS, &response.LogonType.store_mailbox.FolderIds[8]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SCHEDULE, &response.LogonType.store_mailbox.FolderIds[9]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SEARCH, &response.LogonType.store_mailbox.FolderIds[10]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_VIEWS, &response.LogonType.store_mailbox.FolderIds[11]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SHORTCUTS, &response.LogonType.store_mailbox.FolderIds[12]);
 
 	/* Step 4. Set ResponseFlags */
 	response.LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
 
 	/* Step 5. Retrieve MailboxGuid */
-	retval = openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, recipient, &response.LogonType.store_mailbox.MailboxGuid);
+	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, recipient, &response.LogonType.store_mailbox.MailboxGuid);
 
 	/* Step 6. Retrieve mailbox replication information */
-	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, recipient,
-						 &response.LogonType.store_mailbox.ReplId,
-						 &response.LogonType.store_mailbox.ReplGUID);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, recipient,
+					&response.LogonType.store_mailbox.ReplId,
+					&response.LogonType.store_mailbox.ReplGUID);
 
 	/* Step 7. Set LogonTime both in openchange dispatcher database and reply */
 	t = time(NULL);
@@ -220,9 +219,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	} else {
-		/* retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl); */
-		mapi_repl->error_code = MAPI_E_LOGON_FAILED;
-		/* mailboxstore = false; */
+		retval = RopLogon_PublicFolder(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl);
+		/* mapi_repl->error_code = MAPI_E_LOGON_FAILED; */
+		mailboxstore = false;
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	}
 
@@ -256,28 +255,49 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    uint32_t *handles,
 					    uint16_t *size)
 {
-        struct mapistore_subscription_list *subscription_list, *subscription_holder;
-        struct mapistore_subscription *subscription;
-	enum MAPISTATUS		retval;
-	uint32_t		handle;
+        /* struct mapistore_subscription_list *subscription_list, *subscription_holder; */
+        /* struct mapistore_subscription *subscription; */
+	struct mapistore_subscription_list	*el;
+	enum MAPISTATUS				retval;
+	uint32_t				handle;
 
 	handle = handles[request->handle_idx];
+next:
+	for (el = emsmdbp_ctx->mstore_ctx->subscriptions; el; el = el->next) {
+		if (handle == el->subscription->handle) {
+			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
+			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
+			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
+			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
+			DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->subscriptions, el);
+			goto next;
+		}
+	}
 
 	/* If we have notification's subscriptions attached to this handle, we
 	   obviously remove them in order to avoid invoking them once all ROPs
 	   are processed */
-	subscription_list = emsmdbp_ctx->mstore_ctx->subscriptions;
-	subscription_holder = subscription_list;
-	while (subscription_holder) {
-	        subscription = subscription_holder->subscription;
+/* retry: */
+/* 	subscription_list = emsmdbp_ctx->mstore_ctx->subscriptions; */
+/* 	subscription_holder = subscription_list; */
+/* 	while (subscription_holder) { */
+/* 	        subscription = subscription_holder->subscription; */
 		  
-		if (handle == subscription->handle)
-		          DLIST_REMOVE(subscription_list, subscription_holder);
+/* 		if (handle == subscription->handle) { */
+/* 			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n")); */
+/* 			DEBUG(0, ("subscription: handle = 0x%x\n", subscription->handle)); */
+/* 			DEBUG(0, ("subscription: types = 0x%x\n", subscription->notification_types)); */
+/* 			DEBUG(0, ("subscription: mqueue = %d\n", subscription->mqueue)); */
+/* 			DEBUG(0, ("subscription: mqueue name = %s\n", subscription->mqueue_name)); */
+/* 			DLIST_REMOVE(subscription_list, subscription_holder); */
+/* 			talloc_free(subscription_holder); */
+/* 			goto retry; */
+/* 		} */
 
 
-		subscription_holder = subscription_holder->next;
-       	}
-
+/* 		subscription_holder = subscription_holder->next; */
+/*        	} */
 	/* We finally really delete the handle */
 	retval = mapi_handles_delete(emsmdbp_ctx->handles_ctx, handle);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_NOT_FOUND, retval, NULL);

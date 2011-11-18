@@ -181,11 +181,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 {
 	uint64_t			parentFolderID;
 	uint64_t			testFolderID;
-	char				*parentDN;
-	char				*dn;
-	char				*mailboxDN;
-	struct ldb_dn			*basedn;
-	struct ldb_message		*msg;
+	char				*MAPIStoreURI;
 	struct SPropValue		*value;
 	NTTIME				nt_time;
 	int				retval;
@@ -229,39 +225,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			return MAPI_E_COLLISION;
 		}
 
-		/* This part should be moved into openchangedb.c */
 		local_mem_ctx = talloc_zero(NULL, void);
-		retval = openchangedb_get_distinguishedName(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &parentDN);
-		retval = openchangedb_get_mailboxDN(local_mem_ctx, emsmdbp_ctx->oc_ctx, parentFolderID, &mailboxDN);
-		dn = talloc_asprintf(local_mem_ctx, "CN=%"PRIu64",%s", fid, parentDN);
-		basedn = ldb_dn_new(local_mem_ctx, emsmdbp_ctx->oc_ctx, dn);
-		talloc_free(dn);
-		if (!ldb_dn_validate(basedn)) {
-			talloc_free(local_mem_ctx);
-			talloc_free(new_folder);
-			return MAPI_E_BAD_VALUE;
-		}
-	
-		msg = ldb_msg_new(local_mem_ctx);
-		msg->dn = ldb_dn_copy(local_mem_ctx, basedn);
-		ldb_msg_add_string(msg, "objectClass", "systemfolder");
-		ldb_msg_add_fmt(msg, "cn", "%"PRIu64, fid);
-		ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
-		ldb_msg_add_string(msg, "PidTagContentCount", "0");
-		ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
-		ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
-		ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
-		ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
-		ldb_msg_add_string(msg, "PidTagAccess", "63");
-		ldb_msg_add_string(msg, "PidTagRights", "2043");
-		ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
-		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
-		ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
-		ldb_msg_add_fmt(msg, "mailboxDN", mailboxDN);
-		path = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64, emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
-		ldb_msg_add_fmt(msg, "MAPIStoreURI", path);
-		ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
-
 		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
 		if (value) {
 			nt_time = ((NTTIME) value->value.ft.dwHighDateTime << 32
@@ -272,19 +236,19 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		}
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
-			ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, value->value.d);
+			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64,
+						       emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
+			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, 
+							    MAPIStoreURI, nt_time, value->value.d);
+			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
+				abort();
+			}
 		}
 		else {
 			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
 			abort();
 		}
-		ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
-		ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);
-		ldb_msg_add_string(msg, "FolderType", "1");
-		ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
-
-		msg->elements[0].flags = LDB_FLAG_MOD_ADD;
-		ldb_add(emsmdbp_ctx->oc_ctx, msg);
 
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
 
@@ -436,7 +400,20 @@ end:
 	return retval;
 }
 
-_PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, uint64_t fid)
+/**
+   \details Return the folder object associated to specified folder identified
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param context_object pointer to current context object
+   \param fid pointer to the Folder Identifier to lookup
+
+   \return Valid emsmdbp object structure on success, otherwise NULL
+ */
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, 
+								  struct emsmdbp_context *emsmdbp_ctx, 
+								  struct emsmdbp_object *context_object, 
+								  uint64_t fid)
 {
 	uint64_t		parent_fid;
 	int			retval;
@@ -1026,15 +1003,19 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 			DEBUG(5, ("unsupported object type\n"));
 			return MAPISTORE_ERROR;
 		}
+		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
 		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, row_countp);
 	}
 
 	return retval;
 }
 
-_PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, struct emsmdbp_object *parent_object, uint32_t table_type, uint32_t handle_id)
+_PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, 
+							  struct emsmdbp_object *parent_object, 
+							  uint32_t table_type, uint32_t handle_id)
 {
 	struct emsmdbp_object	*table_object;
+	uint64_t		folderID;
 	uint8_t			mstore_type;
 	int			ret;
 
@@ -1074,11 +1055,53 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, s
 		}
 		else {
 			if (table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
+				/* this gets data both for openchangedb and mapistore: needs improvement */
 				emsmdbp_folder_get_folder_count(parent_object->emsmdbp_ctx, parent_object, &table_object->object.table->denominator);
 			}
 			else {
-				/* Non-mapistore message tables are always empty */
-				table_object->object.table->denominator = 0;
+				/* Retrieve folder ID */
+				switch (parent_object->type) {
+				case EMSMDBP_OBJECT_FOLDER:
+					folderID = parent_object->object.folder->folderID;
+					break;
+				case EMSMDBP_OBJECT_MAILBOX:
+					folderID = parent_object->object.mailbox->folderID;
+					break;
+				default:
+					DEBUG(5, ("Unsupported object type"));
+					table_object->object.table->denominator = 0;
+					return table_object;
+				}
+
+				/* Non-mapistore message tables */
+				switch (table_type) {
+				case EMSMDBP_TABLE_MESSAGE_TYPE:
+					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
+								       folderID, 
+								       &table_object->object.table->denominator);
+					break;
+				default:
+					DEBUG(0, ("Unhandled openchangedb table type for folders: %d\n", table_type));
+					table_object->object.table->denominator = 0;
+					abort();
+				}
+			}
+			if (!emsmdbp_is_mapistore(parent_object)) {
+				/* Retrieve folder ID */
+				switch (parent_object->type) {
+				case EMSMDBP_OBJECT_FOLDER:
+					folderID = parent_object->object.folder->folderID;
+					break;
+				case EMSMDBP_OBJECT_MAILBOX:
+					folderID = parent_object->object.mailbox->folderID;
+					break;
+				default:
+					DEBUG(5, ("Unsupported object type"));
+					table_object->object.table->denominator = 0;
+					return table_object;
+				}
+				DEBUG(0, ("Initializaing openchangedb table\n"));
+				openchangedb_table_init((TALLOC_CTX *)table_object, table_type, folderID, &table_object->backend_object);
 			}
 		}
 	}
@@ -1203,7 +1226,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	uint64_t			*rowFolderID;
 	uint64_t			folderID;
 	uint8_t				*has_subobj;
-	char				*table_filter;
 	void				*odb_ctx;
 	struct Binary_r			*binr;
 
@@ -1247,8 +1269,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			talloc_free(data_pointers);
 			return NULL;
 		}
-	}
-	else {
+	} else {
 		if (table_object->parent_object->type == EMSMDBP_OBJECT_FOLDER) {
 			folderID = table_object->parent_object->object.folder->folderID;
 		}
@@ -1264,9 +1285,27 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 		odb_ctx = talloc_zero(NULL, void);
 
-		table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID);
-		retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
-							 table_filter, PR_FID, row_id, (void **) &rowFolderID);
+		/* Setup table_filter for openchangedb */
+		/* switch (table_object->object.table->ulType) { */
+		/* case EMSMDBP_TABLE_MESSAGE_TYPE: */
+		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*))", folderID); */
+		/* 	break; */
+		/* case EMSMDBP_TABLE_FOLDER_TYPE: */
+		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID); */
+		/* 	break; */
+		/* default: */
+		/* 	DEBUG(5, ("[%s:%d]: Unsupported table type for openchangedb: %d\n", __FUNCTION__, __LINE__,  */
+		/* 		      table_object->object.table->ulType)); */
+		/* 	talloc_free(retvals); */
+		/* 	talloc_free(data_pointers); */
+		/* 	return NULL; */
+		/* } */
+
+		retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+		 					 PR_FID, row_id, (void **) &rowFolderID);
+		/* retval = openchangedb_get_table_property(odb_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, */
+		/* 					 table_filter, PR_FID, row_id, (void **) &rowFolderID); */
+		printf("openchangedb_table_get_property retval = 0x%.8x\n", retval);
 		if (retval == MAPI_E_INVALID_OBJECT) {
 			talloc_free(retvals);
 			talloc_free(data_pointers);
@@ -1315,10 +1354,14 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				retval = MAPI_E_SUCCESS;
 			}
 			else {
-				retval = openchangedb_get_table_property(data_pointers, emsmdbp_ctx->oc_ctx, 
-									 emsmdbp_ctx->username,
-									 table_filter, table->properties[i], 
+				retval = openchangedb_table_get_property(data_pointers, table_object->backend_object, 
+									 emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+									 table->properties[i], 
 									 row_id, data_pointers + i);
+				/* retval = openchangedb_get_table_property(data_pointers, emsmdbp_ctx->oc_ctx,  */
+				/* 					 emsmdbp_ctx->username, */
+				/* 					 table_filter, table->properties[i],  */
+				/* 					 row_id, data_pointers + i); */
 			}
 			/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
 			if (retval == MAPI_E_INVALID_OBJECT) {
@@ -1451,7 +1494,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *mem_ctx,
 	switch (mapistore) {
 	case false:
 		/* system/special folder */
-		DEBUG(0, ("[%s] not implemented yet - shouldn't occur\n", __location__));
+		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
+		if (openchangedb_message_open(mem_ctx, emsmdbp_ctx->oc_ctx, messageID, folderID, &message_object->backend_object, (void **)msgp) != MAPI_E_SUCCESS) {
+			printf("Invalid openchangedb message\n");
+			talloc_free(message_object);
+			message_object = NULL;
+		}
 		break;
 	case true:
 		/* mapistore implementation goes here */
@@ -1692,6 +1740,30 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 	return MAPISTORE_SUCCESS;
 }
 
+static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+						 struct emsmdbp_object *object, struct SPropTagArray *properties,
+						 void **data_pointers, enum MAPISTATUS *retvals)
+{
+	enum MAPISTATUS		retval;
+	int			i;
+	struct Binary_r		*binr;
+
+	/* Look over properties */
+	for (i = 0; i < properties->cValues; i++) {
+		if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.message->folderID,
+						     &binr);
+			data_pointers[i] = binr;
+			retval = MAPI_E_SUCCESS;
+		} else {
+			retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+		}
+		retvals[i] = retval;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	enum MAPISTATUS			retval;
@@ -1904,6 +1976,9 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 			case EMSMDBP_OBJECT_FOLDER:
 				retval = emsmdbp_object_get_properties_systemspecialfolder(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 				break;
+			case EMSMDBP_OBJECT_MESSAGE:
+				retval = emsmdbp_object_get_properties_message(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
+				break;
 			default:
 				retval = MAPISTORE_ERROR;
 				break;
@@ -1965,6 +2040,10 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 			}
 			else if (object->type == EMSMDBP_OBJECT_MAILBOX) {
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.mailbox->folderID, rowp);
+			}
+			else if (object->type == EMSMDBP_OBJECT_MESSAGE) {
+				openchangedb_message_set_properties((TALLOC_CTX *)object->object.message, 
+								    object->backend_object, rowp);
 			}
 			else {
 				DEBUG(0, ("Setting properties on openchangedb not implemented yet for non-folder object type\n"));

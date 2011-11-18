@@ -243,7 +243,7 @@ _PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset
 	uint32_t		j;
 
 	for (i = 0, j= 0; i < flaglist->cValues; i++) {
-		switch (flaglist->aulPropTag[i]) {
+	  switch ((int)flaglist->aulPropTag[i]) {
 		case MAPI_UNRESOLVED:
 			printf("\tUNRESOLVED (%s)\n", usernames[i]);
 			break;
@@ -398,7 +398,6 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;
-	ssize_t				len;
 
 	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID_UNICODE);
 	if (!msgid)
@@ -473,8 +472,8 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	if (body) {
 		printf("%s\n", body);
 	} else if (html) {
-		len = write(1, html->lpb, html->cb);
-		len = write(1, "\n", 1);
+		write(1, html->lpb, html->cb);
+		write(1, "\n", 1);
 		fflush(0);
 	}
 }

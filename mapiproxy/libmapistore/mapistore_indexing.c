@@ -188,6 +188,34 @@ int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+int mapistore_indexing_record_add(TALLOC_CTX *mem_ctx,
+				  struct indexing_context_list *ictx,
+				  uint64_t fmid,
+				  const char *mapistore_URI)
+{
+	int		ret;
+	TDB_DATA	key;
+	TDB_DATA	dbuf;
+
+	/* Add the record given its fid and mapistore_uri */
+	key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.16"PRIx64, fmid);
+	key.dsize = strlen((const char *) key.dptr);
+
+	dbuf.dptr = (unsigned char *) talloc_strdup(mem_ctx, mapistore_URI);
+	dbuf.dsize = strlen((const char *) dbuf.dptr);
+
+	ret = tdb_store(ictx->index_ctx->tdb, key, dbuf, TDB_INSERT);
+	talloc_free(key.dptr);
+	talloc_free(dbuf.dptr);
+
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d]: Unable to create 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
+			  fmid, mapistore_URI));
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
 
 /**
    \details Add a folder or message record to the indexing database
@@ -206,8 +234,6 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	int				ret;
 	struct backend_context		*backend_ctx;
 	struct indexing_context_list	*ictx;
-	TDB_DATA			key;
-	TDB_DATA			dbuf;
 	char				*mapistore_URI = NULL;
 	bool				IsSoftDeleted = false;
 
@@ -232,24 +258,10 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
 
 	/* Add the record given its fid and mapistore_uri */
-	key.dptr = (unsigned char *) talloc_asprintf(mstore_ctx, "0x%.16"PRIx64, fmid);
-	key.dsize = strlen((const char *) key.dptr);
-
-	dbuf.dptr = (unsigned char *) talloc_strdup(mstore_ctx, mapistore_URI);
-	dbuf.dsize = strlen((const char *) dbuf.dptr);
-
-	ret = tdb_store(ictx->index_ctx->tdb, key, dbuf, TDB_INSERT);
-	talloc_free(key.dptr);
-	talloc_free(dbuf.dptr);
+	ret = mapistore_indexing_record_add(mstore_ctx, ictx, fmid, mapistore_URI);
 	talloc_free(mapistore_URI);
 
-	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to create 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
-			  fmid, mapistore_URI));
-		return MAPISTORE_ERR_DATABASE_OPS;
-	}
-
-	return MAPISTORE_SUCCESS;
+	return ret;
 }
 
 
@@ -491,7 +503,7 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
 
 	tdb_data.startswith = NULL;
 	tdb_data.endswith = NULL;
-	tdb_data.wildcard_count = NULL;
+	tdb_data.wildcard_count = 0;
 
 	slash_ptr = tdb_data.uri + tdb_data.uri_len - 1;
 	if (*slash_ptr == '/') {

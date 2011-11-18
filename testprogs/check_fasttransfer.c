@@ -70,8 +70,8 @@ struct mapistore_output_ctx {
 static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 {
 	struct mapistore_output_ctx	*mapistore = priv;
-	TALLOC_CTX			*mem_ctx;
-	void				*message;
+	/* TALLOC_CTX			*mem_ctx; */
+	/* void				*message; */
 
 	if (mapistore->proplist) {
 		struct parent_fid *it;
@@ -230,7 +230,6 @@ int main(int argc, const char *argv[])
 	enum MAPISTATUS			retval;
 	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
-	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_folder;
 	mapi_object_t			obj_fx_context;
@@ -344,7 +343,6 @@ int main(int argc, const char *argv[])
 		mapi_errstr("MapiLogonEx", retval);
 		exit (1);
 	}
-	profile = session->profile;
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);

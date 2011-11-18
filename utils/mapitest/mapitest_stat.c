@@ -98,7 +98,7 @@ _PUBLIC_ uint32_t mapitest_stat_add_result(struct mapitest_suite *suite,
 		if (testresult == Fail) {
 			suite->stat->failure++;
 			el->reason = talloc_strdup((TALLOC_CTX *) el, "Unexpected Fail");
-		} else if (testresult == ExpectedFail) {
+		} else if ((int)testresult == (int)ExpectedFail) {
 			suite->stat->x_fail++;
 			el->reason = talloc_strdup((TALLOC_CTX *) el, "Expected Fail");
 		} else if (testresult == UnexpectedPass) {

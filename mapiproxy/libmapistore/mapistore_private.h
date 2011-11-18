@@ -146,7 +146,8 @@ struct indexing_context_list {
 /**
    MAPIStore management defines
  */
-#define	MAPISTORE_MQUEUE_USER		"/mapistore_users"
+#define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
+#define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
 
 __BEGIN_DECLS
 
@@ -212,6 +213,7 @@ struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_conte
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 int mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
 int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+int mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
 int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t);
 int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
 int mapistore_indexing_add_ref_count(struct indexing_context_list *);

@@ -394,7 +394,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		handles[mapi_repl->handle_idx] = message_handle->handle;
 
 		message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
-		mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, message_object, messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, &message_object->backend_object);
+		switch (mapistore) {
+		case true:
+			retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
+								 folder_object->backend_object, message_object, 
+								 messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
+								 &message_object->backend_object);
+			DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
+			break;
+		case false:
+			retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
+							     emsmdbp_ctx->oc_ctx, messageID, folderID,
+							     &message_object->backend_object);
+			DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
+			break;
+		}
 
 		/* Add default properties to message MS-OXCMSG 3.2.5.2 */
 		retval = mapi_handles_set_private_data(message_handle, message_object);
@@ -511,15 +525,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
+
 	mapistore = emsmdbp_is_mapistore(object);
 	switch (mapistore) {
 	case false:
-		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+		retval = openchangedb_message_save(object->backend_object, flags);
+		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
-		flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
 		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
                 mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
 		break;
@@ -804,9 +820,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 			oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i, mapi_req->u.mapi_ModifyRecipients.prop_count, mapi_req->u.mapi_ModifyRecipients.properties, recipients + i);
 		}
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
-
-		/* mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, */
-		/* 				    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues); */
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));

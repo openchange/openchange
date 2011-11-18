@@ -1864,7 +1864,6 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	struct mapi_response		*mapi_response;
 	struct EcDoRpc_MAPI_REQ		*mapi_req;
 	struct SetCollapseState_req	request;
-	struct SetCollapseState_repl	*reply;
 	struct mapi_session		*session;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
@@ -1916,8 +1915,6 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
-
-	reply = &mapi_response->mapi_repl->u.mapi_SetCollapseState;
 
 	mapi_table = (mapi_object_table_t *)obj_table->private_data;
 	OPENCHANGE_RETVAL_IF(!mapi_table, MAPI_E_INVALID_PARAMETER, mem_ctx);

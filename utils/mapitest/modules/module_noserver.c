@@ -1117,7 +1117,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[5].value.bin.lpb[1] = 0x00;
 	valarray.lpProps[5].value.bin.lpb[2] = 0x20;
 	valarray.lpProps[5].value.bin.lpb[3] = 0x00;
-	valarray.lpProps[6].ulPropTag = PR_FREEBUSY_BUSY_MONTHS;
+	valarray.lpProps[6].ulPropTag = PR_SCHDINFO_MONTHS_BUSY;
 	valarray.lpProps[6].value.MVl.cValues = 2;
 	valarray.lpProps[6].value.MVl.lpl = talloc_array(mt->mem_ctx, uint32_t, 2);
 	valarray.lpProps[6].value.MVl.lpl[0] = 32130;
@@ -1189,7 +1189,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BINARY");
 
 
-	mvi4get = find_mapi_SPropValue_data(&valarray, PR_FREEBUSY_BUSY_MONTHS);
+	mvi4get = find_mapi_SPropValue_data(&valarray, PR_SCHDINFO_MONTHS_BUSY);
 	if (!mvi4get || (mvi4get->cValues != 2 ) || (mvi4get->lpl[0] != 32130) || (mvi4get->lpl[1] != 32131)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_MV_LONG");

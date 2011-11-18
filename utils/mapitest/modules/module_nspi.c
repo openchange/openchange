@@ -934,13 +934,10 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
 _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
 	enum MAPISTATUS		retval;
-	struct nspi_context	*nspi_ctx;
 	struct SPropTagArray	*SPropTagArray = NULL;
 	struct SRowSet		*SRowSet = NULL;
 	struct SPropTagArray	*flaglist = NULL;
 	const char     		*username[2];
-
-	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	/* Build the username array */
 	username[0] = (const char *)mt->profile->mailbox;

@@ -46,6 +46,9 @@
 
 #include "libmapi/libmapi.h"
 
+/* forward declarations */
+struct mapistore_mgmt_notif;
+
 #define	MAPISTORE_SUCCESS	0
 
 typedef	int (*init_backend_fn) (void);
@@ -215,7 +218,7 @@ struct mapistore_context {
 	struct tdb_wrap				*replica_mapping_ctx;
 	void					*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
-	mqd_t					mq_users;
+	mqd_t					mq_ipc;
 };
 
 #ifndef __BEGIN_DECLS
@@ -314,6 +317,9 @@ int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
 /* definitions from mapistore_mgmt.c */
 int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
 int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
+int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
+int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
+int mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *, uint16_t, uint8_t *, uint16_t, uint8_t *);
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 
@@ -342,9 +348,11 @@ struct mapistore_subscription {
 		struct mapistore_table_subscription_parameters table_parameters;
 		struct mapistore_object_subscription_parameters object_parameters;
 	} parameters;
+	char		*mqueue_name;
+	mqd_t		mqueue;
 };
 
-struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, uint32_t, uint16_t, void *);
+struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, struct mapistore_context *, const char *, uint32_t, uint16_t, void *);
 
 /* notifications (implementation) */
 
@@ -359,7 +367,8 @@ enum mapistore_notification_type {
 	MAPISTORE_OBJECT_MODIFIED = 2,
 	MAPISTORE_OBJECT_DELETED = 3,
 	MAPISTORE_OBJECT_COPIED = 4,
-	MAPISTORE_OBJECT_MOVED = 5
+	MAPISTORE_OBJECT_MOVED = 5,
+	MAPISTORE_OBJECT_NEWMAIL = 6
 };
 
 struct mapistore_table_notification_parameters {
@@ -393,7 +402,10 @@ struct mapistore_notification {
 };
 
 struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *, struct mapistore_notification *);
+_PUBLIC_ int mapistore_delete_subscription(struct mapistore_context *, uint32_t, uint16_t);
 void mapistore_push_notification(struct mapistore_context *, uint8_t, enum mapistore_notification_type, void *);
+enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_context *, struct mapistore_subscription *, struct mapistore_notification_list **);
+enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapistore_context *, const char *, struct mapistore_notification_list **);
 
 __END_DECLS
 

@@ -254,11 +254,11 @@ void *openchangedb_get_property_data_message(TALLOC_CTX *, struct ldb_message *,
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, uint8_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(void *, struct SSortOrderSet *);
 enum MAPISTATUS openchangedb_table_set_restrictions(void *, struct mapi_SRestriction *);
-enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, void *, void *,  char *,  uint32_t, uint32_t, void **);
+enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, void *, struct ldb_context *,  char *,  uint32_t, uint32_t, void **);
 
 /* definitions from openchangedb_message.c */
-enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, void *, uint64_t, uint64_t, void **, void **);
-enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, void *, uint64_t, uint64_t, void **);
+enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct ldb_context *, uint64_t, uint64_t, void **, void **);
+enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct ldb_context *, uint64_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_message_save(void *, uint8_t);
 enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *, void *, uint32_t, void **);
 enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *, void *, struct SRow *);

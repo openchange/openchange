@@ -209,7 +209,7 @@ static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct opencha
 
 _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void *table_object,
-							 void *ldb_ctx,
+							 struct ldb_context *ldb_ctx,
 							 char *recipient,
 							 uint32_t proptag,
 							 uint32_t pos,

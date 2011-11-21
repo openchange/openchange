@@ -216,7 +216,7 @@ struct mapistore_context {
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;
 	struct tdb_wrap				*replica_mapping_ctx;
-	void					*nprops_ctx;
+	struct ldb_context			*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 	mqd_t					mq_ipc;
 };
@@ -311,10 +311,10 @@ _PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *
 _PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, uint16_t, struct GUID *);
 
 /* definitions from mapistore_namedprops.c */
-int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
+int mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID, uint16_t *);
 uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
 int mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
-int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
+int mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, struct MAPINAMEID **);
 
 /* definitions from mapistore_mgmt.c */
 int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);

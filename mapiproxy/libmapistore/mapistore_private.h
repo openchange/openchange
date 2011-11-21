@@ -220,7 +220,7 @@ int mapistore_indexing_add_ref_count(struct indexing_context_list *);
 int mapistore_indexing_del_ref_count(struct indexing_context_list *);
 
 /* definitions from mapistore_namedprops.c */
-int mapistore_namedprops_init(TALLOC_CTX *, void **);
+int mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);
 
 __END_DECLS
 

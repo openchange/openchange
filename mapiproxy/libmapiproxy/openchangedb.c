@@ -715,7 +715,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
 
 /**
-   \details Retrieve a special MAPI property from a folder record
+   \details Retrieve a special MAPI property from an openchangedb record
 
    \param mem_ctx pointer to the memory context
    \param ldb_ctx pointer to the OpenChange LDB context
@@ -726,12 +726,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
    \return pointer to valid data on success, otherwise NULL
  */
-void *openchangedb_get_folder_special_property(TALLOC_CTX *mem_ctx,
-					       struct ldb_context *ldb_ctx,
-					       char *recipient,
-					       struct ldb_result *res,
-					       uint32_t proptag,
-					       const char *PidTagAttr)
+void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
+					struct ldb_context *ldb_ctx,
+					char *recipient,
+					struct ldb_result *res,
+					uint32_t proptag,
+					const char *PidTagAttr)
 {
 	uint32_t		*l;
 

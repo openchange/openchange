@@ -312,6 +312,8 @@ _PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID, uint16_t *);
+uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
+int mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
 int mapistore_namedprops_get_nameid(void *, uint16_t, struct MAPINAMEID **);
 
 /* definitions from mapistore_mgmt.c */

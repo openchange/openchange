@@ -188,7 +188,6 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 	TALLOC_CTX			*local_mem_ctx;
 	struct emsmdbp_object		*new_folder;
 	uint32_t			contextID;
-	char				*path;
 
 	/* Sanity checks */
 
@@ -253,7 +252,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
 
 		/* Created top folders are always using a mapistore backend */
-		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, path, new_folder->object.folder->folderID, &contextID, &new_folder->backend_object);
+		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, MAPIStoreURI, new_folder->object.folder->folderID, &contextID, &new_folder->backend_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			abort();
 		}
@@ -1224,7 +1223,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         struct mapistore_property_data	*properties;
         uint32_t			contextID, i, num_props, *obj_count;
 	uint64_t			*rowFolderID;
-	uint64_t			folderID;
 	uint8_t				*has_subobj;
 	void				*odb_ctx;
 	struct Binary_r			*binr;
@@ -1271,10 +1269,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		}
 	} else {
 		if (table_object->parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-			folderID = table_object->parent_object->object.folder->folderID;
+			/* folderID = table_object->parent_object->object.folder->folderID; */
 		}
 		else if (table_object->parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
-			folderID = table_object->parent_object->object.mailbox->folderID;
+			/* folderID = table_object->parent_object->object.mailbox->folderID; */
 		}
 		else {
 			DEBUG(5, ("%s: non-poc tables can only be client of folder objects\n", __location__));

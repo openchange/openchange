@@ -53,6 +53,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PR_EMS_AB_PROXY_ADDRESSES_UNICODE,	"proxyAddresses",	false,	NULL			},
 	{ PR_EMS_AB_NETWORK_ADDRESS,		"networkAddress",	false,	NULL			},
 	{ PR_TITLE,				"personalTitle",	false,	NULL			},
+	{ PR_EMS_AB_OBJECT_GUID,		"objectGUID",		false,	NULL			},
 	{ 0,					NULL,			false,	NULL			}
 };
 

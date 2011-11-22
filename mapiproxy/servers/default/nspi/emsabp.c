@@ -433,6 +433,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	const char			*attribute;
 	const char			*ref_attribute;
 	const char			*ldb_string = NULL;
+	const struct ldb_val		*ldb_val;
 	char				*tmp_str;
 	struct Binary_r			*bin;
 	struct StringArray_r		*mvszA;
@@ -511,6 +512,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin->lpb[1] = (MId >> 8)  & 0xFF;
 		bin->lpb[2] = (MId >> 16) & 0xFF;
 		bin->lpb[3] = (MId >> 24) & 0xFF;
+		return bin;
+	case PR_EMS_AB_OBJECT_GUID:
+		ldb_val = ldb_msg_find_ldb_val(msg, emsabp_property_get_attribute(PR_EMS_AB_OBJECT_GUID));
+		if (!ldb_val) return NULL;
+		bin = talloc_zero(mem_ctx, struct Binary_r);
+		bin->cb = ldb_val->length;
+		bin->lpb = talloc_memdup(bin, ldb_val->data, ldb_val->length);
 		return bin;
 	default:
 		break;

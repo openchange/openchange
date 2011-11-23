@@ -145,7 +145,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
-	struct SortTable_req		request;
+	struct SortTable_req		*request;
 	uint32_t			handle;
 	void				*data = NULL;
 	uint8_t				status;
@@ -211,10 +211,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
         /* TODO: we should invalidate current bookmarks on the table */
 
 	/* If parent folder has a mapistore context */
+	request = &mapi_req->u.mapi_SortTable;
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
-                request = mapi_req->u.mapi_SortTable;
-		retval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.lpSortCriteria, &status);
+		retval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request->lpSortCriteria, &status);
                 if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
@@ -224,7 +224,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 		/* Parent folder doesn't have any mapistore context associated */
 		status = TBLSTAT_COMPLETE;
 		mapi_repl->u.mapi_SortTable.TableStatus = status;
-		retval = openchangedb_table_set_sort_order(object->backend_object, &request.lpSortCriteria);
+		retval = openchangedb_table_set_sort_order(object->backend_object, &request->lpSortCriteria);
 		if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;

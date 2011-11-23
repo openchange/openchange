@@ -239,7 +239,7 @@ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *, uint64_
 char *openchangedb_set_folder_property_data(TALLOC_CTX *, struct SPropValue *);
 enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, struct ldb_context *, const char *, uint32_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *, uint64_t, uint32_t *);
-enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *, uint64_t, uint32_t *);
+enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *, uint64_t, uint32_t *, bool);
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, struct ldb_context *, const char *, char *, uint32_t, uint32_t, void **);
 enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *, uint64_t, const char*, uint64_t *);
 enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, struct ldb_context *, const char *, const char *, uint64_t);
@@ -258,7 +258,7 @@ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, void *, struct ldb
 
 /* definitions from openchangedb_message.c */
 enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct ldb_context *, uint64_t, uint64_t, void **, void **);
-enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct ldb_context *, uint64_t, uint64_t, void **);
+enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct ldb_context *, uint64_t, uint64_t, bool, void **);
 enum MAPISTATUS openchangedb_message_save(void *, uint8_t);
 enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *, void *, uint32_t, void **);
 enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *, void *, struct SRow *);

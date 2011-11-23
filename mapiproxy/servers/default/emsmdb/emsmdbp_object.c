@@ -1077,7 +1077,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 				case EMSMDBP_TABLE_MESSAGE_TYPE:
 					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
 								       folderID, 
-								       &table_object->object.table->denominator);
+								       &table_object->object.table->denominator,
+								       false);
+					break;
+				case EMSMDBP_TABLE_FAI_TYPE:
+					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
+								       folderID, 
+								       &table_object->object.table->denominator,
+								       true);
 					break;
 				default:
 					DEBUG(0, ("Unhandled openchangedb table type for folders: %d\n", table_type));

@@ -48,75 +48,79 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 					struct EcDoRpc_MAPI_REQ *mapi_req,
 					struct EcDoRpc_MAPI_REPL *mapi_repl)
 {
-	char			*recipient;
-	struct Logon_req	request;
-	struct Logon_repl	response;
+	struct Logon_req	*request;
+	struct Logon_repl	*response;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+	struct ldb_result	*res = NULL;
+	const char		*username;
 	struct tm		*LogonTime;
 	time_t			t;
 	NTTIME			nttime;
 
+	request = &mapi_req->u.mapi_Logon;
+	response = &mapi_repl->u.mapi_Logon;
+
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!mapi_req->u.mapi_Logon.EssDN, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!request->EssDN, MAPI_E_INVALID_PARAMETER, NULL);
 
-	request = mapi_req->u.mapi_Logon;
-	response = mapi_repl->u.mapi_Logon;
+	/* Step 0. Retrieve user record */
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE, attrs, "legacyExchangeDN=%s", request->EssDN);
+	OPENCHANGE_RETVAL_IF((ret || res->count != 1), ecUnknownUser, NULL);
 
-	OPENCHANGE_RETVAL_IF(strcmp(request.EssDN, emsmdbp_ctx->szUserDN), MAPI_E_INVALID_PARAMETER, NULL);
+	/* Step 1. Retrieve username from record */
+	username = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
+	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
-	/* Step 0. Retrieve recipient name */
-	recipient = x500_get_dn_element(mem_ctx, request.EssDN, "/cn=Recipients/cn=");
-	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Step 2. Check if mailbox corresponding to the specified username does exist */
+	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.FolderIds[0]);
+	OPENCHANGE_RETVAL_IF(ret, ecUnknownUser, NULL);
 
-	/* Step 1. Check if mailbox pointed by recipient belongs to the Exchange organisation */
+	/* Step 3. Set LogonFlags */
+	response->LogonFlags = request->LogonFlags;
 
-	/* Step 2. Set LogonFlags */
-	response.LogonFlags = request.LogonFlags;
+	/* Step 4. Build FolderIds list */
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTIONS, &response->LogonType.store_mailbox.FolderIds[1]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.FolderIds[2]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_TOP_INFORMATION_STORE, &response->LogonType.store_mailbox.FolderIds[3]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &response->LogonType.store_mailbox.FolderIds[4]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_OUTBOX, &response->LogonType.store_mailbox.FolderIds[5]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SENT_ITEMS, &response->LogonType.store_mailbox.FolderIds[6]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DELETED_ITEMS, &response->LogonType.store_mailbox.FolderIds[7]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_COMMON_VIEWS, &response->LogonType.store_mailbox.FolderIds[8]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SCHEDULE, &response->LogonType.store_mailbox.FolderIds[9]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SEARCH, &response->LogonType.store_mailbox.FolderIds[10]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_VIEWS, &response->LogonType.store_mailbox.FolderIds[11]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.FolderIds[12]);
 
-	/* Step 3. Build FolderIds list */
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_MAILBOX_ROOT, &response.LogonType.store_mailbox.FolderIds[0]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DEFERRED_ACTIONS, &response.LogonType.store_mailbox.FolderIds[1]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SPOOLER_QUEUE, &response.LogonType.store_mailbox.FolderIds[2]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_TOP_INFORMATION_STORE, &response.LogonType.store_mailbox.FolderIds[3]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_INBOX, &response.LogonType.store_mailbox.FolderIds[4]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_OUTBOX, &response.LogonType.store_mailbox.FolderIds[5]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SENT_ITEMS, &response.LogonType.store_mailbox.FolderIds[6]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_DELETED_ITEMS, &response.LogonType.store_mailbox.FolderIds[7]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_COMMON_VIEWS, &response.LogonType.store_mailbox.FolderIds[8]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SCHEDULE, &response.LogonType.store_mailbox.FolderIds[9]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SEARCH, &response.LogonType.store_mailbox.FolderIds[10]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_VIEWS, &response.LogonType.store_mailbox.FolderIds[11]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, recipient, EMSMDBP_SHORTCUTS, &response.LogonType.store_mailbox.FolderIds[12]);
+	/* Step 5. Set ResponseFlags */
+	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
 
-	/* Step 4. Set ResponseFlags */
-	response.LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
+	/* Step 6. Retrieve MailboxGuid */
+	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, username, &response->LogonType.store_mailbox.MailboxGuid);
 
-	/* Step 5. Retrieve MailboxGuid */
-	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, recipient, &response.LogonType.store_mailbox.MailboxGuid);
+	/* Step 7. Retrieve mailbox replication information */
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username,
+					&response->LogonType.store_mailbox.ReplId,
+					&response->LogonType.store_mailbox.ReplGUID);
 
-	/* Step 6. Retrieve mailbox replication information */
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, recipient,
-					&response.LogonType.store_mailbox.ReplId,
-					&response.LogonType.store_mailbox.ReplGUID);
-
-	/* Step 7. Set LogonTime both in openchange dispatcher database and reply */
+	/* Step 8. Set LogonTime both in openchange dispatcher database and reply */
 	t = time(NULL);
 	LogonTime = localtime(&t);
-	response.LogonType.store_mailbox.LogonTime.Seconds = LogonTime->tm_sec;
-	response.LogonType.store_mailbox.LogonTime.Minutes = LogonTime->tm_min;
-	response.LogonType.store_mailbox.LogonTime.Hour = LogonTime->tm_hour;
-	response.LogonType.store_mailbox.LogonTime.DayOfWeek = LogonTime->tm_wday;
-	response.LogonType.store_mailbox.LogonTime.Day = LogonTime->tm_mday;
-	response.LogonType.store_mailbox.LogonTime.Month = LogonTime->tm_mon + 1;
-	response.LogonType.store_mailbox.LogonTime.Year = LogonTime->tm_year + 1900;
+	response->LogonType.store_mailbox.LogonTime.Seconds = LogonTime->tm_sec;
+	response->LogonType.store_mailbox.LogonTime.Minutes = LogonTime->tm_min;
+	response->LogonType.store_mailbox.LogonTime.Hour = LogonTime->tm_hour;
+	response->LogonType.store_mailbox.LogonTime.DayOfWeek = LogonTime->tm_wday;
+	response->LogonType.store_mailbox.LogonTime.Day = LogonTime->tm_mday;
+	response->LogonType.store_mailbox.LogonTime.Month = LogonTime->tm_mon + 1;
+	response->LogonType.store_mailbox.LogonTime.Year = LogonTime->tm_year + 1900;
 
-	/* Step 8. Retrieve GwartTime */
+	/* Step 9. Retrieve GwartTime */
 	unix_to_nt_time(&nttime, t);
-	response.LogonType.store_mailbox.GwartTime = nttime - 1000000;
+	response->LogonType.store_mailbox.GwartTime = nttime - 1000000;
 
-	/* Step 9. Set StoreState */
-	response.LogonType.store_mailbox.StoreState = 0x0;
-
-	mapi_repl->u.mapi_Logon = response;
+	/* Step 10. Set StoreState */
+	response->LogonType.store_mailbox.StoreState = 0x0;
 
 	return MAPI_E_SUCCESS;
 }

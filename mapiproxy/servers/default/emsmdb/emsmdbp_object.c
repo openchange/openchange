@@ -761,7 +761,7 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 	count = table_object->object.table->denominator;
 	attach_nums = talloc_array(mem_ctx, uint32_t, count);
 	for (i = 0; i < table_object->object.table->denominator; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (!data_pointers) {
 			talloc_free(mem_ctx);
 			return MAPI_E_CALL_FAILED;
@@ -1213,7 +1213,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	return retval;
 }
 
-_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, uint32_t **retvalsp)
+_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, enum table_query_type query_type, uint32_t **retvalsp)
 {
         void				**data_pointers;
         enum MAPISTATUS			retval;
@@ -1239,7 +1239,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	if (emsmdbp_is_mapistore(table_object)) {
 		retval = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
 						 table_object->backend_object, data_pointers,
-						 MAPISTORE_PREFILTERED_QUERY, row_id, &properties);
+						 query_type, row_id, &properties);
 		if (retval == MAPI_E_SUCCESS) {
 			for (i = 0; i < num_props; i++) {
 				data_pointers[i] = properties[i].data;

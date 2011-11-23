@@ -162,39 +162,46 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 	return MAPI_E_SUCCESS;
 }
 
-static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct openchangedb_table *table)
+static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct openchangedb_table *table, uint64_t row_fmid, struct mapi_SRestriction *restrictions)
 {
 	char		*filter = NULL;
 	const char	*PidTagAttr = NULL;
 
 	switch (table->table_type) {
 	case 0x2 /* EMSMDBP_TABLE_MESSAGE_TYPE */:
-		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*)", table->folderID);
+		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=", table->folderID);
 		break;
 	case 0x1 /* EMSMDBP_TABLE_FOLDER_TYPE */:
-		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*)", table->folderID);
+		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=", table->folderID);
 		break;
 	}
 
-	if (table->restrictions) {
-		switch (table->restrictions->rt) {
+	if (row_fmid == 0) {
+		filter = talloc_asprintf_append(filter, "*)");
+	}
+	else {
+		filter = talloc_asprintf_append(filter, "%"PRIu64")", row_fmid);
+	}
+
+	if (restrictions) {
+		switch (restrictions->rt) {
 		case RES_PROPERTY:
 			/* Retrieve PidTagName */
-			PidTagAttr = openchangedb_property_get_attribute(table->restrictions->res.resProperty.ulPropTag);
+			PidTagAttr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
 			if (!PidTagAttr) {
 				talloc_free(filter);
 				return NULL;
 			}
 			filter = talloc_asprintf_append(filter, "(%s=", PidTagAttr);
-			switch (table->restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+			switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
 			case PT_STRING8:
-				filter = talloc_asprintf_append(filter, "%s)", table->restrictions->res.resProperty.lpProp.value.lpszA);
+				filter = talloc_asprintf_append(filter, "%s)", restrictions->res.resProperty.lpProp.value.lpszA);
 				break;
 			case PT_UNICODE:
-				filter = talloc_asprintf_append(filter, "%s)", table->restrictions->res.resProperty.lpProp.value.lpszW);
+				filter = talloc_asprintf_append(filter, "%s)", restrictions->res.resProperty.lpProp.value.lpszW);
 				break;
 			default:
-				DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n", (table->restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+				DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n", (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
 				talloc_free(filter);
 				return NULL;
 			}
@@ -210,16 +217,18 @@ static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct opencha
 _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void *table_object,
 							 struct ldb_context *ldb_ctx,
-							 char *recipient,
-							 uint32_t proptag,
+							 const char *recipient,
+							 enum MAPITAGS proptag,
 							 uint32_t pos,
+							 bool live_filtered,
 							 void **data)
 {
 	struct openchangedb_table	*table;
-	struct ldb_result		*res = NULL;
+	struct ldb_result		*res = NULL, *live_res = NULL;
 	char				*ldb_filter = NULL;
 	const char * const		attrs[] = { "*", NULL };
-	const char			*PidTagAttr = NULL;
+	const char			*PidTagAttr = NULL, *childIdAttr;
+	uint64_t			*row_fmid;
 	int				ret;
 
 	/* Sanity checks */
@@ -230,27 +239,57 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 
 	table = (struct openchangedb_table *)table_object;
 
-	/* Build ldb filter */
-	ldb_filter = openchangedb_table_build_filter(mem_ctx, table);
-	OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
-	DEBUG(0, ("ldb_filter = %s\n", ldb_filter));
-
 	/* Fetch results */
 	if (table->res) {
 		res = table->res;
 		printf("cached res->count = %d\n", res->count);
 	} else {
-		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &res,
-				 ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE,
-				 attrs, ldb_filter, NULL);
+		/* Build ldb filter */
+		if (live_filtered) {
+			ldb_filter = openchangedb_table_build_filter(NULL, table, 0, NULL);
+			DEBUG(0, ("(live-filtered) ldb_filter = %s\n", ldb_filter));
+		}
+		else {
+			ldb_filter = openchangedb_table_build_filter(NULL, table, 0, table->restrictions);
+			DEBUG(0, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
+		}
+		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
+		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		talloc_free(ldb_filter);
 		DEBUG(0, ("res->count = %d\n", res->count));
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_PARAMETER, NULL);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_OBJECT, NULL);
 		table->res = res;
 	}
 
 	/* Ensure position is within search results range */
 	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);
+
+	/* If live filtering, make sure the specified row match the restrictions */
+	if (live_filtered) {
+		switch (table->table_type) {
+		case 0x2 /* EMSMDBP_TABLE_MESSAGE_TYPE */:
+			childIdAttr = "PidTagMessageId";
+			break;
+		case 0x1 /* EMSMDBP_TABLE_FOLDER_TYPE */:
+			childIdAttr = "PidTagFolderId";
+			break;
+		default:
+			DEBUG(0, ("unsupported table type for openchangedb: %d\n", table->table_type));
+			abort();
+		}
+		row_fmid = openchangedb_get_property_data(mem_ctx, res, pos, PR_MID, childIdAttr);
+		if (!row_fmid || !*row_fmid) {
+			DEBUG(0, ("ldb object must have a '%s' field\n", childIdAttr));
+			abort();
+		}
+		ldb_filter = openchangedb_table_build_filter(NULL, table, *row_fmid, table->restrictions);
+		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
+		DEBUG(0, ("  row ldb_filter = %s\n", ldb_filter));
+
+		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+		talloc_free(ldb_filter);
+		OPENCHANGE_RETVAL_IF((ret || live_res->count == 0), MAPI_E_INVALID_OBJECT, NULL);
+	}
 
 	/* Convert proptag into PidTag attribute */
 	if ((table->table_type == 0x2) && proptag == PR_FID) {

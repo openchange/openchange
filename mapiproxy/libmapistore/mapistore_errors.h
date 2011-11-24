@@ -136,4 +136,9 @@
  */
 #define	MAPISTORE_ERR_MSG_RCV			19
 
+/** 
+   The operation required privileges that the user does not have
+ */
+#define MAPISTORE_ERR_DENIED			20
+
 #endif /* ! __MAPISTORE_ERRORS_H */

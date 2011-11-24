@@ -139,19 +139,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 		table->restrictions->rt = res->rt;
 		table->restrictions->res.resProperty.relop = res->res.resProperty.relop;
 		table->restrictions->res.resProperty.ulPropTag = res->res.resProperty.ulPropTag;
-			table->restrictions->res.resProperty.lpProp.ulPropTag = res->res.resProperty.lpProp.ulPropTag;
+		table->restrictions->res.resProperty.lpProp.ulPropTag = res->res.resProperty.lpProp.ulPropTag;
 
-			switch (table->restrictions->res.resProperty.lpProp.ulPropTag & 0xFFFF) {
-			case PT_STRING8:
-				table->restrictions->res.resProperty.lpProp.value.lpszA = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszA);
-				break;
-			case PT_UNICODE:
-				table->restrictions->res.resProperty.lpProp.value.lpszW = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszW);
-				break;
-			default:
-				DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
-				break;
-			}
+		switch (table->restrictions->res.resProperty.lpProp.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			table->restrictions->res.resProperty.lpProp.value.lpszA = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszA);
+			break;
+		case PT_UNICODE:
+			table->restrictions->res.resProperty.lpProp.value.lpszW = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszW);
+			break;
+		default:
+			DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
+			break;
+		}
 		break;
 	default:
 		DEBUG(0, ("Unsupported restriction type: 0x%x\n", res->rt));

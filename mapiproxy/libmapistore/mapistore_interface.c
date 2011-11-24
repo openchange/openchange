@@ -161,7 +161,8 @@ _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const char *username,
+#warning the "owner" parameter should be deduced from the uri
+_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
 				   const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
 {
 	TALLOC_CTX				*mem_ctx;
@@ -191,7 +192,7 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const c
 	if (namespace[1] && namespace[1] == '/' &&
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
-		mapistore_indexing_add(mstore_ctx, username, &ictx);
+		mapistore_indexing_add(mstore_ctx, owner, &ictx);
 		mapistore_indexing_add_ref_count(ictx);
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);

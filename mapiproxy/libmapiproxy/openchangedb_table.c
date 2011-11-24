@@ -225,8 +225,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void **data)
 {
 	struct openchangedb_table	*table;
-	struct ldb_result		*res = NULL, *live_res = NULL;
 	char				*ldb_filter = NULL;
+	struct ldb_result		*res = NULL, *live_res = NULL;
 	const char * const		attrs[] = { "*", NULL };
 	const char			*PidTagAttr = NULL, *childIdAttr;
 	uint64_t			*row_fmid;
@@ -241,10 +241,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	table = (struct openchangedb_table *)table_object;
 
 	/* Fetch results */
-	if (table->res) {
-		res = table->res;
-		printf("cached res->count = %d\n", res->count);
-	} else {
+	if (!table->res) {
 		/* Build ldb filter */
 		if (live_filtered) {
 			ldb_filter = openchangedb_table_build_filter(NULL, table, 0, NULL);
@@ -255,12 +252,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 			DEBUG(0, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
 		}
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
-		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &table->res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		talloc_free(ldb_filter);
-		DEBUG(0, ("res->count = %d\n", res->count));
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_OBJECT, NULL);
-		table->res = res;
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
 	}
+	res = table->res;
+	printf("res->count = %d\n", res->count);
 
 	/* Ensure position is within search results range */
 	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);

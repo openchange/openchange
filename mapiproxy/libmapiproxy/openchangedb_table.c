@@ -94,13 +94,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_sort_order(void *table_object,
 	if (table->lpSortCriteria) {
 		talloc_free(table->lpSortCriteria);
 	}
-	table->lpSortCriteria = talloc_memdup((TALLOC_CTX *)table, lpSortCriteria, sizeof(struct SSortOrderSet));
-	if (!table->lpSortCriteria) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+	if (lpSortCriteria) {
+		table->lpSortCriteria = talloc_memdup((TALLOC_CTX *)table, lpSortCriteria, sizeof(struct SSortOrderSet));
+		if (!table->lpSortCriteria) {
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+		}
+		table->lpSortCriteria->aSort = talloc_memdup((TALLOC_CTX *)table->lpSortCriteria, lpSortCriteria->aSort, lpSortCriteria->cSorts * sizeof(struct SSortOrder));
+		if (!table->lpSortCriteria->aSort) {
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+		}
 	}
-	table->lpSortCriteria->aSort = talloc_memdup((TALLOC_CTX *)table->lpSortCriteria, lpSortCriteria->aSort, lpSortCriteria->cSorts * sizeof(struct SSortOrder));
-	if (!table->lpSortCriteria->aSort) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+	else {
+		table->lpSortCriteria = NULL;
 	}
 
 	return MAPI_E_SUCCESS;

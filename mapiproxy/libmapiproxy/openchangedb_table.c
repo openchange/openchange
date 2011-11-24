@@ -284,14 +284,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 		ldb_filter = openchangedb_table_build_filter(NULL, table, *row_fmid, table->restrictions);
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
 		DEBUG(0, ("  row ldb_filter = %s\n", ldb_filter));
-
-		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+		ret = ldb_search(ldb_ctx, NULL, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		talloc_free(ldb_filter);
-		OPENCHANGE_RETVAL_IF((ret || live_res->count == 0), MAPI_E_INVALID_OBJECT, NULL);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
+		if (live_res->count == 0) {
+			talloc_free(live_res);
+			return MAPI_E_INVALID_OBJECT;
+		}
+		talloc_free(live_res);
 	}
 
 	/* Convert proptag into PidTag attribute */
-	if ((table->table_type == 0x2) && proptag == PR_FID) {
+	if ((table->table_type != 0x1) && proptag == PR_FID) {
 		proptag = PR_PARENT_FID;
 	}
 	PidTagAttr = openchangedb_property_get_attribute(proptag);

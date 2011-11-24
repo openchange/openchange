@@ -125,6 +125,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 
 	if (table->res) {
 		talloc_free(table->res);
+		table->res = NULL;
 	}
 
 	if (table->restrictions) {

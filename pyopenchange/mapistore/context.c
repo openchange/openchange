@@ -170,9 +170,9 @@ static PyObject *py_MAPIStoreContext_get_notifications(PyMAPIStoreContextObject 
 		ret = mapistore_get_queued_notifications(self->mstore_ctx, sel->subscription, &nlist);
 		if (ret == MAPISTORE_SUCCESS) {
 			while (nlist) {
-				printf("notification FolderID: 0x%llx\n", 
+				printf("notification FolderID: 0x%"PRIx64"\n", 
 				       nlist->notification->parameters.object_parameters.folder_id);
-				printf("notification MessageID: 0x%llx\n", 
+				printf("notification MessageID: 0x%"PRIx64"\n", 
 				       nlist->notification->parameters.object_parameters.object_id);
 				nlist = nlist->next;
 			}

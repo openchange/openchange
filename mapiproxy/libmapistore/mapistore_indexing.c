@@ -229,7 +229,7 @@ int mapistore_indexing_record_add(TALLOC_CTX *mem_ctx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id,  uint64_t fmid)
+				       uint32_t context_id, const char *username, uint64_t fmid)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -248,7 +248,9 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid doesn't already exist within the database */
-	ictx = backend_ctx->indexing;
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 	ret = mapistore_indexing_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
@@ -277,7 +279,7 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id, uint64_t fmid,
+				       uint32_t context_id, const char *username, uint64_t fmid,
 				       uint8_t flags)
 {
 	int				ret;
@@ -299,7 +301,9 @@ int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid still exists within the database */
-	ictx = backend_ctx->indexing;
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 	ret = mapistore_indexing_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
 	MAPISTORE_RETVAL_IF(!ret, ret, NULL);
 
@@ -566,9 +570,9 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t fid)
+					       uint32_t context_id, const char *username, uint64_t fid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, fid);
+	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid);
 }
 
 
@@ -585,10 +589,10 @@ _PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t fid, 
+					       uint32_t context_id, const char *username, uint64_t fid, 
 					       uint8_t flags)
 {
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, fid, flags);
+	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags);
 }
 
 
@@ -606,9 +610,9 @@ _PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t mid)
+					       uint32_t context_id, const char *username, uint64_t mid)
 {
-	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, mid);
+	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid);
 }
 
 
@@ -625,8 +629,8 @@ _PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ int mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, uint64_t mid,
+					       uint32_t context_id, const char *username, uint64_t mid,
 					       uint8_t flags)
 {
-	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, mid, flags);
+	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags);
 }

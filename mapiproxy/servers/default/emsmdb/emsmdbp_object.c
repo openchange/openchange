@@ -96,6 +96,15 @@ bool emsmdbp_is_mapistore(struct emsmdbp_object *object)
 	return false;
 }
 
+static struct emsmdbp_object *emsmdbp_get_mailbox(struct emsmdbp_object *object)
+{
+	if (object->type == EMSMDBP_OBJECT_MAILBOX) {
+		return object;
+	}
+
+	return emsmdbp_get_mailbox(object->parent_object);
+}
+
 /**
    \details Convenient function to determine whether specified
    mapi_handles refers to object within mailbox or public folders
@@ -107,17 +116,25 @@ bool emsmdbp_is_mapistore(struct emsmdbp_object *object)
  */
 bool emsmdbp_is_mailboxstore(struct emsmdbp_object *object)
 {
-	switch (object->type) {
-	case EMSMDBP_OBJECT_MAILBOX:
-		return object->object.mailbox->mailboxstore;
-	default:
-		if (object->parent_object) {
-			return emsmdbp_is_mailboxstore(object->parent_object);
-		}
-	}
-	
-	/* We should never hit this case */
-	return false;
+	struct emsmdbp_object *mailbox = emsmdbp_get_mailbox(object);
+
+	return mailbox->object.mailbox->mailboxstore;
+}
+
+/**
+   \details Convenience function to determine the owner of an object
+
+   \param object pointer to the emsmdp object
+
+   \return true if parent is within mailbox store, otherwise false
+ */
+char *emsmdbp_get_owner(struct emsmdbp_object *object)
+{
+	struct emsmdbp_object *mailbox;
+
+	mailbox = emsmdbp_get_mailbox(object);
+
+	return mailbox->object.mailbox->owner_username;
 }
 
 
@@ -225,8 +242,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		}
 
 		local_mem_ctx = talloc_zero(NULL, void);
-		openchangedb_get_owner(NULL, emsmdbp_ctx->oc_ctx, parentFolderID, &owner);
-
+		owner = emsmdbp_get_owner(parent_folder);
 		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
 		if (value) {
 			nt_time = ((NTTIME) value->value.ft.dwHighDateTime << 32
@@ -249,7 +265,6 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			abort();
 		}
 
-		talloc_free(owner);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
 
 		/* Created top folders are always using a mapistore backend */
@@ -257,7 +272,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		if (retval != MAPISTORE_SUCCESS) {
 			abort();
 		}
-		mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
+		mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid);
 		new_folder->object.folder->mapistore_root = true;
 		new_folder->object.folder->contextID = contextID;
 
@@ -298,13 +313,12 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 			if (retval == MAPISTORE_SUCCESS) {
 				retval = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
 			} else {
-				openchangedb_get_owner(NULL, emsmdbp_ctx->oc_ctx, folder_object->object.folder->folderID, &owner);
+				owner = emsmdbp_get_owner(folder_object);
 				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
-				talloc_free(owner);
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}
-				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, fid);
+				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid);
 			}
 			folder_object->object.folder->contextID = contextID;
 			/* (void) talloc_reference(folder_object, folder_object->backend_object); */
@@ -1235,6 +1249,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 	uint64_t			*rowFolderID;
 	uint8_t				*has_subobj;
 	void				*odb_ctx;
+	char				*owner;
 	struct Binary_r			*binr;
 
         table = table_object->object.table;
@@ -1344,7 +1359,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				data_pointers[i] = obj_count;
 			}
 			else if (table->properties[i] == PR_SOURCE_KEY) {
-				emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, subfolder->object.folder->folderID, &binr);
+				owner = emsmdbp_get_owner(table_object);
+				emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, subfolder->object.folder->folderID, &binr);
 				data_pointers[i] = binr;
 			}
 			else if (table->properties[i] == PR_SUBFOLDERS) {
@@ -1693,6 +1709,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object_folder	*folder;
+	char				*owner;
 	int				i;
         uint32_t                        *obj_count;
 	uint8_t				*has_subobj;
@@ -1717,7 +1734,8 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			talloc_free(obj_count);
 		}
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			owner = emsmdbp_get_owner(object);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		}
@@ -1756,12 +1774,14 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 {
 	enum MAPISTATUS		retval;
 	int			i;
+	char			*owner;
 	struct Binary_r		*binr;
 
 	/* Look over properties */
 	for (i = 0; i < properties->cValues; i++) {
 		if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.message->folderID,
+			owner = emsmdbp_get_owner(object);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.message->folderID,
 						     &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
@@ -1778,6 +1798,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 {
 	enum MAPISTATUS			retval;
 	struct emsmdbp_object_folder	*folder;
+	char				*owner;
 	struct Binary_r			*binr;
 	int				i;
         uint32_t                        *obj_count;
@@ -1798,7 +1819,8 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, object->object.folder->folderID, &binr);
+			owner = emsmdbp_get_owner(object);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		}

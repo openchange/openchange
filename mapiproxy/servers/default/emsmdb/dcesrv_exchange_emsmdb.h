@@ -271,14 +271,16 @@ bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context 
 enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context *, char *, struct mapi_SPropTagArray *, struct RecipientRow *);
 
 const struct GUID *const	MagicGUIDp;
-int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const struct GUID *, uint16_t *);
-int				emsmdbp_replid_to_guid(struct emsmdbp_context *, const uint16_t, struct GUID *);
-int				emsmdbp_source_key_from_fmid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct Binary_r **);
+int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const char *username, const struct GUID *, uint16_t *);
+int				emsmdbp_replid_to_guid(struct emsmdbp_context *, const char *username, const uint16_t, struct GUID *);
+int				emsmdbp_source_key_from_fmid(TALLOC_CTX *, struct emsmdbp_context *, const char *username, uint64_t, struct Binary_r **);
 
 /* definitions from emsmdbp_object.c */
 const char	      *emsmdbp_getstr_type(struct emsmdbp_object *);
 bool		      emsmdbp_is_mapistore(struct emsmdbp_object *);
 bool		      emsmdbp_is_mailboxstore(struct emsmdbp_object *);
+char                  *emsmdbp_get_owner(struct emsmdbp_object *object);
+
 int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, char **);
 int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);

@@ -132,6 +132,13 @@ struct indexing_context_list {
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
+struct replica_mapping_context_list {
+	struct tdb_context		*tdb;
+	char				*username;
+	uint32_t			ref_count;
+	struct replica_mapping_context_list	*prev;
+	struct replica_mapping_context_list	*next;
+};
 #define	MAPISTORE_DB_REPLICA_MAPPING	"replica_mapping.tdb"
 
 /**
@@ -214,8 +221,8 @@ struct indexing_context_list *mapistore_indexing_search(struct mapistore_context
 int mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
 int mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
 int mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
-int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t);
-int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t);
+int mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 int mapistore_indexing_add_ref_count(struct indexing_context_list *);
 int mapistore_indexing_del_ref_count(struct indexing_context_list *);
 

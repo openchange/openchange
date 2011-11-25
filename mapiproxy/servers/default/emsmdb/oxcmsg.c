@@ -486,6 +486,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object	*object;
 	uint64_t		messageID;
 	uint32_t		contextID;
+	char			*owner;
 	uint8_t			flags;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n"));
@@ -527,7 +528,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
 		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
-                mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
+		owner = emsmdbp_get_owner(object);
+                mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 

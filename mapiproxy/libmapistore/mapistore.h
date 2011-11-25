@@ -211,9 +211,9 @@ struct mapistore_context {
 	struct processing_context		*processing_ctx;
 	struct backend_context_list		*context_list;
 	struct indexing_context_list		*indexing_list;
+	struct replica_mapping_context_list	*replica_mapping_list;
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;
-	struct tdb_wrap				*replica_mapping_ctx;
 	struct ldb_context			*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 	mqd_t					mq_ipc;
@@ -296,17 +296,17 @@ struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const cha
 bool		mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_indexing.c */
-int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, uint64_t);
-int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, uint64_t);
-int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
+int mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, const char *, uint64_t);
+int mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
+int mapistore_indexing_record_add_mid(struct mapistore_context *, uint32_t, const char *, uint64_t);
+int mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 int mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 int mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 
 /* definitions from mapistore_replica_mapping.c */
-_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *);
-_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const struct GUID *, uint16_t *);
-_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, uint16_t, struct GUID *);
+_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *, const char *, struct replica_mapping_context_list **);
+_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const char *username, const struct GUID *, uint16_t *);
+_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, const char *username, uint16_t, struct GUID *);
 
 /* definitions from mapistore_namedprops.c */
 int mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID, uint16_t *);

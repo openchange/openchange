@@ -71,7 +71,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	mstore_ctx->context_list = NULL;
 	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
-	mstore_ctx->replica_mapping_ctx = NULL;
+	mstore_ctx->replica_mapping_list = talloc_zero(mstore_ctx, struct replica_mapping_context_list);
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
@@ -140,14 +140,6 @@ _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx,
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
-
-	ret = mapistore_replica_mapping_add(mstore_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d] MAPIStore replica mapping database initialization failed\n", \
-			  __FUNCTION__, __LINE__));
-		talloc_free(mstore_ctx->conn_info);
-		return MAPISTORE_ERR_DATABASE_INIT;
-	}
 
 	return MAPISTORE_SUCCESS;
 }

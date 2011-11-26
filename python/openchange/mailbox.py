@@ -28,7 +28,6 @@ from openchange.urlutils import *
 
 __docformat__ = 'restructuredText'
 
-
 class NoSuchServer(Exception):
     """Raised when a server could not be found."""
 
@@ -61,9 +60,6 @@ dn: CASE_INSENSITIVE
         self.reopen()
 
     def add_rootDSE(self, ocserverdn, firstorg, firstou):
-	print ocserverdn
-	print firstorg
-	print firstou
         self.ldb.add({"dn": "@ROOTDSE",
                       "defaultNamingContext": "CN=%s,CN=%s,%s" % (firstou, firstorg, ocserverdn),
                       "rootDomainNamingContext": ocserverdn,
@@ -127,7 +123,7 @@ dn: CASE_INSENSITIVE
         fid = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
         cn = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
         childcount = len(children)
-        print "\t* %-40s %s" % (name, fid)
+        print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
         if parent_fid == 0:
             mapistoreURL = self.add_root_public_folder(pfdn, fid, cn, SystemIndex, childcount, mapistoreURL)
         else:

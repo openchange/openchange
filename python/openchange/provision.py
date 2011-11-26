@@ -350,7 +350,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
 
         fids[path] = fid
 
-        print "\t* %-40s: %s" % (name, fid)
+        print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
         for name, grandchildren in children.iteritems():
             add_folder(fid, path + (name,), grandchildren[0], grandchildren[1])
 
@@ -389,7 +389,7 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
         ChangeNumber += 1
         db.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
-        print "\t* %-40s: %s (%s)" % (foldername, fid, containerclass)
+        print "\t* %-40s: 0x%.16x (%s)" % ("%s (%s)" % (foldername, containerclass), int(fid, 10), fid)
 
     # Step 7. Set default receive folders
     print "* Adding default Receive Folders:"
@@ -402,9 +402,8 @@ def newmailbox(lp, username, firstorg, firstou, backend):
         ]
     
     for path, messageclass in receive_folders:
-        print "\t* %-40s Message Class added to %s" % (messageclass, fids[path])
-        db.set_receive_folder(username, names.ocfirstorgdn, fids[path], 
-                              messageclass)
+        print "\t* Message Class '%s' added to 0x%.16x (%s)" % (messageclass, int(fids[path], 10), fids[path])
+        db.set_receive_folder(username, names.ocfirstorgdn, fids[path], messageclass)
 
     # Step 8. Set additional properties on Inbox
     print "* Adding additional default properties to Inbox"
@@ -538,8 +537,7 @@ def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     # Add a server object
     # It is responsible for holding the GlobalCount identifier (48 bytes)
     # and the Replica identifier
-    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, 
-        names.firstorg, names.firstou)
+    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, names.firstorg, names.firstou)
 
     mapistoreURL = os.path.join( openchangedb_mapistore_url(lp, mapistore), "publicfolders")
     print "[+] Public Folders"

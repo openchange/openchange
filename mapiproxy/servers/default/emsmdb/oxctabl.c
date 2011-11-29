@@ -776,7 +776,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		while (!found && table->numerator < table->denominator) {
                         flagged = 0;
 
-			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_PREFILTERED_QUERY, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_LIVEFILTERED_QUERY, &retvals);
 			if (data_pointers) {
 				found = true;
 				for (i = 0; i < table->prop_count; i++) {
@@ -844,7 +844,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		while (!found && table->numerator < table->denominator) {
                         flagged = 0;
 
-			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_PREFILTERED_QUERY, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_LIVEFILTERED_QUERY, &retvals);
 			if (data_pointers) {
 				found = true;
 				for (i = 0; i < table->prop_count; i++) {

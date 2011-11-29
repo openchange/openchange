@@ -182,6 +182,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 	uint64_t			parentFolderID;
 	uint64_t			testFolderID;
 	char				*MAPIStoreURI;
+	char				*owner;
 	struct SPropValue		*value;
 	NTTIME				nt_time;
 	int				retval;
@@ -224,6 +225,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		}
 
 		local_mem_ctx = talloc_zero(NULL, void);
+		openchangedb_get_owner(NULL, emsmdbp_ctx->oc_ctx, parentFolderID, &owner);
+
 		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
 		if (value) {
 			nt_time = ((NTTIME) value->value.ft.dwHighDateTime << 32
@@ -235,7 +238,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
 			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64,
-						       emsmdbp_ctx->username, emsmdbp_ctx->username, fid);
+						       owner, owner, fid);
 			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, 
 							    MAPIStoreURI, nt_time, value->value.d);
 			if (retval != MAPI_E_SUCCESS) {
@@ -248,10 +251,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			abort();
 		}
 
+		talloc_free(owner);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
 
 		/* Created top folders are always using a mapistore backend */
-		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, MAPIStoreURI, 
+		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, MAPIStoreURI, 
 					       new_folder->object.folder->folderID,
 					       &contextID, &new_folder->backend_object);
 		if (retval != MAPISTORE_SUCCESS) {
@@ -273,6 +277,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 	struct emsmdbp_object			*folder_object;
 	int					retval;
 	char					*path;
+	char					*owner;
 	uint32_t				contextID;
 	void					*local_ctx;
 
@@ -298,7 +303,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, 
 			if (retval == MAPISTORE_SUCCESS) {
 				retval = mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
 			} else {
-				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
+				openchangedb_get_owner(NULL, emsmdbp_ctx->oc_ctx, folder_object->object.folder->folderID, &owner);
+				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
+				talloc_free(owner);
 				if (retval != MAPISTORE_SUCCESS) {
 					abort();
 				}

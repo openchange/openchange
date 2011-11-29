@@ -363,13 +363,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
-	struct QueryRows_req		request;
+	struct QueryRows_req		*request;
 	struct QueryRows_repl		response;
 	enum MAPISTATUS			retval;
 	void				*data;
 	uint32_t			*mapistore_retvals;
 	void				**data_pointers;
-	uint32_t			count;
+	uint32_t			count, max;
 	uint32_t			handle;
 	uint32_t			i;
 
@@ -382,7 +382,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	request = mapi_req->u.mapi_QueryRows;
+	request = &mapi_req->u.mapi_QueryRows;
 	response = mapi_repl->u.mapi_QueryRows;
 
 	mapi_repl->opnum = mapi_req->opnum;
@@ -419,18 +419,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 	table = object->object.table;
 
-	count = 0;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto finish;
 	}
 
-	if ((request.RowCount + table->numerator) > table->denominator) {
-		request.RowCount = table->denominator - table->numerator;
+	/* Ensure we are in a case which we can handle, until the featureset is complete. */
+	if (!request->ForwardRead) {
+		DEBUG(0, ("  !ForwardRead is not supported yet\n"));
+		abort();
 	}
 
         /* Lookup the properties */
-        for (i = 0; i < request.RowCount; i++, count++) {
+	count = 0;
+	max = table->numerator + request->RowCount;
+	if (max > table->denominator) {
+		max = table->denominator;
+	}
+        for (i = table->numerator; i < max; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, &mapistore_retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
@@ -438,7 +444,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 						    table->properties, data_pointers, mapistore_retvals);
 			talloc_free(mapistore_retvals);
 			talloc_free(data_pointers);
-			table->numerator++;
+			count++;
 		}
 		else {
 			count = 0;
@@ -447,29 +453,29 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
 finish:
+	if ((request->QueryRowsFlags & TBL_NOADVANCE) != TBL_NOADVANCE) {
+		table->numerator = i;
+	}
+
 	/* QueryRows reply parameters */
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->u.mapi_QueryRows.RowCount = count;
 	if (count) {
-		if (count < request.RowCount) {
-			mapi_repl->u.mapi_QueryRows.Origin = 0;
+		if (count < request->RowCount) {
+			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_BEGINNING;
 		} else {
-			mapi_repl->u.mapi_QueryRows.Origin = 2;
+			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_END;
 		}
-		mapi_repl->error_code = MAPI_E_SUCCESS;
-		mapi_repl->u.mapi_QueryRows.RowCount = count;
-		mapi_repl->u.mapi_QueryRows.RowData.length = response.RowData.length;
-		mapi_repl->u.mapi_QueryRows.RowData.data = response.RowData.data;
-		dump_data(0, response.RowData.data, response.RowData.length);
+		mapi_repl->u.mapi_QueryRows.RowData = response.RowData;
+		/* dump_data(0, response.RowData.data, response.RowData.length); */
 	} else {
 		/* useless code for the moment */
-		mapi_repl->error_code = MAPI_E_SUCCESS;
-		
 		if (table->restricted) {
-			mapi_repl->u.mapi_QueryRows.Origin = 0;
+			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_BEGINNING;	
 		}
 		else {
-			mapi_repl->u.mapi_QueryRows.Origin = 2;
+			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_END;
 		}
-		mapi_repl->u.mapi_QueryRows.RowCount = 0;
 		mapi_repl->u.mapi_QueryRows.RowData.length = 0;
 		mapi_repl->u.mapi_QueryRows.RowData.data = NULL;
 		DEBUG(5, ("%s: returning empty data set\n", __location__));

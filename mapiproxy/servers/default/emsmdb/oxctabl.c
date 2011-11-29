@@ -461,10 +461,10 @@ finish:
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->u.mapi_QueryRows.RowCount = count;
 	if (count) {
-		if (count < request->RowCount) {
-			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_BEGINNING;
-		} else {
+		if ((count < request->RowCount) || (table->numerator > (table->denominator - 2))) {
 			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_END;
+		} else {
+			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_CURRENT;
 		}
 		mapi_repl->u.mapi_QueryRows.RowData = response.RowData;
 		/* dump_data(0, response.RowData.data, response.RowData.length); */

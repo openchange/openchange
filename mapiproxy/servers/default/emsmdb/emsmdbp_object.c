@@ -1287,7 +1287,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 		 					 PR_FID, row_id, (void **) &rowFolderID);
 		printf("openchangedb_table_get_property retval = 0x%.8x\n", retval);
-		if (retval == MAPI_E_INVALID_OBJECT || retval == MAPI_E_INVALID_PARAMETER || retval == MAPI_E_NOT_INITIALIZED) {
+		if (retval != MAPI_E_SUCCESS) {
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 			return NULL;
@@ -1430,8 +1430,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
 	if (!parent) return NULL;
-        if (parent->type != EMSMDBP_OBJECT_FOLDER) {
-		DEBUG(5, ("expecting EMSMDBP_OBJECT_FOLDER as type of parent object\n"));
+        if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MAILBOX) {
+		DEBUG(5, ("expecting EMSMDBP_OBJECT_FOLDER/_MAILBOX as type of parent object\n"));
 		return NULL;
 	}
 

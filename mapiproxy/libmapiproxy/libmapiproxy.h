@@ -222,7 +222,7 @@ bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 enum MAPISTATUS openchangedb_get_new_folderID(struct ldb_context *, uint64_t *);
 enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *, uint64_t *);
 enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *, uint64_t, uint64_t *);
-enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *, char *, uint32_t, uint64_t *);
+enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *, const char *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_PublicFolderID(struct ldb_context *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, struct ldb_context *, uint64_t, char **);
 enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *, struct ldb_context *, uint64_t, char **);

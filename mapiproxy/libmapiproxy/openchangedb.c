@@ -46,7 +46,7 @@ extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *ldb_ctx,
-							 char *recipient, uint32_t SystemIdx,
+							 const char *recipient, uint32_t SystemIdx,
 							 uint64_t *FolderId)
 {
 	TALLOC_CTX			*mem_ctx;

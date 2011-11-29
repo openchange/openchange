@@ -645,9 +645,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(struct ldb_context *ld
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_ctx,
-						       uint64_t fid,
-						       uint32_t *RowCount)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_ctx, uint64_t fid, uint32_t *RowCount)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res;
@@ -1657,13 +1655,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *ldb_ctx,
-							uint64_t fid,
-							uint32_t *RowCount)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *ldb_ctx, uint64_t fid, uint32_t *RowCount, bool fai)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res;
 	const char * const	attrs[] = { "*", NULL };
+	const char		*objectClass;
 	int			ret;
 
 	/* Sanity checks */
@@ -1673,9 +1670,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *ldb_
 	mem_ctx = talloc_named(NULL, 0, "get_message_count");
 	*RowCount = 0;
 
+	objectClass = (fai ? "faiMessage" : "systemMessage");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, 
-			 "PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*)", fid);
+			 "(&(objectClass=%s)(PidTagParentFolderId=%"PRIu64"))", objectClass, fid);
 	printf("ldb error: %s\n", ldb_errstring(ldb_ctx));
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
 	

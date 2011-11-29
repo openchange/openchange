@@ -45,7 +45,7 @@
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, struct ldb_context *ldb_ctx,
-						     uint64_t messageID, uint64_t folderID,
+						     uint64_t messageID, uint64_t folderID, bool fai,
 						     void **message_object)
 {
 	enum MAPISTATUS			retval;
@@ -91,7 +91,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, struct
 	msg->msg->dn = ldb_dn_copy((TALLOC_CTX *)msg->msg, basedn);
 
 	/* Add openchangedb required attributes */
-	ldb_msg_add_string(msg->msg, "objectClass", "systemMessage");
+	ldb_msg_add_string(msg->msg, "objectClass", fai ? "faiMessage" : "systemMessage");
 	ldb_msg_add_fmt(msg->msg, "cn", "%"PRIu64, messageID);
 	ldb_msg_add_fmt(msg->msg, "PidTagParentFolderId", "%"PRIu64, folderID);
 	ldb_msg_add_fmt(msg->msg, "PidTagMessageId", "%"PRIu64, messageID);

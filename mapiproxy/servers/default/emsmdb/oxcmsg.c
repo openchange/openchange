@@ -403,7 +403,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
-						     emsmdbp_ctx->oc_ctx, messageID, folderID,
+						     emsmdbp_ctx->oc_ctx, messageID, folderID, mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						     &message_object->backend_object);
 		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
 		break;

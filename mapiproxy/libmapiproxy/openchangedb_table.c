@@ -171,8 +171,11 @@ static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct opencha
 	const char	*PidTagAttr = NULL;
 
 	switch (table->table_type) {
+	case 0x3 /* EMSMDBP_TABLE_FAI_TYPE */:
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=faiMessage)(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=", table->folderID);
+		break;
 	case 0x2 /* EMSMDBP_TABLE_MESSAGE_TYPE */:
-		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=", table->folderID);
+		filter = talloc_asprintf(mem_ctx, "(&(objectClass=systemMessage)(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=", table->folderID);
 		break;
 	case 0x1 /* EMSMDBP_TABLE_FOLDER_TYPE */:
 		filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=", table->folderID);
@@ -270,6 +273,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	/* If live filtering, make sure the specified row match the restrictions */
 	if (live_filtered) {
 		switch (table->table_type) {
+		case 0x3 /* EMSMDBP_TABLE_FAI_TYPE */:
 		case 0x2 /* EMSMDBP_TABLE_MESSAGE_TYPE */:
 			childIdAttr = "PidTagMessageId";
 			break;

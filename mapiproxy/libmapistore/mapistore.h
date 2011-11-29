@@ -49,8 +49,6 @@
 /* forward declarations */
 struct mapistore_mgmt_notif;
 
-#define	MAPISTORE_SUCCESS	0
-
 typedef	int (*init_backend_fn) (void);
 
 #define	MAPISTORE_INIT_MODULE	"mapistore_init_backend"

@@ -44,7 +44,7 @@ static const char *mapistore_namedprops_get_ldif_path(void)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
+int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_context **_ldb_ctx)
 {
 	int			ret;
 	struct stat		sb;
@@ -212,7 +212,7 @@ _PUBLIC_ int mapistore_namedprops_create_id(struct ldb_context *ldb_ctx, struct 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID nameid, uint16_t *propID)
+_PUBLIC_ int mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID nameid, uint16_t *propID)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -263,7 +263,7 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx, 
+_PUBLIC_ int mapistore_namedprops_get_nameid(struct ldb_context *ldb_ctx, 
 					     uint16_t propID,
 					     struct MAPINAMEID **nameidp)
 {

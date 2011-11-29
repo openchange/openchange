@@ -632,7 +632,7 @@ System Attendant Private Interface
 	MAPISTATUS NspiModLinkAtt(
 		[in] policy_handle			*handle,
 		[in] uint32				dwFlags,
-		[in] uint32				ulPropTag,
+		[in] MAPITAGS				ulPropTag,
 		[in] uint32				MId,
 		[in] BinaryArray_r			*lpEntryIds
 		);

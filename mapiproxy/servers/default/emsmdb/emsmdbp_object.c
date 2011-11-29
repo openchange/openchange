@@ -1224,7 +1224,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         struct mapistore_property_data	*properties;
         uint32_t			contextID, i, num_props, *obj_count;
 	uint64_t			*rowFolderID;
-	uint64_t			folderID;
 	uint8_t				*has_subobj;
 	void				*odb_ctx;
 	struct Binary_r			*binr;
@@ -1271,10 +1270,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		}
 	} else {
 		if (table_object->parent_object->type == EMSMDBP_OBJECT_FOLDER) {
-			folderID = table_object->parent_object->object.folder->folderID;
+			/* folderID = table_object->parent_object->object.folder->folderID; */
 		}
 		else if (table_object->parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
-			folderID = table_object->parent_object->object.mailbox->folderID;
+			/* folderID = table_object->parent_object->object.mailbox->folderID; */
 		}
 		else {
 			DEBUG(5, ("%s: non-poc tables can only be client of folder objects\n", __location__));

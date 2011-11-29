@@ -414,7 +414,8 @@ def newmailbox(lp, username, firstorg, firstou, backend):
     print "* Adding additional default properties to Reminders"
     db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");
 
-    entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, int(fid_reminders, 16) >> 16)
+    rev_fid_reminders = mailbox.reverse_int64counter(int(fid_reminders, 10) >> 16) >> 16
+    entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, rev_fid_reminders)
     db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
     GlobalCount = db.get_message_GlobalCount(names.netbiosname)

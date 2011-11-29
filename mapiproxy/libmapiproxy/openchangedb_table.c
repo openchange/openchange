@@ -79,7 +79,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_sort_order(void *table_object,
 							   struct SSortOrderSet *lpSortCriteria)
 {
 	struct openchangedb_table	*table;
-	int				i;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
@@ -89,26 +88,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_sort_order(void *table_object,
 
 	if (table->res) {
 		talloc_free(table->res);
+		table->res = NULL;
 	}
 
 	if (table->lpSortCriteria) {
 		talloc_free(table->lpSortCriteria);
 	}
-
-	table->lpSortCriteria = talloc_zero((TALLOC_CTX *)table, struct SSortOrderSet);
+	table->lpSortCriteria = talloc_memdup((TALLOC_CTX *)table, lpSortCriteria, sizeof(struct SSortOrderSet));
 	if (!table->lpSortCriteria) {
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
-
-	table->lpSortCriteria->cSorts = lpSortCriteria->cSorts;
-	table->lpSortCriteria->cCategories = lpSortCriteria->cCategories;
-	table->lpSortCriteria->cExpanded = lpSortCriteria->cExpanded;
-	table->lpSortCriteria->aSort = talloc_array((TALLOC_CTX *)table->lpSortCriteria, 
-						    struct SSortOrder, table->lpSortCriteria->cSorts);
-	
-	for (i = 0; i < table->lpSortCriteria->cSorts; i++) {
-		table->lpSortCriteria->aSort[i].ulPropTag = lpSortCriteria->aSort[i].ulPropTag;
-		table->lpSortCriteria->aSort[i].ulOrder = lpSortCriteria->aSort[i].ulOrder;		
+	table->lpSortCriteria->aSort = talloc_memdup((TALLOC_CTX *)table->lpSortCriteria, lpSortCriteria->aSort, lpSortCriteria->cSorts * sizeof(struct SSortOrder));
+	if (!table->lpSortCriteria->aSort) {
+		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
 
 	return MAPI_E_SUCCESS;

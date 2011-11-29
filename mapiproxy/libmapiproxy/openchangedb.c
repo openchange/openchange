@@ -223,7 +223,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(struct ldb_context *ldb_ctx,
-						      char *recipient,
+						      const char *recipient,
 						      struct GUID *MailboxGUID)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -268,7 +268,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxGuid(struct ldb_context *ldb_ct
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(struct ldb_context *ldb_ctx,
-							 char *recipient, uint16_t *ReplID,
+							 const char *recipient, uint16_t *ReplID,
 							 struct GUID *ReplGUID)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -728,7 +728,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
  */
 void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
 					struct ldb_context *ldb_ctx,
-					char *recipient,
+					const char *recipient,
 					struct ldb_result *res,
 					uint32_t proptag,
 					const char *PidTagAttr)
@@ -1143,7 +1143,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  struct ldb_context *ldb_ctx,
-							  char *recipient,
+							  const char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
 							  void **data)
@@ -1281,7 +1281,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 struct ldb_context *ldb_ctx,
-							 char *recipient,
+							 const char *recipient,
 							 char *ldb_filter,
 							 uint32_t proptag,
 							 uint32_t pos,

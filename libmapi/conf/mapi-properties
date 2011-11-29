@@ -964,11 +964,15 @@
 0x680A0003  PR_OAB_FILE_SIZE
 0x68340003  PR_VIEW_STYLE
 0x683A0003  PR_VIEW_MAJORVERSION
-0x6844101e  PR_DELEGATES_DISPLAY_NAMES
-0x68451102  PR_DELEGATES_ENTRYIDS
+0x68410003  PR_SCHDINFO_RESOURCE_TYPE                   PidTagScheduleInfoResourceType
+0x6842000b  PR_SCHDINFO_BOSS_WANTS_COPY                 PidTagScheduleInfoDelegatorWantsCopy
+0x6843000b  PR_SCHDINFO_DONT_MAIL_DELEGATES             PidTagScheduleInfoDontMailDelegates
+0x6844101e  PR_DELEGATES_DISPLAY_NAMES                  PidTagScheduleInfoDelegateNames
+0x68451102  PR_DELEGATES_ENTRYIDS                       PidTagScheduleInfoDelegateEntryIds
 0x68470003  PR_FREEBUSY_PUBLISH_START			PidTagFreeBusyPublishStart
 0x68480003  PR_FREEBUSY_PUBLISH_END			PidTagFreeBusyPublishEnd
 0x6849001e  PR_FREEBUSY_EMA				PidTagFreeBusyMessageEmailAddress
+0x684b000b  PR_SCHDINFO_BOSS_WANTS_INFO                 PidTagScheduleInfoDelegatorWantsInfo
 0x684f1003  PR_SCHDINFO_MONTHS_MERGED			PidTagScheduleInfoMonthsMerged
 0x68501102  PR_SCHDINFO_FREEBUSY_MERGED			PidTagScheduleInfoFreeBusyMerged
 0x68511003  PR_SCHDINFO_MONTHS_TENTATIVE		PidTagScheduleInfoMonthsTentative

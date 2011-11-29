@@ -437,7 +437,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		max = table->denominator;
 	}
         for (i = table->numerator; i < max; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, &mapistore_retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &mapistore_retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
 						    &response.RowData, table->prop_count,
@@ -776,7 +776,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		while (!found && table->numerator < table->denominator) {
                         flagged = 0;
 
-			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_PREFILTERED_QUERY, &retvals);
 			if (data_pointers) {
 				found = true;
 				for (i = 0; i < table->prop_count; i++) {
@@ -844,7 +844,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		while (!found && table->numerator < table->denominator) {
                         flagged = 0;
 
-			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, object, table->numerator, MAPISTORE_PREFILTERED_QUERY, &retvals);
 			if (data_pointers) {
 				found = true;
 				for (i = 0; i < table->prop_count; i++) {

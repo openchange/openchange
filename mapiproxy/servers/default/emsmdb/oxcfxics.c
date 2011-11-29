@@ -503,7 +503,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 		}
 		for (i = 0; i < table_object->object.table->denominator; i++) {
 			local_mem_ctx = talloc_zero(NULL, void);
-			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 			if (data_pointers) {
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_NEW_ATTACH);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
@@ -616,7 +616,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
@@ -962,7 +962,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, &retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
@@ -2711,7 +2711,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	}
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, table_object, i, &retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			eid = *(uint64_t *) data_pointers[0];
 			emsmdbp_replid_to_guid(emsmdbp_ctx, eid & 0xffff, &replica_guid);

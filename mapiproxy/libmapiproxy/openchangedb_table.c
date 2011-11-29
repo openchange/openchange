@@ -94,13 +94,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_sort_order(void *table_object,
 	if (table->lpSortCriteria) {
 		talloc_free(table->lpSortCriteria);
 	}
-	table->lpSortCriteria = talloc_memdup((TALLOC_CTX *)table, lpSortCriteria, sizeof(struct SSortOrderSet));
-	if (!table->lpSortCriteria) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+	if (lpSortCriteria) {
+		table->lpSortCriteria = talloc_memdup((TALLOC_CTX *)table, lpSortCriteria, sizeof(struct SSortOrderSet));
+		if (!table->lpSortCriteria) {
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+		}
+		table->lpSortCriteria->aSort = talloc_memdup((TALLOC_CTX *)table->lpSortCriteria, lpSortCriteria->aSort, lpSortCriteria->cSorts * sizeof(struct SSortOrder));
+		if (!table->lpSortCriteria->aSort) {
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+		}
 	}
-	table->lpSortCriteria->aSort = talloc_memdup((TALLOC_CTX *)table->lpSortCriteria, lpSortCriteria->aSort, lpSortCriteria->cSorts * sizeof(struct SSortOrder));
-	if (!table->lpSortCriteria->aSort) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
+	else {
+		table->lpSortCriteria = NULL;
 	}
 
 	return MAPI_E_SUCCESS;
@@ -136,19 +141,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 		table->restrictions->rt = res->rt;
 		table->restrictions->res.resProperty.relop = res->res.resProperty.relop;
 		table->restrictions->res.resProperty.ulPropTag = res->res.resProperty.ulPropTag;
-			table->restrictions->res.resProperty.lpProp.ulPropTag = res->res.resProperty.lpProp.ulPropTag;
+		table->restrictions->res.resProperty.lpProp.ulPropTag = res->res.resProperty.lpProp.ulPropTag;
 
-			switch (table->restrictions->res.resProperty.lpProp.ulPropTag & 0xFFFF) {
-			case PT_STRING8:
-				table->restrictions->res.resProperty.lpProp.value.lpszA = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszA);
-				break;
-			case PT_UNICODE:
-				table->restrictions->res.resProperty.lpProp.value.lpszW = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszW);
-				break;
-			default:
-				DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
-				break;
-			}
+		switch (table->restrictions->res.resProperty.lpProp.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			table->restrictions->res.resProperty.lpProp.value.lpszA = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszA);
+			break;
+		case PT_UNICODE:
+			table->restrictions->res.resProperty.lpProp.value.lpszW = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszW);
+			break;
+		default:
+			DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
+			break;
+		}
 		break;
 	default:
 		DEBUG(0, ("Unsupported restriction type: 0x%x\n", res->rt));
@@ -222,8 +227,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void **data)
 {
 	struct openchangedb_table	*table;
-	struct ldb_result		*res = NULL, *live_res = NULL;
 	char				*ldb_filter = NULL;
+	struct ldb_result		*res = NULL, *live_res = NULL;
 	const char * const		attrs[] = { "*", NULL };
 	const char			*PidTagAttr = NULL, *childIdAttr;
 	uint64_t			*row_fmid;
@@ -238,10 +243,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	table = (struct openchangedb_table *)table_object;
 
 	/* Fetch results */
-	if (table->res) {
-		res = table->res;
-		printf("cached res->count = %d\n", res->count);
-	} else {
+	if (!table->res) {
 		/* Build ldb filter */
 		if (live_filtered) {
 			ldb_filter = openchangedb_table_build_filter(NULL, table, 0, NULL);
@@ -252,12 +254,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 			DEBUG(0, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
 		}
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
-		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &table->res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		talloc_free(ldb_filter);
-		DEBUG(0, ("res->count = %d\n", res->count));
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_INVALID_OBJECT, NULL);
-		table->res = res;
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
 	}
+	res = table->res;
+	printf("res->count = %d\n", res->count);
 
 	/* Ensure position is within search results range */
 	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);

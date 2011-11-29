@@ -23,7 +23,7 @@
 #include "pyopenchange/mapistore/pymapistore.h"
 #include "pyopenchange/pymapi.h"
 
-static PyTypeObject *SPropValue_Type;
+/* static PyTypeObject *SPropValue_Type; */
 
 void initmapistore(void);
 
@@ -41,13 +41,6 @@ static void *sam_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 	char			*ldb_path;
 	struct tevent_context	*ev;
 	int			ret;
-	struct ldb_result	*res;
-	struct ldb_dn		*tmp_dn = NULL;
-	/* static const char	*attrs[] = { */
-	/* 	"rootDomainNamingContext", */
-	/* 	"defaultNamingContext", */
-	/* 	NULL */
-	/* }; */
 
 	/* Sanity checks */
 	if (sam_ldb_ctx) return sam_ldb_ctx;
@@ -64,21 +57,6 @@ static void *sam_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 	ret = ldb_connect(sam_ldb_ctx, ldb_path, 0, NULL);
 	talloc_free(ldb_path);
 	if (ret != LDB_SUCCESS) return NULL;
-
-	/* /\* Step 3. Search for rootDSE record *\/ */
-	/* ret = ldb_search(sam_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, sam_ldb_ctx, "@ROOTDSE"), */
-	/* 		 LDB_SCOPE_BASE, attrs, NULL); */
-	/* if (ret != LDB_SUCCESS) return NULL; */
-	/* if (res->count != 1) return NULL; */
-
-	/* /\* Step 4. Set opaque naming *\/ */
-	/* tmp_dn = ldb_msg_find_attr_as_dn(sam_ldb_ctx, sam_ldb_ctx,  */
-	/* 				 res->msgs[0], "rootDomainNamingContext"); */
-	/* ldb_set_opaque(sam_ldb_ctx, "rootDomainNamingContext", tmp_dn); */
-	
-	/* tmp_dn = ldb_msg_find_attr_as_dn(sam_ldb_ctx, sam_ldb_ctx, */
-	/* 				 res->msgs[0], "defaultNamingContext"); */
-	/* ldb_set_opaque(sam_ldb_ctx, "defaultNamingContext", tmp_dn); */
 
 	return sam_ldb_ctx;
 

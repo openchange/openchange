@@ -715,7 +715,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
 
 /**
-   \details Retrieve a special MAPI property from a folder record
+   \details Retrieve a special MAPI property from an openchangedb record
 
    \param mem_ctx pointer to the memory context
    \param ldb_ctx pointer to the OpenChange LDB context

@@ -3022,10 +3022,15 @@ System Attendant Private Interface
 
 	/*************************/
 	/* EcDoRpc Function 0x56 */
+	typedef [enum8bit, flag(NDR_PAHEX)] enum {
+		GetIDsFromNames_GetOnly		= 0x00,
+		GetIDsFromNames_GetOrCreate	= 0x02
+	} GetIDsFromNamesFlags;
+
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		ulFlags;
-		uint16		count;
-		MAPINAMEID	nameid[count];
+		GetIDsFromNamesFlags	ulFlags;
+		uint16			count;
+		MAPINAMEID		nameid[count];
 	} GetIDsFromNames_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {

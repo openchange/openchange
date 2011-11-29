@@ -27,6 +27,8 @@
 
 #include <sys/stat.h>
 
+static struct MAPINAMEID	**nameids_cache = NULL;
+
 static const char *mapistore_namedprops_get_ldif_path(void)
 {
 	return MAPISTORE_LDIF;
@@ -106,6 +108,42 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 
 
 /**
+   \details return the next unmapped property ID
+
+   \param ldb_ctx pointer to the namedprops ldb context
+
+   \return 0 on error, the next mapped id otherwise
+ */
+_PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *ldb_ctx)
+{
+	uint16_t		highest_id = 0, current_id;
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "mappedId", NULL };
+	int			ret;
+	unsigned int		i;
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_namedprops_get_mapped_propID");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(cn=*)");
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, 0, mem_ctx);
+
+	for (i = 0; i < res->count; i++) {
+		current_id = ldb_msg_find_attr_as_uint(res->msgs[i], "mappedId", 0);
+		if (current_id > 0 && highest_id < current_id) {
+			highest_id = current_id;
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	DEBUG(5, ("next_mapped_id: %d\n", (highest_id + 1)));
+
+	return (highest_id + 1);
+}
+
+/**
    \details return the mapped property ID matching the nameid
    structure passed in parameter.
 
@@ -115,9 +153,66 @@ int mapistore_namedprops_init(TALLOC_CTX *mem_ctx, void **_ldb_ctx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx, 
-						struct MAPINAMEID nameid, 
-						uint16_t *propID)
+_PUBLIC_ int mapistore_namedprops_create_id(struct ldb_context *ldb_ctx, struct MAPINAMEID nameid, uint16_t mapped_id)
+{
+	int ret;
+	TALLOC_CTX *mem_ctx;
+	char *ldif_record;
+	struct ldb_ldif *ldif;
+	char *hex_id, *dec_id, *dec_mappedid, *guid;
+	struct ldb_message *normalized_msg;
+	const char *ldif_records[] = { NULL, NULL };
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	dec_mappedid = talloc_asprintf(mem_ctx, "%u", mapped_id);
+	guid = GUID_string(mem_ctx, &nameid.lpguid);
+	switch (nameid.ulKind) {
+	case MNID_ID:
+		hex_id = talloc_asprintf(mem_ctx, "%.4x", nameid.kind.lid);
+		dec_id = talloc_asprintf(mem_ctx, "%u", nameid.kind.lid);
+		ldif_record = talloc_asprintf(mem_ctx, "dn: CN=0x%s,CN=%s,CN=default\nobjectClass: MNID_ID\ncn: 0x%s\npropType: PT_NULL\noleguid: %s\nmappedId: %s\npropId: %s\n",
+					      hex_id, guid, hex_id, guid, dec_mappedid, dec_id);
+		break;
+	case MNID_STRING:
+		ldif_record = talloc_asprintf(mem_ctx, "dn: CN=%s,CN=%s,CN=default\nobjectClass: MNID_STRING\ncn: %s\npropType: PT_NULL\noleguid: %s\nmappedId: %s\npropName: %s\n",
+					      nameid.kind.lpwstr.Name, guid, nameid.kind.lpwstr.Name, guid, dec_mappedid, nameid.kind.lpwstr.Name);
+		break;
+	default:
+		abort();
+	}
+
+	DEBUG(5, ("inserting record:\n%s\n", ldif_record));
+	ldif_records[0] = ldif_record;
+	ldif = ldb_ldif_read_string(ldb_ctx, ldif_records);
+	ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+	ret = ldb_add(ldb_ctx, normalized_msg);
+	talloc_free(normalized_msg);
+	if (ret != LDB_SUCCESS) {
+		MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+	}
+
+	/* we invalidate the cache, if present */
+	if (nameids_cache) {
+		talloc_free(nameids_cache);
+		nameids_cache = NULL;
+	}
+
+	return ret;
+}
+
+/**
+   \details return the mapped property ID matching the nameid
+   structure passed in parameter.
+
+   \param ldb_ctx pointer to the namedprops ldb context
+   \param nameid the MAPINAMEID structure to lookup
+   \param propID pointer to the property ID the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+_PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx, struct MAPINAMEID nameid, uint16_t *propID)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -148,12 +243,11 @@ _PUBLIC_ int mapistore_namedprops_get_mapped_id(void *ldb_ctx,
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, "%s", filter);
-	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
+	MAPISTORE_RETVAL_IF((ret != LDB_SUCCESS || !res->count), MAPISTORE_ERROR, mem_ctx);
 
 	*propID = ldb_msg_find_attr_as_uint(res->msgs[0], "mappedId", 0);
 	MAPISTORE_RETVAL_IF(!*propID, MAPISTORE_ERROR, mem_ctx);
 
-	talloc_free(filter);
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;
@@ -180,7 +274,6 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx,
 	const char			*guid, *oClass, *cn;
         struct MAPINAMEID		*nameid;
 	int				rc = MAPISTORE_SUCCESS;
-	static struct MAPINAMEID	**nameids = NULL;
 	uint16_t			propidx;
 					     
 	/* Sanity checks */
@@ -188,15 +281,15 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx,
 	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(propID < 0x8000, MAPISTORE_ERROR, NULL);
 
-	if (!nameids) {
-		nameids = talloc_array(NULL, struct MAPINAMEID *, 0x8000);
-		memset(nameids, 0, 0x8000 * sizeof (struct MAPINAMEID *));
+	if (!nameids_cache) {
+		nameids_cache = talloc_array(NULL, struct MAPINAMEID *, 0x8000);
+		memset(nameids_cache, 0, 0x8000 * sizeof (struct MAPINAMEID *));
 	}
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	propidx = propID - 0x8000;
-	nameid = nameids[propidx];
+	nameid = nameids_cache[propidx];
 	if (nameid) {
 		*nameidp = nameid;
 		return MAPISTORE_SUCCESS;
@@ -215,7 +308,7 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx,
 	oClass = ldb_msg_find_attr_as_string(res->msgs[0], "objectClass", 0);
 	MAPISTORE_RETVAL_IF(!propID, MAPISTORE_ERROR, mem_ctx);
 
-	nameid = talloc_zero(nameids, struct MAPINAMEID);
+	nameid = talloc_zero(nameids_cache, struct MAPINAMEID);
 	GUID_from_string(guid, &nameid->lpguid);
 	if (strcmp(oClass, "MNID_ID") == 0) {
 		nameid->ulKind = MNID_ID;
@@ -227,13 +320,13 @@ _PUBLIC_ int mapistore_namedprops_get_nameid(void *ldb_ctx,
 		nameid->kind.lpwstr.Name = talloc_strdup(nameid, cn);
 	}
 	else {
-		talloc_unlink(nameids, nameid);
+		talloc_unlink(nameids_cache, nameid);
 		nameid = NULL;
 		rc = MAPISTORE_ERROR;
 	}
 
 	if (!rc) {
-		nameids[propidx] = nameid;
+		nameids_cache[propidx] = nameid;
 		*nameidp = nameid;
 	}
 

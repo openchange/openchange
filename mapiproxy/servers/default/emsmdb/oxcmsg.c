@@ -375,8 +375,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID);
-	contextID = emsmdbp_get_contextID(folder_object);
-	mapistore = emsmdbp_is_mapistore(folder_object);
 
 	/* This should be handled differently here: temporary hack */
 	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
@@ -393,6 +391,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
+	contextID = emsmdbp_get_contextID(folder_object);
+	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch (mapistore) {
 	case true:
 		retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
@@ -446,16 +446,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 	/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
 	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
-//	}
-//	else {
-//		/* system/special folder */
-//		DEBUG(0, ("[%s] - not implemented yet - shouldn't occur\n", __location__));
-//		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-//		goto end;
-//	}
 
-	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, 
-		  emsmdbp_is_mapistore(folder_object) == true ? "true" : "false"));
+	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false"));
 
 end:
 

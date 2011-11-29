@@ -1284,7 +1284,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 		odb_ctx = talloc_zero(NULL, void);
 		retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
-		 					 PR_FID, row_id, (void **) &rowFolderID);
+		 					 PR_FID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFolderID);
 		printf("openchangedb_table_get_property retval = 0x%.8x\n", retval);
 		if (retval != MAPI_E_SUCCESS) {
 			talloc_free(retvals);
@@ -1337,7 +1337,9 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				retval = openchangedb_table_get_property(data_pointers, table_object->backend_object, 
 									 emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
 									 table->properties[i], 
-									 row_id, data_pointers + i);
+									 row_id,
+									 (query_type == MAPISTORE_LIVEFILTERED_QUERY),
+									 data_pointers + i);
 			}
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));

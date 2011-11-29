@@ -566,6 +566,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 {
 	struct LongTermIdFromId_req	*request;
 	struct LongTermIdFromId_repl	*response;
+	enum MAPISTATUS			retval;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*object = NULL;
+	void				*data;
 	uint16_t			req_repl_id;
 	uint64_t			id;
 	uint8_t				i;
@@ -588,12 +593,30 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 
 	req_repl_id = request->Id & 0xffff;
 
-	if (emsmdbp_replid_to_guid(emsmdbp_ctx, req_repl_id, &response->LongTermId.DatabaseGuid)) {
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+	object = (struct emsmdbp_object *) data;
+	if (!object || object->type != EMSMDBP_OBJECT_MAILBOX) {
+		abort();
+		DEBUG(5, ("  no object or object is not a mailbox\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+	if (emsmdbp_replid_to_guid(emsmdbp_ctx, object->object.mailbox->owner_username, req_repl_id, &response->LongTermId.DatabaseGuid)) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
 	}
-
-	/* openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, NULL, &response->LongTermId.DatabaseGuid); */
 
 	id = request->Id >> 16;
 	for (i = 0; i < 6; i++) {
@@ -634,10 +657,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 {
 	struct IdFromLongTermId_req	*request;
 	struct IdFromLongTermId_repl	*response;
+	enum MAPISTATUS			retval;
+	uint32_t			handle;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*object = NULL;
+	void				*data;
 	uint16_t			repl_id;
 	uint64_t			fmid, base;
 	uint8_t				i, ctr_byte;
-	/* struct GUID			replica_guid; */
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] RopIdFromLongTermId (0x44)\n"));
 
@@ -670,7 +697,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	if (emsmdbp_guid_to_replid(emsmdbp_ctx, &request->LongTermId.DatabaseGuid, &repl_id)) {
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+	object = (struct emsmdbp_object *) data;
+	if (!object || object->type != EMSMDBP_OBJECT_MAILBOX) {
+		abort();
+		DEBUG(5, ("  no object or object is not a mailbox\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+	if (emsmdbp_guid_to_replid(emsmdbp_ctx, object->object.mailbox->owner_username, &request->LongTermId.DatabaseGuid, &repl_id)) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
 	}

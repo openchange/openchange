@@ -37,6 +37,32 @@ static uint16_t mapistore_replica_mapping_get_next_replid(struct tdb_context *);
    - 0x02 is for GetLocalReplicaIDs */
 
 /**
+   \details Search the replica_mapping record matching the username
+
+   \param mstore_ctx pointer to the mapistore context
+   \param username the username to lookup
+
+   \return pointer to the tdb_wrap structure on success, otherwise NULL
+ */
+static struct replica_mapping_context_list *mapistore_replica_mapping_search(struct mapistore_context *mstore_ctx, const char *username)
+{
+	struct replica_mapping_context_list	*el;
+
+	/* Sanity checks */
+	if (!mstore_ctx) return NULL;
+	if (!mstore_ctx->replica_mapping_list) return NULL;
+	if (!username) return NULL;
+
+	for (el = mstore_ctx->replica_mapping_list; el; el = el->next) {
+		if (el && el->username && !strcmp(el->username, username)) {
+			return el;
+		}
+	}
+
+	return NULL;
+}
+
+/**
    \details Open connection to replica_mapping database for a given user
 
    \param mstore_ctx pointer to the mapistore context
@@ -45,35 +71,86 @@ static uint16_t mapistore_replica_mapping_get_next_replid(struct tdb_context *);
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username)
+
+static int context_list_destructor(void *object)
 {
-	TALLOC_CTX			*mem_ctx;
-	char				*dbpath = NULL;
+	struct replica_mapping_context_list	*rmctx = object;
+
+	tdb_close(rmctx->tdb);
+
+	return 1;
+}
+
+_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username, struct replica_mapping_context_list **rmctxp)
+{
+	TALLOC_CTX				*mem_ctx;
+	struct replica_mapping_context_list	*rmctx;
+	char					*dbpath = NULL;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_add");
+	/* Step 1. Search if the context already exists */
+	rmctx = mapistore_replica_mapping_search(mstore_ctx, username);
+	*rmctxp = rmctx;
+	MAPISTORE_RETVAL_IF(rmctx, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_init");
+	rmctx = talloc_zero(mstore_ctx->replica_mapping_list, struct replica_mapping_context_list);
 
 	/* Step 1. Open/Create the replica_mapping database */
-	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING,
+	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING, 
 				 mapistore_get_mapping_path(), username);
-	mstore_ctx->replica_mapping_ctx = tdb_wrap_open(mstore_ctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	rmctx->tdb = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	talloc_set_destructor(rmctx, context_list_destructor);
 	talloc_free(dbpath);
-	if (!mstore_ctx->replica_mapping_ctx) {
+	if (!rmctx->tdb) {
 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		talloc_free(rmctx);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
-	if (mapistore_replica_mapping_get_next_replid(mstore_ctx->replica_mapping_ctx->tdb) == 0xffff) {
-		mapistore_replica_mapping_set_next_replid(mstore_ctx->replica_mapping_ctx->tdb, 0x3);
-	}
+	rmctx->username = talloc_strdup(rmctx, username);
+	rmctx->ref_count = 0;
+	DLIST_ADD_END(mstore_ctx->replica_mapping_list, rmctx, struct replica_mapping_context_list *);
+
+	*rmctxp = rmctx;
 
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return MAPISTORE_SUCCESS;
 }
+
+/* _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username) */
+/* { */
+/* 	TALLOC_CTX			*mem_ctx; */
+/* 	char				*dbpath = NULL; */
+
+/* 	/\* Sanity checks *\/ */
+/* 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL); */
+/* 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL); */
+
+/* 	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_add"); */
+
+/* 	/\* Step 1. Open/Create the replica_mapping database *\/ */
+/* 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING, */
+/* 				 mapistore_get_mapping_path(), username); */
+/* 	mstore_ctx->replica_mapping_ctx = tdb_wrap_open(mstore_ctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600); */
+/* 	talloc_free(dbpath); */
+/* 	if (!mstore_ctx->replica_mapping_ctx) { */
+/* 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno))); */
+/* 		talloc_free(mem_ctx); */
+/* 		return MAPISTORE_ERR_DATABASE_INIT; */
+/* 	} */
+/* 	if (mapistore_replica_mapping_get_next_replid(mstore_ctx->replica_mapping_ctx->tdb) == 0xffff) { */
+/* 		mapistore_replica_mapping_set_next_replid(mstore_ctx->replica_mapping_ctx->tdb, 0x3); */
+/* 	} */
+
+/* 	talloc_free(mem_ctx); */
+
+/* 	return MAPI_E_SUCCESS; */
+/* } */
 
 static void mapistore_replica_mapping_set_next_replid(struct tdb_context *tdb, uint16_t replid) {
 	TDB_DATA	key;
@@ -178,25 +255,29 @@ static int mapistore_replica_mapping_search_guid(struct tdb_context *tdb, const 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *mstore_ctx,
-						      const struct GUID *guidP, uint16_t *replidP)
+_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *mstore_ctx, const char *username, const struct GUID *guidP, uint16_t *replidP)
 {
 	int		ret;
 	uint16_t	new_replid;
+	struct replica_mapping_context_list *list;
 
-	ret = mapistore_replica_mapping_search_guid(mstore_ctx->replica_mapping_ctx->tdb, guidP, replidP);
+	ret = mapistore_replica_mapping_add(mstore_ctx, username, &list);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!list, MAPISTORE_ERROR, NULL);
+
+	ret = mapistore_replica_mapping_search_guid(list->tdb, guidP, replidP);
 	if (ret == MAPISTORE_SUCCESS) {
 		return ret;
 	}
 
-	new_replid = mapistore_replica_mapping_get_next_replid(mstore_ctx->replica_mapping_ctx->tdb);
+	new_replid = mapistore_replica_mapping_get_next_replid(list->tdb);
 	if (new_replid == 0xffff) { /* should never occur */
 		DEBUG(0, ("%s: FATAL: next replica id is not configured for this database\n", __FUNCTION__));
 		return MAPISTORE_ERROR;
 	}
 
-	mapistore_replica_mapping_add_pair(mstore_ctx->replica_mapping_ctx->tdb, guidP, new_replid);
-	mapistore_replica_mapping_set_next_replid(mstore_ctx->replica_mapping_ctx->tdb, new_replid + 1);
+	mapistore_replica_mapping_add_pair(list->tdb, guidP, new_replid);
+	mapistore_replica_mapping_set_next_replid(list->tdb, new_replid + 1);
 
 	*replidP = new_replid;
 
@@ -212,26 +293,29 @@ _PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *mstore_ctx,
-						      uint16_t replid, struct GUID *guidP)
+_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *mstore_ctx, const char *username, uint16_t replid, struct GUID *guidP)
 {
-	TDB_DATA	guid_key;
-	TDB_DATA	replid_key;
-	void		*mem_ctx;
-	int		ret;
+	void					*mem_ctx;
+	TDB_DATA				guid_key, replid_key;
+	int					ret;
+	struct replica_mapping_context_list	*list;
+
+	ret = mapistore_replica_mapping_add(mstore_ctx, username, &list);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!list, MAPISTORE_ERROR, NULL);
 
 	mem_ctx = talloc_zero(NULL, void);
 
 	replid_key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.4x", replid);
 	replid_key.dsize = strlen((const char *) replid_key.dptr);
 
-	ret = tdb_exists(mstore_ctx->replica_mapping_ctx->tdb, replid_key);
+	ret = tdb_exists(list->tdb, replid_key);
 	if (!ret) {
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERROR;
 	}
 
-	guid_key = tdb_fetch(mstore_ctx->replica_mapping_ctx->tdb, replid_key);
+	guid_key = tdb_fetch(list->tdb, replid_key);
 	GUID_from_string((char *) guid_key.dptr, guidP);
 
 	talloc_free(mem_ctx);

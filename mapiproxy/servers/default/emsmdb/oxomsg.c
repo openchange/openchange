@@ -42,6 +42,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	uint64_t			messageID;
 	uint16_t			replID;
 	int				ret;
+	char				*owner;
 	struct emsmdbp_object		*folder_object;
 	struct emsmdbp_object		*message_object;
 
@@ -57,6 +58,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	/* DEBUG(5, (__location__": old message fid: %.16"PRIx64"\n", old_message_object->parent_object->object.folder->folderID)); */
 	/* DEBUG(5, (__location__": old message mid: %.16"PRIx64"\n", old_message_object->object.message->messageID)); */
 
+	owner = emsmdbp_get_owner(old_message_object);
 	bin_data = property_data.data;
 	entryID = get_MessageEntryId(mem_ctx, bin_data);
 	if (!entryID) {
@@ -64,7 +66,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		return;
 	}
 
-	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, &entryID->FolderDatabaseGuid, &replID);
+	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->FolderDatabaseGuid, &replID);
 	if (ret) {
 		DEBUG(5, (__location__": unable to deduce folder replID\n"));
 		return;
@@ -72,7 +74,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	folderID = (entryID->FolderGlobalCounter.value << 16) | replID;
 	/* DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 
-	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, &entryID->MessageDatabaseGuid, &replID);
+	ret = emsmdbp_guid_to_replid(emsmdbp_ctx, owner, &entryID->MessageDatabaseGuid, &replID);
 	if (ret) {
 		DEBUG(5, (__location__": unable to deduce message replID\n"));
 	}
@@ -95,7 +97,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
 	mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
-	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
+	mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 
 	talloc_free(mem_ctx);
 }
@@ -127,6 +129,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
+	char			*owner;
 	uint64_t		messageID;
 	uint32_t		contextID;
 	uint8_t			flags;
@@ -190,8 +193,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		messageID = object->object.message->messageID;
 		contextID = emsmdbp_get_contextID(object);
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
+		owner = emsmdbp_get_owner(object);
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
-		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID);
+		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 

@@ -682,6 +682,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent_folder = NULL;
 	void			*parent_folder_private_data;
 	struct emsmdbp_object	*parent_object;
+	char			*owner;
 	enum MAPISTATUS		retval;
 	uint32_t		contextID;
 	int 			i;
@@ -720,7 +721,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 	}
 
 	contextID = emsmdbp_get_contextID(parent_object);
-
+	owner = emsmdbp_get_owner(parent_object);
 	for (i = 0; i < mapi_req->u.mapi_DeleteMessages.cn_ids; ++i) {
 		int ret;
 		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
@@ -730,7 +731,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;
 		}
-		ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, mid, MAPISTORE_SOFT_DELETE);
+
+		ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 			goto delete_message_response;

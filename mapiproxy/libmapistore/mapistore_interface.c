@@ -62,7 +62,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, const cha
 
 	mstore_ctx->context_list = NULL;
 	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
-	mstore_ctx->replica_mapping_ctx = NULL;
+	mstore_ctx->replica_mapping_list = talloc_zero(mstore_ctx, struct replica_mapping_context_list);
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
@@ -132,14 +132,6 @@ _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx,
 	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
 
-	ret = mapistore_replica_mapping_add(mstore_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d] MAPIStore replica mapping database initialization failed\n", \
-			  __FUNCTION__, __LINE__));
-		talloc_free(mstore_ctx->conn_info);
-		return MAPISTORE_ERR_DATABASE_INIT;
-	}
-
 	return MAPISTORE_SUCCESS;
 }
 
@@ -152,7 +144,8 @@ _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const char *username,
+#warning the "owner" parameter should be deduced from the uri
+_PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
 				   const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
 {
 	TALLOC_CTX				*mem_ctx;
@@ -182,7 +175,7 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const c
 	if (namespace[1] && namespace[1] == '/' &&
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
-		mapistore_indexing_add(mstore_ctx, username, &ictx);
+		mapistore_indexing_add(mstore_ctx, owner, &ictx);
 		mapistore_indexing_add_ref_count(ictx);
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);

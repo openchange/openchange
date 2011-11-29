@@ -401,42 +401,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 }
 
 /**
-   \details Retrieve the username of the owner of an openchangedb folder
-
-   \param parent_ctx pointer to the memory context
-   \param ldb_ctx pointer to the openchange LDB context
-   \param fid the Folder identifier to search for
-   \param ownerP pointer on pointer to username the function returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
- */
-enum MAPISTATUS openchangedb_get_owner(TALLOC_CTX *mem_ctx, struct ldb_context *ldb_ctx, uint64_t fid, char **ownerP)
-{
-	TALLOC_CTX		*local_mem_ctx;
-	struct ldb_result	*res = NULL;
-	const char * const	attrs[] = { "*", NULL };
-	const char		*mbox_dn, *owner;
-	int			ret;
-
-	local_mem_ctx = talloc_named(NULL, 0, "get_owner");
-
-	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
-	mbox_dn = ldb_msg_find_attr_as_string(res->msgs[0], "mailboxDN", NULL);
-	OPENCHANGE_RETVAL_IF(mbox_dn == NULL, MAPI_E_NOT_FOUND, local_mem_ctx);
-	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_dn_new(local_mem_ctx, ldb_ctx, mbox_dn), LDB_SCOPE_BASE, attrs, NULL);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
-#warning this is buggy as records are using the user cn and not its username
-	owner = ldb_msg_find_attr_as_string(res->msgs[0], "cn", NULL);
-	OPENCHANGE_RETVAL_IF(owner == NULL, MAPI_E_NOT_FOUND, local_mem_ctx);
-	*ownerP = talloc_strdup(mem_ctx, owner);
-
-	talloc_free(local_mem_ctx);
-
-	return MAPI_E_SUCCESS;
-}
-
-/**
    \details Retrieve the parent fid associated to a mailbox system
    folder.
 

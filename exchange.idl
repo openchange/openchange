@@ -1166,7 +1166,7 @@ System Attendant Private Interface
 	typedef [enum8bit] enum {
 		ReadOnly	= 0x0,
 		ReadWrite	= 0x1,
-		Create		= 0x3,
+		BestAccess	= 0x3,
 		OpenSoftDelete	= 0x4
 	} OpenMessage_OpenModeFlags;
 

@@ -299,11 +299,11 @@ int mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct tdb_wrap *tdbwrap,
-							 const char *namespace, const char *uri, uint64_t fid)
+enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct tdb_wrap *tdbwrap,
+						      const char *namespace, const char *uri, uint64_t fid, struct backend_context **context_p)
 {
 	struct backend_context		*context;
-	int				retval;
+	enum mapistore_error		retval;
 	bool				found = false;
 	void				*backend_object = NULL;
 	int				i;
@@ -315,7 +315,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 			found = true;
 			retval = backends[i].backend->backend.create_context(NULL, conn_info, tdbwrap, uri, &backend_object);
 			if (retval != MAPISTORE_SUCCESS) {
-				return NULL;
+				return retval;
 			}
 
 			break;
@@ -323,7 +323,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 	}
 	if (found == false) {
 		DEBUG(0, ("MAPISTORE: no backend with namespace '%s' is available\n", namespace));
-		return NULL;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	context = talloc_zero(mem_ctx, struct backend_context);
@@ -334,8 +334,9 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 	talloc_unlink(NULL, backend_object);
 	context->ref_count = 1;
 	context->uri = talloc_strdup(context, uri);
+	*context_p = context;
 
-	return context;
+	return MAPISTORE_SUCCESS;
 }
 
 /**
@@ -494,9 +495,9 @@ int mapistore_backend_folder_delete_folder(struct backend_context *bctx, void *f
 }
 
 int mapistore_backend_folder_open_message(struct backend_context *bctx, void *folder,
-					  TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep)
+					  TALLOC_CTX *mem_ctx, uint64_t mid, bool read_write, void **messagep)
 {
-	return bctx->backend->folder.open_message(folder, mem_ctx, mid, messagep);
+	return bctx->backend->folder.open_message(folder, mem_ctx, mid, read_write, messagep);
 }
 
 int mapistore_backend_folder_create_message(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)

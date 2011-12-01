@@ -126,8 +126,6 @@ _PUBLIC_ int mapistore_release(struct mapistore_context *mstore_ctx)
 _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
 					   struct ldb_context *sam_ctx, struct ldb_context *oc_ctx, const char *username)
 {
-	int	ret;
-
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -138,7 +136,7 @@ _PUBLIC_ int mapistore_set_connection_info(struct mapistore_context *mstore_ctx,
 	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
 	mstore_ctx->conn_info->sam_ctx = sam_ctx;
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
-	talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
+	(void) talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
 
 	return MAPISTORE_SUCCESS;
@@ -189,9 +187,9 @@ _PUBLIC_ int mapistore_add_context(struct mapistore_context *mstore_ctx, const c
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
-		backend_ctx = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx->index_ctx, namespace_start, backend_uri, fid);
-		if (!backend_ctx) {
-			return MAPISTORE_ERR_CONTEXT_FAILED;
+		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx->index_ctx, namespace_start, backend_uri, fid, &backend_ctx);
+		if (retval != MAPISTORE_SUCCESS) {
+			return retval;
 		}
 
 		backend_ctx->indexing = ictx;
@@ -550,7 +548,7 @@ _PUBLIC_ int mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ int mapistore_folder_open_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
-					   void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, void **messagep)
+					   void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, bool read_write, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 	int				ret;
@@ -563,9 +561,9 @@ _PUBLIC_ int mapistore_folder_open_message(struct mapistore_context *mstore_ctx,
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend open_message */
-	ret = mapistore_backend_folder_open_message(backend_ctx, folder, mem_ctx, mid, messagep);
+	ret = mapistore_backend_folder_open_message(backend_ctx, folder, mem_ctx, mid, read_write, messagep);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	return ret;
 }
 
 
@@ -597,7 +595,7 @@ _PUBLIC_ int mapistore_folder_create_message(struct mapistore_context *mstore_ct
 	/* Step 2. Call backend create_message */
 	ret = mapistore_backend_folder_create_message(backend_ctx, folder, mem_ctx, mid, associated, messagep);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	return ret;
 }
 
 /**
@@ -628,7 +626,7 @@ _PUBLIC_ int mapistore_folder_delete_message(struct mapistore_context *mstore_ct
 	/* Step 2. Call backend operation */
 	ret = mapistore_backend_folder_delete_message(backend_ctx, folder, mid, flags);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	return ret;
 }
 
 /**
@@ -967,7 +965,7 @@ _PUBLIC_ int mapistore_message_save(struct mapistore_context *mstore_ctx, uint32
 	/* Step 2. Call backend savechangesmessage */
 	ret = mapistore_backend_message_save(backend_ctx, message);
 
-	return !ret ? MAPISTORE_SUCCESS : MAPISTORE_ERROR;
+	return ret;
 }
 
 

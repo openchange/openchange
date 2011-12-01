@@ -138,7 +138,7 @@ struct mapistore_backend {
 		int		(*open_folder)(void *, TALLOC_CTX *, uint64_t, void **);
 		int		(*create_folder)(void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
 		int		(*delete_folder)(void *, uint64_t);
-		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, void **);
+		int		(*open_message)(void *, TALLOC_CTX *, uint64_t, bool, void **);
 		int		(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		int		(*delete_message)(void *, uint64_t, uint8_t flags);
 	        int		(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
@@ -249,7 +249,7 @@ const char *mapistore_errstr(int);
 int mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 int mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
 int mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
-int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
+int mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, bool, void **);
 int mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 int mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
 int mapistore_folder_move_copy_messages(struct mapistore_context *, uint32_t, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);

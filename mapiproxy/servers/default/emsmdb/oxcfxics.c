@@ -764,7 +764,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			   embeddedMessage:
 			   StartEmbed messageContent EndEmbed */
 
-			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, &msg);
+			/* FIXME: we assume that the return code will always be "MAPISTORE_SUCCESS" */
+			emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg);
 			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
 			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
 			talloc_free(message_object);
@@ -1094,8 +1095,9 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			talloc_free(header_data_pointers);
 			talloc_free(data_pointers);
 			talloc_free(retvals);
-
-			subfolder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid);
+			
+			/* TODO: check return code */
+			emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 			oxcfxics_push_folderChange(mem_ctx, emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
 			talloc_free(subfolder_object);
 		}
@@ -1605,6 +1607,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 							    uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS				retval;
+	enum mapistore_error			ret;
 	struct mapi_handles			*synccontext_object_handle = NULL, *message_object_handle;
 	struct emsmdbp_object			*synccontext_object = NULL, *message_object;
 	uint32_t				synccontext_handle_id, message_handle_id;
@@ -1617,7 +1620,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	uint16_t				repl_id, i;
 	struct mapistore_message		*msg;
 	struct SRow				aRow;
-
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] RopSyncImportMessageChange (0x72)\n"));
 
@@ -1671,8 +1673,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, message_handle_id, &message_object_handle);
 	handles[mapi_repl->handle_idx] = message_object_handle->handle;
 
-	message_object = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, &msg);
-	if (!message_object) {
+	ret = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, true, &message_object, &msg);
+	if (ret == MAPISTORE_ERR_NOT_FOUND) {
 		message_object = emsmdbp_object_message_init(message_object_handle, emsmdbp_ctx, messageID, synccontext_object->parent_object);
 		if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object->parent_object), synccontext_object->parent_object->backend_object, message_object, messageID, (request->ImportFlag & ImportFlag_Associated), &message_object->backend_object)) {
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
@@ -1681,6 +1683,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 	}
+	else if (ret != MAPISTORE_SUCCESS) {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		}
+		goto end;
+	}
+
 	mapi_handles_set_private_data(message_object_handle, message_object);
 
 	response->MessageId = 0; /* Must be set to 0 */
@@ -1796,12 +1809,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		folder_was_open = true;
 	}
 	else {
-		parent_folder = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID);
+		/* TODO: check return code */
+		emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
 		folder_was_open = false;
 	}
 
-	folder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID);
-	if (!folder_object) {
+	if (emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
@@ -2330,8 +2343,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	source_folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID);
-	if (!source_folder_object) {
+	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID, &source_folder_object) != MAPISTORE_SUCCESS) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
 	}
@@ -2571,6 +2583,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	struct mapi_handles			*synccontext_rec;
 	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
 	enum MAPISTATUS				retval;
+	enum mapistore_error			ret;
 	struct MessageReadStates		*read_states;
 	uint32_t				read_states_size;
 	struct Binary_r				*bin_data;
@@ -2647,8 +2660,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 				flag = CLEAR_READ_FLAG | CLEAR_NRN_PENDING;
 			}
 
-			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, &msg);
-			if (message_object) {
+			ret = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, true, &message_object, &msg);
+			if (ret == MAPISTORE_SUCCESS) {
 				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 				talloc_free(message_object);
 			}
@@ -2761,7 +2774,8 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			talloc_free(data_pointers);
 
 			if (sync_data->table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
-				subfolder_object = emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid);
+				/* TODO: check return code */
+				emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 				oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
 				talloc_free(subfolder_object);
 			}

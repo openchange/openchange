@@ -132,6 +132,7 @@ struct emsmdbp_object_folder {
 struct emsmdbp_object_message {
 	uint64_t			folderID;
 	uint64_t			messageID;
+	bool				read_write;
 	struct ldb_message		*msg;
 };
 
@@ -147,6 +148,7 @@ struct emsmdbp_object_table {
 };
 
 struct emsmdbp_object_stream {
+	bool				read_write;
 	bool				needs_commit;
 	enum MAPITAGS			property;
 	struct emsmdbp_stream		stream;
@@ -285,10 +287,10 @@ int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint
 int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
-enum MAPISTATUS       emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
-enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
-struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
-struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
+enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
+enum mapistore_error  emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);
@@ -300,7 +302,7 @@ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_co
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum table_query_type, uint32_t **);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
-struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, struct mapistore_message **);
+enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
 struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_stream_commit(struct emsmdbp_object *);

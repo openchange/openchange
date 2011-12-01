@@ -181,7 +181,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 {
 	struct OpenMessage_req		*request;
 	struct OpenMessage_repl		*response;
-	/* int				ret; */
+	enum mapistore_error		ret;
 	enum MAPISTATUS			retval;
 	uint32_t			parent_handle_id;
 	struct mapi_handles		*object_handle = NULL;
@@ -241,17 +241,33 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
-	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, &msg);
-	if (!object) {
+
+	if (request->OpenModeFlags == ReadOnly) {
+		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
+	}
+	else if (request->OpenModeFlags == OpenSoftDelete) {
+		ret = MAPISTORE_ERROR;
+	}
+	else { /* ReadWrite/BestAccess */
+		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, true, &object, &msg);
+		if (ret == MAPISTORE_ERR_DENIED && request->OpenModeFlags == BestAccess) {
+			ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
+		}
+	}
+	if (ret != MAPISTORE_SUCCESS) {
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, object_handle->handle);
-		if ((request->OpenModeFlags & Create)) {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else if (ret == MAPISTORE_ERR_NOT_FOUND) {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		}
 		else {
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 		}
 		goto end;
 	}
+		
 	handles[mapi_repl->handle_idx] = object_handle->handle;
 	retval = mapi_handles_set_private_data(object_handle, object);
 
@@ -324,6 +340,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	struct mapi_handles		*context_handle = NULL;
 	struct mapi_handles		*message_handle = NULL;
 	struct emsmdbp_object		*context_object = NULL;
@@ -374,7 +391,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID);
+	ret = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID, &folder_object);
+	if (ret != MAPISTORE_SUCCESS) {
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		}
+		goto end;
+	}
 
 	/* This should be handled differently here: temporary hack */
 	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
@@ -391,15 +417,28 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
+	message_object->object.message->read_write = true;
+
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch (mapistore) {
 	case true:
-		retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
-							 folder_object->backend_object, message_object, 
-							 messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
-							 &message_object->backend_object);
-		DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
+		ret = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
+						      folder_object->backend_object, message_object, 
+						      messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
+						      &message_object->backend_object);
+		if (ret != MAPISTORE_SUCCESS) {
+			if (ret == MAPISTORE_ERR_DENIED) {
+				mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			}
+			else if (ret == MAPISTORE_ERR_NOT_FOUND) {
+				mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			}
+			else {
+				mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			}
+			goto end;
+		}
 		break;
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
@@ -488,6 +527,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	uint32_t		contextID;
 	char			*owner;
 	uint8_t			flags;
+	enum mapistore_error	ret;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n"));
 
@@ -527,9 +567,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	case true:
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
-		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
+		ret = mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			goto end;
+		}
 		owner = emsmdbp_get_owner(object);
-                mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
+		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 
@@ -1365,6 +1409,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                                                         struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                         uint32_t *handles, uint16_t *size)
 {
+	enum mapistore_error		ret;
 	enum MAPISTATUS                 retval;
         uint32_t                        handle;
         uint32_t                        contextID;
@@ -1424,11 +1469,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                 }
 
 		contextID = emsmdbp_get_contextID(attachment_object);
-		retval = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
+		ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
 									    NULL, &backend_attachment_message,
 									    &messageID,
 									    &msg);
-                if (retval != MAPISTORE_SUCCESS) {
+                if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
                 }

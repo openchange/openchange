@@ -81,8 +81,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 	messageID = (entryID->MessageGlobalCounter.value << 16) | replID;
 	/* DEBUG(5, (__location__": dest message id: %.16"PRIx64"\n", messageID)); */
 
-	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID);
-	if (!folder_object) {
+	if (!emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
 		DEBUG(5, (__location__": unable to open folder\n"));
 		return;
 	}

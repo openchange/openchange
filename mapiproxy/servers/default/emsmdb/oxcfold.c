@@ -53,6 +53,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 					       uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	struct mapi_handles		*parent = NULL;
 	struct mapi_handles		*rec = NULL;
         void                            *private_data;
@@ -100,9 +101,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	response->IsGhosted = 0;
 
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	object = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, request->folder_id);
-	if (!object) {
-		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+	ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, request->folder_id, &object);
+	if (ret != MAPISTORE_SUCCESS) {
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		}
 		goto end;
 	}
 	retval = mapi_handles_set_private_data(rec, object);
@@ -384,6 +390,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 						 uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	struct mapi_handles		*parent = NULL;
 	uint32_t			handle;
 	uint64_t			parent_fid, fid, cn;
@@ -445,7 +452,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	response->IsExistingFolder = false;
 
 	retval = emsmdbp_object_get_fid_by_name(emsmdbp_ctx, parent_object, request->FolderName.lpszW, &fid);
-	if (!retval) {
+	if (retval == MAPISTORE_SUCCESS) {
 		if (request->ulFlags != OPEN_IF_EXISTS) {
 			mapi_repl->error_code = MAPI_E_COLLISION;
 			goto end;
@@ -453,14 +460,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		response->IsExistingFolder = true;
 	}
 
-	/* Step 4. Do effective work here */
 	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (response->IsExistingFolder) {
-		object = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, fid);
-		if (!object) {
+		ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, fid, &object);
+		if (ret != MAPISTORE_SUCCESS) {
 			DEBUG(5, (__location__": failure opening existing folder\n"));
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 			mapi_repl->error_code = retval;
+			if (ret == MAPISTORE_ERR_DENIED) {
+				mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			}
+			else {
+				mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			}
 			goto end;
 		}
 	}
@@ -727,8 +739,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
 		DEBUG(0, ("MID %i to delete: 0x%.16"PRIx64"\n", i, mid));
 		ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, parent_object->backend_object, mid, MAPISTORE_SOFT_DELETE);
-		if (ret != MAPISTORE_SUCCESS) {
-			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+		if (ret != MAPISTORE_SUCCESS && ret != MAPISTORE_ERR_NOT_FOUND) {
+			if (ret == MAPISTORE_ERR_DENIED) {
+				mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			}
+			else {
+				mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			}
 			goto delete_message_response;
 		}
 

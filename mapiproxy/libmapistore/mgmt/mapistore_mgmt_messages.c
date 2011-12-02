@@ -186,7 +186,17 @@ enum mapistore_error mapistore_mgmt_message_bind_command(struct mapistore_mgmt_c
 							     bind.cbCallbackAddress);
 			
 			/* socket / connect calls */
+#ifdef SOCK_NONBLOCK
 			el->notify_ctx->fd = socket(PF_INET, SOCK_DGRAM|SOCK_NONBLOCK, IPPROTO_UDP);
+#else /* SOCK_NONBLOCK */
+			{
+				int flags;
+				el->notify_ctx->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+				flags = fcntl(el->notify_ctx->fd, F_GETFL, 0);
+				fcntl(el->notify_ctx->fd, F_SETFL, flags | O_NONBLOCK);
+			}
+#endif /* SOCK_NONBLOCK */
+
 			if (el->notify_ctx->fd == -1) {
 				perror("socket");
 				talloc_free(el->notify_ctx);

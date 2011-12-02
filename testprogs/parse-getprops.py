@@ -220,7 +220,10 @@ class GetPropsParser:
     def _printSysTime(self, pos):
         nano100Seconds = struct.unpack_from("<Q", self.response, pos)[0]
         seconds = (nano100Seconds / 10000000) - 11644473600
-        print "(PT_SYSTIME) %s" % time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds))
+        try:
+            print "(PT_SYSTIME) %s" % time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds))
+        except:
+            print "(PT_SYSTIME) %d (seconds)" % seconds
 
         return 8
 

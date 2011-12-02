@@ -65,8 +65,8 @@ struct indexing_context_list *mapistore_indexing_search(struct mapistore_context
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
-				    const char *username, struct indexing_context_list **ictxp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
+						     const char *username, struct indexing_context_list **ictxp)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct indexing_context_list	*ictx;
@@ -113,7 +113,7 @@ _PUBLIC_ int mapistore_indexing_add(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-int mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
+enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
 {
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
@@ -130,7 +130,7 @@ int mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-int mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
+enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
 {
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx->ref_count, MAPISTORE_SUCCESS, NULL);
@@ -154,8 +154,8 @@ int mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
    \return MAPISTORE_SUCCESS if the folder/message ID doesn't exist,
    otherwise MAPISTORE_ERR_EXIST.
  */
-int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx, 
-					    uint64_t fmid, bool *IsSoftDeleted)
+enum mapistore_error mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx, 
+							     uint64_t fmid, bool *IsSoftDeleted)
 {
 	int		ret;
 	TDB_DATA	key;
@@ -188,10 +188,10 @@ int mapistore_indexing_search_existing_fmid(struct indexing_context_list *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
-int mapistore_indexing_record_add(TALLOC_CTX *mem_ctx,
-				  struct indexing_context_list *ictx,
-				  uint64_t fmid,
-				  const char *mapistore_URI)
+enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *mem_ctx,
+						   struct indexing_context_list *ictx,
+						   uint64_t fmid,
+						   const char *mapistore_URI)
 {
 	int		ret;
 	TDB_DATA	key;
@@ -228,8 +228,8 @@ int mapistore_indexing_record_add(TALLOC_CTX *mem_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id, const char *username, uint64_t fmid)
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
+							uint32_t context_id, const char *username, uint64_t fmid)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -278,9 +278,9 @@ int mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-				       uint32_t context_id, const char *username, uint64_t fmid,
-				       uint8_t flags)
+enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
+							uint32_t context_id, const char *username, uint64_t fmid,
+							uint8_t flags)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -354,7 +354,7 @@ int mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, uint64_t fmid, char **urip, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, uint64_t fmid, char **urip, bool *soft_deletedp)
 {
 	struct indexing_context_list	*ictx;
 	TDB_DATA			key, dbuf;
@@ -482,7 +482,7 @@ static int tdb_get_fid_traverse_partial(struct tdb_context *tdb_ctx, TDB_DATA ke
 	return ret;
 }
 
-_PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, bool partial, uint64_t *fmidp, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, bool partial, uint64_t *fmidp, bool *soft_deletedp)
 {
 	struct indexing_context_list	*ictx;
 	int				ret;
@@ -569,8 +569,8 @@ _PUBLIC_ int mapistore_indexing_record_get_fmid(struct mapistore_context *mstore
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, const char *username, uint64_t fid)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, const char *username, uint64_t fid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid);
 }
@@ -588,9 +588,9 @@ _PUBLIC_ int mapistore_indexing_record_add_fid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, const char *username, uint64_t fid, 
-					       uint8_t flags)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, const char *username, uint64_t fid, 
+								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags);
 }
@@ -609,8 +609,8 @@ _PUBLIC_ int mapistore_indexing_record_del_fid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, const char *username, uint64_t mid)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, const char *username, uint64_t mid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid);
 }
@@ -628,9 +628,9 @@ _PUBLIC_ int mapistore_indexing_record_add_mid(struct mapistore_context *mstore_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
-					       uint32_t context_id, const char *username, uint64_t mid,
-					       uint8_t flags)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
+								uint32_t context_id, const char *username, uint64_t mid,
+								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags);
 }

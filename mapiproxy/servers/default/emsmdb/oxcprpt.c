@@ -580,7 +580,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	object->object.stream->stream.buffer.length = 0;
 
 	if (mode == OpenStream_ReadOnly || mode == OpenStream_ReadWrite) {
-		object->object.stream->read_write = (mode == OpenStream_ReadOnly);
+		object->object.stream->read_write = (mode == OpenStream_ReadWrite);
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
 			object->object.stream->stream.buffer = stream_data->data;

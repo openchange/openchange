@@ -1682,6 +1682,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}
+		message_object->object.message->read_write = true;
 	}
 	else if (ret != MAPISTORE_SUCCESS) {
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);

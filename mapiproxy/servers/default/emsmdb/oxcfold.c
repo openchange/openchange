@@ -451,8 +451,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 
 	response->IsExistingFolder = false;
 
-	retval = emsmdbp_object_get_fid_by_name(emsmdbp_ctx, parent_object, request->FolderName.lpszW, &fid);
-	if (retval == MAPISTORE_SUCCESS) {
+	ret = emsmdbp_object_get_fid_by_name(emsmdbp_ctx, parent_object, request->FolderName.lpszW, &fid);
+	if (ret == MAPISTORE_SUCCESS) {
 		if (request->ulFlags != OPEN_IF_EXISTS) {
 			mapi_repl->error_code = MAPI_E_COLLISION;
 			goto end;

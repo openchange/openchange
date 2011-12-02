@@ -2506,7 +2506,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_GetLocalReplicaIds;
 
-	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_Name, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
+	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_username, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
 	openchangedb_reserve_fmid_range(emsmdbp_ctx->oc_ctx, request->IdCount, &new_id);
 	new_id >>= 16;
 	for (i = 0; i < 6 ; i++) {

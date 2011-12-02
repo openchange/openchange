@@ -201,7 +201,7 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -230,7 +230,7 @@ _PUBLIC_ int mapistore_mgmt_release(struct mapistore_mgmt_context *mgmt_ctx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *mgmt_ctx, bool verbose)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *mgmt_ctx, bool verbose)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -247,7 +247,7 @@ _PUBLIC_ int mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context *mgmt_ct
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *mgmt_ctx, const char *backend)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_registered_backend(struct mapistore_mgmt_context *mgmt_ctx, const char *backend)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(backend == NULL, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -361,9 +361,9 @@ _PUBLIC_ struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struc
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_backend_register_user(struct mapistore_connection_info *conn_info,
-						  const char *backend,
-						  const char *vuser)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_backend_register_user(struct mapistore_connection_info *conn_info,
+								   const char *backend,
+								   const char *vuser)
 {
 	return mgmt_user_registration_cmd(MAPISTORE_MGMT_REGISTER, 
 					  MAPISTORE_COMMAND_USER_REGISTER_PRIO, 
@@ -381,9 +381,9 @@ _PUBLIC_ int mapistore_mgmt_backend_register_user(struct mapistore_connection_in
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *conn_info,
-						    const char *backend,
-						    const char *vuser)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *conn_info,
+								     const char *backend,
+								     const char *vuser)
 {
 	return mgmt_user_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
 					  MAPISTORE_COMMAND_USER_UNREGISTER_PRIO, 
@@ -410,10 +410,10 @@ _PUBLIC_ int mapistore_mgmt_backend_unregister_user(struct mapistore_connection_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx,
-					 const char *backend, const char *username,
-					 const char *folder, const char *message,
-					 const char *rootURI, char **uri)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx,
+							  const char *backend, const char *username,
+							  const char *folder, const char *message,
+							  const char *rootURI, char **uri)
 {
 	struct backend_context *backend_ctx;
 
@@ -452,10 +452,10 @@ _PUBLIC_ int mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *mgmt_ctx
 
    \return true if the message is registered, otherwise false
  */
-_PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mgmt_ctx,
-					       const char *backend, const char *sysuser,
-					       const char *username, const char *folder, 
-					       const char *rootURI, const char *message)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mgmt_ctx,
+								const char *backend, const char *sysuser,
+								const char *username, const char *folder, 
+								const char *rootURI, const char *message)
 {
 	struct indexing_context_list	*ictxp;
 	char				*uri;
@@ -504,13 +504,13 @@ _PUBLIC_ int mapistore_mgmt_registered_message(struct mapistore_mgmt_context *mg
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt_ctx,
-					     const char *backend,
-					     const char *sysuser,
-					     uint64_t mid,
-					     const char *rootURI,
-					     const char *messageID,
-					     char **registered_uri)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt_ctx,
+							      const char *backend,
+							      const char *sysuser,
+							      uint64_t mid,
+							      const char *rootURI,
+							      const char *messageID,
+							      char **registered_uri)
 {
 	struct indexing_context_list	*ictxp;
 	int				ret;
@@ -542,9 +542,9 @@ _PUBLIC_ int mapistore_mgmt_register_message(struct mapistore_mgmt_context *mgmt
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *mgmt_ctx,
-							   const char *username, const char *folderURI,
-							   uint16_t NotificationFlags)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *mgmt_ctx,
+									    const char *username, const char *folderURI,
+									    uint16_t NotificationFlags)
 {
 	struct mapistore_mgmt_users	*uel;
 	struct mapistore_mgmt_notif	*el;
@@ -660,8 +660,8 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *conn_info,
-							    struct mapistore_mgmt_notif *notification)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *conn_info,
+									     struct mapistore_mgmt_notif *notification)
 {
 	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_REGISTER,
 						  MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO,
@@ -676,8 +676,8 @@ _PUBLIC_ int mapistore_mgmt_interface_register_subscription(struct mapistore_con
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *conn_info,
-							      struct mapistore_mgmt_notif *notification)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *conn_info,
+									       struct mapistore_mgmt_notif *notification)
 {
 	return mgmt_notification_registration_cmd(MAPISTORE_MGMT_UNREGISTER,
 						  MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO,
@@ -685,11 +685,11 @@ _PUBLIC_ int mapistore_mgmt_interface_unregister_subscription(struct mapistore_c
 }
 
 
-static int mgmt_bind_registration_command(enum mapistore_mgmt_status status,
-					  unsigned msg_prio,
-					  struct mapistore_connection_info *conn_info,
-					  uint16_t cbContext, uint8_t *rgbContext,
-					  uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+static enum mapistore_error mgmt_bind_registration_command(enum mapistore_mgmt_status status,
+							   unsigned msg_prio,
+							   struct mapistore_connection_info *conn_info,
+							   uint16_t cbContext, uint8_t *rgbContext,
+							   uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
 {
 	int				ret;
 	TALLOC_CTX			*mem_ctx;
@@ -744,9 +744,9 @@ static int mgmt_bind_registration_command(enum mapistore_mgmt_status status,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *conn_info,
-						    uint16_t cbContext, uint8_t *rgbContext,
-						    uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
+_PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *conn_info,
+								     uint16_t cbContext, uint8_t *rgbContext,
+								     uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
 {
 	return mgmt_bind_registration_command(MAPISTORE_MGMT_REGISTER,
 					      MAPISTORE_COMMAND_NOTIF_SOCKET_REGISTER_PRIO, 

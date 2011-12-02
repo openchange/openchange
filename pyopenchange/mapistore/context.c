@@ -19,6 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include <inttypes.h>
 #include <Python.h>
 #include "pyopenchange/mapistore/pymapistore.h"
 

@@ -231,6 +231,10 @@ enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
 enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);
 enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *, struct GUID *, struct GUID *, uint16_t, uint64_t, struct Binary_r **);
 
+/* definitions from modules.c */
+typedef NTSTATUS (*openchange_plugin_init_fn) (void);
+openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const char *path);
+
 __END_DECLS
 
 #endif /* ! __LIBMAPIPROXY_H__ */

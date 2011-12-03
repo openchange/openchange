@@ -206,20 +206,21 @@ static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 
 _PUBLIC_ NTSTATUS mapiproxy_module_init(struct dcesrv_context *dce_ctx)
 {
-// COMPILE ONLY HACK - this needs public API from Samba to fix it.
-#if 0
-	init_module_fn			*mpm;
+	openchange_plugin_init_fn *mpm;
 	NTSTATUS			ret;
 
-	mpm = load_samba_modules(NULL, "dcerpc_mapiproxy");
+	mpm = load_openchange_plugins(NULL, "dcerpc_mapiproxy");
 
-	run_init_functions(mpm);
+	if (mpm != NULL) {
+		int i;
+		for (i = 0; mpm[i]; i++) { mpm[i](); }
+	}
+
 	talloc_free(mpm);
-	
+
 	ret = mapiproxy_module_load(dce_ctx);
 
 	return ret;
-#endif
 }
 
 const struct mapiproxy_module *mapiproxy_module_byname(const char *name)

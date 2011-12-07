@@ -522,8 +522,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	DEBUG(5, ("openchangedb_get_ReceiveFolder, dnstr: %s\n", dnstr));
-
 	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
 
 	talloc_free(res);
@@ -548,8 +546,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 2B. Search for all MessageClasses within user's mailbox */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
 			 "(PidTagMessageClass=*)");
-	DEBUG(5, ("openchangedb_get_ReceiveFolder, res->count: %i\n", res->count));
-
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 3. Find the message class that has the longest matching string entry */

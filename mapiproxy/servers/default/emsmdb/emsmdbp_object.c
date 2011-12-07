@@ -900,7 +900,7 @@ end:
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 							    struct emsmdbp_context *emsmdbp_ctx,
-							    struct EcDoRpc_MAPI_REQ *request,
+							    const char *essDN,
 							    bool mailboxstore)
 {
 	struct emsmdbp_object		*object;
@@ -911,7 +911,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
-	if (!request) return NULL;
+	if (!essDN) return NULL;
 
 	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx, NULL);
 	if (!object) return NULL;
@@ -931,8 +931,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->mailboxstore = mailboxstore;
 
 	if (mailboxstore == true) {
-		object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, 
-								    request->u.mapi_Logon.EssDN);
+		object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
 		ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
 				 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 

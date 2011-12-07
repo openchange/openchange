@@ -98,6 +98,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 		table = object->object.table;
 		OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
+		if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+			DEBUG(5, ("  query on rules table are all faked right now\n"));
+			goto end;
+		}
+
 		request = mapi_req->u.mapi_SetColumns;
 
 		if (request.prop_count) {

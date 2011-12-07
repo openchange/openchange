@@ -354,6 +354,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct SRow			aRow;
 	uint32_t			pt_long;
 	bool				pt_boolean;
+	struct SBinary_short		*pt_binary;
 	struct timeval			tv;
 	struct FILETIME			ft;
 	NTTIME				time;
@@ -457,13 +458,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 	pt_long = 0x1;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Note");
 	pt_long = 0x0;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_DISPLAY_BCC_UNICODE, (const void *)"");
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_DISPLAY_CC_UNICODE, (const void *)"");
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_DISPLAY_TO_UNICODE, (const void *)"");
 	pt_long = 0x9;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
+
 	pt_boolean = false;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HAS_NAMED_PROPERTIES, (const void *)&pt_boolean);
+
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
 	pt_long = 0x1;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
@@ -471,7 +478,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
 	pt_long = 0x1;
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_UNICODE, (const void *)"No Subject.EML");
 
 	gettimeofday(&tv, NULL);
 	time = timeval_to_nttime(&tv);
@@ -480,10 +487,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
+
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
 	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
 
-	/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATOR_NAME_UNICODE, (const void *)emsmdbp_ctx->szDisplayName);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFIER_NAME_UNICODE, (const void *)emsmdbp_ctx->szDisplayName);
+	pt_binary = talloc_zero(mem_ctx, struct SBinary_short);
+	entryid_set_AB_EntryID(pt_binary, emsmdbp_ctx->szUserDN, pt_binary);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATOR_ENTRYID, (const void *)pt_binary);
+	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFIER_ENTRYID, (const void *)pt_binary);
+
+	/* TODO: some required properties are not set: PidTagSearchKey, PidTagMessageSize, PidTagSecurityDescriptor */
 	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false"));

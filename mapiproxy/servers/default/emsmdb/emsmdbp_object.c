@@ -184,10 +184,10 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 
 	if (emsmdbp_is_mapistore(parent_folder)) {
 		if (mapistore_folder_get_child_fid_by_name(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_folder), parent_folder->backend_object, name, fidp)) {
-			return MAPI_E_NOT_FOUND;
+			return MAPISTORE_ERR_NOT_FOUND;
 		}
 
-		return MAPI_E_SUCCESS;
+		return MAPISTORE_SUCCESS;
 	}
 	else {
 		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, folderID, name, fidp);
@@ -285,10 +285,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 
 _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent, uint64_t fid, struct emsmdbp_object **folder_object_p)
 {
-	struct emsmdbp_object			*folder_object;
+	struct emsmdbp_object			*folder_object, *mailbox_object;
 	enum mapistore_error			retval;
+	enum MAPISTATUS				ret;
 	char					*path, *owner;
 	uint32_t				contextID;
+	uint64_t				parent_fid, oc_parent_fid;
 	void					*local_ctx;
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);
@@ -316,6 +318,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				owner = emsmdbp_get_owner(folder_object);
 				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, path, folder_object->object.folder->folderID, &contextID, &folder_object->backend_object);
 				if (retval != MAPISTORE_SUCCESS) {
+					talloc_free(local_ctx);
 					talloc_free(folder_object);
 					return retval;
 				}
@@ -325,6 +328,28 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 			/* (void) talloc_reference(folder_object, folder_object->backend_object); */
 		}
 		else {
+			switch (parent->type) {
+			case EMSMDBP_OBJECT_MAILBOX:
+				parent_fid = parent->object.mailbox->folderID;
+				break;
+			case EMSMDBP_OBJECT_FOLDER:
+				parent_fid = parent->object.folder->folderID;
+				break;
+			}
+			mailbox_object = emsmdbp_get_mailbox(parent);
+			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
+			if (ret != MAPI_E_SUCCESS) {
+				DEBUG(0, ("folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid));
+				talloc_free(local_ctx);
+				talloc_free(folder_object);
+				return MAPISTORE_ERR_NOT_FOUND;
+			}
+			if (oc_parent_fid != parent_fid) {
+				DEBUG(0, ("parent folder mistmatch: expected %.16"PRIx64" but got %.16"PRIx64"\n", parent_fid, oc_parent_fid));
+				talloc_free(local_ctx);
+				talloc_free(folder_object);
+				return MAPISTORE_ERR_NOT_FOUND;
+			}
 			DEBUG(0, ("%s: opening openchangedb folder\n", __FUNCTION__));
 		}
 		talloc_free(local_ctx);

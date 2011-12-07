@@ -54,7 +54,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *mem_ctx, uint8_t ta
 	if (!table) {
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
-	printf("openchangedb_table_init: folderID=%"PRIu64"\n", folderID);
+	/* printf("openchangedb_table_init: folderID=%"PRIu64"\n", folderID); */
 	table->folderID = folderID;
 	table->table_type = table_type;
 	table->lpSortCriteria = NULL;
@@ -257,7 +257,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
 	}
 	res = table->res;
-	printf("res->count = %d\n", res->count);
 
 	/* Ensure position is within search results range */
 	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);

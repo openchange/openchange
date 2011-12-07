@@ -442,6 +442,13 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 		*folder_object_p = context_object;
 		return MAPISTORE_SUCCESS;
 	}
+	else {
+		parent_object = emsmdbp_get_mailbox(context_object);
+		if (fid == parent_object->object.mailbox->folderID) {
+			*folder_object_p = parent_object;
+			return MAPISTORE_SUCCESS;
+		}
+	}
 
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, fid, &parent_fid);
 	if (retval == MAPISTORE_SUCCESS) {

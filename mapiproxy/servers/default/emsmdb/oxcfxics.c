@@ -1825,6 +1825,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		}
 		aRow.lpProps[aRow.cValues].ulPropTag = PR_CHANGE_NUM;
 		aRow.lpProps[aRow.cValues].value.d = cn;
+		aRow.cValues++;
 		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_folder, NULL, folderID, &aRow, &folder_object);
 		if (retval) {
 			DEBUG(5, (__location__": folder creation failed\n"));

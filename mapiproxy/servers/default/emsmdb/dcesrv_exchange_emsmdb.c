@@ -1816,6 +1816,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 struct EcDoAsyncConnectEx *r)
 {
 	DEBUG(3, ("exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n"));
+	r->out.result = ecRejected;
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 
 	return MAPI_E_SUCCESS;

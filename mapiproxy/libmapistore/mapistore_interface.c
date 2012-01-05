@@ -236,6 +236,13 @@ _PUBLIC_ int mapistore_add_context_ref_count(struct mapistore_context *mstore_ct
 	/* Step 1. Increment the ref count */
 	retval = mapistore_backend_add_ref_count(backend_ctx);
 
+	/* Step 2. Increment backend indexing ref count */
+	if (backend_ctx->indexing) {
+		mapistore_indexing_add_ref_count(backend_ctx->indexing);
+	} else {
+		DEBUG(0, ("[%s:%d]: This should never occur\n", __FUNCTION__, __LINE__));
+	}
+
 	return retval;
 }
 

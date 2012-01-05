@@ -333,7 +333,7 @@ struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, st
 	context->backend->context.get_root_folder(backend_object, context, fid, &context->root_folder_object);
 	talloc_unlink(NULL, backend_object);
 	context->ref_count = 1;
-	context->uri = talloc_strdup(context, uri);
+	context->uri = talloc_asprintf(context, "%s%s", namespace, uri);
 
 	return context;
 }
@@ -366,7 +366,7 @@ _PUBLIC_ int mapistore_backend_add_ref_count(struct backend_context *bctx)
  */
 _PUBLIC_ int mapistore_backend_delete_context(struct backend_context *bctx)
 {
-	if (bctx->ref_count) {
+	if (bctx->ref_count > 1) {
 		bctx->ref_count -= 1;
 		return MAPISTORE_ERR_REF_COUNT;
 	}

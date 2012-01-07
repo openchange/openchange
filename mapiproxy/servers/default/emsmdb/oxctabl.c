@@ -424,6 +424,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 	table = object->object.table;
 
+	count = 0;
 	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto finish;
@@ -436,7 +437,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
         /* Lookup the properties */
-	count = 0;
 	max = table->numerator + request->RowCount;
 	if (max > table->denominator) {
 		max = table->denominator;

@@ -163,6 +163,9 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
         struct MAPINAMEID       *nameid;
 	struct BinaryArray_r	*bin_array;
 	struct WStringArray_r	*unicode_array;
+	struct ShortArray_r	*short_array;
+	struct LongArray_r	*long_array;
+	struct I8Array_r	*i8_array;
 	uint16_t		prop_type, propID;
         int                     retval;
 
@@ -199,6 +202,27 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 				prop_type &= 0x0fff;
 
 				switch (prop_type) {
+				case PT_SHORT:
+					short_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, short_array->cValues);
+					for (j = 0; j < short_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, short_array->lpi + j);
+					}
+					break;
+				case PT_LONG:
+					long_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, long_array->cValues);
+					for (j = 0; j < long_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, long_array->lpl + j);
+					}
+					break;
+				case PT_I8:
+					i8_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, i8_array->cValues);
+					for (j = 0; j < i8_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, i8_array->lpi8 + j);
+					}
+					break;
 				case PT_BINARY:
 					bin_array = data_pointers[i];
 					ndr_push_uint32(ndr, NDR_SCALARS, bin_array->cValues);
@@ -214,7 +238,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					}
 					break;
 				default:
-					DEBUG(5, ("No handling for multi values of type %.4x\n", prop_type));
+					DEBUG(5, (__location__": no handling for multi values of type %.4x\n", prop_type));
 					abort();
 				}
 			}

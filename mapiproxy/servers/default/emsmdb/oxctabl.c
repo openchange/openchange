@@ -769,10 +769,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		table->numerator = 0;
 	}
 
+	memset (&row, 0, sizeof(DATA_BLOB));
+
 	switch (emsmdbp_is_mapistore(object)) {
 	case true:
-		memset (&row, 0, sizeof(DATA_BLOB));
-
 		/* Restrict rows to be fetched */
 		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
 		/* Then fetch rows */

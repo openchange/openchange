@@ -92,7 +92,7 @@ static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmd
 		return;
 	}
 
-	/* FIXME: (from oxomsg 3.2.5.1.2.8) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
+	/* FIXME: (from oxomsg 3.2.5.1) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
 	emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
 	mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
@@ -171,6 +171,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
 		owner = emsmdbp_get_owner(object);
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
+		oxomsg_mapistore_handle_target_entryid(emsmdbp_ctx, object);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}

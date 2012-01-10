@@ -651,27 +651,27 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	memset(properties_exclusion, 0, 65536 * sizeof(bool));
 
 	/* 1a. Explicit exclusions */
-	properties_exclusion[PR_ROW_TYPE >> 16] = true;
-	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
-	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
-	properties_exclusion[PR_INST_ID >> 16] = true;
-	properties_exclusion[PR_FID >> 16] = true;
-	properties_exclusion[PR_MID >> 16] = true;
-	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_FID >> 16] = true;
+	properties_exclusion[(uint16_t) (PR_ROW_TYPE >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_NUM >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INST_ID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_FID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_MID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_FID >> 16)] = true;
 
 	/* 1b. Request exclusions */
 	if (excluded_tags != NULL) {
 		for (i = 0; i < excluded_tags->cValues; i++) {
-			properties_exclusion[excluded_tags->aulPropTag[i] >> 16] = true;
+			properties_exclusion[(uint16_t) (excluded_tags->aulPropTag[i] >> 16)] = true;
 		}
 	}
 
 	needed_properties = talloc_zero(mem_ctx, struct SPropTagArray);
 	needed_properties->aulPropTag = talloc_zero(needed_properties, void);
 	for (i = 0; i < properties->cValues; i++) {
-		if (!properties_exclusion[properties->aulPropTag[i] >> 16]) {
+		if (!properties_exclusion[(uint16_t) (properties->aulPropTag[i] >> 16)]) {
 			SPropTagArray_add(mem_ctx, needed_properties, properties->aulPropTag[i]);
 		}
 	}

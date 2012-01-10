@@ -169,7 +169,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	uint16_t		prop_type, propID;
         int                     retval;
 
-
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
                         property = properties->aulPropTag[i];
@@ -1501,20 +1500,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Explicit exclusions */
-	properties_exclusion[PR_ROW_TYPE >> 16] = true;
-	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
-	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
-	properties_exclusion[PR_INST_ID >> 16] = true;
-	properties_exclusion[PR_FID >> 16] = true;
-	properties_exclusion[PR_MID >> 16] = true;
-	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_FID >> 16] = true;
+	properties_exclusion[(uint16_t) (PR_ROW_TYPE >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_NUM >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INST_ID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_FID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_MID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_FID >> 16)] = true;
 
 	/* Include or exclude specified properties passed in array */
 	include_props = ((request->SynchronizationFlag & SynchronizationFlag_OnlySpecifiedProperties));
 	for (j = 0; j < request->PropertyTags.cValues; j++) {
-		i = (request->PropertyTags.aulPropTag[j] & 0xffff0000) >> 16;
+		i = (uint16_t) (request->PropertyTags.aulPropTag[j] >> 16);
 		if (!properties_exclusion[i]) {
 			properties_exclusion[i] = true; /* avoid including the same prop twice */
 			if (include_props) {

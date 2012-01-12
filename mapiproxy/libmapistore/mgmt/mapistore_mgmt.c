@@ -617,6 +617,8 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 	MAPISTORE_RETVAL_IF(notification->WholeStore == false && !notification->MAPIStoreURI,
 			    MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	/* TotalNumberOfMessages and UnreadNumberOfMessages are not initialized here, triggering a warning in valgrind */
+	memset(&cmd, 0, sizeof(struct mapistore_mgmt_command));
 	cmd.type = MAPISTORE_MGMT_NOTIF;
 	cmd.command.notification.status = status;
 	printf("NotificationFlags = 0x%x\n", notification->NotificationFlags);

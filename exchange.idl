@@ -3713,14 +3713,40 @@ System Attendant Private Interface
 	} ResponseFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FolderIds[13];
+		/* folders */
+		hyper			Root;
+		hyper			IPMSubTree;
+		hyper			NonIPMSubTree;
+		hyper			EFormsRegistry;
+		hyper			FreeBusy;
+		hyper			OAB;
+		hyper			LocalizedEFormsRegistry;
+		hyper			LocalFreeBusy;
+		hyper			LocalOAB;
+		hyper			NNTPIndex;
+		hyper			_empty[3];
+
 		uint16			ReplId;
 		GUID			Guid;
 		GUID			PerUserGuid;
 	} store_pf;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FolderIds[13];
+		/* folders */
+		hyper			Root;
+		hyper			DeferredAction;
+		hyper			SpoolerQueue;
+		hyper			IPMSubTree;
+		hyper			Inbox;
+		hyper			Outbox;
+		hyper			SentItems;
+		hyper			DeletedItems;
+		hyper			CommonViews;
+		hyper			Schedule;
+		hyper			Search;
+		hyper			Views;
+		hyper			Shortcuts;
+
 		ResponseFlags		ResponseFlags;
 		GUID			MailboxGuid;
 		uint16			ReplId;

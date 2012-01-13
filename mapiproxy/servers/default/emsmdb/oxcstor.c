@@ -73,25 +73,25 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
 	/* Step 2. Check if mailbox corresponding to the specified username does exist */
-	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.FolderIds[0]);
+	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.Root);
 	OPENCHANGE_RETVAL_IF(ret, ecUnknownUser, NULL);
 
 	/* Step 3. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;
 
 	/* Step 4. Build FolderIds list */
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTIONS, &response->LogonType.store_mailbox.FolderIds[1]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.FolderIds[2]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_TOP_INFORMATION_STORE, &response->LogonType.store_mailbox.FolderIds[3]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &response->LogonType.store_mailbox.FolderIds[4]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_OUTBOX, &response->LogonType.store_mailbox.FolderIds[5]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SENT_ITEMS, &response->LogonType.store_mailbox.FolderIds[6]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DELETED_ITEMS, &response->LogonType.store_mailbox.FolderIds[7]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_COMMON_VIEWS, &response->LogonType.store_mailbox.FolderIds[8]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SCHEDULE, &response->LogonType.store_mailbox.FolderIds[9]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SEARCH, &response->LogonType.store_mailbox.FolderIds[10]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_VIEWS, &response->LogonType.store_mailbox.FolderIds[11]);
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.FolderIds[12]);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTIONS, &response->LogonType.store_mailbox.DeferredAction);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.SpoolerQueue);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_TOP_INFORMATION_STORE, &response->LogonType.store_mailbox.IPMSubTree);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &response->LogonType.store_mailbox.Inbox);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_OUTBOX, &response->LogonType.store_mailbox.Outbox);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SENT_ITEMS, &response->LogonType.store_mailbox.SentItems);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DELETED_ITEMS, &response->LogonType.store_mailbox.DeletedItems);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_COMMON_VIEWS, &response->LogonType.store_mailbox.CommonViews);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SCHEDULE, &response->LogonType.store_mailbox.Schedule);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SEARCH, &response->LogonType.store_mailbox.Search);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_VIEWS, &response->LogonType.store_mailbox.Views);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.Shortcuts);
 
 	/* Step 5. Set ResponseFlags */
 	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
@@ -149,19 +149,17 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 
 	response.LogonFlags = request.LogonFlags;
 
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_ROOT, &(response.LogonType.store_pf.FolderIds[0]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_IPMSUBTREE, &(response.LogonType.store_pf.FolderIds[1]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_NONIPMSUBTREE, &(response.LogonType.store_pf.FolderIds[2]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_EFORMSREGISTRY, &(response.LogonType.store_pf.FolderIds[3]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &(response.LogonType.store_pf.FolderIds[4]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_OAB, &(response.LogonType.store_pf.FolderIds[5]));
-	response.LogonType.store_pf.FolderIds[6] = 0x00000000000000000000; /* Eforms Registry */
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &(response.LogonType.store_pf.FolderIds[7]));
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &(response.LogonType.store_pf.FolderIds[8]));
-	response.LogonType.store_pf.FolderIds[9] = 0x00000000000000000000; /* NNTP Article Index */
-	response.LogonType.store_pf.FolderIds[10] = 0x00000000000000000000; /* Empty */
-	response.LogonType.store_pf.FolderIds[11] = 0x00000000000000000000; /* Empty */
-	response.LogonType.store_pf.FolderIds[12] = 0x00000000000000000000; /* Empty */
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_ROOT, &(response.LogonType.store_pf.Root));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_IPMSUBTREE, &(response.LogonType.store_pf.IPMSubTree));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_NONIPMSUBTREE, &(response.LogonType.store_pf.NonIPMSubTree));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_EFORMSREGISTRY, &(response.LogonType.store_pf.EFormsRegistry));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &(response.LogonType.store_pf.FreeBusy));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_OAB, &(response.LogonType.store_pf.OAB));
+	response.LogonType.store_pf.LocalizedEFormsRegistry = 0;
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &(response.LogonType.store_pf.LocalFreeBusy));
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &(response.LogonType.store_pf.LocalOAB));
+	response.LogonType.store_pf.NNTPIndex = 0;
+	memset(response.LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
 					     &(response.LogonType.store_pf.ReplId),

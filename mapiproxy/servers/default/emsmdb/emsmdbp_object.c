@@ -345,7 +345,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				return MAPISTORE_ERR_NOT_FOUND;
 			}
 			if (oc_parent_fid != parent_fid) {
-				DEBUG(0, ("parent folder mistmatch: expected %.16"PRIx64" but got %.16"PRIx64"\n", parent_fid, oc_parent_fid));
+				DEBUG(0, ("parent folder mismatch: expected %.16"PRIx64" but got %.16"PRIx64"\n", parent_fid, oc_parent_fid));
 				talloc_free(local_ctx);
 				talloc_free(folder_object);
 				return MAPISTORE_ERR_NOT_FOUND;
@@ -1080,16 +1080,16 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 		table_object->object.table->ulType = table_type;
 		if (emsmdbp_is_mapistore(parent_object)) {
 			switch (table_type) {
-			case EMSMDBP_TABLE_MESSAGE_TYPE:
+			case MAPISTORE_MESSAGE_TABLE:
 				mstore_type = MAPISTORE_MESSAGE_TABLE;
 				break;
-			case EMSMDBP_TABLE_FAI_TYPE:
+			case MAPISTORE_FAI_TABLE:
 				mstore_type = MAPISTORE_FAI_TABLE;
 				break;
-			case EMSMDBP_TABLE_FOLDER_TYPE:
+			case MAPISTORE_FOLDER_TABLE:
 				mstore_type = MAPISTORE_FOLDER_TABLE;
 				break;
-			case EMSMDBP_TABLE_PERMISSIONS_TYPE:
+			case MAPISTORE_PERMISSIONS_TABLE:
 				mstore_type = MAPISTORE_PERMISSIONS_TABLE;
 				break;
 			default:
@@ -1104,7 +1104,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 			}
 		}
 		else {
-			if (table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
+			if (table_type == MAPISTORE_FOLDER_TABLE) {
 				/* this gets data both for openchangedb and mapistore: needs improvement */
 				emsmdbp_folder_get_folder_count(parent_object->emsmdbp_ctx, parent_object, &table_object->object.table->denominator);
 			}
@@ -1125,13 +1125,13 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 
 				/* Non-mapistore message tables */
 				switch (table_type) {
-				case EMSMDBP_TABLE_MESSAGE_TYPE:
+				case MAPISTORE_MESSAGE_TABLE:
 					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
 								       folderID, 
 								       &table_object->object.table->denominator,
 								       false);
 					break;
-				case EMSMDBP_TABLE_FAI_TYPE:
+				case MAPISTORE_FAI_TABLE:
 					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
 								       folderID, 
 								       &table_object->object.table->denominator,
@@ -1271,10 +1271,11 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	return retval;
 }
 
-_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, enum table_query_type query_type, uint32_t **retvalsp)
+_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, enum mapistore_query_type query_type, uint32_t **retvalsp)
 {
         void				**data_pointers;
         enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
         uint32_t			*retvals;
 	struct emsmdbp_object		*subfolder;
         struct emsmdbp_object_table	*table;
@@ -1344,10 +1345,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 		/* Setup table_filter for openchangedb */
 		/* switch (table_object->object.table->ulType) { */
-		/* case EMSMDBP_TABLE_MESSAGE_TYPE: */
+		/* case MAPISTORE_MESSAGE_TABLE: */
 		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*))", folderID); */
 		/* 	break; */
-		/* case EMSMDBP_TABLE_FOLDER_TYPE: */
+		/* case MAPISTORE_FOLDER_TABLE: */
 		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID); */
 		/* 	break; */
 		/* default: */
@@ -1366,10 +1367,17 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		if (retval != MAPI_E_SUCCESS) {
 			talloc_free(retvals);
 			talloc_free(data_pointers);
+			talloc_free(odb_ctx);
 			return NULL;
 		}
 
-		emsmdbp_object_open_folder(NULL, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFolderID, &subfolder);
+		ret = emsmdbp_object_open_folder(NULL, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFolderID, &subfolder);
+		if (ret != MAPISTORE_SUCCESS) {
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+			talloc_free(odb_ctx);
+			return NULL;
+		}
 
 		/* Lookup for flagged property row */
                 retval = MAPI_E_SUCCESS;
@@ -1612,7 +1620,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 
 		table_object = emsmdbp_object_table_init(mem_ctx, emsmdbp_ctx, message_object);
 		if (table_object) {
-			table_object->object.table->ulType = EMSMDBP_TABLE_ATTACHMENT_TYPE;
+			table_object->object.table->ulType = MAPISTORE_ATTACHMENT_TABLE;
 			mapistore_message_get_attachment_table(emsmdbp_ctx->mstore_ctx, contextID,
 							       message_object->backend_object,
 							       table_object, &table_object->backend_object,

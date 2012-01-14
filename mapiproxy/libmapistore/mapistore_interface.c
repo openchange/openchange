@@ -664,7 +664,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
 {
 	struct backend_context	*backend_ctx;
 
@@ -721,7 +721,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_folder_count(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_get_message_count(struct mapistore_context *mstore_ctx, uint32_t context_id,
-								 void *folder, uint8_t table_type, uint32_t *RowCount)
+								 void *folder, enum mapistore_table_type table_type, uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
 	enum mapistore_error				ret;
@@ -767,7 +767,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fids(struct mapistore_c
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	return mapistore_folder_open_table(mstore_ctx, context_id,
-					  folder, local_mem_ctx, MAPISTORE_FOLDER_TABLE, -1, &backend_table, &row_count);
+					   folder, local_mem_ctx, MAPISTORE_FOLDER_TABLE, -1, &backend_table, &row_count);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
 
 	fid_column = PR_FID;
@@ -805,7 +805,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapi
 }
 
 _PUBLIC_ enum mapistore_error mapistore_folder_open_table(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							  void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
+							  void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1093,7 +1093,7 @@ _PUBLIC_ enum mapistore_error mapistore_table_set_sort_order(struct mapistore_co
 }
 
 _PUBLIC_ enum mapistore_error mapistore_table_get_row(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx,
-						      enum table_query_type query_type, uint32_t rowid, struct mapistore_property_data **data)
+						      enum mapistore_query_type query_type, uint32_t rowid, struct mapistore_property_data **data)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1108,7 +1108,7 @@ _PUBLIC_ enum mapistore_error mapistore_table_get_row(struct mapistore_context *
 	return mapistore_backend_table_get_row(backend_ctx, table, mem_ctx, query_type, rowid, data);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_table_get_row_count(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, enum table_query_type query_type, uint32_t *row_countp)
+_PUBLIC_ enum mapistore_error mapistore_table_get_row_count(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, enum mapistore_query_type query_type, uint32_t *row_countp)
 {
 	struct backend_context	*backend_ctx;
 

@@ -100,7 +100,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = rec->handle;
 	
 	if (emsmdbp_is_mapistore(parent_object)) {
-		object = emsmdbp_folder_open_table(rec, parent_object, EMSMDBP_TABLE_PERMISSIONS_TYPE, mapi_repl->handle_idx);
+		object = emsmdbp_folder_open_table(rec, parent_object, MAPISTORE_PERMISSIONS_TABLE, mapi_repl->handle_idx);
 	}
 	else {
 		object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, parent_object);

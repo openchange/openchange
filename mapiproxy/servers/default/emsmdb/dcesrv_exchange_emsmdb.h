@@ -137,7 +137,7 @@ struct emsmdbp_object_message {
 };
 
 struct emsmdbp_object_table {
-	uint8_t					ulType;
+	enum mapistore_table_type		ulType;
 	uint32_t				handle;
 	bool					restricted;
 	uint16_t				prop_count;
@@ -250,15 +250,6 @@ struct emsmdbp_object {
 #define EMSMDBP_PF_LOCALFREEBUSY	0x7
 #define EMSMDBP_PF_LOCALOAB		0x8
 
-
-/* Note: would be nice to keep this compatible with the equivalent list in mapistore.h, maybe remove one of them... */
-#define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
-#define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
-#define	EMSMDBP_TABLE_FAI_TYPE		0x3
-#define	EMSMDBP_TABLE_RULE_TYPE		0x4
-#define	EMSMDBP_TABLE_ATTACHMENT_TYPE	0x5
-#define	EMSMDBP_TABLE_PERMISSIONS_TYPE	0x6
-
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
@@ -300,7 +291,7 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_obj
 struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *, struct emsmdbp_object *, uint32_t, uint32_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
-void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum table_query_type, uint32_t **);
+void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum mapistore_query_type, uint32_t **);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
 struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);

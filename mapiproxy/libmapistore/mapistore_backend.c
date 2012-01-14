@@ -515,12 +515,12 @@ enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_
         return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 }
 
-enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint8_t table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
 {
         return bctx->backend->folder.get_deleted_fmids(folder, mem_ctx, table_type, change_num, fmidsp, cnp);
 }
 
-enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *bctx, void *folder, uint8_t table_type, uint32_t *RowCount)
+enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *bctx, void *folder, enum mapistore_table_type table_type, uint32_t *RowCount)
 {
 	return bctx->backend->folder.get_child_count(folder, table_type, RowCount);
 }
@@ -568,7 +568,7 @@ enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backe
 }
 
 enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *bctx, void *folder,
-					TALLOC_CTX *mem_ctx, uint8_t table_type, uint32_t handle_id, void **table, uint32_t *row_count)
+							 TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {
         return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
 }
@@ -645,13 +645,13 @@ enum mapistore_error mapistore_backend_table_set_sort_order(struct backend_conte
 }
 
 enum mapistore_error mapistore_backend_table_get_row(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx,
-				    enum table_query_type query_type, uint32_t rowid,
-				    struct mapistore_property_data **data)
+						     enum mapistore_query_type query_type, uint32_t rowid,
+						     struct mapistore_property_data **data)
 {
         return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
 }
 
-enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *bctx, void *table, enum table_query_type query_type, uint32_t *row_countp)
+enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *bctx, void *table, enum mapistore_query_type query_type, uint32_t *row_countp)
 {
         return bctx->backend->table.get_row_count(table, query_type, row_countp);
 }

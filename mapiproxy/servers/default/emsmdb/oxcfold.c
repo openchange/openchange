@@ -201,7 +201,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
-	object = emsmdbp_folder_open_table(rec, parent_object, EMSMDBP_TABLE_FOLDER_TYPE, rec->handle);
+	object = emsmdbp_folder_open_table(rec, parent_object, MAPISTORE_FOLDER_TABLE, rec->handle);
 	if (!object) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
@@ -315,11 +315,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	folderID = parent_object->object.folder->folderID;
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
 		DEBUG(5, ("  table is FAI table\n"));
-		table_type = EMSMDBP_TABLE_FAI_TYPE;
+		table_type = MAPISTORE_FAI_TABLE;
 	}
 	else {
 		DEBUG(5, ("  table is contents table\n"));
-		table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
+		table_type = MAPISTORE_MESSAGE_TABLE;
 	}
 
 	/* Initialize Table object */

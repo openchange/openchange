@@ -180,10 +180,10 @@ enum mapistore_error mapistore_backend_folder_open_message(struct backend_contex
 enum mapistore_error mapistore_backend_folder_create_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 enum mapistore_error mapistore_backend_folder_delete_message(struct backend_context *, void *, uint64_t, uint8_t);
 enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_context *, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
-enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *, void *, TALLOC_CTX *, uint8_t, uint64_t, struct I8Array_r **, uint64_t *);
-enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *, void *, uint8_t, uint32_t *);
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct I8Array_r **, uint64_t *);
+enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *, void *, enum mapistore_table_type, uint32_t *);
 enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backend_context *, void *, const char *, uint64_t *);
-enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *, void *, TALLOC_CTX *, uint8_t, uint32_t, void **, uint32_t *);
+enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_context *, void *, uint8_t, uint16_t, struct PermissionData *);
 
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *, void *, TALLOC_CTX *, struct mapistore_message **);
@@ -200,8 +200,8 @@ enum mapistore_error mapistore_backend_table_get_available_properties(struct bac
 enum mapistore_error mapistore_backend_table_set_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);
 enum mapistore_error mapistore_backend_table_set_restrictions(struct backend_context *, void *, struct mapi_SRestriction *, uint8_t *);
 enum mapistore_error mapistore_backend_table_set_sort_order(struct backend_context *, void *, struct SSortOrderSet *, uint8_t *);
-enum mapistore_error mapistore_backend_table_get_row(struct backend_context *, void *, TALLOC_CTX *, enum table_query_type, uint32_t, struct mapistore_property_data **);
-enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *, void *, enum table_query_type, uint32_t *);
+enum mapistore_error mapistore_backend_table_get_row(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_query_type, uint32_t, struct mapistore_property_data **);
+enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *, void *, enum mapistore_query_type, uint32_t *);
 enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_context *, void *, uint32_t);
 
 enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);

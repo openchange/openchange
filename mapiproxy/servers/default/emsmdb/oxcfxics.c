@@ -617,7 +617,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		abort();
 	}
 
-	if (sync_data->table_type == EMSMDBP_TABLE_FAI_TYPE) {
+	if (sync_data->table_type == MAPISTORE_FAI_TABLE) {
 		original_cnset_seen = synccontext->cnset_seen_fai;
 		properties = &synccontext->fai_properties;
 	}
@@ -858,7 +858,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	/* 2a. we build the message stream (normal messages) */
 	if (synccontext->request.normal) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
-		sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
+		sync_data->table_type = MAPISTORE_MESSAGE_TABLE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen;
@@ -873,7 +873,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	/* 2b. we build the message stream (FAI messages) */
 	if (synccontext->request.fai) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
-		sync_data->table_type = EMSMDBP_TABLE_FAI_TYPE;
+		sync_data->table_type = MAPISTORE_FAI_TABLE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen_fai;
@@ -971,7 +971,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	local_mem_ctx = talloc_zero(NULL, void);
 
 	/* 2b. we build the stream */
-	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0); 
+	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, MAPISTORE_FOLDER_TABLE, 0); 
 	if (!table_object) {
 		DEBUG(5, ("folder does not handle hierarchy tables\n"));
 		return;
@@ -1532,7 +1532,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	if (!include_props) {
 		if (synccontext->request.contents_mode) {
 			if (synccontext->request.normal) {
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_MESSAGE_TYPE, 0);
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
 				if (!table_object) {
 					DEBUG(5, ("could not open message table\n"));
 					abort();
@@ -1555,7 +1555,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 				synccontext->fai_properties.cValues = synccontext->properties.cValues;
 				synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
 
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FAI_TYPE, 0);
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FAI_TABLE, 0);
 				if (!table_object) {
 					DEBUG(5, ("could not open FAI table\n"));
 					abort();
@@ -1575,7 +1575,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			}
 		}
 		else {
-			table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0);
+			table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FOLDER_TABLE, 0);
 			if (!table_object) {
 				DEBUG(5, ("could not open folder table\n"));
 				abort();
@@ -2729,13 +2729,13 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	count_query_props->cValues = 1;
 	count_query_props->aulPropTag = talloc_zero(count_query_props, enum MAPITAGS);
 	switch (sync_data->table_type) {
-	case EMSMDBP_TABLE_FOLDER_TYPE:
+	case MAPISTORE_FOLDER_TABLE:
 		count_query_props->aulPropTag[0] = PR_FOLDER_CHILD_COUNT;
 		break;
-	case EMSMDBP_TABLE_MESSAGE_TYPE:
+	case MAPISTORE_MESSAGE_TABLE:
 		count_query_props->aulPropTag[0] = PR_CONTENT_COUNT;
 		break;
-	case EMSMDBP_TABLE_FAI_TYPE:
+	case MAPISTORE_FAI_TABLE:
 		count_query_props->aulPropTag[0] = PR_ASSOC_CONTENT_COUNT;
 		break;
 	default:
@@ -2798,7 +2798,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 
-			if (sync_data->table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
+			if (sync_data->table_type == MAPISTORE_FOLDER_TABLE) {
 				/* TODO: check return code */
 				emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 				oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
@@ -2842,18 +2842,18 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 		synccontext->properties.aulPropTag[0] = PR_MID;
 
 		if (synccontext->request.normal) {
-			sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
+			sync_data->table_type = MAPISTORE_MESSAGE_TABLE;
 			oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		}
 
 		if (synccontext->request.fai) {
-			sync_data->table_type = EMSMDBP_TABLE_FAI_TYPE;
+			sync_data->table_type = MAPISTORE_FAI_TABLE;
 			oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		}
 	}
 	else {
 		synccontext->properties.aulPropTag[0] = PR_FID;
-		sync_data->table_type = EMSMDBP_TABLE_FOLDER_TYPE;
+		sync_data->table_type = MAPISTORE_FOLDER_TABLE;
 
 		oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 	}

@@ -186,7 +186,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx, struct l
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!message_object, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!msgp, MAPI_E_NOT_INITIALIZED, NULL);
 
 	msg = talloc_zero(mem_ctx, struct openchangedb_message);
 	if (!msg) {
@@ -208,16 +207,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx, struct l
 	printf("We have found: %d messages for ldb_filter = %s\n", msg->res->count, ldb_filter);
 	talloc_free(ldb_filter);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !msg->res->count, MAPI_E_NOT_FOUND, msg);
-
-	mmsg = talloc_zero(mem_ctx, struct mapistore_message);
-	mmsg->subject_prefix = NULL;
-	mmsg->normalized_subject = (char *)ldb_msg_find_attr_as_string(msg->res->msgs[0], "PidTagNormalizedSubject", NULL);
-	mmsg->columns = NULL;
-	mmsg->recipients_count = 0;
-	mmsg->recipients = NULL;
-
 	*message_object = (void *)msg;
-	*msgp = (void *)mmsg;
+
+	if (msgp) {
+		mmsg = talloc_zero(mem_ctx, struct mapistore_message);
+		mmsg->subject_prefix = NULL;
+		mmsg->normalized_subject = (char *)ldb_msg_find_attr_as_string(msg->res->msgs[0], "PidTagNormalizedSubject", NULL);
+		mmsg->columns = NULL;
+		mmsg->recipients_count = 0;
+		mmsg->recipients = NULL;
+		*msgp = (void *)mmsg;
+	}
 
 	return MAPI_E_SUCCESS;
 }

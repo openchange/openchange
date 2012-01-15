@@ -293,6 +293,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 		talloc_free(live_res);
 	}
 
+	/* hacks for some attributes specific to tables */
+	if (proptag == PR_INST_ID) {
+		if (table->table_type == 1) {
+			proptag = PR_FID;
+		}
+		else {
+			proptag = PR_MID;
+		}
+	}
+	else if (proptag == PR_INSTANCE_NUM) {
+		*data = talloc_zero(mem_ctx, uint32_t);
+		return MAPI_E_SUCCESS;
+	}
+
 	/* Convert proptag into PidTag attribute */
 	if ((table->table_type != 0x1) && proptag == PR_FID) {
 		proptag = PR_PARENT_FID;

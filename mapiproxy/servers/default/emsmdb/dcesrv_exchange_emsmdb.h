@@ -133,7 +133,6 @@ struct emsmdbp_object_message {
 	uint64_t			folderID;
 	uint64_t			messageID;
 	bool				read_write;
-	struct ldb_message		*msg;
 };
 
 struct emsmdbp_object_table {

@@ -130,9 +130,23 @@ struct emsmdbp_object_folder {
 };
 
 struct emsmdbp_object_message {
-	uint64_t			folderID;
-	uint64_t			messageID;
-	bool				read_write;
+	uint64_t						folderID;
+	uint64_t						messageID;
+	bool							read_write;
+	struct emsmdbp_object_message_freebusy_properties	*fb_properties;
+};
+
+struct emsmdbp_object_message_freebusy_properties {
+	uint16_t	nbr_months;
+	uint32_t	*months_ranges;
+	struct Binary_r	*freebusy_tentative;
+	struct Binary_r	*freebusy_busy;
+	struct Binary_r	*freebusy_away;
+	struct Binary_r	*freebusy_merged;
+	uint32_t	publish_start;
+	uint32_t	publish_end;
+	char		*email_address;
+	struct FILETIME	timestamp;
 };
 
 struct emsmdbp_object_table {

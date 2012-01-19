@@ -33,7 +33,7 @@ __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
 FIRST_ORGANIZATION = "First Organization"
-FIRST_ORGANIZATION_UNIT = "First Organization Unit"
+FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
@@ -413,6 +413,9 @@ def newmailbox(lp, username, firstorg, firstou, backend):
 
     print "* Adding additional default properties to Reminders"
     db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");
+
+    print "* Adding freebusy entry to public folders"
+    db.add_user_public_freebusy(username, names)
 
     rev_fid_reminders = mailbox.reverse_int64counter(int(fid_reminders, 10) >> 16) >> 16
     entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, rev_fid_reminders)

@@ -79,12 +79,12 @@ dn: CASE_INSENSITIVE
                       "objectClass": ["top", "ou"],
                       "cn": firstou})
 
-    def add_root_public_folder(self, pfdn, fid, cn, SystemIdx, childcount, mapistoreURL):
-        self.ldb.add({"dn": "CN=%s,%s" % (fid, pfdn),
+    def add_root_public_folder(self, dn, fid, change_num, SystemIdx, childcount, mapistoreURL):
+        self.ldb.add({"dn": dn,
                       "objectClass": ["publicfolder"],
                       "cn": fid,
                       "PidTagFolderId": fid,
-                      "PidTagChangeNumber": cn,
+                      "PidTagChangeNumber": change_num,
                       "PidTagDisplayName": "Public Folder Root",
                       "PidTagCreationTime": "%d" % self.nttime,
                       "PidTagLastModificationTime": "%d" % self.nttime,
@@ -93,13 +93,13 @@ dn: CASE_INSENSITIVE
                       "SystemIdx": str(SystemIdx)})
         return mapistoreURL + "/" + fid
 
-    def add_sub_public_folder(self, pfdn, parentfid, fid, cn, name, SystemIndex, childcount, mapistoreURL):
-        self.ldb.add({"dn": "CN=%s,%s" % (fid, pfdn),
+    def add_sub_public_folder(self, dn, parentfid, fid, change_num, name, SystemIndex, childcount, mapistoreURL):
+        self.ldb.add({"dn": dn,
                       "objectClass": ["publicfolder"],
                       "cn": fid,
-                      "PidTagParentFolderId": parentfid,
                       "PidTagFolderId": fid,
-                      "PidTagChangeNumber": cn,
+                      "PidTagParentFolderId": parentfid,
+                      "PidTagChangeNumber": change_num,
                       "PidTagDisplayName": name,
                       "PidTagCreationTime": "%d" % self.nttime,
                       "PidTagLastModificationTime": "%d" % self.nttime,
@@ -110,24 +110,25 @@ dn: CASE_INSENSITIVE
                       "PidTagSubFolders": str(childcount != 0).upper(),
                       "PidTagFolderChildCount": str(childcount),
                       "FolderType": str(1),
-                      "FolderType": str(1),
                       "SystemIdx": str(SystemIndex)})
         return mapistoreURL + "/" + fid
 
-    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, mapistoreURL):
+    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, mapistoreURL, dn_prefix = None):
         name = path[-1]
         GlobalCount = self.get_message_GlobalCount(names.netbiosname)
         ChangeNumber = self.get_message_ChangeNumber(names.netbiosname)
         ReplicaID = self.get_message_ReplicaID(names.netbiosname)
-        pfdn = "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn)
+        if dn_prefix is None:
+            dn_prefix = "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn)
         fid = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        cn = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
+        dn = "CN=%s,%s" % (fid, dn_prefix)
+        change_num = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
         childcount = len(children)
         print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
         if parent_fid == 0:
-            mapistoreURL = self.add_root_public_folder(pfdn, fid, cn, SystemIndex, childcount, mapistoreURL)
+            mapistoreURL = self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount, mapistoreURL)
         else:
-            mapistoreURL = self.add_sub_public_folder(pfdn, parent_fid, fid, cn, name, SystemIndex, childcount, mapistoreURL);
+            mapistoreURL = self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount, mapistoreURL);
 
         GlobalCount += 1
         self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -135,7 +136,8 @@ dn: CASE_INSENSITIVE
         self.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
 
         for name, grandchildren in children.iteritems():
-            self.add_one_public_folder(fid, path + (name,), grandchildren[0], grandchildren[1], names, mapistoreURL)
+            self.add_one_public_folder(fid, path + (name,), grandchildren[0], grandchildren[1], names, mapistoreURL, dn)
+
         return mapistoreURL
 
     def add_mapistore_pf_dir(self, mapistoreURL):
@@ -147,26 +149,61 @@ dn: CASE_INSENSITIVE
         self.add_mapistore_pf_dir(mapistoreURL)
         pfstoreGUID = str(uuid.uuid4())
         self.ldb.add({"dn": "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn),
-                "objectClass": ["container"],
-                "cn": "publicfolders",
-                "StoreGUID": pfstoreGUID,
-                "ReplicaID": str(1)})
+                      "objectClass": ["container"],
+                      "cn": "publicfolders",
+                      "StoreGUID": pfstoreGUID,
+                      "ReplicaID": str(1)})
         public_folders = ({
-            "IPM_SUBTREE": ({}, 1),
-            "NON_IPM_SUBTREE": ({
-                "EFORMS REGISTRY": ({}, 3),
-                "Events Root": ({}, -1),
-                "OFFLINE ADDRESS BOOK": ({
-                        "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 8),
-                }, 5),
-                "SCHEDULE+ FREE BUSY": ({
-                        "EX:/o=%s/ou=Exchange Administrative Group (%s)" % (names.firstorg, names.netbiosname): ({}, 7),
-                }, 4),
-            }, 2),
-        }, 0)
+                "IPM_SUBTREE": ({}, 1),
+                "NON_IPM_SUBTREE": ({
+                        "EFORMS REGISTRY": ({}, 3),
+                        "Events Root": ({}, -1),
+                        "OFFLINE ADDRESS BOOK": ({
+                                "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 8),
+                                }, 5),
+                        "SCHEDULE+ FREE BUSY": ({
+                                "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 7),
+                                }, 4),
+                        }, 2),
+                }, 0)
 
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names, mapistoreURL)
         
+    def add_user_public_freebusy(self, username, names):
+        # retrieve public freebusy subfolder for o and ou
+        name = "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower())
+        records = self.lookup_public_folder(names.netbiosname, name, attributes=["PidTagFolderId", "distinguishedName"])
+        if len(records) != 1:
+            raise Exception, "Incorrect number of entries returned for '%s'" % name
+
+        # retrieve globals
+        GlobalCount = self.get_message_GlobalCount(names.netbiosname)
+        ChangeNumber = self.get_message_ChangeNumber(names.netbiosname)
+        ReplicaID = self.get_message_ReplicaID(names.netbiosname)
+
+        record = records[0]
+        fid = "%s" % record["PidTagFolderId"]
+        fbmid = gen_mailbox_folder_fid(GlobalCount, 1)
+        cnstr = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
+        fbdn = "CN=%s,%s" % (fbmid, record["distinguishedName"])
+        displayname = "USER-/CN=RECIPIENTS/CN=%s" % username.upper()
+
+        self.ldb.add({"dn": fbdn,
+                      "objectClass": ["systemMessage", "freebusy"],
+                      "cn": fbmid,
+                      "PidTagMessageClass": "IPM.Post",
+                      "PidTagMessageId": fbmid,
+                      "PidTagParentFolderId": fid,
+                      "PidTagChangeNumber": cnstr,
+                      "PidTagNormalizedSubject": displayname,
+                      "PidTagCreationTime": "%d" % self.nttime,
+                      "PidTagLastModificationTime": "%d" % self.nttime})
+
+        GlobalCount += 1
+        self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
+        ChangeNumber += 1
+        self.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
+
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn
@@ -189,6 +226,20 @@ dn: CASE_INSENSITIVE
         filter = "(&(objectClass=mailbox)(cn=%s))" % (username)
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=filter, attrs=attributes)
+
+    def lookup_public_folder(self, server, displayname, attributes=[]):
+        """Retrieve the record for a public folder matching a specific display name
+
+        :param server: Server Object Name
+        :param displayname: Display Name of the Folder
+        :param attributes: Requested Attributes
+        :return: LDB Object of the Folder
+        """
+        server_dn = self.lookup_server(server, []).dn
+
+        filter = "(&(objectClass=publicfolder)(PidTagDisplayName=%s))" % (displayname)
+        return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
+                               expression=filter, attrs=attributes)
 
     def user_exists(self, server, username):
         """Check whether a user exists.

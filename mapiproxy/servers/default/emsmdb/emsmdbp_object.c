@@ -25,6 +25,10 @@
    \brief Server-side specific objects init/release routines
  */
 
+#include <ctype.h>
+#include <time.h>
+
+#include "mapiproxy/libmapistore/mapistore_nameid.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
@@ -36,6 +40,8 @@ struct DataArray_r {
 	uint32_t cValues;
 	const void *values;
 };
+
+static const int	max_mins_per_month = 31 * 24 * 60;
 
 const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 {
@@ -1589,6 +1595,472 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
+static int emsmdbp_days_in_month(int month, int year)
+{
+	static int	max_mdays[] = {31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31};
+	int		dec_year, days;
+
+	if (month == 1) {
+		dec_year = year % 100;
+		if ((dec_year == 0
+		     && ((((year + 1900) / 100) % 4) == 0))
+		    || (dec_year % 4) == 0) {
+			days = 29;
+		}
+		else {
+			days = max_mdays[month];
+		}
+	}
+	else {
+		days = max_mdays[month];
+	}
+
+	return days;
+}
+
+static int emsmdbp_mins_in_ymon(uint32_t ymon)
+{
+	return emsmdbp_days_in_month((ymon & 0xf) - 1, ymon >> 4) * 24 * 60;
+}
+
+static inline void emsmdbp_freebusy_make_range(struct tm *start_time, struct tm *end_time)
+{
+	time_t							now;
+	struct tm						time_data;
+	int							mw_delta, month;
+
+	/* (from OXOPFFB - 3.1.4.1.1)
+	   Start of range is 12:00 A.M. UTC on the first day of the month or the first day of the week, whichever occurs earlier at the time of publishing.
+	   End of range is calculated by adding the value of the PidTagFreeBusyCountMonths property ([MS-OXOCAL] section 2.2.12.1) to start of range.
+
+	   Since PidTagFreeBusyCountMonths is not supported yet, we use a count of 3 months
+	*/
+
+	now = time(NULL);
+	time_data = *gmtime(&now);
+	time_data.tm_hour = 0;
+	time_data.tm_min = 0;
+	time_data.tm_sec = 0;
+
+	/* take the first day of the week OR the first day of the month */
+	month = time_data.tm_mon;
+	if (time_data.tm_mday < 7) {
+		mw_delta = (time_data.tm_wday + 1 - time_data.tm_mday);
+		if (mw_delta > 0) {
+			if (time_data.tm_mon > 1) {
+				time_data.tm_mon--;
+			}
+			else {
+				time_data.tm_mon = 11;
+				time_data.tm_year--;
+			}
+			time_data.tm_mday = emsmdbp_days_in_month(time_data.tm_mon, time_data.tm_year) + 1 - mw_delta;
+		}
+		else {
+			time_data.tm_mday = 1;
+		}
+	}
+	else {
+		time_data.tm_mday = 1;
+	}
+
+	*start_time = time_data;
+
+	time_data.tm_mon = month + 2;
+	if (time_data.tm_mon > 11) {
+		time_data.tm_year++;
+		time_data.tm_mon -= 11;
+	}
+	time_data.tm_mday = emsmdbp_days_in_month(time_data.tm_mon, time_data.tm_year) + 1 - mw_delta;
+	time_data.tm_hour = 23;
+	time_data.tm_min = 59;
+	time_data.tm_sec = 59;
+
+	*end_time = time_data;
+}
+
+static void emsmdbp_freebusy_convert_filetime(struct FILETIME *ft_value, uint32_t *ymon, uint32_t *mins)
+{
+	NTTIME		nt_time;
+	time_t		u_time;
+	struct tm	*gm_time;
+
+	nt_time = ((NTTIME) ft_value->dwHighDateTime << 32) | ft_value->dwLowDateTime;
+	u_time = nt_time_to_unix(nt_time);
+	gm_time = gmtime(&u_time);
+
+	*ymon = ((gm_time->tm_year + 1900) << 4) | (gm_time->tm_mon + 1);
+	*mins = gm_time->tm_min + (gm_time->tm_hour + ((gm_time->tm_mday - 1) * 24)) * 60;
+}
+
+static uint16_t emsmdbp_freebusy_find_month_range(uint32_t ymon, uint32_t *months_ranges, uint16_t nbr_months, bool *overflow)
+{
+	uint16_t	range;
+
+	if (nbr_months > 0) {
+		if (months_ranges[0] > ymon) {
+			*overflow = true;
+			return 0;
+		}
+		else {
+			if (months_ranges[nbr_months - 1] < ymon) {
+				*overflow = true;
+				return (nbr_months - 1);
+			}
+			else {
+				*overflow = false;
+				for (range = 0; range < nbr_months; range++) {
+					if (months_ranges[range] == ymon) {
+						return range;
+					}
+				}
+			}
+		}
+	}
+
+	return (uint16_t) -1;
+}
+
+/* TODO: both following methods could be merged. This would certainly enhance performance by avoiding to wander through long arrays multiple times */
+static void emsmdbp_freebusy_fill_fbarray(uint8_t **minutes_array, uint32_t *months_ranges, uint16_t nbr_months, struct FILETIME *start, struct FILETIME *end)
+{
+	uint32_t	i, max, start_ymon, start_mins, end_ymon, end_mins;
+	uint16_t	start_mr_idx, end_mr_idx;
+	bool		start_range_overflow, end_range_overflow;
+
+	emsmdbp_freebusy_convert_filetime(start, &start_ymon, &start_mins);
+	emsmdbp_freebusy_convert_filetime(end, &end_ymon, &end_mins);
+
+	start_mr_idx = emsmdbp_freebusy_find_month_range(start_ymon, months_ranges, nbr_months, &start_range_overflow);
+	if (start_range_overflow) {
+		start_mins = 0;
+	}
+	end_mr_idx = emsmdbp_freebusy_find_month_range(end_ymon, months_ranges, nbr_months, &end_range_overflow);
+	if (end_range_overflow) {
+		end_mins = emsmdbp_mins_in_ymon(end_ymon);
+	}
+
+	/* head */
+	if (end_mr_idx > start_mr_idx) {
+		/* end occurs after start range */
+
+		/* middle */
+		for (i = start_mr_idx + 1; i < end_mr_idx; i++) {
+			memset(minutes_array[i], 1, emsmdbp_mins_in_ymon(months_ranges[i]));
+		}
+
+		/* tail */
+		memset(minutes_array[end_mr_idx], 1, end_mins);
+
+		max = emsmdbp_mins_in_ymon(start_ymon); /* = max chunk for first range */
+	}
+	else {
+		/* end occurs on same range as start */
+
+		max = end_mins;
+	}
+	memset(minutes_array[start_mr_idx] + start_mins, 1, (max - start_mins));
+}
+
+static void emsmdbp_freebusy_compile_fbarray(TALLOC_CTX *mem_ctx, uint8_t *minutes_array, struct Binary_r *fb_bin)
+{
+	int			i;
+	bool			filled;
+	struct ndr_push		*ndr;
+	TALLOC_CTX		*local_mem_ctx;
+
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	ndr = ndr_push_init_ctx(local_mem_ctx);
+
+	filled = (minutes_array[0] != 0);
+	if (filled) {
+		ndr_push_uint16(ndr, NDR_SCALARS, 0);
+	}
+
+	for (i = 1; i < max_mins_per_month; i++) {
+		if (filled && !minutes_array[i]) {
+			ndr_push_uint16(ndr, NDR_SCALARS, (i - 1));
+			filled = false;
+		}
+		else if (!filled && minutes_array[i]) {
+			ndr_push_uint16(ndr, NDR_SCALARS, i);
+			filled = true;
+		}
+	}
+	if (filled) {
+		ndr_push_uint16(ndr, NDR_SCALARS, (max_mins_per_month - 1));
+	}
+
+	fb_bin->cb = ndr->offset;
+	fb_bin->lpb = ndr->data;
+	(void) talloc_reference(mem_ctx, fb_bin->lpb);
+
+	talloc_free(local_mem_ctx);
+}
+
+static void emsmdbp_freebusy_merge_subarray(uint8_t *minutes_array, uint8_t *included_array)
+{
+	int i;
+
+	for (i = 0; i < max_mins_per_month; i++) {
+		if (included_array[i]) {
+			minutes_array[i] = 1;
+		}
+	}
+}
+
+static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_object *message_object)
+{
+	/* freebusy mechanism:
+	   - lookup events in range now + 3 months, requesting end date, start date and PidLidBusyStatus
+	   - fill (olTentative) PidTagScheduleInfoMonthsTentative,
+	   PidTagScheduleInfoFreeBusyTentative
+	   - fill (olBusy) PidTagScheduleInfoMonthsBusy,
+	   PidTagScheduleInfoFreeBusyBusy
+	   - fill (olOutOfOffice) PidTagScheduleInfoMonthsAway,
+	   PidTagScheduleInfoFreeBusyAway
+	   - fill (olBusy + olOutOfOffice) PidTagScheduleInfoMonthsMerged,
+	   PidTagScheduleInfoFreeBusyMerged
+	   - fill PidTagFreeBusyPublishStart, PidTagFreeBusyPublishEnd and
+	   PidTagFreeBusyRangeTimestamp.
+	   - fill PidTagFreeBusyMessageEmailAddress */
+
+	TALLOC_CTX						*mem_ctx;
+	struct emsmdbp_object_message_freebusy_properties	*fb_props;
+	char							*subject, *email, *username, *tmp;
+	struct SPropTagArray					*props;
+        void							**data_pointers;
+        enum MAPISTATUS						*retvals = NULL;
+	struct emsmdbp_object					*mailbox, *inbox, *calendar, *table;
+	uint64_t						inboxFID, calendarFID;
+	uint32_t						contextID;
+	struct mapi_SRestriction				and_res;
+	uint8_t							state;
+	struct tm						start_tm, end_tm;
+	time_t							start_time, end_time;
+	NTTIME							nt_time;
+	struct mapi_SRestriction_and				time_restrictions[2];
+	int							i, month, nbr_months;
+	uint8_t							**minutes_array, **tentative_array, **busy_array, **oof_array;
+	char							*tz;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	fb_props = talloc_zero(message_object, struct emsmdbp_object_message_freebusy_properties);
+	message_object->object.message->fb_properties = fb_props;
+
+	/* 1. retrieve subject and deduce username */
+	props = talloc_zero(mem_ctx, struct SPropTagArray);
+	props->cValues = 1;
+	props->aulPropTag = talloc_zero(props, enum MAPITAGS);
+	props->aulPropTag[0] = PR_NORMALIZED_SUBJECT_UNICODE;
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, message_object->emsmdbp_ctx, message_object, props, &retvals);
+	if (!data_pointers || retvals[0] != MAPI_E_SUCCESS) {
+		goto end;
+	}
+	subject = data_pointers[0];
+	// format is "..../CN="
+	username = strrchr(subject, '/');
+	if (!username) {
+		goto end;
+	}
+	username += 4;
+	username = talloc_strdup(mem_ctx, username);
+
+	// WARNING: the mechanism here will fail if username is not all lower-case, as LDB does not support case-insensitive queries
+	tmp = username;
+	while (*tmp) {
+		*tmp = tolower(*tmp);
+		tmp++;
+	}
+	email = talloc_asprintf(mem_ctx, "/o=First Organization/ou=First Administrative Group/cn=Recipients/cn=%s", username);
+	fb_props->email_address = email;
+
+	/* open user mailbox */
+	mailbox = emsmdbp_object_mailbox_init(mem_ctx, message_object->emsmdbp_ctx, email, true);
+	if (!mailbox) {
+		goto end;
+	}
+
+	/* open Inbox */
+	openchangedb_get_SystemFolderID(message_object->emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &inboxFID);
+	if (emsmdbp_object_open_folder_by_fid(mem_ctx, message_object->emsmdbp_ctx, mailbox, inboxFID, &inbox) != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+
+	/* retrieve Calendar entry id */
+	props->aulPropTag[0] = PR_IPM_APPOINTMENT_ENTRYID;
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, message_object->emsmdbp_ctx, inbox, props, &retvals);
+	if (!data_pointers || retvals[0] != MAPI_E_SUCCESS) {
+		goto end;
+	}
+	calendarFID = 0;
+	for (i = 0; i < 6; i++) {
+		calendarFID <<= 8;
+		calendarFID |= *(((struct Binary_r *) data_pointers[0])->lpb + (43 - i));
+	}
+	calendarFID <<= 16;
+	calendarFID |= 1;
+
+	/* open user calendar */
+	if (emsmdbp_object_open_folder_by_fid(mem_ctx, message_object->emsmdbp_ctx, mailbox, calendarFID, &calendar) != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+	if (!emsmdbp_is_mapistore(calendar)) {
+		DEBUG(5, ("non-mapistore calendars are not supported for freebusy\n"));
+		goto end;
+	}
+
+	/* fetch events from this month for 3 months: start + enddate + fbstatus */
+	table = emsmdbp_folder_open_table(mem_ctx, calendar, MAPISTORE_MESSAGE_TABLE, 0);
+	if (!table) {
+		goto end;
+	}
+	contextID = emsmdbp_get_contextID(calendar);
+
+	/* fetch freebusy range */
+	emsmdbp_freebusy_make_range(&start_tm, &end_tm);
+
+	unix_to_nt_time(&nt_time, time(NULL));
+	fb_props->timestamp.dwLowDateTime = (nt_time & 0xffffffff);
+	fb_props->timestamp.dwHighDateTime = nt_time >> 32;
+
+	tz = getenv("TZ");
+	setenv("TZ", "", 1);
+	tzset();
+	start_time = mktime(&start_tm);
+	end_time = mktime(&end_tm);
+	if (tz) {
+		setenv("TZ", tz, 1);
+	}
+	else {
+		unsetenv("TZ");
+	}
+	tzset();
+
+	/* setup restriction */
+	and_res.rt = RES_AND;
+	and_res.res.resAnd.cRes = 2;
+	and_res.res.resAnd.res = time_restrictions;
+
+	time_restrictions[0].rt = RES_PROPERTY;
+	time_restrictions[0].res.resProperty.relop = RELOP_GE;
+	time_restrictions[0].res.resProperty.ulPropTag = PidLidAppointmentEndWhole; 
+	time_restrictions[0].res.resProperty.lpProp.ulPropTag = PidLidAppointmentEndWhole;
+	unix_to_nt_time(&nt_time, start_time);
+	time_restrictions[0].res.resProperty.lpProp.value.ft.dwLowDateTime = (nt_time & 0xffffffff);
+	time_restrictions[0].res.resProperty.lpProp.value.ft.dwHighDateTime = nt_time >> 32;
+	fb_props->publish_start = (uint32_t) (nt_time / (60 * 10000000));
+
+	time_restrictions[1].rt = RES_PROPERTY;
+	time_restrictions[1].res.resProperty.relop = RELOP_LE;
+	time_restrictions[1].res.resProperty.ulPropTag = PidLidAppointmentStartWhole; 
+	time_restrictions[1].res.resProperty.lpProp.ulPropTag = PidLidAppointmentStartWhole;
+	unix_to_nt_time(&nt_time, end_time);
+	time_restrictions[1].res.resProperty.lpProp.value.ft.dwLowDateTime = (nt_time & 0xffffffff);
+	time_restrictions[1].res.resProperty.lpProp.value.ft.dwHighDateTime = nt_time >> 32;
+	fb_props->publish_end = (uint32_t) (nt_time / (60 * 10000000));
+
+	mapistore_table_set_restrictions(message_object->emsmdbp_ctx->mstore_ctx, contextID, table->backend_object, &and_res, &state);
+
+	/* setup table columns */
+	props->cValues = 3;
+	props->aulPropTag = talloc_array(props, enum MAPITAGS, props->cValues);
+	props->aulPropTag[0] = PidLidAppointmentStartWhole;
+	props->aulPropTag[1] = PidLidAppointmentEndWhole;
+	props->aulPropTag[2] = PidLidBusyStatus;
+	mapistore_table_set_columns(message_object->emsmdbp_ctx->mstore_ctx, contextID, table->backend_object, props->cValues, props->aulPropTag);
+	table->object.table->prop_count = props->cValues;
+	table->object.table->properties = props->aulPropTag;
+
+	/* setup months arrays */
+	if (start_tm.tm_year == end_tm.tm_year) {
+		nbr_months = (end_tm.tm_mon - start_tm.tm_mon + 1);
+	}
+	else {
+		nbr_months = (12 - start_tm.tm_mon) + end_tm.tm_mon + 1;
+	}
+	fb_props->months_ranges = talloc_array(fb_props, uint32_t, nbr_months);
+	if (start_tm.tm_year == end_tm.tm_year) {
+		for (i = 0; i < nbr_months; i++) {
+			fb_props->months_ranges[i] = ((start_tm.tm_year + 1900) << 4) + (start_tm.tm_mon + 1 + i);
+		}
+	}
+	else {
+		month = start_tm.tm_mon;
+		i = 0;
+		while (month < 12) {
+			fb_props->months_ranges[i] = ((start_tm.tm_year + 1900) << 4) + month + 1;
+			i++;
+			month++;
+		}
+		month = 0;
+		while (month < end_tm.tm_mon) {
+			fb_props->months_ranges[i] = ((end_tm.tm_year + 1900) << 4) + month + 1;
+			i++;
+			month++;
+		}
+		fb_props->months_ranges[i] = ((end_tm.tm_year + 1900) << 4) + month + 1;
+	}
+
+	/* fetch events and fill freebusy arrays */
+	tentative_array = talloc_array(mem_ctx, uint8_t *, nbr_months);
+	busy_array = talloc_array(mem_ctx, uint8_t *, nbr_months);
+	oof_array = talloc_array(mem_ctx, uint8_t *, nbr_months);
+	for (i = 0; i < nbr_months; i++) {
+		tentative_array[i] = talloc_array(tentative_array, uint8_t, max_mins_per_month);
+		memset(tentative_array[i], 0, max_mins_per_month);
+		busy_array[i] = talloc_array(tentative_array, uint8_t, max_mins_per_month);
+		memset(busy_array[i], 0, max_mins_per_month);
+		oof_array[i] = talloc_array(tentative_array, uint8_t, max_mins_per_month);
+		memset(oof_array[i], 0, max_mins_per_month);
+	}
+
+	i = 0;
+	while ((data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, message_object->emsmdbp_ctx, table, i, MAPISTORE_PREFILTERED_QUERY, &retvals))) {
+		DEBUG(5, ("fb row++\n"));
+		if (retvals[0] == MAPI_E_SUCCESS && retvals[1] == MAPI_E_SUCCESS && retvals[2] == MAPI_E_SUCCESS) {
+			switch (*((uint32_t *) data_pointers[2])) {
+			case olTentative:
+				minutes_array = tentative_array;
+				break;
+			case olBusy:
+				minutes_array = busy_array;
+				break;
+			case olOutOfOffice:
+				minutes_array = oof_array;
+				break;
+			default:
+				minutes_array = NULL;
+			}
+			if (minutes_array) {
+				emsmdbp_freebusy_fill_fbarray(minutes_array, fb_props->months_ranges, nbr_months, data_pointers[0], data_pointers[1]);
+			}
+		}
+		i++;
+	}
+
+        /* compile minutes array into arrays of ranges */
+	fb_props->nbr_months = nbr_months;
+	fb_props->freebusy_tentative = talloc_array(fb_props, struct Binary_r, nbr_months);
+	fb_props->freebusy_busy = talloc_array(fb_props, struct Binary_r, nbr_months);
+	fb_props->freebusy_away = talloc_array(fb_props, struct Binary_r, nbr_months);
+	fb_props->freebusy_merged = talloc_array(fb_props, struct Binary_r, nbr_months);
+	for (i = 0; i < nbr_months; i++) {
+		emsmdbp_freebusy_compile_fbarray(fb_props, tentative_array[i], fb_props->freebusy_tentative + i);
+		emsmdbp_freebusy_compile_fbarray(fb_props, busy_array[i], fb_props->freebusy_busy + i);
+		emsmdbp_freebusy_compile_fbarray(fb_props, oof_array[i], fb_props->freebusy_away + i);
+		emsmdbp_freebusy_merge_subarray(busy_array[i], oof_array[i]);
+		emsmdbp_freebusy_compile_fbarray(fb_props, busy_array[i], fb_props->freebusy_merged + i);
+	}
+
+end:
+	talloc_free(mem_ctx);
+
+	return;
+}
+
 _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, bool read_write, struct emsmdbp_object **messageP, struct mapistore_message **msgp)
 {
 	struct emsmdbp_object *folder_object, *message_object = NULL;
@@ -1617,6 +2089,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 			talloc_free(message_object);
 			message_object = NULL;
 		}
+
+		emsmdbp_object_message_fill_freebusy_properties(message_object);
 		break;
 	case true:
 		/* mapistore implementation goes here */
@@ -1873,10 +2347,15 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 						 struct emsmdbp_object *object, struct SPropTagArray *properties,
 						 void **data_pointers, enum MAPISTATUS *retvals)
 {
-	enum MAPISTATUS		retval;
-	int			i;
-	char			*owner;
-	struct Binary_r		*binr;
+	enum MAPISTATUS						retval;
+	int							i;
+	char							*owner;
+	struct Binary_r						*binr;
+	struct emsmdbp_object_message_freebusy_properties	*fb_props;
+	struct LongArray_r					*long_array;
+	struct BinaryArray_r				       	*bin_array;
+
+	fb_props = object->object.message->fb_properties;
 
 	/* Look over properties */
 	for (i = 0; i < properties->cValues; i++) {
@@ -1887,7 +2366,69 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;
 		} else {
-			retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+			if (fb_props) {
+				switch (properties->aulPropTag[i]) {
+				case PR_SCHDINFO_MONTHS_TENTATIVE:
+				case PR_SCHDINFO_MONTHS_BUSY:
+				case PR_SCHDINFO_MONTHS_OOF:
+				case PR_SCHDINFO_MONTHS_MERGED:
+					long_array = talloc_zero(data_pointers, struct LongArray_r);
+					long_array->cValues = fb_props->nbr_months;
+					long_array->lpl = fb_props->months_ranges;
+					data_pointers[i] = long_array;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_SCHDINFO_FREEBUSY_TENTATIVE:
+					bin_array = talloc_zero(data_pointers, struct BinaryArray_r);
+					bin_array->cValues = fb_props->nbr_months;
+					bin_array->lpbin = fb_props->freebusy_tentative;
+					data_pointers[i] = bin_array;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_SCHDINFO_FREEBUSY_BUSY:
+					bin_array = talloc_zero(data_pointers, struct BinaryArray_r);
+					bin_array->cValues = fb_props->nbr_months;
+					bin_array->lpbin = fb_props->freebusy_busy;
+					data_pointers[i] = bin_array;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_SCHDINFO_FREEBUSY_OOF:
+					bin_array = talloc_zero(data_pointers, struct BinaryArray_r);
+					bin_array->cValues = fb_props->nbr_months;
+					bin_array->lpbin = fb_props->freebusy_away;
+					data_pointers[i] = bin_array;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_SCHDINFO_FREEBUSY_MERGED:
+					bin_array = talloc_zero(data_pointers, struct BinaryArray_r);
+					bin_array->cValues = fb_props->nbr_months;
+					bin_array->lpbin = fb_props->freebusy_merged;
+					data_pointers[i] = bin_array;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_FREEBUSY_PUBLISH_START:
+					data_pointers[i] = &fb_props->publish_start;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_FREEBUSY_PUBLISH_END:
+					data_pointers[i] = &fb_props->publish_end;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_FREEBUSY_EMA:
+					data_pointers[i] = fb_props->email_address;
+					retval = MAPI_E_SUCCESS;
+					break;
+				case PR_FREEBUSY_RANGE_TIMESTAMP:
+					data_pointers[i] = &fb_props->timestamp;
+					retval = MAPI_E_SUCCESS;
+					break;
+				default:
+					retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+				}
+			}
+			else {
+				retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+			}
 		}
 		retvals[i] = retval;
 	}

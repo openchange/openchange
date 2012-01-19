@@ -58,6 +58,13 @@ interface property
 	} WeekRecurrencePattern;
 
 	typedef [v1_enum] enum {
+		olFree		= 0x00000000,
+		olTentative	= 0x00000001,
+		olBusy		= 0x00000002,
+		olOutOfOffice	= 0x00000003
+	} FreeBusyStatus; /* oxocal - 2.2.1.2 */
+
+	typedef [v1_enum] enum {
 		RecurrenceN_First	=	0x1,
 		RecurrenceN_Second	=	0x2,
 		RecurrenceN_Third	=	0x3,

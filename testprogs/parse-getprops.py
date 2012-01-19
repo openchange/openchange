@@ -256,7 +256,7 @@ class GetPropsParser:
     def _printMultiValue(self, pos, colType):
         length = struct.unpack_from("<L", self.response, pos)[0]
         subtype = colType & 0x0fff
-        print "multivalue (%d, 0x%.4x)" % (length, subtype)
+        print "multivalue (%d, 0xX%.3x)" % (length, subtype)
         consumed = 4
         for x in xrange(length):
             consumed = consumed + self._printValue(pos + consumed, subtype)

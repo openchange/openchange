@@ -505,6 +505,10 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
 
+	case PT_MV_LONG:
+		ndr_push_mapi_MV_LONG_STRUCT(ndr, NDR_SCALARS, (struct mapi_MV_LONG_STRUCT *) value);
+		break;
+
 	case PT_MV_UNICODE:
                 ndr_push_mapi_SPLSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SPLSTRArrayW *) value);
 		break;
@@ -519,6 +523,10 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		}
 		break;
 	default:
+		if (property != 0) {
+			DEBUG(5, ("unsupported type: %.4x\n", (property & 0xffff)));
+			abort();
+		}
 		break;
 	}
 end:

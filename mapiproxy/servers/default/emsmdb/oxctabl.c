@@ -372,7 +372,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	struct QueryRows_repl		response;
 	enum MAPISTATUS			retval;
 	void				*data;
-	uint32_t			*mapistore_retvals;
+	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
 	uint32_t			count, max;
 	uint32_t			handle;
@@ -442,12 +442,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		max = table->denominator;
 	}
         for (i = table->numerator; i < max; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &mapistore_retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
 						    &response.RowData, table->prop_count,
-						    table->properties, data_pointers, mapistore_retvals);
-			talloc_free(mapistore_retvals);
+						    table->properties, data_pointers, retvals);
+			talloc_free(retvals);
 			talloc_free(data_pointers);
 			count++;
 		}
@@ -700,7 +700,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	struct FindRow_req		request;
 	enum MAPISTATUS			retval;
 	void				*data = NULL;
-	uint32_t			*retvals;
+	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
 	uint32_t			handle;
 	DATA_BLOB			row;

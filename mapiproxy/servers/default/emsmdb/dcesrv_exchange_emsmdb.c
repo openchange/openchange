@@ -298,7 +298,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS         retval;
         void                    **data_pointers;
         DATA_BLOB               *table_row;
-        uint32_t                *retvals;
+        enum MAPISTATUS		*retvals;
         uint32_t                contextID, saved_prop_count, prev_instance;
         enum MAPITAGS           *saved_properties, *previous_row_properties;
         uint64_t                prev_fid, prev_mid;

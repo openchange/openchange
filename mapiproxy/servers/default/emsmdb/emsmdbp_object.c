@@ -787,7 +787,8 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		i, count, contextID, dest_num;
 	void			**data_pointers;
-	uint32_t		*retvals, *attach_nums;
+	enum MAPISTATUS		*retvals;
+	uint32_t		*attach_nums;
 	struct emsmdbp_object	*table_object, *source_attach, *dest_attach;
 	enum MAPITAGS		column;
 	int			ret;
@@ -821,7 +822,7 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 			talloc_free(mem_ctx);
 			return MAPISTORE_ERROR;
 		}
-		if (retvals[0] != MAPISTORE_SUCCESS) {
+		if (retvals[0] != MAPI_E_SUCCESS) {
 			talloc_free(mem_ctx);
 			DEBUG(5, ("cannot copy attachments without PR_ATTACH_NUM\n"));
 			return MAPISTORE_ERROR;
@@ -1274,12 +1275,12 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	return retval;
 }
 
-_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, enum mapistore_query_type query_type, uint32_t **retvalsp)
+_PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *table_object, uint32_t row_id, enum mapistore_query_type query_type, enum MAPISTATUS **retvalsp)
 {
         void				**data_pointers;
         enum MAPISTATUS			retval;
 	enum mapistore_error		ret;
-        uint32_t			*retvals;
+        enum MAPISTATUS			*retvals;
         struct emsmdbp_object_table	*table;
         struct mapistore_property_data	*properties;
         uint32_t			contextID, i, num_props, *obj_count;
@@ -1297,7 +1298,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
         data_pointers = talloc_array(mem_ctx, void *, num_props);
         memset(data_pointers, 0, sizeof(void *) * num_props);
-        retvals = talloc_array(mem_ctx, uint32_t, num_props);
+        retvals = talloc_array(mem_ctx, enum MAPISTATUS, num_props);
         memset(retvals, 0, sizeof(uint32_t) * num_props);
 
 	contextID = emsmdbp_get_contextID(table_object);
@@ -1502,7 +1503,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
 					  DATA_BLOB *table_row, uint16_t num_props,
 					  enum MAPITAGS *properties,
-					  void **data_pointers, uint32_t *retvals)
+					  void **data_pointers, enum MAPISTATUS *retvals)
 {
         uint16_t i;
         uint8_t flagged;

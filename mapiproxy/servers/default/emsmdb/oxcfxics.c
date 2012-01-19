@@ -512,7 +512,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 	static const int	prop_count = sizeof(prop_tags) / sizeof (enum MAPITAGS);
 	struct SPropTagArray	query_props;
 	uint32_t		i;
-	uint32_t		*retvals;
+	enum MAPISTATUS		*retvals;
 	void			**data_pointers;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
@@ -590,7 +590,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 {
 	struct emsmdbp_object		*table_object, *message_object;
 	uint32_t			i, j;
-	uint32_t			*retvals, *header_retvals;
+	enum MAPISTATUS			*retvals, *header_retvals;
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
@@ -647,7 +647,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 9);
-			header_retvals = talloc_array(header_data_pointers, uint32_t, 9);
+			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
 			memset(header_retvals, 0, 9 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
@@ -962,7 +962,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	NTTIME			nt_time;
 	int32_t			unix_time;
 	uint32_t		i, j;
-	uint32_t		*retvals, *header_retvals;
+	enum MAPISTATUS		*retvals, *header_retvals;
 	void			**data_pointers, **header_data_pointers;
 	struct SPropTagArray	query_props;
 	TALLOC_CTX		*local_mem_ctx;
@@ -991,7 +991,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 		if (data_pointers) {
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
-			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
+			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 8);
 			memset(header_retvals, 0, 8 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
 
@@ -2713,7 +2713,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	uint64_t			eid, cn;
 	uint32_t			i, nr_eid;
 	void				**data_pointers;
-	uint32_t			*retvals;
+	enum MAPISTATUS			*retvals;
 	struct emsmdbp_object		*table_object, *subfolder_object;
 	struct emsmdbp_object_table	*table;
 	uint32_t			unix_time;

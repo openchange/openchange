@@ -35,12 +35,6 @@
 
 #include "dcesrv_exchange_emsmdb.h"
 
-/* a private struct used to map array for properties with MV_FLAG set in a type-agnostic way */
-struct DataArray_r {
-	uint32_t cValues;
-	const void *values;
-};
-
 static const int	max_mins_per_month = 31 * 24 * 60;
 
 const char *emsmdbp_getstr_type(struct emsmdbp_object *object)

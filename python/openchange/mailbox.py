@@ -154,18 +154,18 @@ dn: CASE_INSENSITIVE
                       "StoreGUID": pfstoreGUID,
                       "ReplicaID": str(1)})
         public_folders = ({
-                "IPM_SUBTREE": ({}, 1),
+                "IPM_SUBTREE": ({}, 2),
                 "NON_IPM_SUBTREE": ({
-                        "EFORMS REGISTRY": ({}, 3),
+                        "EFORMS REGISTRY": ({}, 4),
                         "Events Root": ({}, -1),
                         "OFFLINE ADDRESS BOOK": ({
-                                "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 8),
-                                }, 5),
+                                "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 9),
+                                }, 6),
                         "SCHEDULE+ FREE BUSY": ({
-                                "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 7),
-                                }, 4),
-                        }, 2),
-                }, 0)
+                                "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 8),
+                                }, 5),
+                        }, 3),
+                }, 1)
 
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names, mapistoreURL)
         

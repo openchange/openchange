@@ -80,7 +80,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	response->LogonFlags = request->LogonFlags;
 
 	/* Step 4. Build FolderIds list */
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTIONS, &response->LogonType.store_mailbox.DeferredAction);
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTION, &response->LogonType.store_mailbox.DeferredAction);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.SpoolerQueue);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_TOP_INFORMATION_STORE, &response->LogonType.store_mailbox.IPMSubTree);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &response->LogonType.store_mailbox.Inbox);

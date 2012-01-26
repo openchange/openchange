@@ -714,7 +714,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
    \param mem_ctx pointer to the memory context
    \param ldb_ctx pointer to the OpenChange LDB context
-   \param recipient the mailbox username
    \param res pointer to the LDB result
    \param proptag the MAPI property tag to lookup
    \param PidTagAttr the mapped MAPI property name
@@ -723,7 +722,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
  */
 void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
 					struct ldb_context *ldb_ctx,
-					const char *recipient,
 					struct ldb_result *res,
 					uint32_t proptag,
 					const char *PidTagAttr)
@@ -1129,7 +1127,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
 
    \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
-   \param recipient the mailbox username
    \param proptag the MAPI property tag to retrieve value for
    \param fid the record folder identifier
    \param data pointer on pointer to the data the function returns
@@ -1138,7 +1135,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  struct ldb_context *ldb_ctx,
-							  const char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
 							  void **data)
@@ -1164,7 +1160,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 4. Check if this is a "special property" */
-	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 5. If this is not a "special property" */
@@ -1266,7 +1262,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 
    \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
-   \param recipient the mailbox username
    \param ldb_filter the ldb search string
    \param proptag the MAPI property tag to retrieve value for
    \param pos the record position in search results
@@ -1276,8 +1271,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 struct ldb_context *ldb_ctx,
-							 const char *recipient,
-							 char *ldb_filter,
+							 const char *ldb_filter,
 							 uint32_t proptag,
 							 uint32_t pos,
 							 void **data)
@@ -1306,7 +1300,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 5. Check if this is a "special property" */
-	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 6. Check if this is not a "special property" */

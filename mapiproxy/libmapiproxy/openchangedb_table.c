@@ -218,7 +218,6 @@ static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct opencha
 _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void *table_object,
 							 struct ldb_context *ldb_ctx,
-							 const char *recipient,
 							 enum MAPITAGS proptag,
 							 uint32_t pos,
 							 bool live_filtered,
@@ -235,7 +234,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_NOT_INITIALIZED, NULL);
 
 	table = (struct openchangedb_table *)table_object;
@@ -318,7 +316,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[pos], PidTagAttr), MAPI_E_NOT_FOUND, NULL);
 
 	/* Check if this is a "special property" */
-	*data = openchangedb_get_special_property(mem_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(mem_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, NULL);
 
 	/* Check if this is NOT a "special property" */

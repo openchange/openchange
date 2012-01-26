@@ -19,6 +19,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include <sys/stat.h>
+#include <sys/types.h>
+
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
@@ -162,6 +165,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	char					*namespace;
 	char					*namespace_start;
 	char					*backend_uri;
+	char					*mapistore_dir;
 	struct indexing_context_list		*ictx;
 
 	/* Step 1. Perform Sanity Checks on URI */
@@ -182,6 +186,10 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	if (namespace[1] && namespace[1] == '/' &&
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
+		/* ensure the user mapistore directory exists before any mapistore operation occurs */
+		mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
+		mkdir(mapistore_dir, 0700);
+
 		mapistore_indexing_add(mstore_ctx, owner, &ictx);
 		mapistore_indexing_add_ref_count(ictx);
 
@@ -413,6 +421,11 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 	}
 
 	return "Unknown error";
+}
+
+_PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(const char *username, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
+{
+	return mapistore_backend_list_contexts(username, mem_ctx, contexts_listp);
 }
 
 /**

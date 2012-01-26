@@ -51,7 +51,7 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	struct Logon_req	*request;
 	struct Logon_repl	*response;
 	const char * const	attrs[] = { "*", NULL };
-	int			ret;
+	enum MAPISTATUS		ret;
 	struct ldb_result	*res = NULL;
 	const char		*username;
 	struct tm		*LogonTime;
@@ -72,14 +72,18 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	username = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
-	/* Step 2. Check if mailbox corresponding to the specified username does exist */
-	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.Root);
-	OPENCHANGE_RETVAL_IF(ret, ecUnknownUser, NULL);
+	/* Step 2. Init and or update the user mailbox (auto-provisioning) */
+	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
+	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
+	/* TODO: freebusy entry should be created only during freebusy lookups */
+	ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
+	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
 
 	/* Step 3. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;
 
 	/* Step 4. Build FolderIds list */
+	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &response->LogonType.store_mailbox.Root);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_DEFERRED_ACTION, &response->LogonType.store_mailbox.DeferredAction);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SPOOLER_QUEUE, &response->LogonType.store_mailbox.SpoolerQueue);
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_TOP_INFORMATION_STORE, &response->LogonType.store_mailbox.IPMSubTree);
@@ -392,8 +396,7 @@ static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 3.Set the receive folder for this message class within user mailbox */
-	retval = openchangedb_set_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
-						MessageClass, fid);
+	retval = openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username, MessageClass, fid);
 	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
 
 	return MAPI_E_SUCCESS;

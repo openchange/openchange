@@ -79,7 +79,7 @@ dn: CASE_INSENSITIVE
                       "objectClass": ["top", "ou"],
                       "cn": firstou})
 
-    def add_root_public_folder(self, dn, fid, change_num, SystemIdx, childcount, mapistoreURL):
+    def add_root_public_folder(self, dn, fid, change_num, SystemIdx, childcount):
         self.ldb.add({"dn": dn,
                       "objectClass": ["publicfolder"],
                       "cn": fid,
@@ -91,9 +91,8 @@ dn: CASE_INSENSITIVE
                       "PidTagSubFolders": str(childcount != 0).upper(),
                       "PidTagFolderChildCount": str(childcount),
                       "SystemIdx": str(SystemIdx)})
-        return mapistoreURL + "/" + fid
 
-    def add_sub_public_folder(self, dn, parentfid, fid, change_num, name, SystemIndex, childcount, mapistoreURL):
+    def add_sub_public_folder(self, dn, parentfid, fid, change_num, name, SystemIndex, childcount):
         self.ldb.add({"dn": dn,
                       "objectClass": ["publicfolder"],
                       "cn": fid,
@@ -111,9 +110,9 @@ dn: CASE_INSENSITIVE
                       "PidTagFolderChildCount": str(childcount),
                       "FolderType": str(1),
                       "SystemIdx": str(SystemIndex)})
-        return mapistoreURL + "/" + fid
 
-    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, mapistoreURL, dn_prefix = None):
+    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, dn_prefix = None):
+
         name = path[-1]
         GlobalCount = self.get_message_GlobalCount(names.netbiosname)
         ChangeNumber = self.get_message_ChangeNumber(names.netbiosname)
@@ -126,9 +125,9 @@ dn: CASE_INSENSITIVE
         childcount = len(children)
         print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
         if parent_fid == 0:
-            mapistoreURL = self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount, mapistoreURL)
+            self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount)
         else:
-            mapistoreURL = self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount, mapistoreURL);
+            self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount);
 
         GlobalCount += 1
         self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -136,17 +135,9 @@ dn: CASE_INSENSITIVE
         self.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
 
         for name, grandchildren in children.iteritems():
-            self.add_one_public_folder(fid, path + (name,), grandchildren[0], grandchildren[1], names, mapistoreURL, dn)
+            self.add_one_public_folder(fid, path + (name,), grandchildren[0], grandchildren[1], names, dn)
 
-        return mapistoreURL
-
-    def add_mapistore_pf_dir(self, mapistoreURL):
-        mapistorepath = openchangedb_mapistore_url_split(mapistoreURL)[1]
-        if not os.path.isdir(mapistorepath):
-            os.makedirs(mapistorepath, mode=0700)
-
-    def add_public_folders(self, names, mapistoreURL):
-        self.add_mapistore_pf_dir(mapistoreURL)
+    def add_public_folders(self, names):
         pfstoreGUID = str(uuid.uuid4())
         self.ldb.add({"dn": "CN=publicfolders,CN=%s,CN=%s,%s" % (names.firstou, names.firstorg, names.ocserverdn),
                       "objectClass": ["container"],
@@ -167,43 +158,8 @@ dn: CASE_INSENSITIVE
                         }, 3),
                 }, 1)
 
-        self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names, mapistoreURL)
+        self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names)
         
-    def add_user_public_freebusy(self, username, names):
-        # retrieve public freebusy subfolder for o and ou
-        name = "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower())
-        records = self.lookup_public_folder(names.netbiosname, name, attributes=["PidTagFolderId", "distinguishedName"])
-        if len(records) != 1:
-            raise Exception, "Incorrect number of entries returned for '%s'" % name
-
-        # retrieve globals
-        GlobalCount = self.get_message_GlobalCount(names.netbiosname)
-        ChangeNumber = self.get_message_ChangeNumber(names.netbiosname)
-        ReplicaID = self.get_message_ReplicaID(names.netbiosname)
-
-        record = records[0]
-        fid = "%s" % record["PidTagFolderId"]
-        fbmid = gen_mailbox_folder_fid(GlobalCount, 1)
-        cnstr = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
-        fbdn = "CN=%s,%s" % (fbmid, record["distinguishedName"])
-        displayname = "USER-/CN=RECIPIENTS/CN=%s" % username.upper()
-
-        self.ldb.add({"dn": fbdn,
-                      "objectClass": ["systemMessage", "freebusy"],
-                      "cn": fbmid,
-                      "PidTagMessageClass": "IPM.Post",
-                      "PidTagMessageId": fbmid,
-                      "PidTagParentFolderId": fid,
-                      "PidTagChangeNumber": cnstr,
-                      "PidTagNormalizedSubject": displayname,
-                      "PidTagCreationTime": "%d" % self.nttime,
-                      "PidTagLastModificationTime": "%d" % self.nttime})
-
-        GlobalCount += 1
-        self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
-        ChangeNumber += 1
-        self.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
-
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn
@@ -240,14 +196,6 @@ dn: CASE_INSENSITIVE
         filter = "(&(objectClass=publicfolder)(PidTagDisplayName=%s))" % (displayname)
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
                                expression=filter, attrs=attributes)
-
-    def user_exists(self, server, username):
-        """Check whether a user exists.
-
-        :param username: Username of the user
-        :param server: Server object name
-        """
-        return len(self.lookup_mailbox_user(server, username)) == 1
 
     def get_message_attribute(self, server, attribute):
         """Retrieve attribute value from given message database (server).
@@ -320,246 +268,6 @@ ChangeNumber: %d
             self.ldb.modify_ldif(newChangeNumber)
         finally:
             self.ldb.transaction_commit()
-
-    def get_user_attribute(self, server, username, attribute):
-        """Retrieve attribute value from given mailbox (server, username).
-
-        :param server: Server object name
-        :param username: User name
-        """
-        return self.lookup_mailbox_user(server, username, [attribute])[0][attribute]
-
-    def get_user_MailboxGUID(self, server, username):
-        return self.get_user_attribute(server, username, "MailboxGUID")
-
-    def get_user_ReplicaGUID(self, server, username):
-        return self.get_user_attribute(server, username, "ReplicaGUID")
-
-    def add_mailbox_user(self, basedn, username):
-        """Add a user record in openchange database.
-
-        :param username: Username
-        :return: DN of the created object
-        """
-        
-        mailboxGUID = str(uuid.uuid4())
-        replicaID = str(1)
-        replicaGUID = str(uuid.uuid4())
-        
-        retdn = "CN=%s,%s" % (username, basedn)
-        self.ldb.add({"dn": retdn,
-                  "objectClass": ["mailbox", "container"],
-                  "PidTagDisplayName": "OpenChange Mailbox: %s" % (username),
-                  "PidTagCreationTime": "%d" % self.nttime,
-                  "PidTagLastModificationTime": "%d" % self.nttime,
-                  "PidTagParentFolderId": "0",
-                  "PidTagSubFolders": "TRUE",
-                  "cn": username,
-                  "MailboxGUID": mailboxGUID,
-                  "PidTagAccess": str(63),
-                  "ReplicaID": replicaID,
-                  "ReplicaGUID": replicaGUID})
-        return retdn
-
-    def add_storage_dir(self, mapistoreURL, username):
-        """Add mapistore storage space for the user
-
-        :param username: Username object
-        :param mapistore: mapistore object
-        """
-
-        mapistore_dir = os.path.join(mapistoreURL, username)
-        if not os.path.isdir(mapistore_dir):
-            os.makedirs(mapistore_dir, mode=0700)
-    
-    def add_folder_property(self, folderID, attribute, value):
-        """Add a attribute/value to the record folderID refers to
-
-        :param folderID: the folder identifier where to add attribute/value
-        :param attribute: the ldb attribute
-        :param value: the attribute value
-        """
-
-        # Step 1. Find the folder record
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % folderID, ["*"])
-        if len(res) != 1:
-            raise Exception("Invalid search (PidTagFolderId=%s)" % folderID)
-
-        # Step 2. Add attribute/value pair
-        m = ldb.Message()
-        m.dn = ldb.Dn(self.ldb, "%s" % res[0].dn)
-        m[attribute] = ldb.MessageElement([value], ldb.CHANGETYPE_ADD, attribute);
-        self.ldb.modify(m)
-
-    def add_mailbox_root_folder(self, ocfirstorgdn, username, 
-                                foldername, parentfolder, 
-                                GlobalCount, ChangeNumber,
-                                ReplicaID,
-                                SystemIdx, mapistoreURL,
-                                mapistoreSuffix):
-        """Add a root folder to the user mailbox
-
-        :param username: Username object
-        :param foldername: Folder name
-        :param GlobalCount: current global counter for message database
-        :param ReplicaID: replica identifier for message database
-        :param SystemIdx: System Index for root folders
-        :param mapistoreURL: storage URL prefix (including type)
-        :param mapistoreSuffix: file type suffix to use with mapistore
-        """
-
-        ocuserdn = "CN=%s,%s" % (username, ocfirstorgdn)
-        FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        CN = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
-
-        # Step 1. If we are handling Mailbox Root
-        if parentfolder == 0:
-            m = ldb.Message()
-            m.dn = ldb.Dn(self.ldb, ocuserdn)
-            m["PidTagFolderId"] = ldb.MessageElement([FID], ldb.CHANGETYPE_ADD, "PidTagFolderId")
-            m["PidTagChangeNumber"] = ldb.MessageElement([CN], ldb.CHANGETYPE_ADD, "PidTagChangeNumber")
-            m["SystemIdx"] = ldb.MessageElement([str(SystemIdx)], ldb.CHANGETYPE_ADD, "SystemIdx")
-            self.ldb.modify(m)
-            return FID
-
-        # Step 2. Lookup parent DN
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % parentfolder, ["*"])
-        if len(res) != 1:
-            raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
-
-        # Step 3. Add root folder to correct container
-        if (foldername == "IPM Subtree"):
-             self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
-                          "objectClass": ["systemfolder", "container"],
-                          "cn": FID,
-                          "PidTagParentFolderId": parentfolder,
-                          "PidTagFolderId": FID,
-                          "PidTagChangeNumber": CN,
-                          "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "%d" % self.nttime,
-                          "PidTagLastModificationTime": "%d" % self.nttime,
-                          "PidTagAttributeHidden": str(0),
-                          "PidTagAttributeReadOnly": str(0),
-                          "PidTagAttributeSystem": str(0),
-                          "PidTagContainerClass": "IPF.Note",
-                          "PidTagSubFolders": "TRUE",
-                          "FolderType": str(1),
-                          "PidTagAccess": str(63),
-                          "SystemIdx": str(SystemIdx),
-                          "mailboxDN": str(ocuserdn)})           
-        elif (foldername == "To-Do Search"):
-            self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
-                          "objectClass": ["systemfolder", "container"],
-                          "cn": FID,
-                          "PidTagParentFolderId": parentfolder,
-                          "PidTagFolderId": FID,
-                          "PidTagChangeNumber": CN,
-                          "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "%d" % self.nttime,
-                          "PidTagLastModificationTime": "%d" % self.nttime,
-                          "PidTagAttributeHidden": str(0),
-                          "PidTagAttributeReadOnly": str(0),
-                          "PidTagAttributeSystem": str(0),
-                          "PidTagContainerClass": "IPF.Note",
-                          "PidTagSubFolders": "FALSE",
-                          "FolderType": str(1),
-                          "PidTagAccess": str(63),
-                          "SystemIdx": str(SystemIdx),
-                          "mailboxDN": str(ocuserdn)})           
-        else:
-            self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
-                          "objectClass": ["systemfolder"],
-                          "cn": FID,
-                          "PidTagParentFolderId": parentfolder,
-                          "PidTagFolderId": FID,
-                          "PidTagChangeNumber": CN,
-                          "PidTagDisplayName": foldername,
-                          "PidTagCreationTime": "%d" % self.nttime,
-                          "PidTagLastModificationTime": "%d" % self.nttime,
-                          "PidTagAttributeHidden": str(0),
-                          "PidTagAttributeReadOnly": str(0),
-                          "PidTagAttributeSystem": str(0),
-                          "PidTagContainerClass": "IPF.Note",
-                          "PidTagSubFolders": "TRUE",
-                          "PidTagFolderChildCount": str(0),
-                          "FolderType": str(1),
-                          "MAPIStoreURI": "sogo://%s:%s@%s/" % (username, username, foldername.replace(" ", "-").lower()),
-                          "FolderType": str(1),
-                          "PidTagAccess": str(63),
-                          "PidTagRights":str(2043),
-                          "SystemIdx": str(SystemIdx),
-                          "mailboxDN": str(ocuserdn)})           
-
-        return FID
-
-    def add_mailbox_special_folder(self, username, parentfolder, 
-                                   foldername, containerclass, GlobalCount, ChangeNumber, ReplicaID, 
-                                   mapistoreURL, mapistoreSuffix, mailboxDN):
-        """Add a special folder to the user mailbox
-
-        :param username: Username object
-        :param parent_folder: Folder identifier where record should be added
-        :param foldername: Folder name
-        :param containerclass: Folder container class
-        :param GlobalCount: current global counter for message database
-        :param ChangeNumber: current change number for message database
-        :param ReplicaID: replica identifier for message database
-        :param mapistoreURL: mapistore default content repository URI
-        :param mapistoreSuffix: file type suffix to use with mapistore
-        :param mailboxDN: the DN of the user's mailbox
-        """
-
-        FID = gen_mailbox_folder_fid(GlobalCount, ReplicaID)
-        CN = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
-
-        # Step 1. Lookup parent DN
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % parentfolder, ["*"])
-        if len(res) != 1:
-            raise Exception("Invalid search (PidTagFolderId=%s)" % parentfolder)
-
-        # Step 2. Add special folder to user subtree
-        self.ldb.add({"dn": "CN=%s,%s" % (FID, res[0].dn),
-                      "objectClass": ["specialfolder"],
-                      "cn": FID,
-                      "PidTagParentFolderId": parentfolder,
-                      "PidTagFolderId": FID,
-                      "PidTagChangeNumber": CN,
-                      "PidTagDisplayName": foldername,
-                      "PidTagCreationTime": "%d" % self.nttime,
-                      "PidTagLastModificationTime": "%d" % self.nttime,
-                      "PidTagContainerClass": containerclass,
-                      "MAPIStoreURI": "sogo://%s:%s@%s/" % (username, username, foldername.replace(" ", "-").lower()),
-                      "PidTagContentCount": str(0),
-                      "PidTagAttributeHidden": str(0),
-                      "PidTagAttributeReadOnly": str(0),
-                      "PidTagAttributeSystem": str(0),
-                      "PidTagAccess": str(63),
-                      "PidTagRights": str(2043),
-                      "PidTagContentUnreadCount": str(0),
-                      "PidTagSubFolders": str(0),
-                      "FolderType": str(1),
-                      "mailboxDN": str(mailboxDN)})
-
-        return FID
-
-    def set_receive_folder(self, username, ocfirstorgdn, fid, messageclass):
-        """Set MessageClass for given folder
-
-        :param username: Username object
-        :param ocfirstorgdn: Base DN
-        :param fid: Folder identifier
-        :param messageclass: Explicit Message Class
-        """
-        
-        # Step 1. Search fid DN
-        res = self.ldb.search("", ldb.SCOPE_SUBTREE, "(PidTagFolderId=%s)" % fid, ["*"])
-        if len(res) != 1:
-            raise Exception("Invalid search (PidTagFolderId=%s)" % fid)
-
-        m = ldb.Message()
-        m.dn = res[0].dn
-        m["PidTagMessageClass"] = ldb.MessageElement([messageclass], ldb.CHANGETYPE_ADD, "PidTagMessageClass")
-        self.ldb.modify(m)
 
 def reverse_int64counter(GlobalCount):
     rev_counter = 0

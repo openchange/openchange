@@ -112,11 +112,32 @@ struct mapistore_connection_info {
 	struct ldb_context		*oc_ctx; /* openchangedb */
 };
 
-struct tdb_wrap;
+enum mapistore_context_role {
+	MAPISTORE_MAIL_ROLE,
+	MAPISTORE_DRAFTS_ROLE,
+	MAPISTORE_SENTITEMS_ROLE,
+	MAPISTORE_OUTBOX_ROLE,
+	MAPISTORE_DELETEDITEMS_ROLE,
+	MAPISTORE_CALENDAR_ROLE,
+	MAPISTORE_CONTACTS_ROLE,
+	MAPISTORE_TASKS_ROLE,
+	MAPISTORE_NOTES_ROLE,
+	MAPISTORE_JOURNAL_ROLE,
+	MAPISTORE_FALLBACK_ROLE,
+	MAPISTORE_MAX_ROLES
+};
 
-/* notes:
-   openfolder takes the folderid alone as argument
-   openmessage takes the message id and its parent folderid as arguments  */
+struct mapistore_contexts_list {
+	char				*url;
+	char				*name;
+	bool				main_folder;
+	enum mapistore_context_role	role;
+	char				*tag;
+	struct mapistore_contexts_list	*prev;
+	struct mapistore_contexts_list	*next;
+};
+
+struct tdb_wrap;
 
 struct mapistore_backend {
 	/** backend operations */
@@ -126,6 +147,7 @@ struct mapistore_backend {
 		const char	*namespace;
 
 		enum mapistore_error	(*init)(void);
+		enum mapistore_error	(*list_contexts)(const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
 		enum mapistore_error	(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, void **);
 	} backend;
 
@@ -247,6 +269,8 @@ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_context *,
 enum mapistore_error mapistore_del_context(struct mapistore_context *, uint32_t);
 enum mapistore_error mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *, void **);
 const char *mapistore_errstr(enum mapistore_error);
+
+enum mapistore_error mapistore_list_contexts_for_user(const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
 
 enum mapistore_error mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 enum mapistore_error mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);

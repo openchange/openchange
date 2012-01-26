@@ -270,6 +270,13 @@ enum emsmdbp_pf_systemidx {
 	EMSMDBP_MAX_PF_SYSTEMIDX
 };
 
+struct emsmdbp_special_folder {
+	enum mapistore_context_role	role;
+	enum MAPITAGS			entryid_property;
+	const char			*name;
+	const char			*container_class;
+};
+
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
@@ -297,6 +304,11 @@ char                  *emsmdbp_get_owner(struct emsmdbp_object *object);
 int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, char **);
 int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
+
+/* definitions from emsmdbp_privisioning.c */
+enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *);
+enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
+
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
 enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
 enum mapistore_error  emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);

@@ -291,6 +291,38 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 }
 
 /**
+   \details List backend contexts for given user
+
+   \param mem_ctx pointer to the memory context
+   \param namespace the backend namespace
+   \param uri the backend parameters which can be passes inline
+
+   \return a valid backend_context pointer on success, otherwise NULL
+ */
+enum mapistore_error mapistore_backend_list_contexts(const char *username, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
+{
+	enum mapistore_error		retval;
+	int				i;
+	struct mapistore_contexts_list	*contexts_list = NULL, *current_contexts_list;
+
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < num_backends; i++) {
+		retval = backends[i].backend->backend.list_contexts(username, mem_ctx, &current_contexts_list);
+		if (retval != MAPISTORE_SUCCESS) {
+			return retval;
+		}
+		DLIST_CONCATENATE(contexts_list, current_contexts_list, void);
+	}
+
+	*contexts_listP = contexts_list;
+	(void) talloc_reference(mem_ctx, contexts_list);
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
    \details Create backend context
 
    \param mem_ctx pointer to the memory context

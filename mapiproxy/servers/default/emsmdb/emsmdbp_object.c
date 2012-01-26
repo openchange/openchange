@@ -200,7 +200,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 	uint64_t			testFolderID;
 	char				*MAPIStoreURI, *owner;
 	struct SPropValue		*value;
-	NTTIME				nt_time;
 	int				retval;
 	TALLOC_CTX			*local_mem_ctx;
 	struct emsmdbp_object		*new_folder;
@@ -243,18 +242,11 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 
 		local_mem_ctx = talloc_zero(NULL, void);
 		owner = emsmdbp_get_owner(parent_folder);
-		value = get_SPropValue_SRow(rowp, PR_LAST_MODIFICATION_TIME);
-		if (value) {
-			nt_time = ((NTTIME) value->value.ft.dwHighDateTime << 32
-				   | value->value.ft.dwLowDateTime);
-		}
-		else {
-			unix_to_nt_time(&nt_time, time(NULL));
-		}
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
+			#warning fallback uri should be searched
 			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64, owner, owner, fid);
-			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, MAPIStoreURI, nt_time, value->value.d);
+			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, value->value.d, MAPIStoreURI, -1);
 			if (retval != MAPI_E_SUCCESS) {
 				DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
 				abort();
@@ -1839,9 +1831,6 @@ static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_objec
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	fb_props = talloc_zero(message_object, struct emsmdbp_object_message_freebusy_properties);
-	message_object->object.message->fb_properties = fb_props;
-
 	/* 1. retrieve subject and deduce username */
 	props = talloc_zero(mem_ctx, struct SPropTagArray);
 	props->cValues = 1;
@@ -1859,6 +1848,9 @@ static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_objec
 	}
 	username += 4;
 	username = talloc_strdup(mem_ctx, username);
+
+	fb_props = talloc_zero(message_object, struct emsmdbp_object_message_freebusy_properties);
+	message_object->object.message->fb_properties = fb_props;
 
 	// WARNING: the mechanism here will fail if username is not all lower-case, as LDB does not support case-insensitive queries
 	tmp = username;
@@ -2011,7 +2003,6 @@ static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_objec
 
 	i = 0;
 	while ((data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, message_object->emsmdbp_ctx, table, i, MAPISTORE_PREFILTERED_QUERY, &retvals))) {
-		DEBUG(5, ("fb row++\n"));
 		if (retvals[0] == MAPI_E_SUCCESS && retvals[1] == MAPI_E_SUCCESS && retvals[2] == MAPI_E_SUCCESS) {
 			switch (*((uint32_t *) data_pointers[2])) {
 			case olTentative:

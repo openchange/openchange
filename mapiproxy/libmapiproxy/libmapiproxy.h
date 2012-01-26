@@ -243,8 +243,6 @@ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *, uint64_t, u
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, struct ldb_context *, const char *, uint32_t, uint32_t, void **);
 enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *, uint64_t, const char*, uint64_t *);
 enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *, struct ldb_context *, const char *, const char *, uint64_t);
-enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct ldb_context *, const char *, uint64_t *);
-enum MAPISTATUS	openchangedb_get_users_from_partial_uri(TALLOC_CTX *, struct ldb_context *, const char *, uint32_t *, char ***, char ***);
 enum MAPISTATUS openchangedb_create_folder(struct ldb_context *, uint64_t, uint64_t, const char *, NTTIME, int64_t);
 void *openchangedb_get_special_property(TALLOC_CTX *, struct ldb_context *, struct ldb_result *, uint32_t, const char *);
 void *openchangedb_get_property_data(TALLOC_CTX *, struct ldb_result *, uint32_t, uint32_t, const char *);

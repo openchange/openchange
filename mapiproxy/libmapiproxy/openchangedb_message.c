@@ -66,7 +66,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, struct
 
 	/* Retrieve mailboxDN of parent folder */
 	retval = openchangedb_get_mailboxDN(mem_ctx, ldb_ctx, folderID, &mailboxDN);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	if (retval) {
+		mailboxDN = NULL;
+	}
 	
 	dn = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", messageID, parentDN);
 	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);

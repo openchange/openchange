@@ -299,7 +299,7 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-enum mapistore_error mapistore_backend_list_contexts(const char *username, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
+enum mapistore_error mapistore_backend_list_contexts(const char *username, struct tdb_wrap *tdbwrap, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
 {
 	enum mapistore_error		retval;
 	int				i;
@@ -309,7 +309,7 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, TALLO
 	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
-		retval = backends[i].backend->backend.list_contexts(username, mem_ctx, &current_contexts_list);
+		retval = backends[i].backend->backend.list_contexts(username, tdbwrap, mem_ctx, &current_contexts_list);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}

@@ -41,6 +41,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 {
 	int				retval;
 	struct mapistore_context	*mstore_ctx;
+	const char			*private_dir;
 	char				*mapping_path;
 
 	if (!lp_ctx) {
@@ -54,7 +55,15 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	mstore_ctx->processing_ctx = talloc_zero(mstore_ctx, struct processing_context);
 
-	mapping_path = talloc_asprintf(NULL, "%s/mapistore", lpcfg_private_dir(lp_ctx));
+	private_dir = lpcfg_private_dir(lp_ctx);
+	if (!private_dir) {
+		DEBUG(5, ("private directory was not returned from configuration\n"));
+		return NULL;
+	}
+
+	mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
+	mkdir(mapping_path, 0700);
+
 	mapistore_set_mapping_path(mapping_path);
 	talloc_free(mapping_path);
 
@@ -423,9 +432,19 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 	return "Unknown error";
 }
 
-_PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(const char *username, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
+_PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
 {
-	return mapistore_backend_list_contexts(username, mem_ctx, contexts_listp);
+	char					*mapistore_dir;
+	struct indexing_context_list		*ictx;
+
+	/* ensure the user mapistore directory exists before any mapistore operation occurs */
+	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
+	mkdir(mapistore_dir, 0700);
+
+	mapistore_indexing_add(mstore_ctx, owner, &ictx);
+	mapistore_indexing_add_ref_count(ictx);
+
+	return mapistore_backend_list_contexts(owner, ictx->index_ctx, mem_ctx, contexts_listp);
 }
 
 /**

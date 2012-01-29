@@ -168,7 +168,7 @@ enum mapistore_error mapistore_free_context_id(struct processing_context *, uint
 /* definitions from mapistore_backend.c */
 enum mapistore_error mapistore_backend_init(TALLOC_CTX *, const char *);
 enum mapistore_error mapistore_backend_registered(const char *);
-enum mapistore_error mapistore_backend_list_contexts(const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
+enum mapistore_error mapistore_backend_list_contexts(const char *, struct tdb_wrap *, TALLOC_CTX *, struct mapistore_contexts_list **);
 enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, const char *, uint64_t, struct backend_context **);
 enum mapistore_error mapistore_backend_add_ref_count(struct backend_context *);
 enum mapistore_error mapistore_backend_delete_context(struct backend_context *);

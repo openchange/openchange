@@ -214,7 +214,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	/* Retrieve list of folders from backends */
-	retval = mapistore_list_contexts_for_user(username, mem_ctx, &contexts_list);
+	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);
 	if (retval != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		return MAPI_E_DISK_ERROR;
@@ -394,8 +394,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.lpProps[0].value.bin.cb = entryid_data.length;
 			property_row.lpProps[0].value.bin.lpb = entryid_data.data;
 
-			entryid_dump = ndr_print_struct_string(mem_ctx, ndr_print_FolderEntryId, current_name, &folder_entryid);
-			DEBUG(5, ("%s\n", entryid_dump));
+			/* entryid_dump = ndr_print_struct_string(mem_ctx, ndr_print_FolderEntryId, current_name, &folder_entryid); */
+			/* DEBUG(5, ("%s\n", entryid_dump)); */
 
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, mailbox_fid, &property_row);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, inbox_fid, &property_row);
@@ -404,6 +404,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	/* DEBUG(5, ("size of operation: %ld\n", talloc_total_size(mem_ctx))); */
 
 	/* secondary folders (TODO) */
+
+	/* TODO: rename/create/delete folders at IPM level */
 
 	talloc_free(mem_ctx);
 

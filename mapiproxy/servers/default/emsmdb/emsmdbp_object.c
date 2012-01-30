@@ -244,13 +244,20 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 		owner = emsmdbp_get_owner(parent_folder);
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
+			uint32_t	context_id;
+			void		*backend_object;
+
 			#warning fallback uri should be searched
-			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s:%s@fallback/0x%.16"PRIx64, owner, owner, fid);
+			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s@fallback/0x%.16"PRIx64"/", owner, fid);
 			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, value->value.d, MAPIStoreURI, -1);
 			if (retval != MAPI_E_SUCCESS) {
 				DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
 				abort();
 			}
+
+			/* instantiate the new folder in the backend to make sure it is initialized properly */
+			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, MAPIStoreURI, fid, &context_id, &backend_object);
+			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
 		}
 		else {
 			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));

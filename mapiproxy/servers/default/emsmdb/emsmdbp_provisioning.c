@@ -193,25 +193,32 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	enum MAPISTATUS				ret;
 	enum mapistore_error			retval;
 	struct mapistore_contexts_list		*contexts_list;
+	struct WStringArray_r			*existing_uris;
 	struct mapistore_contexts_list		*main_entries[MAPISTORE_MAX_ROLES], *secondary_entries[MAPISTORE_MAX_ROLES], *next_entry, *current_entry;
 	static const char			*folder_names[] = {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"};
-	static struct emsmdbp_special_folder	special_folders[] = {{MAPISTORE_DRAFTS_ROLE, PR_IPM_DRAFTS_ENTRYID, "Drafts", "IPF.Note"},
-								     {MAPISTORE_CALENDAR_ROLE, PR_IPM_APPOINTMENT_ENTRYID, "Calendar", "IPF.Appointment"},
-								     {MAPISTORE_CONTACTS_ROLE, PR_IPM_CONTACT_ENTRYID, "Contacts", "IPF.Contact"},
-								     {MAPISTORE_TASKS_ROLE, PR_IPM_TASK_ENTRYID, "Tasks", "IPF.Task"},
-								     {MAPISTORE_NOTES_ROLE, PR_IPM_NOTE_ENTRYID, "Notes", "IPF.StickyNote"},
-								     {MAPISTORE_JOURNAL_ROLE, PR_IPM_JOURNAL_ENTRYID, "Journal", "IPF.Journal"}};
-	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, current_cn;
-	char					*mapistore_url, *fallback_url, *entryid_dump;
-	const char				*current_name;
+	static struct emsmdbp_special_folder	special_folders[] = {{MAPISTORE_DRAFTS_ROLE, PR_IPM_DRAFTS_ENTRYID, "Drafts"},
+								     {MAPISTORE_CALENDAR_ROLE, PR_IPM_APPOINTMENT_ENTRYID, "Calendar"},
+								     {MAPISTORE_CONTACTS_ROLE, PR_IPM_CONTACT_ENTRYID, "Contacts"},
+								     {MAPISTORE_TASKS_ROLE, PR_IPM_TASK_ENTRYID, "Tasks"},
+								     {MAPISTORE_NOTES_ROLE, PR_IPM_NOTE_ENTRYID, "Notes"},
+								     {MAPISTORE_JOURNAL_ROLE, PR_IPM_JOURNAL_ENTRYID, "Journal"}};
+	const char				**container_classes;
+	uint32_t				context_id;
+	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, found_fid, current_cn;
+	char					*fallback_url, *entryid_dump;
+	const char				*mapistore_url, *current_name, *base_name;
 	struct emsmdbp_special_folder		*current_folder;
 	struct SRow				property_row;
-	int					i, nbr_special_folders = sizeof(special_folders) / sizeof(struct emsmdbp_special_folder);
+	int					i, j, nbr_special_folders = sizeof(special_folders) / sizeof(struct emsmdbp_special_folder);
 	DATA_BLOB				entryid_data;
 	struct FolderEntryId			folder_entryid;
 	struct Binary_r				*entryId;
+	bool					exists;
+	void					*backend_object;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	ldb_transaction_start(emsmdbp_ctx->oc_ctx);
 
 	/* Retrieve list of folders from backends */
 	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);
@@ -219,6 +226,54 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		talloc_free(mem_ctx);
 		return MAPI_E_DISK_ERROR;
 	}
+
+	/* Fix mapistore uris in returned entries */
+	current_entry = contexts_list;
+	while (current_entry) {
+		mapistore_url = current_entry->url;
+		if (mapistore_url[strlen(mapistore_url)-1] != '/') {
+			current_entry->url = talloc_asprintf(mem_ctx, "%s/", mapistore_url);
+		}
+		DEBUG(5, ("received entry: '%s'\n", current_entry->url));
+		current_entry = current_entry->next;
+	}
+
+	/* Retrieve list of existing entries */
+	ret = openchangedb_get_MAPIStoreURIs(emsmdbp_ctx->oc_ctx, username, mem_ctx, &existing_uris);
+	if (ret == MAPI_E_SUCCESS) {
+		for (i = 0; i < existing_uris->cValues; i++) {
+			DEBUG(5, ("checking entry '%s'\n", existing_uris->lppszW[i]));
+			exists = false;
+			mapistore_url = existing_uris->lppszW[i];
+			if (mapistore_url[strlen(mapistore_url)-1] != '/') {
+				abort();
+			}
+			current_entry = contexts_list;
+			while (!exists && current_entry) {
+				DEBUG(5, ("  compare with '%s'\n", current_entry->url));
+				if (strcmp(mapistore_url, current_entry->url) == 0) {
+					DEBUG(5, ("  entry found\n"));
+					exists = true;
+				}
+				current_entry = current_entry->next;
+			}
+			if (!exists) {
+				DEBUG(5, ("  removing entry '%s'\n", mapistore_url));
+				openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid);
+				openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, found_fid);
+			}
+		}
+	}
+
+	container_classes = talloc_array(mem_ctx, const char *, MAPISTORE_MAX_ROLES);
+	for (i = MAPISTORE_MAIL_ROLE; i < MAPISTORE_MAX_ROLES; i++) {
+		container_classes[i] = "IPF.Note";
+	}
+	container_classes[MAPISTORE_CALENDAR_ROLE] = "IPF.Appointment";
+	container_classes[MAPISTORE_CONTACTS_ROLE] = "IPF.Contact";
+	container_classes[MAPISTORE_TASKS_ROLE] = "IPF.Task";
+	container_classes[MAPISTORE_NOTES_ROLE] = "IPF.StickyNote";
+	container_classes[MAPISTORE_JOURNAL_ROLE] = "IPF.Journal";
 
 	memset(&property_row, 0, sizeof(struct SRow));
 	memset(main_entries, 0, sizeof(struct mapistore_contexts_list *) * MAPISTORE_MAX_ROLES);
@@ -275,6 +330,10 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, mailbox_fid, current_fid, current_cn, mapistore_url, i);
 			property_row.lpProps->value.lpszW = folder_names[i];
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+
+			/* instantiate the new folder in the backend to make sure it is initialized properly */
+			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
+			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
 		}
 	}
 
@@ -329,16 +388,26 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 					current_name = current_entry->name;
 				}
 				mapistore_url = current_entry->url;
-				if (mapistore_url[strlen(mapistore_url)-1] != '/') {
-					mapistore_url = talloc_asprintf(mem_ctx, "%s/", mapistore_url);
-				}
 			}
 			else {
 				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
 			}
+
+			/* Ensure the name is unique */
+			base_name = current_name;
+			j = 1;
+			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
+				j++;
+			}
+
 			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			property_row.lpProps[0].value.lpszW = current_name;
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+
+			/* instantiate the new folder in the backend to make sure it is initialized properly */
+			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
+			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
 
 			if (i == EMSMDBP_INBOX) {
 				/* set INBOX as receive folder for "All", "IPM", "Report.IPM" */
@@ -374,17 +443,27 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 					current_name = current_entry->name;
 				}
 				mapistore_url = current_entry->url;
-				if (mapistore_url[strlen(mapistore_url)-1] != '/') {
-					mapistore_url = talloc_asprintf(mem_ctx, "%s/", mapistore_url);
-				}
 			}
 			else {
 				mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
 			}
+
+			/* Ensure the name is unique */
+			base_name = current_name;
+			j = 1;
+			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
+				j++;
+			}
+
 			property_row.lpProps[0].value.lpszW = current_name;
-			property_row.lpProps[1].value.lpszW = current_folder->container_class;
+			property_row.lpProps[1].value.lpszW = container_classes[current_folder->role];
 			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+
+			/* instantiate the new folder in the backend to make sure it is initialized properly */
+			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
+			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
 
 			/* set entryid on mailbox and inbox */
 			folder_entryid.FolderGlobalCounter.value = (current_fid >> 16);
@@ -403,7 +482,46 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	}
 	/* DEBUG(5, ("size of operation: %ld\n", talloc_total_size(mem_ctx))); */
 
-	/* secondary folders (TODO) */
+	/* secondary folders */
+	property_row.cValues = 2;
+	property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;
+
+	for (i = MAPISTORE_MAIL_ROLE; i < MAPISTORE_MAX_ROLES; i++) {
+		/* secondary fallback roles are only used for synchronization */
+		if (i == MAPISTORE_FALLBACK_ROLE) {
+			continue;
+		}
+
+		property_row.lpProps[1].value.lpszW = container_classes[i];
+		current_entry = secondary_entries[i];
+		while (current_entry) {
+			mapistore_url = current_entry->url;
+			if (openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid) != MAPI_E_SUCCESS) {
+				DEBUG(5, ("creating secondary entry '%s'\n", current_entry->url));
+				openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &current_fid);
+				openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
+
+				current_name = current_entry->name;
+				/* Ensure the name is unique */
+				base_name = current_name;
+				j = 1;
+				while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+					current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
+					j++;
+				}
+				property_row.lpProps[0].value.lpszW = current_name;
+
+				openchangedb_create_folder(emsmdbp_ctx->oc_ctx, ipm_fid, current_fid, current_cn, mapistore_url, -1);
+				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+			}
+			else {
+				DEBUG(5, ("secondary entry '%s' already exists\n", current_entry->url));
+			}
+			current_entry = current_entry->next;
+		}
+	}
+
+	ldb_transaction_commit(emsmdbp_ctx->oc_ctx);
 
 	/* TODO: rename/create/delete folders at IPM level */
 

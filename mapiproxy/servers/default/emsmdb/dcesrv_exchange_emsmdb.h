@@ -274,7 +274,6 @@ struct emsmdbp_special_folder {
 	enum mapistore_context_role	role;
 	enum MAPITAGS			entryid_property;
 	const char			*name;
-	const char			*container_class;
 };
 
 __BEGIN_DECLS

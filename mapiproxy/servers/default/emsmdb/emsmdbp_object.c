@@ -1042,8 +1042,8 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	uint64_t	folderID;
 
 	if (emsmdbp_is_mapistore(folder)) {
-		retval = mapistore_folder_get_folder_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder),
-							   folder->backend_object, row_countp);
+		retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder),
+							  folder->backend_object, MAPISTORE_FOLDER_TABLE, row_countp);
 	}
 	else {
 		if (folder->type == EMSMDBP_OBJECT_FOLDER) {
@@ -1417,14 +1417,14 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				switch (table->properties[i]) {
 				case PR_CONTENT_COUNT:
 					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
-										    MAPISTORE_MESSAGE_TABLE, obj_count);
+					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
+										  MAPISTORE_MESSAGE_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
 				case PR_ASSOC_CONTENT_COUNT:
 					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
-										    MAPISTORE_FAI_TABLE, obj_count);
+					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
+										  MAPISTORE_FAI_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
 				case PR_FOLDER_CHILD_COUNT:
@@ -2445,7 +2445,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
                         /* a hack to avoid fetching dynamic fields from openchange.ldb */
                         obj_count = talloc_zero(data_pointers, uint32_t);
-                        retval = mapistore_folder_get_message_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
+                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
 			if (!retval) {
 				data_pointers[i] = obj_count;
 			}
@@ -2464,8 +2464,8 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		}
                 else if (properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
-                        retval = mapistore_folder_get_message_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object,
-								    MAPISTORE_FAI_TABLE, obj_count);
+                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object,
+								  MAPISTORE_FAI_TABLE, obj_count);
 			if (!retval) {
 				data_pointers[i] = obj_count;
 			}

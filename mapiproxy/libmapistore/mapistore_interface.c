@@ -712,37 +712,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistor
 }
 
 /**
-   \details Retrieve the number of child folders within a mapistore
-   folder
-
-   \param mstore_ctx pointer to the mapistore context
-   \param context_id the context identifier referencing the backend
-   \param fid the folder identifier
-   \param RowCount pointer to the count result to return
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
- */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_folder_count(struct mapistore_context *mstore_ctx, uint32_t context_id,
-								void *folder, uint32_t *RowCount)
-{
-	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 0. Ensure the context exists */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 1. Call backend readdir */
-	return mapistore_backend_folder_get_child_count(backend_ctx, folder, MAPISTORE_FOLDER_TABLE, RowCount);
-
-	return ret;
-}
-
-
-/**
    \details Retrieve the number of child messages within a mapistore folder
 
    \param mstore_ctx pointer to the mapistore context
@@ -752,11 +721,9 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_folder_count(struct mapistore
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_message_count(struct mapistore_context *mstore_ctx, uint32_t context_id,
-								 void *folder, enum mapistore_table_type table_type, uint32_t *RowCount)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, uint32_t *RowCount)
 {
 	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -767,8 +734,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_message_count(struct mapistor
 
 	/* Step 2. Call backend get_child_count */
 	return mapistore_backend_folder_get_child_count(backend_ctx, folder, table_type, RowCount);
-
-	return ret;
 }
 
 /**

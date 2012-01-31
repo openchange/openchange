@@ -343,6 +343,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	*rec = el;
 	DLIST_ADD_END(handles_ctx->handles, el, struct mapi_handles *);
 
+	DEBUG(5, ("handle 0x%.2x is a father of 0x%.2x\n", container_handle, el->handle));
 	handles_ctx->last_handle += 1;
 	talloc_free(mem_ctx);
 
@@ -425,6 +426,7 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		handle = strtol((const char *) handle_str, NULL, 16);
+		DEBUG(5, ("deleting child handle: %d, %s\n", handle, handle_str));
 		mapi_handles_delete(handles_private->handles_ctx, handle);
 	}
 

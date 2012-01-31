@@ -23,7 +23,7 @@
 #include "pyopenchange/mapistore/pymapistore.h"
 #include "pyopenchange/pymapi.h"
 
-static PyTypeObject *SPropValue_Type;
+/* static PyTypeObject *SPropValue_Type; */
 
 void initmapistore(void);
 
@@ -41,8 +41,8 @@ static void *sam_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 	char			*ldb_path;
 	struct tevent_context	*ev;
 	int			ret;
-	struct ldb_result	*res;
-	struct ldb_dn		*tmp_dn = NULL;
+	/* struct ldb_result	*res; */
+	/* struct ldb_dn		*tmp_dn = NULL; */
 	/* static const char	*attrs[] = { */
 	/* 	"rootDomainNamingContext", */
 	/* 	"defaultNamingContext", */

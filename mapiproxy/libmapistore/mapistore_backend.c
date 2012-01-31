@@ -399,7 +399,7 @@ _PUBLIC_ enum mapistore_error mapistore_backend_add_ref_count(struct backend_con
  */
 _PUBLIC_ enum mapistore_error mapistore_backend_delete_context(struct backend_context *bctx)
 {
-	if (bctx->ref_count > 1) {
+	if (bctx->ref_count) {
 		bctx->ref_count -= 1;
 		return MAPISTORE_ERR_REF_COUNT;
 	}

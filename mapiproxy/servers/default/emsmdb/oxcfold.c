@@ -887,8 +887,8 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	retval = mapistore_folder_get_child_fids(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, local_mem_ctx,
-						 &childFolders, &childFolderCount);
+	retval = mapistore_folder_get_child_fmids(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, MAPISTORE_FOLDER_TABLE, local_mem_ctx,
+						  &childFolders, &childFolderCount);
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
 		return MAPI_E_NOT_FOUND;

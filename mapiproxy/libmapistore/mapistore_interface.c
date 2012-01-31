@@ -547,7 +547,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete_folder(struct mapistore_co
 		uint32_t	i;
 
 		/* Get subfolders list */
-		retval = mapistore_folder_get_child_fids(mstore_ctx, context_id, subfolder, mem_ctx, &childFolders, &childFolderCount);
+		retval = mapistore_folder_get_child_fmids(mstore_ctx, context_id, subfolder, MAPISTORE_FOLDER_TABLE, mem_ctx, &childFolders, &childFolderCount);
 		if (retval) {
 			DEBUG(4, ("mapistore_delete_folder bad retval: 0x%x", retval));
 			return MAPI_E_NOT_FOUND;
@@ -751,36 +751,58 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fids(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							      void *folder, TALLOC_CTX *mem_ctx, uint64_t *child_fids[], uint32_t *child_fid_count)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t *child_fmids[], uint32_t *child_fmid_count)
 {
-	TALLOC_CTX	*local_mem_ctx;
+	TALLOC_CTX			*local_mem_ctx;
 	enum mapistore_error		ret;
-	void		*backend_table;
-	uint32_t	i, row_count;
-	uint64_t	*fids, *current_fid;
-	enum MAPITAGS	fid_column;
-	struct mapistore_property_data *row_data;
+	void				*backend_table;
+	uint32_t			i, row_count;
+	uint64_t			*fmids, *current_fmid;
+	enum MAPITAGS			fmid_column;
+	struct mapistore_property_data	*row_data;
+
+	switch (table_type) {
+	case MAPISTORE_FOLDER_TABLE:
+		fmid_column = PR_FID;
+		break;
+	case MAPISTORE_MESSAGE_TABLE:
+	case MAPISTORE_FAI_TABLE:
+		fmid_column = PR_MID;
+		break;
+	case MAPISTORE_RULE_TABLE:
+		fmid_column = PR_RULE_ID;
+		break;
+	case MAPISTORE_ATTACHMENT_TABLE:
+		fmid_column = PR_ATTACH_ID;
+		break;
+	case MAPISTORE_PERMISSIONS_TABLE:
+		fmid_column = PR_MEMBER_ID;
+		break;
+	}
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	return mapistore_folder_open_table(mstore_ctx, context_id,
-					   folder, local_mem_ctx, MAPISTORE_FOLDER_TABLE, -1, &backend_table, &row_count);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+	ret = mapistore_folder_open_table(mstore_ctx, context_id, folder, local_mem_ctx, table_type, -1, &backend_table, &row_count);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
 
-	fid_column = PR_FID;
-	return mapistore_table_set_columns(mstore_ctx, context_id, backend_table, 1, &fid_column);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
+	ret = mapistore_table_set_columns(mstore_ctx, context_id, backend_table, 1, &fmid_column);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
 
-	*child_fid_count = row_count;
-	fids = talloc_array(mem_ctx, uint64_t, row_count);
-	*child_fids = fids;
-	current_fid = fids;
+	*child_fmid_count = row_count;
+	fmids = talloc_array(mem_ctx, uint64_t, row_count);
+	*child_fmids = fmids;
+	current_fmid = fmids;
 	for (i = 0; i < row_count; i++) {
 		mapistore_table_get_row(mstore_ctx, context_id, backend_table, local_mem_ctx,
 					MAPISTORE_PREFILTERED_QUERY, i, &row_data);
-		*current_fid = *(uint64_t *) row_data->data;
-		current_fid++;
+		*current_fmid = *(uint64_t *) row_data->data;
+		current_fmid++;
 	}
+
+end:
 	talloc_free(local_mem_ctx);
 
 	return ret;

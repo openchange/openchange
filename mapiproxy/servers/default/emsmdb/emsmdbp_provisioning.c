@@ -231,10 +231,16 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	current_entry = contexts_list;
 	while (current_entry) {
 		mapistore_url = current_entry->url;
-		if (mapistore_url[strlen(mapistore_url)-1] != '/') {
-			current_entry->url = talloc_asprintf(mem_ctx, "%s/", mapistore_url);
+		if (mapistore_url) {
+			if (mapistore_url[strlen(mapistore_url)-1] != '/') {
+				current_entry->url = talloc_asprintf(mem_ctx, "%s/", mapistore_url);
+			}
+			/* DEBUG(5, ("received entry: '%s' (%p)\n", current_entry->url, current_entry)); */
 		}
-		DEBUG(5, ("received entry: '%s'\n", current_entry->url));
+		else {
+			DEBUG(5, ("received entry without uri\n"));
+			abort();
+		}
 		current_entry = current_entry->next;
 	}
 
@@ -242,7 +248,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	ret = openchangedb_get_MAPIStoreURIs(emsmdbp_ctx->oc_ctx, username, mem_ctx, &existing_uris);
 	if (ret == MAPI_E_SUCCESS) {
 		for (i = 0; i < existing_uris->cValues; i++) {
-			DEBUG(5, ("checking entry '%s'\n", existing_uris->lppszW[i]));
+			/* DEBUG(5, ("checking entry '%s'\n", existing_uris->lppszW[i])); */
 			exists = false;
 			mapistore_url = existing_uris->lppszW[i];
 			if (mapistore_url[strlen(mapistore_url)-1] != '/') {
@@ -250,9 +256,9 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			}
 			current_entry = contexts_list;
 			while (!exists && current_entry) {
-				DEBUG(5, ("  compare with '%s'\n", current_entry->url));
+				/* DEBUG(5, ("  compare with '%s'\n", current_entry->url)); */
 				if (strcmp(mapistore_url, current_entry->url) == 0) {
-					DEBUG(5, ("  entry found\n"));
+					/* DEBUG(5, ("  entry found\n")); */
 					exists = true;
 				}
 				current_entry = current_entry->next;
@@ -282,7 +288,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	/* Sort them between our main_entries and secondary_entries */
 	current_entry = contexts_list;
 	while (current_entry) {
-		DEBUG(5, ("sorting entry: %p\n", current_entry));
 		next_entry = current_entry->next;
 		current_entry->next = NULL;
 		current_entry->prev = NULL;
@@ -473,8 +478,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.lpProps[0].value.bin.cb = entryid_data.length;
 			property_row.lpProps[0].value.bin.lpb = entryid_data.data;
 
-			/* entryid_dump = ndr_print_struct_string(mem_ctx, ndr_print_FolderEntryId, current_name, &folder_entryid); */
-			/* DEBUG(5, ("%s\n", entryid_dump)); */
+			entryid_dump = ndr_print_struct_string(mem_ctx, (ndr_print_fn_t) ndr_print_FolderEntryId, current_name, &folder_entryid);
+			DEBUG(5, ("%s\n", entryid_dump));
 
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, mailbox_fid, &property_row);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, inbox_fid, &property_row);
@@ -497,7 +502,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		while (current_entry) {
 			mapistore_url = current_entry->url;
 			if (openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid) != MAPI_E_SUCCESS) {
-				DEBUG(5, ("creating secondary entry '%s'\n", current_entry->url));
+				/* DEBUG(5, ("creating secondary entry '%s'\n", current_entry->url)); */
 				openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &current_fid);
 				openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
 
@@ -515,7 +520,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
 			}
 			else {
-				DEBUG(5, ("secondary entry '%s' already exists\n", current_entry->url));
+				/* DEBUG(5, ("secondary entry '%s' already exists\n", current_entry->url)); */
 			}
 			current_entry = current_entry->next;
 		}

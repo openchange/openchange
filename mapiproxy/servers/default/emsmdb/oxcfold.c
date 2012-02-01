@@ -529,49 +529,6 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS DoDeleteSystemFolder(struct emsmdbp_context *emsmdbp_ctx,
-					    uint64_t parent_fid, uint64_t fid,
-					    uint8_t flags)
-{
-	TALLOC_CTX			*mem_ctx;
-	char				*parentdn;
-	enum MAPISTATUS			retval;
-	struct ldb_dn			*dn;
-	char				*dn_str;
-	int				ret = 0;
-
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder parent FID: 0x%"PRIx64"\n", parent_fid));
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target FID: 0x%"PRIx64"\n", fid));
-
-	mem_ctx = talloc_named(NULL, 0, "DoDeleteFolder");
-
-	/* TODO:
-		1. We should be careful not to delete special folders
-		2. We need to handle deleting associated folders and messages (based on the flags)
-	*/
-	/* Retrieve dn of parentfolder */
-	retval = openchangedb_get_distinguishedName(mem_ctx, emsmdbp_ctx->oc_ctx, parent_fid, &parentdn);
-	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-
-	/* Create the folder dn record for openchange.ldb */
-	dn_str = talloc_asprintf(mem_ctx, "CN=%"PRIu64",%s", fid, parentdn);
-	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder target DN: %s\n", dn_str));
-	dn = ldb_dn_new(mem_ctx, emsmdbp_ctx->oc_ctx, dn_str);
-	talloc_free(dn_str);
-	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(dn), MAPI_E_BAD_VALUE, mem_ctx);
-
-	ret = ldb_delete(emsmdbp_ctx->oc_ctx, dn);
-	if (ret != LDB_SUCCESS) {
-		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed ldb_delete, ret: 0x%x\n", ret));
-		talloc_free(mem_ctx);
-		return MAPI_E_NO_SUPPORT;
-	}
-
-	talloc_free(mem_ctx);
-	return MAPI_E_SUCCESS;
-}
-
-
 /**
    \details EcDoRpc DeleteFolder (0x1d) Rop. This operation deletes a
    folder on the remote server.
@@ -593,13 +550,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 						 uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 	struct mapi_handles	*rec = NULL;
 	uint32_t		handle;
 	void			*handle_priv_data;
 	struct emsmdbp_object	*handle_object = NULL;
-	uint64_t		parent_fid = 0;
-	bool			mapistore = false;
-	uint32_t		context_id;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder (0x1d)\n"));
 
@@ -635,37 +590,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteFolder(TALLOC_CTX *mem_ctx,
 		return MAPI_E_SUCCESS;
 	}
 
-	mapistore = emsmdbp_is_mapistore(handle_object);
-	switch (mapistore) {
-	case false:
-		/* system/special folder */
-		DEBUG(0, ("Deleting system/special folder\n"));
-		parent_fid = handle_object->object.folder->folderID;
-		mapi_repl->error_code = DoDeleteSystemFolder(emsmdbp_ctx, parent_fid,
-							     mapi_req->u.mapi_DeleteFolder.FolderId,
-							     mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
-
-		break;
-	case true:
-		DEBUG(0, ("Deleting mapistore folder\n"));
-		/* handled by mapistore */
-		context_id = emsmdbp_get_contextID(handle_object);
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, handle_object->backend_object,
-							mapi_req->u.mapi_DeleteFolder.FolderId,
-							mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
-		if (retval) {
-			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (0x%x)",
-				    mapi_req->u.mapi_DeleteFolder.FolderId, retval));
-			  mapi_repl->error_code = MAPI_E_NOT_FOUND;
-		} else {
-			mapi_repl->error_code = MAPI_E_SUCCESS;
-		}
-		break;
+	retval = MAPI_E_SUCCESS;
+	ret = emsmdbp_folder_delete(emsmdbp_ctx, handle_object, mapi_req->u.mapi_DeleteFolder.FolderId, mapi_req->u.mapi_DeleteFolder.DeleteFolderFlags);
+	if (ret == MAPISTORE_ERR_EXIST) {
+		mapi_repl->u.mapi_DeleteFolder.PartialCompletion = true;
 	}
+	else if (ret != MAPISTORE_SUCCESS) {
+		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] DeleteFolder failed to delete fid 0x%.16"PRIx64" (0x%x)",
+			  mapi_req->u.mapi_DeleteFolder.FolderId, retval));
+		retval = MAPI_E_NOT_FOUND;
+	}
+	mapi_repl->error_code = retval;
 
 	*size += libmapiserver_RopDeleteFolder_size(mapi_repl);
 
-	return retval;
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -861,15 +800,17 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
                                                     struct EmptyFolder_repl *response,
                                                     struct mapi_handles *folder)
 {
+	enum MAPISTATUS		ret = MAPI_E_SUCCESS;
 	void                    *folder_priv;
 	struct emsmdbp_object   *folder_object = NULL;
 	uint32_t                context_id;
-	int                     retval;
+	enum mapistore_error	retval;
 	uint64_t		*childFolders;
 	uint32_t		childFolderCount;
 	uint32_t		i;
 	uint8_t			flags = DELETE_HARD_DELETE| DEL_MESSAGES | DEL_FOLDERS;
 	TALLOC_CTX		*local_mem_ctx;
+	void			*subfolder;
 
 	/* Step 1. Retrieve the fid for the folder, given the handle */
 	mapi_handles_get_private_data(folder, &folder_priv);
@@ -891,22 +832,30 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 						  &childFolders, &childFolderCount);
 	if (retval) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder bad retval: 0x%x", retval));
-		return MAPI_E_NOT_FOUND;
+		ret = MAPI_E_NOT_FOUND;
+		goto end;
 	}
 
 	/* Step 3. Delete contents of the folder in mapistore */
 	for (i = 0; i < childFolderCount; ++i) {
-		retval = mapistore_folder_delete_folder(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, childFolders[i],
-							flags);
+		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, folder, local_mem_ctx, childFolders[i], &subfolder);
+		if (retval != MAPISTORE_SUCCESS) {
+			ret = MAPI_E_NOT_FOUND;
+			goto end;
+		}
+
+		retval = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
 		if (retval) {
 			  DEBUG(4, ("exchange_emsmdb: [OXCFOLD] EmptyFolder failed to delete fid 0x%.16"PRIx64" (0x%x)", childFolders[i], retval));
-			  talloc_free(local_mem_ctx);
-			  return MAPI_E_NOT_FOUND;
+			  ret = MAPI_E_NOT_FOUND;
+			  goto end;
 		}
 	}
+
+end:
 	talloc_free(local_mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return ret;
 }
 
 /**

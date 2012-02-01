@@ -518,13 +518,14 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_folder(struct mapistore_co
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_delete_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							     void *folder, uint64_t fid, uint8_t flags)
+_PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, uint8_t flags)
 {
-	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
-	TALLOC_CTX			*mem_ctx, *sub_mem_ctx;
-	void				*subfolder;
+	struct backend_context	*backend_ctx;
+	enum mapistore_error	ret;
+	TALLOC_CTX		*mem_ctx;
+	void			*subfolder;
+	uint64_t		*child_fmids;
+	uint32_t		i, child_count;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -533,42 +534,83 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete_folder(struct mapistore_co
 
 	/* Step 1. Find the backend context */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, mem_ctx);
+	if (!backend_ctx) {
+		ret = MAPISTORE_ERR_INVALID_PARAMETER;
+		goto end;
+	}
 
-	sub_mem_ctx = talloc_zero(mem_ctx, TALLOC_CTX);
-	return mapistore_folder_open_folder(mstore_ctx, context_id, folder, sub_mem_ctx, fid, &subfolder);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, mem_ctx);
-
-	/* Step 2. Handle deletion of child folders / messages */
-	if ((flags & DEL_FOLDERS)) {
-		uint64_t	*childFolders;
-		uint32_t	childFolderCount;
-		int		retval;
-		uint32_t	i;
-
-		/* Get subfolders list */
-		retval = mapistore_folder_get_child_fmids(mstore_ctx, context_id, subfolder, MAPISTORE_FOLDER_TABLE, mem_ctx, &childFolders, &childFolderCount);
-		if (retval) {
-			DEBUG(4, ("mapistore_delete_folder bad retval: 0x%x", retval));
-			return MAPI_E_NOT_FOUND;
-		}
-
-		/* Delete each subfolder in mapistore */
-		for (i = 0; i < childFolderCount; ++i) {
-			retval = mapistore_folder_delete_folder(mstore_ctx, context_id, subfolder, childFolders[i], flags);
-			if (retval) {
-				  DEBUG(4, ("mapistore_delete_folder failed to delete fid 0x%"PRIx64" (0x%x)", childFolders[i], retval));
-				  talloc_free(mem_ctx);
-				  return MAPI_E_NOT_FOUND;
+	/* Step 2a. Handle deletion of normal messages */
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_MESSAGE_TABLE, mem_ctx, &child_fmids, &child_count);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+	if (child_count > 0) {
+		if ((flags & DEL_MESSAGES)) {
+			for (i = 0; i < child_count; i++) {
+				ret = mapistore_backend_folder_delete_message(backend_ctx, folder, child_fmids[i], 0);
+				if (ret != MAPISTORE_SUCCESS) {
+					goto end;
+				}
 			}
 		}
+		else {
+			ret = MAPISTORE_ERR_EXIST;
+			goto end;
+		}
 	}
-	talloc_free(sub_mem_ctx);
-	
-	/* Step 3. Call backend delete_folder */
-	return mapistore_backend_folder_delete_folder(backend_ctx, folder, fid);
 
+	/* Step 2b. Handle deletion of FAI messages */
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FAI_TABLE, mem_ctx, &child_fmids, &child_count);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+	if (child_count > 0) {
+		if ((flags & DEL_MESSAGES)) {
+			for (i = 0; i < child_count; i++) {
+				ret = mapistore_backend_folder_delete_message(backend_ctx, folder, child_fmids[i], 0);
+				if (ret != MAPISTORE_SUCCESS) {
+					goto end;
+				}
+			}
+		}
+		else {
+			ret = MAPISTORE_ERR_EXIST;
+			goto end;
+		}
+	}
+
+	/* Step 3. Handle deletion of child folders */
+	ret = mapistore_folder_get_child_fmids(mstore_ctx, context_id, folder, MAPISTORE_FOLDER_TABLE, mem_ctx, &child_fmids, &child_count);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+	if (child_count > 0) {
+		if ((flags & DEL_FOLDERS)) {
+			for (i = 0; i < child_count; i++) {
+				ret = mapistore_backend_folder_open_folder(backend_ctx, folder, mem_ctx, child_fmids[i], &subfolder);
+				if (ret != MAPISTORE_SUCCESS) {
+					goto end;
+				}
+
+				ret = mapistore_backend_folder_delete(backend_ctx, subfolder);
+				if (ret != MAPISTORE_SUCCESS) {
+					goto end;
+				}
+			}
+		}
+		else {
+			ret = MAPISTORE_ERR_EXIST;
+			goto end;
+		}
+	}
+
+	/* Step 3. Call backend delete_folder */
+	ret = mapistore_backend_folder_delete(backend_ctx, folder);
+
+end:
 	talloc_free(mem_ctx);
+
+	return ret;
 }
 
 /**

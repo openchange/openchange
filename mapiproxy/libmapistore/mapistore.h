@@ -161,7 +161,7 @@ struct mapistore_backend {
         struct {
 		enum mapistore_error	(*open_folder)(void *, TALLOC_CTX *, uint64_t, void **);
 		enum mapistore_error	(*create_folder)(void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
-		enum mapistore_error	(*delete_folder)(void *, uint64_t);
+		enum mapistore_error	(*delete)(void *);
 		enum mapistore_error	(*open_message)(void *, TALLOC_CTX *, uint64_t, bool, void **);
 		enum mapistore_error	(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		enum mapistore_error	(*delete_message)(void *, uint64_t, uint8_t);
@@ -274,7 +274,7 @@ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *
 
 enum mapistore_error mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);
 enum mapistore_error mapistore_folder_create_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
-enum mapistore_error mapistore_folder_delete_folder(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
+enum mapistore_error mapistore_folder_delete(struct mapistore_context *, uint32_t, void *, uint8_t);
 enum mapistore_error mapistore_folder_open_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, bool, void **);
 enum mapistore_error mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 enum mapistore_error mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);

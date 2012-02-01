@@ -176,7 +176,7 @@ enum mapistore_error mapistore_backend_get_path(struct backend_context *, TALLOC
 
 enum mapistore_error mapistore_backend_folder_open_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **);
 enum mapistore_error mapistore_backend_folder_create_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
-enum mapistore_error mapistore_backend_folder_delete_folder(struct backend_context *, void *, uint64_t);
+enum mapistore_error mapistore_backend_folder_delete(struct backend_context *, void *);
 enum mapistore_error mapistore_backend_folder_open_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, bool, void **);
 enum mapistore_error mapistore_backend_folder_create_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 enum mapistore_error mapistore_backend_folder_delete_message(struct backend_context *, void *, uint64_t, uint8_t);

@@ -521,9 +521,9 @@ enum mapistore_error mapistore_backend_folder_create_folder(struct backend_conte
 	return bctx->backend->folder.create_folder(folder, mem_ctx, fid, aRow, child_folder);
 }
 
-enum mapistore_error mapistore_backend_folder_delete_folder(struct backend_context *bctx, void *folder, uint64_t fid)
+enum mapistore_error mapistore_backend_folder_delete(struct backend_context *bctx, void *folder)
 {
-	return bctx->backend->folder.delete_folder(folder, fid);
+	return bctx->backend->folder.delete(folder);
 }
 
 enum mapistore_error mapistore_backend_folder_open_message(struct backend_context *bctx, void *folder,

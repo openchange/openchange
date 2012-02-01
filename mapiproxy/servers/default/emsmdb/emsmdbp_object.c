@@ -1063,6 +1063,75 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	return retval;
 }
 
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
+{
+	enum mapistore_error	ret;
+	enum MAPISTATUS		mapiret;
+	TALLOC_CTX		*mem_ctx;
+	bool			mailboxstore;
+	uint32_t		context_id;
+	void			*subfolder;
+	char			*mapistoreURL;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	mailboxstore = emsmdbp_is_mailboxstore(parent_folder);
+	if (emsmdbp_is_mapistore(parent_folder)) {	/* fid is not a mapistore root */
+		DEBUG(0, ("Deleting mapistore folder\n"));
+		/* handled by mapistore */
+		context_id = emsmdbp_get_contextID(parent_folder);
+
+		ret = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, context_id, parent_folder->backend_object, mem_ctx, fid, &subfolder);
+		if (ret != MAPISTORE_SUCCESS) {
+			goto end;
+		}
+
+		ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+		if (ret != MAPISTORE_SUCCESS) {
+			goto end;
+		}
+	}
+	else {
+		mapiret = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, fid, &mapistoreURL, mailboxstore);
+		if (mapiret != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
+		}
+
+		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, fid);
+		if (mapiret != MAPI_E_SUCCESS) {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+			goto end;
+		}
+
+		if (mapistoreURL) {	/* fid is mapistore root */
+			ret = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, mapistoreURL, &context_id, &subfolder);
+			if (ret == MAPISTORE_SUCCESS) {
+				mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, context_id);
+			} else {
+				ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mapistoreURL, fid, &context_id, &subfolder);
+				if (ret != MAPISTORE_SUCCESS) {
+					goto end;
+				}
+			}
+
+			ret = mapistore_folder_delete(emsmdbp_ctx->mstore_ctx, context_id, subfolder, flags);
+			if (ret != MAPISTORE_SUCCESS) {
+				goto end;
+			}
+
+			 mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+		}
+	}
+
+	ret = MAPISTORE_SUCCESS;
+
+end:
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+ 
 _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, 
 							  struct emsmdbp_object *parent_object, 
 							  uint32_t table_type, uint32_t handle_id)

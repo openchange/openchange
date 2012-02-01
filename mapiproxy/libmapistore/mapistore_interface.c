@@ -491,7 +491,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_folder(struct mapistore_co
 							     void *folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *aRow, void **child_folder)
 {
 	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -502,8 +501,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_folder(struct mapistore_co
 	
 	/* Step 2. Call backend create_folder */
 	return mapistore_backend_folder_create_folder(backend_ctx, folder, mem_ctx, fid, aRow, child_folder);
-
-	return ret;
 }
 
 
@@ -629,7 +626,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_open_message(struct mapistore_con
 							    void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, bool read_write, void **messagep)
 {
 	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -640,8 +636,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_open_message(struct mapistore_con
 
 	/* Step 2. Call backend open_message */
 	return mapistore_backend_folder_open_message(backend_ctx, folder, mem_ctx, mid, read_write, messagep);
-
-	return ret;
 }
 
 
@@ -661,7 +655,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_message(struct mapistore_c
 							      void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)
 {
 	struct backend_context		*backend_ctx;
-	enum mapistore_error				ret;
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
@@ -672,8 +665,6 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_message(struct mapistore_c
 	
 	/* Step 2. Call backend create_message */
 	return mapistore_backend_folder_create_message(backend_ctx, folder, mem_ctx, mid, associated, messagep);
-
-	return ret;
 }
 
 /**

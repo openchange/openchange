@@ -823,7 +823,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_
 	}
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	ret = mapistore_folder_open_table(mstore_ctx, context_id, folder, local_mem_ctx, table_type, -1, &backend_table, &row_count);
+	ret = mapistore_folder_open_table(mstore_ctx, context_id, folder, local_mem_ctx, table_type, 0, &backend_table, &row_count);
 	if (ret != MAPISTORE_SUCCESS) {
 		goto end;
 	}

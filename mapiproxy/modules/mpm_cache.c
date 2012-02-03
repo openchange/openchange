@@ -744,11 +744,11 @@ static NTSTATUS cache_push_ReadStream(struct dcesrv_call_state *dce_call,
 	struct mpm_stream	*stream;
 	struct mapi_response	*mapi_response;
 	struct ReadStream_repl	response;
-	struct ReadStream_req	request;
+	/* struct ReadStream_req	request; */
 
 	mapi_response = EcDoRpc->out.mapi_response;
 	response = mapi_repl.u.mapi_ReadStream;
-	request = mapi_req.u.mapi_ReadStream;
+	/* request = mapi_req.u.mapi_ReadStream; */
 
 	/* Check if the handle is registered */
 	for (stream = mpm->streams; stream; stream = stream->next) {

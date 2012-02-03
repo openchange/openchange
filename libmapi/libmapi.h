@@ -259,6 +259,7 @@ struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *,
 struct mapi_SPropValue	*add_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, uint16_t *, uint32_t, const void *);
 bool			set_SPropValue(struct SPropValue *, const void *);
 uint32_t		get_mapi_property_size(struct mapi_SPropValue *);
+void			mapi_copy_spropvalues(TALLOC_CTX *, struct SPropValue *, struct SPropValue *, uint32_t);
 uint32_t		cast_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);
 uint32_t		cast_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);
 enum MAPISTATUS		SRow_addprop(struct SRow *, struct SPropValue);

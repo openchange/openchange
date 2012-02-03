@@ -1851,9 +1851,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		aRow.cValues++;
 		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_folder, NULL, folderID, &aRow, &folder_object);
 		if (retval) {
+			mapi_repl->error_code = retval;
 			DEBUG(5, (__location__": folder creation failed\n"));
 			folder_object = NULL;
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
 	}
@@ -1945,12 +1945,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_SyncImportDeletes;
 
-	if (request->Flags & SyncImportDeletes_Hierarchy) {
-		DEBUG(5, ("  hierarchy deletes not supported yet\n"));
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		goto end;
-	}
-
 	if (request->Flags & SyncImportDeletes_HardDelete) {
 		delete_type = MAPISTORE_PERMANENT_DELETE;
 	}
@@ -1958,27 +1952,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		delete_type = MAPISTORE_SOFT_DELETE;
 	}
 
-	if (!emsmdbp_is_mapistore(synccontext_object)) {
-		DEBUG(5, ("  no message deletes on non-mapistore store\n"));
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		goto end;
-	}
-
-	contextID = emsmdbp_get_contextID(synccontext_object);
 	owner = emsmdbp_get_owner(synccontext_object);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
 
-	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
-	for (i = 0; i < object_array->cValues; i++) {
-		ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
-		if (ret == MAPISTORE_SUCCESS) {
-			ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
-			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
+	if (request->Flags & SyncImportDeletes_Hierarchy) {
+		object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+		for (i = 0; i < object_array->cValues; i++) {
+			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
+			if (ret == MAPISTORE_SUCCESS) {
+				emsmdbp_folder_delete(emsmdbp_ctx, synccontext_object->parent_object, objectID, 0xff);
 			}
-			ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
-			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID));
+		}
+	}
+	else {
+		if (!emsmdbp_is_mapistore(synccontext_object)) {
+			DEBUG(5, ("  no message deletes on non-mapistore store\n"));
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
+
+		contextID = emsmdbp_get_contextID(synccontext_object);
+
+		object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+		for (i = 0; i < object_array->cValues; i++) {
+			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
+			if (ret == MAPISTORE_SUCCESS) {
+				ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
+				if (ret != MAPISTORE_SUCCESS) {
+					DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
+				}
+				ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
+				if (ret != MAPISTORE_SUCCESS) {
+					DEBUG(5, ("message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID));
+				}
 			}
 		}
 	}

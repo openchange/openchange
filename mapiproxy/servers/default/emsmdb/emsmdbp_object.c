@@ -194,16 +194,128 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 	}
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
+static enum mapistore_context_role emsmdbp_container_class_to_role(const char *container_class)
 {
-	uint64_t			parentFolderID;
-	uint64_t			testFolderID;
-	char				*MAPIStoreURI, *owner;
+	enum mapistore_context_role	i, role = MAPISTORE_FALLBACK_ROLE;
+	static const char		**container_classes = NULL;
+	bool				found = false;
+
+	if (!container_classes) {
+		container_classes = talloc_array(NULL, const char *, MAPISTORE_MAX_ROLES);
+		for (i = MAPISTORE_MAIL_ROLE; i < MAPISTORE_MAX_ROLES; i++) {
+			container_classes[i] = "IPF.Note";
+		}
+		container_classes[MAPISTORE_CALENDAR_ROLE] = "IPF.Appointment";
+		container_classes[MAPISTORE_CONTACTS_ROLE] = "IPF.Contact";
+		container_classes[MAPISTORE_TASKS_ROLE] = "IPF.Task";
+		container_classes[MAPISTORE_NOTES_ROLE] = "IPF.StickyNote";
+		container_classes[MAPISTORE_JOURNAL_ROLE] = "IPF.Journal";
+		container_classes[MAPISTORE_FALLBACK_ROLE] = "";
+	}
+
+	if (container_class) {
+		for (i = 0; !found && i < MAPISTORE_MAX_ROLES; i++) {
+			if (strcmp(container_class, container_classes[i]) == 0) {
+				role = i;
+				found = true;
+			}
+		}
+	}
+
+	return role;
+}
+
+static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *new_folder, bool force_container_class)
+{
+	enum mapistore_error		ret = MAPISTORE_SUCCESS;
+	enum MAPISTATUS			retval;
+	struct SPropValue		*value;
+	char				*mapistore_uri, *owner;
+	enum mapistore_context_role	role;
+	TALLOC_CTX			*mem_ctx;
+	uint64_t			parent_fid, fid;
+	uint32_t			context_id;
+
+	if (!new_folder->object.folder->postponed_props) {
+		return ret;
+	}
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CONTAINER_CLASS_UNICODE);
+	if (!value) {
+		/* Sometimes Outlook does pass non-unicode values. */
+		value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CONTAINER_CLASS);
+	}
+	if (value) {
+		role = emsmdbp_container_class_to_role(value->value.lpszW);
+	}
+	else if (force_container_class) {
+		DEBUG(5, (__location__": forcing folder backend role to 'fallback'\n"));
+		role = MAPISTORE_FALLBACK_ROLE;
+	}
+	else {
+		DEBUG(5, (__location__": container class not set yet\n"));
+		goto end;
+	}
+
+	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME_UNICODE);
+	if (!value) {
+		DEBUG(5, (__location__": display name not set yet\n"));
+		goto end;
+	}
+
+	fid = new_folder->object.folder->folderID;
+	owner = emsmdbp_get_owner(new_folder);
+
+	ret = mapistore_create_root_folder(emsmdbp_ctx->mstore_ctx, owner, role, fid, value->value.lpszW, mem_ctx, &mapistore_uri);
+	if (ret != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+
+	if (new_folder->parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
+		parent_fid = new_folder->parent_object->object.mailbox->folderID;
+	}
+	else { /* EMSMDBP_OBJECT_FOLDER */
+		parent_fid = new_folder->parent_object->object.folder->folderID;
+	}
+
+	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CHANGE_NUM);
+	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parent_fid, fid, value->value.d, mapistore_uri, -1);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = MAPISTORE_ERR_NOT_FOUND;
+		DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
+		abort();
+	}
+
+	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &new_folder->backend_object);
+	if (ret != MAPISTORE_SUCCESS) {
+		abort();
+	}
+	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
+	new_folder->object.folder->contextID = context_id;
+
+	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, new_folder->object.folder->postponed_props);
+	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
+
+	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
+	new_folder->object.folder->postponed_props = NULL;
+
+	DEBUG(5, ("new mapistore context created at uri: %s\n", mapistore_uri));
+
+end:
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
+{
+	uint64_t			parentFolderID, testFolderID;
 	struct SPropValue		*value;
 	int				retval;
-	TALLOC_CTX			*local_mem_ctx;
 	struct emsmdbp_object		*new_folder;
-	uint32_t			contextID;
+	struct SRow			*postponed_props;
 
 	/* Sanity checks */
 
@@ -214,13 +326,23 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 	new_folder = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {
 		retval = mapistore_folder_create_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_folder), parent_folder->backend_object, new_folder, fid, rowp, &new_folder->backend_object);
-		if (retval == MAPISTORE_ERR_EXIST) {
-			/* folder with this name already exists */
-			DEBUG(4, ("emsmdbp_object: CreateFolder Duplicate Folder error\n"));
+		if (retval != MAPISTORE_SUCCESS) {
 			talloc_free(new_folder);
-			return MAPI_E_COLLISION;
+			if (retval == MAPISTORE_ERR_EXIST) {
+				/* folder with this name already exists */
+				DEBUG(5, (__location__": folder already exists\n"));
+				return MAPI_E_COLLISION;
+			}
+			else if (retval == MAPISTORE_ERR_DENIED) {
+				DEBUG(5, (__location__": folder creation denied\n"));
+				return MAPI_E_NO_ACCESS;
+			}
+			else {
+				return MAPI_E_NOT_FOUND;
+			}
 		}
-		OPENCHANGE_RETVAL_IF(retval, MAPISTORE_ERROR, new_folder);
+
+		OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, new_folder);
 	}
 	else {
 		parentFolderID = parent_folder->object.folder->folderID;
@@ -240,42 +362,21 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_create_folder(struct emsmdbp_contex
 			return MAPI_E_COLLISION;
 		}
 
-		local_mem_ctx = talloc_zero(NULL, void);
-		owner = emsmdbp_get_owner(parent_folder);
 		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
 		if (value) {
-			uint32_t	context_id;
-			void		*backend_object;
+			postponed_props = talloc_zero(new_folder, struct SRow);
+			postponed_props->cValues = rowp->cValues;
+			postponed_props->lpProps = talloc_array(postponed_props, struct SPropValue, rowp->cValues);
+			mapi_copy_spropvalues(postponed_props->lpProps, rowp->lpProps, postponed_props->lpProps, rowp->cValues);
+			new_folder->object.folder->postponed_props = postponed_props;
+			new_folder->object.folder->mapistore_root = true;
 
-			#warning fallback uri should be searched
-			MAPIStoreURI = talloc_asprintf(local_mem_ctx, "sogo://%s@fallback/0x%.16"PRIx64"/", owner, fid);
-			retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parentFolderID, fid, value->value.d, MAPIStoreURI, -1);
-			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
-				abort();
-			}
-
-			/* instantiate the new folder in the backend to make sure it is initialized properly */
-			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, MAPIStoreURI, fid, &context_id, &backend_object);
-			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
 		}
 		else {
 			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
 			abort();
 		}
-
-		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, rowp);
-
-		/* Created top folders are always using a mapistore backend */
-		retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, MAPIStoreURI, new_folder->object.folder->folderID, &contextID, &new_folder->backend_object);
-		if (retval != MAPISTORE_SUCCESS) {
-			abort();
-		}
-		mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid);
-		new_folder->object.folder->mapistore_root = true;
-		new_folder->object.folder->contextID = contextID;
-
-		talloc_free(local_mem_ctx);
 	}
 	*new_folderp = new_folder;
 
@@ -1144,6 +1245,10 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	if (!(parent_object->type == EMSMDBP_OBJECT_FOLDER || parent_object->type == EMSMDBP_OBJECT_MAILBOX)) {
 		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type));
 		return NULL;
+	}
+
+	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->postponed_props) {
+		emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
 	}
 
 	table_object = emsmdbp_object_table_init(mem_ctx, parent_object->emsmdbp_ctx, parent_object);
@@ -2699,6 +2804,10 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 	 * dispatcher db, not mapistore */
 	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
 	    object->object.folder->mapistore_root == true) {
+		if (object->object.folder->postponed_props) {
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
+		}
+
 		retval = emsmdbp_object_get_properties_mapistore_root(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 	} else {
 		mapistore = emsmdbp_is_mapistore(object);
@@ -2747,8 +2856,10 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 /* TODO: handling of "property problems" */
 _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SRow *rowp)
 {
-	uint32_t contextID;
-	bool mapistore;
+	uint32_t		contextID, new_cvalues;
+	bool			mapistore;
+	enum mapistore_error	ret;
+	struct SRow		*postponed_props;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
@@ -2762,6 +2873,22 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type));
 		return MAPI_E_NO_SUPPORT;
         }
+
+	postponed_props = object->object.folder->postponed_props;
+	if (object->type == EMSMDBP_OBJECT_FOLDER && postponed_props) {
+		new_cvalues = postponed_props->cValues + rowp->cValues;
+		postponed_props->lpProps = talloc_realloc(postponed_props, postponed_props->lpProps, struct SPropValue, new_cvalues);
+		mapi_copy_spropvalues(postponed_props, rowp->lpProps, postponed_props->lpProps + postponed_props->cValues, rowp->cValues);
+		postponed_props->cValues = new_cvalues;
+
+		ret = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, false);
+		if (ret == MAPISTORE_SUCCESS) {
+			return MAPI_E_SUCCESS;
+		}
+		else {
+			return MAPI_E_NOT_FOUND;
+		}
+	};
 
 	/* Temporary hack: If this is a mapistore root container
 	 * (e.g. Inbox, Calendar etc.), directly stored under

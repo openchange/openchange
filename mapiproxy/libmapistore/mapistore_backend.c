@@ -371,6 +371,19 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 	return MAPISTORE_SUCCESS;
 }
 
+
+enum mapistore_error mapistore_backend_create_root_folder(struct backend_context_list *backend_list_ctx, const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, struct tdb_wrap *tdbwrap, TALLOC_CTX *mem_ctx, char **mapistore_urip)
+{
+	enum mapistore_error		retval = MAPISTORE_ERR_NOT_FOUND;
+	struct backend_context_list	*el;
+
+	for (el = backend_list_ctx; retval == MAPISTORE_ERR_NOT_FOUND && el; el = el->next) {
+		retval = el->ctx->backend->backend.create_root_folder(username, ctx_role, fid, name, tdbwrap, mem_ctx, mapistore_urip);
+	}
+
+	return retval;
+}
+
 /**
    \details Increase the ref count associated to a given backend
 

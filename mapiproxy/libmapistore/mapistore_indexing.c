@@ -82,7 +82,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
-	ictx = talloc_zero(mstore_ctx->indexing_list, struct indexing_context_list);
+	ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
 
 	/* Step 1. Open/Create the indexing database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb", 
@@ -96,7 +96,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
 	ictx->username = talloc_strdup(ictx, username);
-	ictx->ref_count = 0;
+	/* ictx->ref_count = 0; */
 	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);
 
 	*ictxp = ictx;
@@ -106,39 +106,39 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	return MAPISTORE_SUCCESS;
 }
 
-/**
-   \details Increase the ref count associated to a given indexing context
+/* /\** */
+/*    \details Increase the ref count associated to a given indexing context */
 
-   \param ictx pointer to the indexing context
+/*    \param ictx pointer to the indexing context */
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
- */
-enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *ictx)
-{
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+/*    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR */
+/*  *\/ */
+/* enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *ictx) */
+/* { */
+/* 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL); */
 
-	ictx->ref_count += 1;
+/* 	ictx->ref_count += 1; */
 
-	return MAPISTORE_SUCCESS;
-}
+/* 	return MAPISTORE_SUCCESS; */
+/* } */
 
 
-/**
-   \details Decrease the ref count associated to a given indexing context
+/* /\** */
+/*    \details Decrease the ref count associated to a given indexing context */
 
-   \param ictx pointer to the indexing context
+/*    \param ictx pointer to the indexing context */
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
- */
-enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *ictx)
-{
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!ictx->ref_count, MAPISTORE_SUCCESS, NULL);
+/*    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR */
+/*  *\/ */
+/* enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *ictx) */
+/* { */
+/* 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL); */
+/* 	MAPISTORE_RETVAL_IF(!ictx->ref_count, MAPISTORE_SUCCESS, NULL); */
 
-	ictx->ref_count -= 1;
+/* 	ictx->ref_count -= 1; */
 
-	return MAPISTORE_SUCCESS;
-}
+/* 	return MAPISTORE_SUCCESS; */
+/* } */
 
 
 /**

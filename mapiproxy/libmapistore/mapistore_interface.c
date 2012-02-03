@@ -200,7 +200,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 		mkdir(mapistore_dir, 0700);
 
 		mapistore_indexing_add(mstore_ctx, owner, &ictx);
-		mapistore_indexing_add_ref_count(ictx);
+		/* mapistore_indexing_add_ref_count(ictx); */
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
@@ -262,9 +262,10 @@ _PUBLIC_ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_c
 
 	/* Step 2. Increment backend indexing ref count */
 	if (backend_ctx->indexing) {
-		mapistore_indexing_add_ref_count(backend_ctx->indexing);
+		/* mapistore_indexing_add_ref_count(backend_ctx->indexing); */
 	} else {
 		DEBUG(0, ("[%s:%d]: This should never occur\n", __FUNCTION__, __LINE__));
+		abort();
 	}
 
 	return retval;
@@ -339,7 +340,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	}
 
 	/* Step 1. Release the indexing context within backend */
-	if (backend_ctx->indexing) {
+	/* if (backend_ctx->indexing) {
 		mapistore_indexing_del_ref_count(backend_ctx->indexing);
 		if (backend_ctx->indexing->ref_count == 0) {
 			DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
@@ -347,7 +348,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 			talloc_unlink(mstore_ctx->indexing_list, backend_ctx->indexing);
 			backend_ctx->indexing = NULL;
 		}
-	}
+	} */
 
 	/* Step 2. Delete the context within backend */
 	retval = mapistore_backend_delete_context(backend_ctx);
@@ -442,8 +443,8 @@ _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_
 	mkdir(mapistore_dir, 0700);
 
 	mapistore_indexing_add(mstore_ctx, owner, &ictx);
-	mapistore_indexing_add_ref_count(ictx);
-
+	/* mapistore_indexing_add_ref_count(ictx); */
+ 
 	return mapistore_backend_list_contexts(owner, ictx->index_ctx, mem_ctx, contexts_listp);
 }
 

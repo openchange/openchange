@@ -123,7 +123,7 @@ struct processing_context {
 struct indexing_context_list {
 	struct tdb_wrap			*index_ctx;
 	char				*username;
-	uint32_t			ref_count;
+	// uint32_t			ref_count;
 	struct indexing_context_list	*prev;
 	struct indexing_context_list	*next;
 };
@@ -224,8 +224,8 @@ enum mapistore_error mapistore_indexing_search_existing_fmid(struct indexing_con
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t);
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
-enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
-enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
+// enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
+// enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
 
 /* definitions from mapistore_namedprops.c */
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);

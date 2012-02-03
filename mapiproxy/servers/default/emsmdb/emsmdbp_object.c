@@ -1707,7 +1707,7 @@ static inline void emsmdbp_freebusy_make_range(struct tm *start_time, struct tm 
 	if (time_data.tm_mday < 7) {
 		mw_delta = (time_data.tm_wday + 1 - time_data.tm_mday);
 		if (mw_delta > 0) {
-			if (time_data.tm_mon > 1) {
+			if (time_data.tm_mon > 0) {
 				time_data.tm_mon--;
 			}
 			else {
@@ -1729,7 +1729,7 @@ static inline void emsmdbp_freebusy_make_range(struct tm *start_time, struct tm 
 	time_data.tm_mon = month + 2;
 	if (time_data.tm_mon > 11) {
 		time_data.tm_year++;
-		time_data.tm_mon -= 11;
+		time_data.tm_mon -= 12;
 	}
 	time_data.tm_mday = emsmdbp_days_in_month(time_data.tm_mon, time_data.tm_year) + 1 - mw_delta;
 	time_data.tm_hour = 23;

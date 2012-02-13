@@ -448,18 +448,13 @@ _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_
 	return mapistore_backend_list_contexts(owner, ictx->index_ctx, mem_ctx, contexts_listp);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_create_root_folder(struct mapistore_context *mstore_ctx, const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
+_PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
 {
-	struct indexing_context_list		*ictx;
-
 	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!mapistore_urip, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mapistore_indexing_add(mstore_ctx, username, &ictx);
-
-	return mapistore_backend_create_root_folder(mstore_ctx->context_list, username, ctx_role, fid, name, ictx->index_ctx, mem_ctx, mapistore_urip);
+	return mapistore_backend_create_root_folder(username, ctx_role, fid, name, mem_ctx, mapistore_urip);
 }
 
 /**

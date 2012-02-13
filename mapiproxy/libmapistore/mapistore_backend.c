@@ -372,13 +372,13 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 }
 
 
-enum mapistore_error mapistore_backend_create_root_folder(struct backend_context_list *backend_list_ctx, const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, struct tdb_wrap *tdbwrap, TALLOC_CTX *mem_ctx, char **mapistore_urip)
+enum mapistore_error mapistore_backend_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
 {
 	enum mapistore_error		retval = MAPISTORE_ERR_NOT_FOUND;
-	struct backend_context_list	*el;
+	int				i;
 
-	for (el = backend_list_ctx; retval == MAPISTORE_ERR_NOT_FOUND && el; el = el->next) {
-		retval = el->ctx->backend->backend.create_root_folder(username, ctx_role, fid, name, tdbwrap, mem_ctx, mapistore_urip);
+	for (i = 0; retval == MAPISTORE_ERR_NOT_FOUND && i < num_backends; i++) {
+		retval = backends[i].backend->backend.create_root_folder(username, ctx_role, fid, name, mem_ctx, mapistore_urip);
 	}
 
 	return retval;

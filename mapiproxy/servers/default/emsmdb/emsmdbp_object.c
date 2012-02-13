@@ -2254,7 +2254,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 		if (ret != MAPISTORE_SUCCESS) {
 			printf("Invalid openchangedb message\n");
 			talloc_free(message_object);
-			message_object = NULL;
+			goto end;
 		}
 
 		emsmdbp_object_message_fill_freebusy_properties(message_object);
@@ -2271,7 +2271,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 		}
 		if (ret != MAPISTORE_SUCCESS) {
 			talloc_free(message_object);
-			message_object = NULL;
 		}
 	}
 

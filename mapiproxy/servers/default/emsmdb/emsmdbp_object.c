@@ -268,10 +268,17 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	fid = new_folder->object.folder->folderID;
 	owner = emsmdbp_get_owner(new_folder);
 
-	ret = mapistore_create_root_folder(emsmdbp_ctx->mstore_ctx, owner, role, fid, value->value.lpszW, mem_ctx, &mapistore_uri);
+	ret = mapistore_create_root_folder(owner, role, fid, value->value.lpszW, mem_ctx, &mapistore_uri);
 	if (ret != MAPISTORE_SUCCESS) {
 		goto end;
 	}
+
+	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &new_folder->backend_object);
+	if (ret != MAPISTORE_SUCCESS) {
+		abort();
+	}
+
+	new_folder->object.folder->contextID = context_id;
 
 	if (new_folder->parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
 		parent_fid = new_folder->parent_object->object.mailbox->folderID;
@@ -288,10 +295,6 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		abort();
 	}
 
-	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &new_folder->backend_object);
-	if (ret != MAPISTORE_SUCCESS) {
-		abort();
-	}
 	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
 	new_folder->object.folder->contextID = context_id;
 

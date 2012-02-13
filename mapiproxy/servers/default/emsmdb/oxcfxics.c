@@ -642,11 +642,16 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	for (i = 0; i < table_object->object.table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
+			if (emsmdbp_object_message_open(data_pointers, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
+				DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
+				goto end_row;
+			}
+
 			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
 
 			/** fixed header props */
-			header_data_pointers = talloc_array(NULL, void *, 9);
+			header_data_pointers = talloc_array(data_pointers, void *, 9);
 			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
 			memset(header_retvals, 0, 9 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
@@ -787,16 +792,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			   embeddedMessage:
 			   StartEmbed messageContent EndEmbed */
 
-			/* FIXME: we assume that the return code will always be "MAPISTORE_SUCCESS" */
-			emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg);
 			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
 			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
-			talloc_free(message_object);
 
 		end_row:
-			talloc_free(header_data_pointers);
 			talloc_free(data_pointers);
-			talloc_free(retvals);
 		}
 		else {
 			DEBUG(5, ("no data returned for message row %d\n", i));

@@ -642,11 +642,6 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	for (i = 0; i < table_object->object.table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
-			if (emsmdbp_object_message_open(data_pointers, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
-				goto end_row;
-			}
-
 			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
 
@@ -663,9 +658,14 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			if (eid == 0x7fffffffffffffffLL) {
 				DEBUG(0, ("message without a valid eid\n"));
-				talloc_free(header_data_pointers);
-				continue;
+				goto end_row;
 			}
+
+			if (emsmdbp_object_message_open(data_pointers, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
+				DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
+				goto end_row;
+			}
+
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 

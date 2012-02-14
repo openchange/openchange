@@ -344,8 +344,6 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 				return MAPI_E_NOT_FOUND;
 			}
 		}
-
-		OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, new_folder);
 	}
 	else {
 		parentFolderID = parent_folder->object.folder->folderID;

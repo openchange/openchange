@@ -3532,7 +3532,7 @@ System Attendant Private Interface
 		uint16		MessageIdSize;
 		uint8		MessageId[MessageIdSize];
 		boolean8	MarkAsRead;
-	} MessageReadStates;
+	} MessageReadState;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		[subcontext(2),flag(NDR_REMAINING)] DATA_BLOB MessageReadStates;

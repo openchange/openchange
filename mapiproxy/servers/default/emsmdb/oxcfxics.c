@@ -2551,18 +2551,18 @@ end:
 }
 
 /**
-   \details Retrieve a MessageReadStates structure from a binary blob
+   \details Retrieve a MessageReadState structure from a binary blob
 
    \param mem_ctx pointer to the memory context
-   \param bin pointer to the Binary_r structure with raw MessageReadStates data
+   \param bin pointer to the Binary_r structure with raw MessageReadState data
 
-   \return Allocated MessageReadStates structure on success, otherwise NULL
+   \return Allocated MessageReadState structure on success, otherwise NULL
 
-   \note Developers must free the allocated MessageReadStates when finished.
+   \note Developers must free the allocated MessageReadState when finished.
  */
-static struct MessageReadStates *get_MessageReadStates(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+static struct MessageReadState *get_MessageReadState(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
 {
-	struct MessageReadStates	*message_read_states = NULL;
+	struct MessageReadState	*message_read_states = NULL;
 	struct ndr_pull			*ndr;
 	enum ndr_err_code		ndr_err_code;
 
@@ -2577,8 +2577,8 @@ static struct MessageReadStates *get_MessageReadStates(TALLOC_CTX *mem_ctx, stru
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	message_read_states = talloc_zero(mem_ctx, struct MessageReadStates);
-	ndr_err_code = ndr_pull_MessageReadStates(ndr, NDR_SCALARS, message_read_states);
+	message_read_states = talloc_zero(mem_ctx, struct MessageReadState);
+	ndr_err_code = ndr_pull_MessageReadState(ndr, NDR_SCALARS, message_read_states);
 
 	/* talloc_free(ndr); */
 
@@ -2615,7 +2615,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
 	enum MAPISTATUS				retval;
 	enum mapistore_error			ret;
-	struct MessageReadStates		*read_states;
+	struct MessageReadState			*read_states;
 	uint32_t				read_states_size;
 	struct Binary_r				*bin_data;
 	char					*owner;
@@ -2624,6 +2624,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	int					i;
 	struct mapistore_message		*msg;
 	struct GUID				guid;
+	DATA_BLOB				guid_blob = { .length = 16, .data = NULL };
 	uint8_t					flag;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportReadStateChanges (0x80)\n"));
@@ -2665,9 +2666,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 		bin_data->cb = request->MessageReadStates.length;
 		bin_data->lpb = request->MessageReadStates.data;
 		while (bin_data->cb) {
-			read_states = get_MessageReadStates(mem_ctx, bin_data);
+			read_states = get_MessageReadState(mem_ctx, bin_data);
 			read_states_size = read_states->MessageIdSize + 3;
-			if (GUID_from_string((char *) read_states->MessageId, &guid).v != 0) {
+
+			bin_data->cb -= read_states_size;
+			bin_data->lpb += read_states_size;
+
+			guid_blob.data = read_states->MessageId;
+			if (GUID_from_data_blob(&guid_blob, &guid).v != 0) {
 				continue;
 			}
 			owner = emsmdbp_get_owner(synccontext_object);
@@ -2696,9 +2702,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 				talloc_free(message_object);
 			}
-
-			bin_data->cb -= read_states_size;
-			bin_data->lpb += read_states_size;
 		}
 	}
 	else {

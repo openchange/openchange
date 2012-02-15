@@ -231,8 +231,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* OpenMessage can only be called for mailbox/folder objects */
 	if (!(context_object->type == EMSMDBP_OBJECT_MAILBOX || context_object->type == EMSMDBP_OBJECT_FOLDER)) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		*size += libmapiserver_RopOpenMessage_size(NULL);
-		return MAPI_E_SUCCESS;
+		goto end;
 	}
 
 	messageID = request->MessageId;
@@ -254,6 +253,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 			ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
 		}
 	}
+
 	if (ret != MAPISTORE_SUCCESS) {
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, object_handle->handle);
 		if (ret == MAPISTORE_ERR_DENIED) {
@@ -267,7 +267,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		}
 		goto end;
 	}
-		
+
 	handles[mapi_repl->handle_idx] = object_handle->handle;
 	retval = mapi_handles_set_private_data(object_handle, object);
 

@@ -1827,6 +1827,7 @@ static inline void emsmdbp_freebusy_make_range(struct tm *start_time, struct tm 
 		}
 	}
 	else {
+		mw_delta = 0;
 		time_data.tm_mday = 1;
 	}
 

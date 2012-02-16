@@ -807,6 +807,7 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 				       &dest_len);
 			uni_value[dest_len] = 0;
 			dest_value = uni_value;
+			value_size += 2;
 			break;
 		case PT_BINARY:
 			bin_value = talloc_zero(recipient->data, struct Binary_r);

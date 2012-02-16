@@ -2875,21 +2875,23 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 		return MAPI_E_NO_SUPPORT;
         }
 
-	postponed_props = object->object.folder->postponed_props;
-	if (object->type == EMSMDBP_OBJECT_FOLDER && postponed_props) {
-		new_cvalues = postponed_props->cValues + rowp->cValues;
-		postponed_props->lpProps = talloc_realloc(postponed_props, postponed_props->lpProps, struct SPropValue, new_cvalues);
-		mapi_copy_spropvalues(postponed_props, rowp->lpProps, postponed_props->lpProps + postponed_props->cValues, rowp->cValues);
-		postponed_props->cValues = new_cvalues;
+	if (object->type == EMSMDBP_OBJECT_FOLDER) {
+		postponed_props = object->object.folder->postponed_props;
+		if (postponed_props) {
+			new_cvalues = postponed_props->cValues + rowp->cValues;
+			postponed_props->lpProps = talloc_realloc(postponed_props, postponed_props->lpProps, struct SPropValue, new_cvalues);
+			mapi_copy_spropvalues(postponed_props, rowp->lpProps, postponed_props->lpProps + postponed_props->cValues, rowp->cValues);
+			postponed_props->cValues = new_cvalues;
 
-		ret = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, false);
-		if (ret == MAPISTORE_SUCCESS) {
-			return MAPI_E_SUCCESS;
+			ret = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, false);
+			if (ret == MAPISTORE_SUCCESS) {
+				return MAPI_E_SUCCESS;
+			}
+			else {
+				return MAPI_E_NOT_FOUND;
+			}
 		}
-		else {
-			return MAPI_E_NOT_FOUND;
-		}
-	};
+	}
 
 	/* Temporary hack: If this is a mapistore root container
 	 * (e.g. Inbox, Calendar etc.), directly stored under

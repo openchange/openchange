@@ -72,16 +72,14 @@ static struct replica_mapping_context_list *mapistore_replica_mapping_search(str
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 
-static int context_list_destructor(void *object)
+static int context_list_destructor(struct replica_mapping_context_list *rmctx)
 {
-	struct replica_mapping_context_list	*rmctx = object;
-
 	tdb_close(rmctx->tdb);
 
 	return 1;
 }
 
-_PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username, struct replica_mapping_context_list **rmctxp)
+_PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username, struct replica_mapping_context_list **rmctxp)
 {
 	TALLOC_CTX				*mem_ctx;
 	struct replica_mapping_context_list	*rmctx;
@@ -122,7 +120,7 @@ _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx,
 	return MAPISTORE_SUCCESS;
 }
 
-/* _PUBLIC_ int mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username) */
+/* _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *mstore_ctx, const char *username) */
 /* { */
 /* 	TALLOC_CTX			*mem_ctx; */
 /* 	char				*dbpath = NULL; */
@@ -220,7 +218,7 @@ static void mapistore_replica_mapping_add_pair(struct tdb_context *tdb, const st
 	talloc_free(mem_ctx);
 }
 
-static int mapistore_replica_mapping_search_guid(struct tdb_context *tdb, const struct GUID *guidP, uint16_t *replidP)
+static enum mapistore_error mapistore_replica_mapping_search_guid(struct tdb_context *tdb, const struct GUID *guidP, uint16_t *replidP)
 {
 	TDB_DATA	guid_key;
 	TDB_DATA	replid_key;
@@ -255,7 +253,7 @@ static int mapistore_replica_mapping_search_guid(struct tdb_context *tdb, const 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *mstore_ctx, const char *username, const struct GUID *guidP, uint16_t *replidP)
+_PUBLIC_ enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct mapistore_context *mstore_ctx, const char *username, const struct GUID *guidP, uint16_t *replidP)
 {
 	int		ret;
 	uint16_t	new_replid;
@@ -293,7 +291,7 @@ _PUBLIC_ int mapistore_replica_mapping_guid_to_replid(struct mapistore_context *
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_replica_mapping_replid_to_guid(struct mapistore_context *mstore_ctx, const char *username, uint16_t replid, struct GUID *guidP)
+_PUBLIC_ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_context *mstore_ctx, const char *username, uint16_t replid, struct GUID *guidP)
 {
 	void					*mem_ctx;
 	TDB_DATA				guid_key, replid_key;

@@ -28,6 +28,8 @@
 #include "libmapi/libmapi_private.h"
 #include <util/debug.h>
 
+static int dispatch_nbr = 0;
+
 /**
    \file dcesrv_mapiproxy.c
 
@@ -368,9 +370,9 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	struct dcesrv_mapiproxy_private		*private;
 	enum ndr_err_code			ndr_err;
 	const struct ndr_interface_table	*table;
-	const struct ndr_interface_call		*call;
+	/* const struct ndr_interface_call		*call; */
 	uint16_t				opnum;
-	const char				*name;
+	/* const char				*name; */
 
 	DEBUG(5, ("mapiproxy::mapiproxy_op_ndr_push\n"));
 
@@ -378,8 +380,8 @@ static NTSTATUS mapiproxy_op_ndr_push(struct dcesrv_call_state *dce_call, TALLOC
 	table = (const struct ndr_interface_table *)dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
 
-	name = table->calls[opnum].name;
-	call = &table->calls[opnum];
+	/* name = table->calls[opnum].name; */
+	/* call = &table->calls[opnum]; */
 
 	dce_call->fault_code = 0;
 
@@ -449,6 +451,14 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	uint16_t				opnum;
 	const char				*name;
 	NTSTATUS				status;
+	int					this_dispatch;
+	struct timeval				tv;
+
+	this_dispatch = dispatch_nbr;
+	dispatch_nbr++;
+
+	gettimeofday(&tv, NULL);
+	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: [tv=%lu.%.6lu] [#%d start]\n", tv.tv_sec, tv.tv_usec, this_dispatch));
 
 	private = dce_call->context->private_data;
 	table = dce_call->context->iface->private_data;
@@ -529,6 +539,9 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		
 		if (mapiproxy.ahead == true) goto ahead;
 	}
+
+	gettimeofday(&tv, NULL);
+	DEBUG(5, ("mapiproxy::mapiproxy_op_dispatch: [tv=%lu.%.6lu] [#%d end]\n", tv.tv_sec, tv.tv_usec, this_dispatch));
 	
 	return NT_STATUS_OK;
 }

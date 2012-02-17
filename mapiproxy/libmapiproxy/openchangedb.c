@@ -84,7 +84,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct ldb_context *ldb
 	/* Step 3. Search FolderID */
 	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
 	OPENCHANGE_RETVAL_IF(!ldb_dn, MAPI_E_CORRUPT_STORE, mem_ctx);
-	talloc_free(res);
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs, 
 			 "(&(objectClass=systemfolder)(SystemIdx=%d))", SystemIdx);
@@ -481,6 +480,63 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(struct ldb_context *ldb_ctx, const
 }
 
 /**
+   \details Retrieve a list of mapistore URI in use for a certain user
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the Folder identifier to search for
+   \param mapistoreURL pointer on pointer to the mapistore URI the
+   function returns
+   \param mailboxstore boolean value which defines whether the record
+   has to be searched within Public folders hierarchy or not
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct ldb_context *ldb_ctx, const char *username, TALLOC_CTX *mem_ctx, struct WStringArray_r **urisP)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_dn		*dn;
+	const char * const	attrs[] = { "*", NULL };
+	char			*dnstr;
+	int			i, elements, ret;
+	struct WStringArray_r	*uris;
+
+	local_mem_ctx = talloc_named(NULL, 0, "openchangedb_get_fid");
+
+	/* fetch mailbox DN */
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(&(cn=%s)(MailboxGUID=*))", username);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	dnstr = talloc_strdup(local_mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, local_mem_ctx);
+	dn = ldb_dn_new(local_mem_ctx, ldb_ctx, dnstr);
+
+	uris = talloc_zero(mem_ctx, struct WStringArray_r);
+	uris->lppszW = talloc_zero(uris, const char *);
+	*urisP = uris;
+
+	elements = 0;
+
+	/* search subfolders which have a non-null mapistore uri */
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=*)");
+	if (ret == LDB_SUCCESS) {
+		for (i = 0; i < res->count; i++) {
+			if ((uris->cValues + 1) > elements) {
+				elements = uris->cValues + 16;
+				uris->lppszW = talloc_realloc(uris, uris->lppszW, const char *, elements);
+			}
+			uris->lppszW[uris->cValues] = talloc_strdup(uris, ldb_msg_find_attr_as_string(res->msgs[i], "MAPIStoreURI", NULL));
+			uris->cValues++;
+		}
+	}
+
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Retrieve the Explicit message class and Folder identifier
    associated to the MessageClass search pattern.
 
@@ -522,8 +578,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	DEBUG(5, ("openchangedb_get_ReceiveFolder, dnstr: %s\n", dnstr));
-
 	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
 
 	talloc_free(res);
@@ -548,8 +602,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 2B. Search for all MessageClasses within user's mailbox */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs, 
 			 "(PidTagMessageClass=*)");
-	DEBUG(5, ("openchangedb_get_ReceiveFolder, res->count: %i\n", res->count));
-
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 3. Find the message class that has the longest matching string entry */
@@ -718,7 +770,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
    \param mem_ctx pointer to the memory context
    \param ldb_ctx pointer to the OpenChange LDB context
-   \param recipient the mailbox username
    \param res pointer to the LDB result
    \param proptag the MAPI property tag to lookup
    \param PidTagAttr the mapped MAPI property name
@@ -727,7 +778,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
  */
 void *openchangedb_get_special_property(TALLOC_CTX *mem_ctx,
 					struct ldb_context *ldb_ctx,
-					const char *recipient,
 					struct ldb_result *res,
 					uint32_t proptag,
 					const char *PidTagAttr)
@@ -933,6 +983,7 @@ void *openchangedb_get_property_data_message(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		abort();
 		return NULL;
 	}
 
@@ -1133,7 +1184,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
 
    \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
-   \param recipient the mailbox username
    \param proptag the MAPI property tag to retrieve value for
    \param fid the record folder identifier
    \param data pointer on pointer to the data the function returns
@@ -1142,7 +1192,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct ldb_context *ldb
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  struct ldb_context *ldb_ctx,
-							  const char *recipient,
 							  uint32_t proptag,
 							  uint64_t fid,
 							  void **data)
@@ -1168,7 +1217,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 4. Check if this is a "special property" */
-	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 5. If this is not a "special property" */
@@ -1270,7 +1319,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 
    \param parent_ctx pointer to the memory context
    \param ldb_ctx pointer to the openchange LDB context
-   \param recipient the mailbox username
    \param ldb_filter the ldb search string
    \param proptag the MAPI property tag to retrieve value for
    \param pos the record position in search results
@@ -1280,8 +1328,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 struct ldb_context *ldb_ctx,
-							 const char *recipient,
-							 char *ldb_filter,
+							 const char *ldb_filter,
 							 uint32_t proptag,
 							 uint32_t pos,
 							 void **data)
@@ -1310,7 +1357,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
 
 	/* Step 5. Check if this is a "special property" */
-	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(parent_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, mem_ctx);
 
 	/* Step 6. Check if this is not a "special property" */
@@ -1348,7 +1395,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *ldb_ct
 	int			ret;
 
 	mem_ctx = talloc_named(NULL, 0, "get_fid_by_name");
-	*fid = 0;
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs,
@@ -1369,6 +1415,80 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *ldb_ct
 }
 
 /**
+   \details Retrieve the message ID associated with a given subject (normalized)
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param parent_fid the folder ID of the parent folder 
+   \param subject the normalized subject to look up
+   \param mid the message ID for the message (0 if not found)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_mid_by_subject(struct ldb_context *ldb_ctx, uint64_t parent_fid, const char *subject, bool mailboxstore, uint64_t *mid)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res;
+	struct ldb_dn		*base_dn;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mid_by_subject");
+
+	if (mailboxstore) {
+		base_dn = ldb_get_default_basedn(ldb_ctx);
+	} else {
+		base_dn = ldb_get_root_basedn(ldb_ctx);
+	}
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, base_dn,
+			 LDB_SCOPE_SUBTREE, attrs,
+			 "(&(PidTagParentFolderId=%"PRIu64")(PidTagNormalizedSubject=%s))",
+			 parent_fid, subject);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+
+	/* We should only ever get 0 records or 1 record, but there is always a chance
+	   that things got confused at some point, so just return one of the records */
+	OPENCHANGE_RETVAL_IF(res->count < 1, MAPI_E_NOT_FOUND, mem_ctx);
+	
+	*mid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagMessageId", 0);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct ldb_context *ldb_ctx, uint64_t fid)
+{
+	TALLOC_CTX	*mem_ctx;
+	char		*dnstr;
+	struct ldb_dn	*dn;
+	int		retval;
+	enum MAPISTATUS	ret;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	ret = openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, fid, &dnstr);
+	if (ret != MAPI_E_SUCCESS) {
+		goto end;
+	}
+
+	dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
+	retval = ldb_delete(ldb_ctx, dn);
+	if (retval == LDB_SUCCESS) {
+		ret = MAPI_E_SUCCESS;
+	}
+	else {
+		ret = MAPI_E_CORRUPT_STORE;
+	}
+
+end:
+	talloc_free(mem_ctx);
+	
+	return ret;
+}
+
+/**
    \details Set the receive folder for a specific message class.
 
    \param parent_ctx pointer to the memory context
@@ -1379,11 +1499,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct ldb_context *ldb_ct
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
-							struct ldb_context *ldb_ctx,
-							const char *recipient,
-							const char *MessageClass,
-							uint64_t fid)
+_PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(struct ldb_context *ldb_ctx, const char *recipient, const char *MessageClass, uint64_t fid)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct ldb_result		*res = NULL;
@@ -1431,7 +1547,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		uint64_t folderid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, fid to delete from: 0x%.16"PRIx64"\n", folderid));
 
-		openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, folderid, &distinguishedName);
+		openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, folderid, &distinguishedName);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to delete from: %s\n", distinguishedName));
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
 		talloc_free(distinguishedName);
@@ -1454,7 +1570,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		char			*distinguishedName;
 		struct ldb_message	*msg;
 
-		openchangedb_get_distinguishedName(parent_ctx, ldb_ctx, fid, &distinguishedName);
+		openchangedb_get_distinguishedName(mem_ctx, ldb_ctx, fid, &distinguishedName);
 		DEBUG(6, ("openchangedb_set_ReceiveFolder, dn to create in: %s\n", distinguishedName));
 
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
@@ -1564,6 +1680,89 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
    \details Create a folder in openchangedb
 
    \param ldb_ctx pointer to the openchangedb LDB context
+   \param username the owner of the mailbox
+   \param systemIdx the id of the mailbox
+   \param fidp a pointer to the fid of the mailbox
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct ldb_context *ldb_ctx, const char *username, int systemIdx, uint64_t *fidp)
+{
+	enum MAPISTATUS		retval;
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_dn		*mailboxdn;
+	struct ldb_message	*msg;
+	NTTIME			now;
+	uint64_t		fid, changeNum;
+	struct GUID		guid;
+
+	/* Sanity Checks */
+	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!username, MAPI_E_NOT_INITIALIZED, NULL);
+
+	unix_to_nt_time(&now, time(NULL));
+
+	mem_ctx = talloc_named(NULL, 0, "openchangedb_create_mailbox");
+
+	openchangedb_get_new_folderID(ldb_ctx, &fid);
+	openchangedb_get_new_changeNumber(ldb_ctx, &changeNum);
+
+	/* Retrieve distinguesName for parent folder */
+
+	mailboxdn = ldb_dn_copy(mem_ctx, ldb_get_default_basedn(ldb_ctx));
+	MAPI_RETVAL_IF(!mailboxdn, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	ldb_dn_add_child_fmt(mailboxdn, "CN=%s", username);
+	MAPI_RETVAL_IF(!ldb_dn_validate(mailboxdn), MAPI_E_BAD_VALUE, mem_ctx);
+	
+	msg = ldb_msg_new(mem_ctx);
+	MAPI_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	msg->dn = mailboxdn;
+	ldb_msg_add_string(msg, "objectClass", "systemfolder");
+	ldb_msg_add_string(msg, "objectClass", "container");
+	ldb_msg_add_string(msg, "ReplicaID", "1");
+	guid = GUID_random();
+	ldb_msg_add_fmt(msg, "ReplicaGUID", "%s", GUID_string(mem_ctx, &guid));
+	guid = GUID_random();
+	ldb_msg_add_fmt(msg, "MailboxGUID", "%s", GUID_string(mem_ctx, &guid));
+	ldb_msg_add_string(msg, "cn", username);
+	ldb_msg_add_string(msg, "PidTagAccess", "63");
+	ldb_msg_add_string(msg, "PidTagRights", "2043");
+	ldb_msg_add_fmt(msg, "PidTagDisplayName", "OpenChange Mailbox: %s", username);
+	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, now);
+	ldb_msg_add_fmt(msg, "PidTagLastModificationTime", "%"PRId64, now);
+	ldb_msg_add_string(msg, "PidTagSubFolders", "TRUE");
+	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
+	ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, changeNum);
+	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
+	if (systemIdx > -1) {
+		ldb_msg_add_fmt(msg, "SystemIdx", "%d", systemIdx);
+	}
+	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
+
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+
+	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
+		retval = MAPI_E_CALL_FAILED;
+	}
+	else {
+		if (fidp) {
+			*fidp = fid;
+		}
+
+		retval = MAPI_E_SUCCESS;
+	}
+
+	talloc_free(mem_ctx);
+
+	return retval;
+}
+
+/**
+   \details Create a folder in openchangedb
+
+   \param ldb_ctx pointer to the openchangedb LDB context
    \param parentFolderID the FID of the parent folder
    \param fid the FID of the folder to create
    \param MAPIStoreURI the mapistore URI to associate to this folder
@@ -1572,12 +1771,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
-						    uint64_t parentFolderID,
-						    uint64_t fid,
-						    const char *MAPIStoreURI,
-						    NTTIME nt_time,
-						    int64_t changeNumber)
+_PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx, uint64_t parentFolderID, uint64_t fid, uint64_t changeNumber, const char *MAPIStoreURI, int systemIdx)
 {
 	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
@@ -1586,11 +1780,15 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	char			*parentDN;
 	struct ldb_dn		*basedn;
 	struct ldb_message	*msg;
+	NTTIME			now;
 
 	/* Sanity Checks */
 	MAPI_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!MAPIStoreURI, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!parentFolderID, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!fid, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!changeNumber, MAPI_E_NOT_INITIALIZED, NULL);
+
+	unix_to_nt_time(&now, time(NULL));
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_create_folder");
 
@@ -1614,37 +1812,45 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	msg->dn = ldb_dn_copy(mem_ctx, basedn);
 	ldb_msg_add_string(msg, "objectClass", "systemfolder");
 	ldb_msg_add_fmt(msg, "cn", "%"PRIu64, fid);
+	ldb_msg_add_string(msg, "FolderType", "1");
 	ldb_msg_add_string(msg, "PidTagContentUnreadCount", "0");
 	ldb_msg_add_string(msg, "PidTagContentCount", "0");
-	ldb_msg_add_string(msg, "PidTagContainerClass", "IPF.Note");
 	ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
-	ldb_msg_add_string(msg, "MAPIStoreURI", MAPIStoreURI);
-	ldb_msg_add_string(msg, "PidTagSubFolders", "FALSE");
 	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
-	ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
-	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
+	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, now);
+	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, now);
 	if (mailboxDN) {
 		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
 	}
+	if (parentFolderID) {
+		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
+	}
+	ldb_msg_add_fmt(msg, "PidTagFolderId", "%"PRIu64, fid);
 	ldb_msg_add_fmt(msg, "PidTagChangeNumber", "%"PRIu64, changeNumber);
-	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, nt_time);
-	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, nt_time);
-	ldb_msg_add_string(msg, "FolderType", "1");
+	if (MAPIStoreURI) {
+		ldb_msg_add_string(msg, "MAPIStoreURI", MAPIStoreURI);
+	}
+	if (systemIdx > -1) {
+		ldb_msg_add_fmt(msg, "SystemIdx", "%d", systemIdx);
+	}
 	ldb_msg_add_fmt(msg, "distinguishedName", "%s", ldb_dn_get_linearized(msg->dn));
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
 	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return MAPI_E_CALL_FAILED;
+		retval = MAPI_E_CALL_FAILED;
+	}
+	else {
+		retval = MAPI_E_SUCCESS;
 	}
 
 	talloc_free(mem_ctx);
-	return MAPI_E_SUCCESS;
+
+	return retval;
 }
 
 /**

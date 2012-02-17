@@ -647,6 +647,46 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 
 
 /**
+   \details Convenience function to copy an array of struct SPropValue or a
+   part thereof into another array, by duplicating and properly parenting
+   pointer data. The destination array is considered to be preallocated.
+*/
+_PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *source_values, struct SPropValue *dest_values, uint32_t count)
+{
+	uint32_t		i;
+	struct SPropValue	*source_value, *dest_value;
+	uint16_t		prop_type;
+
+	for (i = 0; i < count; i++) {
+		source_value = source_values + i;
+		dest_value = dest_values + i;
+		*dest_value = *source_value;
+
+		prop_type = (source_value->ulPropTag & 0xFFFF);
+		if ((prop_type & MV_FLAG)) {
+			DEBUG(5, ("multivalues not handled\n"));
+			abort();
+		}
+		else {
+			switch(prop_type) {
+			case PT_STRING8:
+				dest_value->value.lpszA = talloc_strdup(mem_ctx, source_value->value.lpszA);
+				break;
+			case PT_UNICODE:
+				dest_value->value.lpszW = talloc_strdup(mem_ctx, source_value->value.lpszW);
+				break;
+			case PT_BINARY:
+				dest_value->value.bin.cb = source_value->value.bin.cb;
+				dest_value->value.bin.lpb = talloc_memdup(mem_ctx, source_value->value.bin.lpb, sizeof(uint8_t) * source_value->value.bin.cb);
+				break;
+			default:
+				*dest_value = *source_value;
+			}
+		}
+	}
+}
+
+/**
    \details Convenience function to convert a SPropValue structure
    into a mapi_SPropValue structure and return the associated size.
 

@@ -68,48 +68,20 @@ static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void 
 	return PyLong_FromLongLong(self->fid);
 }
 
-static PyObject *py_MAPIStoreFolder_get_folder_count(PyMAPIStoreFolderObject *self, void *closure)
+static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	uint32_t	RowCount;
-	int		retval;
+	uint32_t			RowCount;
+	enum mapistore_table_type	table_type;
+	char				*kwnames[] = { "table_type" };
+	int				retval;
 
-	retval = mapistore_folder_get_folder_count(self->context->mstore_ctx, self->context->context_id,
-						   (self->folder_object ? self->folder_object : 
-						    self->context->folder_object), &RowCount);
-	if (retval != MAPISTORE_SUCCESS) {
-		return PyInt_FromLong(-1);
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
+		return NULL;
 	}
 
-	return PyInt_FromLong(RowCount);
-}
-
-
-static PyObject *py_MAPIStoreFolder_get_message_count(PyMAPIStoreFolderObject *self, void *closure)
-{
-	uint32_t	RowCount;
-	int		retval;
-
-	retval = mapistore_folder_get_message_count(self->context->mstore_ctx, self->context->context_id,
-						   (self->folder_object ? self->folder_object : 
-						    self->context->folder_object), 
-						    MAPISTORE_MESSAGE_TABLE, &RowCount);
-	if (retval != MAPISTORE_SUCCESS) {
-		return PyInt_FromLong(-1);
-	}
-
-	return PyInt_FromLong(RowCount);
-}
-
-
-static PyObject *py_MAPIStoreFolder_get_fai_message_count(PyMAPIStoreFolderObject *self, void *closure)
-{
-	uint32_t	RowCount;
-	int		retval;
-
-	retval = mapistore_folder_get_message_count(self->context->mstore_ctx, self->context->context_id,
-						   (self->folder_object ? self->folder_object : 
-						    self->context->folder_object), 
-						    MAPISTORE_FAI_TABLE, &RowCount);
+	retval = mapistore_folder_get_child_count(self->context->mstore_ctx, self->context->context_id,
+						  (self->folder_object ? self->folder_object : 
+						   self->context->folder_object), table_type, &RowCount);
 	if (retval != MAPISTORE_SUCCESS) {
 		return PyInt_FromLong(-1);
 	}
@@ -119,14 +91,12 @@ static PyObject *py_MAPIStoreFolder_get_fai_message_count(PyMAPIStoreFolderObjec
 
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
+	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
 
 static PyGetSetDef mapistore_folder_getsetters[] = {
 	{ (char *)"fid", (getter)py_MAPIStoreFolder_get_fid, NULL, NULL },
-	{ (char *)"folder_count", (getter)py_MAPIStoreFolder_get_folder_count, NULL, NULL },
-	{ (char *)"message_count", (getter)py_MAPIStoreFolder_get_message_count, NULL, NULL },
-	{ (char *)"fai_message_count", (getter)py_MAPIStoreFolder_get_fai_message_count, NULL, NULL },
 	{ NULL }
 };
 

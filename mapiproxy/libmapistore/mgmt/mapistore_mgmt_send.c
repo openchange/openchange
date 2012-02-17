@@ -35,7 +35,7 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-int mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *mgmt_ctx,
+enum mapistore_error mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *mgmt_ctx,
 					 const char *username)
 {
 	struct mapistore_mgmt_users	*el;
@@ -77,7 +77,7 @@ int mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *mgmt_ctx
 
 /*     \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error. */
 /*  *\/ */
-/* int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt_ctx, */
+/* enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt_ctx, */
 /* 					     const char *username, */
 /* 					     uint64_t FolderID, */
 /* 					     uint64_t MessageID, */
@@ -150,7 +150,7 @@ int mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *mgmt_ctx
 /* } */
 
 
-static int mapistore_mgmt_push_send(TALLOC_CTX *mem_ctx, mqd_t mqfd, struct mapistore_mgmt_command cmd)
+static enum mapistore_error mapistore_mgmt_push_send(TALLOC_CTX *mem_ctx, mqd_t mqfd, struct mapistore_mgmt_command cmd)
 {
 	DATA_BLOB		data;
 	enum ndr_err_code	ndr_err;
@@ -185,11 +185,11 @@ static int mapistore_mgmt_push_send(TALLOC_CTX *mem_ctx, mqd_t mqfd, struct mapi
 /**
    \details Send notifications 
  */
-int mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt_ctx,
-					     const char *username,
-					     uint64_t FolderID,
-					     uint64_t MessageID,
-					     const char *MAPIStoreURI)
+enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt_ctx,
+							      const char *username,
+							      uint64_t FolderID,
+							      uint64_t MessageID,
+							      const char *MAPIStoreURI)
 {
 	mqd_t					mqfd;
 	int					ret;

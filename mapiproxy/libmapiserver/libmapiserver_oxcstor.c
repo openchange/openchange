@@ -48,10 +48,7 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 	if (response->error_code == ecWrongServer) {
 		size += SIZE_DFLT_ROPLOGON_REDIRECT;
 		size += strlen (response->us.mapi_Logon.ServerName) + 1;
-		return size;
-	}
-
-	if (request->u.mapi_Logon.LogonFlags & LogonPrivate) {
+	} else if (request->u.mapi_Logon.LogonFlags & LogonPrivate) {
 		size += SIZE_DFLT_ROPLOGON_MAILBOX;
 	} else {
 		size += SIZE_DFLT_ROPLOGON_PUBLICFOLDER;

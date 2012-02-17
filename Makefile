@@ -41,6 +41,17 @@ samba-git-update:
 # top level compilation rules
 #################################################################
 
+ifeq ($(PYTHON_CONFIG),)
+PYTHON_CFLAGS=$(shell $(PYTHON_CONFIG) --cflags)
+PYTHON_LIBS=$(shell $(PYTHON_CONFIG) --libs)
+else
+PYTHON_VERSION=$(shell $(PYTHON) -V 2>& 1 | awk '{ print $$2 }')
+PYTHON_MAJOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 1)
+PYTHON_MINOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 2)
+PYTHON_CFLAGS=-I/usr/include/python$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION) -I/usr/include/python
+PYTHON_LIBS=-lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+endif
+
 all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
@@ -1065,6 +1076,7 @@ mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesr
 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.po	\
 						mapiproxy/servers/default/emsmdb/emsmdbp.po			\
 						mapiproxy/servers/default/emsmdb/emsmdbp_object.po		\
+						mapiproxy/servers/default/emsmdb/emsmdbp_provisioning.po	\
 						mapiproxy/servers/default/emsmdb/oxcstor.po			\
 						mapiproxy/servers/default/emsmdb/oxcprpt.po			\
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
@@ -1521,20 +1533,20 @@ clean-python:
 clean:: clean-python
 
 pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)			\
-		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)		
+#		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
-$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
-						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+# $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
+# 						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+# 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+# 	@echo "Linking $@"
+# 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
  $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
 							pyopenchange/mapistore/mgmt.c				\
@@ -1544,7 +1556,7 @@ $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
+	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS)
 
 
 pyopenchange/pymapi_properties.c:		\

@@ -480,6 +480,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_SEND_INTERNET_ENCODING:
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = 0x00160000;
+		return data;
 	case PR_ENTRYID:
 	case PR_ORIGINAL_ENTRYID:
 		bin = talloc(mem_ctx, struct Binary_r);

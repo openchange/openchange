@@ -127,16 +127,31 @@ struct emsmdbp_object_folder {
 	uint64_t			folderID;
 	uint32_t			contextID; /* requires mapistore_root == true, undefined otherwise */
 	bool				mapistore_root; /* root mapistore container or not */
+	struct SRow			*postponed_props; /* storage for properties set until PR_CONTAINER_CLASS_UNICODE is set */
 };
 
 struct emsmdbp_object_message {
-	uint64_t			folderID;
-	uint64_t			messageID;
-	struct ldb_message		*msg;
+	uint64_t						folderID;
+	uint64_t						messageID;
+	bool							read_write;
+	struct emsmdbp_object_message_freebusy_properties	*fb_properties;
+};
+
+struct emsmdbp_object_message_freebusy_properties {
+	uint16_t	nbr_months;
+	uint32_t	*months_ranges;
+	struct Binary_r	*freebusy_tentative;
+	struct Binary_r	*freebusy_busy;
+	struct Binary_r	*freebusy_away;
+	struct Binary_r	*freebusy_merged;
+	uint32_t	publish_start;
+	uint32_t	publish_end;
+	char		*email_address;
+	struct FILETIME	timestamp;
 };
 
 struct emsmdbp_object_table {
-	uint8_t					ulType;
+	enum mapistore_table_type		ulType;
 	uint32_t				handle;
 	bool					restricted;
 	uint16_t				prop_count;
@@ -147,6 +162,7 @@ struct emsmdbp_object_table {
 };
 
 struct emsmdbp_object_stream {
+	bool				read_write;
 	bool				needs_commit;
 	enum MAPITAGS			property;
 	struct emsmdbp_stream		stream;
@@ -223,39 +239,43 @@ struct emsmdbp_object {
 #define	EMSMDB_PCRETRY			6
 #define	EMSMDB_PCRETRYDELAY		10000
 
-#define	EMSMDBP_MAILBOX_ROOT		0x1
-#define	EMSMDBP_DEFERRED_ACTIONS	0x2
-#define	EMSMDBP_SPOOLER_QUEUE		0x3
-#define	EMSMDBP_TODO_SEARCH		0x4
-#define	EMSMDBP_TOP_INFORMATION_STORE	0x5
-#define	EMSMDBP_INBOX			0x6
-#define	EMSMDBP_OUTBOX			0x7
-#define	EMSMDBP_SENT_ITEMS		0x8
-#define	EMSMDBP_DELETED_ITEMS		0x9
-#define	EMSMDBP_COMMON_VIEWS		0xA
-#define	EMSMDBP_SCHEDULE		0xB
-#define	EMSMDBP_SEARCH			0xC
-#define	EMSMDBP_VIEWS			0xD
-#define	EMSMDBP_SHORTCUTS		0xE
+enum emsmdbp_mailbox_systemidx {
+	EMSMDBP_MAILBOX_ROOT = 1,
+	EMSMDBP_DEFERRED_ACTION,
+	EMSMDBP_SPOOLER_QUEUE,
+	EMSMDBP_COMMON_VIEWS,
+	EMSMDBP_SCHEDULE,
+	EMSMDBP_SEARCH,
+	EMSMDBP_VIEWS,
+	EMSMDBP_SHORTCUTS,
+	EMSMDBP_TOP_INFORMATION_STORE,
+	EMSMDBP_INBOX,
+	EMSMDBP_OUTBOX,
+	EMSMDBP_SENT_ITEMS,
+	EMSMDBP_DELETED_ITEMS,
 
-#define EMSMDBP_PF_ROOT			0x0
-#define EMSMDBP_PF_IPMSUBTREE		0x1
-#define EMSMDBP_PF_NONIPMSUBTREE	0x2
-#define EMSMDBP_PF_EFORMSREGISTRY	0x3
-#define EMSMDBP_PF_FREEBUSY		0x4
-#define EMSMDBP_PF_OAB			0x5
-#define EMSMDBP_PF_LOCALEFORMS		0x6
-#define EMSMDBP_PF_LOCALFREEBUSY	0x7
-#define EMSMDBP_PF_LOCALOAB		0x8
+	EMSMDBP_MAX_MAILBOX_SYSTEMIDX
+};
 
+enum emsmdbp_pf_systemidx {
+	EMSMDBP_PF_ROOT = 1,
+	EMSMDBP_PF_IPMSUBTREE,
+	EMSMDBP_PF_NONIPMSUBTREE,
+	EMSMDBP_PF_EFORMSREGISTRY,
+	EMSMDBP_PF_FREEBUSY,
+	EMSMDBP_PF_OAB,
+	EMSMDBP_PF_LOCALEFORMS,
+	EMSMDBP_PF_LOCALFREEBUSY,
+	EMSMDBP_PF_LOCALOAB,
 
-/* Note: would be nice to keep this compatible with the equivalent list in mapistore.h, maybe remove one of them... */
-#define	EMSMDBP_TABLE_FOLDER_TYPE	0x1
-#define	EMSMDBP_TABLE_MESSAGE_TYPE	0x2
-#define	EMSMDBP_TABLE_FAI_TYPE		0x3
-#define	EMSMDBP_TABLE_RULE_TYPE		0x4
-#define	EMSMDBP_TABLE_ATTACHMENT_TYPE	0x5
-#define	EMSMDBP_TABLE_PERMISSIONS_TYPE	0x6
+	EMSMDBP_MAX_PF_SYSTEMIDX
+};
+
+struct emsmdbp_special_folder {
+	enum mapistore_context_role	role;
+	enum MAPITAGS			entryid_property;
+	const char			*name;
+};
 
 __BEGIN_DECLS
 
@@ -284,23 +304,29 @@ char                  *emsmdbp_get_owner(struct emsmdbp_object *object);
 int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, char **);
 int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
+
+/* definitions from emsmdbp_privisioning.c */
+enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *);
+enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
+
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
-enum MAPISTATUS       emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
+enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
 enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
-struct emsmdbp_object *emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
-struct emsmdbp_object *emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t);
+enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);
-struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, bool);
+struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, const char *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
+enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint8_t);
 struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *, struct emsmdbp_object *, uint32_t, uint32_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
-void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum table_query_type, uint32_t **);
+void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum mapistore_query_type, enum MAPISTATUS **);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
-struct emsmdbp_object *emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, struct mapistore_message **);
+enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
 struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_stream_commit(struct emsmdbp_object *);
@@ -315,7 +341,7 @@ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MA
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
 void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);
-void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, uint32_t *);
+void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, enum MAPISTATUS *);
 void emsmdbp_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
 
 /* definitions from oxcfold.c */

@@ -1167,7 +1167,7 @@ System Attendant Private Interface
 	typedef [enum8bit] enum {
 		ReadOnly	= 0x0,
 		ReadWrite	= 0x1,
-		Create		= 0x3,
+		BestAccess	= 0x3,
 		OpenSoftDelete	= 0x4
 	} OpenMessage_OpenModeFlags;
 
@@ -3533,7 +3533,7 @@ System Attendant Private Interface
 		uint16		MessageIdSize;
 		uint8		MessageId[MessageIdSize];
 		boolean8	MarkAsRead;
-	} MessageReadStates;
+	} MessageReadState;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		[subcontext(2),flag(NDR_REMAINING)] DATA_BLOB MessageReadStates;
@@ -3714,14 +3714,40 @@ System Attendant Private Interface
 	} ResponseFlags;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FolderIds[13];
+		/* folders */
+		hyper			Root;
+		hyper			IPMSubTree;
+		hyper			NonIPMSubTree;
+		hyper			EFormsRegistry;
+		hyper			FreeBusy;
+		hyper			OAB;
+		hyper			LocalizedEFormsRegistry;
+		hyper			LocalFreeBusy;
+		hyper			LocalOAB;
+		hyper			NNTPIndex;
+		hyper			_empty[3];
+
 		uint16			ReplId;
 		GUID			Guid;
 		GUID			PerUserGuid;
 	} store_pf;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FolderIds[13];
+		/* folders */
+		hyper			Root;
+		hyper			DeferredAction;
+		hyper			SpoolerQueue;
+		hyper			IPMSubTree;
+		hyper			Inbox;
+		hyper			Outbox;
+		hyper			SentItems;
+		hyper			DeletedItems;
+		hyper			CommonViews;
+		hyper			Schedule;
+		hyper			Search;
+		hyper			Views;
+		hyper			Shortcuts;
+
 		ResponseFlags		ResponseFlags;
 		GUID			MailboxGuid;
 		uint16			ReplId;

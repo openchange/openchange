@@ -47,7 +47,7 @@ char *mapping_path = NULL;
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ int mapistore_set_mapping_path(const char *path)
+_PUBLIC_ enum mapistore_error mapistore_set_mapping_path(const char *path)
 {
 	TALLOC_CTX	*mem_ctx;
 	DIR		*dir;
@@ -93,7 +93,7 @@ _PUBLIC_ int mapistore_set_mapping_path(const char *path)
  */
 const char *mapistore_get_mapping_path(void)
 {
-	return (!mapping_path) ? MAPISTORE_MAPPING_PATH : (const char *)mapping_path;
+	return (const char *)mapping_path;
 }
 
 
@@ -105,7 +105,7 @@ const char *mapistore_get_mapping_path(void)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_init_mapping_context(struct processing_context *pctx)
+enum mapistore_error mapistore_init_mapping_context(struct processing_context *pctx)
 {
 	TDB_DATA	key;
 	TDB_DATA	dbuf;
@@ -196,7 +196,7 @@ int mapistore_init_mapping_context(struct processing_context *pctx)
 
    \return a non zero context identifier on success, otherwise 0.
  */
-int mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_id)
+enum mapistore_error mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_id)
 {
 	struct context_id_list	*el;
 
@@ -230,7 +230,7 @@ int mapistore_get_context_id(struct processing_context *pctx, uint32_t *context_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_free_context_id(struct processing_context *pctx, uint32_t context_id)
+enum mapistore_error mapistore_free_context_id(struct processing_context *pctx, uint32_t context_id)
 {
 	struct context_id_list	*el;
 

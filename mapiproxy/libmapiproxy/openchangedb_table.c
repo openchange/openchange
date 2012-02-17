@@ -54,7 +54,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *mem_ctx, uint8_t ta
 	if (!table) {
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
-	printf("openchangedb_table_init: folderID=%"PRIu64"\n", folderID);
+	/* printf("openchangedb_table_init: folderID=%"PRIu64"\n", folderID); */
 	table->folderID = folderID;
 	table->table_type = table_type;
 	table->lpSortCriteria = NULL;
@@ -220,7 +220,6 @@ static char *openchangedb_table_build_filter(TALLOC_CTX *mem_ctx, struct opencha
 _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 void *table_object,
 							 struct ldb_context *ldb_ctx,
-							 const char *recipient,
 							 enum MAPITAGS proptag,
 							 uint32_t pos,
 							 bool live_filtered,
@@ -237,7 +236,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_NOT_INITIALIZED, NULL);
 
 	table = (struct openchangedb_table *)table_object;
@@ -259,7 +257,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
 	}
 	res = table->res;
-	printf("res->count = %d\n", res->count);
 
 	/* Ensure position is within search results range */
 	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);
@@ -296,6 +293,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 		talloc_free(live_res);
 	}
 
+	/* hacks for some attributes specific to tables */
+	if (proptag == PR_INST_ID) {
+		if (table->table_type == 1) {
+			proptag = PR_FID;
+		}
+		else {
+			proptag = PR_MID;
+		}
+	}
+	else if (proptag == PR_INSTANCE_NUM) {
+		*data = talloc_zero(mem_ctx, uint32_t);
+		return MAPI_E_SUCCESS;
+	}
+
 	/* Convert proptag into PidTag attribute */
 	if ((table->table_type != 0x1) && proptag == PR_FID) {
 		proptag = PR_PARENT_FID;
@@ -307,7 +318,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[pos], PidTagAttr), MAPI_E_NOT_FOUND, NULL);
 
 	/* Check if this is a "special property" */
-	*data = openchangedb_get_special_property(mem_ctx, ldb_ctx, recipient, res, proptag, PidTagAttr);
+	*data = openchangedb_get_special_property(mem_ctx, ldb_ctx, res, proptag, PidTagAttr);
 	OPENCHANGE_RETVAL_IF(*data != NULL, MAPI_E_SUCCESS, NULL);
 
 	/* Check if this is NOT a "special property" */

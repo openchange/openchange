@@ -461,8 +461,8 @@ static bool notification_matches_subscription(struct mapistore_notification *not
         return result;
 }
 
-_PUBLIC_ int mapistore_delete_subscription(struct mapistore_context *mstore_ctx, uint32_t identifier, 
-					   uint16_t NotificationFlags)
+_PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_context *mstore_ctx, uint32_t identifier, 
+							    uint16_t NotificationFlags)
 {
 	struct mapistore_subscription_list *el;
 

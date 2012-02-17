@@ -772,8 +772,8 @@ _PUBLIC_ struct idset *IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idse
 	bool added_ranges = false, same_id, idbased;
 	struct globset_range *range;
 
-	if (!left) return IDSET_clone(mem_ctx, right);
-	if (!right) return IDSET_clone(mem_ctx, left);
+	if (!left || left->range_count == 0) return IDSET_clone(mem_ctx, right);
+	if (!right || right->range_count == 0) return IDSET_clone(mem_ctx, left);
 
 	merged_idset = IDSET_clone(mem_ctx, left);
 	clone_right = IDSET_clone(mem_ctx, right);

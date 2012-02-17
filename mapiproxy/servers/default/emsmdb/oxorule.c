@@ -106,7 +106,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 		retval = mapi_handles_set_private_data(rec, object);
 		/* rules tables are stub objects for now */
 		object->object.table->denominator = 0;
-		object->object.table->ulType = EMSMDBP_TABLE_RULE_TYPE;
+		object->object.table->ulType = MAPISTORE_RULE_TABLE;
 	}
 end:
 	*size += libmapiserver_RopGetRulesTable_size();

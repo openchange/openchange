@@ -98,6 +98,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetColumns(TALLOC_CTX *mem_ctx,
 		table = object->object.table;
 		OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
+		if (table->ulType == MAPISTORE_RULE_TABLE) {
+			DEBUG(5, ("  query on rules table are all faked right now\n"));
+			goto end;
+		}
+
 		request = mapi_req->u.mapi_SetColumns;
 
 		if (request.prop_count) {
@@ -196,8 +201,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	table = object->object.table;
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
-	if (table->ulType != EMSMDBP_TABLE_MESSAGE_TYPE
-            && table->ulType != EMSMDBP_TABLE_FAI_TYPE) {
+	if (table->ulType != MAPISTORE_MESSAGE_TABLE
+            && table->ulType != MAPISTORE_FAI_TABLE) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		DEBUG(5, ("  query performed on non contents table\n"));
 		goto end;
@@ -310,7 +315,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!table, MAPI_E_INVALID_PARAMETER, NULL);
 
 	table->restricted = true;
-	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
@@ -367,7 +372,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	struct QueryRows_repl		response;
 	enum MAPISTATUS			retval;
 	void				*data;
-	uint32_t			*mapistore_retvals;
+	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
 	uint32_t			count, max;
 	uint32_t			handle;
@@ -419,7 +424,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 
 	table = object->object.table;
 
-	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+	count = 0;
+	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto finish;
 	}
@@ -431,18 +437,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	}
 
         /* Lookup the properties */
-	count = 0;
 	max = table->numerator + request->RowCount;
 	if (max > table->denominator) {
 		max = table->denominator;
 	}
         for (i = table->numerator; i < max; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &mapistore_retvals);
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
 						    &response.RowData, table->prop_count,
-						    table->properties, data_pointers, mapistore_retvals);
-			talloc_free(mapistore_retvals);
+						    table->properties, data_pointers, retvals);
+			talloc_free(retvals);
 			talloc_free(data_pointers);
 			count++;
 		}
@@ -695,7 +700,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	struct FindRow_req		request;
 	enum MAPISTATUS			retval;
 	void				*data = NULL;
-	uint32_t			*retvals;
+	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
 	uint32_t			handle;
 	DATA_BLOB			row;
@@ -751,7 +756,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	 * entire table, nor do we handle bookmarks */
 
 	table = object->object.table;
-	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 		goto end;
 	}
@@ -764,10 +769,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		table->numerator = 0;
 	}
 
+	memset (&row, 0, sizeof(DATA_BLOB));
+
 	switch (emsmdbp_is_mapistore(object)) {
 	case true:
-		memset (&row, 0, sizeof(DATA_BLOB));
-
 		/* Restrict rows to be fetched */
 		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
 		/* Then fetch rows */
@@ -980,7 +985,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
 	table = object->object.table;
-	if (table->ulType == EMSMDBP_TABLE_RULE_TYPE) {
+	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
 	}
 	else {

@@ -27,13 +27,13 @@ from samba import Ldb
 from samba.samdb import SamDB
 from samba.auth import system_session
 from samba.provision import setup_add_ldif, setup_modify_ldif
-from openchange.urlutils import openchangedb_url, openchangedb_mapistore_url, openchangedb_mapistore_dir, openchangedb_suffix_for_mapistore_url
+from openchange.urlutils import openchangedb_url
 
 __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
 FIRST_ORGANIZATION = "First Organization"
-FIRST_ORGANIZATION_UNIT = "First Organization Unit"
+FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
@@ -252,178 +252,6 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
     print "[SUCCESS] Done!"
 
-def newmailbox(lp, username, firstorg, firstou, backend):
-    def guid_to_binary(guid):
-        # "31c32976-efda-4d3c-81fb-63dd2ab9f780"
-	time_low = int(guid[0:8], 16)
-        time_mid = int(guid[9:13], 16)
-        time_hi_and_version = int(guid[14:18], 16)
-        clock_seq = ""
-        for x in xrange(2):
-            idx = 19 + x * 2
-            clock_seq = clock_seq + chr(int(guid[idx:idx+2], 16))
-        node = ""
-        for x in xrange(6):
-            idx = 24 + x * 2
-            node = node + chr(int(guid[idx:idx+2], 16))
-
-        binguid = struct.pack("<LHH", time_low, time_mid, time_hi_and_version) + clock_seq + node
-
-        return binguid
-
-    def make_folder_entryid(provider_uid, folder_type, database_guid, counter):
-        entryid = (4 * chr(0)  #flags
-                   + provider_uid
-                   + struct.pack("<H", folder_type)
-                   + database_guid
-                   + struct.pack(">LH", (counter >> 16) & 0xffffffff, (counter & 0xffff))
-                   + 2 * chr(0)) # padding
-
-        return entryid
-
-    names = guess_names_from_smbconf(lp, firstorg, firstou)
-
-    db = mailbox.OpenChangeDB(openchangedb_url(lp))
-
-    # Step 1. Retrieve current FID index
-    GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
-    ReplicaID = db.get_message_ReplicaID(names.netbiosname)
-
-    print "[+] Mailbox for '%s'" % (username)
-    print "==================" + "=" * len(username)
-    print "* GlobalCount (0x%x), ChangeNumber (0x%x) and ReplicaID (0x%x)" % (GlobalCount, ChangeNumber, ReplicaID)
-
-    # Step 2. Check if the user already exists
-    assert not db.user_exists(names.netbiosname, username)
-
-    # Step 3. Create a default mapistore content repository for this user
-    db.add_storage_dir(mapistoreURL=openchangedb_mapistore_dir(lp), username=username)
-    print "* Mapistore content repository created: %s" % os.path.join(openchangedb_mapistore_dir(lp), username)
-
-    # Step 4. Create the user object
-    retdn = db.add_mailbox_user(names.ocfirstorgdn, username=username)
-    print "* User object created: %s" % (retdn)
-
-    # Step 5. Create system mailbox folders for this user
-    print "* Adding System Folders"
-
-    system_folders = ({
-        "Deferred Actions": ({}, 2),
-        "Spooler Queue": ({}, 3),
-        "To-Do Search": ({}, 4),
-        "IPM Subtree": ({
-            "Inbox": ({}, 6),
-            "Outbox": ({}, 7),
-            "Sent Items": ({}, 8),
-            "Deleted Items": ({}, 9),
-        }, 5),
-        "Common Views": ({}, 10),
-        "Schedule": ({}, 11),
-        "Search": ({}, 12),
-        "Views": ({}, 13),
-        "Shortcuts": ({}, 14),
-        "Reminders": ({}, 15),
-    }, 1)
-
-    fids = {}
-    def add_folder(parent_fid, path, children, SystemIdx):
-        name = path[-1]
-
-        GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-        ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
-        ReplicaID = db.get_message_ReplicaID(names.netbiosname)
-        url = openchangedb_mapistore_url(lp, backend)
-
-        fid = db.add_mailbox_root_folder(names.ocfirstorgdn, 
-                                         username=username, foldername=name,
-                                         parentfolder=parent_fid,
-                                         GlobalCount=GlobalCount, ChangeNumber=ChangeNumber,
-                                         ReplicaID=ReplicaID, SystemIdx=SystemIdx, 
-                                         mapistoreURL=url,
-                                         mapistoreSuffix=openchangedb_suffix_for_mapistore_url(url))
-
-        GlobalCount += 1
-        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
-        ChangeNumber += 1
-        db.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
-
-        fids[path] = fid
-
-        print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
-        for name, grandchildren in children.iteritems():
-            add_folder(fid, path + (name,), grandchildren[0], grandchildren[1])
-
-    add_folder(0, ("Mailbox Root",), system_folders[0], system_folders[1])
-
-    # Step 6. Add special folders
-    print "* Adding Special Folders:"
-    special_folders = [
-        (("Mailbox Root", "IPM Subtree"), "Calendar",   "IPF.Appointment",  "PidTagIpmAppointmentEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Contacts",   "IPF.Contact",      "PidTagIpmContactEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Journal",    "IPF.Journal",      "PidTagIpmJournalEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Notes",      "IPF.StickyNote",   "PidTagIpmNoteEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Tasks",      "IPF.Task",         "PidTagIpmTaskEntryId"),
-        (("Mailbox Root", "IPM Subtree"), "Drafts",     "IPF.Note",         "PidTagIpmDraftsEntryId")
-        ]
-
-    fid_inbox = fids[("Mailbox Root", "IPM Subtree", "Inbox")]
-    fid_reminders = fids[("Mailbox Root", "Reminders")]
-    fid_mailbox = fids[("Mailbox Root",)]
-
-    mailbox_guid = guid_to_binary(db.get_user_MailboxGUID(names.netbiosname, username)[0])
-    replica_guid = guid_to_binary(db.get_user_ReplicaGUID(names.netbiosname, username)[0])
-
-    for path, foldername, containerclass, pidtag in special_folders:
-        GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-        ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
-        ReplicaID = db.get_message_ReplicaID(names.netbiosname)
-        url = openchangedb_mapistore_url(lp, backend)
-        fid = db.add_mailbox_special_folder(username, fids[path], foldername, 
-                                            containerclass, GlobalCount, ChangeNumber, ReplicaID, 
-                                            url, openchangedb_suffix_for_mapistore_url(url), retdn)
-        entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, GlobalCount)
-        db.add_folder_property(fid_inbox, pidtag, entryid.encode("base64").strip())
-        db.add_folder_property(fid_mailbox, pidtag, entryid.encode("base64").strip())
-        GlobalCount += 1
-        db.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
-        ChangeNumber += 1
-        db.set_message_ChangeNumber(names.netbiosname, ChangeNumber=ChangeNumber)
-        print "\t* %-40s: 0x%.16x (%s)" % ("%s (%s)" % (foldername, containerclass), int(fid, 10), fid)
-
-    # Step 7. Set default receive folders
-    print "* Adding default Receive Folders:"
-    receive_folders = [
-        (("Mailbox Root", "IPM Subtree", "Inbox"), "All"),
-        (("Mailbox Root", "IPM Subtree", "Inbox"), "IPM"),
-        (("Mailbox Root", "IPM Subtree", "Inbox"), "Report.IPM"),
-        (("Mailbox Root", "IPM Subtree", "Inbox"), "IPM.Note"),
-        (("Mailbox Root", "IPM Subtree",), "IPC")
-        ]
-    
-    for path, messageclass in receive_folders:
-        print "\t* Message Class '%s' added to 0x%.16x (%s)" % (messageclass, int(fids[path], 10), fids[path])
-        db.set_receive_folder(username, names.ocfirstorgdn, fids[path], messageclass)
-
-    # Step 8. Set additional properties on Inbox
-    print "* Adding additional default properties to Inbox"
-    db.add_folder_property(fid_inbox, "PidTagContentCount", "0")
-    db.add_folder_property(fid_inbox, "PidTagContentUnreadCount", "0")
-    db.add_folder_property(fid_inbox, "PidTagSubFolders", "FALSE")
-
-    print "* Adding additional default properties to Reminders"
-    db.add_folder_property(fid_reminders, "PidTagContainerClass", "Outlook.Reminder");
-
-    rev_fid_reminders = mailbox.reverse_int64counter(int(fid_reminders, 10) >> 16) >> 16
-    entryid = make_folder_entryid(mailbox_guid, 1, replica_guid, rev_fid_reminders)
-    db.add_folder_property(fid_inbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
-    db.add_folder_property(fid_mailbox, "PidTagRemindersOnlineEntryId", entryid.encode("base64").strip())
-    GlobalCount = db.get_message_GlobalCount(names.netbiosname)
-    print "* GlobalCount (0x%.12x)" % GlobalCount
-    ChangeNumber = db.get_message_ChangeNumber(names.netbiosname)
-    print "* ChangeNumber (0x%.12x)" % ChangeNumber
-
-
 def newuser(lp, creds, username=None):
     """extend user record with OpenChange settings.
     
@@ -540,10 +368,9 @@ def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     # and the Replica identifier
     openchange_ldb.add_server(names.ocserverdn, names.netbiosname, names.firstorg, names.firstou)
 
-    mapistoreURL = os.path.join( openchangedb_mapistore_url(lp, mapistore), "publicfolders")
     print "[+] Public Folders"
     print "==================="
-    openchange_ldb.add_public_folders(names, mapistoreURL)
+    openchange_ldb.add_public_folders(names)
 
 def find_setup_dir():
     """Find the setup directory used by provision."""

@@ -300,7 +300,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS         retval;
         void                    **data_pointers;
         DATA_BLOB               *table_row;
-        uint32_t                *retvals;
+        enum MAPISTATUS		*retvals;
         uint32_t                contextID, saved_prop_count, prev_instance;
         enum MAPITAGS           *saved_properties, *previous_row_properties;
         uint64_t                prev_fid, prev_mid;
@@ -1251,7 +1251,7 @@ notif:
 			DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
 		}
 		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
-		if (retval == MAPISTORE_SUCCESS) {
+		if (retval == MAPI_E_SUCCESS) {
 			for (el = nlist; el->notification; el = el->next) {
 				if (needs_realloc) {
 					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
@@ -1819,6 +1819,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 struct EcDoAsyncConnectEx *r)
 {
 	DEBUG(3, ("exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n"));
+	r->out.result = ecRejected;
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 
 	return MAPI_E_SUCCESS;
@@ -1841,7 +1842,6 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 						TALLOC_CTX *mem_ctx,
 						void *r, struct mapiproxy *mapiproxy)
 {
-	enum MAPISTATUS				retval;
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
@@ -1854,22 +1854,22 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 
 	switch (opnum) {
 	case NDR_ECDOCONNECT:
-		retval = dcesrv_EcDoConnect(dce_call, mem_ctx, (struct EcDoConnect *)r);
+		dcesrv_EcDoConnect(dce_call, mem_ctx, (struct EcDoConnect *)r);
 		break;
 	case NDR_ECDODISCONNECT:
-		retval = dcesrv_EcDoDisconnect(dce_call, mem_ctx, (struct EcDoDisconnect *)r);
+		dcesrv_EcDoDisconnect(dce_call, mem_ctx, (struct EcDoDisconnect *)r);
 		break;
 	case NDR_ECDORPC:
-		retval = dcesrv_EcDoRpc(dce_call, mem_ctx, (struct EcDoRpc *)r);
+		dcesrv_EcDoRpc(dce_call, mem_ctx, (struct EcDoRpc *)r);
 		break;
 	case NDR_ECGETMORERPC:
 		dcesrv_EcGetMoreRpc(dce_call, mem_ctx, (struct EcGetMoreRpc *)r);
 		break;
 	case NDR_ECRREGISTERPUSHNOTIFICATION:
-		retval = dcesrv_EcRRegisterPushNotification(dce_call, mem_ctx, (struct EcRRegisterPushNotification *)r);
+		dcesrv_EcRRegisterPushNotification(dce_call, mem_ctx, (struct EcRRegisterPushNotification *)r);
 		break;
 	case NDR_ECRUNREGISTERPUSHNOTIFICATION:
-		retval = dcesrv_EcRUnregisterPushNotification(dce_call, mem_ctx, (struct EcRUnregisterPushNotification *)r);
+		dcesrv_EcRUnregisterPushNotification(dce_call, mem_ctx, (struct EcRUnregisterPushNotification *)r);
 		break;
 	case NDR_ECDUMMYRPC:
 		dcesrv_EcDummyRpc(dce_call, mem_ctx, (struct EcDummyRpc *)r);
@@ -1884,10 +1884,10 @@ static NTSTATUS dcesrv_exchange_emsmdb_dispatch(struct dcesrv_call_state *dce_ca
 		dcesrv_EcDoRpcExt(dce_call, mem_ctx, (struct EcDoRpcExt *)r);
 		break;
 	case NDR_ECDOCONNECTEX:
-		retval = dcesrv_EcDoConnectEx(dce_call, mem_ctx, (struct EcDoConnectEx *)r);
+		dcesrv_EcDoConnectEx(dce_call, mem_ctx, (struct EcDoConnectEx *)r);
 		break;
 	case NDR_ECDORPCEXT2:
-		retval = dcesrv_EcDoRpcExt2(dce_call, mem_ctx, (struct EcDoRpcExt2 *)r);
+		dcesrv_EcDoRpcExt2(dce_call, mem_ctx, (struct EcDoRpcExt2 *)r);
 		break;
 	case NDR_ECUNKNOWN0XC:
 		dcesrv_EcUnknown0xC(dce_call, mem_ctx, (struct EcUnknown0xC *)r);

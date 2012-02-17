@@ -242,6 +242,7 @@ int main(int argc, const char *argv[])
 	enum TransferStatus		fxTransferStatus;
 	DATA_BLOB			transferdata;
 	struct fx_parser_context	*parser;
+	struct loadparm_context		*lp_ctx;
 	struct mapistore_output_ctx	output_ctx;
 	poptContext			pc;
 	int				opt;
@@ -390,7 +391,11 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 
-		output_ctx.mstore_ctx = mapistore_init(mem_ctx, NULL);
+		/* Initialize configuration */
+		lp_ctx = loadparm_init(mem_ctx);
+		lpcfg_load_default(lp_ctx);
+
+		output_ctx.mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 		if (!(output_ctx.mstore_ctx)) {
 			mapi_errstr("mapistore_init", retval);
 			exit (1);

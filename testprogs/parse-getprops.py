@@ -220,7 +220,10 @@ class GetPropsParser:
     def _printSysTime(self, pos):
         nano100Seconds = struct.unpack_from("<Q", self.response, pos)[0]
         seconds = (nano100Seconds / 10000000) - 11644473600
-        print "(PT_SYSTIME) %s" % time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds))
+        try:
+            print "(PT_SYSTIME) %s" % time.strftime("%a, %d %b %Y %T %z", time.localtime(seconds))
+        except:
+            print "(PT_SYSTIME) %d (seconds)" % seconds
 
         return 8
 
@@ -253,7 +256,7 @@ class GetPropsParser:
     def _printMultiValue(self, pos, colType):
         length = struct.unpack_from("<L", self.response, pos)[0]
         subtype = colType & 0x0fff
-        print "multivalue (%d, 0x%.4x)" % (length, subtype)
+        print "multivalue (%d, 0xX%.3x)" % (length, subtype)
         consumed = 4
         for x in xrange(length):
             consumed = consumed + self._printValue(pos + consumed, subtype)

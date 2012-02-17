@@ -345,7 +345,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct SRowSet			*pRows;
-	uint32_t			i;
+	uint32_t			i, j;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -413,17 +413,21 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		r->in.pStat->Delta = 0;
 	} else {
 		/* Step 2.2 Fill ppRows for supplied table of MIds */
-		pRows->cRows = r->in.dwETableCount;
-		pRows->aRow = talloc_array(mem_ctx, struct SRow, r->in.dwETableCount);
-		if (pRows->cRows) {
-			r->in.pStat->CurrentRec = r->in.lpETable[0];
+		j = 0;
+		if (r->in.pStat->NumPos < r->in.dwETableCount) {
+			pRows->cRows = r->in.dwETableCount - r->in.pStat->NumPos;
+			pRows->aRow = talloc_array(mem_ctx, struct SRow, pRows->cRows);
 			for (i = r->in.pStat->NumPos; i < r->in.dwETableCount; i++) {
-				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[i]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
+				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[j]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
 				if (retval != MAPI_E_SUCCESS) {
 					goto failure;
 				}
+				j++;
 			}
 		}
+		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
+		r->in.pStat->TotalRecs = j;
+		r->in.pStat->Delta = 0;
 	}
 
 	/* Step 3. Fill output params */

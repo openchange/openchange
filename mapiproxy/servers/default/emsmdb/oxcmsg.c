@@ -181,7 +181,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 {
 	struct OpenMessage_req		*request;
 	struct OpenMessage_repl		*response;
-	/* int				ret; */
+	enum mapistore_error		ret;
 	enum MAPISTATUS			retval;
 	uint32_t			parent_handle_id;
 	struct mapi_handles		*object_handle = NULL;
@@ -231,8 +231,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* OpenMessage can only be called for mailbox/folder objects */
 	if (!(context_object->type == EMSMDBP_OBJECT_MAILBOX || context_object->type == EMSMDBP_OBJECT_FOLDER)) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		*size += libmapiserver_RopOpenMessage_size(NULL);
-		return MAPI_E_SUCCESS;
+		goto end;
 	}
 
 	messageID = request->MessageId;
@@ -241,17 +240,34 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
-	object = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, &msg);
-	if (!object) {
+
+	if (request->OpenModeFlags == ReadOnly) {
+		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
+	}
+	else if (request->OpenModeFlags == OpenSoftDelete) {
+		ret = MAPISTORE_ERROR;
+	}
+	else { /* ReadWrite/BestAccess */
+		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, true, &object, &msg);
+		if (ret == MAPISTORE_ERR_DENIED && request->OpenModeFlags == BestAccess) {
+			ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
+		}
+	}
+
+	if (ret != MAPISTORE_SUCCESS) {
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, object_handle->handle);
-		if ((request->OpenModeFlags & Create)) {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else if (ret == MAPISTORE_ERR_NOT_FOUND) {
+			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		}
 		else {
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
 		}
 		goto end;
 	}
+
 	handles[mapi_repl->handle_idx] = object_handle->handle;
 	retval = mapi_handles_set_private_data(object_handle, object);
 
@@ -324,6 +340,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 						  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		ret;
 	struct mapi_handles		*context_handle = NULL;
 	struct mapi_handles		*message_handle = NULL;
 	struct emsmdbp_object		*context_object = NULL;
@@ -337,6 +354,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct SRow			aRow;
 	uint32_t			pt_long;
 	bool				pt_boolean;
+	struct SBinary_short		*pt_binary;
 	struct timeval			tv;
 	struct FILETIME			ft;
 	NTTIME				time;
@@ -374,7 +392,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	folder_object = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID);
+	ret = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID, &folder_object);
+	if (ret != MAPISTORE_SUCCESS) {
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		}
+		goto end;
+	}
 
 	/* This should be handled differently here: temporary hack */
 	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
@@ -391,15 +418,28 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
+	message_object->object.message->read_write = true;
+
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
 	switch (mapistore) {
 	case true:
-		retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
-							 folder_object->backend_object, message_object, 
-							 messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
-							 &message_object->backend_object);
-		DEBUG(5, ("mapistore_folder_create_message returned 0x%.8x\n", retval));
+		ret = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
+						      folder_object->backend_object, message_object, 
+						      messageID, mapi_req->u.mapi_CreateMessage.AssociatedFlag, 
+						      &message_object->backend_object);
+		if (ret != MAPISTORE_SUCCESS) {
+			if (ret == MAPISTORE_ERR_DENIED) {
+				mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			}
+			else if (ret == MAPISTORE_ERR_NOT_FOUND) {
+				mapi_repl->error_code = MAPI_E_NOT_FOUND;
+			}
+			else {
+				mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			}
+			goto end;
+		}
 		break;
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
@@ -413,38 +453,78 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_set_private_data(message_handle, message_object);
 
 	/* Set default properties for message: MS-OXCMSG 3.2.5.2 */
-	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	aRow.ulAdrEntryPad = 0;
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 23);
 	aRow.cValues = 0;
 
 	pt_long = 0x1;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Note");
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_IMPORTANCE, (const void *)&pt_long);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Note");
+	aRow.cValues++;
 	pt_long = 0x0;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_SENSITIVITY, (const void *)&pt_long);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_DISPLAY_TO_UNICODE, (const void *)"");
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_DISPLAY_CC_UNICODE, (const void *)"");
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_DISPLAY_BCC_UNICODE, (const void *)"");
+	aRow.cValues++;
 	pt_long = 0x9;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_MESSAGE_FLAGS, (const void *)&pt_long);
+	aRow.cValues++;
+
 	pt_boolean = false;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_HASATTACH, (const void *)&pt_boolean);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_HAS_NAMED_PROPERTIES, (const void *)&pt_boolean);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_URL_COMP_NAME_SET, (const void *)&pt_boolean);
+	aRow.cValues++;
+
 	pt_long = 0x1;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_TRUST_SENDER, (const void *)&pt_long);
+	aRow.cValues++;
 	pt_long = 0x3;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS, (const void *)&pt_long);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_ACCESS, (const void *)&pt_long);
+	aRow.cValues++;
 	pt_long = 0x1;
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_URL_COMP_NAME, (const void *)"No Subject.EML");
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_URL_COMP_NAME_UNICODE, (const void *)"No Subject.EML");
+	aRow.cValues++;
 
 	gettimeofday(&tv, NULL);
 	time = timeval_to_nttime(&tv);
 	ft.dwLowDateTime = (time << 32) >> 32;
 	ft.dwHighDateTime = time >> 32;		
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
-	aRow.lpProps = add_SPropValue(mem_ctx, aRow.lpProps, &aRow.cValues, PR_LOCALE_ID, (const void *)&mapi_req->u.mapi_CreateMessage.CodePageId);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_CREATION_TIME, (const void *)&ft);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_LAST_MODIFICATION_TIME, (const void *)&ft);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_LOCAL_COMMIT_TIME, (const void *)&ft);
+	aRow.cValues++;
 
-	/* TODO: some required properties are not set: PidTagSearchKey, PidTagCreatorName, ... */
+	/* we copy CodePageId (uint16_t) into an uint32_t to avoid a buffer error */
+	pt_long = mapi_req->u.mapi_CreateMessage.CodePageId;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_MESSAGE_LOCALE_ID, (const void *)&pt_long);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_LOCALE_ID, (const void *)&pt_long);
+	aRow.cValues++;
+
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_CREATOR_NAME_UNICODE, (const void *)emsmdbp_ctx->szDisplayName);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_LAST_MODIFIER_NAME_UNICODE, (const void *)emsmdbp_ctx->szDisplayName);
+	aRow.cValues++;
+	pt_binary = talloc_zero(mem_ctx, struct SBinary_short);
+	entryid_set_AB_EntryID(pt_binary, emsmdbp_ctx->szUserDN, pt_binary);
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_CREATOR_ENTRYID, (const void *)pt_binary);
+	aRow.cValues++;
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_LAST_MODIFIER_ENTRYID, (const void *)pt_binary);
+	aRow.cValues++;
+
+	/* TODO: some required properties are not set: PidTagSearchKey, PidTagMessageSize, PidTagSecurityDescriptor */
 	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false"));
@@ -489,6 +569,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	uint32_t		contextID;
 	char			*owner;
 	uint8_t			flags;
+	enum mapistore_error	ret;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n"));
 
@@ -528,9 +609,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	case true:
                 contextID = emsmdbp_get_contextID(object);
 		messageID = object->object.message->messageID;
-		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
+		ret = mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object);
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			goto end;
+		}
 		owner = emsmdbp_get_owner(object);
-                mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
+		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
 
@@ -723,6 +808,7 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 				       &dest_len);
 			uni_value[dest_len] = 0;
 			dest_value = uni_value;
+			value_size += 2;
 			break;
 		case PT_BINARY:
 			bin_value = talloc_zero(recipient->data, struct Binary_r);
@@ -1369,6 +1455,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                                                         struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                         uint32_t *handles, uint16_t *size)
 {
+	enum mapistore_error		ret;
 	enum MAPISTATUS                 retval;
         uint32_t                        handle;
         uint32_t                        contextID;
@@ -1428,11 +1515,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                 }
 
 		contextID = emsmdbp_get_contextID(attachment_object);
-		retval = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
+		ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
 									    NULL, &backend_attachment_message,
 									    &messageID,
 									    &msg);
-                if (retval != MAPISTORE_SUCCESS) {
+                if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
                 }

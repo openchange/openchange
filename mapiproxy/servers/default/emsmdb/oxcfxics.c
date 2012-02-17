@@ -162,9 +162,11 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
         struct MAPINAMEID       *nameid;
 	struct BinaryArray_r	*bin_array;
 	struct WStringArray_r	*unicode_array;
+	struct ShortArray_r	*short_array;
+	struct LongArray_r	*long_array;
+	struct I8Array_r	*i8_array;
 	uint16_t		prop_type, propID;
         int                     retval;
-
 
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
@@ -198,6 +200,27 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 				prop_type &= 0x0fff;
 
 				switch (prop_type) {
+				case PT_SHORT:
+					short_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, short_array->cValues);
+					for (j = 0; j < short_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, short_array->lpi + j);
+					}
+					break;
+				case PT_LONG:
+					long_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, long_array->cValues);
+					for (j = 0; j < long_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, long_array->lpl + j);
+					}
+					break;
+				case PT_I8:
+					i8_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, i8_array->cValues);
+					for (j = 0; j < i8_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, i8_array->lpi8 + j);
+					}
+					break;
 				case PT_BINARY:
 					bin_array = data_pointers[i];
 					ndr_push_uint32(ndr, NDR_SCALARS, bin_array->cValues);
@@ -213,7 +236,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					}
 					break;
 				default:
-					DEBUG(5, ("No handling for multi values of type %.4x\n", prop_type));
+					DEBUG(5, (__location__": no handling for multi values of type %.4x\n", prop_type));
 					abort();
 				}
 			}
@@ -488,7 +511,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 	static const int	prop_count = sizeof(prop_tags) / sizeof (enum MAPITAGS);
 	struct SPropTagArray	query_props;
 	uint32_t		i;
-	uint32_t		*retvals;
+	enum MAPISTATUS		*retvals;
 	void			**data_pointers;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
@@ -566,7 +589,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 {
 	struct emsmdbp_object		*table_object, *message_object;
 	uint32_t			i, j;
-	uint32_t			*retvals, *header_retvals;
+	enum MAPISTATUS			*retvals, *header_retvals;
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
@@ -593,7 +616,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		abort();
 	}
 
-	if (sync_data->table_type == EMSMDBP_TABLE_FAI_TYPE) {
+	if (sync_data->table_type == MAPISTORE_FAI_TABLE) {
 		original_cnset_seen = synccontext->cnset_seen_fai;
 		properties = &synccontext->fai_properties;
 	}
@@ -622,8 +645,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
 
 			/** fixed header props */
-			header_data_pointers = talloc_array(NULL, void *, 9);
-			header_retvals = talloc_array(header_data_pointers, uint32_t, 9);
+			header_data_pointers = talloc_array(data_pointers, void *, 9);
+			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
 			memset(header_retvals, 0, 9 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
 
@@ -634,9 +657,14 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			if (eid == 0x7fffffffffffffffLL) {
 				DEBUG(0, ("message without a valid eid\n"));
-				talloc_free(header_data_pointers);
-				continue;
+				goto end_row;
 			}
+
+			if (emsmdbp_object_message_open(data_pointers, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
+				DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
+				goto end_row;
+			}
+
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
 
@@ -763,15 +791,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			   embeddedMessage:
 			   StartEmbed messageContent EndEmbed */
 
-			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, &msg);
 			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
 			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
-			talloc_free(message_object);
 
 		end_row:
-			talloc_free(header_data_pointers);
 			talloc_free(data_pointers);
-			talloc_free(retvals);
 		}
 		else {
 			DEBUG(5, ("no data returned for message row %d\n", i));
@@ -833,7 +857,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	/* 2a. we build the message stream (normal messages) */
 	if (synccontext->request.normal) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
-		sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
+		sync_data->table_type = MAPISTORE_MESSAGE_TABLE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen;
@@ -848,7 +872,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	/* 2b. we build the message stream (FAI messages) */
 	if (synccontext->request.fai) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
-		sync_data->table_type = EMSMDBP_TABLE_FAI_TYPE;
+		sync_data->table_type = MAPISTORE_FAI_TABLE;
 		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen_fai;
@@ -937,7 +961,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	NTTIME			nt_time;
 	int32_t			unix_time;
 	uint32_t		i, j;
-	uint32_t		*retvals, *header_retvals;
+	enum MAPISTATUS		*retvals, *header_retvals;
 	void			**data_pointers, **header_data_pointers;
 	struct SPropTagArray	query_props;
 	TALLOC_CTX		*local_mem_ctx;
@@ -946,7 +970,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	local_mem_ctx = talloc_zero(NULL, void);
 
 	/* 2b. we build the stream */
-	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0); 
+	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, MAPISTORE_FOLDER_TABLE, 0); 
 	if (!table_object) {
 		DEBUG(5, ("folder does not handle hierarchy tables\n"));
 		return;
@@ -966,7 +990,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 		if (data_pointers) {
 			/** fixed header props */
 			header_data_pointers = talloc_array(NULL, void *, 8);
-			header_retvals = talloc_array(header_data_pointers, uint32_t, 8);
+			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 8);
 			memset(header_retvals, 0, 8 * sizeof(uint32_t));
 			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 8);
 
@@ -1093,8 +1117,9 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			talloc_free(header_data_pointers);
 			talloc_free(data_pointers);
 			talloc_free(retvals);
-
-			subfolder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid);
+			
+			/* TODO: check return code */
+			emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 			oxcfxics_push_folderChange(mem_ctx, emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
 			talloc_free(subfolder_object);
 		}
@@ -1474,20 +1499,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Explicit exclusions */
-	properties_exclusion[PR_ROW_TYPE >> 16] = true;
-	properties_exclusion[PR_INSTANCE_KEY >> 16] = true;
-	properties_exclusion[PR_INSTANCE_NUM >> 16] = true;
-	properties_exclusion[PR_INST_ID >> 16] = true;
-	properties_exclusion[PR_FID >> 16] = true;
-	properties_exclusion[PR_MID >> 16] = true;
-	properties_exclusion[PR_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_SOURCE_KEY >> 16] = true;
-	properties_exclusion[PR_PARENT_FID >> 16] = true;
+	properties_exclusion[(uint16_t) (PR_ROW_TYPE >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INSTANCE_NUM >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_INST_ID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_FID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_MID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_SOURCE_KEY >> 16)] = true;
+	properties_exclusion[(uint16_t) (PR_PARENT_FID >> 16)] = true;
 
 	/* Include or exclude specified properties passed in array */
 	include_props = ((request->SynchronizationFlag & SynchronizationFlag_OnlySpecifiedProperties));
 	for (j = 0; j < request->PropertyTags.cValues; j++) {
-		i = (request->PropertyTags.aulPropTag[j] & 0xffff0000) >> 16;
+		i = (uint16_t) (request->PropertyTags.aulPropTag[j] >> 16);
 		if (!properties_exclusion[i]) {
 			properties_exclusion[i] = true; /* avoid including the same prop twice */
 			if (include_props) {
@@ -1506,7 +1531,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	if (!include_props) {
 		if (synccontext->request.contents_mode) {
 			if (synccontext->request.normal) {
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_MESSAGE_TYPE, 0);
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
 				if (!table_object) {
 					DEBUG(5, ("could not open message table\n"));
 					abort();
@@ -1529,7 +1554,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 				synccontext->fai_properties.cValues = synccontext->properties.cValues;
 				synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
 
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FAI_TYPE, 0);
+				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FAI_TABLE, 0);
 				if (!table_object) {
 					DEBUG(5, ("could not open FAI table\n"));
 					abort();
@@ -1549,7 +1574,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 			}
 		}
 		else {
-			table_object = emsmdbp_folder_open_table(NULL, folder_object, EMSMDBP_TABLE_FOLDER_TYPE, 0);
+			table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FOLDER_TABLE, 0);
 			if (!table_object) {
 				DEBUG(5, ("could not open folder table\n"));
 				abort();
@@ -1604,6 +1629,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 							    uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS				retval;
+	enum mapistore_error			ret;
 	struct mapi_handles			*synccontext_object_handle = NULL, *message_object_handle;
 	struct emsmdbp_object			*synccontext_object = NULL, *message_object;
 	uint32_t				synccontext_handle_id, message_handle_id;
@@ -1616,7 +1642,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	uint16_t				repl_id, i;
 	struct mapistore_message		*msg;
 	struct SRow				aRow;
-
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] RopSyncImportMessageChange (0x72)\n"));
 
@@ -1670,8 +1695,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, message_handle_id, &message_object_handle);
 	handles[mapi_repl->handle_idx] = message_object_handle->handle;
 
-	message_object = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, &msg);
-	if (!message_object) {
+	ret = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, true, &message_object, &msg);
+	if (ret == MAPISTORE_ERR_NOT_FOUND) {
 		message_object = emsmdbp_object_message_init(message_object_handle, emsmdbp_ctx, messageID, synccontext_object->parent_object);
 		if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(synccontext_object->parent_object), synccontext_object->parent_object->backend_object, message_object, messageID, (request->ImportFlag & ImportFlag_Associated), &message_object->backend_object)) {
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
@@ -1679,7 +1704,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;
 		}
+		message_object->object.message->read_write = true;
 	}
+	else if (ret != MAPISTORE_SUCCESS) {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, message_object_handle->handle);
+		if (ret == MAPISTORE_ERR_DENIED) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		}
+		else {
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		}
+		goto end;
+	}
+
 	mapi_handles_set_private_data(message_object_handle, message_object);
 
 	response->MessageId = 0; /* Must be set to 0 */
@@ -1795,12 +1832,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		folder_was_open = true;
 	}
 	else {
-		parent_folder = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID);
+		/* TODO: check return code */
+		emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
 		folder_was_open = false;
 	}
 
-	folder_object = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID);
-	if (!folder_object) {
+	if (emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
@@ -1810,11 +1847,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		}
 		aRow.lpProps[aRow.cValues].ulPropTag = PR_CHANGE_NUM;
 		aRow.lpProps[aRow.cValues].value.d = cn;
+		aRow.cValues++;
 		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_folder, NULL, folderID, &aRow, &folder_object);
 		if (retval) {
+			mapi_repl->error_code = retval;
 			DEBUG(5, (__location__": folder creation failed\n"));
 			folder_object = NULL;
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
 	}
@@ -1906,12 +1944,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_SyncImportDeletes;
 
-	if (request->Flags & SyncImportDeletes_Hierarchy) {
-		DEBUG(5, ("  hierarchy deletes not supported yet\n"));
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		goto end;
-	}
-
 	if (request->Flags & SyncImportDeletes_HardDelete) {
 		delete_type = MAPISTORE_PERMANENT_DELETE;
 	}
@@ -1919,27 +1951,39 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 		delete_type = MAPISTORE_SOFT_DELETE;
 	}
 
-	if (!emsmdbp_is_mapistore(synccontext_object)) {
-		DEBUG(5, ("  no message deletes on non-mapistore store\n"));
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		goto end;
-	}
-
-	contextID = emsmdbp_get_contextID(synccontext_object);
 	owner = emsmdbp_get_owner(synccontext_object);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);
 
-	object_array = &request->PropertyValues.lpProps[0].value.MVbin;
-	for (i = 0; i < object_array->cValues; i++) {
-		ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
-		if (ret == MAPISTORE_SUCCESS) {
-			ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
-			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
+	if (request->Flags & SyncImportDeletes_Hierarchy) {
+		object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+		for (i = 0; i < object_array->cValues; i++) {
+			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
+			if (ret == MAPISTORE_SUCCESS) {
+				emsmdbp_folder_delete(emsmdbp_ctx, synccontext_object->parent_object, objectID, 0xff);
 			}
-			ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
-			if (ret != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID));
+		}
+	}
+	else {
+		if (!emsmdbp_is_mapistore(synccontext_object)) {
+			DEBUG(5, ("  no message deletes on non-mapistore store\n"));
+			mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
+
+		contextID = emsmdbp_get_contextID(synccontext_object);
+
+		object_array = &request->PropertyValues.lpProps[0].value.MVbin;
+		for (i = 0; i < object_array->cValues; i++) {
+			ret = oxcfxics_fmid_from_source_key(emsmdbp_ctx, owner, object_array->bin + i, &objectID);
+			if (ret == MAPISTORE_SUCCESS) {
+				ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, objectID, delete_type);
+				if (ret != MAPISTORE_SUCCESS) {
+					DEBUG(5, ("message deletion failed for fmid: 0x%.16"PRIx64"\n", objectID));
+				}
+				ret = mapistore_indexing_record_del_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, objectID, delete_type);
+				if (ret != MAPISTORE_SUCCESS) {
+					DEBUG(5, ("message deletion of index record failed for fmid: 0x%.16"PRIx64"\n", objectID));
+				}
 			}
 		}
 	}
@@ -2329,8 +2373,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	source_folder_object = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID);
-	if (!source_folder_object) {
+	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID, &source_folder_object) != MAPISTORE_SUCCESS) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
 	}
@@ -2492,7 +2535,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 
 	request = &mapi_req->u.mapi_GetLocalReplicaIds;
 
-	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_Name, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
+	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_username, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
 	openchangedb_reserve_fmid_range(emsmdbp_ctx->oc_ctx, request->IdCount, &new_id);
 	new_id >>= 16;
 	for (i = 0; i < 6 ; i++) {
@@ -2507,18 +2550,18 @@ end:
 }
 
 /**
-   \details Retrieve a MessageReadStates structure from a binary blob
+   \details Retrieve a MessageReadState structure from a binary blob
 
    \param mem_ctx pointer to the memory context
-   \param bin pointer to the Binary_r structure with raw MessageReadStates data
+   \param bin pointer to the Binary_r structure with raw MessageReadState data
 
-   \return Allocated MessageReadStates structure on success, otherwise NULL
+   \return Allocated MessageReadState structure on success, otherwise NULL
 
-   \note Developers must free the allocated MessageReadStates when finished.
+   \note Developers must free the allocated MessageReadState when finished.
  */
-static struct MessageReadStates *get_MessageReadStates(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+static struct MessageReadState *get_MessageReadState(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
 {
-	struct MessageReadStates	*message_read_states = NULL;
+	struct MessageReadState	*message_read_states = NULL;
 	struct ndr_pull			*ndr;
 	enum ndr_err_code		ndr_err_code;
 
@@ -2533,8 +2576,8 @@ static struct MessageReadStates *get_MessageReadStates(TALLOC_CTX *mem_ctx, stru
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	message_read_states = talloc_zero(mem_ctx, struct MessageReadStates);
-	ndr_err_code = ndr_pull_MessageReadStates(ndr, NDR_SCALARS, message_read_states);
+	message_read_states = talloc_zero(mem_ctx, struct MessageReadState);
+	ndr_err_code = ndr_pull_MessageReadState(ndr, NDR_SCALARS, message_read_states);
 
 	/* talloc_free(ndr); */
 
@@ -2570,7 +2613,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	struct mapi_handles			*synccontext_rec;
 	struct emsmdbp_object			*synccontext_object, *folder_object, *message_object;
 	enum MAPISTATUS				retval;
-	struct MessageReadStates		*read_states;
+	enum mapistore_error			ret;
+	struct MessageReadState			*read_states;
 	uint32_t				read_states_size;
 	struct Binary_r				*bin_data;
 	char					*owner;
@@ -2579,6 +2623,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	int					i;
 	struct mapistore_message		*msg;
 	struct GUID				guid;
+	DATA_BLOB				guid_blob = { .length = 16, .data = NULL };
 	uint8_t					flag;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportReadStateChanges (0x80)\n"));
@@ -2620,9 +2665,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 		bin_data->cb = request->MessageReadStates.length;
 		bin_data->lpb = request->MessageReadStates.data;
 		while (bin_data->cb) {
-			read_states = get_MessageReadStates(mem_ctx, bin_data);
+			read_states = get_MessageReadState(mem_ctx, bin_data);
 			read_states_size = read_states->MessageIdSize + 3;
-			if (GUID_from_string((char *) read_states->MessageId, &guid).v != 0) {
+
+			bin_data->cb -= read_states_size;
+			bin_data->lpb += read_states_size;
+
+			guid_blob.data = read_states->MessageId;
+			if (GUID_from_data_blob(&guid_blob, &guid).v != 0) {
 				continue;
 			}
 			owner = emsmdbp_get_owner(synccontext_object);
@@ -2646,14 +2696,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 				flag = CLEAR_READ_FLAG | CLEAR_NRN_PENDING;
 			}
 
-			message_object = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, &msg);
-			if (message_object) {
+			ret = emsmdbp_object_message_open(NULL, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, mid, true, &message_object, &msg);
+			if (ret == MAPISTORE_SUCCESS) {
 				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 				talloc_free(message_object);
 			}
-
-			bin_data->cb -= read_states_size;
-			bin_data->lpb += read_states_size;
 		}
 	}
 	else {
@@ -2674,7 +2721,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	uint64_t			eid, cn;
 	uint32_t			i, nr_eid;
 	void				**data_pointers;
-	uint32_t			*retvals;
+	enum MAPISTATUS			*retvals;
 	struct emsmdbp_object		*table_object, *subfolder_object;
 	struct emsmdbp_object_table	*table;
 	uint32_t			unix_time;
@@ -2690,13 +2737,13 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	count_query_props->cValues = 1;
 	count_query_props->aulPropTag = talloc_zero(count_query_props, enum MAPITAGS);
 	switch (sync_data->table_type) {
-	case EMSMDBP_TABLE_FOLDER_TYPE:
+	case MAPISTORE_FOLDER_TABLE:
 		count_query_props->aulPropTag[0] = PR_FOLDER_CHILD_COUNT;
 		break;
-	case EMSMDBP_TABLE_MESSAGE_TYPE:
+	case MAPISTORE_MESSAGE_TABLE:
 		count_query_props->aulPropTag[0] = PR_CONTENT_COUNT;
 		break;
-	case EMSMDBP_TABLE_FAI_TYPE:
+	case MAPISTORE_FAI_TABLE:
 		count_query_props->aulPropTag[0] = PR_ASSOC_CONTENT_COUNT;
 		break;
 	default:
@@ -2759,8 +2806,9 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 
-			if (sync_data->table_type == EMSMDBP_TABLE_FOLDER_TYPE) {
-				subfolder_object = emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid);
+			if (sync_data->table_type == MAPISTORE_FOLDER_TABLE) {
+				/* TODO: check return code */
+				emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 				oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
 				talloc_free(subfolder_object);
 			}
@@ -2802,18 +2850,18 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 		synccontext->properties.aulPropTag[0] = PR_MID;
 
 		if (synccontext->request.normal) {
-			sync_data->table_type = EMSMDBP_TABLE_MESSAGE_TYPE;
+			sync_data->table_type = MAPISTORE_MESSAGE_TABLE;
 			oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		}
 
 		if (synccontext->request.fai) {
-			sync_data->table_type = EMSMDBP_TABLE_FAI_TYPE;
+			sync_data->table_type = MAPISTORE_FAI_TABLE;
 			oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 		}
 	}
 	else {
 		synccontext->properties.aulPropTag[0] = PR_FID;
-		sync_data->table_type = EMSMDBP_TABLE_FOLDER_TYPE;
+		sync_data->table_type = MAPISTORE_FOLDER_TABLE;
 
 		oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 	}

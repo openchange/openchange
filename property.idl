@@ -58,6 +58,13 @@ interface property
 	} WeekRecurrencePattern;
 
 	typedef [v1_enum] enum {
+		olFree		= 0x00000000,
+		olTentative	= 0x00000001,
+		olBusy		= 0x00000002,
+		olOutOfOffice	= 0x00000003
+	} FreeBusyStatus; /* oxocal - 2.2.1.2 */
+
+	typedef [v1_enum] enum {
 		RecurrenceN_First	=	0x1,
 		RecurrenceN_Second	=	0x2,
 		RecurrenceN_Third	=	0x3,
@@ -261,11 +268,31 @@ interface property
 		uint8			Data[Size];
 	} GlobalObjectId;
 
+	typedef [enum16bit] enum {
+		eitLTPrivateFolder		= 0x01,
+		eitLTPPublicFolder		= 0x03,
+		eitLTPMappedPublicFolder	= 0x05,
+		eitLTPPrivateMessage		= 0x07,
+		eitLTPPublicMessage		= 0x09,
+		eitLTPMappedPublicMessage	= 0x0b,
+		eitLTPPublicNewsgroupFolder	= 0x0c
+	} EntryIdFolderType;
+
+	/* FolderEntryId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			Flags;
+		GUID			ProviderUID;
+		EntryIdFolderType	FolderType;
+		GUID			FolderDatabaseGuid;
+		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
+		uint16			Pad;
+	} FolderEntryId;
+
 	/* PR_ENTRYID/PR_TARGET_ENTRYID (messages) */
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32			Flags;
 		GUID			ProviderUID;
-		uint16			MessageType;
+		EntryIdFolderType	MessageType;
 		GUID			FolderDatabaseGuid;
 		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
 		uint16			Pad1;

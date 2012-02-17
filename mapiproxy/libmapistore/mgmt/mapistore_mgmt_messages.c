@@ -31,9 +31,9 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
-static int mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context *mgmt_ctx,
-						   struct mapistore_mgmt_user_cmd user_cmd,
-						   bool populated)
+static enum mapistore_error mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context *mgmt_ctx,
+								    struct mapistore_mgmt_user_cmd user_cmd,
+								    bool populated)
 {
 	struct mapistore_mgmt_users	*el;
 
@@ -64,8 +64,8 @@ static int mapistore_mgmt_message_user_command_add(struct mapistore_mgmt_context
 	return MAPISTORE_SUCCESS;
 }
 
-int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
-					struct mapistore_mgmt_user_cmd user_cmd)
+enum mapistore_error mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
+							 struct mapistore_mgmt_user_cmd user_cmd)
 {
 	struct mapistore_mgmt_users	*el;
 	bool				found = false;
@@ -152,8 +152,8 @@ int mapistore_mgmt_message_user_command(struct mapistore_mgmt_context *mgmt_ctx,
 	return MAPISTORE_SUCCESS;
 }
 
-int mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *mgmt_ctx,
-					struct mapistore_mgmt_bind_cmd bind)
+enum mapistore_error mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *mgmt_ctx,
+							 struct mapistore_mgmt_bind_cmd bind)
 {
 	struct mapistore_mgmt_users	*el;
 	bool				found = false;
@@ -186,7 +186,17 @@ int mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *mgmt_ctx,
 							     bind.cbCallbackAddress);
 			
 			/* socket / connect calls */
+#ifdef SOCK_NONBLOCK
 			el->notify_ctx->fd = socket(PF_INET, SOCK_DGRAM|SOCK_NONBLOCK, IPPROTO_UDP);
+#else /* SOCK_NONBLOCK */
+			{
+				int flags;
+				el->notify_ctx->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
+				flags = fcntl(el->notify_ctx->fd, F_GETFL, 0);
+				fcntl(el->notify_ctx->fd, F_SETFL, flags | O_NONBLOCK);
+			}
+#endif /* SOCK_NONBLOCK */
+
 			if (el->notify_ctx->fd == -1) {
 				perror("socket");
 				talloc_free(el->notify_ctx);
@@ -204,8 +214,8 @@ int mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *mgmt_ctx,
 	return (found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND;
 }
 
-static int mapistore_mgmt_message_notification_command_add(struct mapistore_mgmt_users *user_cmd,
-							   struct mapistore_mgmt_notification_cmd notif)
+static enum mapistore_error mapistore_mgmt_message_notification_command_add(struct mapistore_mgmt_users *user_cmd,
+									    struct mapistore_mgmt_notification_cmd notif)
 {
 	struct mapistore_mgmt_notif	*el;
 
@@ -357,8 +367,8 @@ static bool mapistore_mgmt_message_notification_folder(struct mapistore_mgmt_use
 	return true;
 }
 
-int mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *mgmt_ctx,
-						struct mapistore_mgmt_notification_cmd notif)
+enum mapistore_error mapistore_mgmt_message_notification_command(struct mapistore_mgmt_context *mgmt_ctx,
+								 struct mapistore_mgmt_notification_cmd notif)
 {
 	struct mapistore_mgmt_users	*el;
 	bool				ret;

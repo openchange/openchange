@@ -195,10 +195,12 @@ static void parse_header(uint8_t *header_data, lzfuheader *header)
 	LE32_CPU(header->dwMagic);  
 	LE32_CPU(header->dwCRC);
 
+	/*
 	DEBUG(2, ("COMPSIZE = 0x%x\n", header->cbSize));
 	DEBUG(2, ("RAWSIZE = 0x%x\n", header->cbRawSize));
 	DEBUG(2, ("COMPTYPE = 0x%08x\n", header->dwMagic)); // TODO: make this look like MS-OXRTFCP examples
 	DEBUG(2, ("CRC = 0x%08x\n", header->dwCRC));
+	*/
 }
 
 static enum MAPISTATUS verify_header(uint8_t *header_data, uint32_t in_size, lzfuheader *header)
@@ -231,18 +233,18 @@ static uint8_t get_next_byte(decompression_state *state)
 static uint8_t get_next_control(decompression_state *state)
 {
 	uint8_t c = get_next_byte(state);
-	DEBUG(3, ("control: 0x%02x\n", c));
+	/* DEBUG(3, ("control: 0x%02x\n", c)); */
 	return c;
 }
 
 static uint8_t get_next_literal(decompression_state *state)
 {
 	uint8_t c = get_next_byte(state);
-	if (isprint(c)) {
+	/* if (isprint(c)) {
 		DEBUG(3, ("literal %c\n", c));
 	} else {
 		DEBUG(3, ("literal 0x%02x\n", c));
-	}
+		} */
 	return c;
 }
 
@@ -280,11 +282,11 @@ static void append_to_output(output_state *output, char c)
 static char get_dictionary_entry(decompression_state *state, uint32_t index)
 {
 	char c = state->dict[index % LZFU_DICTLENGTH];
-	if (isprint(c)) {
+	/* if (isprint(c)) {
 		DEBUG(3, ("dict entry %i: %c\n", index, c));
 	} else {
 		DEBUG(3, ("dict entry 0x%04x: 0x%02x\n", index, c));
-	}
+		} */
 	return c;
 }
 

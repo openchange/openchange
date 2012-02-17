@@ -426,7 +426,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, contextID, owner, fid);
 			}
 			folder_object->object.folder->contextID = contextID;
-			(void) talloc_reference(folder_object, folder_object->backend_object);
+			/* (void) talloc_reference(folder_object, folder_object->backend_object); */
 		}
 		else {
 			switch (parent->type) {
@@ -978,7 +978,7 @@ _PUBLIC_ int emsmdbp_object_copy_properties(struct emsmdbp_context *emsmdbp_ctx,
 	      || source_object->type == EMSMDBP_OBJECT_MAILBOX
 	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
 	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, ("object must be EMSMDBP_OBJECT_FOLDER,EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
+		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
 		ret = MAPI_E_NO_SUPPORT;
                 goto end;
         }
@@ -1244,7 +1244,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	int			ret;
 
 	if (!(parent_object->type != EMSMDBP_OBJECT_FOLDER || parent_object->type != EMSMDBP_OBJECT_MAILBOX)) {
-		DEBUG(5, ("[%s:%d] unhandled object type: %d\n", __FUNCTION__, __LINE__, parent_object->type));
+		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type));
 		return NULL;
 	}
 
@@ -2431,7 +2431,7 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	      || object->type == EMSMDBP_OBJECT_MAILBOX
 	      || object->type == EMSMDBP_OBJECT_MESSAGE
 	      || object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type = %d)\n", object->type));
+		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type));
 		return MAPISTORE_ERROR;
 	}
 	

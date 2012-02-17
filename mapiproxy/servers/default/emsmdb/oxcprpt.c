@@ -150,7 +150,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				else {
 					stream_size = 0;
 				}
-				if (stream_size > 4096) {
+				if (stream_size > 8192) {
 					DEBUG(5, ("%s: attaching stream data for property %.8x\n", __FUNCTION__, properties->aulPropTag[i]));
 					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i]);
 					if (stream_data) {

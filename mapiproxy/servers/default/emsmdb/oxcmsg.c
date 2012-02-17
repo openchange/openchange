@@ -448,7 +448,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
 		break;
 	}
-	
+
 	/* Add default properties to message MS-OXCMSG 3.2.5.2 */
 	retval = mapi_handles_set_private_data(message_handle, message_object);
 
@@ -899,9 +899,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 			oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i, mapi_req->u.mapi_ModifyRecipients.prop_count, mapi_req->u.mapi_ModifyRecipients.properties, recipients + i);
 		}
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
-
-		/* mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, */
-		/* 				    object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.RecipientRow, mapi_req->u.mapi_ModifyRecipients.cValues); */
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));

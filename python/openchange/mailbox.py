@@ -105,8 +105,8 @@ dn: CASE_INSENSITIVE
                       "PidTagAttributeHidden": str(0),
                       "PidTagAttributeReadOnly": str(0),
                       "PidTagAttributeSystem": str(0),
-                      "PidTagContainerClass": "IPF.Note (check this)", 
-                      "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
+                      "PidTagContainerClass": "IPF.Note (check this)",
+                      "PidTagSubFolders": str(childcount != 0).upper(),
                       "PidTagFolderChildCount": str(childcount),
                       "FolderType": str(1),
                       "SystemIdx": str(SystemIndex)})

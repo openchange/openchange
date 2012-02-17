@@ -119,6 +119,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!res, MAPI_E_INVALID_PARAMETER, NULL);
 
 	table = (struct openchangedb_table *) table_object;
 

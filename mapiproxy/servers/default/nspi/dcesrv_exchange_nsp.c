@@ -193,12 +193,11 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
 	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	/* Step 1. Retrieve handle and free if emsabp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
@@ -245,12 +244,11 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -349,12 +347,11 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -559,12 +556,11 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -651,12 +647,11 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -728,12 +723,11 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -870,12 +864,11 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
 
-	/* HACK: Disable authentication */
 	/* Step 0. Ensure incoming user is authenticated */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -1059,10 +1052,9 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13)\n"));
 
-	/* HACK: Disable authentication */
-//	if (!dcesrv_call_authenticated(dce_call)) {
-//		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-//	}
+	if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -1175,10 +1167,10 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	//	if (!dcesrv_call_authenticated(dce_call)) {
-	//	DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-	//	DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-	//}
+		if (!dcesrv_call_authenticated(dce_call)) {
+		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {

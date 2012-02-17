@@ -88,7 +88,7 @@ dn: CASE_INSENSITIVE
                       "PidTagDisplayName": "Public Folder Root",
                       "PidTagCreationTime": "%d" % self.nttime,
                       "PidTagLastModificationTime": "%d" % self.nttime,
-                      "PidTagSubFolders": "TRUE" if (childcount != 0) else "FALSE",
+                      "PidTagSubFolders": str(childcount != 0).upper(),
                       "PidTagFolderChildCount": str(childcount),
                       "SystemIdx": str(SystemIdx)})
 

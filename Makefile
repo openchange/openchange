@@ -1548,7 +1548,7 @@ $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 # 	@echo "Linking $@"
 # 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
- $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
+$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
 							pyopenchange/mapistore/mgmt.c				\
 							pyopenchange/mapistore/context.c			\
 							pyopenchange/mapistore/folder.c				\

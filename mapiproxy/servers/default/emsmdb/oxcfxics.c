@@ -798,10 +798,10 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		end_row:
 			talloc_free(data_pointers);
 		}
-		else {
-			DEBUG(5, ("no data returned for message row %d\n", i));
-			abort();
-		}
+		/* else { */
+		/* 	DEBUG(5, ("no data returned for message row %d\n", i)); */
+		/* 	abort(); */
+		/* } */
 	}
 
 	if (emsmdbp_is_mapistore(folder_object)) {
@@ -1124,10 +1124,10 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			oxcfxics_push_folderChange(mem_ctx, emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
 			talloc_free(subfolder_object);
 		}
-		else {
-			DEBUG(5, ("no data returned for folder row %d\n", i));
-			abort();
-		}
+		/* else { */
+		/* 	DEBUG(5, ("no data returned for folder row %d\n", i)); */
+		/* 	abort(); */
+		/* } */
 	}
 
 	talloc_free(local_mem_ctx);

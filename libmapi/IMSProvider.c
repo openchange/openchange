@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2009.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -281,15 +281,15 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		}
 		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 
-		if (server_version_at_least(provider->ctx, 8, 0, 835, 0)){
-			struct emsmdb_context *prov_ctx = provider->ctx;
+		if (server_version_at_least((struct emsmdb_context *)provider->ctx, 8, 0, 835, 0)){
+		  struct emsmdb_context *prov_ctx = (struct emsmdb_context *)provider->ctx;
 			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_exchange_async_emsmdb);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
-			mapistatus = emsmdb_async_connect(provider->ctx);
+			mapistatus = emsmdb_async_connect(prov_ctx);
 			OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
 		}
 

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2010.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
    Copyright (C) Jelmer Vernooij 2005.
  
    This program is free software; you can redistribute it and/or modify
@@ -270,7 +270,7 @@ int emsmdb_disconnect_dtor(void *data)
 	struct emsmdb_context	*emsmdb_ctx;
 
 	emsmdb_ctx = (struct emsmdb_context *)provider->ctx;
-	emsmdb_disconnect(provider->ctx);	
+	emsmdb_disconnect(emsmdb_ctx);	
 
 	talloc_free(emsmdb_ctx->cache_requests);
 
@@ -590,10 +590,10 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
 {
 	switch (session->profile->exchange_version) {
 	case 0x0:
-		return emsmdb_transaction(session->emsmdb->ctx, mem_ctx, req, repl);
+	  return emsmdb_transaction((struct emsmdb_context *)session->emsmdb->ctx, mem_ctx, req, repl);
 	case 0x1:
 	case 0x2:
-		return emsmdb_transaction_ext2(session->emsmdb->ctx, mem_ctx, req, repl);
+	  return emsmdb_transaction_ext2((struct emsmdb_context *)session->emsmdb->ctx, mem_ctx, req, repl);
 		break;
 	}
 
@@ -618,7 +618,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
 	struct mapi_notify_ctx	*notify_ctx = NULL;
 	unsigned short		port = DFLT_NOTIF_PORT;
 	const char		*ipaddr = NULL;
-	uint32_t		try = 0;
+	uint32_t		attempt = 0;
 
 	/* Sanity Checks */
 	if (!mapi_ctx) return NULL;
@@ -642,7 +642,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
 	notify_ctx->addr->sa_family = AF_INET;
 	((struct sockaddr_in *)(notify_ctx->addr))->sin_addr.s_addr = inet_addr(ipaddr);
 retry:
-	if (try) port++;
+	if (attempt) port++;
 	((struct sockaddr_in *)(notify_ctx->addr))->sin_port = htons(port);
 
 	notify_ctx->fd = socket(PF_INET, SOCK_DGRAM, IPPROTO_UDP);
@@ -658,8 +658,8 @@ retry:
 	if (bind(notify_ctx->fd, notify_ctx->addr, sizeof(struct sockaddr)) == -1) {
 		shutdown(notify_ctx->fd, SHUT_RDWR);
 		close(notify_ctx->fd);
-		if (try < 3) {
-			try++;
+		if (attempt < 3) {
+			attempt++;
 			errno = 0;
 			goto retry;
 		}
@@ -887,7 +887,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		*offset = ndr->offset;
 		sbin = talloc_zero(mem_ctx, struct Binary_r);
 		sbin->cb = pt_binary.cb;
-		sbin->lpb = talloc_memdup(sbin, pt_binary.lpb, pt_binary.cb);
+		sbin->lpb = (uint8_t *)talloc_memdup(sbin, pt_binary.lpb, pt_binary.cb);
 		talloc_free(ndr);
 		return (const void *) sbin;
 	case PT_MV_LONG:
@@ -931,7 +931,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		MVbin->lpbin = talloc_array(mem_ctx, struct Binary_r, pt_MVbin.cValues);
 		for (i = 0; i < MVbin->cValues; i++) {
 			MVbin->lpbin[i].cb = pt_MVbin.bin[i].cb;
-			MVbin->lpbin[i].lpb = talloc_size(mem_ctx, MVbin->lpbin[i].cb);
+			MVbin->lpbin[i].lpb = (uint8_t *)talloc_size(mem_ctx, MVbin->lpbin[i].cb);
 			memcpy(MVbin->lpbin[i].lpb, pt_MVbin.bin[i].lpb, MVbin->lpbin[i].cb);
 		}
 		talloc_free(ndr);
@@ -967,6 +967,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	struct SPropValue	*p_propval;
 	uint32_t		i_propval;
 	uint32_t		i_tag;
+	int			proptag;
 	uint32_t		cn_tags;
 	uint32_t		offset = 0;
 	const void		*data;
@@ -979,8 +980,10 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 	for (i_tag = 0; i_tag < cn_tags; i_tag++) {
 		if (flag) { 
 			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
-				tags->aulPropTag[i_tag] &= 0xFFFF0000;
-				tags->aulPropTag[i_tag] |= PT_ERROR;
+				proptag = (int)tags->aulPropTag[i_tag];
+				proptag &= 0xFFFF0000;
+				proptag |= PT_ERROR;
+				tags->aulPropTag[i_tag] = (enum MAPITAGS) proptag;
 			}
 			offset += sizeof (uint8_t);
 		}
@@ -998,7 +1001,7 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	(*propvals)[i_propval].ulPropTag = 0x0;
+	(*propvals)[i_propval].ulPropTag = (enum MAPITAGS) 0x0;
 	*cn_propvals = i_propval;
 	return MAPI_E_SUCCESS;
 }
@@ -1026,6 +1029,7 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 {
 	struct SRow		*rows;
 	struct SPropValue	*lpProps;
+	int			proptag;
 	uint32_t		idx;
 	uint32_t		prop;
 	uint32_t		offset = 0;
@@ -1064,8 +1068,10 @@ _PUBLIC_ void emsmdb_get_SRowSet(TALLOC_CTX *mem_ctx,
 					break;
 				case PT_ERROR:
 					lpProps[prop].ulPropTag = proptags->aulPropTag[prop];
-					lpProps[prop].ulPropTag &= 0xFFFF0000;
-					lpProps[prop].ulPropTag |= PT_ERROR;
+					proptag = (int) lpProps[prop].ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag |= PT_ERROR;
+					lpProps[prop].ulPropTag = (enum MAPITAGS) proptag;
 					break;
 				default:
 					/* unknown FlaggedPropertyValue flag */
@@ -1116,7 +1122,8 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 {
 	uint32_t		i;
 	uint32_t		offset = 0;
-	uint32_t		aulPropTag = 0;
+	enum MAPITAGS		aulPropTag = (enum MAPITAGS) 0;
+	int			proptag;
 	const void		*data;
 
 	aRow->cValues = propcount;
@@ -1126,8 +1133,10 @@ void emsmdb_get_SRow(TALLOC_CTX *mem_ctx,
 		aulPropTag = proptags->aulPropTag[i];
 		if (flag) {
 			if (((uint8_t)(*(content->data + offset))) == PT_ERROR) {
-				aulPropTag &= 0xFFFF0000;
-				aulPropTag |= 0xA;			
+				proptag = (int) aulPropTag;
+				proptag &= 0xFFFF0000;
+				proptag |= 0xA;			
+				aulPropTag = (enum MAPITAGS)proptag;
 			}
 			offset += align;
 		} 

@@ -2,7 +2,7 @@
    OpenChange MAPI implementation.
    libmapi private header file
 
-   Copyright (C) Julien Kerihuel 2010.
+   Copyright (C) Julien Kerihuel 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 #include "config.h"
 
+#define __STDC_FORMAT_MACROS	1
 #include <inttypes.h>
 
 #if defined(HAVE_PTHREADS)

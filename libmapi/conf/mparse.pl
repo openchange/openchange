@@ -6,7 +6,7 @@
 #
 # Perl code based on pidl one from Andrew Tridgell and the Samba team
 #
-# Copyright (C) Julien Kerihuel 2005-2008
+# Copyright (C) Julien Kerihuel 2005-2011
 # released under the GNU GPL
 
 use strict;
@@ -527,8 +527,8 @@ sub mapicodes_interface($)
     mparse "";
     mparse "struct mapi_retval {";
     indent;
-    mparse "uint32_t	err;";
-    mparse "const char	*name;";
+    mparse "enum MAPISTATUS		err;";
+    mparse "const char		*name;";
     deindent;
     mparse "};";
     mparse "";
@@ -540,16 +540,16 @@ sub mapicodes_interface($)
 	$line =~ s/^\#+.*$//;
 	if ($line) {
 	    @errors = split(/\s+/, $line);
-	    mparse sprintf "{ %8s, \"%s\" },", $errors[0], $errors[1];
+	    mparse sprintf "{ %8s, \"%s\" },", $errors[1], $errors[1];
 	}
     }
 
 
-    mparse " { 0x00000000, NULL }";
+    mparse " { MAPI_E_RESERVED, NULL }";
     deindent;
     mparse "};";
     mparse "";
-    mparse "_PUBLIC_ void mapi_errstr(const char *function, uint32_t mapi_code)";
+    mparse "_PUBLIC_ void mapi_errstr(const char *function, enum MAPISTATUS mapi_code)";
     mparse "{";
     indent;
     mparse "struct ndr_print	ndr_print;";
@@ -561,7 +561,7 @@ sub mapicodes_interface($)
     deindent;
     mparse "}";
     mparse "";
-    mparse "_PUBLIC_ const char *mapi_get_errstr(uint32_t mapi_code)";
+    mparse "_PUBLIC_ const char *mapi_get_errstr(enum MAPISTATUS mapi_code)";
     mparse "{";
     indent;
     mparse "uint32_t i;";

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
    Copyright (C) Brad Hards 2008.
 
    This program is free software; you can redistribute it and/or modify
@@ -1058,7 +1058,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
 	proptags[0]->aulPropTag = (enum MAPITAGS *) talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
 	for (i = 0; i < proptags[0]->cValues; i++) {
-		proptags[0]->aulPropTag[i] = (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED;
+	  proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
 	}
 	
 	talloc_free(mapi_response);

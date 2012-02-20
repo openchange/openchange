@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -656,7 +656,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	}
 	request.ulFolderType = ulFolderType;
 	size += sizeof(uint16_t);
-	request.ulFlags = ulFlags & 0xFFFF;
+	request.ulFlags = (enum FOLDER_FLAGS)((int)ulFlags & 0xFFFF);
 	size += sizeof(uint16_t);
 
 	switch (request.ulType) {

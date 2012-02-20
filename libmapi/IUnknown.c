@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -173,7 +173,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 */
 _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {
-	return errno;
+  return (enum MAPISTATUS)errno;
 }
 
 

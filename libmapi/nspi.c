@@ -1,7 +1,7 @@
 /*
    OpenChange NSPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2008.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -147,7 +147,7 @@ int nspi_disconnect_dtor(void *data)
 	enum MAPISTATUS		retval;
 	struct mapi_provider	*provider = (struct mapi_provider *) data;
 
-	retval = nspi_unbind(provider->ctx);
+	retval = nspi_unbind((struct nspi_context *)provider->ctx);
 	return retval;
 }
 

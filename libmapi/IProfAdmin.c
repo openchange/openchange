@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2010.
+   Copyright (C) Julien Kerihuel 2007-2011.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -258,7 +258,7 @@ static enum MAPISTATUS ldb_copy_profile(TALLOC_CTX *mem_ctx,
 	struct ldb_result		*res_dest;
 	struct ldb_message		*msg;
 	const char * const		attrs[] = { "*", NULL };
-	int				i;
+	uint32_t			i;
 	char				*dn;
 	struct ldb_message_element	*el;
 	struct ldb_dn			*basedn;
@@ -1625,7 +1625,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszW = username;
 
-	Filter.rt = RES_PROPERTY;
+	Filter.rt = (enum RestrictionType_r)RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;
 	Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
 	Filter.res.resProperty.lpProp = lpProp;

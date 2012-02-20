@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2010.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
    Copyright (C) Gregory Schiro 2006
 
    This program is free software; you can redistribute it and/or modify
@@ -81,7 +81,7 @@ _PUBLIC_ struct SPropTagArray *set_SPropTagArray(TALLOC_CTX *mem_ctx,
 */
 _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx, 
 					   struct SPropTagArray *SPropTagArray, 
-					   uint32_t aulPropTag)
+					   enum MAPITAGS aulPropTag)
 {
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -92,7 +92,7 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 	SPropTagArray->aulPropTag = (enum MAPITAGS *) talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
 								     uint32_t, SPropTagArray->cValues + 1);
 	SPropTagArray->aulPropTag[SPropTagArray->cValues - 1] = aulPropTag;
-	SPropTagArray->aulPropTag[SPropTagArray->cValues] = 0;
+	SPropTagArray->aulPropTag[SPropTagArray->cValues] = (enum MAPITAGS) 0;
 
 	return MAPI_E_SUCCESS;
 }
@@ -275,7 +275,7 @@ enum MAPITAGS *get_MAPITAGS_SRow(TALLOC_CTX *mem_ctx,
 			idx++;
 		}
 	}
-	mapitags[idx] = 0;
+	mapitags[idx] = (enum MAPITAGS) 0;
 	*actual_count = idx;
 
 	return mapitags;
@@ -299,7 +299,7 @@ uint32_t MAPITAGS_delete_entries(enum MAPITAGS *mapitags, uint32_t final_count, 
 			if (aulPropTag == (uint32_t)mapitags[count]) {
 				final_count -= 1;
 				for (j = count; mapitags[j]; j++) {
-					mapitags[j] = (mapitags[j+1]) ? mapitags[j+1] : 0;
+				  mapitags[j] = (mapitags[j+1]) ? mapitags[j+1] : (enum MAPITAGS) 0;
 				}
 			}
 		}
@@ -432,7 +432,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	}
 }
 
-_PUBLIC_ bool set_SPropValue_proptag(struct SPropValue *lpProps, uint32_t aulPropTag, const void *data)
+_PUBLIC_ bool set_SPropValue_proptag(struct SPropValue *lpProps, enum MAPITAGS aulPropTag, const void *data)
 {
 	lpProps->ulPropTag = aulPropTag;
 	lpProps->dwAlignPad = 0x0;
@@ -583,7 +583,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.ft = *((const struct FILETIME *) data);
 		break;
 	case PT_ERROR:
-		lpProps->value.err = *((const uint32_t *)data);
+		lpProps->value.err = *((enum MAPISTATUS *)data);
 		break;
 	case PT_MV_SHORT:
 		lpProps->value.MVi = *((const struct ShortArray_r *)data);
@@ -872,7 +872,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		
 		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), talloc_autofree_context(), &b);
 		sprop->value.lpguid = talloc_zero(mem_ctx, struct FlatUID_r);
-		sprop->value.lpguid = memcpy(sprop->value.lpguid->ab, b.data, 16);
+		sprop->value.lpguid = (struct FlatUID_r *)memcpy(sprop->value.lpguid->ab, b.data, 16);
 		return (sizeof (struct FlatUID_r));
 	}
 	case PT_SVREID:
@@ -953,7 +953,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 			
 			sprop->value.MVguid.lpguid[i] = talloc_zero(mem_ctx, struct FlatUID_r);
 			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), talloc_autofree_context(), &b);
-			sprop->value.MVguid.lpguid[i] = memcpy(sprop->value.MVguid.lpguid[i]->ab, b.data, sizeof(struct FlatUID_r));
+			sprop->value.MVguid.lpguid[i] = (struct FlatUID_r *)memcpy(sprop->value.MVguid.lpguid[i]->ab, b.data, sizeof(struct FlatUID_r));
 			size += (sizeof (struct FlatUID_r));
 		}
 		return size;
@@ -970,7 +970,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < sprop->value.MVbin.cValues; i++) {
 			sprop->value.MVbin.lpbin[i].cb = mapi_sprop->value.MVbin.bin[i].cb;
 			if (sprop->value.MVbin.lpbin[i].cb) {
-				sprop->value.MVbin.lpbin[i].lpb = talloc_memdup(sprop->value.MVbin.lpbin, 
+			  sprop->value.MVbin.lpbin[i].lpb = (uint8_t *)talloc_memdup(sprop->value.MVbin.lpbin, 
 										mapi_sprop->value.MVbin.bin[i].lpb,
 										mapi_sprop->value.MVbin.bin[i].cb);
 			} else {
@@ -1081,15 +1081,15 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 			propID = props->lpProps[i].ulPropTag;
 			propID = (propID & 0xFFFF0000) | PT_NULL;
 			nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
-			retval = GetNamesFromIDs(obj, propID, &count, &nameid);
+			retval = GetNamesFromIDs(obj, (enum MAPITAGS)propID, &count, &nameid);
 			if (retval != MAPI_E_SUCCESS) goto end;
 
 			if (count) {
 				/* Display property given its propID */
 				switch (nameid->ulKind) {
 				case MNID_ID:
-					props->lpProps[i].ulPropTag = (nameid->kind.lid << 16) | 
-						(props->lpProps[i].ulPropTag & 0x0000FFFF);
+				  props->lpProps[i].ulPropTag = (enum MAPITAGS)((nameid->kind.lid << 16) | 
+										((int)props->lpProps[i].ulPropTag & 0x0000FFFF));
 					break;
 				case MNID_STRING:
 					/* MNID_STRING named properties don't have propIDs */
@@ -1200,11 +1200,11 @@ _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx,
         }
 	
 	/*Copy DeletedInstanceDates and ModifiedInstanceDates into memory*/ 
-	RecurrencePattern->DeletedInstanceDates=talloc_memdup(mem_ctx, RecurrencePattern->DeletedInstanceDates, 
-							      sizeof(uint32_t) * RecurrencePattern->DeletedInstanceCount);
+	RecurrencePattern->DeletedInstanceDates = (uint32_t *) talloc_memdup(mem_ctx, RecurrencePattern->DeletedInstanceDates, 
+									     sizeof(uint32_t) * RecurrencePattern->DeletedInstanceCount);
 							      
-	RecurrencePattern->ModifiedInstanceDates=talloc_memdup(mem_ctx, RecurrencePattern->ModifiedInstanceDates, 
-							      sizeof(uint32_t) * RecurrencePattern->ModifiedInstanceCount);
+	RecurrencePattern->ModifiedInstanceDates = (uint32_t *) talloc_memdup(mem_ctx, RecurrencePattern->ModifiedInstanceDates, 
+									      sizeof(uint32_t) * RecurrencePattern->ModifiedInstanceCount);
 	
 	/*Set reference to parent so arrays get free with RecurrencePattern struct*/
 	RecurrencePattern->DeletedInstanceDates=talloc_reference(RecurrencePattern, RecurrencePattern->DeletedInstanceDates);
@@ -1298,17 +1298,17 @@ _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(T
                 return NULL;
         }
 
-	/*Copy ExceptionInfo array into memory*/ 
-	arp->ExceptionInfo=talloc_memdup(mem_ctx,arp->ExceptionInfo, sizeof(struct ExceptionInfo) * arp->ExceptionCount);
+	/* Copy ExceptionInfo array into memory */ 
+	arp->ExceptionInfo = (struct ExceptionInfo *) talloc_memdup(mem_ctx,arp->ExceptionInfo, sizeof(struct ExceptionInfo) * arp->ExceptionCount);
 	
-	/*Copy DeletedInstanceDates and ModifiedInstanceDates into memory*/ 
-	arp->RecurrencePattern.DeletedInstanceDates=talloc_memdup(mem_ctx, arp->RecurrencePattern.DeletedInstanceDates, 
-							      sizeof(uint32_t) * arp->RecurrencePattern.DeletedInstanceCount);
+	/* Copy DeletedInstanceDates and ModifiedInstanceDates into memory */ 
+	arp->RecurrencePattern.DeletedInstanceDates = (uint32_t *) talloc_memdup(mem_ctx, arp->RecurrencePattern.DeletedInstanceDates, 
+										 sizeof(uint32_t) * arp->RecurrencePattern.DeletedInstanceCount);
 							      
-	arp->RecurrencePattern.ModifiedInstanceDates=talloc_memdup(mem_ctx, arp->RecurrencePattern.ModifiedInstanceDates, 
-							      sizeof(uint32_t) * arp->RecurrencePattern.ModifiedInstanceCount);
+	arp->RecurrencePattern.ModifiedInstanceDates = (uint32_t *) talloc_memdup(mem_ctx, arp->RecurrencePattern.ModifiedInstanceDates, 
+										  sizeof(uint32_t) * arp->RecurrencePattern.ModifiedInstanceCount);
 	
-	/*Set reference to parent so arrays get free with rest*/
+	/* Set reference to parent so arrays get free with rest */
 	arp->ExceptionInfo = talloc_reference(arp, arp->ExceptionInfo);
 	arp->RecurrencePattern.DeletedInstanceDates = talloc_reference(arp,arp->RecurrencePattern.DeletedInstanceDates);
 	arp->RecurrencePattern.ModifiedInstanceDates = talloc_reference(arp, arp->RecurrencePattern.ModifiedInstanceDates);

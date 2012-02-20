@@ -296,6 +296,7 @@ _PUBLIC_ uint32_t module_oxcfxics_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "COPYTO", "Test CopyTo operation", mapitest_oxcfxics_CopyTo);
 	mapitest_suite_add_test(suite, "COPYPROPS", "Test CopyProperties operation", mapitest_oxcfxics_CopyProperties);
 	mapitest_suite_add_test(suite, "DEST-CONFIGURE", "Test Destination Configure operation", mapitest_oxcfxics_DestConfigure);
+	mapitest_suite_add_test(suite, "SYNC-CONFIGURE", "Configure ICS context for download", mapitest_oxcfxics_SyncConfigure);
 
 	mapitest_suite_register(mt, suite);
 

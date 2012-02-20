@@ -945,7 +945,7 @@ System Attendant Private Interface
 	} mapi_MV_LONG_STRUCT;
 
 	typedef struct {
-		astring lppszA;
+		raw8string lppszA;
 	} mapi_LPSTR;
 
 	typedef [public] struct {
@@ -1067,7 +1067,7 @@ System Attendant Private Interface
 		[case(PT_ERROR)]       	uint32			err;
 		[case(PT_BOOLEAN)]	uint8			b;
 		[case(PT_I8)]		dlong			d;
-		[case(PT_STRING8)]	astring			lpszA;
+		[case(PT_STRING8)]	raw8string		lpszA;
 		[case(PT_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
 		[case(PT_SYSTIME)]	FILETIME		ft;
 		[case(PT_CLSID)]	GUID			lpguid;
@@ -1154,8 +1154,8 @@ System Attendant Private Interface
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
 		[case(0x1)];
-		[case(0x2)] astring			lpszA;
-		[case(0x3)] astring			lpszW_reduced;
+		[case(0x2)] raw8string			lpszA;
+		[case(0x3)] raw8string			lpszW_reduced;
 		[case(0x4)] [flag(STR_NULLTERM)] string	lpszW;
 	} String;
 
@@ -1236,19 +1236,19 @@ System Attendant Private Interface
 	} recipient_AddressType;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x400)] astring				lpszA;
+		[case(0x400)] raw8string			lpszA;
 		[case(0x600)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_SimpleDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x20)] astring				lpszA;
+		[case(0x20)] raw8string				lpszA;
 		[case(0x220)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_TransmittableDisplayName;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x10)] astring				lpszA;
+		[case(0x10)] raw8string				lpszA;
 		[case(0x210)][flag(STR_NULLTERM)] string	lpszW;
 		[default];
 	} recipient_DisplayName;
@@ -1864,7 +1864,7 @@ System Attendant Private Interface
 	} FOLDER_STRING;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(MAPI_FOLDER_ANSI)] astring			lpszA;
+		[case(MAPI_FOLDER_ANSI)] raw8string			lpszA;
 		[case(MAPI_FOLDER_UNICODE)][flag(STR_NULLTERM)] string	lpszW;
 	} LPTSTR;
 
@@ -2018,7 +2018,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x26 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		fid;
-		astring		lpszMessageClass;
+		raw8string	lpszMessageClass;
 	} SetReceiveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2087,7 +2087,7 @@ System Attendant Private Interface
 	} MsgFlags;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)] astring			lpszA;
+		[case(0x0)] raw8string			lpszA;
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
 	} MessageClass;
 
@@ -2505,7 +2505,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x35 */
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0)] astring			lpszA;
+		[case(0x0)] raw8string			lpszA;
 		[case(0x1)][flag(STR_NULLTERM)] string	lpszW;
 	} Folder_name;
 
@@ -3304,7 +3304,7 @@ System Attendant Private Interface
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
-		[default]  astring	HelpFileName;
+		[default]  raw8string	HelpFileName;
 	} OptionsData_HelpFileName;
 
 	typedef [flag(NDR_NOALIGN)] struct {

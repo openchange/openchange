@@ -798,25 +798,25 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 				 DATA_BLOB *data)
 {
 	struct ndr_pull			*ndr;
-	const char			*pt_string8;
-	const char			*pt_unicode;
-	uint16_t			*pt_i2;
-	uint64_t			*pt_i8;
-	uint32_t			*pt_long;
-	uint8_t				*pt_boolean;
-	double				*pt_double;
-	struct FILETIME			*pt_filetime;
-	struct GUID			*pt_clsid;
+	const char			*pt_string8 = NULL;
+	const char			*pt_unicode = NULL;
+	uint16_t			*pt_i2 = NULL;
+	uint64_t			*pt_i8 = NULL;
+	uint32_t			*pt_long = NULL;
+	uint8_t				*pt_boolean = NULL;
+	double				*pt_double = NULL;
+	struct FILETIME			*pt_filetime = NULL;
+	struct GUID			*pt_clsid = NULL;
 	struct SBinary_short		pt_binary;
-	struct Binary_r			*sbin;
+	struct Binary_r			*sbin = NULL;
 	struct mapi_SLPSTRArray		pt_slpstr;
-	struct StringArray_r		*slpstr;
+	struct StringArray_r		*slpstr = NULL;
 	struct mapi_SLPSTRArrayW	pt_slpstrw;
 	struct StringArrayW_r		*slpstrw = NULL;
 	struct mapi_MV_LONG_STRUCT	pt_MVl;
-	struct LongArray_r		*MVl;
+	struct LongArray_r		*MVl = NULL;
 	struct mapi_SBinaryArray	pt_MVbin;
-	struct BinaryArray_r		*MVbin;
+	struct BinaryArray_r		*MVbin = NULL;
 	uint32_t			i;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
@@ -864,7 +864,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		talloc_free(ndr);
 		return (const void *) pt_unicode;
 	case PT_STRING8:
-		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM);
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_RAW8|LIBNDR_FLAG_STR_NULLTERM);
 		ndr_pull_string(ndr, NDR_SCALARS, &pt_string8);
 		*offset = ndr->offset;
 		talloc_free(ndr);

@@ -80,6 +80,9 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 	if ((ulPropTag & 0xFFFF) == PT_UNICODE) {
 		ulPropTag &= 0xFFFF0000;
 		ulPropTag += PT_STRING8;
+	} else if ((ulPropTag & 0xFFFF) == PT_MV_STRING8) {
+		ulPropTag &= 0xFFFF0000;
+		ulPropTag += PT_MV_UNICODE;
 	}
 
 	for (i = 0; emsabp_property[i].attribute; i++) {

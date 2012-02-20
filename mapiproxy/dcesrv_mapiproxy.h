@@ -40,6 +40,7 @@
 #include <samba/session.h>
 
 #include <dcerpc_server.h>
+#include <samba_util.h>
 #include <param.h>
 #include <credentials.h>
 

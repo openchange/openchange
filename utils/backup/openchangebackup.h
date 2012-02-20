@@ -34,6 +34,7 @@
 #include <inttypes.h>
 
 /* Samba4 includes */
+#include <samba_util.h>
 #include <talloc.h>
 #include <ldb_errors.h>
 #include <ldb.h>

@@ -127,7 +127,7 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel,
-			       uint8_t exchange_version)
+			       uint8_t exchange_version, const char *kerberos)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_context	*mapi_ctx;
@@ -224,6 +224,10 @@ static bool mapiprofile_create(const char *profdb, const char *profname,
 
 	talloc_free(cpid_str);
 	talloc_free(lcid_str);
+
+	if (kerberos) {
+		mapi_profile_add_string_attr(mapi_ctx, profname, "kerberos", kerberos);
+	}
 
 	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
@@ -609,6 +613,7 @@ int main(int argc, const char *argv[])
 	const char	*rename = NULL;
 	const char	*attribute = NULL;
 	const char	*opt_tmp = NULL;
+	const char	*opt_krb = NULL;
 	const char	*version = NULL;
 	uint32_t	nopass = 0;
 	char		hostname[256];
@@ -620,7 +625,7 @@ int main(int argc, const char *argv[])
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
-	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION};
+	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -651,6 +656,7 @@ int main(int argc, const char *argv[])
 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL},
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
+		{"kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KRB, "specify kerberos behavior (guess by default)", "{yes|no}"},
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
@@ -757,6 +763,9 @@ int main(int argc, const char *argv[])
 		case OPT_GETFQDN:
 			getfqdn = true;
 			break;
+		case OPT_KRB:
+			opt_krb = poptGetOptArg(pc);
+			break;
 		}
 	}
 
@@ -793,6 +802,16 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	if (opt_krb) {
+		if (strncmp(opt_krb, "yes", 3) && strncmp(opt_krb, "no", 2)) {
+			fprintf(stderr,
+			        "kerberos value must be 'yes' or 'no'\n");
+			poptPrintUsage(pc, stderr, 0);
+			retcode = EXIT_FAILURE;
+			goto cleanup;
+		}
+	}
+
 	/* Process the code here */
 
 	if (!workstation) {
@@ -803,10 +822,9 @@ int main(int argc, const char *argv[])
 
 	if (create == true) {
 		if (!profname) show_help(pc, "profile");
-		if (!password) show_help(pc, "password");
+		if (!password && !nopass) show_help(pc, "password");
 		if (!username) show_help(pc, "username");
 		if (!address) show_help(pc, "address");
-		if (!domain) show_help(pc, "domain");
 
 		if (!version) {
 			version = talloc_strdup(mem_ctx, DEFAULT_EXCHANGE_VERSION);
@@ -836,7 +854,8 @@ int main(int argc, const char *argv[])
 		if (! mapiprofile_create(profdb, profname, pattern, username, password, address,
 					 language, workstation, domain, realm, nopass, opt_seal, 
 					 opt_dumpdata, opt_debuglevel,
-					 exchange_version[i].version)) {
+					 exchange_version[i].version,
+					 opt_krb)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

@@ -22,6 +22,15 @@
 #ifndef	__MAPISTORE_H
 #define	__MAPISTORE_H
 
+/**
+   \file mapistore.h
+
+   \brief MAPISTORE general API
+   
+   This header contains general functions, primarily for
+   users of the store (rather than storage providers).
+ */
+
 #ifndef	_GNU_SOURCE
 #define	_GNU_SOURCE
 #endif

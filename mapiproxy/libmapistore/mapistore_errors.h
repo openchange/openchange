@@ -22,8 +22,8 @@
 /**
    \file mapistore_errors.h
 
-   \brief This header provides a set of result codes for MAPISTORE
-   function calls.
+   This header provides a set of result codes for MAPISTORE function calls.
+
  */
 
 #ifndef	__MAPISTORE_ERRORS_H

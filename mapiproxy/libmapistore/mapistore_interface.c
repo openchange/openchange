@@ -34,6 +34,7 @@
    \details Initialize the mapistore context
 
    \param mem_ctx pointer to the memory context
+   \param path the path to the location to load the backend providers from (NULL for default)
 
    \return allocate mapistore context on success, otherwise NULL
  */
@@ -159,7 +160,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 
    \param mstore_ctx pointer to the mapistore context
    \param uri the connection context URI
-   \param pointer to the context identifier the function returns
+   \param context_id pointer to the context identifier the function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */

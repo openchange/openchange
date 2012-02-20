@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -152,14 +152,14 @@ NTSTATUS mapiproxy_module_unbind(struct server_id server_id, uint32_t context_id
 
 extern NTSTATUS mapiproxy_module_register(const void *_mp_module)
 {
-	const struct mapiproxy_module	*mp_module =_mp_module;
+	const struct mapiproxy_module	*mp_module = (const struct mapiproxy_module *) _mp_module;
 
 	mp_modules = realloc_p(mp_modules, struct mp_module, num_mp_modules + 1);
 	if (!mp_modules) {
 		smb_panic("out of memory in mapiproxy_register");
 	}
 
-	mp_modules[num_mp_modules].mp_module = smb_xmemdup(mp_module, sizeof (*mp_module));
+	mp_modules[num_mp_modules].mp_module = (struct mapiproxy_module *) smb_xmemdup(mp_module, sizeof (*mp_module));
 	mp_modules[num_mp_modules].mp_module->name = smb_xstrdup(mp_module->name);
 
 	num_mp_modules++;

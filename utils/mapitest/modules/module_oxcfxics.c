@@ -517,12 +517,16 @@ cleanup:
 
 
 /**
-   \details Test the RopSynchronizationConfigure (0x70) operation
+   \details Test the RopSynchronizationConfigure (0x70),
+   RopSynchronizationUploadStateStreamBegin (0x75),
+   RopSynchronizationUploadStateStreamContinue (0x76) and
+   RopSynchronizationUploadStateStreamEnd (0x77) operations
 
    This function:
    -# Log on private message store
    -# Creates a test folder
    -# Sets up sync configure context
+   -# Uploads an empty ICS state
    -# cleans up.
  */
 _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
@@ -533,6 +537,7 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	mapi_object_t		obj_sync_context;
 	mapi_object_t		download_folder;
 	DATA_BLOB		restriction;
+	DATA_BLOB		ics_state;
 	struct SPropTagArray	*property_tags;
 	bool			ret = true;
 
@@ -567,6 +572,30 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 		goto cleanup;
 	}
 
+	ics_state.length = 0;
+	ics_state.data = NULL;
+
+	retval = ICSSyncUploadStateBegin(&obj_sync_context, PidTagIdsetGiven, ics_state.length);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateBegin", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncUploadStateContinue(&obj_sync_context, ics_state);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateContinue", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	retval = ICSSyncUploadStateEnd(&obj_sync_context);
+	mapitest_print_retval_clean(mt, "ICSSyncUploadStateEnd", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	      
 cleanup:
 	/* Cleanup and release */
 	mapi_object_release(&obj_sync_context);

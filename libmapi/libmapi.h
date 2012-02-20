@@ -460,6 +460,9 @@ enum MAPISTATUS		FXCopyProperties(mapi_object_t *, uint8_t, uint32_t, uint8_t, s
 enum MAPISTATUS		FXGetBuffer(mapi_object_t *obj_source_context, uint16_t maxSize, enum TransferStatus *, uint16_t *, uint16_t *, DATA_BLOB *);
 enum MAPISTATUS		FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB *blob, uint16_t *usedSize);
 enum MAPISTATUS		ICSSyncConfigure(mapi_object_t *, enum SynchronizationType, uint8_t, uint16_t, uint32_t, DATA_BLOB, struct SPropTagArray*, mapi_object_t *);
+enum MAPISTATUS		ICSSyncUploadStateBegin(mapi_object_t *, enum StateProperty, uint32_t);
+enum MAPISTATUS		ICSSyncUploadStateContinue(mapi_object_t *, DATA_BLOB);
+enum MAPISTATUS		ICSSyncUploadStateEnd(mapi_object_t *);
 
 /* The following public definitions come from libmapi/freebusy.c */
 enum MAPISTATUS		GetUserFreeBusyData(mapi_object_t *, const char *, struct SRow *);

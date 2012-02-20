@@ -1058,3 +1058,237 @@ _PUBLIC_ enum MAPISTATUS ICSSyncConfigure(mapi_object_t *obj, enum Synchronizati
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+    Initialize an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateContinue and ICSSyncUploadStateEnd)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+    \param state_property the type of ICS state that will be uploaded (see below)
+    \param length the length (in bytes) of the ICS state that will be uploaded
+
+    state_property can be one of the following:
+    - PidTagIdsetGiven
+    - PidTagCnsetSeen
+    - PidTagCnsetSeenFAI
+    - PidTagCnsetRead
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateBegin(mapi_object_t *obj_sync_context,
+						 enum StateProperty state_property,
+						 uint32_t length)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SyncUploadStateStreamBegin_req		request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateBegin");
+	size = 0;
+
+	/* Fill the RopSynchronizationUploadStateBegin operation */
+	request.StateProperty = state_property;
+	size += sizeof(uint32_t);
+	request.TransferBufferSize = length;
+	size += sizeof(uint32_t);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamBegin;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncUploadStateStreamBegin = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+    Send data for an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateBegin and ICSSyncUploadStateEnd)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+    \param state the state data for this part of the upload
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateContinue(mapi_object_t *obj_sync_context, DATA_BLOB state)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SyncUploadStateStreamContinue_req	request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateContinue");
+	size = 0;
+
+	/* Fill the RopSynchronizationUploadStateBegin operation */
+	request.StreamDataSize = state.length;
+	size += sizeof(uint32_t);
+	request.StreamData = state.data;
+	size += state.length;
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamContinue;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncUploadStateStreamContinue = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+    Signal completion of an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateBegin and ICSSyncUploadStateContinue)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateEnd(mapi_object_t *obj_sync_context)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateEnd");
+	size = 0;
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamEnd;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

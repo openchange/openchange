@@ -748,7 +748,7 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = (TALLOC_CTX *) mapi_ctx->session;
+	mem_ctx = mapi_ctx->mem_ctx;
 
 	profile->credentials = cli_credentials_init(mem_ctx);
 	OPENCHANGE_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);

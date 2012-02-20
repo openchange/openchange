@@ -142,6 +142,7 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 	}
 cleanup:
 	/* Cleanup and release */
+	data_blob_free(&put_buffer_data);
 	mapi_object_release(&obj_context);
 	mapi_object_release(&destfolder);
 	mapi_object_release(&obj_htable);

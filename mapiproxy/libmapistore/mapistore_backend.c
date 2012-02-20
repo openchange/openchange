@@ -33,7 +33,6 @@
 #include "mapistore_private.h"
 #include <dlinklist.h>
 
-#include <util.h>
 #include <util/debug.h>
 
 /**

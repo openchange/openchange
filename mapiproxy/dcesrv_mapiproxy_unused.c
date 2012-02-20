@@ -38,7 +38,6 @@
 #include "gen_ndr/exchange.h"
 
 #include <dcerpc_server.h>
-#include <util.h>
 #include <param.h>
 
 #include "gen_ndr/ndr_exchange.h"

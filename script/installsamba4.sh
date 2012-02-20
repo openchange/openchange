@@ -250,13 +250,17 @@ packages() {
 
     for lib in lib/talloc lib/tdb lib/tevent lib/ldb; do
 	echo "Building and installing $lib library"
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	$BUILDTOOLS/scripts/autogen-waf.sh
-	error_check $? "$lib autogen"
-	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
-	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	extra=""
+	if [ "$lib" == "lib/ldb" ]; then
+	    extra="--disable-tdb2"
+	fi
+
+	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
+	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	error_check $? "$lib configure"
 
 	$MAKE -j
@@ -275,6 +279,7 @@ packages() {
 	error_check $? "$lib make distclean"
 
 	popd
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
     done
 }
 
@@ -287,7 +292,8 @@ compile() {
     error_check $? "samba4 setup"
 
     cd $RUNDIR/../samba4
-    ./configure.developer -C --prefix=$SAMBA_PREFIX
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-tdb2
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

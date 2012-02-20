@@ -59,7 +59,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e) -- stub\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

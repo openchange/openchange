@@ -101,14 +101,13 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING, 
 				 mapistore_get_mapping_path(), username);
 	rmctx->tdb = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
-	talloc_set_destructor(rmctx, context_list_destructor);
-	talloc_free(dbpath);
 	if (!rmctx->tdb) {
-		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		DEBUG(3, ("[%s:%d]: %s (%s)\n", __FUNCTION__, __LINE__, strerror(errno), dbpath));
 		talloc_free(rmctx);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
+	talloc_set_destructor(rmctx, context_list_destructor);
 	rmctx->username = talloc_strdup(rmctx, username);
 	rmctx->ref_count = 0;
 	DLIST_ADD_END(mstore_ctx->replica_mapping_list, rmctx, struct replica_mapping_context_list *);

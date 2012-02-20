@@ -339,6 +339,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
 			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 		}
 	}
 
@@ -413,6 +414,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
 			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			if (i == EMSMDBP_INBOX) {
 				/* set INBOX as receive folder for "All", "IPM", "Report.IPM" */
@@ -469,6 +471,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
 			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
+			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 
 			/* set entryid on mailbox and inbox */
 			folder_entryid.FolderGlobalCounter.value = (current_fid >> 16);
@@ -518,6 +521,11 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 				openchangedb_create_folder(emsmdbp_ctx->oc_ctx, ipm_fid, current_fid, current_cn, mapistore_url, -1);
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+
+				/* instantiate the new folder in the backend to make sure it is initialized properly */
+				retval = mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
+				mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
+				mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 			}
 			else {
 				/* DEBUG(5, ("secondary entry '%s' already exists\n", current_entry->url)); */

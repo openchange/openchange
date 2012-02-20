@@ -672,6 +672,14 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
+   When using this function, take care to ensure that the properties
+   that are present on the first row in the rowset are also present
+   in all the following rows. If any are missing, this function will
+   suffer NDR errors. This includes making sure that any string
+   properties are present in the same encoding (e.g. if you use
+   PR_SMTP_ADDRESS_UNICODE on the first row, don't provide
+   PR_SMTP_ADDRESS on subsequent rows).
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized

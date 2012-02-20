@@ -23,6 +23,8 @@
 
 #include "config.h"
 
+#include <inttypes.h>
+
 #if defined(HAVE_PTHREADS)
 #include <pthread.h>
 #elif defined(HAVE_GTHREAD)
@@ -31,24 +33,6 @@
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
-
-/* These are essentially local versions of part of the 
-   C99 __STDC_FORMAT_MACROS */
-#ifndef PRIx64
-#if __WORDSIZE == 64
-  #define PRIx64        "lx"
-#else
-  #define PRIx64        "llx"
-#endif
-#endif
-
-#ifndef PRIX64
-#if __WORDSIZE == 64
-  #define PRIX64        "lX"
-#else
-  #define PRIX64        "llX"
-#endif
-#endif
 
 /* This provides a "we need to fix this problem" signal
    in development builds, but not in release builds */

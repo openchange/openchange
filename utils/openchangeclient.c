@@ -126,7 +126,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 		MAPI_RETVAL_IF(retval, GetLastError(), folder);
 
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x2,
-						  PR_DISPLAY_NAME,
+						  PR_DISPLAY_NAME_UNICODE,
 						  PR_FID);
 		retval = SetColumns(&obj_htable, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
@@ -136,7 +136,6 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
 				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
 				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME_UNICODE);
-
 				if (name && fid && !strcmp(name, folder[i])) {
 					retval = OpenFolder(&obj_folder, *fid, obj_child);
 					MAPI_RETVAL_IF(retval, retval, folder);
@@ -576,7 +575,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	uint32_t		last;
 	struct SPropValue	SPropValue;
 
-	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 2);
+	SRowSet->aRow = talloc_realloc(mem_ctx, SRowSet->aRow, struct SRow, SRowSet->cRows + 1);
 	last = SRowSet->cRows;
 	SRowSet->aRow[last].cValues = 0;
 	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
@@ -592,27 +591,27 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_GIVEN_NAME */
-	SPropValue.ulPropTag = PR_GIVEN_NAME;
+	SPropValue.ulPropTag = PR_GIVEN_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_DISPLAY_NAME;
+	SPropValue.ulPropTag = PR_DISPLAY_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_7BIT_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
+	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_SMTP_ADDRESS */
-	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
+	SPropValue.ulPropTag = PR_SMTP_ADDRESS_UNICODE;
 	SPropValue.value.lpszA = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_ADDRTYPE */
-	SPropValue.ulPropTag = PR_ADDRTYPE;
+	SPropValue.ulPropTag = PR_ADDRTYPE_UNICODE;
 	SPropValue.value.lpszA = "SMTP";
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
@@ -623,7 +622,7 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 }
 
 static bool set_usernames_RecipientType(TALLOC_CTX *mem_ctx, uint32_t *index, struct SRowSet *rowset, 
-					char **usernames, struct SPropTagArray *flaglist,
+					char **usernames, struct PropertyTagArray_r *flaglist,
 					enum ulRecipClass RecipClass)
 {
 	uint32_t	i;
@@ -749,20 +748,20 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 						 mapi_object_t *obj_store, 
 						 struct oclient *oclient)
 {
-	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray;
-	struct SPropValue	SPropValue;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	mapi_id_t		id_outbox;
-	mapi_object_t		obj_outbox;
-	mapi_object_t		obj_message;
-	mapi_object_t		obj_stream;
-	uint32_t		index = 0;
-	uint32_t		msgflag;
-	struct SPropValue	props[SETPROPS_COUNT];
-	uint32_t		prop_count = 0;
-	uint32_t		editor = 0;
+	enum MAPISTATUS			retval;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		SPropValue;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	mapi_id_t			id_outbox;
+	mapi_object_t			obj_outbox;
+	mapi_object_t			obj_message;
+	mapi_object_t			obj_stream;
+	uint32_t			index = 0;
+	uint32_t			msgflag;
+	struct SPropValue		props[SETPROPS_COUNT];
+	uint32_t			prop_count = 0;
+	uint32_t			editor = 0;
 
 	mapi_object_init(&obj_outbox);
 	mapi_object_init(&obj_message);

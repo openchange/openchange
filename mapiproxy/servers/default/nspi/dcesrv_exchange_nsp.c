@@ -1036,19 +1036,20 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 				    TALLOC_CTX *mem_ctx,
 				    struct NspiResolveNames *r)
 {
-	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
-	struct emsabp_context	*emsabp_ctx = NULL;
-	struct ldb_message	*ldb_msg_ab;
-	struct SPropTagArray	*pPropTags;
-	const char		*purportedSearch;
-	struct SPropTagArray	*pMIds = NULL;
-	struct SRowSet		*pRows = NULL;
-	struct StringsArray_r	*paStr;
-	uint32_t		i;
-	int			ret;
-	const char * const	recipient_attrs[] = { "*", NULL };
-	const char * const	search_attr[] = { "mailNickName", "mail", "name",
-						  "displayName", "givenName", "sAMAccountName", "proxyAddresses" };
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	struct ldb_message		*ldb_msg_ab;
+	struct SPropTagArray		*pPropTags;
+	const char			*purportedSearch;
+	struct PropertyTagArray_r	*pMIds = NULL;
+	struct SRowSet			*pRows = NULL;
+	struct StringsArray_r		*paStr;
+	uint32_t			i;
+	int				ret;
+	const char * const		recipient_attrs[] = { "*", NULL };
+	const char * const		search_attr[] = { "mailNickName", "mail", "name",
+							  "displayName", "givenName", 
+							  "sAMAccountName", "proxyAddresses" };
 
 	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13)\n"));
 
@@ -1088,9 +1089,9 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 
 	/* Allocate output MIds */
 	paStr = r->in.paStr;
-	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paStr->Count;
-	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
@@ -1155,7 +1156,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	struct ldb_message		*ldb_msg_ab;
 	struct SPropTagArray		*pPropTags;
 	const char			*purportedSearch;
-	struct SPropTagArray		*pMIds = NULL;
+	struct PropertyTagArray_r	*pMIds = NULL;
 	struct SRowSet			*pRows = NULL;
 	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
@@ -1204,9 +1205,9 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 
 	/* Allocate output MIds */
 	paWStr = r->in.paWStr;
-	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paWStr->Count;
-	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);

@@ -933,15 +933,19 @@ _PUBLIC_ bool mapitest_nspi_GetIDsFromNames(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray	*flaglist = NULL;
-	const char     		*username[2];
+	enum MAPISTATUS			retval;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	const char			*username[2];
+	const char     			*username_err[2];
 
 	/* Build the username array */
 	username[0] = (const char *)mt->profile->mailbox;
 	username[1] = NULL;
+	/* Build the err username array */
+	username_err[0] = talloc_asprintf(mt->mem_ctx, "%s%s", mt->info.szDNPrefix, "nspi_resolve_testcase");
+	username_err[1] = NULL;
 
 	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xd,
 					  PR_ENTRYID,
@@ -958,34 +962,68 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 					  PR_TRANSMITTABLE_DISPLAY_NAME,
 					  PR_7BIT_DISPLAY_NAME);
 
+	/* Test with existing username */
 	/* NspiResolveNames (0x13) */
-	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
-	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
-
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
-	if (retval != MAPI_E_SUCCESS) {
-		mapitest_print_retval_clean(mt, "NspiResolveNames", retval);
-		MAPIFreeBuffer(SPropTagArray);
-		talloc_free(flaglist);
-		talloc_free(SRowSet);
-		return false;
+	mapitest_print_retval_clean(mt, "NspiResolveNames - existing", retval);
+	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
+		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
+	} else {
+		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
 	talloc_free(SRowSet);
-	mapitest_print_retval(mt, "NspiResolveNames");
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
 
 	/* NspiResolveNamesW (0x14) */
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
-	MAPIFreeBuffer(SPropTagArray);
-	mapitest_print_retval_clean(mt, "NspiResolveNamesW", retval);
-	if (retval != MAPI_E_SUCCESS) {
-		talloc_free(flaglist);
-		talloc_free(SRowSet);
-		return false;
+	mapitest_print_retval_clean(mt, "NspiResolveNamesW - existing", retval);
+	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
+		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
+	} else {
+		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
 	talloc_free(SRowSet);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
 
+	/* Test with non-existant username */
+	/* NspiResolveNames (0x13) */
+	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &SRowSet, &flaglist, 0);
+	mapitest_print_retval_clean(mt, "NspiResolveNames - non existant user name", retval);
+	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
+		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
+	} else {
+		mapitest_print(mt, "\tGot expected resolution flag\n");
+	}
+	talloc_free(flaglist);
+	talloc_free(SRowSet);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
+
+	/* NspiResolveNamesW (0x14) */
+	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+	mapitest_print_retval_clean(mt, "NspiResolveNamesW - non existant user name", retval);
+	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
+		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
+	} else {
+		mapitest_print(mt, "\tGot expected resolution flag\n");
+	}
+	talloc_free(flaglist);
+	talloc_free(SRowSet);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
+	MAPIFreeBuffer(SPropTagArray);
 	return true;
 }
 

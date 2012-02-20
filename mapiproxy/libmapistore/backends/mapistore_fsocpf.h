@@ -28,24 +28,7 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <dlinklist.h>
 #include <dirent.h>
-
-/* These are essentially local versions of part of the 
-   C99 __STDC_FORMAT_MACROS */
-#ifndef PRIx64
-#if __WORDSIZE == 64
-  #define PRIx64        "lx"
-#else
-  #define PRIx64        "llx"
-#endif
-#endif
-
-#ifndef PRIX64
-#if __WORDSIZE == 64
-  #define PRIX64        "lX"
-#else
-  #define PRIX64        "llX"
-#endif
-#endif
+#include <inttypes.h>
 
 struct fsocpf_folder {
 	uint64_t			fid;

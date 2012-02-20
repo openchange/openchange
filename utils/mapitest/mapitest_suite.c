@@ -226,7 +226,7 @@ static bool run_test(struct mapitest *mt, struct mapitest_suite *suite, struct m
 			if (ret) {
 				mapitest_stat_add_result(suite, el->name, UnexpectedPass);
 			} else {
-				mapitest_stat_add_result(suite, el->name, ExpectedFail);
+				mapitest_stat_add_result(suite, el->name, ExpectedFailure);
 			}
 		} else {
 			if (ret) {

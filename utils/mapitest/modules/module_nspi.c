@@ -966,6 +966,15 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	/* NspiResolveNames (0x13) */
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
 	mapitest_print_retval_clean(mt, "NspiResolveNames - existing", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
+	if ( ! flaglist) {
+		mapitest_print(mt, "\tNULL flaglist, which wasn't expected\n");
+		MAPIFreeBuffer(SPropTagArray);
+		return false;
+	}
 	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
 		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
 	} else {

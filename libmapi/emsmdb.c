@@ -811,6 +811,8 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	struct Binary_r			*sbin;
 	struct mapi_SLPSTRArray		pt_slpstr;
 	struct StringArray_r		*slpstr;
+	struct mapi_SLPSTRArrayW	pt_slpstrw;
+	struct StringArrayW_r		*slpstrw = NULL;
 	struct mapi_MV_LONG_STRUCT	pt_MVl;
 	struct LongArray_r		*MVl;
 	struct mapi_SBinaryArray	pt_MVbin;
@@ -910,6 +912,17 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		}
 		talloc_free(ndr);
 		return (const void *) slpstr;
+	case PT_MV_UNICODE:
+		ndr_pull_mapi_SLPSTRArrayW(ndr, NDR_SCALARS, &pt_slpstrw);
+		*offset = ndr->offset;
+		slpstrw = talloc_zero(mem_ctx, struct StringArrayW_r);
+		slpstrw->cValues = pt_slpstrw.cValues;
+		slpstrw->lppszW = talloc_array(mem_ctx, const char *, pt_slpstrw.cValues);
+		for (i = 0; i < slpstrw->cValues; i++) {
+			slpstrw->lppszW[i] = talloc_strdup(mem_ctx, pt_slpstrw.strings[i].lppszW);
+		}
+		talloc_free(ndr);
+		return (const void *) slpstrw;
 	case PT_MV_BINARY:
 		ndr_pull_mapi_SBinaryArray(ndr, NDR_SCALARS, &pt_MVbin);
 		*offset = ndr->offset;

@@ -118,7 +118,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	// struct LongArray_r MVl;/* [case(0x1003)] */
 	// struct BinaryArray_r MVbin;/* [case(0x1102)] */
 	// struct FlatUIDArray_r MVguid;/* [case(0x1048)] */
-	// struct WStringArray_r MVszW;/* [case(0x101f)] */
+	// struct StringArrayW_r MVszW;/* [case(0x101f)] */
 	// struct DateTimeArray_r MVft;/* [case(0x1040)] */
 	// uint32_t object;/* [case(0x000d)] */
 #endif

@@ -510,7 +510,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		break;
 
 	case PT_MV_UNICODE:
-                ndr_push_mapi_SPLSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SPLSTRArrayW *) value);
+                ndr_push_mapi_SLPSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SLPSTRArrayW *) value);
 		break;
 
 	case PT_MV_BINARY:

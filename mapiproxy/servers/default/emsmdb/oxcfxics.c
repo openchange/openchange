@@ -161,7 +161,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	enum MAPITAGS		property;
         struct MAPINAMEID       *nameid;
 	struct BinaryArray_r	*bin_array;
-	struct WStringArray_r	*unicode_array;
+	struct StringArrayW_r	*unicode_array;
 	struct ShortArray_r	*short_array;
 	struct LongArray_r	*long_array;
 	struct I8Array_r	*i8_array;

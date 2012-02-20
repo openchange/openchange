@@ -1140,7 +1140,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 					    struct SPropTagArray ***pppMIds)
 {
 	struct NspiResolveNamesW	r;
-	struct WStringsArray_r		*paWStr;
+	struct StringsArrayW_r		*paWStr;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			count;
@@ -1160,7 +1160,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	r.in.Reserved = 0;
 	r.in.pPropTags = pPropTags;
 
-	paWStr = talloc(mem_ctx, struct WStringsArray_r);
+	paWStr = talloc(mem_ctx, struct StringsArrayW_r);
 	paWStr->Count = count;
 	paWStr->Strings = usernames;
 	r.in.paWStr = paWStr;

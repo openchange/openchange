@@ -1157,7 +1157,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	const char			*purportedSearch;
 	struct SPropTagArray		*pMIds = NULL;
 	struct SRowSet			*pRows = NULL;
-	struct WStringsArray_r		*paWStr;
+	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
 	int				ret;
 	const char * const		recipient_attrs[] = { "*", NULL };

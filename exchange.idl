@@ -275,12 +275,12 @@ System Attendant Private Interface
 	typedef struct {
 		[range(0,100000)] uint32			cValues;
 		[string,size_is(cValues),charset(UTF16)] uint16	**lppszW;
-	} WStringArray_r;
+	} StringArrayW_r;
 
 	typedef struct {
 		[range(0,100000)] uint32		       	Count;
 		[string,size_is(Count),charset(UTF16)] uint16  	*Strings[];
-	} WStringsArray_r;
+	} StringsArrayW_r;
 
 	typedef struct {
 		[range(0,100001)] uint32       				cValues;
@@ -346,7 +346,7 @@ System Attendant Private Interface
 		[case(PT_MV_STRING8)]		StringArray_r		MVszA;
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		FlatUIDArray_r		MVguid;
-		[case(PT_MV_UNICODE)]		WStringArray_r		MVszW;
+		[case(PT_MV_UNICODE)]		StringArrayW_r		MVszW;
 		[case(PT_MV_SYSTIME)]		DateTimeArray_r		MVft;
 		[case(PT_NULL)]			uint32			null;
 		[case(PT_OBJECT)]		uint32			object;
@@ -700,7 +700,7 @@ System Attendant Private Interface
 		[in] uint32			Reserved,
 		[in] STAT			*pStat,
 		[in,unique] SPropTagArray      	*pPropTags,
-		[in] WStringsArray_r       	*paWStr,
+		[in] StringsArrayW_r       	*paWStr,
 		[out] SPropTagArray		**ppMIds,
 		[out] SRowSet			**ppRows
 		);
@@ -944,7 +944,7 @@ System Attendant Private Interface
 		uint32 lpl[cValues]; 
 	} mapi_MV_LONG_STRUCT;
 
-	typedef [public] struct {
+	typedef struct {
 		astring lppszA;
 	} mapi_LPSTR;
 
@@ -960,7 +960,7 @@ System Attendant Private Interface
 	typedef [public] struct {
 		uint32 cValues;
 		mapi_LPWSTR strings[cValues];
-	} mapi_SPLSTRArrayW;
+	} mapi_SLPSTRArrayW;
 	
 	typedef [public] struct {
 		uint32		cValues;
@@ -1077,7 +1077,7 @@ System Attendant Private Interface
 		[case(PT_SVREID)]      	SBinary_short		bin;
 		[case(PT_MV_LONG)]	mapi_MV_LONG_STRUCT	MVl;	
 		[case(PT_MV_STRING8)]	mapi_SLPSTRArray	MVszA;
-		[case(PT_MV_UNICODE)]	mapi_SPLSTRArrayW	MVszW;
+		[case(PT_MV_UNICODE)]	mapi_SLPSTRArrayW	MVszW;
 		[case(PT_MV_CLSID)]	mapi_SGuidArray		MVguid;
 		[case(PT_MV_BINARY)]	mapi_SBinaryArray      	MVbin;
 	} mapi_SPropValue_CTR;

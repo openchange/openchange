@@ -230,12 +230,16 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
  */
 _PUBLIC_ NTSTATUS mapiproxy_server_init(struct dcesrv_context *dce_ctx)
 {
-	init_module_fn		*servers;
+	openchange_plugin_init_fn *servers;
 	NTSTATUS		ret;
 
-	servers = load_samba_modules(NULL, "dcerpc_mapiproxy_server");
+	servers = load_openchange_plugins(NULL, "dcerpc_mapiproxy_server");
 
-	run_init_functions(servers);
+	if (servers != NULL) {
+		int i;
+		for (i = 0; servers[i]; i++) { servers[i](); }
+	}
+
 	talloc_free(servers);
 
 	ret = mapiproxy_server_load(dce_ctx);

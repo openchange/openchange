@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008-2010.
+   Copyright (C) Julien Kerihuel 2008-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,7 @@
 
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
+#include "libocpf/ocpf_private.h"
 
 /**
    \file ocpf_api.c
@@ -61,11 +62,17 @@ int ocpf_propvalue_var(struct ocpf_context *ctx,
 		       const char *propname, 
 		       uint32_t proptag, 
 		       const char *variable, 
-		       bool unescape)
+		       bool unescape,
+		       int scope)
 {
 	struct ocpf_var		*vel;
 	struct ocpf_property	*element;
 	uint32_t		aulPropTag;
+	uint32_t		cRows;
+	struct SRow		aRow;
+	struct SPropValue	lpProps;
+	void			*value;
+	int			i;
 
 	if (!ocpf || !ocpf->mem_ctx) return -1;
 	if (!propname && !proptag) return -1;
@@ -78,25 +85,62 @@ int ocpf_propvalue_var(struct ocpf_context *ctx,
 		aulPropTag = get_proptag_value(propname);
 	}
 
-	for (element = ctx->props; element->next; element = element->next) {
-		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
-	}
-
-	for (vel = ctx->vars; vel->next; vel = vel->next) {
-		if (vel->name && !strcmp(vel->name, variable)) {
-			OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), ctx, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
-			element = NULL;
-			element = talloc_zero(ctx->vars, struct ocpf_property);
-			element->aulPropTag = aulPropTag;
-			if (unescape && (((aulPropTag & 0xFFFF) == PT_STRING8) || 
-					 ((aulPropTag & 0xFFFF) == PT_UNICODE))) {
-				element->value = ocpf_write_unescape_string(ctx, vel->value);
-			} else {
-				element->value = vel->value;
-			}
-			DLIST_ADD(ctx->props, element);
-			return OCPF_SUCCESS;
+	switch (scope) {
+	case kw_PROPERTY:
+		for (element = ctx->props; element->next; element = element->next) {
+			OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
 		}
+		for (vel = ctx->vars; vel->next; vel = vel->next) {
+			if (vel->name && !strcmp(vel->name, variable)) {
+				OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), ctx, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
+				element = NULL;
+				element = talloc_zero(ctx->vars, struct ocpf_property);
+				element->aulPropTag = aulPropTag;
+				if (unescape && (((aulPropTag & 0xFFFF) == PT_STRING8) || 
+						 ((aulPropTag & 0xFFFF) == PT_UNICODE))) {
+					element->value = ocpf_write_unescape_string(ctx, vel->value);
+				} else {
+					element->value = vel->value;
+				}
+				DLIST_ADD(ctx->props, element);
+				return OCPF_SUCCESS;
+			}
+		}
+		break;
+	case kw_RECIPIENT:
+		cRows = ctx->recipients->cRows;
+		aRow = ctx->recipients->aRow[cRows];
+		for (i = 0; i < aRow.cValues; i++) {
+			OCPF_RETVAL_IF(aRow.lpProps[i].ulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
+		}
+		for (vel = ctx->vars; vel->next; vel = vel->next) {
+			if (vel->name && !strcmp(vel->name, variable)) {
+				OCPF_RETVAL_IF(vel->propType != (aulPropTag & 0xFFFF), ctx, OCPF_WARN_PROPVALUE_MISMATCH, NULL);
+				lpProps.ulPropTag = aulPropTag;
+				lpProps.dwAlignPad = 0;
+				if (unescape && (((aulPropTag & 0xFFFF) == PT_STRING8) ||
+						 ((aulPropTag & 0xFFFF) == PT_UNICODE))) {
+					value = ocpf_write_unescape_string(ctx, vel->value);
+				} else {
+					value = (void *)vel->value;
+				}
+				set_SPropValue(&lpProps, value);
+
+				if (!aRow.cValues) {
+					aRow.lpProps = talloc_array((TALLOC_CTX *)ctx->recipients->aRow, struct SPropValue, 2);
+				} else {
+					aRow.lpProps = talloc_realloc(aRow.lpProps, aRow.lpProps, 
+								      struct SPropValue, aRow.cValues + 2);
+				}
+				aRow.lpProps[aRow.cValues] = lpProps;
+				aRow.cValues += 1;
+				ctx->recipients->aRow[cRows] = aRow;
+				return OCPF_SUCCESS;
+			}
+		}
+		break;
+	default:
+		break;
 	}
 
 	OCPF_RETVAL_IF(1, ctx, OCPF_WARN_VAR_NOT_REGISTERED, NULL);
@@ -257,43 +301,144 @@ int ocpf_propvalue(struct ocpf_context *ctx,
 		   uint32_t aulPropTag, 
 		   union SPropValue_CTR lpProp, 
 		   uint16_t proptype, 
-		   bool unescape)
+		   bool unescape,
+		   int scope)
 {
 	struct ocpf_property	*element;
 	int			ret;
+	uint32_t		cRows;
+	struct SRow		aRow;
+	struct SPropValue	lpProps;
+	void			*value;
+	int			i;
 
 	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	if (!ctx) return OCPF_ERROR;
 
-	/* Sanity check: do not insert the same property twice */
-	for (element = ctx->props; element->next; element = element->next) {
-		OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
+	switch (scope) {
+	case kw_PROPERTY:
+		/* Sanity check: do not insert the same property twice */
+		for (element = ctx->props; element->next; element = element->next) {
+			OCPF_RETVAL_IF(element->aulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
+		}
+
+		element = NULL;
+		element = talloc_zero(ctx->props, struct ocpf_property);
+		if ((aulPropTag & 0xFFFF) == PT_STRING8) {
+			element->aulPropTag = (aulPropTag & 0xFFFF0000) + PT_UNICODE;
+		} else {
+			element->aulPropTag = aulPropTag;
+		}
+		ret = ocpf_set_propvalue((TALLOC_CTX *)element, ctx, &element->value, 
+					 (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
+		if (ret == -1) {
+			talloc_free(element);
+			return OCPF_ERROR;
+		}
+
+		DLIST_ADD(ctx->props, element);
+		break;
+	case kw_RECIPIENT:
+		cRows = ctx->recipients->cRows;
+		aRow = ctx->recipients->aRow[cRows];
+		for (i = 0; i < aRow.cValues; i++) {
+			OCPF_RETVAL_IF(aRow.lpProps[i].ulPropTag == aulPropTag, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
+		}
+
+		lpProps.ulPropTag = aulPropTag;
+		ret = ocpf_set_propvalue((TALLOC_CTX *)ctx->recipients->aRow, ctx, (const void **)&value, 
+					 (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
+		if (ret == -1) {
+			return OCPF_ERROR;
+		}
+		set_SPropValue(&lpProps, value);
+
+		if (!aRow.cValues) {
+			aRow.lpProps = talloc_array((TALLOC_CTX *)ctx->recipients->aRow, struct SPropValue, 2);
+		} else {
+			aRow.lpProps = talloc_realloc(aRow.lpProps, aRow.lpProps, struct SPropValue, aRow.cValues + 2);
+		}
+		aRow.lpProps[aRow.cValues] = lpProps;
+		aRow.cValues += 1;
+		ctx->recipients->aRow[cRows] = aRow;
+		break;
+	default:
+		break;
 	}
 
-	element = NULL;
-	element = talloc_zero(ctx->props, struct ocpf_property);
-	element->aulPropTag = aulPropTag;
-	ret = ocpf_set_propvalue((TALLOC_CTX *)element, ctx, &element->value, 
-				 (uint16_t)aulPropTag & 0xFFFF, proptype, lpProp, unescape);
-	if (ret == -1) {
-		talloc_free(element);
-		return OCPF_ERROR;
-	}
-
-	DLIST_ADD(ctx->props, element);
 	return OCPF_SUCCESS;
 }
 
+int ocpf_new_recipient(struct ocpf_context *ctx)
+{
+	uint32_t	cRows;
+	
+	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	if (!ctx->recipients || !ctx->recipients->aRow) return OCPF_ERROR;
+
+	ctx->recipients->cRows += 1;
+	cRows = ctx->recipients->cRows;
+
+	ctx->recipients->aRow = talloc_realloc(ctx->recipients->aRow, ctx->recipients->aRow, struct SRow, cRows + 2);
+	ctx->recipients->aRow[cRows].ulAdrEntryPad = 0;
+	ctx->recipients->aRow[cRows].lpProps = NULL;
+	ctx->recipients->aRow[cRows].cValues = 0;
+
+	return OCPF_SUCCESS;
+}
+
+int ocpf_recipient_set_class(struct ocpf_context *ctx, enum ulRecipClass class)
+{
+	struct SPropValue	lpProps;
+	uint32_t		cRows;
+	struct SRow		aRow;
+	int			i;
+
+	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
+	if (!ctx->recipients || !ctx->recipients->aRow) return OCPF_ERROR;
+
+	cRows = ctx->recipients->cRows;
+	aRow = ctx->recipients->aRow[cRows];
+
+	/* Check if PidTagRecipientType has not been declared as a block property */
+	for (i = 0; i < aRow.cValues; i++) {
+		if (aRow.lpProps[i].ulPropTag == PidTagRecipientType) {
+			if (aRow.lpProps[i].value.l == class) {
+				return OCPF_SUCCESS;
+			} else {
+				OCPF_RETVAL_IF(1, ctx, OCPF_WARN_PROP_REGISTERED, NULL);
+			}
+		}
+	}
+
+	lpProps.ulPropTag = PidTagRecipientType;
+	lpProps.dwAlignPad = 0;
+	set_SPropValue(&lpProps, (void *)&class);
+	
+	if (!aRow.cValues) {
+		aRow.lpProps = talloc_array((TALLOC_CTX *)ctx->recipients->aRow, struct SPropValue, 2);
+	} else {
+		aRow.lpProps = talloc_realloc(aRow.lpProps, aRow.lpProps, struct SPropValue, aRow.cValues + 2);
+	}
+
+	aRow.lpProps[aRow.cValues] = lpProps;
+	aRow.cValues += 1;
+	ctx->recipients->aRow[cRows] = aRow;
+
+	return OCPF_SUCCESS;
+}
 
 void ocpf_propvalue_s(struct ocpf_context *ctx,
 		      const char *propname, 
 		      union SPropValue_CTR lpProp, 
 		      uint16_t proptype, 
-		      bool unescape)
+		      bool unescape,
+		      int scope)
 {
 	uint32_t	aulPropTag;
 
 	aulPropTag = get_proptag_value(propname);
-	ocpf_propvalue(ctx, aulPropTag, lpProp, proptype, unescape);
+	ocpf_propvalue(ctx, aulPropTag, lpProp, proptype, unescape, scope);
 }
 
 
@@ -414,7 +559,6 @@ int ocpf_nproperty_add(struct ocpf_context *ctx,
 
 	return OCPF_SUCCESS;
 }
-
 
 /**
    \details Register OCPF message type
@@ -657,22 +801,6 @@ int ocpf_binary_add(struct ocpf_context *ctx, const char *filename, struct Binar
 	bin->cb = read(fd, bin->lpb, sb.st_size);
 
 	close(fd);
-
-	return OCPF_SUCCESS;
-}
-
-int ocpf_recipient_add(struct ocpf_context *ctx, uint8_t recipClass, char *recipient)
-{
-	struct ocpf_recipients	*element;
-
-	if (!ocpf || !ocpf->mem_ctx) return OCPF_ERROR;
-	if (!recipient) return OCPF_ERROR;
-
-	element = talloc_zero(ctx->recipients, struct ocpf_recipients);
-	element->name = talloc_strdup((TALLOC_CTX *)element, recipient);
-	element->class = recipClass;
-
-	DLIST_ADD(ctx->recipients, element);
 
 	return OCPF_SUCCESS;
 }

@@ -764,11 +764,17 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 			propline += " = 0x" + format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
 			propline += ",\n"
 			proplines.append(propline)
+			if entry["DataTypeName"] == "PtypString":
+				propline = "\t" + string.ljust(entry["CanonicalName"] + "_string8", 68)
+				propline += " = 0x" + format(entry["PropertyId"], "04X") + "001E"
+				propline += ",\n"
+				proplines.append(propline)
 			propline = "\t" + string.ljust(entry["CanonicalName"] + "_Error", 68)
 			propline += " = 0x" + format(entry["PropertyId"], "04X") + "000A"
 			propline += ",\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
+	proplines.append("\t" + string.ljust("PR_IPM_PUBLIC_FOLDERS_ENTRYID", 68) + " = 0x66310102,\n")
 	sortedproplines = sorted(proplines)
 	for propline in sortedproplines:
 		f.write(propline)

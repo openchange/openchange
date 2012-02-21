@@ -4,7 +4,7 @@
    OpenChange Project - BULK DATA TRANSFER PROTOCOL operations
 
    Copyright (C) Julien Kerihuel 2008
-   Copyright (C) Brad Hards 2010
+   Copyright (C) Brad Hards 2010-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -60,7 +60,7 @@ _PUBLIC_ bool mapitest_oxcfxics_GetLocalReplicaIds(struct mapitest *mt)
 	}
 	guid = GUID_string(mt->mem_ctx, &ReplGuid);
 	mapitest_print(mt, "* %-35s: %s\n", "ReplGuid", guid);
-	mapitest_print(mt, "* %-35s: %x %x %x %x %x %x\n", "GlobalCount", GlobalCount[0],
+	mapitest_print(mt, "* %-35s: %02x %02x %02x %02x %02x %02x\n", "GlobalCount", GlobalCount[0],
 		       GlobalCount[1], GlobalCount[2], GlobalCount[3], GlobalCount[4],
 		       GlobalCount[5]);
 	talloc_free(guid);
@@ -600,6 +600,83 @@ cleanup:
 	/* Cleanup and release */
 	mapi_object_release(&obj_sync_context);
 	mapi_object_release(&download_folder);
+	mapi_object_release(&obj_htable);
+	mapitest_common_cleanup(mt);
+
+	return ret;
+}
+
+/**
+   \details Test the GetLocalReplicaId (0x7f) and SetLocalReplicaMidsetDeleted (0x93)
+   operations
+
+   This function:
+   -# Log on private message store
+   -# Creates a test folder
+   -# Gets a local replica ID range
+   -# Sets the local replica ID range as deleted (on the test folder)
+   -# cleans up
+ */
+_PUBLIC_ bool mapitest_oxcfxics_SetLocalReplicaMidsetDeleted(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	struct mt_common_tf_ctx	*context;
+	mapi_object_t		obj_htable;
+	struct GUID		ReplGuid;
+	uint8_t			GlobalCount[6];
+	uint8_t			GlobalCountHigh[6];
+	char			*guid;
+	mapi_object_t		testfolder;
+	bool			ret = true;
+
+	/* Logon */
+	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
+		return false;
+	}
+
+	context = mt->priv;
+
+	/* Create test folder */
+	mapi_object_init(&testfolder);
+	retval = CreateFolder(&(context->obj_test_folder), FOLDER_GENERIC,
+			      "ReplicaTestFolder", NULL /*folder comment*/,
+			      OPEN_IF_EXISTS, &testfolder);
+	mapitest_print_retval_clean(mt, "Create ReplicaTestFolder", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+	/* Get the local ID range */
+	retval = GetLocalReplicaIds(&(context->obj_store), 0x101, &ReplGuid, GlobalCount);
+	mapitest_print_retval_clean(mt, "GetLocalReplicaIds", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+	guid = GUID_string(mt->mem_ctx, &ReplGuid);
+	mapitest_print(mt, "* %-35s: %s\n", "ReplGuid", guid);
+	mapitest_print(mt, "* %-35s: %02x %02x %02x %02x %02x %02x\n", "GlobalCount", GlobalCount[0],
+		       GlobalCount[1], GlobalCount[2], GlobalCount[3], GlobalCount[4],
+		       GlobalCount[5]);
+	talloc_free(guid);
+	
+	/* copy the returned global count range, and increment it by the range we asked for, less 1,
+	   since these ranges are inclusive */
+	memcpy(GlobalCountHigh, GlobalCount, 6);
+	GlobalCountHigh[4] += 1; /* 0x100 */
+	
+	/* delete the local ID range */
+	retval = SetLocalReplicaMidsetDeleted(&testfolder, ReplGuid, GlobalCount, GlobalCountHigh);
+	mapitest_print_retval_clean(mt, "SetLocalReplicaMidsetDeleted", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto cleanup;
+	}
+
+cleanup:
+	/* Cleanup and release */
+	mapi_object_release(&testfolder);
 	mapi_object_release(&obj_htable);
 	mapitest_common_cleanup(mt);
 

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,16 +70,11 @@ _PUBLIC_ enum mapistore_error mapistore_set_mapping_path(const char *path)
 
 	/* Step 1. Check if path is valid path */
 	dir = opendir(path);
-	if (!dir) {
-		return MAPISTORE_ERR_NO_DIRECTORY;
-	}
+	MAPISTORE_RETVAL_IF(!dir, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 
 	/* Step 2. TODO: Check for write permissions */
-
-	if (closedir(dir) == -1) {
-		/* FIXME: Should have a better error name here */
-		return MAPISTORE_ERR_NO_DIRECTORY;
-	}
+	/* FIXME: Should have a better error name here */
+	MAPISTORE_RETVAL_IF(closedir(dir) == -1, MAPISTORE_ERR_NO_DIRECTORY, NULL);
 	
 	mem_ctx = talloc_autofree_context();
 	mapping_path = talloc_strdup(mem_ctx, path);
@@ -115,11 +110,12 @@ enum mapistore_error mapistore_init_mapping_context(struct processing_context *p
 	char		*tmp_buf;
 	int		ret;
 
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
-	if (pctx->mapping_ctx) return MAPISTORE_ERR_ALREADY_INITIALIZED;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(pctx->mapping_ctx, MAPISTORE_ERR_ALREADY_INITIALIZED, NULL);
 
 	pctx->mapping_ctx = talloc_zero(pctx, struct id_mapping_context);
-	if (!pctx->mapping_ctx) return MAPISTORE_ERR_NO_MEMORY;
+	MAPISTORE_RETVAL_IF(!pctx->mapping_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_init_mapping_context");
 
@@ -188,7 +184,7 @@ enum mapistore_error mapistore_get_context_id(struct processing_context *pctx, u
 	struct context_id_list	*el;
 
 	/* Sanity checks */
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. The free context list doesn't exist yet */
 	if (!pctx->free_ctx) {
@@ -222,7 +218,7 @@ enum mapistore_error mapistore_free_context_id(struct processing_context *pctx, 
 	struct context_id_list	*el;
 
 	/* Sanity checks */
-	if (!pctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	MAPISTORE_RETVAL_IF(!pctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Step 1. Ensure the list is not corrupted */
 	for (el = pctx->free_ctx; el; el = el->next) {

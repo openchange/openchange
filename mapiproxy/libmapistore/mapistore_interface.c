@@ -116,7 +116,8 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
  */
 _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore_ctx)
 {
-	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	DEBUG(5, ("freeing up mstore_ctx ref: %p\n", mstore_ctx));
 

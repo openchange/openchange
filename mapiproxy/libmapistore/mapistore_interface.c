@@ -430,6 +430,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Error receiving message";
 	case MAPISTORE_ERR_DENIED:
 		return "Insufficient rights to perform the operation";
+	case MAPISTORE_ERR_NOT_IMPLEMENTED:
+		return "Not implemented";
 	}
 
 	return "Unknown error";

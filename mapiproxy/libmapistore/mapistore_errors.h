@@ -158,7 +158,12 @@ enum mapistore_error {
 /** 
     The operation required privileges that the user does not have
 */
-	MAPISTORE_ERR_DENIED = 20
+	MAPISTORE_ERR_DENIED = 20,
+
+/**
+   The function is not implemented
+*/
+	MAPISTORE_ERR_NOT_IMPLEMENTED
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

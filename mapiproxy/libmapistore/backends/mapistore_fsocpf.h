@@ -66,7 +66,7 @@ struct fsocpf_context {
 
 __BEGIN_DECLS
 
-int	mapistore_init_backend(void);
+enum MAPISTORE_ERROR	mapistore_init_backend(void);
 
 __END_DECLS
 

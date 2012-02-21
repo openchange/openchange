@@ -331,6 +331,9 @@ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_l
 struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const char *);
 bool		mapistore_backend_run_init(init_backend_fn *);
 
+/* definitions from mapistore_backend_defaults */
+enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *);
+
 /* definitions from mapistore_indexing.c */
 enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, const char *, uint64_t);
 enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);

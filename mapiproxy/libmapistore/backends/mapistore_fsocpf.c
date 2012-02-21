@@ -1373,10 +1373,14 @@ static int fsocpf_op_get_folders_list(void *private_data,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-int mapistore_init_backend(void)
+enum MAPISTORE_ERROR mapistore_init_backend(void)
 {
 	struct mapistore_backend	backend;
-	int				ret;
+	enum MAPISTORE_ERROR		retval;
+
+	/* Initialize backend with defaults */
+	retval = mapistore_backend_init_defaults(&backend);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	/* Fill in our name */
 	backend.name = "fsocpf";
@@ -1406,11 +1410,10 @@ int mapistore_init_backend(void)
 	backend.op_get_folders_list = fsocpf_op_get_folders_list;
 
 	/* Register ourselves with the MAPISTORE subsystem */
-	ret = mapistore_backend_register(&backend);
-	if (ret != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("Failed to register the '%s' mapistore backend!\n", backend.name));
-		return ret;
+	retval = mapistore_backend_register(&backend);
+	if (retval != MAPISTORE_SUCCESS) {
+		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend!\n", backend.name);
 	}
 
-	return MAPISTORE_SUCCESS;
+	return retval;
 }

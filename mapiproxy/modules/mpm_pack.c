@@ -292,6 +292,7 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	unsigned long		opnum;
 	int			i;
 	int			j;
+	struct loadparm_context	*lp_ctx;
 
 	/* Fetch the mapi call list from smb.conf */
 	calls = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "opnums"), NULL);
@@ -322,6 +323,8 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	/* Fetch the lasthop parameter from smb.conf */
 	mpm->lasthop = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "lasthop", true);
 
+	lp_ctx = loadparm_init(dce_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init();
 
 	return NT_STATUS_OK;

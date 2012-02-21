@@ -1154,6 +1154,7 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 {
 	char			*database;
 	NTSTATUS		status;
+	struct loadparm_context	*lp_ctx;
 
 	mpm = talloc_zero(dce_ctx, struct mpm_cache);
 	if (!mpm) return NT_STATUS_NO_MEMORY;
@@ -1187,6 +1188,8 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	lp_ctx = loadparm_init(dce_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init();
 
 	talloc_free(database);

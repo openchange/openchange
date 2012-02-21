@@ -1566,21 +1566,21 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 					       mapi_profile_callback_t callback, 
 					       const void *private_data)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct mapi_context	*mapi_ctx;
-	struct nspi_context	*nspi;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct Restriction_r	Filter;
-	struct SRowSet		*SRowSet;
-	struct SPropValue	*lpProp = NULL;
-	struct SPropTagArray	*MIds = NULL;
-	struct SPropTagArray	MIds2;
-	struct SPropTagArray	*MId_server = NULL;
-	struct StringsArray_r	pNames;
-	const char		*profname;
-	uint32_t		instance_key = 0;
-	uint32_t		index = 0;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
+	struct nspi_context		*nspi;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct Restriction_r		Filter;
+	struct SRowSet			*SRowSet;
+	struct SPropValue		*lpProp = NULL;
+	struct PropertyTagArray_r	*MIds = NULL;
+	struct PropertyTagArray_r	MIds2;
+	struct PropertyTagArray_r	*MId_server = NULL;
+	struct StringsArray_r		pNames;
+	const char			*profname;
+	uint32_t			instance_key = 0;
+	uint32_t			index = 0;
 
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
@@ -1631,7 +1631,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	Filter.res.resProperty.lpProp = lpProp;
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	MIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
@@ -1658,7 +1658,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	MAPIFreeBuffer(MIds);
 	
 	MIds2.cValues = 0x1;
-	MIds2.aulPropTag = (enum MAPITAGS *) &instance_key;
+	MIds2.aulPropTag = &instance_key;
 
 	set_profile_attribute(mapi_ctx, profname, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 	set_profile_attribute(mapi_ctx, profname, *SRowSet, index, PR_DISPLAY_NAME, "DisplayName");
@@ -1708,7 +1708,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	pNames.Strings[0] = (const char *) talloc_asprintf(mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);
-	MId_server = talloc_zero(mem_ctx, struct SPropTagArray);
+	MId_server = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_server);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);

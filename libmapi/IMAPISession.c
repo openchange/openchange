@@ -32,18 +32,18 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 				      const char *legacyDN, 
 				      bool server)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct nspi_context	*nspi;
-	struct StringsArray_r	pNames;
-	struct SRowSet		*SRowSet;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropTagArray	*MId_array;
-	struct StringArray_r	*MVszA = NULL;
-	const char		*binding = NULL;
-	char			*HomeMDB = NULL;
-	char			*server_dn;
-	uint32_t		i;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct nspi_context		*nspi;
+	struct StringsArray_r		pNames;
+	struct SRowSet			*SRowSet;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct PropertyTagArray_r	*MId_array;
+	struct StringArray_r		*MVszA = NULL;
+	const char			*binding = NULL;
+	char				*HomeMDB = NULL;
+	char				*server_dn;
+	uint32_t			i;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
@@ -59,7 +59,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 		pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
 
-		MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+		MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 		MAPIFreeBuffer(pNames.Strings);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -84,7 +84,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
-	MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+	MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 	MAPIFreeBuffer(pNames.Strings);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);

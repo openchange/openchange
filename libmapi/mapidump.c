@@ -237,7 +237,7 @@ _PUBLIC_ void mapidump_PAB_entry(struct SRow *aRow)
 }
 
 
-_PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset, struct SPropTagArray *flaglist)
+_PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset, struct PropertyTagArray_r *flaglist)
 {
 	uint32_t		i;
 	uint32_t		j;

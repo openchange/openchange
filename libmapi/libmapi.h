@@ -168,7 +168,7 @@ void			mapidump_SPropTagArray(struct SPropTagArray *);
 void			mapidump_SRowSet(struct SRowSet *, const char *);
 void			mapidump_SRow(struct SRow *, const char *);
 void			mapidump_PAB_entry(struct SRow *);
-void			mapidump_Recipients(const char **, struct SRowSet *, struct SPropTagArray *);
+void			mapidump_Recipients(const char **, struct SRowSet *, struct PropertyTagArray_r *flaglist);
 void			mapidump_date(struct mapi_SPropValue_array *, uint32_t, const char *);
 void			mapidump_date_SPropValue(struct SPropValue, const char *, const char *);
 void			mapidump_message_summary(mapi_object_t *);

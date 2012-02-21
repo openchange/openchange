@@ -208,7 +208,7 @@ knownareas = [
         "AB Container",
         "Access Control Properties",
         "Access Control Properties Property set",
-        "address book",
+        "Address book",
         "Address Book",
         "Address Properties",
         "Address Properties Property set",
@@ -404,7 +404,7 @@ def make_properties_list(propsfilename):
 				print "In section 2.%(section)i (%(propname)s):" % { 'section': (next_num -1), 'propname': propname }
 				print "\t", areaname, "isn't an expected area name (typo?)"
 
-		if line.strip().startswith("References:"):
+		if line.strip().startswith("References:") or line.strip().startswith("Reference:"):
 			references = line.strip().split(":")[1].strip()
 			while (1):
 				nextline = propsfile.next().strip()
@@ -413,7 +413,7 @@ def make_properties_list(propsfilename):
 				references += (nextline)
 			propertyinfo["References"] = references
 
-		if line.strip().startswith("Defining references:"):
+		if line.strip().startswith("Defining Reference:") or line.strip().startswith("Defining reference:") or line.strip().startswith("Defining references"):
 			reference = line.strip().split(":")[1].strip()
 			propertyinfo["DefiningReference"] = reference
 
@@ -977,15 +977,21 @@ def check_areas():
 		if entry.has_key("Area") == False:
 			print "\tIn section %(section)s : there is no area" % { 'section': entry["OXPROPS_Sect"] }
 
-def check_reference_line(entry, line):
+def check_reference_line(entry, line, isdefining):
 	if line.endswith(","):
 		print "\tIn section %(section)s : trailing comma in (defining?) references" % { 'section': entry["OXPROPS_Sect"] }
 		line = line.rstrip(",")
 	for docentry in line.split(","):
 		docentry = docentry.strip()
-		if knownrefs.count(docentry) != 1:
+		if docentry == "":
+			print "\tIn section %(section)s : empty (defining) reference section" % { 'section': entry["OXPROPS_Sect"] }
+		elif knownrefs.count(docentry) != 1:
 			if len(docentry.split(" ")) > 1:
-				print "\tIn section %(section)s : missing comma in (defining?) references" % { 'section': entry["OXPROPS_Sect"] }
+				if docentry.split(" ")[1].strip().startswith("section"):
+					# thats ok
+					pass
+				else:
+					print "\tIn section %(section)s : missing comma in (defining?) references: %(docentry)s" % { 'section': entry["OXPROPS_Sect"], 'docentry': docentry }
 			else:
 				print "\tIn section %(section)s : unknown document: %(docname)s" % { 'section': entry["OXPROPS_Sect"], 'docname': docentry }
 		else:
@@ -1004,9 +1010,9 @@ def check_references():
 	print "Checking for references:"
 	for entry in properties:
 		if entry.has_key("References"):
-			check_reference_line(entry, entry["References"])
-		elif (entry.has_key("DefiningReference")):
-			check_reference_line(entry, entry["DefiningReference"])
+			check_reference_line(entry, entry["References"], False)
+		elif entry.has_key("DefiningReference"):
+			check_reference_line(entry, entry["DefiningReference"], True)
 		else:
 			print "\tIn section %(section)s : there is no (defining) reference entry" % { 'section': entry["OXPROPS_Sect"] }
 
@@ -1292,16 +1298,17 @@ def dump_areas_count():
 
 def fix_problems(propsfilename):
 	retcode = subprocess.call(["sed", "-i",
-				   "-e", "s/.Data type: PtyString, 0x001F/Data type: PtypString, 0x001F/",
 				   "-e", "s/.Dta type: PtypBoolean, 0x000B/Data type: PtypBoolean, 0x000B/",
-				   "-e", "s/.Data type: PtypString8, 0x000E/Data type: PtypString8, 0x001E/",
-				   "-e", "s/.Data type: PtypString, 0x0003/Data type: PtypString, 0x001F/",
-				   "-e", "s/.Propety long ID (LID): 0x00008083/Property long ID (LID): 0x00008083/",
-				   "-e", "s/.Propety long ID (LID): 0x000080A3/Property long ID (LID): 0x000080A3/",
-				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS/Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O/",
-				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
+				   "-e", "s/.Data Type: PtypString, 0x001F/Data type: PtypString, 0x001F/",
+				   "-e", "s/.Area: MAPI Display Tables\[MS-OXOABK\] section 2.2.3.33/Area: MAPI Display Tables\\nDefining Reference: \[MS-OXOABK\] section 2.2.3.33/",
+				   "-e", "s/.Area: ProviderDefinedNonTransmittable\[MS-OXCTABL\] section 2.2.1.2/Area: ProviderDefinedNonTransmittable\\nDefining Reference: \[MS-OXCTABL\] section 2.2.1.2/",
+				   "-e", "s/.Area: Server-Side Rules Properties\[MS-OXORULE\] section 2.2.1.3.2.2/Area: Server-Side Rules Properties\\nDefining Reference: \[MS-OXORULE\] section 2.2.1.3.2.2/",
+				   "-e", "s/.Area: MapiMailUser\[MS-OXOABK\] section 2.2.4.66/Area: MapiMailUser\\nDefining Reference: \[MS-OXOABK\] section 2.2.4.66/",
+				   "-e", "s/.Description: \[MS-OXORULE\] section 2.2.7.3/Defining Reference: \[MS-OXORULE\] section 2.2.7.3/",
 				   "-e", "s/.Property set: PSTID_Sharing {00062040-0000-0000-C000-000000000046}/Property set: PSETID_Sharing {00062040-0000-0000-C000-000000000046}/",
-				   "-e", "s/.Property set: PSETID_Address{00062004-0000-0000-C000-000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C000-00000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Appointment {00062002-0000-0000-C000-0000000000046}/Property set: PSETID_Appointment {00062002-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C00-0000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
 				    propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode

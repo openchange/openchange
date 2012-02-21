@@ -1611,6 +1611,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	r->out.rgwServerVersion[1] = 0x82B4;
 	r->out.rgwServerVersion[2] = 0x3;
 
+	r->out.pulTimeStamp = talloc_zero(mem_ctx, uint32_t);
 	*r->out.pulTimeStamp = time(NULL);
 
 	*r->out.pcbAuxOut = 0;

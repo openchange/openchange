@@ -32,6 +32,8 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "libmapi/property_tags.h"
+#include "libmapi/property_altnames.h"
 
 #include "dcesrv_exchange_emsmdb.h"
 
@@ -287,7 +289,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		parent_fid = new_folder->parent_object->object.folder->folderID;
 	}
 
-	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CHANGE_NUM);
+	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PidTagChangeNumber);
 	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parent_fid, fid, value->value.d, mapistore_uri, -1);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = MAPISTORE_ERR_NOT_FOUND;
@@ -362,7 +364,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			return MAPI_E_COLLISION;
 		}
 
-		value = get_SPropValue_SRow(rowp, PR_CHANGE_NUM);
+		value = get_SPropValue_SRow(rowp, PidTagChangeNumber);
 		if (value) {
 			postponed_props = talloc_zero(new_folder, struct SRow);
 			postponed_props->cValues = rowp->cValues;
@@ -374,7 +376,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
 		}
 		else {
-			DEBUG(0, (__location__": PR_CHANGE_NUM *must* be present\n"));
+			DEBUG(0, (__location__": PidTagChangeNumber *must* be present\n"));
 			abort();
 		}
 	}
@@ -1424,7 +1426,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_MESSAGE_CLASS_UNICODE);
 		SPropTagArray_add(properties, properties, PR_RIGHTS);
 		SPropTagArray_add(properties, properties, PR_CONTENT_COUNT);
-		SPropTagArray_add(properties, properties, PR_ASSOC_CONTENT_COUNT);
+		SPropTagArray_add(properties, properties, PidTagAssociatedContentCount);
 		SPropTagArray_add(properties, properties, PR_SUBFOLDERS);
 		SPropTagArray_add(properties, properties, PR_MAPPING_SIGNATURE);
 		SPropTagArray_add(properties, properties, PR_USER_ENTRYID);
@@ -1596,18 +1598,18 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 										  MAPISTORE_MESSAGE_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
-				case PR_ASSOC_CONTENT_COUNT:
+				case PidTagAssociatedContentCount:
 					obj_count = talloc_zero(data_pointers, uint32_t);
 					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
 										  MAPISTORE_FAI_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
-				case PR_FOLDER_CHILD_COUNT:
+				case PidTagFolderChildCount:
 					obj_count = talloc_zero(data_pointers, uint32_t);
 					retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, rowobject, obj_count);
 					data_pointers[i] = obj_count;
 					break;
-				case PR_SOURCE_KEY:
+				case PidTagSourceKey:
 					owner = emsmdbp_get_owner(table_object);
 					emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, rowobject->object.folder->folderID, &binr);
 					data_pointers[i] = binr;
@@ -1621,7 +1623,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 					talloc_free(obj_count);
 					break;
 				case PR_CONTENT_UNREAD:
-				case PR_DELETED_COUNT_TOTAL:
+				case PidTagDeletedCountTotal:
 					/* TODO: temporary */
 					obj_count = talloc_zero(data_pointers, uint32_t);
 					data_pointers[i] = obj_count;
@@ -2480,7 +2482,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			retval = MAPI_E_SUCCESS;
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT
-			 || properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT
+			 || properties->aulPropTag[i] == PidTagAssociatedContentCount
 			 || properties->aulPropTag[i] == PR_CONTENT_UNREAD
 			 || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
@@ -2488,7 +2490,7 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
                 }
-		else if (properties->aulPropTag[i] == PR_LOCAL_COMMIT_TIME_MAX) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
 			unix_time = time(NULL) & 0xffffff00;
 			unix_to_nt_time(&nt_time, unix_time);
@@ -2578,7 +2580,7 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 					data_pointers[i] = &fb_props->publish_end;
 					retval = MAPI_E_SUCCESS;
 					break;
-				case PR_FREEBUSY_EMA:
+				case PidTagFreeBusyMessageEmailAddress:
 					data_pointers[i] = fb_props->email_address;
 					retval = MAPI_E_SUCCESS;
 					break;
@@ -2638,7 +2640,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-                else if (properties->aulPropTag[i] == PR_ASSOC_CONTENT_COUNT) {
+                else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
                         retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object,
 								  MAPISTORE_FAI_TABLE, obj_count);
@@ -2670,7 +2672,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PR_LOCAL_COMMIT_TIME_MAX) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
 			/* TODO: temporary hack */
 			unix_time = time(NULL) & 0xffffff00;
 			unix_to_nt_time(&nt_time, unix_time);
@@ -2709,7 +2711,7 @@ static int emsmdbp_object_get_properties_mailbox(TALLOC_CTX *mem_ctx, struct ems
 	for (i = 0; i < properties->cValues; i++) {
 		switch (properties->aulPropTag[i]) {
 		case PR_MAPPING_SIGNATURE:
-		case PR_IPM_PUBLIC_FOLDERS_ENTRYID:
+		case PidTagIpmPublicFoldersEntryId:
 			retvals[i] = MAPI_E_NO_ACCESS;
 			break;
 		case PR_USER_ENTRYID:
@@ -2727,8 +2729,7 @@ static int emsmdbp_object_get_properties_mailbox(TALLOC_CTX *mem_ctx, struct ems
 				data_pointers[i] = bin;
 			}
 			break;
-		case PR_MAILBOX_OWNER_NAME:
-		case PR_MAILBOX_OWNER_NAME_UNICODE:
+		case PidTagMailboxOwnerName:
 			if (object->object.mailbox->mailboxstore == false) {
 				retvals[i] = MAPI_E_NO_ACCESS;
 			} else {

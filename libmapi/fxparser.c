@@ -419,24 +419,24 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 			case ParserState_HaveTag:
 			{
 				switch (parser->tag) {
-					case PR_START_TOP_FLD:
-					case PR_START_SUB_FLD:
-					case PR_END_FOLDER:
-					case PR_START_MESSAGE:
-					case PR_START_FAI_MSG:
-					case PR_END_MESSAGE:
-					case PR_START_RECIP:
-					case PR_END_RECIP:
-					case PR_NEW_ATTACH:
-					case PR_END_ATTACH:
-					case PR_START_EMBED:
-					case PR_END_EMBED:
+					case PidTagStartTopFld:
+					case PidTagStartSubFld:
+					case PidTagEndFolder:
+					case PidTagStartMessage:
+					case PidTagStartFAIMsg:
+					case PidTagEndMessage:
+					case PidTagStartRecip:
+					case PidTagEndToRecip:
+					case PidTagNewAttach:
+					case PidTagEndAttach:
+					case PidTagStartEmbed:
+					case PidTagEndEmbed:
 						if (parser->op_marker) {
 							parser->op_marker(parser->tag, parser->priv);
 						}
 						parser->state = ParserState_Entry;
 						break;
-					case PR_FX_DEL_PROP:
+					case PidTagFXDelProp:
 					{
 						uint32_t tag;
 						if (pull_uint32_t(parser, &tag)) {

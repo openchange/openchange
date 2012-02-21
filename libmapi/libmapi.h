@@ -68,6 +68,8 @@
 #include "libmapi/mapicode.h"
 #include "libmapi/socket/netif.h"
 #include "libmapi/idset.h"
+#include "libmapi/property_tags.h"
+#include "libmapi/property_altnames.h"
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)

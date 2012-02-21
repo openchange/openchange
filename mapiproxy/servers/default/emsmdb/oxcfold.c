@@ -496,7 +496,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		
 		aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
-		cnValue.ulPropTag = PR_CHANGE_NUM;
+		cnValue.ulPropTag = PidTagChangeNumber;
 		cnValue.value.d = cn;
 		SRow_addprop(aRow, cnValue);
 

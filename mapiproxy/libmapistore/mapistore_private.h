@@ -137,6 +137,13 @@ struct replica_mapping_context_list {
 
 __BEGIN_DECLS
 
+/**
+   Properties used in mapistore but not referenced anymore in MS-OXCPROPS.pdf
+ */
+#define PR_ATTACH_ID				0x3f880014
+#define PR_MODIFIER_FLAGS			0x405a0003
+#define	PR_RECIPIENT_ON_NORMAL_MSG_COUNT	0x66af0003
+
 /* definitions from mapistore_processing.c */
 const char *mapistore_get_mapping_path(void);
 enum mapistore_error mapistore_init_mapping_context(struct processing_context *);

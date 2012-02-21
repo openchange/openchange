@@ -66,7 +66,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.b = 1; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_FILE_SIZE_EXTENDED; /* enum MAPITAGS */
+	propvalue.ulPropTag = PidTagMemberId; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;
 	propvalue.value.d = 0x3DEADBEEFCAFE124LL; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
@@ -86,7 +86,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.bin = bin; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_DELIVER_TIME ; /* enum MAPITAGS */
+	propvalue.ulPropTag = PidTagOriginalDeliveryTime ; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;
 	ft.dwLowDateTime = 0x12345678;
 	ft.dwHighDateTime = 0x01CA6AE4;
@@ -98,7 +98,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.err = MAPI_E_UNKNOWN_CPID; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_CONTACT_ADDRTYPES;
+	propvalue.ulPropTag = PidTagScheduleInfoDelegateNames;
 	propvalue.dwAlignPad = 0;
 	mvstr.cValues = 3;
 	mvstr.lppszA = talloc_array(mt->mem_ctx, const char *, mvstr.cValues);
@@ -556,7 +556,7 @@ _PUBLIC_ bool mapitest_mapidump_message(struct mapitest *mt)
 	props.lpProps[6].ulPropTag = PR_DISPLAY_BCC;
 	props.lpProps[6].value.lpszA = "Ms. Anonymous <bcc@example.com>";
 
-	props.lpProps[7].ulPropTag = PR_STATUS;
+	props.lpProps[7].ulPropTag = PidTagPriority;
 	props.lpProps[7].value.l = 0;
 
 	props.lpProps[8].ulPropTag = PR_HASATTACH;
@@ -900,9 +900,9 @@ _PUBLIC_ bool mapitest_mapidump_foldercreated(struct mapitest *mt)
 	foldercreatednotification.TagCount = 3;
 	foldercreatednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
                                                            foldercreatednotification.TagCount);
-	foldercreatednotification.NotificationTags.Tags[0] = PR_RECIPIENT_CERTIFICATE;
+	foldercreatednotification.NotificationTags.Tags[0] = PidTagTemplateData;
 	foldercreatednotification.NotificationTags.Tags[1] = PR_URL_COMP_NAME;
-	foldercreatednotification.NotificationTags.Tags[2] = PR_END_ATTACH;
+	foldercreatednotification.NotificationTags.Tags[2] = PidTagEndAttach;
 
 	mapidump_foldercreated(&foldercreatednotification, "[sep]");
 

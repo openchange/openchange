@@ -1297,7 +1297,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 	ldb_msg_add_string(msg, "PidTagLastModificationTime", str_value);
 	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
 
-	value->ulPropTag = PR_CHANGE_NUM;
+	value->ulPropTag = PidTagChangeNumber;
 	openchangedb_get_new_changeNumber(ldb_ctx, (uint64_t *) &value->value.d);
 	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 	ldb_msg_add_string(msg, "PidTagChangeNumber", str_value);

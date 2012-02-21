@@ -791,10 +791,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			case PR_EMS_AB_CONTAINERID:
 				lpProps.value.l = 0x0;
 				break;
-			case PR_DISPLAY_NAME:
-				lpProps.value.lpszA = NULL;
-				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = NULL;
 				break;
 			case PR_EMS_AB_IS_MASTER:
@@ -850,16 +847,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				}
 				lpProps.value.l = containerID;
 				break;
-			case PR_DISPLAY_NAME:
-				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
-				if (!lpProps.value.lpszA) {
-					proptag = (int) lpProps.ulPropTag;
-					proptag &= 0xFFFF0000;
-					proptag += PT_ERROR;
-					lpProps.ulPropTag = (enum MAPITAGS) proptag;
-				}
-				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszW) {
 					proptag = (int) lpProps.ulPropTag;

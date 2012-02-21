@@ -48,7 +48,7 @@ cpp_quote("#include <gen_ndr/ndr_misc.h>")
 ] interface exchange_ds_rfr
 {
 
-#include "mapitags_enum.h"
+#include "properties_enum.h"
 #include "mapicodes_enum.h"
 
 	/*****************/
@@ -3418,18 +3418,18 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x75 */
 	typedef [v1_enum,flag(NDR_PAHEX)] enum {
-		PidTagIdsetGiven	= 0x40170003,
-		PidTagCnsetSeen		= 0x67960102,
-		PidTagCnsetSeenFAI	= 0x67da0102,
-		PidTagCnsetRead		= 0x67d20102
+		SP_PidTagIdsetGiven	= 0x40170003,
+		SP_PidTagCnsetSeen	= 0x67960102,
+		SP_PidTagCnsetSeenFAI	= 0x67da0102,
+		SP_PidTagCnsetRead	= 0x67d20102
 	} StateProperty;
 
 	typedef [v1_enum,flag(NDR_PAHEX)] enum {
-		PidTagIdsetDeleted		= 0x67e50102,
-		PidTagIdsetNoLongerInScope	= 0x40210102,
-		PidTagIdsetExpired		= 0x67930102,
-		PidTagIdsetRead			= 0x402d0102,
-		PidTagIdsetUnread		= 0x402e0102
+		DP_PidTagIdsetDeleted		= 0x67e50102,
+		DP_PidTagIdsetNoLongerInScope	= 0x40210102,
+		DP_PidTagIdsetExpired		= 0x67930102,
+		DP_PidTagIdsetRead		= 0x402d0102,
+		DP_PidTagIdsetUnread		= 0x402e0102
 	} DeltaProperty;
 
 	typedef [flag(NDR_NOALIGN)] struct {

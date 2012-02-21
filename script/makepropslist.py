@@ -1271,6 +1271,16 @@ static struct mapi_nameid_tags mapi_nameid_tags[] = {
 				string.ljust(datatype, 15), "MNID_ID", line[6], "0x0")
 			f.write(propline)
 
+	for line in sortednamedprops:
+		if line[5] == "MNID_STRING":
+			OOM = "%s" % line[1]
+			key = find_key(knowndatatypes, line[4])
+			datatype = datatypemap[key]
+			propline = "{ %s, %s, %s, \"%s\", %s, %s, %s, %s },\n" % (
+				string.ljust(line[0], 60), string.ljust(OOM, 65), line[2], line[3], 
+				string.ljust(datatype, 15), "MNID_STRING", line[6], "0x0")
+			f.write(propline)
+
 	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s }\n" % (
 		string.ljust("0x00000000", 60), string.ljust("NULL", 65), "0x0000", "NULL",
 		string.ljust("PT_UNSPECIFIED", 15), "0x0", "NULL", "0x0")
@@ -1309,7 +1319,12 @@ def fix_problems(propsfilename):
 				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C000-00000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
 				   "-e", "s/.Property set: PSETID_Appointment {00062002-0000-0000-C000-0000000000046}/Property set: PSETID_Appointment {00062002-0000-0000-C000-000000000046}/",
 				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C00-0000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
-				    propsfilename])
+				   "-e", "s/.Consuming Reference: \[MS-OXCICAL\] Alternate names: PR_NEXT_SEND_ACCT/Consuming Reference: \[MS-OXCICAL\]\\nAlternate names: PR_NEXT_SEND_ACCT/",
+				   "-e", "s/.Alternate names: PR_WB_SF_ID//",
+				   "-e", "s/.Alternate names: PR_WB_SF_TAG//",
+				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
+				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS//",
+				   propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode
 		sys.exit(retcode)

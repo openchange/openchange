@@ -240,7 +240,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row, row_max;
 	TALLOC_CTX			*local_mem_ctx;
-	struct SPropTagArray		*mids;
+	struct PropertyTagArray_r	*mids;
 
 	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
 
@@ -263,7 +263,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		goto end;
 	}
 
-	mids = talloc_zero(local_mem_ctx, struct SPropTagArray);
+	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
 	if (emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		row_max = 0;
 	}
@@ -456,7 +456,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS, ret;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row;
-	struct SPropTagArray		*mids, *all_mids;
+	struct PropertyTagArray_r	*mids, *all_mids;
 	struct Restriction_r		*seek_restriction;
 
 	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
@@ -481,7 +481,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		all_mids = r->in.lpETable;
 	}
 	else {
-		all_mids = talloc_zero(mem_ctx, struct SPropTagArray);
+		all_mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
 	}
 
@@ -492,7 +492,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	seek_restriction->res.resProperty.ulPropTag = r->in.pTarget->ulPropTag;
 	seek_restriction->res.resProperty.lpProp = r->in.pTarget;
 
-	mids = talloc_zero(mem_ctx, struct SPropTagArray);
+	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	if (emsabp_search(mem_ctx, emsabp_ctx, mids, seek_restriction, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		mids = all_mids;
 		retval = MAPI_E_NOT_FOUND;

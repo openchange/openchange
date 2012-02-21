@@ -1564,7 +1564,6 @@ pyopenchange-clean:
 #	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 #	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
-	rm -f pyopenchange/pymapi_properties.c
 
 clean:: pyopenchange-clean
 

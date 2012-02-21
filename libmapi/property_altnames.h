@@ -596,7 +596,7 @@
 #define PR_IPM_JOURNAL_ENTRYID_ERROR                                         PROP_TAG(PT_ERROR     , 0x36D2)  /* 0x36D2000A */
 #define PR_IPM_NOTE_ENTRYID                                                  PidTagIpmNoteEntryId
 #define PR_IPM_NOTE_ENTRYID_ERROR                                            PROP_TAG(PT_ERROR     , 0x36D3)  /* 0x36D3000A */
-#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        0x66310102
+#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        PidTagIpmPublicFoldersEntryId
 #define PR_IPM_TASK_ENTRYID                                                  PidTagIpmTaskEntryId
 #define PR_IPM_TASK_ENTRYID_ERROR                                            PROP_TAG(PT_ERROR     , 0x36D4)  /* 0x36D4000A */
 #define PR_ISDN_NUMBER                                                       PROP_TAG(PT_STRING8   , 0x3A2D)  /* 0x3A2D001E */

@@ -624,7 +624,7 @@ def make_mapi_properties_file():
 	altnamelines.append("#define PR_FREEBUSY_OOF_MONTHS                                               PidTagScheduleInfoMonthsAway\n")
 	altnamelines.append("#define PR_FREEBUSY_OOF_EVENTS                                               PidTagScheduleInfoFreeBusyAway\n")
 	altnamelines.append("#define PR_REMINDERS_ONLINE_ENTRYID                                          0x36d50102\n")
-	altnamelines.append("#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        0x66310102\n")
+	altnamelines.append("#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        PidTagIpmPublicFoldersEntryId\n")
 	altnamelines.append("#define PR_PARENT_FID                                                        PidTagParentFolderId\n")
 	altnamelines.append("#define PR_URL_COMP_NAME_SET                                                 PidTagUrlCompNameSet\n")
 	altnamelines.append("#define PR_ASSOC_CONTENT_COUNT						  PidTagAssociatedContentCount\n")
@@ -774,7 +774,6 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 			propline += ",\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
-	proplines.append("\t" + string.ljust("PR_IPM_PUBLIC_FOLDERS_ENTRYID", 68) + " = 0x66310102,\n")
 	sortedproplines = sorted(proplines)
 	for propline in sortedproplines:
 		f.write(propline)

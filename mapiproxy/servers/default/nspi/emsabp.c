@@ -1063,6 +1063,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		fmt_attr = emsabp_property_get_attribute(res_prop->ulPropTag);
 		if (fmt_attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
+		} 
+
+		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		if (attr == NULL) {
+			return MAPI_E_NO_SUPPORT;
 		}
 		
 		if ((res_prop->ulPropTag & 0xFFFF) == 0x101e) {

@@ -1111,6 +1111,7 @@ def make_mapi_named_properties_file():
 	for key in sorted(knownpropsets):
 		cn = knownpropsets[key].strip('{}').lower()
 		oleguid_ldif = "dn: CN=%s,CN=External,CN=Server\n"	\
+			       "objectClass: External\n"		\
 			       "cn: %s\n"				\
 			       "name: %s\n"				\
 			       "oleguid: %s\n\n" % (cn, cn, str(key), cn)
@@ -1124,6 +1125,7 @@ def make_mapi_named_properties_file():
 		oleguid = knownpropsets[line[6]].strip('{}').lower()
 		if line[5] == "MNID_STRING":
 			named_props_ldif = "dn: CN=%s,CN=MNID_STRING,CN=%s,CN=External,CN=Server\n"	\
+					   "objectClass: External\n"					\
 					   "objectClass: MNID_STRING\n"					\
 					   "cn: %s\n"							\
 					   "canonical: %s\n"						\
@@ -1136,6 +1138,7 @@ def make_mapi_named_properties_file():
 				line[2], line[4], line[3])
 		else:
 			named_props_ldif = "dn: CN=%s,CN=MNID_ID,CN=%s,CN=External,CN=Server\n"		\
+					   "objectClass: External\n"					\
 					   "objectClass: MNID_ID\n"					\
 					   "cn: %s\n"							\
 					   "canonical: %s\n"						\
@@ -1162,15 +1165,17 @@ def make_mapi_named_properties_file():
 			 "cn: Server\n\n"		\
 							\
 			 "dn: CN=Internal,CN=Server\n"	\
+			 "objectClass: Internal\n"	\
 			 "objectClass: container\n"	\
 			 "objectClass: top\n"		\
 			 "cn: Internal\n"		\
 			 "mapping_index: 0x0000\n\n"	\
 							\
 			 "dn: CN=External,CN=Server\n"	\
+			 "objectClass: External\n"	\
 			 "objectClass: container\n"	\
 			 "objectClass: top\n"		\
-			 "cn: External\n"			\
+			 "cn: External\n"		\
 			 "mapping_index: 0x%.4x\n" % increment
 	start_content += attributes + "\n"
 	start_content += "dn: CN=Users,CN=Server\n"	\

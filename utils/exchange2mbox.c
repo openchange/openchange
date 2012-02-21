@@ -545,7 +545,10 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	const char			*cc = NULL;
 	const char			*bcc = NULL;
 	const char			*from = NULL;
+	const char			*normalizedsubject = NULL;
+	const char			*subject_prefix = NULL;
 	const char			*subject = NULL;
+	const char			*thread_topic = NULL;
 	const char			*msgid;
 	const char                      *msgheaders = NULL;
 	const char			*attach_filename;
@@ -561,6 +564,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct SRowSet			rowset_attach;
 	uint32_t			count;
 	unsigned int			i;
+	ssize_t				len;
 	int header_done = 0;
 	body_stuff_t body[3];
 	int body_count = 0;
@@ -582,7 +586,10 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		from = "unknown";
 	}
 
+	subject_prefix = (const char *) octool_get_propval(aRow, PR_SUBJECT_PREFIX);
+	normalizedsubject = (const char *) octool_get_propval(aRow, PR_NORMALIZED_SUBJECT);
 	subject = (const char*) octool_get_propval(aRow, PR_SUBJECT);
+	thread_topic = (const char *) octool_get_propval(aRow, PR_CONVERSATION_TOPIC);
 	msgid = (const char *) octool_get_propval(aRow, PR_INTERNET_MESSAGE_ID);
 
 	msgheaders = (const char *) octool_get_propval(aRow, PR_TRANSPORT_MESSAGE_HEADERS);
@@ -681,14 +688,14 @@ old_code:
 		/* Second line: Date */
 		line = talloc_asprintf(mem_ctx, "Date: %s\n", date);
 		if (line) {
-			fwrite(line, strlen(line), 1, fp);
+			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
 
 		/* Third line From */
 		line = talloc_asprintf(mem_ctx, "From: %s\n", from);
 		if (line) {
-			fwrite(line, strlen(line), 1, fp);
+			len = fwrite(line, strlen(line), 1, fp);
 		}
 		talloc_free(line);
 
@@ -696,7 +703,7 @@ old_code:
 		if (to) {
 			line = talloc_asprintf(mem_ctx, "To: %s\n", to);
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -704,7 +711,7 @@ old_code:
 		if (cc) {
 			line = talloc_asprintf(mem_ctx, "Cc: %s\n", cc);
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -712,7 +719,7 @@ old_code:
 		if (bcc) {
 			line = talloc_asprintf(mem_ctx, "Bcc: %s\n", bcc);
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -721,7 +728,7 @@ old_code:
 		if (subject) {
 			line = talloc_asprintf(mem_ctx, "Subject: %s\n", subject);
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -729,7 +736,7 @@ old_code:
 		if (msgid) {
 			line = talloc_asprintf(mem_ctx, "Message-ID: %s\n", msgid);
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -750,7 +757,7 @@ old_code:
 		if ((has_attach && *has_attach) || body_count > 1) {
 			/* blank line before content */
 			if (!header_done) {
-				fwrite("\n", 1, 1, fp);
+				len = fwrite("\n", 1, 1, fp);
 				header_done = 1;
 			}
 			fprintf(fp, "--%s\n", boundary(base_level+0));
@@ -769,21 +776,21 @@ old_code:
 		/*
 		 * output content type
 		 */
-		fwrite(body[0].body_header, strlen(body[0].body_header), 1, fp);
+		len = fwrite(body[0].body_header, strlen(body[0].body_header), 1, fp);
 		fprintf(fp, "Content-Disposition: inline\n");
 
 		/* blank after header */
-		fwrite("\n", 1, 1, fp);
+		len = fwrite("\n", 1, 1, fp);
 		header_done = 1;
 
 		fix_froms(body[0].body.data, body[0].body.length);
-		fwrite(body[0].body.data, body[0].body.length, 1, fp);
+		len = fwrite(body[0].body.data, body[0].body.length, 1, fp);
 		talloc_free(body[0].body.data);
 	}
 
 	/* blank line before content */
 	if (!header_done) {
-		fwrite("\n", 1, 1, fp);
+		len = fwrite("\n", 1, 1, fp);
 		header_done = 1;
 	}
 
@@ -794,11 +801,11 @@ old_code:
 		} else {
 			fprintf(fp, "\n\n--%s\n", boundary(base_level+0));
 		}
-		fwrite(body[i].body_header, strlen(body[i].body_header), 1, fp);
+		len = fwrite(body[i].body_header, strlen(body[i].body_header), 1, fp);
 		fprintf(fp, "Content-Disposition: inline\n");
-		fwrite("\n", 1, 1, fp);
+		len = fwrite("\n", 1, 1, fp);
 		fix_froms(body[i].body.data, body[i].body.length);
-		fwrite(body[i].body.data, body[i].body.length, 1, fp);
+		len = fwrite(body[i].body.data, body[i].body.length, 1, fp);
 	}
 
 	if (has_attach && *has_attach) {
@@ -963,7 +970,7 @@ old_code:
 
 			line = talloc_asprintf(mem_ctx, "\n\n--%s--\n\n\n", boundary(base_level+0));
 			if (line) {
-				fwrite(line, strlen(line), 1, fp);
+				len = fwrite(line, strlen(line), 1, fp);
 			}
 			talloc_free(line);
 		}
@@ -972,7 +979,7 @@ old_code:
 		fprintf(fp, "\n\n--%s--\n", boundary(base_level+0));
 	}
 	
-	fwrite("\n\n\n", 3, 1, fp);
+	len = fwrite("\n\n\n", 3, 1, fp);
 
 	return true;
 }

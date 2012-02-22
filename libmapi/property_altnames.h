@@ -221,6 +221,7 @@
 #define PR_CONVERSATION_INDEX_ERROR                                          PROP_TAG(PT_ERROR     , 0x0071)  /* 0x0071000A */
 #define PR_CONVERSATION_INDEX_TRACKING                                       PidTagConversationIndexTracking
 #define PR_CONVERSATION_INDEX_TRACKING_ERROR                                 PROP_TAG(PT_ERROR     , 0x3016)  /* 0x3016000A */
+#define PR_CONVERSATION_KEY						  PidTagConversationKey
 #define PR_CONVERSATION_TOPIC                                                PROP_TAG(PT_STRING8   , 0x0070)  /* 0x0070001E */
 #define PR_CONVERSATION_TOPIC_ERROR                                          PROP_TAG(PT_ERROR     , 0x0070)  /* 0x0070000A */
 #define PR_CONVERSATION_TOPIC_UNICODE                                        PROP_TAG(PT_UNICODE   , 0x0070)  /* 0x0070001F */

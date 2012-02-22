@@ -1361,5 +1361,6 @@ typedef [v1_enum, flag(NDR_PAHEX)] enum {
 	PidTagDeletedCountTotal                                              = 0x670B0003,
 	PidTagIpmPublicFoldersEntryId                                        = 0x66310102,
 	PidTagLocalCommitTimeMax                                             = 0x670a0040,
+	PidTagConversationKey                                                = 0x000b0102,
 	MAPI_PROP_RESERVED                                                   = 0xFFFFFFFF
 } MAPITAGS;

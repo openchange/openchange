@@ -628,8 +628,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagMid_Error", PyInt_FromLong(0x674A000A));
 	PyModule_AddObject(m, "PidTagMiddleName", PyInt_FromLong(0x3A44001F));
 	PyModule_AddObject(m, "PidTagMiddleName_Error", PyInt_FromLong(0x3A44000A));
-	PyModule_AddObject(m, "PidTagMimeSkeleton", PyInt_FromLong(0x64F00102));
-	PyModule_AddObject(m, "PidTagMimeSkeleton_Error", PyInt_FromLong(0x64F0000A));
+	PyModule_AddObject(m, "PidTagMimeSkeleton", PyInt_FromLong(0x04700102));
+	PyModule_AddObject(m, "PidTagMimeSkeleton_Error", PyInt_FromLong(0x0470000A));
 	PyModule_AddObject(m, "PidTagMobileTelephoneNumber", PyInt_FromLong(0x3A1C001F));
 	PyModule_AddObject(m, "PidTagMobileTelephoneNumber_Error", PyInt_FromLong(0x3A1C000A));
 	PyModule_AddObject(m, "PidTagNativeBody", PyInt_FromLong(0x10160003));
@@ -650,8 +650,16 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagObjectType_Error", PyInt_FromLong(0x0FFE000A));
 	PyModule_AddObject(m, "PidTagOfficeLocation", PyInt_FromLong(0x3A19001F));
 	PyModule_AddObject(m, "PidTagOfficeLocation_Error", PyInt_FromLong(0x3A19000A));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookCompressedSize", PyInt_FromLong(0x68090003));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookCompressedSize_Error", PyInt_FromLong(0x6809000A));
 	PyModule_AddObject(m, "PidTagOfflineAddressBookContainerGuid", PyInt_FromLong(0x6802001E));
 	PyModule_AddObject(m, "PidTagOfflineAddressBookContainerGuid_Error", PyInt_FromLong(0x6802000A));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookFileSize", PyInt_FromLong(0x680A0003));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookFileSize_Error", PyInt_FromLong(0x680A000A));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookFileType", PyInt_FromLong(0x68080003));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookFileType_Error", PyInt_FromLong(0x6808000A));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookLanguageId", PyInt_FromLong(0x68070003));
+	PyModule_AddObject(m, "PidTagOfflineAddressBookLanguageId_Error", PyInt_FromLong(0x6807000A));
 	PyModule_AddObject(m, "PidTagOfflineAddressBookMessageClass", PyInt_FromLong(0x68030003));
 	PyModule_AddObject(m, "PidTagOfflineAddressBookMessageClass_Error", PyInt_FromLong(0x6803000A));
 	PyModule_AddObject(m, "PidTagOfflineAddressBookName", PyInt_FromLong(0x6800001F));
@@ -670,6 +678,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagOriginalDisplayBcc_Error", PyInt_FromLong(0x0072000A));
 	PyModule_AddObject(m, "PidTagOriginalDisplayCc", PyInt_FromLong(0x0073001F));
 	PyModule_AddObject(m, "PidTagOriginalDisplayCc_Error", PyInt_FromLong(0x0073000A));
+	PyModule_AddObject(m, "PidTagOriginalDisplayName", PyInt_FromLong(0x3A13001F));
+	PyModule_AddObject(m, "PidTagOriginalDisplayName_Error", PyInt_FromLong(0x3A13000A));
 	PyModule_AddObject(m, "PidTagOriginalDisplayTo", PyInt_FromLong(0x0074001F));
 	PyModule_AddObject(m, "PidTagOriginalDisplayTo_Error", PyInt_FromLong(0x0074000A));
 	PyModule_AddObject(m, "PidTagOriginalEntryId", PyInt_FromLong(0x3A120102));
@@ -678,6 +688,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagOriginalMessageClass_Error", PyInt_FromLong(0x004B000A));
 	PyModule_AddObject(m, "PidTagOriginalMessageId", PyInt_FromLong(0x1046001F));
 	PyModule_AddObject(m, "PidTagOriginalMessageId_Error", PyInt_FromLong(0x1046000A));
+	PyModule_AddObject(m, "PidTagOriginalSearchKey", PyInt_FromLong(0x3A140102));
+	PyModule_AddObject(m, "PidTagOriginalSearchKey_Error", PyInt_FromLong(0x3A14000A));
 	PyModule_AddObject(m, "PidTagOriginalSenderAddressType", PyInt_FromLong(0x0066001F));
 	PyModule_AddObject(m, "PidTagOriginalSenderAddressType_Error", PyInt_FromLong(0x0066000A));
 	PyModule_AddObject(m, "PidTagOriginalSenderEmailAddress", PyInt_FromLong(0x0067001F));

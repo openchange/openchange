@@ -359,6 +359,11 @@ AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers.
 OC_CHECK_SAMBA_VERSION([$SAMBA4_RELEASE],[$SAMBA4_GIT_VER-GIT-$SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"
 
+AC_MSG_CHECKING([for DCE/RPC server modules directory])
+DCERPC_SERVER_MODULESDIR=`$PKG_CONFIG --variable=modulesdir dcerpc_server`
+AC_SUBST(DCERPC_SERVER_MODULESDIR)
+AC_MSG_RESULT($DCERPC_SERVER_MODULESDIR)
+
 dnl ---------------------------------------------------------------------------
 dnl Finally add libmapi to the library list
 dnl ---------------------------------------------------------------------------

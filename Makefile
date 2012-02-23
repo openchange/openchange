@@ -764,6 +764,8 @@ libmapiproxy-distclean:
 
 distclean::libmapiproxy-distclean
 
+mapiproxy/libmapiproxy/modules.o mapiproxy/libmapiproxy/modules.po: CFLAGS+=-DMODULESDIR=\"${modulesdir}\"
+
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\

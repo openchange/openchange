@@ -56,18 +56,24 @@ static openchange_plugin_init_fn load_plugin(const char *path)
 	return (openchange_plugin_init_fn)init_fn;
 }
 
-openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const char *path)
+openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const char *subsystem)
 {
 	DIR *dir;
 	struct dirent *entry;
-	char *filename;
+	char *filename, *path;
 	int success = 0;
 	openchange_plugin_init_fn *ret = talloc_array(mem_ctx, openchange_plugin_init_fn, 2);
 
 	ret[0] = NULL;
 
+	path = talloc_asprintf(mem_ctx, "%s/%s", MODULESDIR, subsystem);
+	if (path == NULL) {
+		return NULL;
+	}
+
 	dir = opendir(path);
 	if (dir == NULL) {
+		talloc_free(path);
 		talloc_free(ret);
 		return NULL;
 	}
@@ -89,6 +95,7 @@ openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const ch
 	}
 
 	closedir(dir);
+	talloc_free(path);
 
 	return ret;
 }

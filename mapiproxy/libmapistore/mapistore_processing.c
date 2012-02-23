@@ -122,7 +122,7 @@ enum mapistore_error mapistore_init_mapping_context(struct processing_context *p
 	/* Open/Create the used ID database */
 	if (!pctx->mapping_ctx->used_ctx) {
 		dbpath = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAME_USED_ID);
-		pctx->mapping_ctx->used_ctx = tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+		pctx->mapping_ctx->used_ctx = mapistore_tdb_wrap_open(pctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 		talloc_free(dbpath);
 		if (!pctx->mapping_ctx->used_ctx) {
 			DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));

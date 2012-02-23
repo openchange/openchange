@@ -96,7 +96,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	/* Step 1. Open/Create the indexing database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb", 
 				 mapistore_get_mapping_path(), username);
-	ictx->index_ctx = tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	ictx->index_ctx = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(dbpath);
 	if (!ictx->index_ctx) {
 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));

@@ -199,7 +199,7 @@ enum mapistore_error mapistore_backend_properties_set_properties(struct backend_
 enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_context *, TALLOC_CTX *, const char *, const char *, const char *, const char *, char **);
 
 /* definitions from mapistore_tdb_wrap.c */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
+struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 /* definitions from mapistore_ldb_wrap.c */
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);

@@ -1325,7 +1325,6 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 	return 0;
 }
 
-
 _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 {
 	uint32_t	idx;
@@ -1343,3 +1342,5 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
 	return 0;
 }
+
+

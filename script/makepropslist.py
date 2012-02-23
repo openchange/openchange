@@ -758,7 +758,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 		}
 	}
 
-	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
+	DEBUG(5, ("%s: type for property '%x' could not be deduced\\n", __FUNCTION__, untypedtag));
 	return 0;
 }
 
@@ -887,7 +887,7 @@ static struct pidtags pidtags[] = {
 				print "Skipping output of pidtags entry for", entry["CanonicalName"], "(duplicate)"
 				continue
 			propline = "\t{ " + string.ljust(entry["CanonicalName"] + ",", 68)
-			propline += " \"0x" + format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:] + "\" },\n"
+			propline += "\"" + entry["CanonicalName"] + "\" },\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
 	sortedproplines = sorted(proplines)

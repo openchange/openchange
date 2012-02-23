@@ -139,7 +139,6 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
 def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Provision schema using LDIF specified file
-
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
@@ -150,13 +149,15 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """
 
     session_info = system_session()
-    samdb = Ldb(url=lp.samdb_url(), session_info = session_info,
-                lp=lp, options=["modules:"])
 
-    reporter.reportNextStep(msg)
-    samdb.transaction_start()
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+               credentials=creds, lp=lp)
+
+    db.transaction_start()
+
     try:
-        setup_ldb(samdb, setup_path(ldif), {
+        reporter.reportNextStep(msg)
+        setup_add_ldif(db, setup_path(ldif), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
                 "CONFIGDN": names.configdn,
@@ -166,17 +167,15 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
                 "DNSDOMAIN": names.dnsdomain,
                 "NETBIOSNAME": names.netbiosname,
                 "HOSTNAME": names.hostname
-                })                            
-    except Exception:
-        samdb.transaction_cancel()
+                })
+    except:
+        db.transaction_cancel()
         raise
-    else:
-        samdb.transaction_commit()
+
+    db.transaction_commit()
 
 def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
-    """Modify schema using LDIF specified file
-
-    :param setup_path: Path to the setup directory.
+    """Modify schema using LDIF specified file                                                                                                                                                                          :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
     :param creds: Credentials Context
@@ -186,21 +185,24 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """
 
     session_info = system_session()
-    samdb = Ldb(url=lp.samdb_url(), session_info=session_info, 
-                lp=lp, options=["modules:"])
 
-    reporter.reportNextStep(msg)
-    samdb.transaction_start()
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+               credentials=creds, lp=lp)
+
+    db.transaction_start()
+
     try:
-        setup_modify_ldif(samdb, setup_path(ldif), 
-                          { 'SCHEMADN': names.schemadn,
-                            'CONFIGDN': names.configdn
-                            })
+        reporter.reportNextStep(msg)
+        setup_modify_ldif(db, setup_path(ldif), {
+                "SCHEMADN": names.schemadn,
+                "CONFIGDN": names.configdn
+                })
     except:
-        samdb.transaction_cancel()
+        db.transaction_cancel()
         raise
-    else:
-        samdb.transaction_commit()
+
+    db.transaction_commit()
+
 
 def install_schemas(setup_path, names, lp, creds, reporter):
     """Install the OpenChange-specific schemas in the SAM LDAP database. 
@@ -212,6 +214,8 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
     session_info = system_session()
+
+    lp.set("dsdb:schema update allowed", "yes")
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
     samdb = SamDB(url=lp.samdb_url(), session_info=session_info,

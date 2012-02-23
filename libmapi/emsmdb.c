@@ -94,6 +94,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	if (!p) return NULL;
 	if (!cred) return NULL;
 	if (!return_value) return NULL;
+	if (!session->profile->mailbox) return NULL;
 
 	mem_ctx = talloc_named(NULL, 0, "emsmdb_connect");
 

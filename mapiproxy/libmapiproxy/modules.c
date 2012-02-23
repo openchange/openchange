@@ -24,7 +24,7 @@
 #include <sys/types.h>
 #include <dirent.h>
 
-#define SAMBA_MODULE_INIT "samba_module_init"
+#define SAMBA_INIT_MODULE "samba_init_module"
 
 static openchange_plugin_init_fn load_plugin(const char *path)
 {
@@ -43,11 +43,11 @@ static openchange_plugin_init_fn load_plugin(const char *path)
 		return NULL;
 	}
 
-	init_fn = (openchange_plugin_init_fn)dlsym(handle, SAMBA_MODULE_INIT);
+	init_fn = (openchange_plugin_init_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	if (init_fn == NULL) {
 		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  SAMBA_MODULE_INIT, path, dlerror()));
+			  SAMBA_INIT_MODULE, path, dlerror()));
 		DEBUG(1, ("Loading plugin '%s' failed\n", path));
 		dlclose(handle);
 		return NULL;

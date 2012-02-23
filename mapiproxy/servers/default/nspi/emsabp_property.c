@@ -46,6 +46,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
 	{ PidTagCompanyName,			"company",		false,	NULL			},
 	{ PidTagDisplayName,			"displayName",		false,	NULL			},
+	{ PidTagDisplayName_string8,		"displayName",		false,	NULL			},
 	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},
 	{ PidTagAddressBookHomeMessageDatabase,	"homeMDB",		true,	"legacyExchangeDN"	},
 	{ PidTagAddressBookProxyAddresses,	"proxyAddresses",	false,	NULL			},

@@ -847,6 +847,15 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				}
 				lpProps.value.l = containerID;
 				break;
+			case PidTagDisplayName_string8:
+				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
+				if (!lpProps.value.lpszA) {
+					proptag = (int) lpProps.ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag += PT_ERROR;
+					lpProps.ulPropTag = (enum MAPITAGS) proptag;
+				}
+				break;
 			case PidTagDisplayName:
 				lpProps.value.lpszW = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszW) {

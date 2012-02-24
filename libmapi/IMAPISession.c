@@ -223,16 +223,16 @@ retry:
 	store = (mapi_object_store_t*)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[0];
-	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[1];
-	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[2];
-	store->fid_pf_EFormsRegistryRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[3];
-	store->fid_pf_FreeBusyRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[4];
-	store->fid_pf_OfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[5];
-	store->fid_pf_EFormsRegistry = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[6];
-	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[7];
-	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[8];
-	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[9];
+	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.Root;
+	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.IPMSubTree;
+	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.NonIPMSubTree;
+	store->fid_pf_EFormsRegistryRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.EFormsRegistry;
+	store->fid_pf_FreeBusyRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FreeBusy;
+	store->fid_pf_OfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.OAB;
+	store->fid_pf_EFormsRegistry = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalizedEFormsRegistry;
+	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalFreeBusy;
+	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalOAB;
+	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.NNTPIndex;
 	store->store_type = PublicFolder;
 
 	talloc_free(mapi_response);
@@ -395,19 +395,19 @@ retry:
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_mailbox_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];
-	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[1];
-	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[2];
-	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[3];
-	store->fid_inbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[4]; 
-	store->fid_outbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[5];
-	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[6];
-	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[7];
-	store->fid_common_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[8];
-	store->fid_schedule = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[9];
-	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[10];
-	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[11];
-	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[12];
+	store->fid_mailbox_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Root;
+	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.DeferredAction;
+	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.SpoolerQueue;
+	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.IPMSubTree;
+	store->fid_inbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Inbox;
+	store->fid_outbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Outbox;
+	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.SentItems;
+	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.DeletedItems;
+	store->fid_common_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.CommonViews;
+	store->fid_schedule = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Schedule;
+	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Search;
+	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Views;
+	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Shortcuts;
 	store->store_type = PrivateFolderWithoutCachedFids;
 
 	talloc_free(mapi_response);

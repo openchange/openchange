@@ -19,11 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-/* #include "config.h" */
+#include "config.h"
 #include <stdio.h>
 #include <string.h>
 
-#include "mapistore_errors.h"
 #include "mapistore.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>

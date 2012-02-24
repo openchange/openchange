@@ -499,7 +499,7 @@ _PUBLIC_ enum MAPISTATUS SetRecipientType(struct SRow *aRow, enum ulRecipClass R
 	enum MAPISTATUS		retval;
 	struct SPropValue	lpProp;
 
-	lpProp.ulPropTag = PidTagRecipientType;
+	lpProp.ulPropTag = PR_RECIPIENT_TYPE;
 	lpProp.value.l = RecipClass;
 
 	retval = SRow_addprop(aRow, lpProp);
@@ -1413,7 +1413,8 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 		lpProps->cValues = reply->properties.lpProps.cValues;
 		lpProps->lpProps = talloc_steal((TALLOC_CTX *)session, reply->properties.lpProps.lpProps);
 	} else {
-		lpProps = NULL;
+		lpProps->cValues = 0;
+		lpProps->lpProps = NULL;
 	}
 
 	talloc_free(mapi_response);
@@ -1513,8 +1514,10 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	request.flags = flags;
 	size += sizeof(uint8_t);
 
-	request.clientdata.length = 0;
-	request.clientdata.data = NULL;
+	/* TEMP HACK, see exchange.idl:
+	   request.clientdata.length = 0;
+	   request.clientdata.data = NULL;
+	*/
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -1692,8 +1695,8 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	message->SRowSet.cRows = reply->RowCount;
 	message->SRowSet.aRow = talloc_array((TALLOC_CTX *)message, struct SRow, reply->RowCount + 1);
 
-	message->SPropTagArray.cValues = reply->RecipientCount;
-	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns);
+	message->SPropTagArray.cValues = reply->RecipientColumns.cValues;
+	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
 		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,

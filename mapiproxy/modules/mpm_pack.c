@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008-2011
+   Copyright (C) Julien Kerihuel 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -50,7 +50,7 @@ static uint32_t proxypack(TALLOC_CTX *mem_ctx, struct EcDoRpc_MAPI_REQ *mapi_req
 	size = 0;	
 	request.bin.cb = ndr->offset;
 	size += sizeof (uint16_t);
-	request.bin.lpb = (uint8_t *) talloc_memdup(mem_ctx, ndr->data, ndr->offset);
+	request.bin.lpb = talloc_memdup(mem_ctx, ndr->data, ndr->offset);
 	size += ndr->offset;
 
 	/* Fill the MAPI_REQ request */
@@ -288,10 +288,11 @@ static NTSTATUS pack_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
  */
 static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 {
-	char		**calls;
+	char			**calls;
 	unsigned long		opnum;
 	int			i;
 	int			j;
+	struct loadparm_context	*lp_ctx;
 
 	/* Fetch the mapi call list from smb.conf */
 	calls = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, MPM_NAME, "opnums"), NULL);
@@ -322,6 +323,8 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	/* Fetch the lasthop parameter from smb.conf */
 	mpm->lasthop = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, MPM_NAME, "lasthop", true);
 
+	lp_ctx = loadparm_init(dce_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init();
 
 	return NT_STATUS_OK;

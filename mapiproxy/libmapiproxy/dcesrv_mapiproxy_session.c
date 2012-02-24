@@ -181,7 +181,7 @@ bool mpm_session_cmp_sub(struct mpm_session *session,
 {
 	if (!session) return false;
 
-	if ((memcmp(&(session->server_id), &sid, sizeof(struct server_id)) == 0) &&
+	if (memcmp(&session->server_id, &sid, sizeof(struct server_id) == 0) &&
 	    (session->context_id == context_id)) {
 		return true;
 	}

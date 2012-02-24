@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Julien Kerihuel 2009-2010
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,20 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-/**
-   \file mapistore_private.h
-
-   \brief internal / private API for mapistore.
- */
-
 #ifndef	__MAPISTORE_PRIVATE_H__
 #define	__MAPISTORE_PRIVATE_H__
 
-#define	__STDC_FORMAT_MACROS	1
-#include <inttypes.h>
 #include <talloc.h>
-
-#include "mapistore_indexing_db.h"
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \
@@ -57,147 +47,16 @@ struct tdb_wrap {
 	struct tdb_wrap		*next;
 };
 
-struct ldb_wrap_context {
-	const char		*url;
-	struct tevent_context	*ev;
-	unsigned int		flags;
-};
 
 struct ldb_wrap {
   struct ldb_wrap			*next;
 	struct ldb_wrap			*prev;
-	struct ldb_wrap_context 	context;
+	struct ldb_wrap_context {
+		const char		*url;
+		struct tevent_context	*ev;
+		unsigned int		flags;
+	} context;
 	struct ldb_context		*ldb;
-};
-
-
-#define	MAPISTORE_NAMESPACE_COMMON	"://"
-
-/**
-   mapistore database context.
-
-   This structure stores parameters for mapistore database
-   initialization and backend initialization.
- */
-#define	DFLT_MDB_FIRSTORG	"First Organization"
-#define	DFLT_MDB_FIRSTOU	"First Organization Unit"
-#define	TMPL_MDB_SERVERDN	"CN=%s,%s"
-#define	TMPL_MDB_FIRSTORGDN	"CN=%s,CN=%s,%s"
-#define	TMPL_MDB_USERSTORE	"CN=%s,%s"
-
-struct mapistoredb_conf {
-	char		*db_path;
-	char		*db_named_path;
-	char		*mstore_path;
-	char		*netbiosname;
-	char		*dnsdomain;
-	char		*domain;
-	char		*domaindn;
-	char		*serverdn;
-	char		*firstorg;
-	char		*firstou;
-	char		*firstorgdn;
-};
-
-struct mapistoredb_context {
-	struct loadparm_context		*lp_ctx;
-	struct mapistoredb_conf		*param;
-	struct mapistore_context	*mstore_ctx;
-};
-
-#define	MDB_INIT_LDIF_TMPL		\
-	"dn: @OPTIONS\n"		\
-	"checkBaseOnSearch: TRUE\n\n"	\
-	"dn: @INDEXLIST\n"		\
-	"@IDXATTR: cn\n"		\
-	"@IDXATTR: objectClass\n\n"	\
-	"dn: @ATTRIBUTES@\n"		\
-	"cn: CASE_INSENSITIVE\n"	\
-	"dn: CASE_INSENSITIVE\n\n"
-
-#define	MDB_ROOTDSE_LDIF_TMPL						\
-	"dn: @ROOTDSE\n"						\
-	"defaultNamingContext: CN=%s,%s,%s\n"				\
-	"rootDomainNamingContext: %s\n"					\
-	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
-
-#define	MDB_SERVER_LDIF_TMPL	       	\
-	"dn: %s\n"			\
-	"objectClass: top\n"		\
-	"objectClass: server\n"		\
-	"cn: %s\n\n"			\
-					\
-	"dn: CN=%s,%s\n"		\
-	"objectClass: top\n"		\
-	"objectClass: org\n"		\
-	"cn: %s\n\n"			\
-					\
-	"dn: CN=%s,CN=%s,%s\n"		\
-	"objectClass: top\n"		\
-	"objectClass: ou\n"		\
-	"cn: %s\n"				
-
-#define	MDB_USER_STORE_LDIF_TMPL	\
-	"dn: CN=%s,%s\n"		\
-	"objectClass: top\n"		\
-	"objectClass: store\n"		\
-	"objectClass: container\n"	\
-	"cn: %s\n"			\
-	"GlobalCount: 0x1\n"		\
-	"ReplicaID: 0x1\n\n"		
-		
-				
-#define	MDB_MAILBOX_LDIF_TMPL		\
-	"dn: CN=Folders,CN=%s,%s\n"    	\
-	"objectClass: top\n"	       	\
-	"objectClass: container\n"     	\
-	"cn: Folders\n\n"	       	\
-					\
-	"dn: %s\n"			\
-	"cn: %s\n"			\
-	"objectClass: mailbox\n"	\
-	"objectClass: container\n"	\
-	"MailboxGUID: %s\n"		\
-	"ReplicaGUID: %s\n"		\
-	"ReplicaID: 1\n"		\
-	"SystemIdx: %d\n"		\
-	"mapistore_uri: %s\n"		\
-	"distinguishedName: %s\n"
-
-/** Named properties database ldif */
-#define	MDB_NPROPS_INIT_LDIF_TMPL		\
-	"dn: @OPTIONS\n"			\
-	"checkBaseOnSearch: TRUE\n\n"		\
-	"dn: @INDEXLIST\n"			\
-	"@IDXATTR: cn\n"			\
-	"@IDXATTR: objectClass\n"		\
-	"@IDXATTR: mapped_id\n\n"		\
-	"dn: @ATTRIBUTES@\n"			\
-	"cn: CASE_INSENSITIVE\n"		\
-	"dn: CASE_INSENSITIVE\n\n"
-
-#define	MDB_NPROPS_ROOTDSE_LDIF_TMPL					\
-	"dn: @ROOTDSE\n"						\
-	"defaultNamingContext: DC=server\n"				\
-	"rootDomainNamingContext: DC=server\n"				\
-	"vendorName: OpenChange Project (http://www.openchange.org)\n\n"
-
-#define	MDB_NPROPS_USER_LDIF				\
-	"dn: CN=%s,CN=Users,CN=Server\n"		\
-	"objectClass: user\n"				\
-	"objectClass: container\n"			\
-	"mapping_index: 0x%.4x\n"			\
-	"cn: %s\n\n"					\
-
-#define	MDB_NPROPS_MAPPED_INDEX_CHANGE_LDIF		\
-	"dn: CN=%s,CN=Server\n"				\
-	"changetype: modify\n"				\
-	"replace: mapping_index\n"			\
-	"mapping_index: 0x%.4x\n\n"
-
-enum MAPISTORE_NAMEDPROPS_TYPE {
-	MAPISTORE_NAMEDPROPS_INTERNAL = 0,
-	MAPISTORE_NAMEDPROPS_EXTERNAL = 1
 };
 
 /**
@@ -212,14 +71,8 @@ enum MAPISTORE_NAMEDPROPS_TYPE {
    higher than last_id.
  */
 struct id_mapping_context {
-	/* MAPISTORE v1 */
 	struct tdb_wrap		*used_ctx;
 	uint64_t		last_id;
-	/* !MAPISTORE_v1 */
-
-	/* MAPISTORE v2 */
-	struct tevent_context	*ev;
-	struct ldb_context	*ldb_ctx;
 };
 
 
@@ -250,33 +103,23 @@ struct processing_context {
 struct indexing_context_list {
 	struct tdb_wrap			*index_ctx;
 	char				*username;
-	uint32_t			ref_count;
+	// uint32_t			ref_count;
 	struct indexing_context_list	*prev;
 	struct indexing_context_list	*next;
 };
 
-/**
-   MAPIStore indexing context list
- */
-struct mapistore_indexing_context_list {
-	struct tdb_wrap				*tdb_ctx;
-	const char				*username;
-	uint32_t				ref_count;
-	struct mapistore_indexing_context_list	*prev;
-	struct mapistore_indexing_context_list	*next;
-};
-
-#define	MAPISTORE_INDEXING_DBPATH_TMPL	"%s/mapistore_indexing_%s.tdb"
-#define	MAPISTORE_INDEXING_URI		"URI/%s"
-#define	MAPISTORE_INDEXING_FMID		"FMID/0x%.16"PRIx64
-
 #define	MAPISTORE_DB_NAMED		"named_properties.ldb"
-
-#define	MAPISTORE_DB_NAMED_V2		"mapistore_named_properties.ldb"
-#define	MAPISTORE_DB_NAMED_V2_LDIF	"mapistore_namedprops_v2.ldif"
-
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
+
+struct replica_mapping_context_list {
+	struct tdb_context		*tdb;
+	char				*username;
+	uint32_t			ref_count;
+	struct replica_mapping_context_list	*prev;
+	struct replica_mapping_context_list	*next;
+};
+#define	MAPISTORE_DB_REPLICA_MAPPING	"replica_mapping.tdb"
 
 /**
    The database name where in use ID mappings are stored
@@ -287,87 +130,92 @@ struct mapistore_indexing_context_list {
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
 
 /**
-   Mapistore opaque context to pass down to backends
-
-   Semantically, encapsulating the mstore_ctx within a container's
-   structure help abstracting mapistore logic from backend's
-   perspective and write a specific API dealing exclusively with this
-   particular context.
+   MAPIStore management defines
  */
-struct mapistore_backend_context {
-	struct mapistore_context	*mstore_ctx;
-};
+#define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
+#define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
 
 __BEGIN_DECLS
 
+/**
+   Properties used in mapistore but not referenced anymore in MS-OXCPROPS.pdf
+ */
+#define PR_ATTACH_ID				0x3f880014
+#define PR_MODIFIER_FLAGS			0x405a0003
+#define	PR_RECIPIENT_ON_NORMAL_MSG_COUNT	0x66af0003
+
 /* definitions from mapistore_processing.c */
-enum MAPISTORE_ERROR mapistore_init_mapping_context(struct processing_context *);
-enum MAPISTORE_ERROR mapistore_get_context_id(struct processing_context *, uint32_t *);
-enum MAPISTORE_ERROR mapistore_free_context_id(struct processing_context *, uint32_t);
-/* mapistore_v2 */
-enum MAPISTORE_ERROR mapistore_ldb_write_ldif_string_to_store(struct ldb_context *, const char *);
-enum MAPISTORE_ERROR mapistore_write_ldif_string_to_store(struct processing_context *, const char *);
-enum MAPISTORE_ERROR mapistore_ldb_write_ldif_file_to_store(struct ldb_context *, const char *);
-enum MAPISTORE_ERROR mapistore_get_new_fmid(struct processing_context *, const char *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_get_new_allocation_range(struct processing_context *, const char *, uint64_t, uint64_t *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_get_mailbox_uri(struct processing_context *, const char *, char **);
+const char *mapistore_get_mapping_path(void);
+enum mapistore_error mapistore_init_mapping_context(struct processing_context *);
+enum mapistore_error mapistore_get_context_id(struct processing_context *, uint32_t *);
+enum mapistore_error mapistore_free_context_id(struct processing_context *, uint32_t);
+
 
 /* definitions from mapistore_backend.c */
-enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_get_next_backend(const char **, const char **, const char **, uint32_t *);
-enum MAPISTORE_ERROR mapistore_backend_get_namedprops_ldif(TALLOC_CTX *, const char *, char **, enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *);
-struct backend_context *mapistore_backend_create_context(TALLOC_CTX *, const char *, const char *, const char *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *);
-enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *);
-enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *, char **);
-enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *, enum MAPISTORE_DFLT_FOLDERS, const char *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *, const char *, uint8_t);
-enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *, const char *, uint8_t, char **);
-enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *, const char *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_closedir(struct backend_context *, const char *folder_uri);
-enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *, char *, const char *, const char *, enum FOLDER_TYPE, char **);
-enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *, const char *, enum MAPISTORE_TABLE_TYPE, uint32_t *);
-enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *, const char *, const char *);
-enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *, const char *, 
-							  enum MAPISTORE_TABLE_TYPE, uint32_t, enum MAPITAGS, void **);
-enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *, const char *, const char *, struct mapistore_message *);
-enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *, const char *, char **, bool *);
-enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *, const char *, uint8_t);
-enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *, const char *, uint8_t);
-enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *, const char *, uint8_t, 
-						struct SPropTagArray *, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *, const char *, uint8_t, struct SRow *);
-enum MAPISTORE_ERROR mapistore_backend_get_uri_by_name(struct backend_context *, const char *, const char *, char **);
-enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *, const char *, enum MAPISTORE_DELETION_TYPE);
+enum mapistore_error mapistore_backend_init(TALLOC_CTX *, const char *);
+enum mapistore_error mapistore_backend_registered(const char *);
+enum mapistore_error mapistore_backend_list_contexts(const char *, struct tdb_wrap *, TALLOC_CTX *, struct mapistore_contexts_list **);
+enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, const char *, uint64_t, struct backend_context **);
+enum mapistore_error mapistore_backend_create_root_folder(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
+enum mapistore_error mapistore_backend_add_ref_count(struct backend_context *);
+enum mapistore_error mapistore_backend_delete_context(struct backend_context *);
+enum mapistore_error mapistore_backend_get_path(struct backend_context *, TALLOC_CTX *, uint64_t, char **);
+
+enum mapistore_error mapistore_backend_folder_open_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **);
+enum mapistore_error mapistore_backend_folder_create_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
+enum mapistore_error mapistore_backend_folder_delete(struct backend_context *, void *);
+enum mapistore_error mapistore_backend_folder_open_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, bool, void **);
+enum mapistore_error mapistore_backend_folder_create_message(struct backend_context *, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
+enum mapistore_error mapistore_backend_folder_delete_message(struct backend_context *, void *, uint64_t, uint8_t);
+enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_context *, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct I8Array_r **, uint64_t *);
+enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *, void *, enum mapistore_table_type, uint32_t *);
+enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backend_context *, void *, const char *, uint64_t *);
+enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
+enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_context *, void *, uint8_t, uint16_t, struct PermissionData *);
+
+enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *, void *, TALLOC_CTX *, struct mapistore_message **);
+enum mapistore_error mapistore_backend_message_modify_recipients(struct backend_context *, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
+enum mapistore_error mapistore_backend_message_set_read_flag(struct backend_context *, void *, uint8_t);
+enum mapistore_error mapistore_backend_message_save(struct backend_context *, void *);
+enum mapistore_error mapistore_backend_message_submit(struct backend_context *, void *, enum SubmitFlags);
+enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
+enum mapistore_error mapistore_backend_message_open_attachment(struct backend_context *, void *, TALLOC_CTX *, uint32_t, void **);
+enum mapistore_error mapistore_backend_message_create_attachment(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
+enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *, void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
+
+enum mapistore_error mapistore_backend_table_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
+enum mapistore_error mapistore_backend_table_set_columns(struct backend_context *, void *, uint16_t, enum MAPITAGS *);
+enum mapistore_error mapistore_backend_table_set_restrictions(struct backend_context *, void *, struct mapi_SRestriction *, uint8_t *);
+enum mapistore_error mapistore_backend_table_set_sort_order(struct backend_context *, void *, struct SSortOrderSet *, uint8_t *);
+enum mapistore_error mapistore_backend_table_get_row(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_query_type, uint32_t, struct mapistore_property_data **);
+enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *, void *, enum mapistore_query_type, uint32_t *);
+enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_context *, void *, uint32_t);
+
+enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
+enum mapistore_error mapistore_backend_properties_get_properties(struct backend_context *, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
+enum mapistore_error mapistore_backend_properties_set_properties(struct backend_context *, void *, struct SRow *);
+
+enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_context *, TALLOC_CTX *, const char *, const char *, const char *, const char *, char **);
 
 /* definitions from mapistore_tdb_wrap.c */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
+struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 /* definitions from mapistore_ldb_wrap.c */
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
 
 /* definitions from mapistore_indexing.c */
-enum MAPISTORE_ERROR mapistore_indexing_dump_object(struct mapistore_indexing_entry *);
-enum MAPISTORE_ERROR mapistore_indexing_dump_reverse_entry(struct mapistore_indexing_entry_r *);
-enum MAPISTORE_ERROR mapistore_indexing_record_search_uri(struct mapistore_indexing_context_list *, const char *);
-enum MAPISTORE_ERROR mapistore_indexing_get_record_fmid_by_uri(struct mapistore_indexing_context_list *, const char *, uint64_t *);
-enum MAPISTORE_ERROR mapistore_indexing_get_record_uri_by_fmid(struct mapistore_indexing_context_list *, uint64_t, char **);
-
-/* MAPISTORE_v1 */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
-enum MAPISTORE_ERROR mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
-enum MAPISTORE_ERROR mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, uint64_t, uint8_t);
-enum MAPISTORE_ERROR mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, uint64_t, enum MAPISTORE_DELETION_TYPE);
-enum MAPISTORE_ERROR mapistore_indexing_add_ref_count(struct indexing_context_list *);
-enum MAPISTORE_ERROR mapistore_indexing_del_ref_count(struct indexing_context_list *);
-/* !MAPISTORE_v1 */
-
-/* MAPISTORE_v2 */
-enum MAPISTORE_ERROR mapistore_indexing_context_add_ref(struct mapistore_context *, const char *);
-/* !MAPISTORE_v2 */
+enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
+enum mapistore_error mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t);
+enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
+// enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
+// enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
 
 /* definitions from mapistore_namedprops.c */
-enum MAPISTORE_ERROR mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);
+enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);
 
 __END_DECLS
 

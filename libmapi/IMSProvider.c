@@ -394,7 +394,6 @@ enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
    configures the server to send notifications on this port.
 
    \param session the session context to register for notifications on.
-   \param ulEventMask the mask of events to provide notifications for.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -406,8 +405,7 @@ enum MAPISTATUS GetNewLogonId(struct mapi_session *session, uint8_t *logon_id)
 
    \sa RegisterAsyncNotification, Subscribe, Unsubscribe, MonitorNotification, GetLastError 
 */
-_PUBLIC_ enum MAPISTATUS RegisterNotification(struct mapi_session *session,
-					      uint16_t ulEventMask)
+_PUBLIC_ enum MAPISTATUS RegisterNotification(struct mapi_session *session)
 {
 	NTSTATUS		status;
 	struct mapi_context	*mapi_ctx;
@@ -441,7 +439,7 @@ _PUBLIC_ enum MAPISTATUS RegisterNotification(struct mapi_session *session,
 retry:
 	lpKey->ab[7] = rand;
 
-	status = emsmdb_register_notification(session, lpKey, ulEventMask);
+	status = emsmdb_register_notification(session, lpKey);
 	if (!NT_STATUS_IS_OK(status)) {
 		if (attempt < 5) {
 			rand++;

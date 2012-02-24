@@ -1890,7 +1890,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}	
 
 	/* Create another folder */
-        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, "[MT] Target Folder", NULL,
+        retval = CreateFolder(&obj_top_folder, FOLDER_GENERIC, "MT Target Folder", NULL,
                               OPEN_IF_EXISTS, &obj_targ_folder);
 	mapitest_print_retval(mt, "CreateFolder");
 	if (retval != MAPI_E_SUCCESS) {
@@ -1957,7 +1957,7 @@ _PUBLIC_ bool mapitest_oxcprpt_CopyTo(struct mapitest *mt)
 	}
 	MAPIFreeBuffer(SPropTagArray);
 	if (lpProps[0].value.lpszA) {
-		if (!strncmp("[MT] Target Folder", lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
+		if (!strncmp("MT Target Folder", lpProps[0].value.lpszA, strlen(lpProps[0].value.lpszA))) {
 			mapitest_print(mt, "* Step 19E - Check: Target folder props - [SUCCESS] (%s)\n",
 				       lpProps[0].value.lpszA);
 		} else {

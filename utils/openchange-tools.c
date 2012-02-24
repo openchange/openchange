@@ -187,7 +187,6 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	struct SPropValue		*lpProps;
 	struct SRow			aRow;
 	uint32_t			count;
-	ssize_t				len;
 	/* common email fields */
 	const char			*msgid;
 	const char			*from, *to, *cc, *bcc;
@@ -198,15 +197,15 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	const char			*codepage;
 
 	/* Build the array of properties we want to fetch */
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x14,
 					  PR_INTERNET_MESSAGE_ID,
 					  PR_INTERNET_MESSAGE_ID_UNICODE,
 					  PR_CONVERSATION_TOPIC,
 					  PR_CONVERSATION_TOPIC_UNICODE,
 					  PR_MSG_EDITOR_FORMAT,
-					  PR_BODY,
 					  PR_BODY_UNICODE,
 					  PR_HTML,
+					  PR_RTF_IN_SYNC,
 					  PR_RTF_COMPRESSED,
 					  PR_SENT_REPRESENTING_NAME,
 					  PR_SENT_REPRESENTING_NAME_UNICODE,
@@ -283,8 +282,8 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 	printf("Body:\n");
 	fflush(0);
 	if (body.length) {
-		len = write(1, body.data, body.length);
-		len = write(1, "\n", 1);
+		write(1, body.data, body.length);
+		write(1, "\n", 1);
 		fflush(0);
 		talloc_free(body.data);
 	} 

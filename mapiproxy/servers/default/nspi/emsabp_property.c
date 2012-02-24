@@ -36,16 +36,25 @@ struct emsabp_property {
 
 /* MAPI Property tags to AD attributes mapping */
 static const struct emsabp_property emsabp_property[] = {
-	{ PidTagAnr,					"anr",			false,	NULL			},
-	{ PidTagAccount,				"sAMAccountName",	false,	NULL			},
-	{ PidTagCompanyName,				"company",		false,	NULL			},
-	{ PidTagDisplayName,				"displayName",		false,	NULL			},
-	{ PidTagEmailAddress,				"legacyExchangeDN",	false,	NULL			},
-	{ PidTagAddressBookHomeMessageDatabase,		"homeMDB",		true,	"legacyExchangeDN"	},
-	{ PidTagAddressBookProxyAddresses,		"proxyAddresses",	false,	NULL			},
-	{ PidTagAddressBookNetworkAddress,		"networkAddress",	false,	NULL			},
-	{ PidTagTitle,					"personalTitle",	false,	NULL			},
-	{ 0,						NULL,			false,	NULL			}
+	{ PidTagAnr,				"anr",			false,	NULL			},
+	{ PidTagAccount,			"sAMAccountName",	false,	NULL			},
+	{ PR_GIVEN_NAME,			"givenName",		false,	NULL			},
+	{ PR_SURNAME,				"sn",			false,	NULL			},
+	{ PR_TRANSMITTABLE_DISPLAY_NAME,	"displayName",		false,	NULL			},
+	{ PR_7BIT_DISPLAY_NAME,			"displayName",		false,	NULL			},
+	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
+	{ PidTagCompanyName,			"company",		false,	NULL			},
+	{ PidTagDisplayName,			"displayName",		false,	NULL			},
+	{ PidTagDisplayName_string8,		"displayName",		false,	NULL			},
+	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},
+	{ PidTagEmailAddress_string8,		"legacyExchangeDN",	false,	NULL			},
+	{ PidTagAddressBookHomeMessageDatabase,	"homeMDB",		true,	"legacyExchangeDN"	},
+	{ PidTagAddressBookProxyAddresses,	"proxyAddresses",	false,	NULL			},
+	{ PidTagAddressBookNetworkAddress,	"networkAddress",	false,	NULL			},
+	{ PidTagTitle,				"personalTitle",	false,	NULL			},
+	{ PR_EMS_AB_OBJECT_GUID,		"objectGUID",		false,	NULL			},
+	{ 0,					NULL,			false,	NULL			}
 };
 
 
@@ -61,15 +70,14 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 {
 	int		i;
 
-	/* Search if the attribute is available */
 	for (i = 0; emsabp_property[i].attribute; i++) {
 		if (ulPropTag == emsabp_property[i].ulPropTag) {
 			return emsabp_property[i].attribute;
 		}
 	}
-
-	/* Otherwise try its PT_UNICODE form */
-	if ((ulPropTag & 0xFFFF) == PT_STRING8) {
+	
+	/* if ulPropTag type is PT_UNICODE, turn it to PT_STRING8 */
+	if ((ulPropTag & 0xFFFF) == PT_UNICODE) {
 		ulPropTag &= 0xFFFF0000;
 		ulPropTag += PT_UNICODE;
 	} else if ((ulPropTag & 0xFFFF) == PT_MV_STRING8) {
@@ -125,6 +133,13 @@ _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 
 	if (!ulPropTag) return -1;
 
+	for (i = 0; emsabp_property[i].attribute; i++) {
+		if (ulPropTag == emsabp_property[i].ulPropTag) {
+			return (emsabp_property[i].ref == true) ? 1 : 0;
+		}
+	}
+
+	ulPropTag = (ulPropTag & 0xFFFF) + 0x001e;
 	for (i = 0; emsabp_property[i].attribute; i++) {
 		if (ulPropTag == emsabp_property[i].ulPropTag) {
 			return (emsabp_property[i].ref == true) ? 1 : 0;

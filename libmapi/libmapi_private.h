@@ -70,7 +70,7 @@ struct emsmdb_context	*emsmdb_connect_ex(TALLOC_CTX *, struct mapi_session *, st
 int			emsmdb_disconnect_dtor(void *);
 enum MAPISTATUS		emsmdb_disconnect(struct emsmdb_context *);
 struct mapi_notify_ctx	*emsmdb_bind_notification(struct mapi_context *, TALLOC_CTX *);
-NTSTATUS		emsmdb_register_notification(struct mapi_session *, struct NOTIFKEY *, uint16_t);
+NTSTATUS		emsmdb_register_notification(struct mapi_session *, struct NOTIFKEY *);
 void			free_emsmdb_property(struct SPropValue *, void *);
 const void		*pull_emsmdb_property(TALLOC_CTX *, struct loadparm_context *, uint32_t *, enum MAPITAGS, DATA_BLOB *);
 enum MAPISTATUS		emsmdb_get_SPropValue(TALLOC_CTX *, struct loadparm_context *, DATA_BLOB *, struct SPropTagArray *, struct SPropValue **, uint32_t *, uint8_t);

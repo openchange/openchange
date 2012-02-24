@@ -19,6 +19,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/mapi_nameid.h"
 #include "libmapi/mapidump.h"
 #include <time.h>
 
@@ -242,7 +243,7 @@ _PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset
 	uint32_t		j;
 
 	for (i = 0, j= 0; i < flaglist->cValues; i++) {
-		switch (flaglist->aulPropTag[i]) {
+	  switch ((int)flaglist->aulPropTag[i]) {
 		case MAPI_UNRESOLVED:
 			printf("\tUNRESOLVED (%s)\n", usernames[i]);
 			break;
@@ -397,7 +398,6 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;
-	ssize_t				len;
 
 	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID_UNICODE);
 	if (!msgid)
@@ -472,8 +472,8 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	if (body) {
 		printf("%s\n", body);
 	} else if (html) {
-		len = write(1, html->lpb, html->cb);
-		len = write(1, "\n", 1);
+		write(1, html->lpb, html->cb);
+		write(1, "\n", 1);
 		fflush(0);
 	}
 }
@@ -835,7 +835,7 @@ _PUBLIC_ void mapidump_foldercreated(struct FolderCreatedNotification *data, con
 	fflush(0);
 	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+	mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
 }
 
 _PUBLIC_ void mapidump_folderdeleted(struct FolderDeletedNotification *data, const char *sep)
@@ -889,7 +889,9 @@ _PUBLIC_ void mapidump_messagecreated(struct MessageCreatedNotification *data, c
 	fflush(0);
 	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+        if (data->TagCount != 0xffff) {
+                mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
+        }
 }
 
 _PUBLIC_ void mapidump_messagemodified(struct MessageModifiedNotification *data, const char *sep)

@@ -21,6 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/mapi_nameid.h"
 #include "libocpf/ocpf.h"
 #include <samba/popt.h>
 #include <param.h>
@@ -281,7 +282,6 @@ static const char *get_filename(const char *filename)
 static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 			    mapi_object_t *obj_message)
 {
-	enum MAPISTATUS		retval;
 	char			*id;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
@@ -291,14 +291,14 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 
 	/* retrieve the folder ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
-	retval = GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
+	GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	fid = (const uint64_t *)get_SPropValue_data(lpProps);
 
 	/* retrieve the message ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_MID);
-	retval = GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
+	GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
 	mid = (const uint64_t *)get_SPropValue_data(lpProps);
@@ -320,7 +320,6 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 {
 	TALLOC_CTX	*mem_ctx;
 	enum MAPISTATUS	retval;
-	ssize_t		len;
 	char		*path;
 	mapi_object_t	obj_stream;
 	uint16_t	read_size;
@@ -330,8 +329,9 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 
 	if (!filename || !size) return false;
 
-	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 	mapi_object_init(&obj_stream);
+
+	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 
 	if (!(dir = opendir(oclient->store_folder))) {
 		if (mkdir(oclient->store_folder, 0700) == -1) return false;
@@ -352,7 +352,7 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	do {
 		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
 		if (retval != MAPI_E_SUCCESS) goto error;
-		len = write(fd, buf, read_size);
+		write(fd, buf, read_size);
 	} while (read_size);
 	
 	close(fd);
@@ -429,7 +429,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
+					  PR_SUBJECT_UNICODE);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
@@ -699,6 +699,9 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 
 	/* Open a stream on the parent for the given property */
 	retval = OpenStream(&obj_parent, mapitag, access_flags, &obj_stream);
+	fprintf (stderr, "openstream: retval = %s (0x%.8x)\n",
+		 mapi_get_errstr (retval), retval);
+
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* WriteStream operation */
@@ -717,7 +720,10 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 		fflush(0);
 
 		/* Exit when there is nothing left to write */
-		if (!read_size) return true;
+		if (!read_size) {
+			mapi_object_release(&obj_stream);
+			return true;
+		}
 		
 		offset += read_size;
 
@@ -725,6 +731,8 @@ static bool openchangeclient_stream(TALLOC_CTX *mem_ctx, mapi_object_t obj_paren
 			size = bin.cb - offset;
 		}
 	}
+
+	mapi_object_release(&obj_stream);
 
 	return true;
 }
@@ -763,7 +771,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		if (retval != MAPI_E_SUCCESS) return retval;
 	} else {
 		/* Get Sent Items folder but should be using olFolderOutbox */
-		retval = GetDefaultFolder(obj_store, &id_outbox, olFolderSentMail);
+		retval = GetDefaultFolder(obj_store, &id_outbox, olFolderOutbox);
 		if (retval != MAPI_E_SUCCESS) return retval;
 
 		/* Open outbox folder */
@@ -848,6 +856,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			
 			bin.lpb = (uint8_t *)oclient->pr_html_inline;
 			bin.cb = strlen(oclient->pr_html_inline);
+
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_HTML, 2, bin);
 		} else {
 			struct SBinary_short bin;
@@ -873,7 +882,6 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 		} else {
 			mapi_object_init(&obj_stream);
 			openchangeclient_stream(mem_ctx, obj_message, obj_stream, PR_HTML, 2, oclient->pr_html);
-			mapi_object_release(&obj_stream);
 		}
 	}
 
@@ -911,6 +919,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 			if (retval != MAPI_E_SUCCESS) return retval;
 
 			/* Stream operations */
+			mapi_object_init(&obj_stream);
 			openchangeclient_stream(mem_ctx, obj_attach, obj_stream, PR_ATTACH_DATA_BIN, 2, oclient->attach[i].bin);
 
 			/* Save changes on attachment */
@@ -983,7 +992,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT);
+					  PR_SUBJECT_UNICODE);
 	retval = SetColumns(&obj_table, SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
@@ -1117,7 +1126,7 @@ static enum MAPISTATUS appointment_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Appointment");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Appointment");
 
 		flag = 1;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&flag);
@@ -1252,7 +1261,7 @@ static enum MAPISTATUS contact_SetProps(TALLOC_CTX *mem_ctx,
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PidLidEmail1EmailAddress, (const void *)oclient->email);
 	}
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Contact");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Contact");
 	}
 	retval = SetProps(obj_message, 0, lpProps, cValues);
 	MAPIFreeBuffer(SPropTagArray);
@@ -1360,7 +1369,7 @@ static enum MAPISTATUS task_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.Task");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.Task");
 		oclient->importance = (oclient->importance == -1) ? 1 : oclient->importance;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_IMPORTANCE, (const void *)&oclient->importance);
 		oclient->taskstatus = (oclient->taskstatus == -1) ? 0 : oclient->taskstatus;
@@ -1450,7 +1459,7 @@ static enum MAPISTATUS note_SetProps(TALLOC_CTX *mem_ctx,
 	}
 
 	if (!oclient->update) {
-		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS, (const void *)"IPM.StickyNote");
+		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_CLASS_UNICODE, (const void *)"IPM.StickyNote");
 
 		value = 1;
 		lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, PR_MESSAGE_FLAGS, (const void *)&value);
@@ -1789,8 +1798,8 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
-					  PR_SUBJECT,
-					  PR_MESSAGE_CLASS,
+					  PR_SUBJECT_UNICODE,
+					  PR_MESSAGE_CLASS_UNICODE,
 					  PR_RULE_MSG_PROVIDER,
 					  PR_RULE_MSG_NAME);
 	retval = SetColumns(&obj_table, SPropTagArray);
@@ -2171,7 +2180,6 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 	struct HierarchyTableChange    	*htable;
 	struct ContentsTableChange     	*ctable;
 	struct ContentsTableChange     	*stable;
-	enum MAPISTATUS			retval;
 
 	switch(NotificationType) {
 	case fnevNewMail:
@@ -2179,7 +2187,7 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 		DEBUG(0, ("[+] New mail Received\n"));
 		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
-		retval = openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
+		openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
 		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
@@ -2314,7 +2322,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 
 	/* Register notification */
 	session = mapi_object_get_session(obj_store);
-	retval = RegisterNotification(session, 0);
+	retval = RegisterNotification(session);
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	if (oclient->pf == true) {
@@ -2449,14 +2457,13 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 {
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		*SRowSet;
-	enum MAPISTATUS		retval;
 	uint32_t		i;
 	uint32_t		count;
 	uint8_t			ulFlags;
 	uint32_t		rowsFetched = 0;
 	uint32_t		totalRecs = 0;
 
-	retval = GetGALTableCount(session, &totalRecs);
+	GetGALTableCount(session, &totalRecs);
 	printf("Total Number of entries in GAL: %d\n", totalRecs);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
@@ -2477,7 +2484,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	ulFlags = TABLE_START;
 	do {
 		count += 0x2;
-		retval = GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
+		GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
 		if ((!SRowSet) || (!(SRowSet->aRow))) {
 			return false;
 		}
@@ -2716,14 +2723,14 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 
 	/* Step 2. Dump properties */
 	message_name = (const char *) find_SPropValue_data(&aRow, PR_NORMALIZED_SUBJECT);
-	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_START_RANGE);
-	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_END_RANGE);
-	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_MONTHS);
-	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_BUSY_EVENTS);
-	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_MONTHS);
-	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_TENTATIVE_EVENTS);
-	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_MONTHS);
-	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_FREEBUSY_OOF_EVENTS);
+	publish_start = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_START);
+	publish_end = (const uint32_t *) find_SPropValue_data(&aRow, PR_FREEBUSY_PUBLISH_END);
+	busy_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_BUSY);
+	busy_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_BUSY);
+	tentative_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_TENTATIVE);
+	tentative_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_TENTATIVE);
+	oof_months = (const struct LongArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_MONTHS_OOF);
+	oof_events = (const struct BinaryArray_r *) find_SPropValue_data(&aRow, PR_SCHDINFO_FREEBUSY_OOF);
 
 	year = GetFreeBusyYear(publish_start);
 

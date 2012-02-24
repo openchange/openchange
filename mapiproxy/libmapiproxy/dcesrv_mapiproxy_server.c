@@ -371,8 +371,8 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	}
 
 	/* Step 2. Search for the rootDSE record */
-	ret = ldb_search((struct ldb_context *)openchange_ldb_ctx, mem_ctx, &res, NULL,
-			 LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=@ROOTDSE)");
+	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, openchange_ldb_ctx, "@ROOTDSE"),
+			  LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) {
 		talloc_free(mem_ctx);
 		return NULL;

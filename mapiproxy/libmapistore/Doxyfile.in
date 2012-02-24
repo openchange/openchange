@@ -429,7 +429,7 @@ WARN_IF_DOC_ERROR      = YES
 # wrong or incomplete parameter documentation, but not about the absence of 
 # documentation.
 
-WARN_NO_PARAMDOC       = YES
+WARN_NO_PARAMDOC       = NO
 
 # The WARN_FORMAT tag determines the format of the warning messages that 
 # doxygen can produce. The string should contain the $file, $line, and $text 
@@ -541,9 +541,25 @@ IMAGE_PATH             = doc/doxygen/pictures/
 # ignored.
 
 INPUT_FILTER           = "sed \
-			 -e '20,60s/#include .*//'	\
-			 -e 's/_PUBLIC_//'		\
-			 -e 's/__BEGIN_DECLS//'"
+		         -e '20,40s/.*\<libmapi\/proto_private.h\>//'	\
+			 -e '20,40s/.*\<gen_ndr\/ndr_exchange.h\>//'		\
+			 -e '20,40s/.*\<param.h\>//'				\
+			 -e '20,40s/.*\<core\/error.h\>//'			\
+			 -e '20,40s/.*\<credentials.h\>//'			\
+			 -e '20,40s/.*\<ldb.h\>//'				\
+			 -e '20,40s/.*\<ldb_errors.h\>//'			\
+			 -e '20,40s/.*\<libmapi\/dlinklist.h\>//'		\
+			 -e '20,40s/.*\<libmapi\/defs_private.h\>//'		\
+			 -e '20,40s/.*\<libmapi\/mapi_nameid.h\>//'		\
+			 -e '20,40s/.*\<libmapi\/mapi_nameid_private.h\>//'	\
+			 -e '20,40s/.*\<libocpf\/proto_private.h\>//'	\
+			 -e '20,40s/.*\<libocpf\/ocpf_api.h\>//'		\
+			 -e '20,40s/.*\<libocpf\/ocpf.tab.h\>//'		\
+			 -e '20,40s/.*\<libocpf\/ocpf_dump.h\>//'		\
+			 -e '20,40s/.*\<libgen.h\>//'			\
+			 -e '20,40s/.*\<time.h\>//'				\
+			 -e '20,40s/.*\<sys\/*\>//'				\
+                         -e '20,40s/_PUBLIC_//'"
 
 # The FILTER_PATTERNS tag can be used to specify filters on a per file pattern 
 # basis.  Doxygen will compare the file name with each pattern and apply the 

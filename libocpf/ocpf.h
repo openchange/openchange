@@ -21,6 +21,7 @@
 #define	__OCPF_H_
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 
 #define	OCPF_SUCCESS	0x0
 #define	OCPF_ERROR	0x1

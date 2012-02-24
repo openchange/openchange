@@ -22,6 +22,8 @@ if test x"$SAMBA_PREFIX" = x""; then
     SAMBA_PREFIX="/usr/local/samba"
 fi
 
+export CPPFLAGS="-I${SAMBA_PREFIX}/include"
+
 # use ccache for faster rebuild, where available
 if which ccache 2>/dev/null; then
 	export CC="ccache gcc"
@@ -33,8 +35,10 @@ export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
 export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
-RUNDIR=`dirname $0`
+RUNDIR=$(readlink -f $(dirname $0))
 HOST_OS=`$RUNDIR/../config.guess`
+
+BUILDTOOLS=$RUNDIR/../samba4/buildtools/
 
 #
 # Error check
@@ -246,11 +250,17 @@ packages() {
 
     for lib in lib/talloc lib/tdb lib/tevent lib/ldb; do
 	echo "Building and installing $lib library"
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
-	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	extra=""
+	if [ "$lib" == "lib/ldb" ]; then
+	    extra="--disable-tdb2"
+	fi
+
+	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
+	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	error_check $? "$lib configure"
 
 	$MAKE -j
@@ -269,6 +279,7 @@ packages() {
 	error_check $? "$lib make distclean"
 
 	popd
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
     done
 }
 
@@ -277,11 +288,13 @@ packages() {
 #
 compile() {
     echo "Step1: Preparing Samba4 system"
-    pushd samba4
+    pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./configure.developer -C --prefix=$SAMBA_PREFIX
-    error_check $? "samba4 git configure"
+    cd $RUNDIR/../samba4
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-tdb2
+    error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"
     $MAKE -j
@@ -336,9 +349,10 @@ typedef int (*comparison_fn_t)(const void *, const void *);\\
 install() {
     echo "Step1: Installing Samba"
     echo "===> we are in $PWD"
-    pushd samba4
+    pushd samba4/source4
     error_check $? "samba4 setup"
 
+    cd $RUNDIR/../samba4
     if test -w `dirname $SAMBA_PREFIX`; then
 	$MAKE install
 	error_check $? "samba4 install"

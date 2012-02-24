@@ -46,6 +46,7 @@ int main(int argc, const char *argv[])
 	uint32_t			context_id = 0;
 	uint32_t			context_id2 = 0;
 	uint32_t			context_id3 = 0;
+	void				*root_folder;
 
 	enum { OPT_DEBUG=1000 };
 
@@ -80,19 +81,19 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	mstore_ctx = mapistore_init(mem_ctx, NULL);
+	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!mstore_ctx) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
-	retval = mapistore_add_context(mstore_ctx, "test", "test", "sqlite:///tmp/test.db", &context_id);
+	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test.db", -1, &context_id, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
-	retval = mapistore_add_context(mstore_ctx, "test", "test", "sqlite:///tmp/test2.db", &context_id2);
+	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test2.db", -1, &context_id2, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
@@ -101,7 +102,7 @@ int main(int argc, const char *argv[])
 	DEBUG(0, ("Context ID: [1] = %d and [2] = %d\n", context_id, context_id2));
 
 
-	retval = mapistore_add_context(mstore_ctx, "test", "test", "fsocpf:///tmp/fsocpf", &context_id3);
+	retval = mapistore_add_context(mstore_ctx, "openchange", "fsocpf:///tmp/fsocpf", -1, &context_id3, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);

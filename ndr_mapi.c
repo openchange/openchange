@@ -60,7 +60,6 @@ static enum ndr_err_code ndr_push_lxpress_chunk(struct ndr_push *ndrpush,
 						bool *last)
 {
 	DATA_BLOB	comp_chunk;
-	uint32_t	comp_chunk_size_offset;
 	DATA_BLOB	plain_chunk;
 	uint32_t	plain_chunk_size;
 	uint32_t	plain_chunk_offset;
@@ -80,7 +79,6 @@ static enum ndr_err_code ndr_push_lxpress_chunk(struct ndr_push *ndrpush,
 		*last = true;
 	};
 
-	comp_chunk_size_offset = ndrpush->offset;
 	NDR_CHECK(ndr_push_expand(ndrpush, max_comp_size));
 
 	comp_chunk.data = ndrpush->data + ndrpush->offset;
@@ -262,7 +260,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_response(struct ndr_pull *ndr, int n
 					NDR_PULL_ALLOC(ndr, r->mapi_response);
 				}
 				
-				NDR_CHECK((ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, -1)));
+				NDR_CHECK((ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->header.Size)));
 				{
 					if (r->header.Flags & RHEF_Compressed) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
@@ -276,7 +274,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_response(struct ndr_pull *ndr, int n
 						NDR_CHECK(ndr_pull_mapi_response(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_response));			
 					}
 				}
-				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, -1));
+				NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_buffer, 0, r->header.Size));
 			}
 			ndr->flags = _flags_save_mapi_response;
 		}
@@ -317,14 +315,12 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUX_HEADER(struct ndr_pull *ndr, int ndr_fla
 {
 	struct ndr_pull	*_ndr_buffer;
 	uint32_t	_flags_save_STRUCT = ndr->flags;
-	TALLOC_CTX	*_mem_save_AUX_HEADER_0;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_pull_align(ndr, 4));
 		NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->Size));
 
-		_mem_save_AUX_HEADER_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, r->Size - 2));
 		{
 			NDR_CHECK(ndr_pull_AUX_VERSION(_ndr_buffer, NDR_SCALARS, &r->Version));
@@ -689,6 +685,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc_MAPI_REPL(struct ndr_push *ndr, int 
 							NDR_CHECK(ndr_push_Logon_redirect(ndr, NDR_SCALARS, &(r->us.mapi_Logon)));
 						}
 						break; }
+					case op_MAPI_GetIDsFromNames: {
+						/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+						if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+							NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						break; }
 					default:
 						break;
 					}
@@ -727,6 +730,13 @@ enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags
 							NDR_CHECK(ndr_pull_Logon_redirect(ndr, NDR_SCALARS, &(r->us.mapi_Logon)));
 						}
 						break;}
+					case op_MAPI_GetIDsFromNames: {
+						/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+						if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+							NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						break;}
 					default:
 						break;
 					}
@@ -762,6 +772,13 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 						ndr_print_EcDoRpc_MAPI_REPL_UNION_SPECIAL(ndr, "us", &r->us);
 					}
 					break;}
+				case op_MAPI_GetIDsFromNames: {
+					/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
+					if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+						ndr_print_set_switch_value(ndr, &r->u, r->opnum);
+						ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
+					}
+					break; }
 				default:
 					break;
 				}
@@ -1031,7 +1048,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
+		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));				
 		/* Only try to fetch rgbAuxOut if pcbAuxOut is > 0 */
@@ -1384,9 +1401,11 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "pulTimeStamp", r->out.pulTimeStamp);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
-		ndr->depth--;
+                if (r->out.pulTimeStamp) {
+                        ndr->depth++;
+                        ndr_print_uint32(ndr, "pulTimeStamp", *r->out.pulTimeStamp);
+                        ndr->depth--;
+                }
 		ndr_print_ptr(ndr, "rgbAuxOut", r->out.rgbAuxOut);
 		if (r->out.rgbAuxOut && r->out.pcbAuxOut) {
 			ndr->depth++;
@@ -1394,13 +1413,121 @@ _PUBLIC_ void ndr_print_EcDoConnectEx(struct ndr_print *ndr, const char *name, i
 			ndr->depth--;
 		}
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
+                if (r->out.pcbAuxOut) {
+                        ndr->depth++;
+                        ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+                        ndr->depth--;
+                }
+		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
+		ndr->depth--;
+	}
+	ndr->depth--;
+}
+
+_PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int flags, const struct EcDoRpcExt *r)
+{
+	DATA_BLOB		rgbIn;
+	DATA_BLOB		rgbOut;
+	struct ndr_pull		*ndr_pull;
+	struct mapi2k7_request	*mapi_request;
+	struct mapi2k7_response	*mapi_response;
+	TALLOC_CTX		*mem_ctx;
+
+	mem_ctx = talloc_named(NULL, 0, "ndr_print_EcDoRpcExt2");
+
+	ndr_print_struct(ndr, name, "EcDoRpcExt");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	ndr->depth++;
+	if (flags & NDR_SET_VALUES) {
+		ndr->flags |= LIBNDR_PRINT_SET_VALUES;
+	}
+	if (flags & NDR_IN) {
+		ndr_print_struct(ndr, "in", "EcDoRpcExt");
 		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+		ndr_print_ptr(ndr, "handle", r->in.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->in.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulFlags", r->in.pulFlags);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulFlags", *r->in.pulFlags);
+		ndr->depth--;
+
+		/* Put MAPI request blob into a ndr_pull structure */
+		rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+		rgbIn.length = r->in.cbIn;
+		dump_data(0, rgbIn.data, rgbIn.length);
+		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+		mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
+		mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
+		ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request);
+		ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
+		talloc_free(mapi_request);
+		talloc_free(ndr_pull);
+		talloc_free(rgbIn.data);
+
+		ndr_print_uint32(ndr, "cbIn", r->in.cbIn);
+		ndr_print_ptr(ndr, "pcbOut", r->in.pcbOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbOut", *r->in.pcbOut);
+		ndr->depth--;
+		ndr_print_array_uint8(ndr, "Reserved0", r->in.Reserved0, *r->in.Reserved1);
+		ndr_print_ptr(ndr, "Reserved1", r->in.Reserved1);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "Reserved1", *r->in.Reserved1);
+		ndr->depth--;
+		ndr->depth--;
+	}
+	if (flags & NDR_OUT) {
+		ndr_print_struct(ndr, "out", "EcDoRpcExt");
+		ndr->depth++;
+		ndr_print_ptr(ndr, "handle", r->out.handle);
+		ndr->depth++;
+		ndr_print_policy_handle(ndr, "handle", r->out.handle);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulFlags", r->out.pulFlags);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulFlags", *r->out.pulFlags);
+		ndr->depth--;
+
+		/* Put MAPI response blob into a ndr_pull structure */
+		if (*r->out.pcbOut) {
+			rgbOut.data = talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+			rgbOut.length = *r->out.pcbOut;
+			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
+				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
+				ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
+				ndr_print_mapi2k7_response(ndr, "mapi_response", 
+						   (const struct mapi2k7_response *)mapi_response);
+				talloc_free(mapi_response);
+			}
+			talloc_free(ndr_pull);
+			talloc_free(rgbOut.data);
+		}
+
+		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
+		ndr->depth--;
+		ndr_print_array_uint8(ndr, "Reserved0", r->out.Reserved0, *r->out.Reserved1);
+		ndr_print_ptr(ndr, "Reserved1", r->out.Reserved1);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "Reserved1", *r->out.Reserved1);
+		ndr->depth--;
+		ndr_print_ptr(ndr, "pulTransTime", r->out.pulTransTime);
+		ndr->depth++;
+		ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
 		ndr->depth--;
 		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}
 	ndr->depth--;
+
+	talloc_free(mem_ctx);
 }
 
 _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int flags, const struct EcDoRpcExt2 *r)
@@ -1482,15 +1609,16 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
-			mapi_response = talloc_zero(mem_ctx, struct mapi2k7_response);
-			mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
-			ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
-			ndr_print_mapi2k7_response(ndr, "mapi_response", 
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
+				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
+				ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response);
+				ndr_print_mapi2k7_response(ndr, "mapi_response", 
 						   (const struct mapi2k7_response *)mapi_response);
+				talloc_free(mapi_response);
+			}
 			talloc_free(ndr_pull);
 			talloc_free(rgbOut.data);
-			talloc_free(mapi_response->mapi_response);
-			talloc_free(mapi_response);
 		}
 		/* ndr_print_array_uint8(ndr, "rgbOut", r->out.rgbOut, *r->out.pcbOut); */
 		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
@@ -1626,6 +1754,18 @@ _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, c
 	}
 }
 
+_PUBLIC_ void ndr_print_Binary_r(struct ndr_print *ndr, const char *name, const struct Binary_r *r)
+{
+	ndr->print(ndr, "%-25s: Binary_r cb=%u", name, (unsigned)r->cb);
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		dump_data(0, r->lpb, r->cb);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
 
 _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint32_t r)
 {
@@ -1939,4 +2079,44 @@ void ndr_print_GetSearchCriteria_repl(struct ndr_print *ndr, const char *name, c
 		ndr->depth--;
 		ndr->flags = _flags_save_STRUCT;
 	}
+}
+
+enum ndr_err_code ndr_push_Backoff_req(struct ndr_push *ndr, int ndr_flags, const struct Backoff_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_Backoff_req(struct ndr_pull *ndr, int ndr_flags, struct Backoff_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_Backoff_repl(struct ndr_push *ndr, int ndr_flags, const struct Backoff_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_Backoff_repl(struct ndr_pull *ndr, int ndr_flags, struct Backoff_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_BufferTooSmall_req(struct ndr_push *ndr, int ndr_flags, const struct BufferTooSmall_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_BufferTooSmall_req(struct ndr_pull *ndr, int ndr_flags, struct BufferTooSmall_req *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_push_BufferTooSmall_repl(struct ndr_push *ndr, int ndr_flags, const struct BufferTooSmall_repl *r)
+{
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_BufferTooSmall_repl(struct ndr_pull *ndr, int ndr_flags, struct BufferTooSmall_repl *r)
+{
+	return NDR_ERR_SUCCESS;
 }

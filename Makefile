@@ -1,6 +1,12 @@
 # # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
+ifneq ($(MAKECMDGOALS), samba)
+ifneq ($(MAKECMDGOALS), samba-git)
+include config.mk
+endif
+endif
+
 default: all
 
 # Until we add proper dependencies for all the C files:
@@ -10,14 +16,15 @@ config.mk: config.status config.mk.in
 	./config.status
 
 config.status: configure
-	@if test x"$(prefix)" != x""; then \
-		echo "Running configure with prefix '$(prefix)'..."; \
-		./configure --prefix=$(prefix); \
+	@if test x"$(prefix)" != x""; \
+	then \
+	  echo "Running configure with prefix '$(prefix)'..."; \
+	  ./configure --prefix=$(prefix); \
 	else \
-		echo "Running configure without prefix"; \
-		./configure; \
+	  echo "Running configure without prefix"; \
+	  ./configure; \
 	fi
- 
+
 configure: configure.ac
 	PREFIX=$(prefix) ./autogen.sh
 
@@ -30,15 +37,20 @@ samba-git:
 samba-git-update:
 	./script/installsamba4.sh git-update
 
-ifneq ($(MAKECMDGOALS), samba)
-ifneq ($(MAKECMDGOALS), samba-git)
-include config.mk
-endif
-endif
-
 #################################################################
 # top level compilation rules
 #################################################################
+
+ifeq ($(PYTHON_CONFIG),)
+PYTHON_CFLAGS=$(shell $(PYTHON_CONFIG) --cflags)
+PYTHON_LIBS=$(shell $(PYTHON_CONFIG) --libs)
+else
+PYTHON_VERSION=$(shell $(PYTHON) -V 2>& 1 | awk '{ print $$2 }')
+PYTHON_MAJOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 1)
+PYTHON_MINOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 2)
+PYTHON_CFLAGS=-I/usr/include/python$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION) -I/usr/include/python
+PYTHON_LIBS=-lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
+endif
 
 all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
@@ -110,11 +122,11 @@ re:: clean install
 
 .c.o:
 	@echo "Compiling $<"
-	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) -c $< -o $@
+	@$(CC) $(CFLAGS) -c $< -o $@
 
 .c.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) -fPIC -c $< -o $@
+	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
@@ -233,11 +245,14 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/idset.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/property_tags.h $(DESTDIR)$(includedir)/libmapi/
-	$(INSTALL) -m 0644 libmapi/property_altnames.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property_altnames.h $(DESTIDR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_exchange.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_property.h $(DESTDIR)$(includedir)/gen_ndr/
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/*.h
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/socket/*.h
 	@$(SED) $(DESTDIR)$(includedir)/gen_ndr/*.h
@@ -297,6 +312,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/x500.po 				\
 	libmapi/fxparser.po				\
 	libmapi/notif.po				\
+	libmapi/idset.po				\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
@@ -317,7 +333,7 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapicode.c libmapi/codepage_lcid.c mapicodes_enum.h: \
+libmapi/mapi_nameid.h libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h mapiproxy/libmapistore/mapistore_nameid.h: \
 	libmapi/conf/mapi-properties								\
 	libmapi/conf/mapi-codes									\
 	libmapi/conf/mapi-named-properties							\
@@ -684,15 +700,15 @@ mapiproxy-install: 	mapiproxy				\
 			libmapiserver-install			\
 			libmapistore-installpc			\
 			libmapistore-install
-	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 
 mapiproxy-uninstall: 	mapiproxy-modules-uninstall		\
 			mapiproxy-servers-uninstall		\
 			libmapiproxy-uninstall			\
 			libmapiserver-uninstall			\
 			libmapistore-uninstall
-	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
+	rm -f $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)/dcesrv_mapiproxy.*
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
@@ -748,10 +764,14 @@ libmapiproxy-distclean:
 
 distclean::libmapiproxy-distclean
 
+mapiproxy/libmapiproxy/modules.o mapiproxy/libmapiproxy/modules.po: CFLAGS+=-DMODULESDIR=\"${modulesdir}\"
+
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
 							mapiproxy/libmapiproxy/openchangedb.po			\
+							mapiproxy/libmapiproxy/openchangedb_table.po		\
+							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
@@ -795,6 +815,7 @@ distclean:: libmapiserver-distclean
 mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/libmapiserver_oxcstor.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcprpt.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcfold.po	\
+							mapiproxy/libmapiserver/libmapiserver_oxcfxics.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxctabl.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcmsg.po		\
 							mapiproxy/libmapiserver/libmapiserver_oxcnotif.po	\
@@ -802,7 +823,6 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiserver/
 							mapiproxy/libmapiserver/libmapiserver_oxorule.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcperm.po	\
 							mapiproxy/libmapiserver/libmapiserver_oxcdata.po	\
-							mapiproxy/libmapiserver/libmapiserver_oxcfxics.po	\
 							ndr_mapi.po				\
 							gen_ndr/ndr_exchange.po
 	@echo "Linking $@"
@@ -817,21 +837,22 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 LIBMAPISTORE_SO_VERSION = 0
 
-mapiproxy/libmapistore/indexing/mapistore_indexing_db.idl: mapiproxy/libmapistore/indexing/gen_ndr
+mapiproxy/libmapistore/mgmt/mapistore_mgmt.idl: mapiproxy/libmapistore/mgmt/gen_ndr
 
-mapiproxy/libmapistore/indexing/gen_ndr/%.h: mapiproxy/libmapistore/indexing/mapistore_indexing_db.idl
+mapiproxy/libmapistore/mgmt/gen_ndr/%.h: mapiproxy/libmapistore/mgmt/mapistore_mgmt.idl
 	@echo "Generating $@"
-	@$(PIDL) --outputdir=mapiproxy/libmapistore/indexing/gen_ndr --header -- $<
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/mgmt/gen_ndr --header -- $<
 
-mapiproxy/libmapistore/indexing/gen_ndr:
-	@echo "Creating the gen_ndr directory for libmapistore indexing IDL"
-	@mkdir -p mapiproxy/libmapistore/indexing/gen_ndr
+mapiproxy/libmapistore/mgmt/gen_ndr:
+	@echo "Creating gen_ndr directory for libmapistore mgmt IDL"
+	@mkdir -p mapiproxy/libmapistore/mgmt/gen_ndr
 
-mapiproxy/libmapistore/indexing/gen_ndr/ndr_%.h mapiproxy/libmapistore/indexing/gen_ndr/ndr_%.c: mapiproxy/libmapistore/indexing/%.idl mapiproxy/libmapistore/indexing/gen_ndr/%.h
+mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.h mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.c: mapiproxy/libmapistore/mgmt/%.idl mapiproxy/libmapistore/mgmt/gen_ndr/%.h
 	@echo "Generating $@"
-	@$(PIDL) --outputdir=mapiproxy/libmapistore/indexing/gen_ndr --ndr-parser -- $<
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/mgmt/gen_ndr --ndr-parser -- $<
 
-libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
+		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
@@ -839,7 +860,7 @@ libmapistore: 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 libmapistore-installpc:
 	@echo "[*] install: libmapistore pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
-	$(INSTALL) -m 0644 mapiproxy/libmapistore/libmapistore.pc $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 mapiproxy/libmapistore.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -847,6 +868,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -d $(DESTDIR)$(includedir)/mapistore
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/
+	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_nameid.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
 	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
@@ -855,13 +877,10 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
-	rm -f mapiproxy/libmapistore/database/*.po mapiproxy/libmapistore/database/*.o
-	rm -f mapiproxy/libmapistore/database/*.gcno mapiproxy/libmapistore/database/*.gcda
-	rm -f mapiproxy/libmapistore/indexing/*.po mapiproxy/libmapistore/indexing/*.o
-	rm -f mapiproxy/libmapistore/indexing/*.gcno mapiproxy/libmapistore/indexing/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
-	rm -rf mapiproxy/libmapistore/indexing/gen_ndr
+	rm -f mapiproxy/libmapistore/mapistore_nameid.h
+	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*
@@ -870,25 +889,24 @@ libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -rf $(DESTDIR)$(datadir)/setup/mapistore
 
 libmapistore-distclean: libmapistore-clean
-	rm -f mapiproxy/libmapistore/libmapistore.pc
+	rm -f mapiproxy/libmapistore.pc
 
 distclean:: libmapistore-distclean
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.po	\
-							mapiproxy/libmapistore/indexing/mapistore_indexing.po			\
-							mapiproxy/libmapistore/mapistore_interface.po				\
-							mapiproxy/libmapistore/mapistore_processing.po				\
-							mapiproxy/libmapistore/mapistore_backend.po				\
-							mapiproxy/libmapistore/mapistore_backend_defaults.po			\
-							mapiproxy/libmapistore/mapistore_tdb_wrap.po				\
-							mapiproxy/libmapistore/mapistore_ldb_wrap.po				\
-							mapiproxy/libmapistore/mapistore_indexing.po				\
-							mapiproxy/libmapistore/mapistore_namedprops.po				\
-							mapiproxy/libmapistore/mapistore_backend_public.po			\
-							mapiproxy/libmapistore/mapistore_util.po				\
-							mapiproxy/libmapistore/database/mapistoredb.po				\
-							mapiproxy/libmapistore/database/mapistoredb_conf.po			\
-							mapiproxy/libmapistore/database/mapistoredb_namedprops.po		\
+mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
+							mapiproxy/libmapistore/mapistore_interface.po			\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po		\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
+							mapiproxy/libmapistore/mapistore_processing.po			\
+							mapiproxy/libmapistore/mapistore_backend.po			\
+							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
+							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
+							mapiproxy/libmapistore/mapistore_ldb_wrap.po			\
+							mapiproxy/libmapistore/mapistore_indexing.po			\
+							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
+							mapiproxy/libmapistore/mapistore_namedprops.po			\
+							mapiproxy/libmapistore/mapistore_notification.po 		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
@@ -905,59 +923,33 @@ setup/mapistore/mapistore_namedprops.ldif: 	\
 # mapistore backends
 #####################
 
-mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
+# mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
 
-mapistore_fsocpf-install:
-	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
+# mapistore_fsocpf-install:
+#	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
+#	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
 
-mapistore_fsocpf-uninstall:
-	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
+#mapistore_fsocpf-uninstall:
+#	rm -rf $(DESTDIR)$(libdir)/mapistore_backends/mapistore_fsocpf.$(SHLIBEXT)
 
-mapistore_fsocpf-clean:
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.o
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcno
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcda
-	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
+#mapistore_fsocpf-clean:
+#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.o
+#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.po
+#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcno
+#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcda
+#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
 
-clean:: mapistore_fsocpf-clean
+#clean:: mapistore_fsocpf-clean
 
-mapistore_fsocpf-distclean: mapistore_fsocpf-clean
+#mapistore_fsocpf-distclean: mapistore_fsocpf-clean
 
-distclean:: mapistore_fsocpf-distclean
+#distclean:: mapistore_fsocpf-distclean
 
-mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-	@echo "Linking mapistore module $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS)					\
-	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-
-mapistore_mstoredb: mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT)
-
-mapistore_mstoredb-install:
-	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
-
-mapistore_mstoredb-uninstall:
-	rm -rf $(DESTDIR)$(libdir)/mapistore_backends
-
-mapistore_mstoredb-clean:
-	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.o
-	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.po
-	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.gcno
-	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.gcda
-	rm -f mapiproxy/libmapistore/backends/mapistore_mstoredb.so
-
-clean:: mapistore_mstoredb-clean
-
-mapistore_mstoredb-distclean: mapistore_mstoredb-clean
-
-distclean:: mapistore_mstoredb-distclean
-
-mapiproxy/libmapistore/backends/mapistore_mstoredb.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_mstoredb.po
-	@echo "Linking mapistore module $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) 
+#mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_fsocpf.po
+#	@echo "Linking mapistore module $@"
+#	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
+#	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
+#	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #######################
 # mapistore test tools
@@ -1081,9 +1073,11 @@ mapiproxy/servers/exchange_nsp.$(SHLIBEXT):	mapiproxy/servers/default/nspi/dcesr
 mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.po	\
 						mapiproxy/servers/default/emsmdb/emsmdbp.po			\
 						mapiproxy/servers/default/emsmdb/emsmdbp_object.po		\
+						mapiproxy/servers/default/emsmdb/emsmdbp_provisioning.po	\
 						mapiproxy/servers/default/emsmdb/oxcstor.po			\
 						mapiproxy/servers/default/emsmdb/oxcprpt.po			\
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
+						mapiproxy/servers/default/emsmdb/oxcfxics.po			\
 						mapiproxy/servers/default/emsmdb/oxctabl.po			\
 						mapiproxy/servers/default/emsmdb/oxcmsg.po			\
 						mapiproxy/servers/default/emsmdb/oxcnotif.po			\
@@ -1331,6 +1325,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/module.o				\
 		utils/mapitest/modules/module_oxcstor.o		\
 		utils/mapitest/modules/module_oxcfold.o		\
+		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxomsg.o		\
 		utils/mapitest/modules/module_oxcmsg.o		\
 		utils/mapitest/modules/module_oxcprpt.o		\
@@ -1357,13 +1352,14 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/module.c				\
 	utils/mapitest/modules/module_oxcstor.c		\
 	utils/mapitest/modules/module_oxcfold.c		\
+	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxomsg.c		\
 	utils/mapitest/modules/module_oxcmsg.c		\
 	utils/mapitest/modules/module_oxcprpt.c		\
+	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxctable.c	\
 	utils/mapitest/modules/module_oxorule.c		\
 	utils/mapitest/modules/module_oxcnotif.c	\
-	utils/mapitest/modules/module_oxcfxics.c	\
 	utils/mapitest/modules/module_oxcperm.c		\
 	utils/mapitest/modules/module_nspi.c		\
 	utils/mapitest/modules/module_noserver.c	\
@@ -1533,34 +1529,32 @@ clean-python:
 
 clean:: clean-python
 
-pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)		\
-		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)		\
-		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)	\
-		$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT)
+pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)			\
+		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)		
+#		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
-$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
-						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS) 
+# $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
+# 						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+# 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+# 	@echo "Linking $@"
+# 	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
-$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/pymapistore_module.c				\
-							pyopenchange/pymapistore_object.c				\
-							pyopenchange/pymapistore_folder.c				\
-							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pymapistore.c			\
+							pyopenchange/mapistore/mgmt.c				\
+							pyopenchange/mapistore/context.c			\
+							pyopenchange/mapistore/folder.c				\
+							pyopenchange/mapistore/table.c				\
+							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
+	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS)
 
-$(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT):	pyopenchange/pymapistoredb.c				\
-							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) $(WAF_BUILD_INC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ `$(PYTHON_CONFIG) --cflags --libs` $(LIBS)
 
 pyopenchange/pymapi_properties.c:		\
 	libmapi/conf/mapi-properties		\
@@ -1570,25 +1564,22 @@ pyopenchange/pymapi_properties.c:		\
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
-	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
-	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
+#	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
+#	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
-	rm -f $(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT)
 
 clean:: pyopenchange-clean
 
 pyopenchange-install:
 	$(INSTALL) -d $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
-	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
+#	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
-	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/mapistoredb.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)/openchange
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistore.$(SHLIBEXT)
-	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistoredb.$(SHLIBEXT)
 
 
 ###################
@@ -1664,7 +1655,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/indexing/gen_ndr/ndr_mapistore_indexing_db.c mapiproxy/libmapistore/indexing/gen_ndr/mapistore_indexing_db.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.c mapiproxy/libmapistore/mgmt/gen_ndr/mapistore_mgmt.h
 
 test:: check
 

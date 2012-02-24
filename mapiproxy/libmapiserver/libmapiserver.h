@@ -93,6 +93,18 @@
 #define	SIZE_DFLT_ROPGETPROPERTIESSPECIFIC	1
 
 /**
+   \details GetPropertiesAllRop has fixed response size for:
+   -# cValues: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPROPERTIESALL		2
+
+/**
+   \details GetPropertiesListRop has fixed response size for:
+   -# count: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETPROPERTIESLIST		2
+
+/**
    \details: SetPropertiesRop has fixed response size for:
    -# PropertyProblemCount: uint16_t
  */
@@ -103,6 +115,12 @@
    -# PropertyProblemCount: uint16_t
  */
 #define	SIZE_DFLT_ROPDELETEPROPERTIES		2
+
+/**
+   \details: CopyToRop has fixed response size for:
+   -# PropertyProblemCount: uint16_t
+ */
+#define	SIZE_DFLT_ROPCOPYTO		2
 
 /**
    \details: SaveChangesMessageRop has fixed response size for:
@@ -124,6 +142,23 @@
    -# ReadStatusChanged: uint8_t
  */
 #define	SIZE_DFLT_ROPSETMESSAGEREADFLAG		1
+
+/**
+   \details: CreateAttachRop has fixed response size for:
+   -# AttachmentId: uint32_t
+ */
+#define	SIZE_DFLT_ROPCREATEATTACH		4
+
+/**
+   \details: OpenEmbeddedMessage has fixed response size for:
+   -# Reserved: uint8_t
+   -# MessageId: uint64_t
+   -# HasNamedProperties: uint8_t
+   -# RecipientCount: uint16_t
+   -# RecipientColumns.cValues: uint16_t
+   -# RowCount: uint8_t
+ */
+#define SIZE_DFLT_ROPOPENEMBEDDEDMESSAGE        15
 
 /**
    \details SetColumnsRop has fixed response size for:
@@ -203,6 +238,12 @@
 #define	SIZE_DFLT_ROPGETSTREAMSIZE		4
 
 /**
+   \details SeekStream has fixed response size for:
+   -# NewPosition: uint64_t
+ */
+#define	SIZE_DFLT_ROPSEEKSTREAM 		8
+
+/**
    \details GetReceiveFolder has fixed response size for:
    -# folder_id: uint64_t
  */
@@ -214,6 +255,12 @@
    -# size: uint16_t
  */
 #define	SIZE_DFLT_ROPGETADDRESSTYPES		4
+
+/**
+   \details TransportSend  has fixed response size for:
+   -# NoPropertiesReturned: uint8_t
+ */
+#define	SIZE_DFLT_ROPTRANSPORTSEND		1
 
 /**
    \details GetTransportFolder has fixed response size for:
@@ -237,6 +284,12 @@
 #define	SIZE_DFLT_ROPFINDROW			2
 
 /**
+   \details GetNamesFromIDs has fixed response size for:
+   -# PropertyNameCount: uint16_t
+ */
+#define	SIZE_DFLT_ROPGETNAMESFROMIDS		2
+
+/**
    \details GetPropertyIdsFromNames has fixed response size for:
    -# count: uint16_t
  */
@@ -246,13 +299,20 @@
    \details GetPropertyIdsFromNames has fixed response size for:
    -# PropertyProblemCount: uint16_t
  */
-#define SIZE_DFLT_ROPDELETEPROPERTIESNOREPLICATE	2
+#define SIZE_DFLT_ROPDELETEPROPERTIESNOREPLICATE 2
 
 /**
    \details EmptyFolder has fixed response size for:
    -# PartialCompletion: uint8_t
  */
-#define SIZE_DFLT_ROPEMPTYFOLDER		1
+#define SIZE_DFLT_ROPEMPTYFOLDER                1
+
+/**
+   \details MoveCopyMessages Rop has fixed response size for:
+   -#: PartialCompletion: uint8_t
+
+*/
+#define SIZE_DFLT_ROPMOVECOPYMESSAGES           1 
 
 /**
    \details DeleteMessage Rop has fixed response size for:
@@ -260,6 +320,14 @@
  */
 #define	SIZE_DFLT_ROPDELETEMESSAGE		1
 
+/**
+   \details Notify Rop has non-default fixed response size for:
+   -# RopId: uint8_t
+   -# NotificationHandle: uint32_t
+   -# LogonId: uint8_t
+   -# NotificationType: uint16_t
+ */
+#define	SIZE_DFLT_ROPNOTIFY                     8
 
 /**
    \details GetSearchCriteria Rop has fixed response size for:
@@ -269,6 +337,20 @@
    -# SearchFlags: uint32_t
  */
 #define	SIZE_DFLT_ROPGETSEARCHCRITERIA		9
+
+/**
+   \details LongTermIdFromId Rop has fixed response size for:
+   -# DatabaseGuid: 16 * uint8_t
+   -# LongTermId: 6 * uint8_t
+   -# Padding: uint16_t
+*/
+#define SIZE_DFLT_ROPLONGTERMIDFROMID		24;
+
+/**
+   \details IdFromLongTermId Rop has fixed response size for:
+   -# Id: 8 * uint8_t
+*/
+#define SIZE_DFLT_ROPIDFROMLONGTERMID		8;
 
 /**
    \details GetPerUserLongTermIds has fixed response size for:
@@ -289,6 +371,11 @@
  */
 #define	SIZE_DFLT_ROPGETPERUSERGUID		16
 
+/**
+   \details GetStoreState has fixed response size for:
+   -# StoreState: uin32_t
+ */
+#define SIZE_DFLT_ROPGETSTORESTATE		4
 
 /**
    \details LogonRop has a fixed size for mailbox:
@@ -332,6 +419,13 @@
 #define	SIZE_DFLT_LONGTERMID		24
 
 /**
+   \details PropertyName structure is fixed size:
+   -# Kind: uint8_t
+   -# GUID: uint8_t * 16
+ */
+#define	SIZE_DFLT_PROPERTYNAME		17
+
+/**
    \details FastTransferSourceGetBuffer has a fixed size for:
    -# TransferStatus: uint16_t
    -# InProgressCount: uint16_t
@@ -340,6 +434,31 @@
    -# TransferBufferSize (2 bytes): uint16_t
  */
 #define SIZE_DFLT_ROPFASTTRANSFERSOURCEGETBUFFER 9
+
+/**
+   \details SyncImportMessageChange has a fixed size for:
+   -# FolderId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTMESSAGECHANGE 8
+
+/**
+   \details SyncImportHierarchyChange has a fixed size for:
+   -# FolderId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTHIERARCHYCHANGE 8
+
+/**
+   \details SyncImportMessageMove has a fixed size for:
+   -# MessageId: uint64_t
+*/
+#define SIZE_DFLT_ROPSYNCIMPORTMESSAGEMOVE 8
+
+/**
+   \details GetLocalReplicaIds has a fixed size for:
+   -# ReplGuid: sizeof (struct GUID)
+   -# GlobalCount: uint8_t * 6
+ */
+#define SIZE_DFLT_ROPGETLOCALREPLICAIDS 22
 
 __BEGIN_DECLS
 
@@ -353,6 +472,8 @@ uint16_t libmapiserver_RopDeleteMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopMoveCopyMessages_size(struct EcDoRpc_MAPI_REPL *);
+
 
 /* definitions from libmapiserver_oxcmsg.c */
 uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *);
@@ -363,26 +484,40 @@ uint16_t libmapiserver_RopModifyRecipients_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetMessageReadFlag_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);
+uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcdata.c */
 uint16_t libmapiserver_TypedString_size(struct TypedString);
 uint16_t libmapiserver_RecipientRow_size(struct RecipientRow);
 uint16_t libmapiserver_LongTermId_size(void);
+uint16_t libmapiserver_PropertyName_size(struct MAPINAMEID *);
+uint16_t libmapiserver_mapi_SPropValue_size(uint16_t, struct mapi_SPropValue *);
 
 /* definitions from libmapiserver_oxcprpt.c */
 uint16_t libmapiserver_RopSetProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPropertiesAll_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetPropertiesList_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCommitStream_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetNamesFromIDs_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoRpc_MAPI_REPL *);
-int libmapiserver_push_property(TALLOC_CTX *, uint32_t, const void *, DATA_BLOB *, uint8_t, uint8_t);
+uint16_t libmapiserver_RopCopyTo_size(struct EcDoRpc_MAPI_REPL *);
+int libmapiserver_push_property(TALLOC_CTX *, uint32_t, const void *, DATA_BLOB *, uint8_t, uint8_t, uint8_t);
 struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *, void *, uint8_t);
 
 /* definitions from libmapiserver_oxcstor.c */
@@ -390,9 +525,12 @@ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_M
 uint16_t libmapiserver_RopRelease_size(void);
 uint16_t libmapiserver_RopSetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopLongTermIdFromId_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopIdFromLongTermId_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserLongTermIds_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopReadPerUserInformation_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetStoreState_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxctabl.c */
@@ -409,6 +547,7 @@ uint16_t libmapiserver_RopResetTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSubmitMessage_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSetSpooler_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopTransportSend_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetTransportFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOptionsData_size(struct EcDoRpc_MAPI_REPL *);
 
@@ -418,10 +557,24 @@ uint16_t libmapiserver_RopModifyRules_size(void);
 
 /* definitions from libmapiserver_oxcperm.c */
 uint16_t libmapiserver_RopGetPermissionsTable_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopModifyPermissions_size(struct EcDoRpc_MAPI_REPL *);
 
 /* definitions from libmapiserver_oxcfxics.c */
-uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *response);
-uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopFastTransferSourceCopyTo_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopFastTransferSourceGetBuffer_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncConfigure_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportMessageChange_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportHierarchyChange_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportDeletes_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamBegin_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamContinue_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncUploadStateStreamEnd_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportMessageMove_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncOpenCollector_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopGetLocalReplicaIds_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncImportReadStateChanges_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSyncGetTransferState_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopSetLocalReplicaMidsetDeleted_size(struct EcDoRpc_MAPI_REPL *response);
 
 __END_DECLS
 

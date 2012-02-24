@@ -26,7 +26,6 @@
 #include <samba/popt.h>
 #include <ldb.h>
 #include <talloc.h>
-
 #include <inttypes.h>
 
 static void popt_openchange_version_callback(poptContext con,
@@ -62,6 +61,7 @@ struct mapistore_output_ctx {
 	struct mapistore_context	*mstore_ctx;
 	uint32_t			mapistore_context_id;
 	uint64_t			root_fid;
+	void				*root_folder;
 	struct parent_fid		*parent_fids; /* stack */
 	uint64_t			current_id;
 	uint8_t				current_output_type;
@@ -70,7 +70,9 @@ struct mapistore_output_ctx {
 
 static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 {
-	struct mapistore_output_ctx *mapistore = priv;
+	struct mapistore_output_ctx	*mapistore = priv;
+	/* TALLOC_CTX			*mem_ctx; */
+	/* void				*message; */
 
 	if (mapistore->proplist) {
 		struct parent_fid *it;
@@ -81,24 +83,32 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		printf("\n");
 		if (mapistore->current_id == mapistore->root_fid) {
 			/* This is the top level folder */
+			abort();
+			/* obsolete code: */
 			/* mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
 			/* 		   mapistore->root_fid, mapistore->current_output_type, */
 			/* 		   mapistore->proplist); */
 		} else if (mapistore->current_output_type == MAPISTORE_FOLDER) {
-                        struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid);
-			/* mapistore_mkdir(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
-			/* 		mapistore->parent_fids->fid, mapistore->current_id, */
-			/* 		mapistore->proplist); */
+			abort();
+			/* obsolete code: */
+                        /* struct parent_fid *element = talloc_zero(mapistore->mstore_ctx, struct parent_fid); */
+			/* mapistore_folder_create_folder(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 			       mapistore->parent_fids->fid, mapistore->current_id, */
+			/* 			       mapistore->proplist); */
                         /* element->fid = mapistore->current_id; */
 			/* DLIST_ADD(mapistore->parent_fids, element); */
 		} else {
-			/* mapistore_createmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
-			/* 		        mapistore->parent_fids->fid, mapistore->current_id); */
-			/* mapistore_setprops(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
-			/* 		   mapistore->current_id, mapistore->current_output_type, */
-			/* 		   mapistore->proplist); */
-			/* mapistore_savechangesmessage(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
-			/* 			     mapistore->current_id, 0); */
+			abort();
+			/* obsolete code: */
+			/* mem_ctx = talloc_zero(NULL, TALLOC_CTX); */
+			/* mapistore_folder_create_message(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 				mem_ctx, mapistore->parent_fids->fid, mapistore->current_id, false, */
+			/* 				&message); */
+			/* mapistore_properties_set_properties(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 				    message, mapistore->proplist); */
+			/* mapistore_message_save(mapistore->mstore_ctx, mapistore->mapistore_context_id, */
+			/* 		       message); */
+			/* talloc_free(mem_ctx); */
 		}
 		talloc_free(mapistore->proplist);
 		mapistore->proplist = 0;
@@ -219,10 +229,8 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
-	enum MAPISTORE_ERROR		retval_mapistore;
 	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
-	struct mapi_profile		*profile;
 	mapi_object_t			obj_store;
 	mapi_object_t			obj_folder;
 	mapi_object_t			obj_fx_context;
@@ -234,6 +242,7 @@ int main(int argc, const char *argv[])
 	enum TransferStatus		fxTransferStatus;
 	DATA_BLOB			transferdata;
 	struct fx_parser_context	*parser;
+	struct loadparm_context		*lp_ctx;
 	struct mapistore_output_ctx	output_ctx;
 	poptContext			pc;
 	int				opt;
@@ -335,7 +344,6 @@ int main(int argc, const char *argv[])
 		mapi_errstr("MapiLogonEx", retval);
 		exit (1);
 	}
-	profile = session->profile;
 
 	/* Open the default message store */
 	mapi_object_init(&obj_store);
@@ -370,28 +378,32 @@ int main(int argc, const char *argv[])
 
 	if (opt_mapistore) {
 		char *root_folder;
+
 		// TODO: check the path is valid / exists / can be opened, etc.
 		// TODO: maybe allow a URI instead of path.
 		output_ctx.root_fid = 0x0000000000010001;
 		output_ctx.current_id = output_ctx.root_fid;
 		root_folder = talloc_asprintf(mem_ctx, "fsocpf://%s/0x%016"PRIx64, opt_mapistore, output_ctx.root_fid);
 		parser = fxparser_init(mem_ctx, &output_ctx);
-		retval_mapistore = mapistore_set_mapping_path(opt_mapistore);
-		if (retval_mapistore != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_set_mapping_path", retval_mapistore);
+		retval = mapistore_set_mapping_path(opt_mapistore);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_set_mapping_path", retval);
 			exit (1);
 		}
 
-		output_ctx.mstore_ctx = mapistore_init(mem_ctx, NULL);
+		/* Initialize configuration */
+		lp_ctx = loadparm_init(mem_ctx);
+		lpcfg_load_default(lp_ctx);
+
+		output_ctx.mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 		if (!(output_ctx.mstore_ctx)) {
 			mapi_errstr("mapistore_init", retval);
 			exit (1);
 		}
 
-		retval_mapistore = mapistore_add_context(output_ctx.mstore_ctx, "check_fasttransfer", "check_fasttransfer",
-							 root_folder, &(output_ctx.mapistore_context_id));
-		if (retval_mapistore != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("%s\n", mapistore_errstr(retval_mapistore)));
+		retval = mapistore_add_context(output_ctx.mstore_ctx, "openchange", root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id), &output_ctx.root_folder);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 			exit (1);
 		}
 		
@@ -430,15 +442,15 @@ int main(int argc, const char *argv[])
 	printf("total transfers: %i\n", transfers);
 
 	if (opt_mapistore) {
-		retval_mapistore = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
-		if (retval_mapistore != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_del_context", retval_mapistore);
+		retval = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_del_context", retval);
 			exit (1);
 		}
 
-		retval_mapistore = mapistore_release(output_ctx.mstore_ctx);
-		if (retval_mapistore != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_release", retval_mapistore);
+		retval = mapistore_release(output_ctx.mstore_ctx);
+		if (retval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_release", retval);
 			exit (1);
 		}
 	}

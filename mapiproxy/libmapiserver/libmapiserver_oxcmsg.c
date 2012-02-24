@@ -57,10 +57,10 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenMessage_size(struct EcDoRpc_MAPI_REPL *re
 	size += response->u.mapi_OpenMessage.RecipientColumns.cValues * sizeof (uint32_t);
 
 	for (i = 0; i < response->u.mapi_OpenMessage.RowCount; i++) {
-		size += sizeof (uint8_t);
-		size += sizeof (uint16_t);
-		size += sizeof (uint16_t);
-		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.recipients[i].RecipientRow);
+		size += sizeof (uint8_t);	/* ulRecipClass */
+		size += sizeof (uint16_t);	/* CODEPAGEID */
+		size += sizeof (uint16_t);	/* uint16 */
+		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenMessage.RecipientRows[i].RecipientRow);
 	}
 
 	return size;
@@ -154,7 +154,6 @@ _PUBLIC_ uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_M
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 	uint8_t		i;
-	uint16_t	RecipientRowSize = 0;
 
 	if (!response || response->error_code) {
 		return size;
@@ -176,10 +175,7 @@ _PUBLIC_ uint16_t libmapiserver_RopReloadCachedInformation_size(struct EcDoRpc_M
 		size += sizeof (uint8_t);
 		size += sizeof (uint16_t);
 		size += sizeof (uint16_t);
-		size += sizeof (uint16_t);
-		RecipientRowSize = libmapiserver_RecipientRow_size(response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow);
-		response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRowSize = RecipientRowSize;
-		size += RecipientRowSize;
+		size += libmapiserver_RecipientRow_size(response->u.mapi_ReloadCachedInformation.RecipientRows[i].RecipientRow);
 	}
 
 	return size;
@@ -223,4 +219,86 @@ _PUBLIC_ uint16_t libmapiserver_RopSetMessageReadFlag_size(struct EcDoRpc_MAPI_R
 _PUBLIC_ uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+
+/**
+   \details Calculate OpenAttach (0x22) Rop size
+
+   \param response pointer to the OpenAttach EcDoRpc_MAPI_REPL
+
+   \return Size of OpenAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate CreateAttach (0x23) Rop size
+
+   \param response pointer to the CreateAttach EcDoRpc_MAPI_REPL
+
+   \return Size of CreateAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPCREATEATTACH;
+
+        return size;
+}
+
+/**
+   \details Calculate SaveChangesAttachment (0x25) Rop size
+
+   \param response pointer to the SaveChangesAttachment EcDoRpc_MAPI_REPL
+
+   \return Size of SaveChangesAttachment response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate OpenEmbeddedMessage (0x46) Rop size
+
+   \param response pointer to the OpenEmbeddedMessage EcDoRpc_MAPI_REPL
+
+   \return Size of OpenEmbeddedMessage response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+        uint8_t         i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPOPENEMBEDDEDMESSAGE;
+
+	/* SubjectPrefix */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.SubjectPrefix);
+
+	/* NormalizedSubject */
+	size += libmapiserver_TypedString_size(response->u.mapi_OpenMessage.NormalizedSubject);
+
+	/* RecipientColumns */
+	size += response->u.mapi_OpenEmbeddedMessage.RecipientColumns.cValues * sizeof (uint32_t);
+
+	for (i = 0; i < response->u.mapi_OpenEmbeddedMessage.RowCount; i++) {
+		size += sizeof (uint8_t);
+		size += sizeof (uint16_t);
+		size += sizeof (uint16_t);
+		size += libmapiserver_RecipientRow_size(response->u.mapi_OpenEmbeddedMessage.RecipientRows[i].RecipientRow);
+	}
+        
+        return size;
 }

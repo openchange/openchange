@@ -64,10 +64,10 @@
 #include "libmapi/mapi_id_array.h"
 #include "libmapi/mapi_notification.h"
 #include "libmapi/mapi_profile.h"
-#include "libmapi/mapi_nameid.h"
 #include "libmapi/mapidefs.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/socket/netif.h"
+#include "libmapi/idset.h"
 #include "libmapi/property_tags.h"
 #include "libmapi/property_altnames.h"
 
@@ -142,6 +142,7 @@ enum MAPISTATUS		GetBestBody(mapi_object_t *, uint8_t *);
 /* The following public definitions come from auto-generated libmapi/mapitags.c */
 const char		*get_proptag_name(uint32_t);
 uint32_t		get_proptag_value(const char *);
+uint16_t		get_property_type(uint16_t untypedtag);
 
 /* The following public definitions come from auto-generated libmapi/mapicode.c */
 void			mapi_errstr(const char *, enum MAPISTATUS);
@@ -243,6 +244,8 @@ enum MAPISTATUS		mapi_nameid_GetIDsFromNames(struct mapi_nameid *, mapi_object_t
 /* The following public definitions come from libmapi/property.c */
 struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
 enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, enum MAPITAGS);
+enum MAPISTATUS		SPropTagArray_delete(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
+enum MAPISTATUS		SPropTagArray_find(struct SPropTagArray, enum MAPITAGS, uint32_t *);
 const void		*get_SPropValue(struct SPropValue *, enum MAPITAGS);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);
@@ -255,8 +258,10 @@ const void		*get_mapi_SPropValue_data(struct mapi_SPropValue *);
 const void		*get_SPropValue_data(struct SPropValue *);
 bool			set_SPropValue_proptag(struct SPropValue *, enum MAPITAGS, const void *);
 struct SPropValue	*add_SPropValue(TALLOC_CTX *, struct SPropValue *, uint32_t *, enum MAPITAGS, const void *);
+struct mapi_SPropValue	*add_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, uint16_t *, uint32_t, const void *);
 bool			set_SPropValue(struct SPropValue *, const void *);
 uint32_t		get_mapi_property_size(struct mapi_SPropValue *);
+void			mapi_copy_spropvalues(TALLOC_CTX *, struct SPropValue *, struct SPropValue *, uint32_t);
 uint32_t		cast_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);
 uint32_t		cast_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, struct SPropValue *);
 enum MAPISTATUS		SRow_addprop(struct SRow *, struct SPropValue);
@@ -267,9 +272,15 @@ enum MAPISTATUS		get_mapi_SPropValue_date_timeval(struct timeval *t, struct SPro
 bool			set_SPropValue_proptag_date_timeval(struct SPropValue *, enum MAPITAGS, const struct timeval *);
 struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *, struct Binary_r *);
 struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, struct Binary_r *);
+struct Binary_r *set_RecurrencePattern(TALLOC_CTX *, const struct RecurrencePattern *);
+struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
+struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);
+struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
+bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
+bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);
 
 /* The following public definitions come from libmapi/IABContainer.c */
 enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct SRowSet **,  struct PropertyTagArray_r **, uint32_t);
@@ -374,7 +385,7 @@ enum MAPISTATUS		SetCollapseState(mapi_object_t *, struct SBinary_short *);
 char			*RfrGetNewDSA(struct mapi_context *, struct mapi_session *, const char *, const char *);
 enum MAPISTATUS		RfrGetFQDNFromLegacyDN(struct mapi_context *, struct mapi_session *, const char **);
 enum MAPISTATUS		Logoff(mapi_object_t *);
-enum MAPISTATUS		RegisterNotification(struct mapi_session *, uint16_t);
+enum MAPISTATUS		RegisterNotification(struct mapi_session *);
 enum MAPISTATUS		RegisterAsyncNotification(struct mapi_session *, uint32_t *);
 
 /* The following public definitions come from libmapi/IMessage.c */
@@ -494,11 +505,84 @@ typedef enum MAPISTATUS (*fxparser_namedprop_callback_t)(uint32_t, struct MAPINA
 typedef enum MAPISTATUS (*fxparser_property_callback_t)(struct SPropValue, void *);
 
 struct fx_parser_context *fxparser_init(TALLOC_CTX *, void *);
-void 			 fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
-void 			 fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
-void 			 fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
-void 			 fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
-void			 fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+void 			fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker_callback_t);
+void 			fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
+void 			fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
+void 			fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
+void			fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+
+/* The following public definitions come from libmapi/idset.c */
+uint64_t		exchange_globcnt(uint64_t);
+
+struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool, bool);
+void			RAWIDSET_push_eid(struct rawidset *, uint64_t);
+void			RAWIDSET_push_guid_glob(struct rawidset *, const struct GUID *, uint64_t);
+struct idset *		RAWIDSET_convert_to_idset(TALLOC_CTX *, const struct rawidset *);
+
+struct idset *		IDSET_parse(TALLOC_CTX *, DATA_BLOB, bool);
+struct idset *		IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *, const struct idset *);
+struct Binary_r *	IDSET_serialize(TALLOC_CTX *, const struct idset *);
+bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, uint64_t);
+bool			IDSET_includes_eid(const struct idset *, uint64_t);
+void			IDSET_remove_rawidset(struct idset *, const struct rawidset *);
+void			IDSET_dump(const struct idset *, const char *);
+void			ndr_push_idset(struct ndr_push *, struct idset *);
+
+struct globset_range *	GLOBSET_parse(TALLOC_CTX *, DATA_BLOB, uint32_t *, uint32_t *);
+
+/* Size functions */
+
+/**
+   \details struct RecurrencePattern has fixed response size for:
+   -# ReaderVersion: uint16_t
+   -# WriterVersion: uint16_t
+   -# RecurFrequency: uint16_t
+   -# PatternType: uint16_t
+   -# CalendarType: uint16_t
+   -# FirstDateTime: uint32_t
+   -# Period: uint32_t
+   -# SlidingFlag: uint32_t
+   -# EndType: uint32_t
+   -# OccurrenceCount: uint32_t
+   -# FirstDOW: uint32_t
+   -# DeletedInstanceCount: uint32_t
+   -# ModifiedInstanceCount: uint32_t
+   -# StartDate: uint32_t
+   -# EndDate: uint32_t
+ */
+#define	SIZE_DFLT_RECURRENCEPATTERN 50
+size_t set_RecurrencePattern_size(const struct RecurrencePattern *);
+
+/**
+   \details struct AppointmentRecurrencePattern has fixed response size for:
+   -# ReaderVersion2: uint32_t
+   -# WriterVersion2: uint32_t
+   -# StartTimeOffset: uint32_t
+   -# EndTimeOffset: uint32_t
+   -# ExceptionCount: uint16_t
+   -# ReservedBlock1Size: uint32_t
+   -# ReservedBlock2Size: uint32_t
+ */
+#define	SIZE_DFLT_APPOINTMENTRECURRENCEPATTERN 26
+size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrencePattern *);
+
+/**
+   \details struct ExceptionInfo has fixed response size for:
+   -# StartDateTime: uint32_t
+   -# EndDateTime: uint32_t
+   -# OriginalStartDate: uint32_t
+   -# OverrideFlags: uint16_t
+ */
+#define	SIZE_DFLT_EXCEPTIONINFO 14
+size_t set_ExceptionInfo_size(const struct ExceptionInfo *);
+
+/**
+   \details struct ExtendedException has fixed response size for:
+   -# ReservedBlockEE1Size: uint32_t
+   -# ReservedBlockEE2Size: uint32_t
+ */
+// #define	SIZE_DFLT_EXTENDEDEXCEPTION 8
+// size_t set_ExtendedException_size(const struct ExtendedException *);
 
 __END_DECLS
 

@@ -50,13 +50,12 @@ struct emsabp_context {
 	TALLOC_CTX		*mem_ctx;
 };
 
-
 struct exchange_nsp_session {
 	struct mpm_session		*session;
+	struct GUID			uuid;
 	struct exchange_nsp_session	*prev;
 	struct exchange_nsp_session	*next;
 };
-
 
 struct emsabp_MId {
 	uint32_t	MId;
@@ -105,6 +104,8 @@ struct EphemeralEntryID {
 #define	EMSABP_TDB_MID_START		0x1b28
 #define	EMSABP_TDB_TMP_MID_START	0x5000
 #define	EMSABP_TDB_DATA_REC		"MId_index"
+
+#define DCESRV_NSP_RETURN(r,c,ctx) { r->out.result = c; return; if (ctx) talloc_free(ctx); }
 
 __BEGIN_DECLS
 

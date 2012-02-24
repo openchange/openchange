@@ -66,7 +66,6 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 	/* Ensure this tag has not already been added to the list */
 	for (i = 0; i < self->cValues; i++) {
 		if (self->SPropValue[i].ulPropTag == proptag) {
-			PyErr_SetString(PyExc_TypeError, "Property Tag already present in list");
 			return NULL;
 		}
 	}
@@ -125,7 +124,7 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 		break;
 	case PT_SYSTIME:
 		if (!PyFloat_Check(data)) {
-			PyErr_SetString(PyExc_TypeError, "Property Tag requires time");
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires float");
 			return NULL;
 		}
 		unix_to_nt_time(&nt, PyFloat_AsDouble(data));
@@ -140,12 +139,8 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 		self->SPropValue[self->cValues].value.err = PyInt_AsLong(data);
 		break;
 	default:
-	{
-		char errstr[100];
-		sprintf(errstr, "Missing support for 0x%.4x type\n", (proptag & 0xFFFF));
-		PyErr_SetString(PyExc_TypeError, errstr);
-		return NULL;
-	}
+		printf("Missing support for 0x%.4x type\n", (proptag & 0xFFFF));
+		Py_RETURN_NONE;
 	}
 
 	self->SPropValue[self->cValues].ulPropTag = proptag;

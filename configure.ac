@@ -9,6 +9,11 @@ AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
+if test -z "$CFLAGS";
+then
+  CFLAGS="-g";
+fi
+
 CFLAGS="-I. $CFLAGS"
 
 dnl #################################################################
@@ -231,16 +236,16 @@ dnl Sun Studio Compiler
     LDFLAGS="$LDFLAGS -z ignore -R '\$\$ORIGIN/../lib'"
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
 dnl Intel Compiler
-    COMPILER_OPTIONS_SHARED="-O3 -Wall -g3 -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
+    COMPILER_OPTIONS_SHARED="-Wall -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
 dnl GNU Compiler
-    COMPILER_OPTIONS_SHARED="-Wall -g3 -fstrict-aliasing -Wp,-D_FORTIFY_SOURCE=2"
+    COMPILER_OPTIONS_SHARED="-Wall -fstrict-aliasing -Wp,-D_FORTIFY_SOURCE=2"
     if test "x$use_cov" = "xyes"; then
         COMPILER_OPTIONS_SHARED="-O0 $COMPILER_OPTIONS_SHARED"
     else
-        COMPILER_OPTIONS_SHARED="-O3 $COMPILER_OPTIONS_SHARED"
+        COMPILER_OPTIONS_SHARED="$COMPILER_OPTIONS_SHARED"
     fi
     COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
     if test "x$use_cov" = "xyes"; then
@@ -340,8 +345,6 @@ PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb)
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
-OC_RULE_ADD(mapistore_mstoredb, MAPISTORE)
-
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision
 dnl ---------------------------------------------------------------------------
@@ -355,6 +358,11 @@ AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers.
 
 OC_CHECK_SAMBA_VERSION([$SAMBA4_RELEASE],[$SAMBA4_GIT_VER-GIT-$SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"
+
+AC_MSG_CHECKING([for DCE/RPC server modules directory])
+DCERPC_SERVER_MODULESDIR=`$PKG_CONFIG --variable=modulesdir dcerpc_server`
+AC_SUBST(DCERPC_SERVER_MODULESDIR)
+AC_MSG_RESULT($DCERPC_SERVER_MODULESDIR)
 
 dnl ---------------------------------------------------------------------------
 dnl Finally add libmapi to the library list
@@ -539,7 +547,7 @@ if test x"$enable_libpopt" = x"yes"; then
 
 	if test x"$enable_libocpf" = x"yes"; then
 	   OC_RULE_ADD(openchangeclient, TOOLS)
-	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
 	fi
 
 	if test x"$have_libical" = x"yes"; then
@@ -581,14 +589,36 @@ if test x"$enable_libmagic" = x"yes"; then
 	fi
 fi
 
+dnl ##########################################################################
+dnl libmapistore dependencies
+dnl ##########################################################################
+
+AC_CHECK_LIB([rt], [mq_open],
+	    [
+		 	RT_LIBS="-lrt"
+			AC_SUBST(RT_LIBS)
+		],
+		[
+			AC_CHECK_FUNCS(mq_open, [
+				RT_LIBS=""
+				AC_SUBST(RT_LIBS)
+			], [
+				AC_MSG_ERROR([unable to find mq_open])
+		 	])
+		])
 
 dnl ##########################################################################
 dnl libmapistore backends dependencies
 dnl ##########################################################################
 
-dnl --------------------------------------------------------------------------
-dnl Check for libs
-dnl --------------------------------------------------------------------------
+OC_MAPISTORE=
+OC_MAPISTORE_CLEAN=
+OC_MAPISTORE_INSTALL=
+OC_MAPISTORE_UNINSTALL=
+AC_SUBST(OC_MAPISTORE)
+AC_SUBST(OC_MAPISTORE_CLEAN)
+AC_SUBST(OC_MAPISTORE_INSTALL)
+AC_SUBST(OC_MAPISTORE_UNINSTALL)
 
 dnl ##########################################################################
 dnl mapiproxy server
@@ -689,7 +719,7 @@ dnl ***********************
 dnl Makefiles 
 dnl ***********************
 AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
-		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore/libmapistore.pc libmapi++.pc
+		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc libmapi++.pc
 		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
 		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile
 		 mapiproxy/libmapistore/Doxyfile])
@@ -733,8 +763,7 @@ OpenChange Configuration (Please review)
 	     - mapiproxy:		$enable_mapiproxy
 
 	   * OpenChange mapistore backends:
-	     - mstoredb:		yes
-	     - fsocpf:			$enable_libocpf
+	     - backends dependencies goes here
 
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient

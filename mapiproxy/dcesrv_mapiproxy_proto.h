@@ -145,7 +145,7 @@ enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *,
 void dcesrv_EcDummyRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDummyRpc *);
 void dcesrv_EcRGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRGetDCName *);
 void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRNetGetDCName *);
-void dcesrv_EcDoRpcExt(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpcExt *);
+enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpcExt *);
 enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoConnectEx *);
 enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *, TALLOC_CTX *, struct EcDoRpcExt2 *);
 void dcesrv_EcUnknown0xC(struct dcesrv_call_state *, TALLOC_CTX *, struct EcUnknown0xC *);

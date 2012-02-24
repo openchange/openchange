@@ -899,16 +899,16 @@ _PUBLIC_ bool mapitest_mapidump_foldercreated(struct mapitest *mt)
 
 	foldercreatednotification.ParentFID = 0x9876CAFE432LL;
 	foldercreatednotification.FID = 0x1234ABCDLL;
-	foldercreatednotification.Tags = 0;
+	foldercreatednotification.NotificationTags.Tags = 0;
 	foldercreatednotification.TagCount = 0;
 	mapidump_foldercreated(&foldercreatednotification, "[sep]");
 
 	foldercreatednotification.TagCount = 3;
-	foldercreatednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
-						      foldercreatednotification.TagCount);
-	foldercreatednotification.Tags[0] = PidTagTemplateData;
-	foldercreatednotification.Tags[1] = PR_URL_COMP_NAME;
-	foldercreatednotification.Tags[2] = PidTagOriginalSensitivity;
+	foldercreatednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+                                                           foldercreatednotification.TagCount);
+	foldercreatednotification.NotificationTags.Tags[0] = PidTagTemplateData;
+	foldercreatednotification.NotificationTags.Tags[1] = PR_URL_COMP_NAME;
+	foldercreatednotification.NotificationTags.Tags[2] = PidTagEndAttach;
 
 	mapidump_foldercreated(&foldercreatednotification, "[sep]");
 
@@ -966,16 +966,16 @@ _PUBLIC_ bool mapitest_mapidump_messagecreated(struct mapitest *mt)
 
 	messagecreatednotification.FID = 0x1234ABCDLL;
 	messagecreatednotification.MID = 0x9876FEALL;
-	messagecreatednotification.Tags = 0;
+	messagecreatednotification.NotificationTags.Tags = 0;
 	messagecreatednotification.TagCount = 0;
 	mapidump_messagecreated(&messagecreatednotification, "[sep]");
 
 	messagecreatednotification.TagCount = 3;
-	messagecreatednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+	messagecreatednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
 						       messagecreatednotification.TagCount);
-	messagecreatednotification.Tags[0] = PR_DISPLAY_NAME;
-	messagecreatednotification.Tags[1] = PR_DISPLAY_NAME_UNICODE;
-	messagecreatednotification.Tags[2] = PR_COMPANY_NAME;
+	messagecreatednotification.NotificationTags.Tags[0] = PR_DISPLAY_NAME;
+	messagecreatednotification.NotificationTags.Tags[1] = PR_DISPLAY_NAME_UNICODE;
+	messagecreatednotification.NotificationTags.Tags[2] = PR_COMPANY_NAME;
 
 	mapidump_messagecreated(0, "[sep]");
 
@@ -1063,16 +1063,16 @@ _PUBLIC_ bool mapitest_mapidump_messagemodified(struct mapitest *mt)
 
 	messagemodifiednotification.FID = 0x1234ABCDLL;
 	messagemodifiednotification.MID = 0x9876FEALL;
-	messagemodifiednotification.Tags = 0;
+	messagemodifiednotification.NotificationTags.Tags = 0;
 	messagemodifiednotification.TagCount = 0;
 	mapidump_messagemodified(&messagemodifiednotification, "[sep]");
 
 	messagemodifiednotification.TagCount = 3;
-	messagemodifiednotification.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
+	messagemodifiednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
 						        messagemodifiednotification.TagCount);
-	messagemodifiednotification.Tags[0] = PR_DISPLAY_NAME;
-	messagemodifiednotification.Tags[1] = PR_DISPLAY_NAME_UNICODE;
-	messagemodifiednotification.Tags[2] = PR_COMPANY_NAME;
+	messagemodifiednotification.NotificationTags.Tags[0] = PR_DISPLAY_NAME;
+	messagemodifiednotification.NotificationTags.Tags[1] = PR_DISPLAY_NAME_UNICODE;
+	messagemodifiednotification.NotificationTags.Tags[2] = PR_COMPANY_NAME;
 
 	mapidump_messagemodified(0, "[sep]");
 

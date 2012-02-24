@@ -80,14 +80,13 @@ _PUBLIC_ void mapitest_print(struct mapitest *mt, const char *format, ...)
 {
 	va_list		ap;
 	char		*s = NULL;
-	int		ret;
 
 	if (mt->subunit_output) {
 		return;
 	}
 
 	va_start(ap, format);
-	ret = vasprintf(&s, format, ap);
+	vasprintf(&s, format, ap);
 	va_end(ap);
 
 	mapitest_print_tab(mt);
@@ -496,10 +495,9 @@ _PUBLIC_ void mapitest_print_retval_fmt(struct mapitest *mt, char *name, const c
 	const char	*retstr = NULL;
 	va_list		ap;
 	char		*s = NULL;
-	int		ret;
 
 	va_start(ap, format);
-	ret = vasprintf(&s, format, ap);
+	vasprintf(&s, format, ap);
 	va_end(ap);
 
 	retstr = mapi_get_errstr(GetLastError());
@@ -534,10 +532,9 @@ _PUBLIC_ void mapitest_print_retval_fmt_clean(struct mapitest *mt, char *name, e
 	const char	*retstr = NULL;
 	va_list		ap;
 	char		*s = NULL;
-	int		ret;
 
 	va_start(ap, format);
-	ret = vasprintf(&s, format, ap);
+	vasprintf(&s, format, ap);
 	va_end(ap);
 
 	retstr = mapi_get_errstr(retval);
@@ -604,10 +601,9 @@ _PUBLIC_ void mapitest_print_retval_step_fmt(struct mapitest *mt, char *step, ch
 	const char	*retstr = NULL;
 	va_list		ap;
 	char		*s = NULL;
-	int		ret;
 
 	va_start(ap, format);
-	ret = vasprintf(&s, format, ap);
+	vasprintf(&s, format, ap);
 	va_end(ap);
 
 	retstr = mapi_get_errstr(GetLastError());

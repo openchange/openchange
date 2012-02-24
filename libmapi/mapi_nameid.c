@@ -782,7 +782,6 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 {
 	enum MAPISTATUS	retval;
 	uint32_t	i;
-	uint16_t	proptype;
 	bool		status = false;
 
 	/* Sanity checks */
@@ -790,7 +789,6 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
-		proptype = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) >> 16;
 		if (mapi_nameid_property_lookup(SPropTagArray->aulPropTag[i]) == MAPI_E_SUCCESS) {
 			retval = mapi_nameid_canonical_add(nameid, SPropTagArray->aulPropTag[i]);
 			if (retval == MAPI_E_SUCCESS) {

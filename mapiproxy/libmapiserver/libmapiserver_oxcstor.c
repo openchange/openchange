@@ -48,10 +48,7 @@ _PUBLIC_ uint16_t libmapiserver_RopLogon_size(struct EcDoRpc_MAPI_REQ *request,
 	if (response->error_code == ecWrongServer) {
 		size += SIZE_DFLT_ROPLOGON_REDIRECT;
 		size += strlen (response->us.mapi_Logon.ServerName) + 1;
-		return size;
-	}
-
-	if (request->u.mapi_Logon.LogonFlags & LogonPrivate) {
+	} else if (request->u.mapi_Logon.LogonFlags & LogonPrivate) {
 		size += SIZE_DFLT_ROPLOGON_MAILBOX;
 	} else {
 		size += SIZE_DFLT_ROPLOGON_PUBLICFOLDER;
@@ -95,6 +92,45 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolder_size(struct EcDoRpc_MAPI_REP
 	return size;
 }
 
+/**
+   \details Calculate LongTermIdFromId Rop size
+
+   \param response pointer to the LongTermIdFromId EcDoRpc_MAPI_REPL structure
+
+   \return Size of LongTermIdFromId response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopLongTermIdFromId_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPLONGTERMIDFROMID;
+
+	return size;
+}
+
+/**
+   \details Calculate IdFromLongTermId Rop size
+
+   \param response pointer to the IdFromLongTermId EcDoRpc_MAPI_REPL structure
+
+   \return Size of IdFromLongTermId response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopIdFromLongTermId_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPIDFROMLONGTERMID;
+
+	return size;	
+}
 
 /**
    \details Calculate GetPerUserLongTermIds Rop size
@@ -167,6 +203,26 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL 
 }
 
 /**
+   \details Calculate GetStoreState Rop size
+
+   \param response pointer to the GetStoreState EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetStoreState response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetStoreState_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETSTORESTATE;
+
+	return size;
+}
+
+/**
    \details Calculate GetReceiveFolderTable ROP size
 
    \param response pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REPL structure
@@ -175,7 +231,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPerUserGuid_size(struct EcDoRpc_MAPI_REPL 
  */
 _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAPI_REPL *response)
 {
-	uint32_t	i = 0;
+	int 		i = 0;
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
 	if (!response || response->error_code) {

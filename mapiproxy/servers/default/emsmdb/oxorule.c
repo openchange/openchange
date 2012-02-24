@@ -59,7 +59,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXORULE] GetRulesTable (0x3f)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXORULE] GetRulesTable (0x3f) -- stub\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -68,26 +68,46 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	/* Ensure parent handle references a folder object */
-	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
-
 	/* Initialize default GetRulesTable reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->u.mapi_GetRulesTable.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	mapi_handles_get_private_data(parent, &data);
-	object = (struct emsmdbp_object *) data;
-	if (!object || object->type != EMSMDBP_OBJECT_FOLDER) {
-		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+	/* Ensure parent handle references a folder object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		goto end;
 	}
 
+	retval = mapi_handles_get_private_data(parent, &data);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_NOT_FOUND;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	object = (struct emsmdbp_object *) data;
+	if (object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  unhandled object type: %d\n", object->type));
+		goto end;
+	}
+
+	/* Initialize Table object */
+	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
 	handles[mapi_repl->handle_idx] = rec->handle;
 
+	object = emsmdbp_object_table_init((TALLOC_CTX *)rec, emsmdbp_ctx, object);
+	if (object) {
+		retval = mapi_handles_set_private_data(rec, object);
+		/* rules tables are stub objects for now */
+		object->object.table->denominator = 0;
+		object->object.table->ulType = MAPISTORE_RULE_TABLE;
+	}
 end:
 	*size += libmapiserver_RopGetRulesTable_size();
 

@@ -566,10 +566,9 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	property_tags = set_SPropTagArray(mt->mem_ctx, 0x0);
 	restriction.length = 0;
 	restriction.data = NULL;
-	retval = ICSSyncConfigure(&download_folder, SynchronizationType_Hierarchy,
+	retval = ICSSyncConfigure(&download_folder, Hierarchy,
 				  FastTransfer_Unicode, SynchronizationFlag_Unicode,
-				  SynchronizationExtraFlag_Eid | SynchronizationExtraFlag_Cn,
-				  restriction, property_tags, &obj_sync_context);
+				  Eid | Cn, restriction, property_tags, &obj_sync_context);
 	mapitest_print_retval_clean(mt, "ICSSyncConfigure", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

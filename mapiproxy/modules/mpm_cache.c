@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008-2011
+   Copyright (C) Julien Kerihuel 2008
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -786,12 +786,12 @@ static NTSTATUS cache_push_ReadStream(struct dcesrv_call_state *dce_call,
 	struct mpm_stream	*stream;
 	struct mapi_response	*mapi_response;
 	struct ReadStream_repl	response;
-	struct ReadStream_req	request;
+	/* struct ReadStream_req	request; */
 	char			*server_id_printable = NULL;
 
 	mapi_response = EcDoRpc->out.mapi_response;
 	response = mapi_repl.u.mapi_ReadStream;
-	request = mapi_req.u.mapi_ReadStream;
+	/* request = mapi_req.u.mapi_ReadStream; */
 
 	/* Check if the handle is registered */
 	for (stream = mpm->streams; stream; stream = stream->next) {
@@ -1024,7 +1024,7 @@ static NTSTATUS cache_dispatch(struct dcesrv_call_state *dce_call, TALLOC_CTX *m
 						mapi_response->mapi_repl[i].handle_idx = mapi_req[i].handle_idx;
 						mapi_response->mapi_repl[i].error_code = MAPI_E_SUCCESS;
 						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length = 0;
-						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data = (uint8_t *) talloc_size(mem_ctx, request.ByteCount);
+						mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data = talloc_size(mem_ctx, request.ByteCount);
 						mpm_cache_stream_read(stream, (size_t) request.ByteCount, 
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.length,
 								      &mapi_response->mapi_repl[i].u.mapi_ReadStream.data.data);
@@ -1154,6 +1154,7 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 {
 	char			*database;
 	NTSTATUS		status;
+	struct loadparm_context	*lp_ctx;
 
 	mpm = talloc_zero(dce_ctx, struct mpm_cache);
 	if (!mpm) return NT_STATUS_NO_MEMORY;
@@ -1187,6 +1188,8 @@ static NTSTATUS cache_init(struct dcesrv_context *dce_ctx)
 		return NT_STATUS_NO_MEMORY;
 	}
 
+	lp_ctx = loadparm_init(dce_ctx);
+	lpcfg_load_default(lp_ctx);
 	dcerpc_init();
 
 	talloc_free(database);

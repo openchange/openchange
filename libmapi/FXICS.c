@@ -1013,7 +1013,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncConfigure(mapi_object_t *obj, enum Synchronizati
 	size += sizeof(uint8_t);
 	request.SendOptions = send_options;
 	size += sizeof(uint8_t);
-	request.SynchronizationFlags = sync_flags;
+	request.SynchronizationFlag = sync_flags;
 	size += sizeof(uint16_t);
 	request.RestrictionSize = restriction.length;
 	size += sizeof(uint16_t);

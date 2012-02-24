@@ -130,7 +130,6 @@ _PUBLIC_ bool mapitest_oxomsg_AddressTypes(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
 	mapi_object_t		obj_message;
@@ -140,19 +139,19 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(mt->session, &obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. Open Outbox folder */
-	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
+	GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	mapi_object_init(&obj_folder);
-	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	OpenFolder(&obj_store, id_folder, &obj_folder);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
@@ -165,7 +164,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 	}
 
 	/* Step 4. Submit Message */
-	retval = SubmitMessage(&obj_message);
+	SubmitMessage(&obj_message);
 	mapitest_print_retval(mt, "SubmitMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -173,7 +172,7 @@ _PUBLIC_ bool mapitest_oxomsg_SubmitMessage(struct mapitest *mt)
 
 	/* Step 5. Delete Message */
 	id_msgs[0] = mapi_object_get_id(&obj_message);
-	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	DeleteMessage(&obj_folder, id_msgs, 1);
 	mapitest_print_retval(mt, "DeleteMessage");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -322,18 +321,17 @@ mapitest_oxomsg_AbortSubmit_bailout:
  */
 _PUBLIC_ bool mapitest_oxomsg_SetSpooler(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_store;
 	
 	/* Step 1. Logon */
 	mapi_object_init(&obj_store);
-	retval = OpenMsgStore(mt->session, &obj_store);
+	OpenMsgStore(mt->session, &obj_store);
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
 	/* Step 2. SetSpooler */
-	retval = SetSpooler(&obj_store);
+	SetSpooler(&obj_store);
 	mapitest_print_retval(mt, "SetSpooler");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -501,7 +499,7 @@ _PUBLIC_ bool mapitest_oxomsg_TransportSend(struct mapitest *mt)
 	}
 
 	/* Step 6. Dump the properties */
-	if (&lpProps != NULL) {
+	if (lpProps.lpProps != NULL) {
 		uint32_t		i;
 		struct SPropValue	lpProp;
 

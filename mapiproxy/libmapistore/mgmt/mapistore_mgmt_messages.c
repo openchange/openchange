@@ -104,6 +104,8 @@ enum mapistore_error mapistore_mgmt_message_user_command(struct mapistore_mgmt_c
 						break;
 					}
 					break;
+				case MAPISTORE_MGMT_SEND:
+					break;
 				}
 			}
 			/* Case where the record exists */
@@ -276,6 +278,8 @@ static bool mapistore_mgmt_message_notification_wholestore(struct mapistore_mgmt
 		}
 		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
 		break;
+	case MAPISTORE_MGMT_SEND:
+		break;
 	}
 
 	return true;
@@ -319,6 +323,8 @@ static bool mapistore_mgmt_message_notification_message(struct mapistore_mgmt_us
 		}
 		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
 		break;
+	case MAPISTORE_MGMT_SEND:
+		break;
 	}
 
 	return true;
@@ -361,6 +367,8 @@ static bool mapistore_mgmt_message_notification_folder(struct mapistore_mgmt_use
 			}
 		}
 		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		break;
+	case MAPISTORE_MGMT_SEND:
 		break;
 	}
 

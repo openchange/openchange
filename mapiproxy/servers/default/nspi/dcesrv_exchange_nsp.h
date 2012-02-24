@@ -27,6 +27,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <ldb.h>
 #include <ldb_errors.h>
+#include <tevent.h>
 #include <fcntl.h>
 #include <util/debug.h>
 

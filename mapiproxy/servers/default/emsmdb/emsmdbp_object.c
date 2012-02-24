@@ -694,6 +694,13 @@ static int emsmdbp_object_destructor(void *data)
 			talloc_free(object->object.subscription->subscription_list);
                 }
 		break;
+	case EMSMDBP_OBJECT_UNDEF:
+	case EMSMDBP_OBJECT_MAILBOX:
+	case EMSMDBP_OBJECT_MESSAGE:
+	case EMSMDBP_OBJECT_ATTACHMENT:
+	case EMSMDBP_OBJECT_FTCONTEXT:
+	case EMSMDBP_OBJECT_SYNCCONTEXT:
+		break;
 	}
 	
 nomapistore:

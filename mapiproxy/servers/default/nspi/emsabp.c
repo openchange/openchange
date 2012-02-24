@@ -1121,7 +1121,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */

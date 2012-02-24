@@ -410,12 +410,18 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                         reply->NotificationData.SearchTableChange.TableEvent = TABLE_CHANGED;
                         switch (notification->event) {
                         case MAPISTORE_OBJECT_CREATED:
-                        /* case MAPISTORE_OBJECT_MODIFIED: */
+				/* case MAPISTORE_OBJECT_MODIFIED: */
                                 reply->NotificationData.HierarchyTableChange.TableEvent = (notification->event == MAPISTORE_OBJECT_CREATED ? TABLE_ROW_ADDED : TABLE_ROW_MODIFIED);
                                 reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.FID = notification->parameters.table_parameters.object_id;
                                 reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.InsertAfterFID = prev_fid;
                                 reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.Columns = *table_row;
                                 break;
+			case MAPISTORE_OBJECT_MODIFIED:
+			case MAPISTORE_OBJECT_DELETED:
+			case MAPISTORE_OBJECT_COPIED:
+			case MAPISTORE_OBJECT_MOVED:
+			case MAPISTORE_OBJECT_NEWMAIL:
+				break;
                         /* case MAPISTORE_OBJECT_DELETED: */
                         /*         reply->NotificationData.HierarchyTableChange.TableEvent = TABLE_ROW_DELETED; */
                         /*         reply->NotificationData.HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowDeletedNotification.FID = notification->parameters.table_parameters.object_id; */
@@ -503,6 +509,12 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                         /*         reply->NotificationType = fnevCriticalError; */
                         /*         DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
                         /*         goto end; */
+			case MAPISTORE_OBJECT_MODIFIED:
+			case MAPISTORE_OBJECT_DELETED:
+			case MAPISTORE_OBJECT_COPIED:
+			case MAPISTORE_OBJECT_MOVED:
+			case MAPISTORE_OBJECT_NEWMAIL:
+				break;
                         }
                 }
         }

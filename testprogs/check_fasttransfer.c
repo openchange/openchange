@@ -229,6 +229,7 @@ int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	struct mapi_context		*mapi_ctx;
 	struct mapi_session		*session = NULL;
 	mapi_object_t			obj_store;
@@ -385,8 +386,8 @@ int main(int argc, const char *argv[])
 		output_ctx.current_id = output_ctx.root_fid;
 		root_folder = talloc_asprintf(mem_ctx, "fsocpf://%s/0x%016"PRIx64, opt_mapistore, output_ctx.root_fid);
 		parser = fxparser_init(mem_ctx, &output_ctx);
-		retval = mapistore_set_mapping_path(opt_mapistore);
-		if (retval != MAPISTORE_SUCCESS) {
+		mretval = mapistore_set_mapping_path(opt_mapistore);
+		if (mretval != MAPISTORE_SUCCESS) {
 			mapi_errstr("mapistore_set_mapping_path", retval);
 			exit (1);
 		}
@@ -401,9 +402,9 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 
-		retval = mapistore_add_context(output_ctx.mstore_ctx, "openchange", root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id), &output_ctx.root_folder);
-		if (retval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		mretval = mapistore_add_context(output_ctx.mstore_ctx, "openchange", root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id), &output_ctx.root_folder);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("%s\n", mapistore_errstr(mretval)));
 			exit (1);
 		}
 		
@@ -442,15 +443,15 @@ int main(int argc, const char *argv[])
 	printf("total transfers: %i\n", transfers);
 
 	if (opt_mapistore) {
-		retval = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
-		if (retval != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_del_context", retval);
+		mretval = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
+		if (mretval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_del_context", mretval);
 			exit (1);
 		}
 
-		retval = mapistore_release(output_ctx.mstore_ctx);
-		if (retval != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_release", retval);
+		mretval = mapistore_release(output_ctx.mstore_ctx);
+		if (mretval != MAPISTORE_SUCCESS) {
+			mapi_errstr("mapistore_release", mretval);
 			exit (1);
 		}
 	}

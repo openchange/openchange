@@ -149,7 +149,6 @@ struct tce_async_context {
 static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct tce_async_context	*actx = talloc_get_type(req->context, struct tce_async_context);
-	int				ret;
 
         switch (ares->type) {
 
@@ -162,7 +161,6 @@ static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
                 break;
         case LDB_REPLY_DONE:
-                ret = 0;
                 break;
         default:
 		DEBUG(3, ("[%s:%d]: unknown Reply Type ignore it\n", __FUNCTION__, __LINE__));
@@ -365,7 +363,6 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	struct mapi_context		*mapi_ctx;
-	struct mapi_profile		*profile;
 	struct samr_CreateUser2		r;
 	struct samr_GetUserPwInfo	pwp;
 	struct samr_SetUserInfo		s;
@@ -382,7 +379,6 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	DEBUG(3, ("Creating account %s\n", mapiadmin_ctx->username));
-	profile = mapiadmin_ctx->session->profile;
 
 	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
 	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, mem_ctx);

@@ -871,7 +871,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_nameid.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
-	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
+#	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
 	@$(SED) $(DESTDIR)$(includedir)/mapistore/*.h
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)

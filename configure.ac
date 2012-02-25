@@ -440,7 +440,7 @@ dnl ---------------------------------------------------------------------------
 AC_CACHE_CHECK([C++ compiler availability], [ac_cv_libmapixx_gxx_works],
 	       [
 		AC_LANG_PUSH([C++])
-		AC_COMPILE_IFELSE([int main() { return 0; }], 
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])], 
 				  [ac_cv_libmapixx_gxx_works=yes],
 				  [ac_cv_libmapixx_gxx_works=no])
 		AC_LANG_POP([C++])

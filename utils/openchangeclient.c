@@ -450,7 +450,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					struct SRow		aRow;
 					
 					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
-					lpProps = talloc_zero(mem_ctx, struct SPropValue);
+					lpProps = NULL;
 					retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval != MAPI_E_SUCCESS) return retval;
@@ -488,7 +488,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 													  PR_ATTACH_LONG_FILENAME,
 													  PR_ATTACH_SIZE,
 													  PR_ATTACH_CONTENT_ID);
-									lpProps2 = talloc_zero(mem_ctx, struct SPropValue);
+									lpProps2 = NULL;
 									retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2);
 									MAPIFreeBuffer(SPropTagArray);
 									if (retval != MAPI_E_SUCCESS) return retval;

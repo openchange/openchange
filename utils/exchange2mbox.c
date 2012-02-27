@@ -830,7 +830,7 @@ old_code:
 									  PR_ATTACH_SIZE,
 									  PR_ATTACH_MIME_TAG,
 									  PR_ATTACH_METHOD);
-					lpProps = talloc_zero(mem_ctx, struct SPropValue);
+					lpProps = NULL;
 					retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval == MAPI_E_SUCCESS) {

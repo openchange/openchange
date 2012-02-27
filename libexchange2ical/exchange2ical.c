@@ -425,7 +425,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 									  PR_ATTACHMENT_HIDDEN
 									  );
 									  
-				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
+				lpProps = NULL;
 				retval = GetProps(&obj_attach, 0, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {

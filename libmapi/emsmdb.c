@@ -721,8 +721,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 	status = dcerpc_EcRRegisterPushNotification_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &request);
 	retval = request.out.result;
 	if (!NT_STATUS_IS_OK(status) || retval) {
-		talloc_free(mem_ctx);
-		return status;
+		status = NT_STATUS_RPC_CALL_FAILED;
 	}
 
 	talloc_free(mem_ctx);

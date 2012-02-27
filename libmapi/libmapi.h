@@ -212,7 +212,7 @@ enum MAPISTATUS		mapi_object_bookmark_get_count(mapi_object_t *, uint32_t *);
 enum MAPISTATUS		mapi_object_bookmark_debug(mapi_object_t *);
 
 /* The following public definitions come from libmapi/mapi_id_array.c */
-enum MAPISTATUS		mapi_id_array_init(struct mapi_context *, mapi_id_array_t *);
+enum MAPISTATUS		mapi_id_array_init(TALLOC_CTX *, mapi_id_array_t *);
 enum MAPISTATUS		mapi_id_array_release(mapi_id_array_t *);
 enum MAPISTATUS		mapi_id_array_get(TALLOC_CTX *, mapi_id_array_t *, mapi_id_t **);
 enum MAPISTATUS		mapi_id_array_add_obj(mapi_id_array_t *, mapi_object_t *);

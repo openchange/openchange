@@ -103,7 +103,7 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *parent_ctx,
 		return NULL;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(parent_ctx, 0, __FUNCTION__);
 
 	r.in.dwFlags = 0;
 

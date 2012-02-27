@@ -76,7 +76,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetLocalReplicaIds");
+	mem_ctx = talloc_named(session, 0, "GetLocalReplicaIds");
 	size = 0;
 
 	/* Fill the GetLocalReplicaIds operation */
@@ -166,7 +166,7 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXDestConfigure");
+	mem_ctx = talloc_named(session, 0, "FXDestConfigure");
 	size = 0;
 
 	/* Fill the ConfigureDestination operation */
@@ -252,7 +252,7 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "TellVersion");
+	mem_ctx = talloc_named(session, 0, "TellVersion");
 	size = 0;
 
 	/* Fill the operation */
@@ -344,7 +344,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyFolder");
+	mem_ctx = talloc_named(session, 0, "FXCopyFolder");
 	size = 0;
 
 	/* Fill the CopyFolder operation */
@@ -455,7 +455,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyMessages");
+	mem_ctx = talloc_named(session, 0, "FXCopyMessages");
 	size = 0;
 
 	/* Fill the CopyMessages operation */
@@ -566,7 +566,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyTo(mapi_object_t *obj, uint8_t level, uint32_t co
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyTo");
+	mem_ctx = talloc_named(session, 0, "FXCopyTo");
 	size = 0;
 
 	/* Fill the CopyTo operation */
@@ -676,7 +676,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyProperties(mapi_object_t *obj, uint8_t level, uin
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyProperties");
+	mem_ctx = talloc_named(session, 0, "FXCopyProperties");
 	size = 0;
 
 	/* Fill the CopyProperties operation */
@@ -775,7 +775,7 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	if ((retval = mapi_object_get_logon_id(obj_source_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXGetBuffer");
+	mem_ctx = talloc_named(session, 0, "FXGetBuffer");
 	size = 0;
 
 	/* Fill the GetBuffer operation */
@@ -873,7 +873,7 @@ _PUBLIC_ enum MAPISTATUS FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB 
 	if ((retval = mapi_object_get_logon_id(obj_dest_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXPutBuffer");
+	mem_ctx = talloc_named(session, 0, "FXPutBuffer");
 	size = 0;
 
 	/* Fill the PutBuffer operation */
@@ -1003,7 +1003,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncConfigure(mapi_object_t *obj, enum Synchronizati
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "RopSynchronizationConfigure");
+	mem_ctx = talloc_named(session, 0, "RopSynchronizationConfigure");
 	size = 0;
 
 	/* Fill the SyncConfigure operation */
@@ -1110,7 +1110,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncUploadStateBegin(mapi_object_t *obj_sync_context
 	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateBegin");
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateBegin");
 	size = 0;
 
 	/* Fill the RopSynchronizationUploadStateBegin operation */
@@ -1188,7 +1188,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncUploadStateContinue(mapi_object_t *obj_sync_cont
 	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateContinue");
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateContinue");
 	size = 0;
 
 	/* Fill the RopSynchronizationUploadStateBegin operation */
@@ -1264,7 +1264,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncUploadStateEnd(mapi_object_t *obj_sync_context)
 	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ICSSyncUploadStateEnd");
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateEnd");
 	size = 0;
 
 	/* Fill the MAPI_REQ structure */
@@ -1344,7 +1344,7 @@ _PUBLIC_ enum MAPISTATUS SetLocalReplicaMidsetDeleted(mapi_object_t *obj_folder,
 		return retval;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
 	size = 0;
 
 	/* Fill the SetLocalReplicaMidsetDeleted operation */
@@ -1446,7 +1446,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncOpenCollector(mapi_object_t *folder,
 	if ((retval = mapi_object_get_logon_id(folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
 	size = 0;
 
 	/* Fill the SyncOpenCollector operation */
@@ -1533,7 +1533,7 @@ _PUBLIC_ enum MAPISTATUS ICSSyncGetTransferState(mapi_object_t *obj, mapi_object
 		return retval;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
 
 	/* Fill the SyncGetTransferState operation */
 	request.handle_idx = 0x01;

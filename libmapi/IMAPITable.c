@@ -72,7 +72,7 @@ _PUBLIC_ enum MAPISTATUS SetColumns(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetColumns");
+	mem_ctx = talloc_named(session, 0, "SetColumns");
 	size = 0;
 
 	/* Fill the SetColumns operation */
@@ -170,7 +170,7 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "QueryPosition");
+	mem_ctx = talloc_named(session, 0, "QueryPosition");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -267,7 +267,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "QueryRows");
+	mem_ctx = talloc_named(session, 0, "QueryRows");
 	size = 0;
 
 	/* Fill the QueryRows operation */
@@ -360,7 +360,7 @@ _PUBLIC_ enum MAPISTATUS QueryColumns(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "QueryColumns");
+	mem_ctx = talloc_named(session, 0, "QueryColumns");
 
 	cols->cValues = 0;
 	size = 0;
@@ -453,7 +453,7 @@ _PUBLIC_ enum MAPISTATUS SeekRow(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SeekRow");
+	mem_ctx = talloc_named(session, 0, "SeekRow");
 	*row = 0;
 
 	/* Fill the SeekRow operation */
@@ -551,7 +551,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowBookmark(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SeekRowBookmark");
+	mem_ctx = talloc_named(session, 0, "SeekRowBookmark");
 
 	/* Fill the SeekRowBookmark operation */
 	size = 0;
@@ -654,7 +654,7 @@ _PUBLIC_ enum MAPISTATUS SeekRowApprox(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SeekRowApprox");
+	mem_ctx = talloc_named(session, 0, "SeekRowApprox");
 	
 	/* Fill the SeekRowApprox operation */
 	size = 0;
@@ -737,7 +737,7 @@ _PUBLIC_ enum MAPISTATUS CreateBookmark(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CreateBookmark");	
+	mem_ctx = talloc_named(session, 0, "CreateBookmark");	
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -840,7 +840,7 @@ _PUBLIC_ enum MAPISTATUS FreeBookmark(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FreeBookmark");
+	mem_ctx = talloc_named(session, 0, "FreeBookmark");
 
 	while (bookmark) {
 		if (bookmark->index == bkPosition) {
@@ -933,7 +933,7 @@ _PUBLIC_ enum MAPISTATUS SortTable(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SortTable");
+	mem_ctx = talloc_named(session, 0, "SortTable");
 
 	/* Fill the SortTable operation */
 	size = 0;
@@ -1079,7 +1079,7 @@ _PUBLIC_ enum MAPISTATUS Reset(mapi_object_t *obj_table)
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Reset");
+	mem_ctx = talloc_named(session, 0, "Reset");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -1172,7 +1172,7 @@ _PUBLIC_ enum MAPISTATUS Restrict(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Restrict");
+	mem_ctx = talloc_named(session, 0, "Restrict");
 
 	/* Fill the Restrict operation */
 	size = 0;
@@ -1292,7 +1292,7 @@ _PUBLIC_ enum MAPISTATUS FindRow(mapi_object_t *obj_table,
 		OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "FindRow");
+	mem_ctx = talloc_named(session, 0, "FindRow");
 
 	/* Fill the FindRow operation */
 	size = 0;
@@ -1405,7 +1405,7 @@ _PUBLIC_ enum MAPISTATUS GetStatus(mapi_object_t *obj_table, uint8_t *TableStatu
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetStatus");
+	mem_ctx = talloc_named(session, 0, "GetStatus");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -1482,7 +1482,7 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Abort");
+	mem_ctx = talloc_named(session, 0, "Abort");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -1591,7 +1591,7 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ExpandRow");
+	mem_ctx = talloc_named(session, 0, "ExpandRow");
 	size = 0;
 
 	/* Fill the ExpandRow operation */
@@ -1694,7 +1694,7 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CollapseRow");
+	mem_ctx = talloc_named(session, 0, "CollapseRow");
 	size = 0;
 
 	/* Fill the CollapseRow operation */
@@ -1788,7 +1788,7 @@ _PUBLIC_ enum MAPISTATUS GetCollapseState(mapi_object_t *obj_table, uint64_t row
 
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
-	mem_ctx = talloc_named(NULL, 0, "GetCollapseState");
+	mem_ctx = talloc_named(session, 0, "GetCollapseState");
 	size = 0;
 
 	/* Fill the GetCollapseState operation */
@@ -1882,7 +1882,7 @@ _PUBLIC_ enum MAPISTATUS SetCollapseState(mapi_object_t *obj_table,
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetCollapseState");
+	mem_ctx = talloc_named(session, 0, "SetCollapseState");
 	size = 0;
 
 	/* Fill the SetCollapseState operation */

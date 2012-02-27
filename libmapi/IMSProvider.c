@@ -54,7 +54,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ev = tevent_context_init(talloc_autofree_context());
+	ev = tevent_context_init(parent_ctx);
 	tevent_loop_allow_nesting(ev);
 
 	status = dcerpc_pipe_connect(parent_ctx, 
@@ -154,7 +154,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetNewDSA(struct mapi_context *mapi_ctx,
 	if (!mapi_ctx) return MAPI_E_NOT_INITIALIZED;
 	if (!mapi_ctx->session) return MAPI_E_NOT_INITIALIZED;
 
-	mem_ctx = talloc_named(NULL, 0, "RfrGetNewDSA");
+	mem_ctx = talloc_named(session, 0, "RfrGetNewDSA");
 	profile = session->profile;
 
 	binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);

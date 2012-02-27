@@ -81,7 +81,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!rowset, MAPI_E_INVALID_PARAMETER, NULL);
 
 	nspi = (struct nspi_context *)session->nspi->ctx;
-	mem_ctx = talloc_named(NULL, 0, "ResolveNames");
+	mem_ctx = talloc_named(session, 0, "ResolveNames");
 
 	switch (flags) {
 	case MAPI_UNICODE:
@@ -166,7 +166,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "GetGALTable");
+	mem_ctx = talloc_named(session, 0, "GetGALTable");
 	nspi = (struct nspi_context *)session->nspi->ctx;
 
 	if (ulFlags == TABLE_START) {
@@ -224,7 +224,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTableCount(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "GetGALTableCount");
+	mem_ctx = talloc_named(session, 0, "GetGALTableCount");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 
 	nspi->pStat->CurrentRec = 0;
@@ -295,7 +295,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!ppRowSet, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "GetABRecipientInfo");
+	mem_ctx = talloc_named(session, 0, "GetABRecipientInfo");
 	nspi_ctx = (struct nspi_context *)session->nspi->ctx;
 
 	/* Step 1. Resolve the username */

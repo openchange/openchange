@@ -101,7 +101,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Subscribe");
+	mem_ctx = talloc_named(session, 0, "Subscribe");
 
 	/* Fill the Subscribe operation */
 	request.handle_idx = 0x1;

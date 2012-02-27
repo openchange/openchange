@@ -124,7 +124,7 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!store, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "CacheDefaultFolders");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_store), 0, "CacheDefaultFolders");
 
 	mapi_object_init(&obj_inbox);
 	retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
@@ -430,7 +430,7 @@ _PUBLIC_ enum MAPISTATUS GetFolderItemsCount(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!unread, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!total, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "GetFolderItemsCount");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "GetFolderItemsCount");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x2, 
 					  PR_CONTENT_UNREAD,
@@ -504,7 +504,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 
 	rowList.ModifyFlags = 0;
 
-	mem_ctx = talloc_named(NULL, 0, "AddUserPermission");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "AddUserPermission");
 
 	/* query Address book */
 
@@ -585,7 +585,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 
 	rowList.ModifyFlags = 0;
 
-	mem_ctx = talloc_named(NULL, 0, "ModifyUserPermission");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "ModifyUserPermission");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;
@@ -701,7 +701,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "RemoveUserPermission");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "RemoveUserPermission");
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 2, PR_ENTRYID, PR_DISPLAY_NAME);
 	names[0] = username;

@@ -333,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(struct mapi_context *mapi_ctx, uint32
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	debuglevel = talloc_asprintf(talloc_autofree_context(), "%u", level);
+	debuglevel = talloc_asprintf(mapi_ctx->mem_ctx, "%u", level);
 	ret = lpcfg_set_cmdline(mapi_ctx->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 

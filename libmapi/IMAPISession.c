@@ -50,7 +50,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "FindGoodServer");
+	mem_ctx = talloc_named(session, 0, "FindGoodServer");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 
 	if (server == false) {
@@ -169,7 +169,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
+	mem_ctx = talloc_named(session, 0, "OpenPublicFolder");
 	size = 0;
 
 	/* Fill the Logon operation */
@@ -333,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
+	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
 	size = 0;
 
 	if (!username) {

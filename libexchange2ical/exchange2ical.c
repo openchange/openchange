@@ -606,7 +606,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 	uint32_t			count;
 	int				i;
 
-	mem_ctx = talloc_named(NULL, 0, "exchange2ical");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "exchange2ical");
 	exchange2ical_init(mem_ctx, &exchange2ical);
 	
 	/* Open the contents table */

@@ -876,7 +876,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 	{
 		DATA_BLOB	b;
 		
-		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), talloc_autofree_context(), &b);
+		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), mem_ctx, &b);
 		sprop->value.lpguid = talloc_zero(mem_ctx, struct FlatUID_r);
 		sprop->value.lpguid = (struct FlatUID_r *)memcpy(sprop->value.lpguid->ab, b.data, 16);
 		return (sizeof (struct FlatUID_r));
@@ -958,7 +958,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 			DATA_BLOB	b;
 			
 			sprop->value.MVguid.lpguid[i] = talloc_zero(mem_ctx, struct FlatUID_r);
-			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), talloc_autofree_context(), &b);
+			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), mem_ctx, &b);
 			sprop->value.MVguid.lpguid[i] = (struct FlatUID_r *)memcpy(sprop->value.MVguid.lpguid[i]->ab, b.data, sizeof(struct FlatUID_r));
 			size += (sizeof (struct FlatUID_r));
 		}
@@ -1080,7 +1080,7 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 	uint16_t		count;
 	uint32_t		i;
 
-	mem_ctx = talloc_named(NULL, 0, "mapi_SPropValue_array_named");
+	mem_ctx = talloc_named(mapi_object_get_session(obj), 0, "mapi_SPropValue_array_named");
 
 	for (i = 0; i < props->cValues; i++) {
 		if ((props->lpProps[i].ulPropTag & 0xFFFF0000) > 0x80000000) {

@@ -74,7 +74,7 @@ _PUBLIC_ enum MAPISTATUS SyncOpenAdvisor(mapi_object_t *obj, mapi_object_t *obj_
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
 
 	/* Fill the SyncOpenAdvisor operation */
 	request.handle_idx = 0x01;
@@ -158,7 +158,7 @@ _PUBLIC_ enum MAPISTATUS SetSyncNotificationGuid(mapi_object_t *obj_advisor,
 		return retval;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
 
 	/* Fill the SetSyncNotificationGuid operation */
 	request.NotificationGuid = Guid;

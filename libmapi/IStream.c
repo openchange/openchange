@@ -82,7 +82,7 @@ _PUBLIC_ enum MAPISTATUS OpenStream(mapi_object_t *obj_related, enum MAPITAGS Pr
 	if ((retval = mapi_object_get_logon_id(obj_related, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenStream");
+	mem_ctx = talloc_named(session, 0, "OpenStream");
 
 	size = 0;
 
@@ -183,7 +183,7 @@ _PUBLIC_ enum MAPISTATUS ReadStream(mapi_object_t *obj_stream, unsigned char *bu
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ReadStream");
+	mem_ctx = talloc_named(session, 0, "ReadStream");
 
 	*ByteRead = 0;
 	size = 0;
@@ -283,7 +283,7 @@ _PUBLIC_ enum MAPISTATUS WriteStream(mapi_object_t *obj_stream, DATA_BLOB *blob,
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "WriteStream");
+	mem_ctx = talloc_named(session, 0, "WriteStream");
 
 	size = 0;
 
@@ -364,7 +364,7 @@ _PUBLIC_ enum MAPISTATUS CommitStream(mapi_object_t *obj_stream)
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CommitStream");
+	mem_ctx = talloc_named(session, 0, "CommitStream");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -435,7 +435,7 @@ _PUBLIC_ enum MAPISTATUS GetStreamSize(mapi_object_t *obj_stream, uint32_t *Stre
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetStreamSize");
+	mem_ctx = talloc_named(session, 0, "GetStreamSize");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -523,7 +523,7 @@ _PUBLIC_ enum MAPISTATUS SeekStream(mapi_object_t *obj_stream, uint8_t Origin, u
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SeekStream");
+	mem_ctx = talloc_named(session, 0, "SeekStream");
 	size = 0;
 
 	/* Fill the SeekStream operation */
@@ -604,7 +604,7 @@ _PUBLIC_ enum MAPISTATUS SetStreamSize(mapi_object_t *obj_stream, uint64_t SizeS
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetStreamSize");
+	mem_ctx = talloc_named(session, 0, "SetStreamSize");
 	size = 0;
 
 	/* Fill the SetStreamSize operation */
@@ -699,7 +699,7 @@ _PUBLIC_ enum MAPISTATUS CopyToStream(mapi_object_t *obj_src, mapi_object_t *obj
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyToStream");
+	mem_ctx = talloc_named(session[0], 0, "CopyToStream");
 	size = 0;
 
 	/* Fill the CopyToStream operation */
@@ -789,7 +789,7 @@ _PUBLIC_ enum MAPISTATUS LockRegionStream(mapi_object_t *obj_stream, uint64_t Re
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "LockRegionStream");
+	mem_ctx = talloc_named(session, 0, "LockRegionStream");
 	size = 0;
 
 	/* Fill the LockRegionStream operation */
@@ -871,7 +871,7 @@ _PUBLIC_ enum MAPISTATUS UnlockRegionStream(mapi_object_t *obj_stream, uint64_t 
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "UnlockRegionStream");
+	mem_ctx = talloc_named(session, 0, "UnlockRegionStream");
 	size = 0;
 
 	/* Fill the LockRegionStream operation */
@@ -950,7 +950,7 @@ _PUBLIC_ enum MAPISTATUS CloneStream(mapi_object_t *obj_src, mapi_object_t *obj_
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CloneStream");
+	mem_ctx = talloc_named(session, 0, "CloneStream");
 	size = 0;
 
 	/* Fill the CloneStream operation */
@@ -1042,7 +1042,7 @@ _PUBLIC_ enum MAPISTATUS WriteAndCommitStream(mapi_object_t *obj_stream, DATA_BL
 	if ((retval = mapi_object_get_logon_id(obj_stream, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "WriteAndCommitStream");
+	mem_ctx = talloc_named(session, 0, "WriteAndCommitStream");
 
 	size = 0;
 

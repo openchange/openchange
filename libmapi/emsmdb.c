@@ -96,7 +96,7 @@ struct emsmdb_context *emsmdb_connect(TALLOC_CTX *parent_mem_ctx,
 	if (!return_value) return NULL;
 	if (!session->profile->mailbox) return NULL;
 
-	mem_ctx = talloc_named(NULL, 0, "emsmdb_connect");
+	mem_ctx = talloc_named(parent_mem_ctx, 0, "emsmdb_connect");
 
 	ret = talloc_zero(parent_mem_ctx, struct emsmdb_context);
 	ret->rpc_connection = p;
@@ -189,7 +189,7 @@ struct emsmdb_context *emsmdb_connect_ex(TALLOC_CTX *mem_ctx,
 	if (!cred) return NULL;
 	if (!return_value) return NULL;
 
-	tmp_ctx = talloc_named(NULL, 0, "emsmdb_connect_ex");
+	tmp_ctx = talloc_named(mem_ctx, 0, "emsmdb_connect_ex");
 
 	ctx = talloc_zero(mem_ctx, struct emsmdb_context);
 	ctx->rpc_connection = p;
@@ -700,7 +700,7 @@ NTSTATUS emsmdb_register_notification(struct mapi_session *session,
 
 	emsmdb_ctx = (struct emsmdb_context *)session->emsmdb->ctx;
 	notify_ctx = (struct mapi_notify_ctx *)session->notify_ctx;
-	mem_ctx = talloc_named(NULL, 0, "emsmdb_register_notification");
+	mem_ctx = talloc_named(session, 0, "emsmdb_register_notification");
 
 	request.in.handle = &emsmdb_ctx->handle;
 	request.in.iRpc = 0x0;

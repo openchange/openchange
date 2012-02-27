@@ -68,7 +68,7 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenFolder");
+	mem_ctx = talloc_named(session, 0, "OpenFolder");
 
 	/* Fill the OpenFolder operation */
 	request.handle_idx = 0x1;
@@ -163,7 +163,7 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
 	folderId = mapi_object_get_id(obj_folder);
 	OPENCHANGE_RETVAL_IF(!folderId, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "PublicFolderIsGhosted");
+	mem_ctx = talloc_named(session, 0, "PublicFolderIsGhosted");
 	size = 0;
 
 	/* Fill the PublicFolderIsGhosted operation */
@@ -245,7 +245,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolderByName(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolderByName");
+	mem_ctx = talloc_named(session, 0, "OpenPublicFolderByName");
 	size = 0;
 
 	/* Fill the OpenPublicFolderByName operation */
@@ -335,7 +335,7 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetReceiveFolder");
+	mem_ctx = talloc_named(session, 0, "SetReceiveFolder");
 
 	/* Fill the SetReceiveFolder operation */
 	size = 0;
@@ -421,7 +421,7 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolder(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetReceiveFolder");
+	mem_ctx = talloc_named(session, 0, "GetReceiveFolder");
 
 	*id_folder = 0;
 
@@ -510,7 +510,7 @@ _PUBLIC_ enum MAPISTATUS GetReceiveFolderTable(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetReceiveFolderTable");
+	mem_ctx = talloc_named(session, 0, "GetReceiveFolderTable");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -611,7 +611,7 @@ _PUBLIC_ enum MAPISTATUS GetTransportFolder(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetTransportFolder");
+	mem_ctx = talloc_named(session, 0, "GetTransportFolder");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -706,7 +706,7 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 	FolderId = mapi_object_get_id(obj_folder);
 	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
 		
-	mem_ctx = talloc_named(NULL, 0, "GetOwningServers");
+	mem_ctx = talloc_named(session, 0, "GetOwningServers");
 	
 	size = 0;
 
@@ -803,7 +803,7 @@ _PUBLIC_ enum MAPISTATUS GetStoreState(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetStoreState");
+	mem_ctx = talloc_named(session, 0, "GetStoreState");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -918,7 +918,7 @@ _PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_store, mapi_object_
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "TransportNewMail");
+	mem_ctx = talloc_named(session, 0, "TransportNewMail");
 
 	/* Fill the TransportNewMail operation */
 	size = 0;

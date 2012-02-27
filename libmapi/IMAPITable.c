@@ -1008,6 +1008,9 @@ uint32_t get_mapi_SRestriction_size(struct mapi_SRestriction *res)
 			size += get_mapi_SRestriction_size((struct mapi_SRestriction *)&(res->res.resOr.res[i]));
 		}
 		break;
+	case RES_NOT:
+		size += get_mapi_SRestriction_size(res->res.resNot.res);
+		break;
 	case RES_CONTENT:
 		size += sizeof (res->res.resContent.fuzzy);
 		size += sizeof (res->res.resContent.ulPropTag);

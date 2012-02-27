@@ -1630,8 +1630,8 @@ System Attendant Private Interface
     		mapi_SRestriction_or	res[cRes];
 	} mapi_SOrRestriction;
 
-	typedef [flag(NDR_NOALIGN)] struct {
-		mapi_SRestriction_wrap	res;
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
+		mapi_SRestriction	*res;
 	} mapi_SNotRestriction;
 
  	typedef [noprint, bitmap32bit] bitmap {

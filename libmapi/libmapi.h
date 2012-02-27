@@ -382,7 +382,7 @@ enum MAPISTATUS		GetCollapseState(mapi_object_t *, uint64_t, uint32_t, struct SB
 enum MAPISTATUS		SetCollapseState(mapi_object_t *, struct SBinary_short *);
 
 /* The following public definitions come from libmapi/IMSProvider.c */
-char			*RfrGetNewDSA(struct mapi_context *, struct mapi_session *, const char *, const char *);
+enum MAPISTATUS		RfrGetNewDSA(struct mapi_context *, struct mapi_session *, const char *, const char *, char **);
 enum MAPISTATUS		RfrGetFQDNFromLegacyDN(struct mapi_context *, struct mapi_session *, const char **);
 enum MAPISTATUS		Logoff(mapi_object_t *);
 enum MAPISTATUS		RegisterNotification(struct mapi_session *);

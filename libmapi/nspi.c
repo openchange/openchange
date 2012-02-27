@@ -390,17 +390,22 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
    \param mem_ctx pointer to the memory context
    \param pPropTags pointer to an array of property tags of columns
    \param Filter pointer to the Restriction to apply to the table
+   \param ulRequested The upper limit for returned rows
    \param ppRows pointer to pointer to a SRowSet structure holding the
    rows returned by the server
    \param ppOutMIds pointer to pointer to a list of MId that comprise
    a restricted address book container
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. If the resulting
+   table rows count will be greater than ulRequested, then an error
+   MAPI_E_TABLE_TOO_BIG is returned. Note, this error can be also returned
+   when server limits for table size are exceeded.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx, 
 					 TALLOC_CTX *mem_ctx,
 					 struct SPropTagArray *pPropTags,
 					 struct Restriction_r *Filter,
+					 uint32_t ulRequested,
 					 struct SRowSet **ppRows,
 					 struct PropertyTagArray_r **ppOutMIds)
 {
@@ -429,7 +434,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 	r.in.Reserved2 = 0;
 	r.in.Filter = Filter;
 	r.in.lpPropName = NULL;
-	r.in.ulRequested = 5000;
+	r.in.ulRequested = ulRequested;
 	r.in.pPropTags = pPropTags;
 
 	pStat = talloc(mem_ctx, struct STAT);

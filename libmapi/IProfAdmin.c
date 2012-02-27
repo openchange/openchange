@@ -1632,7 +1632,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
 	if (retval != MAPI_E_SUCCESS) {

@@ -65,7 +65,7 @@ int main(int argc, char *argv[])
 
 	/* construct an explicit table */
 	MIds = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, NULL, &Filter, &srowset, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, NULL, &Filter, 5000, &srowset, &MIds);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 
 	/* fetch the contents of the explicit table */

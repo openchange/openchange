@@ -96,7 +96,7 @@ enum MAPISTATUS		nspi_unbind(struct nspi_context *);
 enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, uint32_t *);
 enum MAPISTATUS		nspi_QueryRows(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MIds, uint32_t, struct SRowSet **);
 enum MAPISTATUS		nspi_SeekEntries(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct SPropValue *, struct SPropTagArray *, struct PropertyTagArray_r *pMIds, struct SRowSet **);
-enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, struct SRowSet **, struct PropertyTagArray_r **ppOutMIds);
+enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, uint32_t ulRequested, struct SRowSet **, struct PropertyTagArray_r **ppOutMIds);
 enum MAPISTATUS		nspi_ResortRestriction(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct PropertyTagArray_r *pInMIds, struct PropertyTagArray_r **ppMIds);
 enum MAPISTATUS		nspi_DNToMId(struct nspi_context *, TALLOC_CTX *, struct StringsArray_r *, struct PropertyTagArray_r **ppMIds);
 enum MAPISTATUS		nspi_GetPropList(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct SPropTagArray **);

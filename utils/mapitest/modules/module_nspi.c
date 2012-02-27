@@ -106,7 +106,7 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
@@ -233,7 +233,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);
@@ -299,7 +299,7 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(SRowSet);
@@ -400,7 +400,7 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
@@ -525,7 +525,7 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(SRowSet);
@@ -602,7 +602,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SRowSet);
 	MAPIFreeBuffer(SPropTagArray);

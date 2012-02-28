@@ -1214,7 +1214,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(session, 0, "AbortSubmit");
+	mem_ctx = talloc_named(session[0], 0, "AbortSubmit");
 	size = 0;
 
 	/* Fill the AbortSubmit operation */

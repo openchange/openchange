@@ -513,7 +513,7 @@ void 			fxparser_set_marker_callback(struct fx_parser_context *, fxparser_marker
 void 			fxparser_set_delprop_callback(struct fx_parser_context *, fxparser_delprop_callback_t);
 void 			fxparser_set_namedprop_callback(struct fx_parser_context *, fxparser_namedprop_callback_t);
 void 			fxparser_set_property_callback(struct fx_parser_context *, fxparser_property_callback_t);
-void			fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
+enum MAPISTATUS		fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/idset.c */
 uint64_t		exchange_globcnt(uint64_t);

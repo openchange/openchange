@@ -37,7 +37,7 @@
 static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
 {
 	if ((parser->idx) + 1 > parser->data.length) {
-		val = 0;
+		*val = 0;
 		return false;
 	}
 	*val = parser->data.data[parser->idx];
@@ -48,7 +48,7 @@ static bool pull_uint8_t(struct fx_parser_context *parser, uint8_t *val)
 static bool pull_uint16_t(struct fx_parser_context *parser, uint16_t *val)
 {
 	if ((parser->idx) + 2 > parser->data.length) {
-		val = 0;
+		*val = 0;
 		return false;
 	}
 	*val = parser->data.data[parser->idx];
@@ -61,7 +61,7 @@ static bool pull_uint16_t(struct fx_parser_context *parser, uint16_t *val)
 static bool pull_uint32_t(struct fx_parser_context *parser, uint32_t *val)
 {
 	if ((parser->idx) + 4 > parser->data.length) {
-		val = 0;
+		*val = 0;
 		return false;
 	}
 	*val = parser->data.data[parser->idx];
@@ -77,19 +77,14 @@ static bool pull_uint32_t(struct fx_parser_context *parser, uint32_t *val)
 
 static bool pull_tag(struct fx_parser_context *parser)
 {
-	bool result;
-	result = pull_uint32_t(parser, &(parser->tag));
-	if (!result) {
-		printf("bad pull of tag\n");
-	}
-	return result;
+	return pull_uint32_t(parser, &(parser->tag));
 }
 
-static bool pull_uint8_data(struct fx_parser_context *parser, uint8_t **data_read)
+static bool pull_uint8_data(struct fx_parser_context *parser, uint32_t read_len, uint8_t **data_read)
 {
-	for (; parser->offset < parser->length; ++(parser->offset)) {
-		/* printf("parser %i of %i\n", parser->offset, parser->length); */
-		if (!pull_uint8_t(parser, (uint8_t*)&((*data_read)[parser->offset]))) {
+	uint32_t i;
+	for (i = 0; i < read_len; i++) {
+		if (!pull_uint8_t(parser, (uint8_t*)&((*data_read)[i]))) {
 			return false;
 		}
 	}
@@ -150,14 +145,75 @@ static bool pull_guid(struct fx_parser_context *parser, struct GUID *guid)
 		GUID_all_zero(guid);
 		return false;
 	}
-	pull_uint32_t(parser, &(guid->time_low));
-	pull_uint16_t(parser, &(guid->time_mid));
-	pull_uint16_t(parser, &(guid->time_hi_and_version));
-	pull_uint8_t(parser, &(guid->clock_seq[0]));
-	pull_uint8_t(parser, &(guid->clock_seq[1]));
+	if (!pull_uint32_t(parser, &(guid->time_low)))
+		return false;
+	if (!pull_uint16_t(parser, &(guid->time_mid)))
+		return false;
+	if (!pull_uint16_t(parser, &(guid->time_hi_and_version)))
+		return false;
+	if (!pull_uint8_t(parser, &(guid->clock_seq[0])))
+		return false;
+	if (!pull_uint8_t(parser, &(guid->clock_seq[1])))
+		return false;
 	for (i = 0; i < 6; ++i) {
-		pull_uint8_t(parser, &(guid->node[i]));
+		if (!pull_uint8_t(parser, &(guid->node[i])))
+			return false;
 	}
+	return true;
+}
+
+static bool pull_systime(struct fx_parser_context *parser, struct FILETIME *ft)
+{
+	struct FILETIME filetime = {0,0};
+
+	if (parser->idx + 8 > parser->data.length ||
+	    !pull_uint32_t(parser, &(filetime.dwLowDateTime)) ||
+	    !pull_uint32_t(parser, &(filetime.dwHighDateTime)))
+		return false;
+
+	*ft = filetime;
+
+	return true;
+}
+
+static bool pull_clsid(struct fx_parser_context *parser, struct FlatUID_r **pclsid)
+{
+	struct FlatUID_r *clsid;
+	int i = 0;
+
+	if (parser->idx + 16 > parser->data.length)
+		return false;
+
+	clsid = talloc_zero(parser->mem_ctx, struct FlatUID_r);
+	for (i = 0; i < 16; ++i) {
+		if (!pull_uint8_t(parser, &(clsid->ab[i])))
+			return false;
+	}
+
+	*pclsid = clsid;
+
+	return true;
+}
+
+static bool pull_string8(struct fx_parser_context *parser, char **pstr)
+{
+	char *str;
+	uint32_t i, length;
+
+	if (!pull_uint32_t(parser, &length) ||
+	    parser->idx + length > parser->data.length)
+		return false;
+
+	str = talloc_array(parser->mem_ctx, char, length + 1);
+	for (i = 0; i < length; i++) {
+		if (!pull_uint8_t(parser, (uint8_t*)&(str[i]))) {
+			return false;
+		}
+	}
+	str[length] = '\0';
+
+	*pstr = str;
+
 	return true;
 }
 
@@ -177,6 +233,7 @@ static bool fetch_ucs2_data(struct fx_parser_context *parser, uint32_t numbytes,
 static bool fetch_ucs2_nullterminated(struct fx_parser_context *parser, smb_ucs2_t **data_read)
 {
 	uint32_t idx_local = parser->idx;
+	bool found = false;
 	while (idx_local < parser->data.length -1) {
 		smb_ucs2_t val = 0x0000;
 		val += parser->data.data[idx_local];
@@ -184,36 +241,85 @@ static bool fetch_ucs2_nullterminated(struct fx_parser_context *parser, smb_ucs2
 		val += parser->data.data[idx_local] << 8;
 		idx_local++;
 		if (val == 0x0000) {
+			found = true;
 			break;
 		}
 	}
+	if (!found)
+		return false;
 	return fetch_ucs2_data(parser, idx_local-(parser->idx), data_read); 
+}
+
+static bool pull_unicode(struct fx_parser_context *parser, char **pstr)
+{
+	smb_ucs2_t *ucs2_data = NULL;
+	char *utf8_data = NULL;
+	size_t utf8_len;
+	uint32_t length;
+
+	if (!pull_uint32_t(parser, &length) ||
+	    parser->idx + length > parser->data.length)
+		return false;
+
+	ucs2_data = talloc_array(parser->mem_ctx, smb_ucs2_t, length/2);
+
+	if (!fetch_ucs2_data(parser, length, &ucs2_data)) {
+		return false;
+	}
+	pull_ucs2_talloc(parser->mem_ctx, &utf8_data, ucs2_data, &utf8_len);
+
+	*pstr = utf8_data;
+
+	return true;
+}
+
+static bool pull_binary(struct fx_parser_context *parser, struct Binary_r *bin)
+{
+	if (!pull_uint32_t(parser, &(bin->cb)) ||
+	    parser->idx + bin->cb > parser->data.length)
+		return false;
+
+	bin->lpb = talloc_array(parser->mem_ctx, uint8_t, bin->cb + 1);
+
+	return pull_uint8_data(parser, bin->cb, &(bin->lpb));
 }
 
 /*
  pull a property value from the blob, starting at position idx
 */
-static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *buf, struct SPropValue *prop, uint32_t *len)
+static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *buf, struct SPropValue *prop)
 {
 	switch(prop->ulPropTag & 0xFFFF) {
+	case PT_NULL:
+	{
+		if (!pull_uint32_t(parser, &(prop->value.null)))
+			return false;
+		break; 
+	}
 	case PT_SHORT:
 	{
-		pull_uint16_t(parser, &(prop->value.i));
+		if (!pull_uint16_t(parser, &(prop->value.i)))
+			return false;
 		break;
 	}
 	case PT_LONG:
 	{
-		pull_uint32_t(parser, &(prop->value.l));
+		if (!pull_uint32_t(parser, &(prop->value.l)))
+			return false;
 		break;
 	}
 	case PT_DOUBLE:
 	{
-		pull_double(parser, (double *)&(prop->value.dbl));
+		if (!pull_double(parser, (double *)&(prop->value.dbl)))
+			return false;
 		break;
 	}
 	case PT_BOOLEAN:
 	{
-		pull_uint8_t(parser, &(prop->value.b));
+		if (parser->idx + 2 > parser->data.length ||
+		    !pull_uint8_t(parser, &(prop->value.b)))
+			return false;
+
 		/* special case for fast transfer, 2 bytes instead of one */
 		(parser->idx)++;
 		break;
@@ -221,96 +327,155 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	case PT_I8:
 	{
 		int64_t val;
-		pull_int64_t(parser, &(val));
+		if (!pull_int64_t(parser, &(val)))
+			return false;
 		prop->value.d = val;
 		break;
 	}
 	case PT_STRING8:
 	{
-		char *ptr = 0;
-		if (parser->length == 0) {
-			pull_uint32_t(parser, &(parser->length));
-			parser->offset = 0;
-			prop->value.lpszA = talloc_array(parser->mem_ctx, char, parser->length + 1);
-		}
-		for (; parser->offset < parser->length; ++(parser->offset)) {
-			if (!pull_uint8_t(parser, (uint8_t*)&(prop->value.lpszA[parser->offset]))) {
-				return false;
-			}
-		}
-		ptr = (char*)prop->value.lpszA;
-		ptr += parser->length;
-		*ptr = '\0';
+		char *str = NULL;
+		if (!pull_string8(parser, &str))
+			return false;
+		prop->value.lpszA = str;
 		break;
 	}
 	case PT_UNICODE:
 	{
-		/* TODO: rethink this to handle split buffers */
-		smb_ucs2_t *ucs2_data = NULL;
-		if (parser->length == 0) {
-			pull_uint32_t(parser, &(parser->length));
-			ucs2_data = talloc_array(parser->mem_ctx, smb_ucs2_t, parser->length/2);
-			parser->offset = 0;
-		}
-		char *utf8_data = NULL;
-		size_t utf8_len;
-		if (!fetch_ucs2_data(parser, parser->length, &ucs2_data)) {
+		char *str = NULL;
+		if (!pull_unicode (parser, &str))
 			return false;
-		}
-		pull_ucs2_talloc(parser->mem_ctx, &utf8_data, ucs2_data, &utf8_len);
-		prop->value.lpszW = utf8_data;
+		prop->value.lpszW = str;
 		break;
 	}
 	case PT_SYSTIME:
 	{
-		struct FILETIME filetime = {0,0};
-		pull_uint32_t(parser, &(filetime.dwLowDateTime));
-		pull_uint32_t(parser, &(filetime.dwHighDateTime));
-		prop->value.ft = filetime;
+		if (!pull_systime(parser, &prop->value.ft))
+			return false;
 		break;
 	}
 	case PT_CLSID:
 	{
-		int i = 0;
-		prop->value.lpguid = talloc_zero(parser->mem_ctx, struct FlatUID_r);
-		for (i = 0; i < 16; ++i) {
-		  	pull_uint8_t(parser, &(prop->value.lpguid->ab[i]));
-		}
+		if (!pull_clsid(parser, &prop->value.lpguid))
+			return false;
 		break;
 	}
 	case PT_SVREID:
 	case PT_BINARY:
 	{
-		if (parser->length == 0) {
-			  pull_uint32_t(parser, &(prop->value.bin.cb));
-			  parser->length = prop->value.bin.cb;
-			  prop->value.bin.lpb = talloc_array(parser->mem_ctx, uint8_t, parser->length + 1);
-			  parser->offset = 0;
-		}
-		if (!pull_uint8_data(parser, &(prop->value.bin.lpb))) {
+		if (!pull_binary(parser, &prop->value.bin))
 			return false;
-		}
 		break;
 	}
 	case PT_OBJECT:
 	{
-		pull_uint32_t(parser, &(prop->value.object));
+		if (!pull_uint32_t(parser, &(prop->value.object)))
+			return false;
+		break;
+	}
+	case PT_ERROR:
+	{
+		uint32_t num;
+		if (!pull_uint32_t(parser, &num))
+			return false;
+		prop->value.err = num;
 		break;
 	}
 	case PT_MV_BINARY:
 	{
-		/* TODO: handle partial count / length */
-		uint32_t        i;
-		pull_uint32_t(parser, &(prop->value.MVbin.cValues));
+		uint32_t i;
+		if (!pull_uint32_t(parser, &(prop->value.MVbin.cValues)) ||
+		    parser->idx + prop->value.MVbin.cValues * 4 > parser->data.length)
+			return false;
 		prop->value.MVbin.lpbin = talloc_array(parser->mem_ctx, struct Binary_r, prop->value.MVbin.cValues);
 		for (i = 0; i < prop->value.MVbin.cValues; i++) {
-			pull_uint32_t(parser, &(prop->value.MVbin.lpbin[i].cb));
-			parser->length = prop->value.MVbin.lpbin[i].cb;
-			prop->value.MVbin.lpbin[i].lpb = talloc_array(parser->mem_ctx, uint8_t, parser->length + 1);
-			parser->offset = 0;
-			if (!pull_uint8_data(parser, &(prop->value.MVbin.lpbin[i].lpb))) {
+			if (!pull_binary(parser, &(prop->value.MVbin.lpbin[i])))
 				return false;
-			}
+		}
+		break;
+	}
+	case PT_MV_SHORT:
+	{
+		uint32_t i;
+		if (!pull_uint32_t(parser, &(prop->value.MVi.cValues)) ||
+		    parser->idx + prop->value.MVi.cValues * 2 > parser->data.length)
+			return false;
+		prop->value.MVi.lpi = talloc_array(parser->mem_ctx, uint16_t, prop->value.MVi.cValues);
+		for (i = 0; i < prop->value.MVi.cValues; i++) {
+			if (!pull_uint16_t(parser, &(prop->value.MVi.lpi[i])))
+				return false;
+		}
+		break;
+	}
+	case PT_MV_LONG:
+	{
+		uint32_t i;
+		if (!pull_uint32_t(parser, &(prop->value.MVl.cValues)) ||
+		    parser->idx + prop->value.MVl.cValues * 4 > parser->data.length)
+			return false;
+		prop->value.MVl.lpl = talloc_array(parser->mem_ctx, uint32_t, prop->value.MVl.cValues);
+		for (i = 0; i < prop->value.MVl.cValues; i++) {
+			if (!pull_uint32_t(parser, &(prop->value.MVl.lpl[i])))
+				return false;
+		}
+		break;
+	}
+	case PT_MV_STRING8:
+	{
+		uint32_t i;
+		char *str;
+		if (!pull_uint32_t(parser, &(prop->value.MVszA.cValues)) ||
+		    parser->idx + prop->value.MVszA.cValues * 4 > parser->data.length)
+			return false;
+		prop->value.MVszA.lppszA = (const char **) talloc_array(parser->mem_ctx, char *, prop->value.MVszA.cValues);
+		for (i = 0; i < prop->value.MVszA.cValues; i++) {
+			str = NULL;
+			if (!pull_string8(parser, &str))
+				return false;
+			prop->value.MVszA.lppszA[i] = str;
+		}
+		break;
+	}
+	case PT_MV_CLSID:
+	{
+		uint32_t i;
+		if (!pull_uint32_t(parser, &(prop->value.MVguid.cValues)) ||
+		    parser->idx + prop->value.MVguid.cValues * 16 > parser->data.length)
+			return false;
+		prop->value.MVguid.lpguid = talloc_array(parser->mem_ctx, struct FlatUID_r *, prop->value.MVguid.cValues);
+		for (i = 0; i < prop->value.MVguid.cValues; i++) {
+			if (!pull_clsid(parser, &(prop->value.MVguid.lpguid[i])))
+				return false;
+		}
+		break;
+	}
+	case PT_MV_UNICODE:
+	{
+		uint32_t i;
+		char *str;
+
+		if (!pull_uint32_t(parser, &(prop->value.MVszW.cValues)) ||
+		    parser->idx + prop->value.MVszW.cValues * 4 > parser->data.length)
+			return false;
+		prop->value.MVszW.lppszW = (const char **)  talloc_array(parser->mem_ctx, char *, prop->value.MVszW.cValues);
+		for (i = 0; i < prop->value.MVszW.cValues; i++) {
+			str = NULL;
+			if (!pull_unicode(parser, &str))
+				return false;
+			prop->value.MVszW.lppszW[i] = str;
+		}
+		break;
+	}
+	case PT_MV_SYSTIME:
+	{
+		uint32_t i;
+		if (!pull_uint32_t(parser, &(prop->value.MVft.cValues)) ||
+		    parser->idx + prop->value.MVft.cValues * 8 > parser->data.length)
+			return false;
+		prop->value.MVft.lpft = talloc_array(parser->mem_ctx, struct FILETIME, prop->value.MVft.cValues);
+		for (i = 0; i < prop->value.MVft.cValues; i++) {
+			if (!pull_systime(parser, &(prop->value.MVft.lpft[i])))
+				return false;
 		}
 		break;
 	}
@@ -321,21 +486,25 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	return true;
 }
 
-static void pull_named_property(struct fx_parser_context *parser)
+static bool pull_named_property(struct fx_parser_context *parser, enum MAPISTATUS *ms)
 {
 	uint8_t type = 0;
-	pull_guid(parser, &(parser->namedprop.lpguid));
+	if (!pull_guid(parser, &(parser->namedprop.lpguid)))
+		return false;
 	/* printf("guid       : %s\n", GUID_string(parser->mem_ctx, &(parser->namedprop.lpguid))); */
-	pull_uint8_t(parser, &type);
+	if (!pull_uint8_t(parser, &type))
+		return false;
 	if (type == 0) {
 		parser->namedprop.ulKind = MNID_ID;
-		pull_uint32_t(parser, &(parser->namedprop.kind.lid));
+		if (!pull_uint32_t(parser, &(parser->namedprop.kind.lid)))
+			return false;
 		/* printf("LID dispid: 0x%08x\n", parser->namedprop.kind.lid); */
 	} else if (type == 1) {
 		smb_ucs2_t *ucs2_data = NULL;
 		size_t utf8_len;
 		parser->namedprop.ulKind = MNID_STRING;
-		fetch_ucs2_nullterminated(parser, &ucs2_data);
+		if (!fetch_ucs2_nullterminated(parser, &ucs2_data))
+			return false;
 		pull_ucs2_talloc(parser->mem_ctx, (char**)&(parser->namedprop.kind.lpwstr.Name), ucs2_data, &(utf8_len));
 		parser->namedprop.kind.lpwstr.NameSize = utf8_len;
 		/* printf("named: %s\n", parser->namedprop.kind.lpwstr.Name); */
@@ -344,8 +513,10 @@ static void pull_named_property(struct fx_parser_context *parser)
 		OPENCHANGE_ASSERT();
 	}
 	if (parser->op_namedprop) {
-		parser->op_namedprop(parser->lpProp.ulPropTag, parser->namedprop, parser->priv);
+		*ms = parser->op_namedprop(parser->lpProp.ulPropTag, parser->namedprop, parser->priv);
 	}
+
+	return true;
 }
 
 /**
@@ -394,7 +565,6 @@ _PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx, void *priv
 	parser->lpProp.ulPropTag = (enum MAPITAGS) 0;
 	parser->lpProp.dwAlignPad = 0;
 	parser->lpProp.value.l = 0;
-	parser->length = 0;
 	parser->priv = priv;
 
 	return parser;
@@ -403,17 +573,25 @@ _PUBLIC_ struct fx_parser_context* fxparser_init(TALLOC_CTX *mem_ctx, void *priv
 /**
   \details parse a fast transfer buffer
 */
-_PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
+_PUBLIC_ enum MAPISTATUS fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 {
+	enum MAPISTATUS ms = MAPI_E_SUCCESS;
+
 	data_blob_append(parser->mem_ctx, &(parser->data), fxbuf->data, fxbuf->length);
 	parser->enough_data = true;
-	while((parser->idx < parser->data.length) && parser->enough_data) {
+	while(ms == MAPI_E_SUCCESS && (parser->idx < parser->data.length) && parser->enough_data) {
+		uint32_t idx = parser->idx;
+
 		switch(parser->state) {
 			case ParserState_Entry:
 			{
-				pull_tag(parser);
-				/* printf("tag: 0x%08x\n", parser->tag); */
-				parser->state = ParserState_HaveTag;
+				if (pull_tag(parser)) {
+					/* printf("tag: 0x%08x\n", parser->tag); */
+					parser->state = ParserState_HaveTag;
+				} else {
+					parser->enough_data = false;
+					parser->idx = idx;
+				}
 				break;
 			}
 			case ParserState_HaveTag:
@@ -432,7 +610,7 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 					case PidTagStartEmbed:
 					case PidTagEndEmbed:
 						if (parser->op_marker) {
-							parser->op_marker(parser->tag, parser->priv);
+							ms = parser->op_marker(parser->tag, parser->priv);
 						}
 						parser->state = ParserState_Entry;
 						break;
@@ -441,42 +619,49 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 						uint32_t tag;
 						if (pull_uint32_t(parser, &tag)) {
 							if (parser->op_delprop) {
-								parser->op_delprop(tag, parser->priv);
+								ms = parser->op_delprop(tag, parser->priv);
 							}
 							parser->state = ParserState_Entry;
 						} else {
 							parser->enough_data = false;
+							parser->idx = idx;
 						}
 						break;
 					}
 					default:
 					{
 						/* standard property thing */
-					  parser->lpProp.ulPropTag = (enum MAPITAGS) parser->tag;
+						parser->lpProp.ulPropTag = (enum MAPITAGS) parser->tag;
 						parser->lpProp.dwAlignPad = 0;
 						if ((parser->lpProp.ulPropTag >> 16) & 0x8000) {
 							/* this is a named property */
 							// printf("tag: 0x%08x\n", parser->tag);
 							// TODO: this should probably be a separate parser state
 							// TODO: this needs to return the named property
-							pull_named_property(parser);
+							if (pull_named_property(parser, &ms)) {
+								parser->state = ParserState_HavePropTag;
+							} else {
+								parser->enough_data = false;
+								parser->idx = idx;
+							}
+						} else {
+							parser->state = ParserState_HavePropTag;
 						}
-						parser->state = ParserState_HavePropTag;
 					}
 				}
 				break;
 			}
 			case ParserState_HavePropTag:
 			{
-				if (fetch_property_value(parser, &(parser->data), &(parser->lpProp), &(parser->length))) {
+				if (fetch_property_value(parser, &(parser->data), &(parser->lpProp))) {
 					// printf("position %i of %zi\n", parser->idx, parser->data.length);
 					if (parser->op_property) {
-						parser->op_property(parser->lpProp, parser->priv);
+						ms = parser->op_property(parser->lpProp, parser->priv);
 					}
 					parser->state = ParserState_Entry;
-					parser->length = 0;
 				} else {
 					parser->enough_data = false;
+					parser->idx = idx;
 				}
 				break;
 			}
@@ -490,4 +675,6 @@ _PUBLIC_ void fxparser_parse(struct fx_parser_context *parser, DATA_BLOB *fxbuf)
 		parser->data = remainder;
 		parser->idx = 0;
 	}
+
+	return ms;
 }

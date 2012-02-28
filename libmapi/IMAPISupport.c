@@ -228,7 +228,8 @@ enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 	void			*NotificationData;
 	uint32_t		i;
 
-	if (!mapi_response || !mapi_response->mapi_repl) return MAPI_E_INVALID_PARAMETER;
+	OPENCHANGE_RETVAL_IF(!mapi_response, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_SUCCESS, NULL);
 
 	for (i = 0; mapi_response->mapi_repl[i].opnum; i++) {
 		if (mapi_response->mapi_repl[i].opnum == op_MAPI_Notify) {

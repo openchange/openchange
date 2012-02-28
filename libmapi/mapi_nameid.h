@@ -19,6 +19,11 @@ struct mapi_nameid_tags {
 	uint32_t		position;
 };
 
+struct mapi_nameid_names {
+	uint32_t		proptag;
+	const char		*propname;
+};
+
 struct mapi_nameid {
 	struct MAPINAMEID	*nameid;
 	uint16_t		count;

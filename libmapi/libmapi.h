@@ -241,6 +241,9 @@ enum MAPISTATUS		mapi_nameid_unmap_SPropValue(struct mapi_nameid *, struct SProp
 enum MAPISTATUS		mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *, struct SPropTagArray *);
 enum MAPISTATUS		mapi_nameid_lookup_SPropValue(struct mapi_nameid *, struct SPropValue *, unsigned long);
 enum MAPISTATUS		mapi_nameid_GetIDsFromNames(struct mapi_nameid *, mapi_object_t *, struct SPropTagArray *);
+const char *		get_namedid_name(uint32_t proptag);
+uint32_t		get_namedid_value(const char *propname);
+uint16_t		get_namedid_type(uint16_t untypedtag);
 
 /* The following public definitions come from libmapi/property.c */
 struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);

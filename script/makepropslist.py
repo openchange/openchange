@@ -1248,6 +1248,11 @@ struct mapi_nameid_tags {
 	uint32_t		position;
 };
 
+struct mapi_nameid_names {
+	uint32_t		proptag;
+	const char		*propname;
+};
+
 struct mapi_nameid {
 	struct MAPINAMEID	*nameid;
 	uint16_t		count;
@@ -1308,6 +1313,19 @@ static struct mapi_nameid_tags mapi_nameid_tags[] = {
 	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s }\n" % (
 		string.ljust("0x00000000", 60), string.ljust("NULL", 65), "0x0000", "NULL",
 		string.ljust("PT_UNSPECIFIED", 15), "0x0", "NULL", "0x0")
+	f.write(propline)
+	f.write("""
+};
+""")
+
+	f.write("""
+static struct mapi_nameid_names mapi_nameid_names[] = {
+""")
+	for line in sortednamedprops:
+		propline = "{ %s, \"%s\" },\n" % (string.ljust(line[0], 60), line[0])
+		f.write(propline)
+
+	propline = "{ %s, \"%s\" }\n" % (string.ljust("0x00000000", 60), "NULL")
 	f.write(propline)
 	f.write("""
 };

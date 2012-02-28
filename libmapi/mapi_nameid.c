@@ -887,3 +887,55 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 
 	return MAPI_E_SUCCESS;
 }
+
+_PUBLIC_ const char *get_namedid_name(uint32_t proptag)
+{
+	uint32_t idx;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (mapi_nameid_names[idx].proptag == proptag) { 
+			return mapi_nameid_names[idx].propname;
+		}
+	}
+	if (((proptag & 0xFFFF) == PT_STRING8) ||
+	    ((proptag & 0xFFFF) == PT_MV_STRING8)) {
+		proptag += 1; /* try as _UNICODE variant */
+	}
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (mapi_nameid_names[idx].proptag == proptag) { 
+			return mapi_nameid_names[idx].propname;
+		}
+	}
+	return NULL;
+}
+
+_PUBLIC_ uint32_t get_namedid_value(const char *propname)
+{
+	uint32_t idx;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (!strcmp(mapi_nameid_names[idx].propname, propname)) { 
+			return mapi_nameid_names[idx].proptag;
+		}
+	}
+
+	return 0;
+}
+
+_PUBLIC_ uint16_t get_namedid_type(uint16_t untypedtag)
+{
+	uint32_t	idx;
+	uint16_t	current_type;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if ((mapi_nameid_names[idx].proptag >> 16) == untypedtag) {
+			current_type = mapi_nameid_names[idx].proptag & 0xFFFF;
+			if (current_type != PT_ERROR && current_type != PT_STRING8) {
+				return current_type;
+			}
+		}
+	}
+
+	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
+	return 0;
+}

@@ -163,7 +163,7 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
 	folderId = mapi_object_get_id(obj_folder);
 	OPENCHANGE_RETVAL_IF(!folderId, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(session, 0, "PublicFolderIsGhosted");
+	mem_ctx = talloc_named(session[0], 0, "PublicFolderIsGhosted");
 	size = 0;
 
 	/* Fill the PublicFolderIsGhosted operation */

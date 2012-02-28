@@ -401,6 +401,7 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void 
         mapi_notify_continue_callback_t callback;
 	void                    *data;
 	struct timeval          *tv;
+	struct timeval          tvi;
 	enum MAPISTATUS		retval;
 
 	/* sanity checks */
@@ -410,13 +411,14 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void 
 	notify_ctx = session->notify_ctx;
 	callback = cb_data ? cb_data->callback : NULL;
 	data = cb_data ? cb_data->data : NULL;
-	tv = cb_data ? &cb_data->tv : NULL;
+	tv = cb_data ? &tvi : NULL;
 
 	nread = 0;
 	is_done = 0;
 	while (!is_done) {
-	        FD_ZERO(&read_fds);
+		FD_ZERO(&read_fds);
 		FD_SET(notify_ctx->fd, &read_fds);
+		if( cb_data ) tvi = cb_data->tv;
 
 		err = select(notify_ctx->fd + 1, &read_fds, NULL, NULL, tv);
 		if (FD_ISSET(notify_ctx->fd, &read_fds)) {

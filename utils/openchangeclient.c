@@ -2318,6 +2318,7 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	mapi_id_t		fid;
 	uint32_t		ulConnection;
 	uint16_t		ulEventMask;
+	uint32_t		notification = 0;
 	struct mapi_session	*session;
 
 	/* Register notification */
@@ -2350,7 +2351,10 @@ static bool openchangeclient_notifications(TALLOC_CTX *mem_ctx, mapi_object_t *o
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	/* wait for notifications: infinite loop */
-	retval = MonitorNotification(mapi_object_get_session(obj_store), (void *)obj_store, NULL);
+	retval = RegisterAsyncNotification(mapi_object_get_session(obj_store), &notification);
+	if( retval == MAPI_E_NOT_INITIALIZED ) {
+		retval = MonitorNotification(mapi_object_get_session(obj_store), (void *)obj_store, NULL);
+	}
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	retval = Unsubscribe(mapi_object_get_session(obj_store), ulConnection);

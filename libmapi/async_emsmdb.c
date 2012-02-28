@@ -53,6 +53,7 @@ enum MAPISTATUS emsmdb_async_waitex(struct emsmdb_context *emsmdb_ctx, uint32_t 
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!emsmdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!(emsmdb_ctx->mem_ctx), MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!(emsmdb_ctx->async_rpc_connection), MAPI_E_NOT_INITIALIZED, NULL);
 
 	r.in.async_handle = &(emsmdb_ctx->async_handle);
 	r.in.ulFlagsIn = flagsIn;

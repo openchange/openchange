@@ -1308,7 +1308,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	if ((retval = mapi_object_get_logon_id(parent, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(session, 0, "SaveChangesMessage");
+	mem_ctx = talloc_named(session[0], 0, "SaveChangesMessage");
 	size = 0;
 
 	/* Fill the SaveChangesMessage operation */

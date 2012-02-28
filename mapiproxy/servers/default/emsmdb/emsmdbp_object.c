@@ -28,7 +28,6 @@
 #include <ctype.h>
 #include <time.h>
 
-#include "mapiproxy/libmapistore/mapistore_nameid.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"

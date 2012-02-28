@@ -516,6 +516,43 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 
 
 /**
+   \details Search for a given lid,OLEGUID couple and return the
+   associated canonical propTag.
+
+   \param lid the named property light ID
+   \param OLEGUID the named property GUID for this entry
+   \param propTag pointer on returned named canonical property tag
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup_canonical(uint16_t lid, const char *OLEGUID,
+							  uint32_t *propTag)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propTag, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].lid == lid &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propTag = mapi_nameid_tags[i].proptag;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
+}
+
+
+/**
    \details Search for a given Name,OLEGUID couple and return the
    associated propType.
 
@@ -545,6 +582,45 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
 		    !strcmp(mapi_nameid_tags[i].Name, Name) &&
 		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
 			*propType = mapi_nameid_tags[i].propType;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
+}
+
+
+/**
+   \details Search for a given Name,OLEGUID couple and return the
+   associated canonical propTag.
+
+   \param Name the named property name
+   \param OLEGUID the named property GUID for this entry
+   \param propTag pointer on returned named canonical property tag
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name, 
+							     const char *OLEGUID,
+							     uint32_t *propTag)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propTag, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].Name &&
+		    !strcmp(mapi_nameid_tags[i].Name, Name) &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propTag = mapi_nameid_tags[i].proptag;
 			return MAPI_E_SUCCESS;
 		}
 	}

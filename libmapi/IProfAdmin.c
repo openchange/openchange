@@ -48,6 +48,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
 
+	memset(profile, 0, sizeof(struct mapi_profile));
 	/* fills in profile name */
 	profile->profname = talloc_strdup(mem_ctx, profname);
 	if (!profile->profname) return MAPI_E_NOT_ENOUGH_RESOURCES;

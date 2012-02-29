@@ -369,7 +369,9 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 	}
 	case PT_OBJECT:
 	{
-		if (!pull_uint32_t(parser, &(prop->value.object)))
+		/* the object itself is sent too, thus download it as a binary,
+		   not as a meaningless number, which is length of the object here */
+		if (!pull_binary(parser, &prop->value.bin))
 			return false;
 		break;
 	}
@@ -480,7 +482,7 @@ static bool fetch_property_value(struct fx_parser_context *parser, DATA_BLOB *bu
 		break;
 	}
 	default:
-		printf("unhandled conversion case in fetch_property_value(): 0x%x\n", (prop->ulPropTag & 0xFFFF));
+		printf("unhandled conversion case in fetch_property_value(): 0x%x\n", prop->ulPropTag);
 		OPENCHANGE_ASSERT();
 	}
 	return true;

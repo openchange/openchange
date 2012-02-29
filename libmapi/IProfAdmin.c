@@ -713,8 +713,9 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_context *mapi_ctx,
 	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, profile, profname, password);
 
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	profile->mapi_ctx = mapi_ctx;
 
-	return MAPI_E_SUCCESS;	
+	return MAPI_E_SUCCESS;
 }
 
 /**

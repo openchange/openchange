@@ -988,6 +988,12 @@ _PUBLIC_ enum MAPISTATUS CopyProfile(struct mapi_context *mapi_ctx,
 	return retval;
 }
 
+static bool set_profile_attribute(struct mapi_context *mapi_ctx,
+				  const char *profname,
+				  struct SRowSet rowset,
+				  uint32_t index,
+				  uint32_t property,
+				  const char *attr);
 
 /**
    \details Duplicate an existing profile.
@@ -1014,8 +1020,8 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	char			*username_src = NULL;
-	char			*EmailAddress = NULL;
 	char			*ProxyAddress = NULL;
+	char			*oldEmailAddress = NULL;
 	struct mapi_profile	profile;
 	char			**attr_tmp = NULL;
 	char			*tmp = NULL;
@@ -1044,8 +1050,8 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 	talloc_free(attr_tmp[0]);
 
 	retval = GetProfileAttr(&profile, "EmailAddress", &count, &attr_tmp);
-	OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
-	EmailAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, mem_ctx);
+	oldEmailAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
 	talloc_free(attr_tmp[0]);
 
 	retval = GetProfileAttr(&profile, "ProxyAddress", &count, &attr_tmp);
@@ -1055,21 +1061,91 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 
 	/* Change EmailAddress */
 	{
-		int	i;
+		enum MAPISTATUS			retval;
+		struct nspi_context		*nspi;
+		struct SPropTagArray		*SPropTagArray = NULL;
+		struct SRowSet			*SRowSet;
+		struct Restriction_r		Filter;
+		struct SPropValue		*lpProp = NULL;
+		struct PropertyTagArray_r	*MIds = NULL;
+		struct PropertyTagArray_r	MIds2;
+		uint32_t			instance_key = 0;
+		uint32_t			index = 0;
+		char				*password;
+		struct mapi_session     *session = NULL;
 
-		tmp = NULL;
-		for (i = strlen(EmailAddress); i > 0; i--) {
-			if (EmailAddress[i] == '=') {
-				tmp = talloc_strndup(mem_ctx, EmailAddress, i + 1);
-				break;
-			}
+		retval = GetProfileAttr(&profile, "password", &count, &attr_tmp);
+		OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
+		password = talloc_strdup(mem_ctx, attr_tmp[0]);
+		talloc_free(attr_tmp[0]);
+
+		retval = MapiLogonProvider(mapi_ctx, &session, profile_dst, password, PROVIDER_ID_NSPI);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("DuplicateProfile", GetLastError());
+			return retval;
 		}
-		OPENCHANGE_RETVAL_IF(!tmp, MAPI_E_INVALID_PARAMETER, mem_ctx);
+		mapi_ctx = session->mapi_ctx;
 
-		attr = talloc_asprintf(mem_ctx, "%s%s", tmp, username);
-		talloc_free(tmp);
-		mapi_profile_modify_string_attr(mapi_ctx, profile_dst, "EmailAddress", attr);
-		talloc_free(attr);
+		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+		OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
+		OPENCHANGE_RETVAL_IF(!session->mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+		mem_ctx = talloc_named(NULL, 0, "ProcessNetworkProfile");
+		nspi = (struct nspi_context *) session->nspi->ctx;
+		index = 0;
+
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+		retval = nspi_GetSpecialTable(nspi, mem_ctx, 0x0, &SRowSet);
+		MAPIFreeBuffer(SRowSet);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
+						PR_EMAIL_ADDRESS
+						);
+
+		/* Retrieve the username to match */
+		if (!username) {
+			username = cli_credentials_get_username(nspi->cred);
+			OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, mem_ctx);
+		}
+
+		/* Build the restriction we want for NspiGetMatches */
+		lpProp = talloc_zero(mem_ctx, struct SPropValue);
+		lpProp->ulPropTag = PR_ANR_UNICODE;
+		lpProp->dwAlignPad = 0;
+		lpProp->value.lpszW = username;
+
+		Filter.rt = (enum RestrictionType_r)RES_PROPERTY;
+		Filter.res.resProperty.relop = RES_PROPERTY;
+		Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
+		Filter.res.resProperty.lpProp = lpProp;
+
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+		MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+		retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+		MAPIFreeBuffer(SPropTagArray);
+		MAPIFreeBuffer(lpProp);
+		if (retval != MAPI_E_SUCCESS) {
+			MAPIFreeBuffer(MIds);
+			MAPIFreeBuffer(SRowSet);
+			talloc_free(mem_ctx);
+			return retval;
+		}
+
+		/* if there's no match */
+		OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, mem_ctx);
+		OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, mem_ctx);
+		OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, mem_ctx);
+
+		instance_key = MIds->aulPropTag[0];
+		MAPIFreeBuffer(MIds);
+
+		MIds2.cValues = 0x1;
+		MIds2.aulPropTag = &instance_key;
+
+		set_profile_attribute(mapi_ctx, profile_dst, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
+		mapi_profile_delete_string_attr(mapi_ctx, profile_dst, "EmailAddress", oldEmailAddress);
+		MAPIFreeBuffer(SRowSet);
 	}
 
 	/* Change ProxyAddress */

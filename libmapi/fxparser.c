@@ -224,7 +224,7 @@ static bool fetch_ucs2_data(struct fx_parser_context *parser, uint32_t numbytes,
 		return false;
 	}
 
-	*data_read = talloc_array(parser->mem_ctx, smb_ucs2_t, numbytes/2);
+	*data_read = talloc_zero_array(parser->mem_ctx, smb_ucs2_t, (numbytes/2) + 1);
 	memcpy(*data_read, &(parser->data.data[parser->idx]), numbytes);
 	parser->idx += numbytes;
 	return true;
@@ -261,7 +261,7 @@ static bool pull_unicode(struct fx_parser_context *parser, char **pstr)
 	    parser->idx + length > parser->data.length)
 		return false;
 
-	ucs2_data = talloc_array(parser->mem_ctx, smb_ucs2_t, length/2);
+	ucs2_data = talloc_zero_array(parser->mem_ctx, smb_ucs2_t, (length/2) + 1);
 
 	if (!fetch_ucs2_data(parser, length, &ucs2_data)) {
 		return false;

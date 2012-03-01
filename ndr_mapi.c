@@ -1809,25 +1809,6 @@ void ndr_print_mapi_SRestriction_wrap(struct ndr_print *ndr, const char *name, c
 }
 
 /*
- * Fake wrapper over mapi_SNotRestriction. Workaround the pointer inclusion
- * problem in pidl
- */
-enum ndr_err_code ndr_push_mapi_SNotRestriction(struct ndr_push *ndr, int ndr_flags, const struct mapi_SNotRestriction *r)
-{
-	return ndr_push_mapi_SRestriction(ndr, ndr_flags, r->res);
-}
-
-enum ndr_err_code ndr_pull_mapi_SNotRestriction(struct ndr_pull *ndr, int ndr_flags, struct mapi_SNotRestriction *r)
-{
-	return ndr_pull_mapi_SRestriction(ndr, ndr_flags, r->res);
-}
-
-void ndr_print_mapi_SNotRestriction(struct ndr_print *ndr, const char *name, const struct mapi_SNotRestriction *r)
-{
-	ndr_print_mapi_SRestriction(ndr, name, r->res);
-}
-
-/*
  * Fake wrapper over mapi_SPropValue. Workaround the no-pointer deep
  * recursion problem in pidl
  */

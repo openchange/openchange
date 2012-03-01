@@ -92,29 +92,29 @@ knownrefs = [
 	"[MS-OXCDATA]",
 	"[MS-OXCETF]",
 	"[MS-OXCFOLD]",
-	"[MS-OXCFXICS]",                                                                                                                                                                                                                            
-	"[MS-OXCHGTR]",                                                                                                                                                                                                                             
-	"[MS-OXCICAL]",                                                                                                                                                                                                                             
-	"[MS-OXCMAIL]",                                                                                                                                                                                                                             
-	"[MS-OXCMSG]",                                                                                                                                                                                                                              
-	"[MS-OXCNOTIF]",                                                                                                                                                                                                                            
-	"[MS-OXCPERM]",                                                                                                                                                                                                                             
-	"[MS-OXCPRPT]",                                                                                                                                                                                                                             
-	"[MS-OXCROPS]",                                                                                                                                                                                                                             
-	"[MS-OXCRPC]",                                                                                                                                                                                                                              
-	"[MS-OXCSPAM]",                                                                                                                                                                                                                             
-	"[MS-OXCSTOR]",                                                                                                                                                                                                                             
-	"[MS-OXCSYNC]",                                                                                                                                                                                                                             
-	"[MS-OXCTABL]",                                                                                                                                                                                                                             
-	"[MS-OXDISCO]",                                                                                                                                                                                                                             
-	"[MS-OXDOCO]",                                                                                                                                                                                                                              
-	"[MS-OXDSCLI]",                                                                                                                                                                                                                             
-	"[MS-OXGLOS]",                                                                                                                                                                                                                              
-	"[MS-OXIMAP4]",                                                                                                                                                                                                                             
-	"[MS-OXLDAP]",                                                                                                                                                                                                                              
-	"[MS-OXMSG]",                                                                                                                                                                                                                               
-	"[MS-OXMVMBX]",                                                                                                                                                                                                                             
-	"[MS-OXOABK]",                                                                                                                                                                                                                              
+	"[MS-OXCFXICS]",
+	"[MS-OXCHGTR]",
+	"[MS-OXCICAL]",
+	"[MS-OXCMAIL]",
+	"[MS-OXCMSG]",
+	"[MS-OXCNOTIF]",
+	"[MS-OXCPERM]",
+	"[MS-OXCPRPT]",
+	"[MS-OXCROPS]",
+	"[MS-OXCRPC]",
+	"[MS-OXCSPAM]",
+	"[MS-OXCSTOR]",
+	"[MS-OXCSYNC]",
+	"[MS-OXCTABL]",
+	"[MS-OXDISCO]",
+	"[MS-OXDOCO]",
+	"[MS-OXDSCLI]",
+	"[MS-OXGLOS]",
+	"[MS-OXIMAP4]",
+	"[MS-OXLDAP]",
+	"[MS-OXMSG]",
+	"[MS-OXMVMBX]",
+	"[MS-OXOABK]",
 	"[MS-OXOABKT]",
 	"[MS-OXOAB]",
 	"[MS-OXOCAL]",
@@ -1277,6 +1277,10 @@ struct mapi_nameid {
 			mnstring_id += 1
 			f.write(propline)
 
+	# Additional properties
+	propline = "#define %s %s\n" % (string.ljust("PidLidRemoteTransferSize", 60), string.ljust("0x8f050003", 20))
+	f.write(propline)
+
 	f.write("#endif /* ! MAPI_NAMEID_H__ */")
 	f.close()
 
@@ -1310,6 +1314,12 @@ static struct mapi_nameid_tags mapi_nameid_tags[] = {
 				string.ljust(datatype, 15), "MNID_STRING", line[6], "0x0")
 			f.write(propline)
 
+	# Addtional named properties
+	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s },\n" % (
+		string.ljust("PidLidRemoteTransferSize", 60), string.ljust("\"RemoteTransferSize\"", 65), "0x8f05",
+		"NULL", string.ljust("PT_LONG", 15), "MNID_ID", "PSETID_Remote", "0x0")
+	f.write(propline)
+
 	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s }\n" % (
 		string.ljust("0x00000000", 60), string.ljust("NULL", 65), "0x0000", "NULL",
 		string.ljust("PT_UNSPECIFIED", 15), "0x0", "NULL", "0x0")
@@ -1324,6 +1334,9 @@ static struct mapi_nameid_names mapi_nameid_names[] = {
 	for line in sortednamedprops:
 		propline = "{ %s, \"%s\" },\n" % (string.ljust(line[0], 60), line[0])
 		f.write(propline)
+
+	# Additional named properties
+	propline = "{ %s, \"%s\" }\n" % (string.ljust("PidLidRemoteTransferSize", 60), "PidLidRemoteTransferSize")	
 
 	propline = "{ %s, \"%s\" }\n" % (string.ljust("0x00000000", 60), "NULL")
 	f.write(propline)

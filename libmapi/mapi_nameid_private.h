@@ -585,6 +585,7 @@ static struct mapi_nameid_tags mapi_nameid_tags[] = {
 { PidNameThumbnail                                            , NULL                                                             , 0x0000, "Thumbnail", PT_BINARY      , MNID_STRING, PS_PUBLIC_STRINGS, 0x0 },
 { PidNameTitle                                                , NULL                                                             , 0x0000, "Title", PT_UNICODE     , MNID_STRING, PS_PUBLIC_STRINGS, 0x0 },
 { PidNameWordCount                                            , NULL                                                             , 0x0000, "WordCount", PT_LONG        , MNID_STRING, PS_PUBLIC_STRINGS, 0x0 },
+{ PidLidRemoteTransferSize                                    , "RemoteTransferSize"                                             , 0x8f05, NULL, PT_LONG        , MNID_ID, PSETID_Remote, 0x0 },
 { 0x00000000                                                  , NULL                                                             , 0x0000, NULL, PT_UNSPECIFIED , 0x0, NULL, 0x0 }
 
 };

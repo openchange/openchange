@@ -614,4 +614,5 @@ struct mapi_nameid {
 #define PidNameThumbnail                                             0xa0d70102          
 #define PidNameTitle                                                 0xa0d8001f          
 #define PidNameWordCount                                             0xa0d90003          
+#define PidLidRemoteTransferSize                                     0x8f050003          
 #endif /* ! MAPI_NAMEID_H__ */

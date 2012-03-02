@@ -335,6 +335,8 @@ dnl    fi
 
 dnl    AC_SUBST(FLEX)
 dnl fi
+FLEX=/bin/false
+AC_SUBST(FLEX)
 
 dnl ---------------------------------------------------------------------------
 dnl Samba4 modules
@@ -545,11 +547,6 @@ if test x"$enable_libpopt" = x"yes"; then
 	   OC_RULE_ADD(mapitest, TOOLS)
 	fi
 
-	if test x"$enable_libocpf" = x"yes"; then
-	   OC_RULE_ADD(openchangeclient, TOOLS)
-           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
-	fi
-
 	if test x"$have_libical" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
 	fi
@@ -718,9 +715,9 @@ AC_SUBST(OPENCHANGE_QT4)
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
+AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc mapiproxy/libmapiproxy.pc
 		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc libmapi++.pc
-		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
+		 Doxyfile libmapi++/Doxyfile libmapiadmin/Doxyfile
 		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile
 		 mapiproxy/libmapistore/Doxyfile])
 AC_OUTPUT
@@ -732,7 +729,7 @@ dnl ##########################################################################
 
 OC_SETVAL(libmapi)
 OC_SETVAL(libmapiadmin)
-OC_SETVAL(libocpf)
+dnl OC_SETVAL(libocpf)
 OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
@@ -757,7 +754,6 @@ OpenChange Configuration (Please review)
 		      Thread support:	$enable_pthread $enable_thread_lib
 	     - libmapi++ (C++ library):	$enable_libmapixx
 	     - libmapiadmin:		$enable_libmapiadmin
-	     - libocpf:			$enable_libocpf
 
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy

@@ -923,34 +923,6 @@ setup/mapistore/mapistore_namedprops.ldif: 	\
 # mapistore backends
 #####################
 
-# mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
-
-# mapistore_fsocpf-install:
-#	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-#	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
-
-#mapistore_fsocpf-uninstall:
-#	rm -rf $(DESTDIR)$(libdir)/mapistore_backends/mapistore_fsocpf.$(SHLIBEXT)
-
-#mapistore_fsocpf-clean:
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.o
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcno
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcda
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
-
-#clean:: mapistore_fsocpf-clean
-
-#mapistore_fsocpf-distclean: mapistore_fsocpf-clean
-
-#distclean:: mapistore_fsocpf-distclean
-
-#mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-#	@echo "Linking mapistore module $@"
-#	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
-#	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-#	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-
 #######################
 # mapistore test tools
 #######################

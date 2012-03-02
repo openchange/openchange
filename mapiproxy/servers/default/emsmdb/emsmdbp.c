@@ -355,8 +355,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 		row->prop_values.length = 0;
 		for (i = 0; i < properties->cValues; i++) {
 			switch (properties->aulPropTag[i]) {
-			case PR_SMTP_ADDRESS:
-			case PR_SMTP_ADDRESS_UNICODE:
+			case PidTagSmtpAddress:
 				property = properties->aulPropTag[i];
 				data = (void *) recipient;
 				break;
@@ -391,10 +390,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 		switch (properties->aulPropTag[i]) {
 		case PR_DISPLAY_TYPE:
 		case PR_OBJECT_TYPE:
-		case PR_7BIT_DISPLAY_NAME:
-		case PR_7BIT_DISPLAY_NAME_UNICODE:
-		case PR_SMTP_ADDRESS:
-		case PR_SMTP_ADDRESS_UNICODE:
+		case PidTagAddressBookDisplayNamePrintable:
+		case PidTagSmtpAddress:
 			break;
 		default:
 			row->layout = 1;
@@ -425,14 +422,12 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			l = MAPI_MAILUSER;
 			data = (void *)&l;
 			break;
-		case PR_7BIT_DISPLAY_NAME:
-		case PR_7BIT_DISPLAY_NAME_UNICODE:
+		case PidTagAddressBookDisplayNamePrintable:
 			property = properties->aulPropTag[i];
 			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "mailNickname", NULL);
 			data = (void *) str;
 			break;
-		case PR_SMTP_ADDRESS:
-		case PR_SMTP_ADDRESS_UNICODE:
+		case PidTagSmtpAddress:
 			property = properties->aulPropTag[i];
 			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
 			data = (void *) str;

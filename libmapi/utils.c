@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2006.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,7 +56,7 @@ _PUBLIC_ char *guid_delete_dash(TALLOC_CTX *mem_ctx, const char *recipient_id)
 		if (recipient_id[i] != '-') count++;
 	}
 
-	guid = talloc_zero_size(mem_ctx, count+1);
+	guid = (char *)talloc_zero_size(mem_ctx, count+1);
 	for (count=0,i = 0;i!=strlen(recipient_id);i++) {
 		if (recipient_id[i] != '-') {
 			guid[count] = recipient_id[i];
@@ -84,7 +84,7 @@ _PUBLIC_ struct Binary_r *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const 
 		entryid->cb += strlen(guid);
 	}
 
-	entryid->lpb = talloc_zero_size(mem_ctx, entryid->cb);
+	entryid->lpb = (uint8_t *)talloc_zero_size(mem_ctx, entryid->cb);
 	off = 4;
 	memcpy(entryid->lpb + off, MAPI_LOCAL_UID, sizeof (MAPI_LOCAL_UID));
 	off += sizeof (MAPI_LOCAL_UID);

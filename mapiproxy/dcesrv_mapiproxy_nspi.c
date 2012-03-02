@@ -21,6 +21,8 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
+#include "libmapi/mapidefs.h"
+#include "libmapi/property_altnames.h"
 
 /**
    \file dcesrv_mapiproxy_nspi.c

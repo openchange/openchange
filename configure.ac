@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 0.11, [openchange@openchange.org])
+AC_INIT(openchange, 1.0, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
@@ -317,24 +317,24 @@ dnl Check for Flex
 dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
 dnl default version provided under FreeBSD or RHL5
 dnl ----------------------------------------------------------------------------
-dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
-dnl    AC_ARG_VAR([FLEX], [Location of the flex program.])
-dnl    AC_CHECK_PROG([FLEX], [flex], [flex])
+if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+   AC_ARG_VAR([FLEX], [Location of the flex program.])
+   AC_CHECK_PROG([FLEX], [flex], [flex])
 
-dnl    if test x"$FLEX" = x""; then
-dnl       	AC_MSG_WARN([No version of flex was found!])
-dnl 	AC_MSG_ERROR([Please install flex])
-dnl    else
-dnl 	V=`$FLEX --version | awk '{print $NF}'`
-dnl    	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
-dnl    	if test "x$W" != x ; then
-dnl 	   AC_MSG_WARN([Adjust your FLEX environment variable])
-dnl       	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
-dnl       	fi
-dnl    fi
+   if test x"$FLEX" = x""; then
+      	AC_MSG_WARN([No version of flex was found!])
+	AC_MSG_ERROR([Please install flex])
+   else
+	V=`$FLEX --version | awk '{print $NF}'`
+   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
+   	if test "x$W" != x ; then
+	   AC_MSG_WARN([Adjust your FLEX environment variable])
+      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
+      	fi
+   fi
 
-dnl    AC_SUBST(FLEX)
-dnl fi
+   AC_SUBST(FLEX)
+fi
 
 dnl ---------------------------------------------------------------------------
 dnl Samba4 modules
@@ -358,6 +358,11 @@ AC_CHECK_HEADER([samba/version.h],, AC_MSG_ERROR([Could not find Samba4 headers.
 
 OC_CHECK_SAMBA_VERSION([$SAMBA4_RELEASE],[$SAMBA4_GIT_VER-GIT-$SAMBA4_GIT_REV])
 CPPFLAGS="$oc_save_CPPFLAGS"
+
+AC_MSG_CHECKING([for DCE/RPC server modules directory])
+DCERPC_SERVER_MODULESDIR=`$PKG_CONFIG --variable=modulesdir dcerpc_server`
+AC_SUBST(DCERPC_SERVER_MODULESDIR)
+AC_MSG_RESULT($DCERPC_SERVER_MODULESDIR)
 
 dnl ---------------------------------------------------------------------------
 dnl Finally add libmapi to the library list
@@ -435,7 +440,7 @@ dnl ---------------------------------------------------------------------------
 AC_CACHE_CHECK([C++ compiler availability], [ac_cv_libmapixx_gxx_works],
 	       [
 		AC_LANG_PUSH([C++])
-		AC_COMPILE_IFELSE([int main() { return 0; }], 
+		AC_COMPILE_IFELSE([AC_LANG_SOURCE([[int main() { return 0; }]])], 
 				  [ac_cv_libmapixx_gxx_works=yes],
 				  [ac_cv_libmapixx_gxx_works=no])
 		AC_LANG_POP([C++])
@@ -476,17 +481,17 @@ dnl ###########################################################################
 dnl ---------------------------------------------------------------------------
 dnl Check for Bison
 dnl ---------------------------------------------------------------------------
-dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
-dnl    AC_ARG_VAR([BISON], [Location of the bison program.])
-dnl    AC_PATH_PROG([BISON], [bison], [bison])
+if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+   AC_ARG_VAR([BISON], [Location of the bison program.])
+   AC_PATH_PROG([BISON], [bison], [bison])
 
-dnl    if test x"$BISON" != x""; then
-dnl       OC_RULE_ADD(libocpf, LIBS)
-dnl       AC_SUBST(BISON)
-dnl    fi
-dnl else
-dnl    OC_RULE_ADD(libocpf, LIBS)
-dnl fi
+   if test x"$BISON" != x""; then
+      OC_RULE_ADD(libocpf, LIBS)
+      AC_SUBST(BISON)
+   fi
+else
+   OC_RULE_ADD(libocpf, LIBS)
+fi
 
 
 
@@ -540,11 +545,10 @@ if test x"$enable_libpopt" = x"yes"; then
 	   OC_RULE_ADD(mapitest, TOOLS)
 	fi
 
-	dnl if test x"$enable_libocpf" = x"yes"; then
-	dnl    OC_RULE_ADD(openchangeclient, TOOLS)
-        dnl    #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
-	dnl fi
-        OC_RULE_ADD(openchangeclient, TOOLS)
+	if test x"$enable_libocpf" = x"yes"; then
+	   OC_RULE_ADD(openchangeclient, TOOLS)
+           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+	fi
 
 	if test x"$have_libical" = x"yes"; then
 	    OC_RULE_ADD(exchange2ical, TOOLS)
@@ -714,10 +718,11 @@ AC_SUBST(OPENCHANGE_QT4)
 dnl ***********************
 dnl Makefiles 
 dnl ***********************
-AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc mapiproxy/libmapiproxy.pc
+AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
 		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc libmapi++.pc
-		 Doxyfile libmapi++/Doxyfile libmapiadmin/Doxyfile
-		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile])
+		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
+		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile
+		 mapiproxy/libmapistore/Doxyfile])
 AC_OUTPUT
 
 
@@ -727,7 +732,7 @@ dnl ##########################################################################
 
 OC_SETVAL(libmapi)
 OC_SETVAL(libmapiadmin)
-dnl OC_SETVAL(libocpf)
+OC_SETVAL(libocpf)
 OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
@@ -752,6 +757,7 @@ OpenChange Configuration (Please review)
 		      Thread support:	$enable_pthread $enable_thread_lib
 	     - libmapi++ (C++ library):	$enable_libmapixx
 	     - libmapiadmin:		$enable_libmapiadmin
+	     - libocpf:			$enable_libocpf
 
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy

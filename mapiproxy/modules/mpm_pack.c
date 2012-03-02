@@ -288,7 +288,7 @@ static NTSTATUS pack_pull(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ct
  */
 static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 {
-	char		**calls;
+	char			**calls;
 	unsigned long		opnum;
 	int			i;
 	int			j;

@@ -22,6 +22,15 @@
 #ifndef	__MAPISTORE_H
 #define	__MAPISTORE_H
 
+/**
+   \file mapistore.h
+
+   \brief MAPISTORE general API
+   
+   This header contains general functions, primarily for
+   users of the store (rather than storage providers).
+ */
+
 #ifndef	_GNU_SOURCE
 #define	_GNU_SOURCE
 #endif
@@ -321,6 +330,9 @@ struct backend_context *mapistore_backend_lookup(struct backend_context_list *, 
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
 struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const char *);
 bool		mapistore_backend_run_init(init_backend_fn *);
+
+/* definitions from mapistore_backend_defaults */
+enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *);
 
 /* definitions from mapistore_indexing.c */
 enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *, uint32_t, const char *, uint64_t);

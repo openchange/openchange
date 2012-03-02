@@ -50,6 +50,7 @@ PidLidYearInterval                                     LID_YEAR_INTERVAL        
 PidLidMonthOfYearMask				       LID_MOY_MASK		     0x0017 NULL			  PT_LONG	MNID_ID	    PSETID_Meeting	   0x91d6
 PidLidOldRecurrenceType				       OldRecurrenceType	     0x0018 NULL			  PT_SHORT	MNID_ID	    PSETID_Meeting	   0x91e4
 PidLidOwnerCriticalChange                              LID_OWNER_CRITICAL_CHANGE     0x001A NULL                          PT_SYSTIME    MNID_ID     PSETID_Meeting	   0x9102
+PidLidUnknown001B				       NULL			     0x001B NULL			  PT_NULL	MNID_ID	    PSETID_Meeting	   0x9103
 PidLidCalendarType                                     LID_CALENDAR_TYPE             0x001C NULL                          PT_LONG       MNID_ID     PSETID_Meeting	   0x9194
 PidLidAllAttendeesList                                 LID_ALL_ATTENDEES_LIST        0x001D NULL                          PT_UNICODE    MNID_ID     PSETID_Meeting	   0x9259
 PidLidCleanGlobalObjectId                              CleanGlobalObjId              0x0023 NULL                          PT_BINARY     MNID_ID     PSETID_Meeting	   0x9195
@@ -209,10 +210,13 @@ PidLidResponseStatus                                   ResponseStatus           
 PidLidAppointmentReplyTime                             ApptReplyTime                 0x8220 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment	   0x9114
 PidLidRecurring                                        Recurring                     0x8223 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment	   0x91e7
 PidLidIntendedBusyStatus                               IntendedBusyStatus            0x8224 NULL                          PT_LONG       MNID_ID     PSETID_Appointment	   0x91cc
+PidLidUnknown8225				       NULL			     0x8225 NULL			  PT_NULL	MNID_ID	    PSETID_Appointment	   0x91cd
 PidLidAppointmentUpdateTime			       ApptUpdateTime		     0x8226 NULL			  PT_SYSTIME	MNID_ID	    PSETID_Appointment	   0x9191
 PidLidExceptionReplaceTime                             ExceptionReplaceTime          0x8228 NULL                          PT_SYSTIME    MNID_ID     PSETID_Appointment	   0x9249
 PidLidFInvited                                         FInvited                      0x8229 NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment	   0x91c4
 PidLidFExceptionalAttendees                            FExceptionalAttendees         0x822B NULL                          PT_BOOLEAN    MNID_ID     PSETID_Appointment	   0x924a
+PidLidUnknown822c				       NULL			     0x822C NULL			  PT_NULL	MNID_ID	    PSETID_Appointment	   0x924c
+PidLidUnknown822d				       NULL			     0x822D NULL			  PT_NULL	MNID_ID	    PSETID_Appointment	   0x924e
 PidLidOwnerName					       OwnerName		     0x822E NULL			  PT_UNICODE	MNID_ID	    PSETID_Appointment	   0x91e0
 PidLidFOthersAppointment			       FOthersAppt		     0x822F NULL			  PT_BOOLEAN	MNID_ID	    PSETID_Appointment	   0x91c8
 PidLidAppointmentReplyName                             ApptReplyName                 0x8230 NULL                          PT_UNICODE    MNID_ID     PSETID_Appointment	   0x918c
@@ -254,10 +258,14 @@ PidLidSingleBodyIcal				       IsSingleBodyIcal		     0x827B NULL			  PT_BOOLEAN
 ### Common Named properties
 PidLidDayOfMonth				       DayOfMonth			    0x1000 NULL			  PT_LONG       MNID_ID     PSETID_Common          0x91a2
 PidLidICalendarDayOfWeekMask			       ICalendarDayOfWeekMask		    0x1001 NULL			  PT_LONG	MNID_ID	    PSETID_Common	   0x91a3
+PidLidUnknown1003				       NULL				    0x1003 NULL			  PT_NULL	MNID_ID	    PSETID_Common	   0x91a5
+PidLidUnknown1004				       NULL				    0x1004 NULL			  PT_NULL	MNID_ID	    PSETID_Common	   0x91a7
 PidLidOccurrences				       Occurrences			    0x1005 NULL			  PT_LONG	MNID_ID	    PSETID_Common	   0x91dd
 PidLidMonthOfYear				       MonthOfYear			    0x1006 NULL			  PT_LONG	MNID_ID	    PSETID_Common	   0x91d5
+PidLidUnknown100a				       NULL				    0x100A NULL			  PT_LONG	MNID_ID	    PSETID_Common	   0x91aa
 PidLidNoEndDateFlag				       NoEndDateFlag			    0x100B NULL			  PT_BOOLEAN	MNID_ID	    PSETID_Common	   0x91c5
 PidLidRecurrenceDuration			       RecurrenceDuration		    0x100D NULL			  PT_LONG	MNID_ID	    PSETID_Common	   0x91e5
+PidLidUnknown100f				       NULL				    0x100F NULL			  PT_NULL	MNID_ID	    PSETID_Common	   0x91f6
 PidLidReminderDelta                                    ReminderDelta                 	    0x8501 NULL                   PT_LONG       MNID_ID     PSETID_Common	   0x91e9
 PidLidReminderTime                                     ReminderTime                  	    0x8502 NULL                   PT_SYSTIME    MNID_ID     PSETID_Common	   0x91ef
 PidLidReminderSet                                      ReminderSet                   	    0x8503 NULL                   PT_BOOLEAN    MNID_ID     PSETID_Common	   0x91ee
@@ -819,3 +827,6 @@ PidNameWcviewheight	NULL	0x0000	http://schemas.microsoft.com/exchange/wcviewheig
 PidNamePreview	NULL	0x0000	http://schemas.microsoft.com/exchange/preview	PT_NULL	MNID_STRING	PS_PUBLIC_STRINGS	0x95f1
 PidNameWebclientlastusedsortcols	NULL	0x0000	http://schemas.microsoft.com/exchange/webclientlastusedsortcols	PT_NULL	MNID_STRING	PS_PUBLIC_STRINGS	0x95f2
 PidLidUnknownProperty85d9   LID_UNKNOWN_PROPERTY_85d9       0x85d9  NULL    PT_NULL MNID_ID PSETID_CalendarAssistant 0x95f3
+
+
+PidNameTimeZone		NULL	0x0000	TimeZone	PT_NULL MNID_STRING PSETID_Appointment2		0x95f7

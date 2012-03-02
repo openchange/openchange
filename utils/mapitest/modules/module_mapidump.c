@@ -66,7 +66,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.b = 1; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_FILE_SIZE_EXTENDED; /* enum MAPITAGS */
+	propvalue.ulPropTag = PidTagMemberId; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;
 	propvalue.value.d = 0x3DEADBEEFCAFE124LL; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
@@ -86,7 +86,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.bin = bin; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_DELIVER_TIME ; /* enum MAPITAGS */
+	propvalue.ulPropTag = PidTagOriginalDeliveryTime ; /* enum MAPITAGS */
 	propvalue.dwAlignPad = 0;
 	ft.dwLowDateTime = 0x12345678;
 	ft.dwHighDateTime = 0x01CA6AE4;
@@ -98,7 +98,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	propvalue.value.err = MAPI_E_UNKNOWN_CPID; /* union SPropValue_CTR */
 	mapidump_SPropValue(propvalue, "[sep]");
 
-	propvalue.ulPropTag = PR_CONTACT_ADDRTYPES;
+	propvalue.ulPropTag = PidTagScheduleInfoDelegateNames;
 	propvalue.dwAlignPad = 0;
 	mvstr.cValues = 3;
 	mvstr.lppszA = talloc_array(mt->mem_ctx, const char *, mvstr.cValues);
@@ -118,7 +118,7 @@ _PUBLIC_ bool mapitest_mapidump_spropvalue(struct mapitest *mt)
 	// struct LongArray_r MVl;/* [case(0x1003)] */
 	// struct BinaryArray_r MVbin;/* [case(0x1102)] */
 	// struct FlatUIDArray_r MVguid;/* [case(0x1048)] */
-	// struct WStringArray_r MVszW;/* [case(0x101f)] */
+	// struct StringArrayW_r MVszW;/* [case(0x101f)] */
 	// struct DateTimeArray_r MVft;/* [case(0x1040)] */
 	// uint32_t object;/* [case(0x000d)] */
 #endif
@@ -556,7 +556,7 @@ _PUBLIC_ bool mapitest_mapidump_message(struct mapitest *mt)
 	props.lpProps[6].ulPropTag = PR_DISPLAY_BCC;
 	props.lpProps[6].value.lpszA = "Ms. Anonymous <bcc@example.com>";
 
-	props.lpProps[7].ulPropTag = PR_STATUS;
+	props.lpProps[7].ulPropTag = PidTagPriority;
 	props.lpProps[7].value.l = 0;
 
 	props.lpProps[8].ulPropTag = PR_HASATTACH;
@@ -757,10 +757,10 @@ _PUBLIC_ bool mapitest_mapidump_freebusy(struct mapitest *mt)
 */ 
 _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 {
-	const char 		**userlist;
-	struct SRowSet 		resolved;
-	struct SPropTagArray 	*flaglist;
-	struct SPropValue	SPropValue;
+	const char 			**userlist;
+	struct SRowSet 			resolved;
+	struct PropertyTagArray_r	flaglist;
+	struct SPropValue		SPropValue;
 
 	userlist = talloc_array(mt->mem_ctx, const char*, 3);
 	userlist[0] = "Mr. Unresolved";
@@ -779,9 +779,15 @@ _PUBLIC_ bool mapitest_mapidump_recipients(struct mapitest *mt)
 	SPropValue.value.lpszA = "gname";
 	SRow_addprop(&(resolved.aRow[0]), SPropValue);
 
-	flaglist = set_SPropTagArray(mt->mem_ctx, 3, MAPI_UNRESOLVED, MAPI_AMBIGUOUS, MAPI_RESOLVED);
+	flaglist.cValues = 3;
+	flaglist.aulPropTag = talloc_zero_array(mt->mem_ctx, uint32_t, flaglist.cValues);
+	flaglist.aulPropTag[0] = MAPI_UNRESOLVED;
+	flaglist.aulPropTag[1] = MAPI_AMBIGUOUS;
+	flaglist.aulPropTag[2] = MAPI_RESOLVED;
 	
-	mapidump_Recipients(userlist, &resolved, flaglist);
+	mapidump_Recipients(userlist, &resolved, &flaglist);
+
+	talloc_free(flaglist.aulPropTag);
 
 	return true;
 }
@@ -900,9 +906,9 @@ _PUBLIC_ bool mapitest_mapidump_foldercreated(struct mapitest *mt)
 	foldercreatednotification.TagCount = 3;
 	foldercreatednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
                                                            foldercreatednotification.TagCount);
-	foldercreatednotification.NotificationTags.Tags[0] = PR_RECIPIENT_CERTIFICATE;
+	foldercreatednotification.NotificationTags.Tags[0] = PidTagTemplateData;
 	foldercreatednotification.NotificationTags.Tags[1] = PR_URL_COMP_NAME;
-	foldercreatednotification.NotificationTags.Tags[2] = PR_END_ATTACH;
+	foldercreatednotification.NotificationTags.Tags[2] = PidTagEndAttach;
 
 	mapidump_foldercreated(&foldercreatednotification, "[sep]");
 

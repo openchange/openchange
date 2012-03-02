@@ -217,7 +217,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 					  PR_DISPLAY_BCC_UNICODE,
 					  PR_HASATTACH,
 					  PR_MESSAGE_CODEPAGE);
-	lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	lpProps = NULL;
 	retval = GetProps(obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, NULL);

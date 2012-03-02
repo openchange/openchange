@@ -19,6 +19,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+/**
+   \file mapistore_indexing.c
+
+   \brief MAPISTORE internal indexing functions
+   
+   This file contains functionality to map between folder / message
+   identifiers and backend URI strings.
+ */
+
 #include <string.h>
 
 #include "mapistore.h"
@@ -87,7 +96,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	/* Step 1. Open/Create the indexing database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb", 
 				 mapistore_get_mapping_path(), username);
-	ictx->index_ctx = tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	ictx->index_ctx = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(dbpath);
 	if (!ictx->index_ctx) {
 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
@@ -274,7 +283,7 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
    \param context_id the context identifier referencing the indexing
    database to update
    \param fmid the folder or message ID to delete
-   \flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
+   \param flags the type of deletion MAPISTORE_SOFT_DELETE or MAPISTORE_PERMANENT_DELETE
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -347,7 +356,9 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
    \details Returns record data
 
    \param mstore_ctx pointer to the mapistore context
-   \param mem_ctx pointer to the talloc context
+   \param username the name of the account where to look for the
+   indexing database
+   \param mem_ctx pointer to the memory context
    \param fmid the fmid/key to the record
    \param urip pointer to the uri pointer
    \param soft_deletedp pointer to the soft deleted pointer

@@ -193,7 +193,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	enum MAPISTATUS				ret;
 	enum mapistore_error			retval;
 	struct mapistore_contexts_list		*contexts_list;
-	struct WStringArray_r			*existing_uris;
+	struct StringArrayW_r			*existing_uris;
 	struct mapistore_contexts_list		*main_entries[MAPISTORE_MAX_ROLES], *secondary_entries[MAPISTORE_MAX_ROLES], *next_entry, *current_entry;
 	static const char			*folder_names[] = {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"};
 	static struct emsmdbp_special_folder	special_folders[] = {{MAPISTORE_DRAFTS_ROLE, PR_IPM_DRAFTS_ENTRYID, "Drafts"},

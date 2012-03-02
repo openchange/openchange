@@ -96,7 +96,7 @@ _PUBLIC_ enum MAPISTATUS CreateAttach(mapi_object_t *obj_message,
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CreateAttach");
+	mem_ctx = talloc_named(session, 0, "CreateAttach");
 	size = 0;
 
 	/* Fill the CreateAttach operation */
@@ -180,7 +180,7 @@ _PUBLIC_ enum MAPISTATUS DeleteAttach(mapi_object_t *obj_message, uint32_t Attac
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteAttach");
+	mem_ctx = talloc_named(session, 0, "DeleteAttach");
 	size = 0;
 
 	/* Fill the DeleteAttach operation */
@@ -257,7 +257,7 @@ _PUBLIC_ enum MAPISTATUS GetAttachmentTable(mapi_object_t *obj_message,
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetAttachmentTable");
+	mem_ctx = talloc_named(session, 0, "GetAttachmentTable");
 	size = 0;
 
 	/* Fill the GetAttachmentTable operation */
@@ -349,7 +349,7 @@ _PUBLIC_ enum MAPISTATUS GetValidAttach(mapi_object_t *obj_message, uint16_t *Nu
 
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
-	mem_ctx = talloc_named(NULL, 0, "GetValidAttach");
+	mem_ctx = talloc_named(session, 0, "GetValidAttach");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -428,7 +428,7 @@ _PUBLIC_ enum MAPISTATUS OpenAttach(mapi_object_t *obj_message, uint32_t Attachm
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenAttach");
+	mem_ctx = talloc_named(session, 0, "OpenAttach");
 	size = 0;
 
 	/* Fill the OpenAttach operation */
@@ -672,6 +672,14 @@ uint16_t mapi_recipients_RecipientFlags(struct SRow *aRow)
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
+   When using this function, take care to ensure that the properties
+   that are present on the first row in the rowset are also present
+   in all the following rows. If any are missing, this function will
+   suffer NDR errors. This includes making sure that any string
+   properties are present in the same encoding (e.g. if you use
+   PR_SMTP_ADDRESS_UNICODE on the first row, don't provide
+   PR_SMTP_ADDRESS on subsequent rows).
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -711,7 +719,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ModifyRecipients");
+	mem_ctx = talloc_named(session, 0, "ModifyRecipients");
 	size = 0;
 
 	/* Fill the ModifyRecipients operation */
@@ -953,7 +961,7 @@ _PUBLIC_ enum MAPISTATUS ReadRecipients(mapi_object_t *obj_message,
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ReadRecipients");
+	mem_ctx = talloc_named(session, 0, "ReadRecipients");
 	size = 0;
 
 	/* Fill the ReadRecipients operation */
@@ -1036,7 +1044,7 @@ _PUBLIC_ enum MAPISTATUS RemoveAllRecipients(mapi_object_t *obj_message)
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "RemoveAllRecipients");
+	mem_ctx = talloc_named(session, 0, "RemoveAllRecipients");
 	size = 0;
 
 	/* Fill the RemoveAllRecipients operation */
@@ -1116,7 +1124,7 @@ _PUBLIC_ enum MAPISTATUS SubmitMessage(mapi_object_t *obj_message)
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SubmitMessage");
+	mem_ctx = talloc_named(session, 0, "SubmitMessage");
 	size = 0;
 
 	/* Fill the SubmitMessage operation */
@@ -1206,7 +1214,7 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "AbortSubmit");
+	mem_ctx = talloc_named(session[0], 0, "AbortSubmit");
 	size = 0;
 
 	/* Fill the AbortSubmit operation */
@@ -1300,7 +1308,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesMessage(mapi_object_t *parent,
 	if ((retval = mapi_object_get_logon_id(parent, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SaveChangesMessage");
+	mem_ctx = talloc_named(session[0], 0, "SaveChangesMessage");
 	size = 0;
 
 	/* Fill the SaveChangesMessage operation */
@@ -1373,7 +1381,7 @@ _PUBLIC_ enum MAPISTATUS TransportSend(mapi_object_t *obj_message,
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "TransportSend");
+	mem_ctx = talloc_named(session, 0, "TransportSend");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -1497,7 +1505,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageReadFlag(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetMessageReadFlags");
+	mem_ctx = talloc_named(session[0], 0, "SetMessageReadFlags");
 	size = 0;
 
 	/* Fill the SetMessageReadFlags operation */
@@ -1639,7 +1647,7 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	if ((retval = mapi_object_get_logon_id(obj_attach, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenEmbeddedMessage");
+	mem_ctx = talloc_named(session, 0, "OpenEmbeddedMessage");
 
 	/* Fill the OpenEmbeddedMessage request */
 	request.handle_idx = 0x1;

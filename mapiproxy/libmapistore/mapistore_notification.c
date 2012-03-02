@@ -221,7 +221,7 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 		nl->notification->parameters.object_parameters.tags[2] = PR_RCVD_REPRESENTING_EMAIL_ADDRESS;
 		nl->notification->parameters.object_parameters.tags[3] = PR_RCVD_REPRESENTING_NAME;
 		nl->notification->parameters.object_parameters.tags[4] = PR_RCVD_REPRESENTING_SEARCH_KEY;
-		nl->notification->parameters.object_parameters.tags[5] = PR_RCVD_REPRESENTING_FLAGS;
+		nl->notification->parameters.object_parameters.tags[5] = PidTagReceivedRepresentingFlags;
 		nl->notification->parameters.object_parameters.tags[6] = 0x67BA0102;
 		nl->notification->parameters.object_parameters.tags[7] = PR_CONTENT_FILTER_SCL;
 		nl->notification->parameters.object_parameters.tags[8] = PR_LAST_MODIFICATION_TIME;
@@ -235,7 +235,7 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 		nl->notification->parameters.object_parameters.tags[16] = PR_RECEIVED_BY_ADDRTYPE;
 		nl->notification->parameters.object_parameters.tags[17] = PR_RECEIVED_BY_EMAIL_ADDRESS;
 		nl->notification->parameters.object_parameters.tags[18] = PR_RECEIVED_BY_NAME;
-		nl->notification->parameters.object_parameters.tags[19] = PR_RCVD_BY_FLAGS;
+		nl->notification->parameters.object_parameters.tags[19] = PidTagReceivedByFlags;
 		nl->notification->parameters.object_parameters.tags[20] = 0x67B90102;
 		nl->notification->parameters.object_parameters.tags[21] = PR_MESSAGE_FLAGS;
 		nl->notification->parameters.object_parameters.tags[22] = PR_MESSAGE_SIZE;

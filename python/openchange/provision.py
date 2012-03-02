@@ -19,14 +19,17 @@
 #
 
 from base64 import b64encode
-import os
+import os,sys
 import struct
 import samba
 from openchange import mailbox
-from samba import Ldb
+from samba import param, Ldb, dsdb, substitute_var, read_and_sub_file
 from samba.samdb import SamDB
-from samba.auth import system_session
-from samba.provision import setup_add_ldif, setup_modify_ldif
+import ldb
+from ldb import (SCOPE_SUBTREE, SCOPE_BASE, FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE)
+from samba.auth import system_session, admin_session
+from samba.provision import (setup_add_ldif, setup_modify_ldif, setup_ldb,find_provision_key_parameters)
+from samba.upgradehelpers import (get_paths, get_ldbs)
 from openchange.urlutils import openchangedb_url
 
 __docformat__ = 'restructuredText'
@@ -136,7 +139,6 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
 def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Provision schema using LDIF specified file
-
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
@@ -148,14 +150,14 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
                credentials=creds, lp=lp)
 
     db.transaction_start()
 
     try:
         reporter.reportNextStep(msg)
-        setup_add_ldif(db, setup_path(ldif), { 
+        setup_add_ldif(db, setup_path(ldif), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
                 "CONFIGDN": names.configdn,
@@ -173,9 +175,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     db.transaction_commit()
 
 def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
-    """Modify schema using LDIF specified file
-
-    :param setup_path: Path to the setup directory.
+    """Modify schema using LDIF specified file                                                                                                                                                                          :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
     :param creds: Credentials Context
@@ -186,14 +186,14 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.samdb_url(), session_info=session_info, 
+    db = SamDB(url=lp.samdb_url(), session_info=session_info,
                credentials=creds, lp=lp)
 
     db.transaction_start()
 
     try:
         reporter.reportNextStep(msg)
-        setup_modify_ldif(db, setup_path(ldif), { 
+        setup_modify_ldif(db, setup_path(ldif), {
                 "SCHEMADN": names.schemadn,
                 "CONFIGDN": names.configdn
                 })
@@ -202,6 +202,7 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
         raise
 
     db.transaction_commit()
+
 
 def install_schemas(setup_path, names, lp, creds, reporter):
     """Install the OpenChange-specific schemas in the SAM LDAP database. 
@@ -214,30 +215,29 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     """
     session_info = system_session()
 
+    lp.set("dsdb:schema update allowed", "yes")
+
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+    samdb = SamDB(url=lp.samdb_url(), session_info=session_info,
                   credentials=creds, lp=lp)
 
-    prefixmap = open(setup_path("AD/prefixMap.txt"), 'r').read()
+    schemadn = str(names.schemadn)
+    current = samdb.search(expression="objectClass=*", base=schemadn, 
+                           scope=SCOPE_SUBTREE)
+    
 
-    db.transaction_start()
+    schema_ldif = ""
+    prefixmap_data = ""
+    for ent in current:
+        schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
 
-    try:
-        reporter.reportNextStep("Register Exchange OIDs")
-        setup_modify_ldif(db,
-                          setup_path("AD/provision_schema_basedn_modify.ldif"), {
-                "SCHEMADN": names.schemadn,
-                "NETBIOSNAME": names.netbiosname,
-                "DEFAULTSITE": names.sitename,
-                "CONFIGDN": names.configdn,
-                "SERVERDN": names.serverdn,
-                "PREFIXMAP_B64": b64encode(prefixmap)
-                })
-    except:
-        db.transaction_cancel()
-        raise
+    prefixmap_data = open(setup_path("AD/prefixMap.txt"), 'r').read()
+    prefixmap_data = b64encode(prefixmap_data)
 
-    db.transaction_commit()
+    # We don't actually add this ldif, just parse it
+    prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
+    reporter.reportNextStep("Register Exchange OIDs")
+    dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
 
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")

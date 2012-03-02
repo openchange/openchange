@@ -19,8 +19,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <inttypes.h>
 #include <Python.h>
+#include <inttypes.h>
 #include "pyopenchange/mapistore/pymapistore.h"
 
 static void py_MAPIStoreContext_dealloc(PyObject *_self)

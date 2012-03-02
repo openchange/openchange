@@ -34,6 +34,7 @@
    \details Initialize the mapistore context
 
    \param mem_ctx pointer to the memory context
+   \param path the path to the location to load the backend providers from (NULL for default)
 
    \return allocate mapistore context on success, otherwise NULL
  */
@@ -90,6 +91,11 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
 
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {
@@ -115,7 +121,8 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
  */
 _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore_ctx)
 {
-	if (!mstore_ctx) return MAPISTORE_ERR_NOT_INITIALIZED;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	DEBUG(5, ("freeing up mstore_ctx ref: %p\n", mstore_ctx));
 
@@ -159,7 +166,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 
    \param mstore_ctx pointer to the mapistore context
    \param uri the connection context URI
-   \param pointer to the context identifier the function returns
+   \param context_id pointer to the context identifier the function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -428,6 +435,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Error receiving message";
 	case MAPISTORE_ERR_DENIED:
 		return "Insufficient rights to perform the operation";
+	case MAPISTORE_ERR_NOT_IMPLEMENTED:
+		return "Not implemented";
 	}
 
 	return "Unknown error";

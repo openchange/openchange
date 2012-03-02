@@ -24,24 +24,6 @@
 
 #include <talloc.h>
 
-void mapistore_set_errno(int);
-
-#define	MAPISTORE_RETVAL_IF(x,e,c)	\
-do {					\
-	if (x) {			\
-		mapistore_set_errno(e);	\
-		if (c) {		\
-			talloc_free(c);	\
-		}			\
-		return (e);		\
-	}				\
-} while (0);
-
-#define	MAPISTORE_SANITY_CHECKS(x,c)						\
-MAPISTORE_RETVAL_IF(!x, MAPISTORE_ERR_NOT_INITIALIZED, c);			\
-MAPISTORE_RETVAL_IF(!x->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, c);	\
-MAPISTORE_RETVAL_IF(!x->context_list, MAPISTORE_ERR_NOT_INITIALIZED, c);
-
 #ifndef	ISDOT
 #define ISDOT(path) ( \
 			*((const char *)(path)) == '.' && \
@@ -81,9 +63,8 @@ struct ldb_wrap {
    Identifier mapping context.
 
    This structure stores PR_MID and PR_FID identifiers to backend
-   identifiers mapping. It points on 2 databases, one with "in use"
-   identifiers and another one with a list of "free identifiers" which
-   are added when an object is deleted, moved, etc.
+   identifiers mapping. It points to a database containing the used
+   identifiers.
 
    The last_id structure member references the last identifier value
    which got created. There is no identifier available with a value
@@ -91,7 +72,6 @@ struct ldb_wrap {
  */
 struct id_mapping_context {
 	struct tdb_wrap		*used_ctx;
-	struct tdb_wrap		*free_ctx;
 	uint64_t		last_id;
 };
 
@@ -148,7 +128,6 @@ struct replica_mapping_context_list {
 #define	MAPISTORE_DB_LAST_ID_VAL	0x15000
 
 #define	MAPISTORE_DB_NAME_USED_ID	"mapistore_id_mapping_used.tdb"
-#define	MAPISTORE_DB_NAME_FREE_ID	"mapistore_id_mapping_free.tdb"
 
 /**
    MAPIStore management defines
@@ -157,6 +136,13 @@ struct replica_mapping_context_list {
 #define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
 
 __BEGIN_DECLS
+
+/**
+   Properties used in mapistore but not referenced anymore in MS-OXCPROPS.pdf
+ */
+#define PR_ATTACH_ID				0x3f880014
+#define PR_MODIFIER_FLAGS			0x405a0003
+#define	PR_RECIPIENT_ON_NORMAL_MSG_COUNT	0x66af0003
 
 /* definitions from mapistore_processing.c */
 const char *mapistore_get_mapping_path(void);
@@ -213,7 +199,7 @@ enum mapistore_error mapistore_backend_properties_set_properties(struct backend_
 enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_context *, TALLOC_CTX *, const char *, const char *, const char *, const char *, char **);
 
 /* definitions from mapistore_tdb_wrap.c */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
+struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 /* definitions from mapistore_ldb_wrap.c */
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);

@@ -29,6 +29,7 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <ldb.h>
 #include <ldb_errors.h>
+#include <tevent.h>
 #include <util/debug.h>
 #include <time.h>
 #include <inttypes.h>

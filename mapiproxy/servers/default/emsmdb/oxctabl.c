@@ -840,6 +840,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 		break;
 	case false:
+		memset (&row, 0, sizeof(DATA_BLOB));
 		DEBUG(0, ("FindRow for openchangedb\n"));
 		/* Restrict rows to be fetched */
 		retval = openchangedb_table_set_restrictions(object->backend_object, &request.res);
@@ -886,11 +887,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 				}
 				talloc_free(retvals);
 				talloc_free(data_pointers);
-                        }
-                        else {
+                        } else {
 				table->numerator++;
 			}
 		}
+		/* Reset restrictions */
+		openchangedb_table_set_restrictions(object->backend_object, NULL);
+
 		/* Adjust parameters */
 		if (found) {
 			mapi_repl->u.mapi_FindRow.HasRowData = 1;

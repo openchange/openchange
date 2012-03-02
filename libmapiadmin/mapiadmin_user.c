@@ -220,10 +220,10 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	dom_sid = mapiadmin_ctx->user_ctx->user_sid;
 
 	/* initialize memory context */
-	mem_ctx = talloc_named(NULL, 0, "mapiadmin_user_extend");
+	mem_ctx = talloc_named((TALLOC_CTX *)mapiadmin_ctx, 0, "mapiadmin_user_extend");
 
 	/* open LDAP connection */
-	ev = tevent_context_init(talloc_autofree_context());
+	ev = tevent_context_init(mem_ctx);
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
 	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, mapi_ctx->lp_ctx, remote_ldb_url, 

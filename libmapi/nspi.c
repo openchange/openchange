@@ -1,7 +1,7 @@
 /*
    OpenChange NSPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2008.
+   Copyright (C) Julien Kerihuel 2005 - 2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -103,7 +103,7 @@ _PUBLIC_ struct nspi_context *nspi_bind(TALLOC_CTX *parent_ctx,
 		return NULL;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
+	mem_ctx = talloc_named(parent_ctx, 0, __FUNCTION__);
 
 	r.in.dwFlags = 0;
 
@@ -147,7 +147,7 @@ int nspi_disconnect_dtor(void *data)
 	enum MAPISTATUS		retval;
 	struct mapi_provider	*provider = (struct mapi_provider *) data;
 
-	retval = nspi_unbind(provider->ctx);
+	retval = nspi_unbind((struct nspi_context *)provider->ctx);
 	return retval;
 }
 
@@ -240,7 +240,7 @@ _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx, 
 					TALLOC_CTX *mem_ctx,
 					struct SPropTagArray *pPropTags,
-					struct SPropTagArray *MIds, 
+					struct PropertyTagArray_r *MIds, 
 					uint32_t count,
 					struct SRowSet **ppRows)
 {
@@ -326,7 +326,7 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 					  enum TableSortOrders SortType,
 					  struct SPropValue *pTarget,
 					  struct SPropTagArray *pPropTags,
-					  struct SPropTagArray *pMIds,
+					  struct PropertyTagArray_r *pMIds,
 					  struct SRowSet **pRows)
 {
 	struct NspiSeekEntries		r;
@@ -390,19 +390,24 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
    \param mem_ctx pointer to the memory context
    \param pPropTags pointer to an array of property tags of columns
    \param Filter pointer to the Restriction to apply to the table
+   \param ulRequested The upper limit for returned rows
    \param ppRows pointer to pointer to a SRowSet structure holding the
    rows returned by the server
    \param ppOutMIds pointer to pointer to a list of MId that comprise
    a restricted address book container
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error. If the resulting
+   table rows count will be greater than ulRequested, then an error
+   MAPI_E_TABLE_TOO_BIG is returned. Note, this error can be also returned
+   when server limits for table size are exceeded.
  */
 _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx, 
 					 TALLOC_CTX *mem_ctx,
 					 struct SPropTagArray *pPropTags,
 					 struct Restriction_r *Filter,
+					 uint32_t ulRequested,
 					 struct SRowSet **ppRows,
-					 struct SPropTagArray **ppOutMIds)
+					 struct PropertyTagArray_r **ppOutMIds)
 {
 	struct NspiGetMatches		r;
 	NTSTATUS			status;
@@ -429,7 +434,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 	r.in.Reserved2 = 0;
 	r.in.Filter = Filter;
 	r.in.lpPropName = NULL;
-	r.in.ulRequested = 5000;
+	r.in.ulRequested = ulRequested;
 	r.in.pPropTags = pPropTags;
 
 	pStat = talloc(mem_ctx, struct STAT);
@@ -467,13 +472,13 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 						TALLOC_CTX *mem_ctx,
 						enum TableSortOrders SortType,
-						struct SPropTagArray *pInMIds,
-						struct SPropTagArray **ppMIds)
+						struct PropertyTagArray_r *pInMIds,
+						struct PropertyTagArray_r **ppMIds)
 {
 	struct NspiResortRestriction	r;
 	enum MAPISTATUS			retval;
 	NTSTATUS			status;
-	struct SPropTagArray		*ppInMIds = NULL;
+	struct PropertyTagArray_r		*ppInMIds = NULL;
 	struct STAT			*pStat = NULL;
 
 	/* Sanity checks */
@@ -520,7 +525,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResortRestriction(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_DNToMId(struct nspi_context *nspi_ctx, 
 				      TALLOC_CTX *mem_ctx,
 				      struct StringsArray_r *pNames,
-				      struct SPropTagArray **ppMIds)
+				      struct PropertyTagArray_r **ppMIds)
 {
 	struct NspiDNToMId	r;
 	NTSTATUS		status;
@@ -610,7 +615,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetPropList(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx, 
 				       TALLOC_CTX *mem_ctx,
 				       struct SPropTagArray *pPropTags, 
-				       struct SPropTagArray *MId,
+				       struct PropertyTagArray_r *MId,
 				       struct SRowSet **SRowSet)
 
 {
@@ -1074,7 +1079,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 					   const char **usernames, 
 					   struct SPropTagArray *pPropTags, 
 					   struct SRowSet ***pppRows,
-					   struct SPropTagArray ***pppMIds)
+					   struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNames r;
 	struct StringsArray_r	*paStr;
@@ -1137,10 +1142,10 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 					    const char **usernames, 
 					    struct SPropTagArray *pPropTags, 
 					    struct SRowSet ***pppRows,
-					    struct SPropTagArray ***pppMIds)
+					    struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNamesW	r;
-	struct WStringsArray_r		*paWStr;
+	struct StringsArrayW_r		*paWStr;
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	uint32_t			count;
@@ -1160,7 +1165,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 	r.in.Reserved = 0;
 	r.in.pPropTags = pPropTags;
 
-	paWStr = talloc(mem_ctx, struct WStringsArray_r);
+	paWStr = talloc(mem_ctx, struct StringsArrayW_r);
 	paWStr->Count = count;
 	paWStr->Strings = usernames;
 	r.in.paWStr = paWStr;

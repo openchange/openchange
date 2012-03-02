@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -93,13 +93,13 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenMessage");
+	mem_ctx = talloc_named(session, 0, "OpenMessage");
 
 	/* Fill the OpenMessage operation */
 	request.handle_idx = 0x1;
 	request.CodePageId = 0xfff;
 	request.FolderId = id_folder;
-	request.OpenModeFlags = ulFlags;
+	request.OpenModeFlags = (enum OpenMessage_OpenModeFlags)ulFlags;
 	request.MessageId = id_message;
 	size = sizeof (uint8_t) + sizeof(uint16_t) + sizeof(mapi_id_t) + sizeof(uint8_t) + sizeof(mapi_id_t);
 
@@ -232,7 +232,7 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ReloadCachedInformation");
+	mem_ctx = talloc_named(session, 0, "ReloadCachedInformation");
 
 	/* Fill the ReloadCachedInformation operation */
 	request.Reserved = 0x0000;

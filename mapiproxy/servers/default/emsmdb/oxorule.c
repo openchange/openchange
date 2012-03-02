@@ -143,7 +143,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRules(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXORULE] ModifyRules (0x41) -- stub\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXORULE] ModifyRules (0x41)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

@@ -32,25 +32,25 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 				      const char *legacyDN, 
 				      bool server)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct nspi_context	*nspi;
-	struct StringsArray_r	pNames;
-	struct SRowSet		*SRowSet;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropTagArray	*MId_array;
-	struct StringArray_r	*MVszA = NULL;
-	const char		*binding = NULL;
-	char			*HomeMDB = NULL;
-	char			*server_dn;
-	uint32_t		i;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct nspi_context		*nspi;
+	struct StringsArray_r		pNames;
+	struct SRowSet			*SRowSet;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct PropertyTagArray_r	*MId_array;
+	struct StringArray_r		*MVszA = NULL;
+	const char			*binding = NULL;
+	char				*HomeMDB = NULL;
+	char				*server_dn;
+	uint32_t			i;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "FindGoodServer");
+	mem_ctx = talloc_named(session, 0, "FindGoodServer");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 
 	if (server == false) {
@@ -59,7 +59,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 		pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
 
-		MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+		MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 		MAPIFreeBuffer(pNames.Strings);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -84,7 +84,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
-	MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+	MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 	MAPIFreeBuffer(pNames.Strings);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -169,7 +169,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
+	mem_ctx = talloc_named(session, 0, "OpenPublicFolder");
 	size = 0;
 
 	/* Fill the Logon operation */
@@ -333,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
+	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
 	size = 0;
 
 	if (!username) {

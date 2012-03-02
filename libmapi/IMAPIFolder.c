@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -66,7 +66,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CreateMessage");
+	mem_ctx = talloc_named(session, 0, "CreateMessage");
 	size = 0;
 
 	/* Fill the OpenFolder operation */
@@ -157,7 +157,7 @@ _PUBLIC_ enum MAPISTATUS DeleteMessage(mapi_object_t *obj_folder, mapi_id_t *id_
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteMessages");
+	mem_ctx = talloc_named(session, 0, "DeleteMessages");
 	size = 0;
 
 	/* Fill the DeleteMessages operation */
@@ -245,7 +245,7 @@ _PUBLIC_ enum MAPISTATUS HardDeleteMessage(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "HardDeleteMessages");
+	mem_ctx = talloc_named(session, 0, "HardDeleteMessages");
 	size = 0;
 
 	/* Fill the HardDeleteMessages operation */
@@ -329,7 +329,7 @@ _PUBLIC_ enum MAPISTATUS GetMessageStatus(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetMessageStatus");
+	mem_ctx = talloc_named(session, 0, "GetMessageStatus");
 	size = 0;
 
 	/* Fill the GetMessageStatus operation */
@@ -428,7 +428,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetMessageStatus");
+	mem_ctx = talloc_named(session, 0, "SetMessageStatus");
 	size = 0;
 
 	/* Fill the SetMessageStatus operation */
@@ -525,7 +525,7 @@ _PUBLIC_ enum MAPISTATUS MoveCopyMessages(mapi_object_t *obj_src,
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "MoveCopyMessages");
+	mem_ctx = talloc_named(session[0], 0, "MoveCopyMessages");
 	size = 0;
 
 	/* Fill the CopyMessage operation */
@@ -640,7 +640,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 			ulFolderType != FOLDER_SEARCH),
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "CreateFolder");
+	mem_ctx = talloc_named(session, 0, "CreateFolder");
 	size = 0;
 
 	/* Fill the CreateFolder operation */
@@ -656,7 +656,7 @@ _PUBLIC_ enum MAPISTATUS CreateFolder(mapi_object_t *obj_parent,
 	}
 	request.ulFolderType = ulFolderType;
 	size += sizeof(uint16_t);
-	request.ulFlags = ulFlags & 0xFFFF;
+	request.ulFlags = (enum FOLDER_FLAGS)((int)ulFlags & 0xFFFF);
 	size += sizeof(uint16_t);
 
 	switch (request.ulType) {
@@ -771,7 +771,7 @@ _PUBLIC_ enum MAPISTATUS EmptyFolder(mapi_object_t *obj_folder)
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "EmptyFolder");
+	mem_ctx = talloc_named(session, 0, "EmptyFolder");
 	size = 0;
 
 	/* Fill the EmptyFolder operation */
@@ -866,7 +866,7 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent,
 	if ((retval = mapi_object_get_logon_id(obj_parent, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteFolder");
+	mem_ctx = talloc_named(session, 0, "DeleteFolder");
 	size = 0;
 
 	/* Fill the DeleteFolder operation */
@@ -962,7 +962,7 @@ _PUBLIC_ enum MAPISTATUS MoveFolder(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "MoveFolder");
+	mem_ctx = talloc_named(session[0], 0, "MoveFolder");
 	size = 0;
 
 	/* Fill the MoveFolder operation */
@@ -1074,7 +1074,7 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyFolder");
+	mem_ctx = talloc_named(session[0], 0, "CopyFolder");
 
 	size = 0;
 
@@ -1183,7 +1183,7 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetReadFlags");
+	mem_ctx = talloc_named(session, 0, "SetReadFlags");
 
 	size = 0;
 
@@ -1269,7 +1269,7 @@ _PUBLIC_ enum MAPISTATUS HardDeleteMessagesAndSubfolders(mapi_object_t *obj_fold
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "HardDeleteMessagesAndSubfolders");
+	mem_ctx = talloc_named(session, 0, "HardDeleteMessagesAndSubfolders");
 	size = 0;
 
 	/* Fill the EmptyFolder operation */

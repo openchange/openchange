@@ -561,9 +561,9 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 	struct SRowSet			rowset_attach;
 	uint32_t			count;
 	unsigned int			i;
-	int header_done = 0;
-	body_stuff_t body[3];
-	int body_count = 0;
+	int				header_done = 0;
+	body_stuff_t			body[3];
+	int				body_count = 0;
 
 	has_attach = (const uint8_t *) octool_get_propval(aRow, PR_HASATTACH);
 	to = (const char *) octool_get_propval(aRow, PR_DISPLAY_TO);
@@ -830,7 +830,7 @@ old_code:
 									  PR_ATTACH_SIZE,
 									  PR_ATTACH_MIME_TAG,
 									  PR_ATTACH_METHOD);
-					lpProps = talloc_zero(mem_ctx, struct SPropValue);
+					lpProps = NULL;
 					retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval == MAPI_E_SUCCESS) {

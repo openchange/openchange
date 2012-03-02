@@ -1,7 +1,8 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
+   Copyright (C) Brad Hards <bradh@openchange.org> 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -24,7 +25,7 @@
 /**
    \file FXICS.c
 
-   \brief Incremental Change Synchronization operations
+   \brief Fast Transfer and Incremental Change Synchronization operations
  */
 
 
@@ -75,7 +76,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetLocalReplicaIds");
+	mem_ctx = talloc_named(session, 0, "GetLocalReplicaIds");
 	size = 0;
 
 	/* Fill the GetLocalReplicaIds operation */
@@ -165,7 +166,7 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXDestConfigure");
+	mem_ctx = talloc_named(session, 0, "FXDestConfigure");
 	size = 0;
 
 	/* Fill the ConfigureDestination operation */
@@ -251,7 +252,7 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "TellVersion");
+	mem_ctx = talloc_named(session, 0, "TellVersion");
 	size = 0;
 
 	/* Fill the operation */
@@ -343,7 +344,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyFolder");
+	mem_ctx = talloc_named(session, 0, "FXCopyFolder");
 	size = 0;
 
 	/* Fill the CopyFolder operation */
@@ -454,7 +455,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyMessages");
+	mem_ctx = talloc_named(session, 0, "FXCopyMessages");
 	size = 0;
 
 	/* Fill the CopyMessages operation */
@@ -565,7 +566,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyTo(mapi_object_t *obj, uint8_t level, uint32_t co
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyTo");
+	mem_ctx = talloc_named(session, 0, "FXCopyTo");
 	size = 0;
 
 	/* Fill the CopyTo operation */
@@ -675,7 +676,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyProperties(mapi_object_t *obj, uint8_t level, uin
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXCopyProperties");
+	mem_ctx = talloc_named(session, 0, "FXCopyProperties");
 	size = 0;
 
 	/* Fill the CopyProperties operation */
@@ -774,7 +775,7 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	if ((retval = mapi_object_get_logon_id(obj_source_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXGetBuffer");
+	mem_ctx = talloc_named(session, 0, "FXGetBuffer");
 	size = 0;
 
 	/* Fill the GetBuffer operation */
@@ -817,7 +818,7 @@ _PUBLIC_ enum MAPISTATUS FXGetBuffer(mapi_object_t *obj_source_context, uint16_t
 	*progressStepCount = reply->InProgressCount;
 	*totalStepCount = reply->TotalStepCount;
 	blob->length = reply->TransferBufferSize;
-	blob->data = talloc_size((TALLOC_CTX *)session, blob->length);
+	blob->data = (uint8_t *)talloc_size((TALLOC_CTX *)session, blob->length);
 	memcpy(blob->data, reply->TransferBuffer.data, blob->length);
 
 	talloc_free(mapi_response);
@@ -872,7 +873,7 @@ _PUBLIC_ enum MAPISTATUS FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB 
 	if ((retval = mapi_object_get_logon_id(obj_dest_context, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "FXPutBuffer");
+	mem_ctx = talloc_named(session, 0, "FXPutBuffer");
 	size = 0;
 
 	/* Fill the PutBuffer operation */
@@ -908,6 +909,663 @@ _PUBLIC_ enum MAPISTATUS FXPutBuffer(mapi_object_t *obj_dest_context, DATA_BLOB 
 	reply = &(mapi_response->mapi_repl->u.mapi_FastTransferDestinationPutBuffer);
 	*usedSize = reply->BufferUsedCount;
 	/* we could pull more stuff here, but it doesn't seem useful */
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Prepare a server for ICS download
+
+   This function is used to configure a server for ICS (Incremental Change Synchronization)
+   download. You use the synchronization context handle for other ICS and Fast Transfer
+   operations.
+
+   \param obj the target object for the upload (folder)
+   \param sync_type the type of synchronization that will be performed (just
+		    folder contents, or whole folder hierachy)
+   \param send_options flags that change the format of the transfer (see FXCopyMessages)
+   \param sync_flags flags that change the behavior of the transfer (see below)
+   \param sync_extraflags additional flags that change the behavior of the transfer (see below)
+   \param restriction a Restriction structure to limit downloads (only for sync_type ==
+   SynchronizationType_Content)
+   \param property_tags the properties to exclude (or include, if
+   SynchronizationFlag_OnlySpecifiedProperties flag is set) in the download
+   \param obj_sync_context the resulting synchronization context handle
+
+   \a sync_flags can be zero or more of the following:
+   - SynchronizationFlag_Unicode to use Unicode format (must match in send_options)
+   - SynchronizationFlag_NoDeletions - whether to download changes about message deletion
+   - SynchronizationFlag_IgnoreNoLongerInScope - whether to download changes for messages that have
+   gone out of scope.
+   - SynchronizationFlag_ReadState - server to download changes to read state
+   - SynchronizationFlag_FAI server to download changes to FAI messages
+   - SynchronizationFlag_Normal - server to download changes to normal messages
+   - SynchronizationFlag_OnlySpecifiedProperties - set means to include only properties
+   that are listed in property_tags, not-set means to exclude properties that are listed
+   in property_tags
+   - SynchronizationFlag_NoForeignIdentifiers - ignore persisted values (usually want this set)
+   - SynchronizationFlag_BestBody - format for outputting message bodies (set means original format,
+   not-set means output in RTF)
+   - SynchronizationFlag_IgnoreSpecifiedOnFAI - ignore property_tags restrictions for FAI messages
+   - SynchronizationFlag_Progress - whether to output progress information.
+
+   \note SynchronizationFlag_IgnoreNoLongerInScope, SynchronizationFlag_ReadState,
+   SynchronizationFlag_FAI, SynchronizationFlag_Normal, SynchronizationFlag_OnlySpecifiedProperties,
+   SynchronizationFlag_BestBody and SynchronizationFlag_IgnoreSpecifiedOnFAI are only
+   valid if the synchronization type is SynchronizationType_Content.
+
+   \a sync_extraflags can be zero or more of the following:
+   - SynchronizationExtraFlag_Eid - whether the server includes the PR_FID / PR_MID in the download
+   - SynchronizationExtraFlag_MessageSize - whether the server includes the PR_MESSAGE_SIZE property
+   in the download (only for sync_type == SynchronizationType_Content)
+   - SynchronizationExtraFlag_Cn - whether the server includes the PR_CHANGE_NUM property in the
+   download.
+   - SynchronizationExtraFlag_OrderByDeliveryTime - whether the server sends messages sorted by
+   delivery time (only for sync_type == SynchronizationType_Content)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS ICSSyncConfigure(mapi_object_t *obj, enum SynchronizationType sync_type,
+					  uint8_t send_options, uint16_t sync_flags,
+					  uint32_t sync_extraflags, DATA_BLOB restriction,
+					  struct SPropTagArray *property_tags,
+					  mapi_object_t *obj_sync_context)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SyncConfigure_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(session, 0, "RopSynchronizationConfigure");
+	size = 0;
+
+	/* Fill the SyncConfigure operation */
+	request.handle_idx = 0x01;
+	size += sizeof(uint8_t);
+	request.SynchronizationType = sync_type;
+	size += sizeof(uint8_t);
+	request.SendOptions = send_options;
+	size += sizeof(uint8_t);
+	request.SynchronizationFlag = sync_flags;
+	size += sizeof(uint16_t);
+	request.RestrictionSize = restriction.length;
+	size += sizeof(uint16_t);
+	request.RestrictionData = restriction;
+	size += request.RestrictionSize; /* for the RestrictionData BLOB */
+	request.SynchronizationExtraFlags = sync_extraflags;
+	size += sizeof(uint32_t);
+	request.PropertyTags.cValues = property_tags->cValues;
+	size += sizeof(uint16_t);
+	request.PropertyTags.aulPropTag = property_tags->aulPropTag;
+	size += property_tags->cValues * sizeof(enum MAPITAGS);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncConfigure;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncConfigure = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Set object session and handle */
+	mapi_object_set_session(obj_sync_context, session);
+	mapi_object_set_handle(obj_sync_context, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_sync_context, logon_id);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+    Initialize an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateContinue and ICSSyncUploadStateEnd)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+    \param state_property the type of ICS state that will be uploaded (see below)
+    \param length the length (in bytes) of the ICS state that will be uploaded
+
+    state_property can be one of the following:
+    - PidTagIdsetGiven
+    - PidTagCnsetSeen
+    - PidTagCnsetSeenFAI
+    - PidTagCnsetRead
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateBegin(mapi_object_t *obj_sync_context,
+						 enum StateProperty state_property,
+						 uint32_t length)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SyncUploadStateStreamBegin_req		request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateBegin");
+	size = 0;
+
+	/* Fill the RopSynchronizationUploadStateBegin operation */
+	request.StateProperty = state_property;
+	size += sizeof(uint32_t);
+	request.TransferBufferSize = length;
+	size += sizeof(uint32_t);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamBegin;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncUploadStateStreamBegin = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+    Send data for an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateBegin and ICSSyncUploadStateEnd)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+    \param state the state data for this part of the upload
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateContinue(mapi_object_t *obj_sync_context, DATA_BLOB state)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SyncUploadStateStreamContinue_req	request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateContinue");
+	size = 0;
+
+	/* Fill the RopSynchronizationUploadStateBegin operation */
+	request.StreamDataSize = state.length;
+	size += sizeof(uint32_t);
+	request.StreamData = state.data;
+	size += state.length;
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamContinue;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncUploadStateStreamContinue = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+    Signal completion of an ICS Initial State upload
+
+    This is one of three operations (along with ICSSyncUploadStateBegin and ICSSyncUploadStateContinue)
+    used to send the initial state for an ICS download to the server.
+
+    \param obj_sync_context the synchronization context (from ICSSyncConfigure)
+
+    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+    \note Developers may also call GetLastError() to retrieve the last
+    MAPI error code. Possible MAPI error codes are:
+    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+    - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+      invalid
+    - MAPI_E_CALL_FAILED: A network problem was encountered during the
+      transaction
+*/
+_PUBLIC_ enum MAPISTATUS ICSSyncUploadStateEnd(mapi_object_t *obj_sync_context)
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_sync_context);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_sync_context, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(session, 0, "ICSSyncUploadStateEnd");
+	size = 0;
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncUploadStateStreamEnd;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_sync_context);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Mark a range of Message Ids as deleted / unused
+
+   This function allows the client to specify that a specific range
+   of message identifiers will never be used on a particular folder.
+   This allows the server to make optimisations for message identifier
+   sets during incremental change synchronisation operations.
+   
+   \param obj_folder pointer to the folder MAPI object
+   \param ReplGuid the GUID for the MIDSET
+   \param GlobalCountLow lower end of the range to be marked as deleted
+   \param GlobalCountHigh upper end of the range to be marked as deleted
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS SetLocalReplicaMidsetDeleted(mapi_object_t *obj_folder, 
+						      const struct GUID ReplGuid,
+						      const uint8_t GlobalCountLow[6],
+						      const uint8_t GlobalCountHigh[6])
+{
+	struct mapi_request				*mapi_request;
+	struct mapi_response				*mapi_response;
+	struct EcDoRpc_MAPI_REQ				*mapi_req;
+	struct SetLocalReplicaMidsetDeleted_req		request;
+	struct mapi_session				*session;
+	NTSTATUS					status;
+	enum MAPISTATUS					retval;
+	uint32_t					size = 0;
+	TALLOC_CTX					*mem_ctx;
+	uint8_t 					logon_id = 0;
+	uint32_t					i = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj_folder);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
+	size = 0;
+
+	/* Fill the SetLocalReplicaMidsetDeleted operation */
+	request.DataSize = 0;
+	size += sizeof(uint16_t);
+	request.LongTermIdRangeCount = 1; /* this version only handles a single range */
+	request.DataSize += sizeof(uint32_t); /* the size of the LongTermIdRangeCount */
+	request.LongTermIdRanges = talloc_array(mem_ctx, struct LongTermIdRange, request.LongTermIdRangeCount);
+	for (i = 0; i < request.LongTermIdRangeCount; ++i) {
+		request.LongTermIdRanges[i].MinLongTermId.DatabaseGuid = ReplGuid;
+		request.DataSize += sizeof(struct GUID);
+
+		memcpy(request.LongTermIdRanges[i].MinLongTermId.GlobalCounter, GlobalCountLow, 6);
+		request.DataSize += 6;
+
+		request.LongTermIdRanges[i].MinLongTermId.padding = 0x0000;
+		request.DataSize += sizeof(uint16_t);
+
+		request.LongTermIdRanges[i].MaxLongTermId.DatabaseGuid = ReplGuid;
+		request.DataSize += sizeof(struct GUID);
+
+		memcpy(request.LongTermIdRanges[i].MaxLongTermId.GlobalCounter, GlobalCountHigh, 6);
+		request.DataSize += 6;
+
+		request.LongTermIdRanges[i].MaxLongTermId.padding = 0x0000;
+		request.DataSize += sizeof(uint16_t);
+	}
+	size += request.DataSize; /* add that datasize to the overall length */
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SetLocalReplicaMidsetDeleted;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SetLocalReplicaMidsetDeleted = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t);
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	mapi_request->handles[0] = mapi_object_get_handle(obj_folder);
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Prepare a folder for ICS upload
+
+   \param folder the folder for the collector creation
+   \param isContentsCollector true for contents collector, false for hierachy collector
+   \param obj_collector pointer to the resulting ICS collector
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS ICSSyncOpenCollector(mapi_object_t *folder,
+					      bool isContentsCollector,
+					      mapi_object_t *obj_collector)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SyncOpenCollector_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!folder, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(folder);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_collector, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(folder, &logon_id)) != MAPI_E_SUCCESS)
+		return retval;
+
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
+	size = 0;
+
+	/* Fill the SyncOpenCollector operation */
+	request.handle_idx = 0x01;
+	size += sizeof(uint8_t);
+	if (isContentsCollector) {
+		request.IsContentsCollector = 0x01;
+	} else {
+		request.IsContentsCollector = 0x00;
+	}
+	size += sizeof(uint8_t);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncOpenCollector;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncOpenCollector = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(folder);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Set object session and handle */
+	mapi_object_set_session(obj_collector, session);
+	mapi_object_set_handle(obj_collector, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_collector, logon_id);
+
+	talloc_free(mapi_response);
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details obtain an object to get the sync transfer state
+
+   \param obj the source object
+   \param obj_sync_context the synchronization transfer state object
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: one of the function parameters is
+     invalid
+   - MAPI_E_CALL_FAILED: A network problem was encountered during the
+   transaction
+ */
+_PUBLIC_ enum MAPISTATUS ICSSyncGetTransferState(mapi_object_t *obj, mapi_object_t *obj_sync_context)
+{
+	struct mapi_request		*mapi_request;
+	struct mapi_response		*mapi_response;
+	struct EcDoRpc_MAPI_REQ		*mapi_req;
+	struct SyncGetTransferState_req	request;
+	struct mapi_session		*session;
+	NTSTATUS			status;
+	enum MAPISTATUS			retval;
+	uint32_t			size = 0;
+	TALLOC_CTX			*mem_ctx;
+	uint8_t 			logon_id = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
+
+	session = mapi_object_get_session(obj);
+	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_sync_context, MAPI_E_INVALID_PARAMETER, NULL);
+
+	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	mem_ctx = talloc_named(session, 0, __FUNCTION__);
+
+	/* Fill the SyncGetTransferState operation */
+	request.handle_idx = 0x01;
+	size += sizeof(uint8_t);
+
+	/* Fill the MAPI_REQ structure */
+	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	mapi_req->opnum = op_MAPI_SyncGetTransferState;
+	mapi_req->logon_id = logon_id;
+	mapi_req->handle_idx = 0;
+	mapi_req->u.mapi_SyncGetTransferState = request;
+	size += 5;
+
+	/* Fill the mapi_request structure */
+	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
+	mapi_request->length = (uint16_t)size;
+	mapi_request->mapi_req = mapi_req;
+	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	mapi_request->handles[0] = mapi_object_get_handle(obj);
+	mapi_request->handles[1] = 0xFFFFFFFF;
+
+	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
+	retval = mapi_response->mapi_repl->error_code;
+	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Set object session and handle */
+	mapi_object_set_session(obj_sync_context, session);
+	mapi_object_set_handle(obj_sync_context, mapi_response->handles[1]);
+	mapi_object_set_logon_id(obj_sync_context, logon_id);
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

@@ -71,7 +71,7 @@ _PUBLIC_ enum MAPISTATUS AddressTypes(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "AddressTypes");
+	mem_ctx = talloc_named(session, 0, "AddressTypes");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -146,7 +146,7 @@ _PUBLIC_ enum MAPISTATUS SetSpooler(mapi_object_t *obj_store)
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetSpooler");
+	mem_ctx = talloc_named(session, 0, "SetSpooler");
 	size = 0;
 
 	/* Fill the MAPI_REQ request */
@@ -228,7 +228,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SpoolerLockMessage");
+	mem_ctx = talloc_named(session, 0, "SpoolerLockMessage");
 	size = 0;
 
 	/* Fill the SpoolerLockMessage operation */
@@ -318,7 +318,7 @@ _PUBLIC_ enum MAPISTATUS OptionsData(mapi_object_t *obj_store, const char *addrt
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "RecipientOptions");
+	mem_ctx = talloc_named(session, 0, "RecipientOptions");
 	size = 0;
 
 	/* Build the OptionsData request */

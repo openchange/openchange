@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 
 #
 # VARS
@@ -193,7 +193,7 @@ download() {
 	case "$answer" in
 	    Y|y|yes)
 		echo "Step0: removing previous samba4 directory"
-		rm -rf samba4
+		sudo rm -rf samba4
 		;;
 	    N|n|no)
 		echo "Step0: Keep existing directory"
@@ -202,14 +202,14 @@ download() {
 	esac
     fi
 
-    echo "Step2: Fetching samba-$SAMBA4_RELEASE tarball"
+    echo "Step1: Fetching samba-$SAMBA4_RELEASE tarball"
     if ! test -e samba-$SAMBA4_RELEASE.tar.gz; then
 	rm -rf samba-$SAMBA4_RELEASE.tar.gz
-	wget http://us1.samba.org/samba/ftp/samba4/samba-$SAMBA4_RELEASE.tar.gz
+	wget http://ftp.samba.org/pub/samba/samba4/samba-$SAMBA4_RELEASE.tar.gz
 	error_check $? "Step1"
     fi     
 
-    echo "Step3: Extracting $SAMBA4_RELEASE"
+    echo "Step2: Extracting $SAMBA4_RELEASE"
     tar xzvf samba-$SAMBA4_RELEASE.tar.gz
     error_check $? "Step2"
     mv samba-$SAMBA4_RELEASE samba4
@@ -250,13 +250,17 @@ packages() {
 
     for lib in lib/talloc lib/tdb lib/tevent lib/ldb; do
 	echo "Building and installing $lib library"
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	$BUILDTOOLS/scripts/autogen-waf.sh
-	error_check $? "$lib autogen"
-	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
-	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	extra=""
+	if [ "$lib" == "lib/ldb" ]; then
+	    extra="--disable-tdb2"
+	fi
+
+	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
+	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	error_check $? "$lib configure"
 
 	$MAKE -j
@@ -275,6 +279,7 @@ packages() {
 	error_check $? "$lib make distclean"
 
 	popd
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
     done
 }
 
@@ -287,7 +292,8 @@ compile() {
     error_check $? "samba4 setup"
 
     cd $RUNDIR/../samba4
-    ./configure.developer -C --prefix=$SAMBA_PREFIX
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-tdb2
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

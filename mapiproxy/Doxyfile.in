@@ -557,7 +557,6 @@ INPUT                  = mapiproxy \
                          mapiproxy/modules \
                          mapiproxy/libmapiproxy \
                          mapiproxy/libmapiserver \
-                         mapiproxy/libmapistore \
                          mapiproxy/servers/default/emsmdb \
                          mapiproxy/servers/default/nspi \
                          mapiproxy/servers/default/rfr

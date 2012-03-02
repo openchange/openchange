@@ -27,6 +27,7 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <ldb.h>
 #include <ldb_errors.h>
+#include <tevent.h>
 #include <fcntl.h>
 #include <util/debug.h>
 
@@ -131,7 +132,7 @@ enum MAPISTATUS		emsabp_fetch_attrs_from_msg(TALLOC_CTX *, struct emsabp_context
 enum MAPISTATUS		emsabp_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, uint32_t, struct SPropTagArray *);
 enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, struct PermanentEntryID *, 
 						 struct PermanentEntryID *, struct ldb_message *, bool);
-enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct SPropTagArray *, struct Restriction_r *, struct STAT *, uint32_t);
+enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct PropertyTagArray_r *, struct Restriction_r *, struct STAT *, uint32_t);
 enum MAPISTATUS		emsabp_search_dn(struct emsabp_context *, const char *, struct ldb_message **);
 enum MAPISTATUS		emsabp_search_legacyExchangeDN(struct emsabp_context *, const char *, struct ldb_message **, bool *);
 enum MAPISTATUS		emsabp_ab_container_by_id(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct ldb_message **);

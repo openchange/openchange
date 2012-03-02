@@ -2,7 +2,7 @@
    OpenChange MAPI implementation.
    libmapi private header file
 
-   Copyright (C) Julien Kerihuel 2010.
+   Copyright (C) Julien Kerihuel 2010-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +23,9 @@
 
 #include "config.h"
 
+#define __STDC_FORMAT_MACROS	1
+#include <inttypes.h>
+
 #if defined(HAVE_PTHREADS)
 #include <pthread.h>
 #elif defined(HAVE_GTHREAD)
@@ -31,24 +34,6 @@
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)
-
-/* These are essentially local versions of part of the 
-   C99 __STDC_FORMAT_MACROS */
-#ifndef PRIx64
-#if __WORDSIZE == 64
-  #define PRIx64        "lx"
-#else
-  #define PRIx64        "llx"
-#endif
-#endif
-
-#ifndef PRIX64
-#if __WORDSIZE == 64
-  #define PRIX64        "lX"
-#else
-  #define PRIX64        "llX"
-#endif
-#endif
 
 /* This provides a "we need to fix this problem" signal
    in development builds, but not in release builds */

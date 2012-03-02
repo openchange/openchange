@@ -155,13 +155,13 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	}
 
 	/* Initialize ldb context on sam.ldb */
-	samdb_ctx = sam_ldb_init(mem_ctx, syspath);
+/*	samdb_ctx = sam_ldb_init(mem_ctx, syspath);
 	if (samdb_ctx == NULL) {
 		printf("Error in sam_ldb_init\n");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-
+*/
 	/* Initialize ldb context on openchange.ldb */
 	ocdb_ctx = openchange_ldb_init(mem_ctx, syspath);
 	if (ocdb_ctx == NULL) {

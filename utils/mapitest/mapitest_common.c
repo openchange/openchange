@@ -222,17 +222,17 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 					   mapi_object_t *obj_message,
 					   const char *subject)
 {
-	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		*SRowSet = NULL;
-	struct SPropTagArray   	*flaglist = NULL;
-	struct SPropValue	SPropValue;
-	struct SPropValue	lpProps[4];
-	const char	       	*username[2];
-	const char		*body;
-	uint32_t		msgflag;
-	uint32_t		format;
-	uint32_t		ret;
+	enum MAPISTATUS			retval;
+	struct SPropTagArray		*SPropTagArray;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	struct SPropValue		SPropValue;
+	struct SPropValue		lpProps[4];
+	const char			*username[2];
+	const char			*body;
+	uint32_t			msgflag;
+	uint32_t			format;
+	uint32_t			ret;
 
 	/* Sanity checks */
 	if (subject == NULL) return false;
@@ -254,7 +254,7 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	username[1] = NULL;
 
 	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
-	flaglist = talloc_zero(mt->mem_ctx, struct SPropTagArray);
+	flaglist = talloc_zero(mt->mem_ctx, struct PropertyTagArray_r);
 
 	retval = ResolveNames(mapi_object_get_session(obj_message), username, SPropTagArray, 
 			      &SRowSet, &flaglist, MAPI_UNICODE);

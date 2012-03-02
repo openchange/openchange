@@ -87,9 +87,10 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libmapiadmin/Doxyfile
-#	rm -f libocpf/Doxyfile
+	rm -f libocpf/Doxyfile
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
+	rm -f mapiproxy/libmapistore/Doxyfile
 	rm -f config.status config.log
 	rm -f config.h
 	rm -f stamp-h1
@@ -141,7 +142,7 @@ re:: clean install
 
 idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h
 
-exchange.idl: mapitags_enum.h mapicodes_enum.h
+exchange.idl: properties_enum.h mapicodes_enum.h
 
 gen_ndr:
 	@echo "Creating the gen_ndr directory"
@@ -190,11 +191,8 @@ libmapi-clean::
 	rm -f libmapi/version.h
 ifneq ($(SNAPSHOT), no)
 	rm -f libmapi/mapicode.c
-	rm -f libmapi/mapitags.c libmapi/mapitags.h
 	rm -f libmapi/codepage_lcid.c
-	rm -f libmapi/mapi_nameid.h libmapi/mapi_nameid_private.h
 	rm -f mapicodes_enum.h
-	rm -f mapitags_enum.h
 endif
 	rm -f gen_ndr/ndr_exchange*
 	rm -f gen_ndr/exchange.h
@@ -248,6 +246,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/idset.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property_tags.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/property_altnames.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/
 	$(INSTALL) -m 0644 gen_ndr/exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
@@ -301,7 +301,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/lzfu.po					\
 	libmapi/mapi_object.po				\
 	libmapi/mapi_id_array.po			\
-	libmapi/mapitags.po				\
+	libmapi/property_tags.po			\
 	libmapi/mapidump.po				\
 	libmapi/mapicode.po 				\
 	libmapi/codepage_lcid.po			\
@@ -591,91 +591,91 @@ libmapiadmin.$(SHLIBEXT).$(PACKAGE_VERSION):	\
 # libocpf compilation rules
 #################################################################
 
-# LIBOCPF_SO_VERSION = 0
+LIBOCPF_SO_VERSION = 0
 
-# libocpf:		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+libocpf:		libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
-# libocpf-install:	libocpf-installpc	\
-# 			libocpf-installlib	\
-# 			libocpf-installheader	
+libocpf-install:	libocpf-installpc	\
+			libocpf-installlib	\
+			libocpf-installheader	
 
-# libocpf-uninstall:	libocpf-uninstallpc	\
-# 			libocpf-uninstalllib	\
-# 			libocpf-uninstallheader	
+libocpf-uninstall:	libocpf-uninstallpc	\
+			libocpf-uninstalllib	\
+			libocpf-uninstallheader	
 
-# libocpf-clean::
-# 	rm -f libocpf/*.o libocpf/*.po
-# 	rm -f libocpf/*.gcno libocpf/*.gcda
-# ifneq ($(SNAPSHOT), no)
-# 	rm -f libocpf/lex.yy.c
-# 	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
-# endif
-# 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).* \
-# 		  libocpf.$(SHLIBEXT)
+libocpf-clean::
+	rm -f libocpf/*.o libocpf/*.po
+	rm -f libocpf/*.gcno libocpf/*.gcda
+ifneq ($(SNAPSHOT), no)
+	rm -f libocpf/lex.yy.c
+	rm -f libocpf/ocpf.tab.c libocpf/ocpf.tab.h
+endif
+	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).* \
+		  libocpf.$(SHLIBEXT)
 
-# clean:: libocpf-clean
+clean:: libocpf-clean
 
-# libocpf-distclean::
-# 	rm -f libocpf.pc
+libocpf-distclean::
+	rm -f libocpf.pc
 
-# distclean:: libocpf-distclean
+distclean:: libocpf-distclean
 
-# libocpf-installpc:
-# 	@echo "[*] install: libocpf pc files"
-# 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
-# 	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
+libocpf-installpc:
+	@echo "[*] install: libocpf pc files"
+	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
+	$(INSTALL) -m 0644 libocpf.pc $(DESTDIR)$(libdir)/pkgconfig
 
-# libocpf-installlib:
-# 	@echo "[*] install: libocpf library"
-# 	$(INSTALL) -d $(DESTDIR)$(libdir)
-# 	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
-# 	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
-# ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
-# 	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION)
-# endif
+libocpf-installlib:
+	@echo "[*] install: libocpf library"
+	$(INSTALL) -d $(DESTDIR)$(libdir)
+	$(INSTALL) -m 0755 libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
+	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION)
+endif
 
-# libocpf-installheader:
-# 	@echo "[*] install: libocpf headers"
-# 	$(INSTALL) -d $(DESTDIR)$(includedir)/libocpf
-# 	$(INSTALL) -m 0644 libocpf/ocpf.h $(DESTDIR)$(includedir)/libocpf/
-# 	@$(SED) $(DESTDIR)$(includedir)/libocpf/*.h
+libocpf-installheader:
+	@echo "[*] install: libocpf headers"
+	$(INSTALL) -d $(DESTDIR)$(includedir)/libocpf
+	$(INSTALL) -m 0644 libocpf/ocpf.h $(DESTDIR)$(includedir)/libocpf/
+	@$(SED) $(DESTDIR)$(includedir)/libocpf/*.h
 
-# libocpf-uninstallpc:
-# 	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
+libocpf-uninstallpc:
+	rm -f $(DESTDIR)$(libdir)/pkgconfig/libocpf.pc
 
-# libocpf-uninstalllib:
-# 	rm -f $(DESTDIR)$(libdir)/libocpf.*
+libocpf-uninstalllib:
+	rm -f $(DESTDIR)$(libdir)/libocpf.*
 
-# libocpf-uninstallheader:
-# 	rm -rf $(DESTDIR)$(includedir)/libocpf
+libocpf-uninstallheader:
+	rm -rf $(DESTDIR)$(includedir)/libocpf
 
-# libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
-# 	libocpf/ocpf.tab.po			\
-# 	libocpf/lex.yy.po			\
-# 	libocpf/ocpf_context.po			\
-# 	libocpf/ocpf_public.po			\
-# 	libocpf/ocpf_server.po			\
-# 	libocpf/ocpf_dump.po			\
-# 	libocpf/ocpf_api.po			\
-# 	libocpf/ocpf_write.po			\
-# 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-# 	@echo "Linking $@"
-# 	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
+libocpf.$(SHLIBEXT).$(PACKAGE_VERSION):		\
+	libocpf/ocpf.tab.po			\
+	libocpf/lex.yy.po			\
+	libocpf/ocpf_context.po			\
+	libocpf/ocpf_public.po			\
+	libocpf/ocpf_server.po			\
+	libocpf/ocpf_dump.po			\
+	libocpf/ocpf_api.po			\
+	libocpf/ocpf_write.po			\
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(DSOOPT) $(LDFLAGS) -Wl,-soname,libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION) -o $@ $^ $(LIBS)
 
-# libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
-# 	ln -fs $< $@
+libocpf.$(SHLIBEXT).$(LIBOCPF_SO_VERSION): libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+	ln -fs $< $@
 
-# libocpf/lex.yy.c:		libocpf/lex.l
-# 	@echo "Generating $@"
-# 	@$(FLEX) -t $< > $@
+libocpf/lex.yy.c:		libocpf/lex.l
+	@echo "Generating $@"
+	@$(FLEX) -t $< > $@
 
-# libocpf/ocpf.tab.c:	libocpf/ocpf.y
-# 	@echo "Generating $@"
-# 	@$(BISON) -d $< -o $@
+libocpf/ocpf.tab.c:	libocpf/ocpf.y
+	@echo "Generating $@"
+	@$(BISON) -d $< -o $@
 
-# # Avoid warnings
-# libocpf/lex.yy.o: CFLAGS=
-# libocpf/ocpf.tab.o: CFLAGS=
+# Avoid warnings
+libocpf/lex.yy.o: CFLAGS=
+libocpf/ocpf.tab.o: CFLAGS=
 
 #################################################################
 # mapiproxy compilation rules
@@ -700,15 +700,15 @@ mapiproxy-install: 	mapiproxy				\
 			libmapiserver-install			\
 			libmapistore-installpc			\
 			libmapistore-install
-	$(INSTALL) -d $(DESTDIR)$(SERVER_MODULESDIR)
-	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(SERVER_MODULESDIR)
+	$(INSTALL) -d $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 
 mapiproxy-uninstall: 	mapiproxy-modules-uninstall		\
 			mapiproxy-servers-uninstall		\
 			libmapiproxy-uninstall			\
 			libmapiserver-uninstall			\
 			libmapistore-uninstall
-	rm -f $(DESTDIR)$(SERVER_MODULESDIR)/dcesrv_mapiproxy.*
+	rm -f $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)/dcesrv_mapiproxy.*
 	rm -f $(DESTDIR)$(libdir)/libmapiproxy.*
 	rm -f $(DESTDIR)$(includedir)/libmapiproxy.h
 
@@ -752,9 +752,6 @@ libmapiproxy-install:
 libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
-ifneq ($(SNAPSHOT), no)
-	rm -f mapiproxy/libmapiproxy/openchangedb_property.c
-endif
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
 
 libmapiproxy-uninstall:
@@ -767,9 +764,7 @@ libmapiproxy-distclean:
 
 distclean::libmapiproxy-distclean
 
-mapiproxy/libmapiproxy/openchangedb_property.c: libmapi/conf/mapi-properties libmapi/conf/mparse.pl
-	@./libmapi/conf/mparse.pl --parser=openchangedb_property --outputdir=mapiproxy/libmapiproxy/ \
-				  libmapi/conf/mapi-properties
+mapiproxy/libmapiproxy/modules.o mapiproxy/libmapiproxy/modules.po: CFLAGS+=-DMODULESDIR=\"${modulesdir}\"
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
@@ -780,6 +775,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
+							mapiproxy/libmapiproxy/modules.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
@@ -904,6 +900,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
 							mapiproxy/libmapistore/mapistore_processing.po			\
 							mapiproxy/libmapistore/mapistore_backend.po			\
+							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_ldb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
@@ -925,34 +922,6 @@ setup/mapistore/mapistore_namedprops.ldif: 	\
 #####################
 # mapistore backends
 #####################
-
-# mapistore_fsocpf: mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT)
-
-# mapistore_fsocpf-install:
-#	$(INSTALL) -d $(DESTDIR)$(libdir)/mapistore_backends
-#	$(INSTALL) -m 0755 mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT) $(DESTDIR)$(libdir)/mapistore_backends/
-
-#mapistore_fsocpf-uninstall:
-#	rm -rf $(DESTDIR)$(libdir)/mapistore_backends/mapistore_fsocpf.$(SHLIBEXT)
-
-#mapistore_fsocpf-clean:
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.o
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcno
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.gcda
-#	rm -f mapiproxy/libmapistore/backends/mapistore_fsocpf.so
-
-#clean:: mapistore_fsocpf-clean
-
-#mapistore_fsocpf-distclean: mapistore_fsocpf-clean
-
-#distclean:: mapistore_fsocpf-distclean
-
-#mapiproxy/libmapistore/backends/mapistore_fsocpf.$(SHLIBEXT): mapiproxy/libmapistore/backends/mapistore_fsocpf.po
-#	@echo "Linking mapistore module $@"
-#	@$(CC) $(SQLITE_CFLAGS) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) $(SQLITE_LIBS) 	\
-#	-Lmapiproxy mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)			\
-#	-L. libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 #######################
 # mapistore test tools
@@ -1126,7 +1095,8 @@ clean:: openchangeclient-clean
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
 			utils/openchange-tools.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
@@ -1533,6 +1503,7 @@ clean:: clean-python
 
 pyopenchange: 	$(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)			\
 		$(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)		
+#		$(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)			\
 
 $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
@@ -1568,7 +1539,6 @@ pyopenchange-clean:
 #	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 #	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
-	rm -f pyopenchange/pymapi_properties.c
 
 clean:: pyopenchange-clean
 
@@ -1580,7 +1550,7 @@ pyopenchange-install:
 
 pyopenchange-uninstall:
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapi.$(SHLIBEXT)
-#	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
+	rm -f $(DESTDIR)$(PYCDIR)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(DESTDIR)$(PYCDIR)/openchange/mapistore.$(SHLIBEXT)
 
 
@@ -1631,24 +1601,25 @@ doxygen:
 		$(DOXYGEN) Doxyfile;						\
 		$(DOXYGEN) libmapi/Doxyfile;					\
 		$(DOXYGEN) libmapiadmin/Doxyfile;				\
+		$(DOXYGEN) libocpf/Doxyfile;					\
 		$(DOXYGEN) libmapi++/Doxyfile;					\
 		$(DOXYGEN) mapiproxy/Doxyfile;					\
 		$(DOXYGEN) utils/mapitest/Doxyfile;				\
+		$(DOXYGEN) mapiproxy/libmapistore/Doxyfile;			\
 		cp -f doc/doxygen/index.html apidocs/html;			\
 		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
+		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
 		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
 		rm -f apidocs/man/man3/todo.3;					\
 		rm -f apidocs/man/man3/bug.3;					\
 		rm -f apidocs/man/man3/*.c.3;					\
 	fi								
-
-#		$(DOXYGEN) libocpf/Doxyfile;					
-#		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`
@@ -1674,8 +1645,8 @@ coverage-init:
 
 coverage::
 	rm -f libmapi/\<stdout\>.gcov
-#	rm -f ./libocpf/lex.yy.gcda
-#	rm -f libocpf/\<stdout\>.gcov
+	rm -f ./libocpf/lex.yy.gcda
+	rm -f libocpf/\<stdout\>.gcov
 	rm -f ./\<stdout\>.gcov
 	lcov --base-directory .  --directory . --output-file oc_cov.info --capture
 	genhtml -o covresults oc_cov.info

@@ -425,7 +425,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 									  PR_ATTACHMENT_HIDDEN
 									  );
 									  
-				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
+				lpProps = NULL;
 				retval = GetProps(&obj_attach, 0, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {
@@ -606,7 +606,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 	uint32_t			count;
 	int				i;
 
-	mem_ctx = talloc_named(NULL, 0, "exchange2ical");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "exchange2ical");
 	exchange2ical_init(mem_ctx, &exchange2ical);
 	
 	/* Open the contents table */

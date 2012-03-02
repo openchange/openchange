@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
    Copyright (C) Brad Hards 2008.
 
    This program is free software; you can redistribute it and/or modify
@@ -95,7 +95,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetProps");
+	mem_ctx = talloc_named(session, 0, "GetProps");
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
@@ -225,7 +225,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetProps");
+	mem_ctx = talloc_named(session, 0, "SetProps");
 	size = 0;
 
 	/* Named property mapping */
@@ -346,7 +346,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	if ((retval = mapi_object_get_logon_id(obj_parent, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SaveChangesAttachment");
+	mem_ctx = talloc_named(session[0], 0, "SaveChangesAttachment");
 	size = 0;
 
 	/* Fill the SaveChangesAttachment operation */
@@ -428,7 +428,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetPropList");
+	mem_ctx = talloc_named(session, 0, "GetPropList");
 
 	/* Reset */
 	proptags->cValues = 0;
@@ -520,7 +520,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetPropsAll");
+	mem_ctx = talloc_named(session, 0, "GetPropsAll");
 	size = 0;
 
 	/* Fill the GetPropsAll operation */
@@ -603,7 +603,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteProps");
+	mem_ctx = talloc_named(session, 0, "DeleteProps");
 	size = 0;
 
 	/* Fill the DeleteProps operation */
@@ -696,7 +696,7 @@ _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetPropertiesNoReplicate");
+	mem_ctx = talloc_named(session, 0, "SetPropertiesNoReplicate");
 	size = 0;
 
 	/* Named property mapping */
@@ -803,7 +803,7 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeletePropertiesNoReplicate");
+	mem_ctx = talloc_named(session, 0, "DeletePropertiesNoReplicate");
 	size = 0;
 
 	/* Fill the DeletePropertiesNoReplicate operation */
@@ -893,7 +893,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "GetNamesFromIDs");
+	mem_ctx = talloc_named(session, 0, "GetNamesFromIDs");
 	size = 0;
 
 	/* Fill the GetNamesFromIDs operation */
@@ -1005,7 +1005,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "GetIDsFromNames");
+	mem_ctx = talloc_named(session, 0, "GetIDsFromNames");
 	size = 0;
 	
 	/* Fill the GetIDsFromNames operation */
@@ -1054,11 +1054,10 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Fill the SPropTagArray */
-        proptags[0] = talloc_zero(NULL, struct SPropTagArray);
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
 	proptags[0]->aulPropTag = (enum MAPITAGS *) talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
 	for (i = 0; i < proptags[0]->cValues; i++) {
-		proptags[0]->aulPropTag[i] = (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED;
+	  proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
 	}
 	
 	talloc_free(mapi_response);
@@ -1119,7 +1118,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "QueryNamesFromIDs");
+	mem_ctx = talloc_named(session, 0, "QueryNamesFromIDs");
 	size = 0;
 
 	/* Fill the QueryNamedProperties operation */
@@ -1236,7 +1235,7 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyProps");
+	mem_ctx = talloc_named(session[0], 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */
@@ -1355,7 +1354,7 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyProps");
+	mem_ctx = talloc_named(session[0], 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */

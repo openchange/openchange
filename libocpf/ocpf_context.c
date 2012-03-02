@@ -73,7 +73,12 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
 	ctx->oleguid = talloc_zero(ctx, struct ocpf_oleguid);
 	ctx->props = talloc_zero(ctx, struct ocpf_property);
 	ctx->nprops = talloc_zero(ctx, struct ocpf_nproperty);
-	ctx->recipients = talloc_zero(ctx, struct ocpf_recipients);
+
+	ctx->recipients = talloc_zero(ctx, struct SRowSet);
+	ctx->recipients->aRow = talloc_array(ctx->recipients, struct SRow, 2);
+	ctx->recipients->aRow[0].lpProps = talloc_array(ctx->recipients->aRow, struct SPropValue, 2);
+	ctx->recipients->cRows = 0;
+
 	ctx->lpProps = NULL;
 	ctx->cValues = 0;
 	ctx->folder = 0;
@@ -89,7 +94,7 @@ struct ocpf_context *ocpf_context_init(TALLOC_CTX *mem_ctx,
 	ctx->typeset = 0;
 	ctx->folderset = false;
 	ctx->recip_type = 0;
-	ctx->type = 0;
+	ctx->type = NULL;
 
 	switch (flags) {
 	case OCPF_FLAGS_RDWR:

@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2009.
+   Copyright (C) Julien Kerihuel 2006-2011.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -629,7 +629,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 			ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 		}
 		
-		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
 	}
@@ -702,7 +702,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 			ulPropTag += PT_ERROR;
 		}
 
-		aRow->lpProps[i].ulPropTag = ulPropTag;
+		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_SPropValue(&(aRow->lpProps[i]), data);
 	}
@@ -741,6 +741,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray;
 	struct SPropValue		lpProps;
+	int				proptag;
 	uint32_t			i;
 	uint32_t			containerID = 0;
 	const char			*dn = NULL;
@@ -790,10 +791,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			case PR_EMS_AB_CONTAINERID:
 				lpProps.value.l = 0x0;
 				break;
-			case PR_DISPLAY_NAME:
-				lpProps.value.lpszA = NULL;
-				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = NULL;
 				break;
 			case PR_EMS_AB_IS_MASTER:
@@ -849,18 +847,22 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				}
 				lpProps.value.l = containerID;
 				break;
-			case PR_DISPLAY_NAME:
+			case PidTagDisplayName_string8:
 				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszA) {
-					lpProps.ulPropTag &= 0xFFFF0000;
-					lpProps.ulPropTag += PT_ERROR;
+					proptag = (int) lpProps.ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag += PT_ERROR;
+					lpProps.ulPropTag = (enum MAPITAGS) proptag;
 				}
 				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszW) {
-					lpProps.ulPropTag &= 0xFFFF0000;
-					lpProps.ulPropTag += PT_ERROR;
+					proptag = (int) lpProps.ulPropTag;
+					proptag &= 0xFFFF0000;
+					proptag += PT_ERROR;
+					lpProps.ulPropTag = (enum MAPITAGS) proptag;
 				}
 				break;
 			case PR_EMS_AB_IS_MASTER:
@@ -1030,7 +1032,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-				       struct SPropTagArray *MIds, struct Restriction_r *restriction,
+				       struct PropertyTagArray_r *MIds, struct Restriction_r *restriction,
 				       struct STAT *pStat, uint32_t limit)
 {
 	enum MAPISTATUS			retval;
@@ -1069,6 +1071,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		res_prop = (struct PropertyRestriction_r *)&(restriction->res.resProperty);
 		fmt_attr = emsabp_property_get_attribute(res_prop->ulPropTag);
 		if (fmt_attr == NULL) {
+			return MAPI_E_NO_SUPPORT;
+		} 
+
+		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
 		}
 		
@@ -1114,7 +1121,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */

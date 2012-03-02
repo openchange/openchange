@@ -22,12 +22,30 @@
 /**
    \file mapistore_errors.h
 
-   \brief This header provides a set of result codes for MAPISTORE
-   function calls.
+   This header provides a set of result codes for MAPISTORE function calls.
+
  */
 
 #ifndef	__MAPISTORE_ERRORS_H
 #define	__MAPISTORE_ERRORS_H
+
+void mapistore_set_errno(int);
+
+#define	MAPISTORE_RETVAL_IF(x,e,c)	\
+do {					\
+	if (x) {			\
+		mapistore_set_errno(e);	\
+		if (c) {		\
+			talloc_free(c);	\
+		}			\
+		return (e);		\
+	}				\
+} while (0);
+
+#define	MAPISTORE_SANITY_CHECKS(x,c)						\
+MAPISTORE_RETVAL_IF(!x, MAPISTORE_ERR_NOT_INITIALIZED, c);			\
+MAPISTORE_RETVAL_IF(!x->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, c);	\
+MAPISTORE_RETVAL_IF(!x->context_list, MAPISTORE_ERR_NOT_INITIALIZED, c);
 
 enum mapistore_error {
 /**
@@ -140,7 +158,12 @@ enum mapistore_error {
 /** 
     The operation required privileges that the user does not have
 */
-	MAPISTORE_ERR_DENIED = 20
+	MAPISTORE_ERR_DENIED = 20,
+
+/**
+   The function is not implemented
+*/
+	MAPISTORE_ERR_NOT_IMPLEMENTED
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

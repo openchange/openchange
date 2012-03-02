@@ -35,7 +35,7 @@
 /** notes:
  * conventions:
  - binary data must be returned as Binary_r
- - PR_CHANGE_NUM is computed
+ - PidTagChangeNumber is computed
  - PR_CHANGE_KEY and PR_PREDECESSOR_CHANGE_LIST *must* be handled by the backend code
  - PR_SOURCE_KEY, PR_PARENT_SOURCE_KEY are deduced automatically from PR_MID/PR_FID and PR_PARENT_FID
  * PR_*KEY should be computed in the same manner in oxcprpt and oxctabl
@@ -56,7 +56,7 @@
 struct oxcfxics_prop_index {
 	uint32_t	parent_fid;
 	uint32_t	eid;
-	uint32_t	change_number; /* PR_CHANGE_NUM */
+	uint32_t	change_number; /* PidTagChangeNumber */
 	uint32_t	change_key; /* PR_CHANGE_KEY */
 	uint32_t	predecessor_change_list;
 	uint32_t	last_modification_time;
@@ -103,9 +103,6 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_ty
 	uint32_t	string_len;
 
 	switch (data_type) {
-	case PT_NULL:
-		/* This should never occur in theory, but it might occur when returning the PidNameXXX properties. */
-		break;
 	case PT_I2:
 		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
 		break;
@@ -150,6 +147,8 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_ty
 	case PT_SYSTIME:
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
+	case PT_NULL:
+		break;
 	default:
 		DEBUG(5, ("%s: unsupported property type: %.4x\n", __FUNCTION__, data_type));
 		abort();
@@ -162,7 +161,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	enum MAPITAGS		property;
         struct MAPINAMEID       *nameid;
 	struct BinaryArray_r	*bin_array;
-	struct WStringArray_r	*unicode_array;
+	struct StringArrayW_r	*unicode_array;
 	struct ShortArray_r	*short_array;
 	struct LongArray_r	*long_array;
 	struct I8Array_r	*i8_array;
@@ -441,7 +440,7 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 	uint32_t				i, j;
 	uint32_t				cn_idx = (uint32_t) -1, email_idx = (uint32_t) -1;
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_FX_DEL_PROP);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_MESSAGE_RECIPIENTS);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -462,7 +461,7 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 		for (i = 0; i < msg->recipients_count; i++) {
 			recipient = msg->recipients + i;
 
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_START_RECIP);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagStartRecip);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ROWID);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
@@ -496,7 +495,7 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 			}
 
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, msg->columns, recipient->data, retvals);
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_END_RECIP);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndToRecip);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		}
 
@@ -529,7 +528,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 			local_mem_ctx = talloc_zero(NULL, void);
 			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 			if (data_pointers) {
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_NEW_ATTACH);
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagNewAttach);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PR_ATTACH_NUM);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, i);
@@ -579,8 +578,8 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 
 	cn_restriction.rt = RES_PROPERTY;
 	cn_restriction.res.resProperty.relop = RELOP_GT;
-	cn_restriction.res.resProperty.ulPropTag = PR_CHANGE_NUM;
-	cn_restriction.res.resProperty.lpProp.ulPropTag = PR_CHANGE_NUM;
+	cn_restriction.res.resProperty.ulPropTag = PidTagChangeNumber;
+	cn_restriction.res.resProperty.lpProp.ulPropTag = PidTagChangeNumber;
 	cn_restriction.res.resProperty.lpProp.value.d = (cnset_seen->ranges[0].high << 16) | repl_id;
 
 	mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, &cn_restriction, &state);
@@ -693,7 +692,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			j++;
 
 			if (retvals[sync_data->prop_index.change_number]) {
-				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for message\n"));
+				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 				abort();
 			}
 			cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
@@ -735,7 +734,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			j++;
 
 			/* associated (could be based on table type ) */
-			query_props.aulPropTag[j] = PR_ASSOCIATED;
+			query_props.aulPropTag[j] = PidTagAssociated;
 			if (retvals[sync_data->prop_index.associated]) {
 				header_data_pointers[j] = talloc_zero(header_data_pointers, uint8_t);
 			}
@@ -766,7 +765,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 			/* cn (conditional) */
 			if (synccontext->request.request_cn) {
-				query_props.aulPropTag[j] = PR_CHANGE_NUM;
+				query_props.aulPropTag[j] = PidTagChangeNumber;
 				header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
 				*(uint64_t *) header_data_pointers[j] = (cn << 16) | (eid & 0xffff);
 				j++;
@@ -839,7 +838,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
 	SPropTagArray_find(synccontext->properties, PR_MID, &sync_data->prop_index.eid);
-	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PidTagChangeNumber, &sync_data->prop_index.change_number);
 	SPropTagArray_find(synccontext->properties, PR_CHANGE_KEY, &sync_data->prop_index.change_key);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.predecessor_change_list);
@@ -1044,7 +1043,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			j++;
 
 			if (retvals[sync_data->prop_index.change_number]) {
-				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for folder\n"));
+				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for folder\n"));
 				abort();
 			}
 			else {
@@ -1148,7 +1147,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
 	SPropTagArray_find(synccontext->properties, PR_PARENT_FID, &sync_data->prop_index.parent_fid);
 	SPropTagArray_find(synccontext->properties, PR_FID, &sync_data->prop_index.eid);
-	SPropTagArray_find(synccontext->properties, PR_CHANGE_NUM, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PidTagChangeNumber, &sync_data->prop_index.change_number);
 	SPropTagArray_find(synccontext->properties, PR_PREDECESSOR_CHANGE_LIST, &sync_data->prop_index.predecessor_change_list);
 	SPropTagArray_find(synccontext->properties, PR_LAST_MODIFICATION_TIME, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PR_DISPLAY_NAME_UNICODE, &sync_data->prop_index.display_name);
@@ -1489,7 +1488,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 		SPropTagArray_add(synccontext, &synccontext->properties, PR_PARENT_FID); /* PR_PARENT_SOURCE_KEY */
 		SPropTagArray_add(synccontext, &synccontext->properties, PR_FID); /* PR_SOURCE_KEY */
 	}
-	SPropTagArray_add(synccontext, &synccontext->properties, PR_CHANGE_NUM);
+	SPropTagArray_add(synccontext, &synccontext->properties, PidTagChangeNumber);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_CHANGE_KEY);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_PREDECESSOR_CHANGE_LIST);
 	SPropTagArray_add(synccontext, &synccontext->properties, PR_LAST_MODIFICATION_TIME);
@@ -1846,7 +1845,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
-		aRow.lpProps[aRow.cValues].ulPropTag = PR_CHANGE_NUM;
+		aRow.lpProps[aRow.cValues].ulPropTag = PidTagChangeNumber;
 		aRow.lpProps[aRow.cValues].value.d = cn;
 		aRow.cValues++;
 		retval = emsmdbp_object_create_folder(emsmdbp_ctx, parent_folder, NULL, folderID, &aRow, &folder_object);
@@ -2796,7 +2795,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 			}
 
 			if (retvals[sync_data->prop_index.change_number]) {
-				DEBUG(5, (__location__": mandatory property PR_CHANGE_NUM not returned for message\n"));
+				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 				abort();
 			}
 			else {
@@ -2839,7 +2838,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	sync_data->prop_index.change_number = 1;
 	synccontext->properties.cValues = 2;
 	synccontext->properties.aulPropTag = talloc_array(synccontext, enum MAPITAGS, 2);
-	synccontext->properties.aulPropTag[1] = PR_CHANGE_NUM;
+	synccontext->properties.aulPropTag[1] = PidTagChangeNumber;
 	sync_data->ndr = ndr;
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
 	ndr_set_flags(&sync_data->cutmarks_ndr->flags, LIBNDR_FLAG_NOALIGN);

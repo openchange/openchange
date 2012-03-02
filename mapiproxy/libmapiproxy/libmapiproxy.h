@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008-2009
+   Copyright (C) Julien Kerihuel 2008-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -230,7 +230,7 @@ enum MAPISTATUS	openchangedb_get_MailboxGuid(struct ldb_context *, const char *,
 enum MAPISTATUS	openchangedb_get_MailboxReplica(struct ldb_context *, const char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct ldb_context *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_parent_fid(struct ldb_context *, uint64_t, uint64_t *, bool);
-enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct ldb_context *, const char *, TALLOC_CTX *, struct WStringArray_r **);
+enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct ldb_context *, const char *, TALLOC_CTX *, struct StringArrayW_r **);
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, struct ldb_context *, uint64_t, char **, bool);
 enum MAPISTATUS openchangedb_get_fid(struct ldb_context *, const char *, uint64_t *);
 enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, struct ldb_context *, const char *, const char *, uint64_t *, const char **);
@@ -284,6 +284,10 @@ enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
 /* definitions from entryid.c */
 enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);
 enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *, struct GUID *, struct GUID *, uint16_t, uint64_t, struct Binary_r **);
+
+/* definitions from modules.c */
+typedef NTSTATUS (*openchange_plugin_init_fn) (void);
+openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const char *path);
 
 __END_DECLS
 

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2011
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -85,7 +85,7 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
+	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
@@ -104,7 +104,7 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
-	if (emsabp_verify_user(dce_call, emsabp_ctx) == false) {
+	if ((emsabp_verify_user(dce_call, emsabp_ctx) == false) && (r->in.dwFlags & fAnonymousLogin)) {
 		talloc_free(emsabp_ctx);
 
 		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
@@ -219,7 +219,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	r->out.result = 1;
+	r->out.result = (enum MAPISTATUS) 1;
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 }
@@ -240,7 +240,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row, row_max;
 	TALLOC_CTX			*local_mem_ctx;
-	struct SPropTagArray		*mids;
+	struct PropertyTagArray_r	*mids;
 
 	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
 
@@ -263,7 +263,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		goto end;
 	}
 
-	mids = talloc_zero(local_mem_ctx, struct SPropTagArray);
+	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
 	if (emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		row_max = 0;
 	}
@@ -456,7 +456,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS, ret;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row;
-	struct SPropTagArray		*mids, *all_mids;
+	struct PropertyTagArray_r	*mids, *all_mids;
 	struct Restriction_r		*seek_restriction;
 
 	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
@@ -481,7 +481,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		all_mids = r->in.lpETable;
 	}
 	else {
-		all_mids = talloc_zero(mem_ctx, struct SPropTagArray);
+		all_mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
 	}
 
@@ -492,7 +492,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	seek_restriction->res.resProperty.ulPropTag = r->in.pTarget->ulPropTag;
 	seek_restriction->res.resProperty.lpProp = r->in.pTarget;
 
-	mids = talloc_zero(mem_ctx, struct SPropTagArray);
+	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	if (emsabp_search(mem_ctx, emsabp_ctx, mids, seek_restriction, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		mids = all_mids;
 		retval = MAPI_E_NOT_FOUND;
@@ -550,7 +550,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 {
 	enum MAPISTATUS			retval;
 	struct emsabp_context		*emsabp_ctx = NULL;
-	struct SPropTagArray		*ppOutMIds = NULL;
+	struct PropertyTagArray_r	*ppOutMIds = NULL;
 	uint32_t			i;
 	
 
@@ -568,7 +568,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. Retrieve MIds array given search criterias */
-	ppOutMIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	ppOutMIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	ppOutMIds->cValues = 0;
 	ppOutMIds->aulPropTag = NULL;
 
@@ -658,16 +658,16 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
 	}
 	
-	r->out.ppMIds = talloc_array(mem_ctx, struct SPropTagArray *, 2);
-	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct SPropTagArray);
+	r->out.ppMIds = talloc_array(mem_ctx, struct PropertyTagArray_r *, 2);
+	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	r->out.ppMIds[0]->cValues = r->in.pNames->Count;
-	r->out.ppMIds[0]->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
+	r->out.ppMIds[0]->aulPropTag = talloc_array(mem_ctx, uint32_t, r->in.pNames->Count);
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */
 	  retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
 		if (retval != MAPI_E_SUCCESS) {
-			r->out.ppMIds[0]->aulPropTag[i] = 0;
+		  r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) 0;
 		} else {
 			TDB_CONTEXT *tdb_ctx = (pbUseConfPartition ? emsabp_ctx->tdb_ctx : emsabp_ctx->ttdb_ctx);
 			dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
@@ -676,7 +676,7 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 				retval = emsabp_tdb_insert(tdb_ctx, dn);
 				retval = emsabp_tdb_fetch_MId(tdb_ctx, dn, &MId);
 			}
-			r->out.ppMIds[0]->aulPropTag[i] = MId;
+			r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) MId;
 		}
 	}
 
@@ -779,7 +779,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 				ulPropTag = r->in.pPropTags->aulPropTag[i];
 				ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 
-				aRow->lpProps[i].ulPropTag = ulPropTag;
+				aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 				aRow->lpProps[i].dwAlignPad = 0x0;
 				set_SPropValue(&(aRow->lpProps[i]), NULL);
 			}
@@ -1036,26 +1036,25 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 				    TALLOC_CTX *mem_ctx,
 				    struct NspiResolveNames *r)
 {
-	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
-	struct emsabp_context	*emsabp_ctx = NULL;
-	struct ldb_message	*ldb_msg_ab;
-	struct SPropTagArray	*pPropTags;
-	const char		*purportedSearch;
-	struct SPropTagArray	*pMIds = NULL;
-	struct SRowSet		*pRows = NULL;
-	struct StringsArray_r	*paStr;
-	uint32_t		i;
-	int			ret;
-	const char * const	recipient_attrs[] = { "*", NULL };
-	const char * const	search_attr[] = { "mailNickName", "mail", "name",
-						  "displayName", "givenName", "sAMAccountName", "proxyAddresses" };
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	struct ldb_message		*ldb_msg_ab;
+	struct SPropTagArray		*pPropTags;
+	const char			*purportedSearch;
+	struct PropertyTagArray_r	*pMIds = NULL;
+	struct SRowSet			*pRows = NULL;
+	struct StringsArray_r		*paStr;
+	uint32_t			i;
+	int				ret;
+	const char * const		recipient_attrs[] = { "*", NULL };
+	const char * const		search_attr[] = { "mailNickName", "mail", "name",
+							  "displayName", "givenName", 
+							  "sAMAccountName", "proxyAddresses" };
 
 	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13)\n"));
 
-	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -1090,9 +1089,9 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 
 	/* Allocate output MIds */
 	paStr = r->in.paStr;
-	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paStr->Count;
-	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
@@ -1157,9 +1156,9 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	struct ldb_message		*ldb_msg_ab;
 	struct SPropTagArray		*pPropTags;
 	const char			*purportedSearch;
-	struct SPropTagArray		*pMIds = NULL;
+	struct PropertyTagArray_r	*pMIds = NULL;
 	struct SRowSet			*pRows = NULL;
-	struct WStringsArray_r		*paWStr;
+	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
 	int				ret;
 	const char * const		recipient_attrs[] = { "*", NULL };
@@ -1169,7 +1168,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
-	if (!dcesrv_call_authenticated(dce_call)) {
+		if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
@@ -1206,9 +1205,9 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 
 	/* Allocate output MIds */
 	paWStr = r->in.paWStr;
-	pMIds = talloc(mem_ctx, struct SPropTagArray);
+	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paWStr->Count;
-	pMIds->aulPropTag = (enum MAPITAGS *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
+	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
 	pRows = talloc(mem_ctx, struct SRowSet);
 	pRows->cRows = 0;
 	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);

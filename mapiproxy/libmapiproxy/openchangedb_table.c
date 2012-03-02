@@ -1,7 +1,7 @@
 /*
    OpenChange Server implementation
 
-   EMSMDBP: EMSMDB Provider implementation
+   OpenChangeDB table object implementation
 
    Copyright (C) Julien Kerihuel 2011
 
@@ -130,7 +130,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_set_restrictions(void *table_object,
 
 	if (table->restrictions) {
 		talloc_free(table->restrictions);
+		table->restrictions = NULL;
 	}
+
+	MAPI_RETVAL_IF(!res, MAPI_E_SUCCESS, NULL);
 
 	table->restrictions = talloc_zero((TALLOC_CTX *)table_object, struct mapi_SRestriction);
 

@@ -528,6 +528,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
 	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false"));
+
 end:
 
 	*size += libmapiserver_RopCreateMessage_size(mapi_repl);

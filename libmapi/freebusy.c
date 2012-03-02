@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -99,7 +99,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	retval = GetABRecipientInfo(session, recipient, NULL, &pRowSet);
 	OPENCHANGE_RETVAL_IF(retval, retval, pRowSet);
 
-	email = get_SPropValue_SRowSet_data(pRowSet, PR_EMAIL_ADDRESS_UNICODE);
+	email = (const char *) get_SPropValue_SRowSet_data(pRowSet, PR_EMAIL_ADDRESS_UNICODE);
 	o = x500_get_dn_element(mem_ctx, email, ORG);
 	ou = x500_get_dn_element(mem_ctx, email, ORG_UNIT);
 	username = x500_get_dn_element(mem_ctx, email, "/cn=Recipients/cn=");

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2009.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -54,7 +54,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
-	ev = tevent_context_init(talloc_autofree_context());
+	ev = tevent_context_init(parent_ctx);
 	tevent_loop_allow_nesting(ev);
 
 	status = dcerpc_pipe_connect(parent_ctx, 
@@ -123,8 +123,11 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
    \param session pointer to the MAPI session context
    \param server the Exchange server address (IP or FQDN)
    \param userDN optional user mailbox DN
+   \param dsa pointer to a new dsa (return value), containing
+      a valid allocated string on success, otherwise NULL
 
-   \return a valid allocated string on success, otherwise NULL.
+   \return MAPI_E_SUCCESS on success, otherwise a MAPI error and
+   serverFQDN content set to NULL.
 
    \note The string returned can either be RfrGetNewDSA one on
    success, or a copy of the server's argument one on failure. If no
@@ -133,10 +136,11 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
    It is up to the developer to free the returned string when
    not needed anymore.
  */
-_PUBLIC_ char *RfrGetNewDSA(struct mapi_context *mapi_ctx,
+_PUBLIC_ enum MAPISTATUS RfrGetNewDSA(struct mapi_context *mapi_ctx,
 			    struct mapi_session *session,
 			    const char *server, 
-			    const char *userDN)
+			    const char *userDN,
+			    char **dsa)
 {
 	NTSTATUS		status;
 	TALLOC_CTX		*mem_ctx;
@@ -147,19 +151,19 @@ _PUBLIC_ char *RfrGetNewDSA(struct mapi_context *mapi_ctx,
 	char			*ppszServer = NULL;
 
 	/* Sanity Checks */
-	if (!mapi_ctx) return NULL;
-	if (!mapi_ctx->session) return NULL;
+	if (!mapi_ctx) return MAPI_E_NOT_INITIALIZED;
+	if (!mapi_ctx->session) return MAPI_E_NOT_INITIALIZED;
 
-	mem_ctx = talloc_named(NULL, 0, "RfrGetNewDSA");
+	mem_ctx = talloc_named(session, 0, "RfrGetNewDSA");
 	profile = session->profile;
 
 	binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, mapi_ctx->lp_ctx);
 	talloc_free(binding);
-
+	
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return NULL;
+		return MAPI_E_NETWORK_ERROR;
 	}
 
 
@@ -177,7 +181,9 @@ _PUBLIC_ char *RfrGetNewDSA(struct mapi_context *mapi_ctx,
 
 	talloc_free(mem_ctx);
 
-	return ppszServer;
+	*dsa = ppszServer;
+
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -214,6 +220,11 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_context *mapi_ctx, s
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
 
 	r.in.ulFlags = 0x0;
@@ -264,6 +275,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		switch (profile->exchange_version) {
 		case 0x0:
@@ -281,22 +293,24 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		}
 		OPENCHANGE_RETVAL_IF(!provider->ctx, MAPI_E_LOGON_FAILED, NULL);
 
-		if (server_version_at_least(provider->ctx, 8, 0, 835, 0)){
-			struct emsmdb_context *prov_ctx = provider->ctx;
+		if (server_version_at_least((struct emsmdb_context *)provider->ctx, 8, 0, 835, 0)){
+		  struct emsmdb_context *prov_ctx = (struct emsmdb_context *)provider->ctx;
 			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_exchange_async_emsmdb);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
 			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
-			mapistatus = emsmdb_async_connect(provider->ctx);
+			mapistatus = emsmdb_async_connect(prov_ctx);
 			OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
 		}
 
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
-		server = RfrGetNewDSA(mapi_ctx, session, profile->server, profile->mailbox);
+		mapistatus = RfrGetNewDSA(mapi_ctx, session, profile->server, profile->mailbox, &server);
+		OPENCHANGE_RETVAL_IF(mapistatus != MAPI_E_SUCCESS, mapistatus, NULL);
 		binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
 		talloc_free(server);
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, mapi_ctx->lp_ctx);
@@ -305,6 +319,7 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		provider->ctx = (void *)nspi_bind(provider, pipe, profile->credentials, 
 						  profile->codepage, profile->language, profile->method);

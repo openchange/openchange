@@ -53,12 +53,8 @@ if len(args) == 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-_setup_path_prefix = os.path.dirname(__file__)
-if not os.path.exists(os.path.join(_setup_path_prefix, "AD")):
-	_setup_path_prefix = samba.param.setup_dir()
-
 def setup_path(*args):
-	return os.path.join(_setup_path_prefix, *args)
+	return os.path.join(os.path.dirname(__file__), *args)
 
 if opts.enable == True:
 	openchange.accountcontrol(lp, creds, username=args[0], value=0)

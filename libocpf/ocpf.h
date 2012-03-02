@@ -21,6 +21,7 @@
 #define	__OCPF_H_
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 
 #define	OCPF_SUCCESS	0x0
 #define	OCPF_ERROR	0x1
@@ -64,11 +65,12 @@ int ocpf_release(void);
 int ocpf_new_context(const char *, uint32_t *, uint8_t);
 int ocpf_del_context(uint32_t);
 int ocpf_parse(uint32_t);
-struct SRowSet *ocpf_get_recipients(TALLOC_CTX *, uint32_t);
+enum MAPISTATUS ocpf_get_recipients(TALLOC_CTX *, uint32_t, struct SRowSet **);
 enum MAPISTATUS	ocpf_set_SPropValue(TALLOC_CTX *, uint32_t, mapi_object_t *, mapi_object_t *);
 struct SPropValue *ocpf_get_SPropValue(uint32_t, uint32_t *);
 enum MAPISTATUS ocpf_OpenFolder(uint32_t, mapi_object_t *, mapi_object_t *);
 enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *, uint32_t, mapi_object_t *);
+enum MAPISTATUS ocpf_clear_props (uint32_t context_id);
 
 /* The following public definitions come from libocpf/ocpf_server.c */
 enum MAPISTATUS ocpf_server_set_type(uint32_t, const char *);

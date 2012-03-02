@@ -1561,7 +1561,7 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth--;
 
 		/* Put MAPI request blob into a ndr_pull structure */
-		rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+		rgbIn.data = (uint8_t *)talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
 		rgbIn.length = r->in.cbIn;
 		dump_data(0, rgbIn.data, rgbIn.length);
 		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
@@ -1605,7 +1605,7 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 
 		/* Put MAPI response blob into a ndr_pull structure */
 		if (*r->out.pcbOut) {
-			rgbOut.data = talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+		  rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
@@ -1795,13 +1795,12 @@ _PUBLIC_ void ndr_print_fuzzyLevel(struct ndr_print *ndr, const char *name, uint
  */
 enum ndr_err_code ndr_push_mapi_SRestriction_wrap(struct ndr_push *ndr, int ndr_flags, const struct mapi_SRestriction_wrap *r)
 {
-	return ndr_push_mapi_SRestriction(ndr, NDR_SCALARS, (const struct mapi_SRestriction *)r);
+	return ndr_push_mapi_SRestriction(ndr, ndr_flags, (struct mapi_SRestriction *)r);
 }
-
 
 enum ndr_err_code ndr_pull_mapi_SRestriction_wrap(struct ndr_pull *ndr, int ndr_flags, struct mapi_SRestriction_wrap *r)
 {
-	return ndr_pull_mapi_SRestriction(ndr, NDR_SCALARS|NDR_BUFFERS, (struct mapi_SRestriction *)r);
+	return ndr_pull_mapi_SRestriction(ndr, ndr_flags, (struct mapi_SRestriction *)r);
 }
 
 void ndr_print_mapi_SRestriction_wrap(struct ndr_print *ndr, const char *name, const struct mapi_SRestriction_wrap *r)

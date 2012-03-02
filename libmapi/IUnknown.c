@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2008.
+   Copyright (C) Julien Kerihuel 2007-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -129,7 +129,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Release");
+	mem_ctx = talloc_named(session, 0, "Release");
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -173,7 +173,7 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 */
 _PUBLIC_ enum MAPISTATUS GetLastError(void)
 {
-	return errno;
+  return (enum MAPISTATUS)errno;
 }
 
 
@@ -220,7 +220,7 @@ _PUBLIC_ enum MAPISTATUS GetLongTermIdFromId(mapi_object_t *obj, mapi_id_t id,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "LongTermIdFromId");
+	mem_ctx = talloc_named(session, 0, "LongTermIdFromId");
 
 	/* Fill the LongTermIdFromId operation */
 	request.Id = id;
@@ -306,7 +306,7 @@ _PUBLIC_ enum MAPISTATUS GetIdFromLongTermId(mapi_object_t *obj, struct LongTerm
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "IdFromLongTermId");
+	mem_ctx = talloc_named(session, 0, "IdFromLongTermId");
 	size = 0;
 
 	/* Fill the IdFromLongTermId operation */

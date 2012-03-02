@@ -33,7 +33,7 @@
 #include "mapistore_private.h"
 #include <dlinklist.h>
 
-#include <util.h>
+#include <samba_util.h>
 #include <util/debug.h>
 
 /**
@@ -53,7 +53,7 @@ int					num_backends;
 /**
    \details Register mapistore backends
 
-   \param _backend pointer to the mapistore backend to register
+   \param backend pointer to the mapistore backend to register
 
    \return MAPISTORE_SUCCESS on success
  */
@@ -63,9 +63,7 @@ _PUBLIC_ enum mapistore_error mapistore_backend_register(const void *_backend)
 	uint32_t			i;
 
 	/* Sanity checks */
-	if (!backend) {
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
+	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend && backend && 

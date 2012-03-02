@@ -4,6 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 datarootdir=@prefix@/share
 datadir=@datadir@
+modulesdir=@modulesdir@/dcerpc_mapiproxy_server
 
 Name: MAPISERVER 
 Description: Server side MAPI library

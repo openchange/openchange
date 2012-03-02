@@ -1390,5 +1390,10 @@ typedef [v1_enum, flag(NDR_PAHEX)] enum {
 	PidTagIpmPublicFoldersEntryId                                        = 0x66310102,
 	PidTagLocalCommitTimeMax                                             = 0x670a0040,
 	PidTagConversationKey                                                = 0x000b0102,
+	PidTagContactEmailAddresses                                          = 0x3a56101f,
+	PidTagGenerateExchangeViews                                          = 0x36e9000b,
+	PidTagLatestDeliveryTime                                             = 0x00190040,
+	PidTagMailPermission                                                 = 0x3a0e000b,
+	PidTagOriginalAuthorName                                             = 0x004d001f,
 	MAPI_PROP_RESERVED                                                   = 0xFFFFFFFF
 } MAPITAGS;

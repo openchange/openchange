@@ -483,17 +483,17 @@ dnl ###########################################################################
 dnl ---------------------------------------------------------------------------
 dnl Check for Bison
 dnl ---------------------------------------------------------------------------
-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
-   AC_ARG_VAR([BISON], [Location of the bison program.])
-   AC_PATH_PROG([BISON], [bison], [bison])
+dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+dnl    AC_ARG_VAR([BISON], [Location of the bison program.])
+dnl    AC_PATH_PROG([BISON], [bison], [bison])
 
-   if test x"$BISON" != x""; then
-      OC_RULE_ADD(libocpf, LIBS)
-      AC_SUBST(BISON)
-   fi
-else
-   OC_RULE_ADD(libocpf, LIBS)
-fi
+dnl    if test x"$BISON" != x""; then
+dnl       OC_RULE_ADD(libocpf, LIBS)
+dnl       AC_SUBST(BISON)
+dnl    fi
+dnl else
+dnl    OC_RULE_ADD(libocpf, LIBS)
+dnl fi
 
 
 

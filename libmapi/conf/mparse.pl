@@ -1326,6 +1326,12 @@ sub process_file($)
 	FileSave($openchangedb_parser, openchangedb_property($contents));
     }
 
+    if ($opt_parser eq "mapistore_namedprops") {
+	print "Generating $outputdir" . "mapistore_namedprops.ldif\n";
+	my $mapistore_parser = ("$outputdir/mapistore_namedprops.ldif");
+	FileSave($mapistore_parser, mapistore_namedprops($contents));
+    }
+
     if ($opt_parser eq "mapistore_nameid") {
 	print "Generating $outputdir" . "mapistore_nameid.h\n";
 	my $mapistore_parser = ("$outputdir/mapistore_nameid.h");

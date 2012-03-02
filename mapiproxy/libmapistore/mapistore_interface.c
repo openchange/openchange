@@ -91,6 +91,11 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
 
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {

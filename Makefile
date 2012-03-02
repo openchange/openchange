@@ -87,7 +87,7 @@ distclean:: clean
 	rm -f Doxyfile
 	rm -f libmapi/Doxyfile
 	rm -f libmapiadmin/Doxyfile
-	rm -f libocpf/Doxyfile
+	# rm -f libocpf/Doxyfile
 	rm -f libmapi++/Doxyfile
 	rm -f mapiproxy/Doxyfile
 	rm -f mapiproxy/libmapistore/Doxyfile
@@ -613,7 +613,7 @@ endif
 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).* \
 		  libocpf.$(SHLIBEXT)
 
-clean:: libocpf-clean
+# clean:: libocpf-clean
 
 libocpf-distclean::
 	rm -f libocpf.pc
@@ -1095,8 +1095,8 @@ clean:: openchangeclient-clean
 
 bin/openchangeclient: 	utils/openchangeclient.o			\
 			utils/openchange-tools.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+			# libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
@@ -1601,7 +1601,6 @@ doxygen:
 		$(DOXYGEN) Doxyfile;						\
 		$(DOXYGEN) libmapi/Doxyfile;					\
 		$(DOXYGEN) libmapiadmin/Doxyfile;				\
-		$(DOXYGEN) libocpf/Doxyfile;					\
 		$(DOXYGEN) libmapi++/Doxyfile;					\
 		$(DOXYGEN) mapiproxy/Doxyfile;					\
 		$(DOXYGEN) utils/mapitest/Doxyfile;				\
@@ -1611,7 +1610,7 @@ doxygen:
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
+		$(DOXYGEN) libocpf/Doxyfile;					\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
 		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
@@ -1620,6 +1619,9 @@ doxygen:
 		rm -f apidocs/man/man3/bug.3;					\
 		rm -f apidocs/man/man3/*.c.3;					\
 	fi								
+	#	$(DOXYGEN) libocpf/Doxyfile;					\
+	#	cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
+
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`
@@ -1645,8 +1647,8 @@ coverage-init:
 
 coverage::
 	rm -f libmapi/\<stdout\>.gcov
-	rm -f ./libocpf/lex.yy.gcda
-	rm -f libocpf/\<stdout\>.gcov
+	# rm -f ./libocpf/lex.yy.gcda
+	# rm -f libocpf/\<stdout\>.gcov
 	rm -f ./\<stdout\>.gcov
 	lcov --base-directory .  --directory . --output-file oc_cov.info --capture
 	genhtml -o covresults oc_cov.info

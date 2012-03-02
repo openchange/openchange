@@ -317,24 +317,24 @@ dnl Check for Flex
 dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
 dnl default version provided under FreeBSD or RHL5
 dnl ----------------------------------------------------------------------------
-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
-   AC_ARG_VAR([FLEX], [Location of the flex program.])
-   AC_CHECK_PROG([FLEX], [flex], [flex])
+dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+dnl    AC_ARG_VAR([FLEX], [Location of the flex program.])
+dnl    AC_CHECK_PROG([FLEX], [flex], [flex])
 
-   if test x"$FLEX" = x""; then
-      	AC_MSG_WARN([No version of flex was found!])
-	AC_MSG_ERROR([Please install flex])
-   else
-	V=`$FLEX --version | awk '{print $NF}'`
-   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
-   	if test "x$W" != x ; then
-	   AC_MSG_WARN([Adjust your FLEX environment variable])
-      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
-      	fi
-   fi
+dnl    if test x"$FLEX" = x""; then
+dnl       	AC_MSG_WARN([No version of flex was found!])
+dnl 	AC_MSG_ERROR([Please install flex])
+dnl    else
+dnl 	V=`$FLEX --version | awk '{print $NF}'`
+dnl    	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
+dnl    	if test "x$W" != x ; then
+dnl 	   AC_MSG_WARN([Adjust your FLEX environment variable])
+dnl       	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
+dnl       	fi
+dnl    fi
 
-   AC_SUBST(FLEX)
-fi
+dnl    AC_SUBST(FLEX)
+dnl fi
 
 dnl ---------------------------------------------------------------------------
 dnl Samba4 modules

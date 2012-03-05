@@ -98,9 +98,6 @@ connections between the client and server. For more information,
 consult the API documentation (either build yourself, or online at
 http://apidocs.openchange.org/mapiproxy/index.html) 
 
-- pymapi/  This directory contains hand-written python bindings for
-libmapi functions. 
-
 - python/  This directory contains python scripts used to set up
 ("provision") the server side. They are not required for the client
 side.

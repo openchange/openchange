@@ -369,7 +369,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
 	struct QueryRows_req		*request;
-	struct QueryRows_repl		response;
+	struct QueryRows_repl		*response;
 	enum MAPISTATUS			retval;
 	void				*data;
 	enum MAPISTATUS			*retvals;
@@ -388,13 +388,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	request = &mapi_req->u.mapi_QueryRows;
-	response = mapi_repl->u.mapi_QueryRows;
+	response = &mapi_repl->u.mapi_QueryRows;
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = MAPI_E_NOT_FOUND;
 	
-	response.RowData.length = 0;
+	response->RowData.length = 0;
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
@@ -445,7 +445,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
-						    &response.RowData, table->prop_count,
+						    &response->RowData, table->prop_count,
 						    table->properties, data_pointers, retvals);
 			talloc_free(retvals);
 			talloc_free(data_pointers);
@@ -464,25 +464,24 @@ finish:
 
 	/* QueryRows reply parameters */
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->u.mapi_QueryRows.RowCount = count;
+	response->RowCount = count;
 	if (count) {
 		if ((count < request->RowCount) || (table->numerator > (table->denominator - 2))) {
-			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_END;
+			response->Origin = BOOKMARK_END;
 		} else {
-			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_CURRENT;
+			response->Origin = BOOKMARK_CURRENT;
 		}
-		mapi_repl->u.mapi_QueryRows.RowData = response.RowData;
 		/* dump_data(0, response.RowData.data, response.RowData.length); */
 	} else {
 		/* useless code for the moment */
 		if (table->restricted) {
-			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_BEGINNING;	
+			response->Origin = BOOKMARK_BEGINNING;	
 		}
 		else {
-			mapi_repl->u.mapi_QueryRows.Origin = BOOKMARK_END;
+			response->Origin = BOOKMARK_END;
 		}
-		mapi_repl->u.mapi_QueryRows.RowData.length = 0;
-		mapi_repl->u.mapi_QueryRows.RowData.data = NULL;
+		response->RowData.length = 0;
+		response->RowData.data = NULL;
 		DEBUG(5, ("%s: returning empty data set\n", __location__));
 	}
 

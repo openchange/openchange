@@ -239,7 +239,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &object_handle);
 
 	if (request->OpenModeFlags == ReadOnly) {
 		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);
@@ -414,7 +414,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &message_handle);
 	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
@@ -1271,7 +1271,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
                 contextID = emsmdbp_get_contextID(message_object);
                 attachmentID = mapi_req->u.mapi_OpenAttach.AttachmentID;
 
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &attachment_rec);
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &attachment_rec);
 		handles[mapi_repl->handle_idx] = attachment_rec->handle;
 
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
@@ -1369,7 +1369,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
                 messageID = message_object->object.message->messageID;
                 contextID = emsmdbp_get_contextID(message_object);
 
-		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &attachment_rec);
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &attachment_rec);
 		handles[mapi_repl->handle_idx] = attachment_rec->handle;
 		
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
@@ -1559,7 +1559,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 
                 /* Initialize Message object */
                 handle = handles[mapi_req->handle_idx];
-                retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_rec);
+                retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &message_rec);
                 handles[mapi_repl->handle_idx] = message_rec->handle;
 
                 message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_rec, emsmdbp_ctx, messageID, attachment_object);

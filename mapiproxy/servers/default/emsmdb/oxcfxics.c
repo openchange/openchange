@@ -1632,7 +1632,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	enum mapistore_error			ret;
 	struct mapi_handles			*synccontext_object_handle = NULL, *message_object_handle;
 	struct emsmdbp_object			*synccontext_object = NULL, *message_object;
-	uint32_t				synccontext_handle_id, message_handle_id;
+	uint32_t				synccontext_handle_id;
 	void					*data;
 	struct SyncImportMessageChange_req	*request;
 	struct SyncImportMessageChange_repl	*response;
@@ -1691,8 +1691,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Initialize Message object */
-	message_handle_id = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, message_handle_id, &message_object_handle);
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &message_object_handle);
 	handles[mapi_repl->handle_idx] = message_object_handle->handle;
 
 	ret = emsmdbp_object_message_open(message_object_handle, emsmdbp_ctx, synccontext_object->parent_object, folderID, messageID, true, &message_object, &msg);

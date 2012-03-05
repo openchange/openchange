@@ -100,7 +100,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	response->HasRules = 0;
 	response->IsGhosted = 0;
 
-	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 	ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, request->folder_id, &object);
 	if (ret != MAPISTORE_SUCCESS) {
 		if (ret == MAPISTORE_ERR_DENIED) {
@@ -460,7 +460,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		response->IsExistingFolder = true;
 	}
 
-	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 	if (response->IsExistingFolder) {
 		ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, fid, &object);
 		if (ret != MAPISTORE_SUCCESS) {

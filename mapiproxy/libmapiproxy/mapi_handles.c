@@ -426,8 +426,10 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		handle = strtol((const char *) handle_str, NULL, 16);
-		DEBUG(5, ("deleting child handle: %d, %s\n", handle, handle_str));
-		mapi_handles_delete(handles_private->handles_ctx, handle);
+		DEBUG(5, ("handles being released must NOT have child handles attached to them\n"));
+		abort();
+		/* DEBUG(5, ("deleting child handle: %d, %s\n", handle, handle_str)); */
+		/* mapi_handles_delete(handles_private->handles_ctx, handle); */
 	}
 
 	talloc_free(mem_ctx);

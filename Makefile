@@ -1458,20 +1458,6 @@ bin/test_asyncnotif:	testprogs/test_asyncnotif.o			\
 
 pythonscriptdir = python
 
-#pymapi: $(pythonscriptdir)/mapi.$(SHLIBEXT)
-
-#pymapi/%: CFLAGS+=`$(PYTHON_CONFIG) --cflags` -fPIC
-
-#$(pythonscriptdir)/mapi.$(SHLIBEXT): $(patsubst %.c,%.o,$(wildcard pymapi/*.c)) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-#	$(CC) -o $@ $^ `$(PYTHON_CONFIG) --libs` $(DSOOPT)
-
-#pymapi-install::
-#	$(INSTALL) -d $(DESTDIR)$(PYCDIR)
-#	$(INSTALL) -m 0755 $(pythonscriptdir)/mapi.$(SHLIBEXT) $(DESTDIR)$(PYCDIR)
-
-#pymapi-uninstall::
-#	rm -f $(DESTDIR)$(PYCDIR)/mapi.$(SHLIBEXT)
-
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
 python-install::

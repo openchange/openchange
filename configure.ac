@@ -641,12 +641,6 @@ AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
 			   [build Python bindings for libmapi]),
 			   enable_pymapi="$enableval",
 			   enable_pymapi=no)
-if test "x${enable_pymapi}" = xyes; then
-   PYMAPIALL="pymapi"
-   PYMAPIINSTALL="pymapi-install"
-   PYMAPIUNINSTALL="pymapi-uninstall"
-fi
-
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
 AC_SUBST(PYCDIR)
 

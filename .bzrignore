@@ -53,3 +53,4 @@ stamp-h1
 libmapi/codepage_lcid.c
 pyopenchange/pymapi_properties.c
 setup/mapistore/mapistore_namedprops.ldif
+mapiproxy/libmapistore/mapistore_nameid.h

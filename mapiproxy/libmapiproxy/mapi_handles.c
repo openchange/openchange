@@ -419,7 +419,6 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	uint32_t			handle;
 	char				*container_handle_str = NULL;
 	char				*handle_str = NULL;
-	char				*handle_str2 = NULL;
 
 	mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_delete");
 	container_handle_str = talloc_asprintf(mem_ctx, "0x%x", handles_private->container_handle);

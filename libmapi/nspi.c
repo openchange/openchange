@@ -379,6 +379,11 @@ _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, pStat);
 	OPENCHANGE_RETVAL_IF(retval, retval, pStat);
 
+	nspi_ctx->pStat->CurrentRec = r.out.pStat->CurrentRec;
+	nspi_ctx->pStat->Delta = r.out.pStat->Delta;
+	nspi_ctx->pStat->NumPos = r.out.pStat->NumPos;
+	nspi_ctx->pStat->TotalRecs = r.out.pStat->TotalRecs;
+
 	return MAPI_E_SUCCESS;
 }
 

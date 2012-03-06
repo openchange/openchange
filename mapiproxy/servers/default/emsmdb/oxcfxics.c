@@ -715,11 +715,11 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			j++;
 
 			/* predecessor change list */
+			query_props.aulPropTag[j] = PidTagPredecessorChangeList;
 			if (retvals[sync_data->prop_index.predecessor_change_list]) {
 				DEBUG(5, (__location__": mandatory property PidTagPredecessorChangeList not returned for message\n"));
 				/* abort(); */
 
-				query_props.aulPropTag[j] = PidTagPredecessorChangeList;
 				predecessors_data.cb = bin_data->cb + 1;
 				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
 				*predecessors_data.lpb = bin_data->cb & 0xff;
@@ -727,7 +727,6 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 				header_data_pointers[j] = &predecessors_data;
 			}
 			else {
-				query_props.aulPropTag[j] = PidTagPredecessorChangeList;
 				bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
 				header_data_pointers[j] = bin_data;
 			}

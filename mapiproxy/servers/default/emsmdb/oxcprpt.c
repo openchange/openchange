@@ -1235,7 +1235,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetNamesFromIDs(TALLOC_CTX *mem_ctx,
 		}
 		else if (mapistore_namedprops_get_nameid(emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
 			response->nameid[i] = *nameid;
-			response->nameid[i].kind.lpwstr.NameSize *= 2;
 		}
 		else {
 			response->nameid[i].ulKind = 0xff;

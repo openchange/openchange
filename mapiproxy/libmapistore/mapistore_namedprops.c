@@ -316,7 +316,7 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context
 	}
 	else if (strcmp(oClass, "MNID_STRING") == 0) {
 		nameid->ulKind = MNID_STRING;
-		nameid->kind.lpwstr.NameSize = strlen(cn);
+		nameid->kind.lpwstr.NameSize = strlen(cn) * 2 + 2;
 		nameid->kind.lpwstr.Name = talloc_strdup(nameid, cn);
 	}
 	else {

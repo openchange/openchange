@@ -412,6 +412,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_CLSID:
 		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
+	case PT_SVREID:
 		return (const void *)&lpProps->value.bin;
 	case PT_OBJECT:
 		return (const void *)&lpProps->value.object;
@@ -580,6 +581,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
+	case PT_SVREID:
 		lpProps->value.bin = *((const struct Binary_r *)data);
 		break;
 	case PT_UNICODE:

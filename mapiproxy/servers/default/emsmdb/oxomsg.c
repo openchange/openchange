@@ -31,9 +31,9 @@
 static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
 {
 	TALLOC_CTX			*mem_ctx;
-	enum MAPITAGS			property = PR_TARGET_ENTRYID;
+	enum MAPITAGS			property = PidTagTargetEntryId;
 	struct mapistore_property_data	property_data;
-	enum MAPITAGS			ex_properties[] = { PR_TARGET_ENTRYID, PR_CHANGE_KEY, PR_PREDECESSOR_CHANGE_LIST };
+	enum MAPITAGS			ex_properties[] = { PidTagTargetEntryId, PidTagChangeKey, PidTagPredecessorChangeList };
 	struct SPropTagArray		excluded_tags = { sizeof(ex_properties) / sizeof(enum MAPITAGS), ex_properties };
 	struct Binary_r			*bin_data;
 	struct MessageEntryId		*entryID;

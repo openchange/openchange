@@ -166,7 +166,7 @@ static enum MAPISTATUS mapi_handles_tdb_free(struct mapi_handles_context *handle
 
 	/* Step 2. Update existing record */
 	dbuf.dptr = (unsigned char *)MAPI_HANDLES_NULL;
-	dbuf.dsize = strlen(MAPI_HANDLES_NULL);
+	dbuf.dsize = sizeof(MAPI_HANDLES_NULL) - 1;
 
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_MODIFY);
 	talloc_free(mem_ctx);
@@ -243,7 +243,7 @@ static int mapi_handles_traverse_null(TDB_CONTEXT *tdb_ctx,
 	uint32_t	*handle = (uint32_t *) state;
 	char		*handle_str = NULL;
 
-	if (dbuf.dptr && (dbuf.dsize == sizeof(MAPI_HANDLES_NULL) - 1) && !strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize)) {
+	if (dbuf.dptr && (dbuf.dsize == sizeof(MAPI_HANDLES_NULL) - 1) && strncmp((const char *)dbuf.dptr, MAPI_HANDLES_NULL, dbuf.dsize) == 0) {
 		mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_null");
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
 		*handle = strtol((const char *) handle_str, NULL, 16);
@@ -404,8 +404,8 @@ struct mapi_handles_private {
    which dbuf value is set to state.
  
    \param tdb_ctx pointer to the TDB context
-   \param key the current TDB key
-   \param dbuf the current TDB value
+   \param key the current TDB key (potential child handle)
+   \param dbuf the current TDB value (parent handle)
    \param state pointer on private data
 
    \return 1 when a free record is found, otherwise 0
@@ -423,13 +423,13 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 	mem_ctx = talloc_named(NULL, 0, "mapi_handles_traverse_delete");
 	container_handle_str = talloc_asprintf(mem_ctx, "0x%x", handles_private->container_handle);
 
-	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && !strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize)) {
+	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize) == 0) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
+		DEBUG(5, ("handles being released must NOT have child handles attached to them (%s is a child of %s)\n", handle_str, container_handle_str));
 		handle = strtol((const char *) handle_str, NULL, 16);
-		DEBUG(5, ("handles being released must NOT have child handles attached to them\n"));
-		abort();
+		/* abort(); */
 		/* DEBUG(5, ("deleting child handle: %d, %s\n", handle, handle_str)); */
-		/* mapi_handles_delete(handles_private->handles_ctx, handle); */
+		mapi_handles_delete(handles_private->handles_ctx, handle);
 	}
 
 	talloc_free(mem_ctx);
@@ -491,6 +491,9 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *handle
 
 	/* Step 3. Free this record within the TDB database */
 	retval = mapi_handles_tdb_free(handles_ctx, handle);
+	/* if (retval) { */
+	/* 	abort(); */
+	/* } */
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Step 4. Delete hierarchy of children */

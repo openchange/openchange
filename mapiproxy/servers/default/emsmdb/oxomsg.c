@@ -28,7 +28,7 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-static void oxomsg_mapistore_handle_target_entryid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
+static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *old_message_object)
 {
 	TALLOC_CTX			*mem_ctx;
 	enum MAPITAGS			properties[] = { PidTagTargetEntryId, PidTagSentMailSvrEID };
@@ -221,7 +221,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 		flags = mapi_req->u.mapi_SubmitMessage.SubmitFlags;
 		owner = emsmdbp_get_owner(object);
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, flags);
-		oxomsg_mapistore_handle_target_entryid(emsmdbp_ctx, object);
+		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 		break;
 	}
@@ -446,7 +446,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	case true:
 		mapistore_message_submit(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, 0);
 
-		oxomsg_mapistore_handle_target_entryid(emsmdbp_ctx, object);
+		oxomsg_mapistore_handle_message_relocation(emsmdbp_ctx, object);
 		/* mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, messageID); */
 		break;
 	}

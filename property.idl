@@ -278,6 +278,14 @@ interface property
 		eitLTPPublicNewsgroupFolder	= 0x0c
 	} EntryIdFolderType;
 
+	/* PtypServerId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8			ours;
+		dlong			FolderId;
+		dlong			MessageId;
+		int32			Instance;
+	} PtypServerId;
+
 	/* FolderEntryId */
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32			Flags;

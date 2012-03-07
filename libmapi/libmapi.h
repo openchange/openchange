@@ -283,6 +283,7 @@ struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
 struct PtypServerId	*get_PtypServerId(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);
+struct FolderEntryId	*get_FolderEntryId(TALLOC_CTX *, struct Binary_r *);
 struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);

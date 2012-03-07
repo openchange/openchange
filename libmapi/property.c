@@ -462,6 +462,7 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx,
 _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 		return false;
 	}
@@ -521,6 +522,7 @@ _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *l
 		lpProps->value.MVszW = *((const struct mapi_SLPSTRArrayW *)data);
 		break;
 	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
 		return false;
@@ -554,6 +556,7 @@ _PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct
 _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 		return false;
 	}
@@ -619,6 +622,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.object = *((const uint32_t *)data);
 		break;
 	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
 		return false;

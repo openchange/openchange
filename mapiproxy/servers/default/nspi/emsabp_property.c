@@ -45,6 +45,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
 	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
 	{ PidTagCompanyName,			"company",		false,	NULL			},
+	{ PidTagCompanyName_string8,			"company",		false,	NULL			},
 	{ PidTagDisplayName,			"displayName",		false,	NULL			},
 	{ PidTagDisplayName_string8,		"displayName",		false,	NULL			},
 	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},
@@ -52,7 +53,9 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagAddressBookHomeMessageDatabase,	"homeMDB",		true,	"legacyExchangeDN"	},
 	{ PidTagAddressBookHomeMessageDatabase_string8,	"homeMDB",		true,	"legacyExchangeDN"	},
 	{ PidTagAddressBookProxyAddresses,	"proxyAddresses",	false,	NULL			},
+	{ PidTagAddressBookProxyAddresses_string8,	"proxyAddresses",	false,	NULL			},
 	{ PidTagAddressBookNetworkAddress,	"networkAddress",	false,	NULL			},
+	{ PidTagAddressBookNetworkAddress_string8,	"networkAddress",	false,	NULL			},
 	{ PidTagTitle,				"personalTitle",	false,	NULL			},
 	{ PR_EMS_AB_OBJECT_GUID,		"objectGUID",		false,	NULL			},
 	{ 0,					NULL,			false,	NULL			}

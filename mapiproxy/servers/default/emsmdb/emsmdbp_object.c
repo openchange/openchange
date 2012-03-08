@@ -2679,17 +2679,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
-			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
-			unix_to_nt_time(&nt_time, unix_time);
-			ft = talloc_zero(data_pointers, struct FILETIME);
-			ft->dwLowDateTime = (nt_time & 0xffffffff);
-			ft->dwHighDateTime = nt_time >> 32;
-			data_pointers[i] = ft;
-			retval = MAPI_E_SUCCESS;
-		}
-		else if (properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
 			struct mapistore_property_data prop_data;
 
 			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,

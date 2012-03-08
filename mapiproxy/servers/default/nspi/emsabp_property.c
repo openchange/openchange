@@ -50,6 +50,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},
 	{ PidTagEmailAddress_string8,		"legacyExchangeDN",	false,	NULL			},
 	{ PidTagAddressBookHomeMessageDatabase,	"homeMDB",		true,	"legacyExchangeDN"	},
+	{ PidTagAddressBookHomeMessageDatabase_string8,	"homeMDB",		true,	"legacyExchangeDN"	},
 	{ PidTagAddressBookProxyAddresses,	"proxyAddresses",	false,	NULL			},
 	{ PidTagAddressBookNetworkAddress,	"networkAddress",	false,	NULL			},
 	{ PidTagTitle,				"personalTitle",	false,	NULL			},

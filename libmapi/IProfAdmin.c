@@ -1099,7 +1099,7 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 		MAPIFreeBuffer(SRowSet);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-		SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x1,
 						PR_EMAIL_ADDRESS
 						);
 

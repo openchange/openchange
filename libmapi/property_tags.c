@@ -64,7 +64,7 @@ static struct mapi_proptags canonical_property_tags[] = {
 	{ PidTagAddressBookHierarchicalRootDepartment_Error,                  PT_ERROR,     "PidTagAddressBookHierarchicalRootDepartment_Error"                 },
 	{ PidTagAddressBookHierarchicalShowInDepartments,                     PT_OBJECT,    "PidTagAddressBookHierarchicalShowInDepartments"                    },
 	{ PidTagAddressBookHierarchicalShowInDepartments_Error,               PT_ERROR,     "PidTagAddressBookHierarchicalShowInDepartments_Error"              },
-	{ PidTagAddressBookHomeMessageDatabase,                               PT_STRING8,   "PidTagAddressBookHomeMessageDatabase"                              },
+	{ PidTagAddressBookHomeMessageDatabase,                               PT_UNICODE,   "PidTagAddressBookHomeMessageDatabase"                              },
 	{ PidTagAddressBookHomeMessageDatabase_Error,                         PT_ERROR,     "PidTagAddressBookHomeMessageDatabase_Error"                        },
 	{ PidTagAddressBookIsMaster,                                          PT_BOOLEAN,   "PidTagAddressBookIsMaster"                                         },
 	{ PidTagAddressBookIsMaster_Error,                                    PT_ERROR,     "PidTagAddressBookIsMaster_Error"                                   },

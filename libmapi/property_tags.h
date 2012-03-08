@@ -68,6 +68,7 @@
 #define PidTagAccessLevel                                                    PROP_TAG(PT_LONG      , 0x0FF7)  /* 0x0FF70003 */
 #define PidTagAccessLevel_Error                                              PROP_TAG(PT_ERROR     , 0x0FF7)  /* 0x0FF7000A */
 #define PidTagAccess_Error                                                   PROP_TAG(PT_ERROR     , 0x0FF4)  /* 0x0FF4000A */
+#define PidTagAccessControlListData					PROP_TAG(PT_BINARY     , 0x3FE0)
 #define PidTagAccount                                                        PROP_TAG(PT_UNICODE   , 0x3A00)  /* 0x3A00001F */
 #define PidTagAccount_Error                                                  PROP_TAG(PT_ERROR     , 0x3A00)  /* 0x3A00000A */
 #define PidTagAdditionalRenEntryIds                                          PROP_TAG(PT_MV_BINARY , 0x36D8)  /* 0x36D81102 */
@@ -114,7 +115,7 @@
 #define PidTagAddressBookHierarchicalRootDepartment_Error                    PROP_TAG(PT_ERROR     , 0x8C98)  /* 0x8C98000A */
 #define PidTagAddressBookHierarchicalShowInDepartments                       PROP_TAG(PT_OBJECT    , 0x8C94)  /* 0x8C94000D */
 #define PidTagAddressBookHierarchicalShowInDepartments_Error                 PROP_TAG(PT_ERROR     , 0x8C94)  /* 0x8C94000A */
-#define PidTagAddressBookHomeMessageDatabase                                 PROP_TAG(PT_STRING8   , 0x8006)  /* 0x8006001E */
+#define PidTagAddressBookHomeMessageDatabase                                 PROP_TAG(PT_UNICODE   , 0x8006)  /* 0x8006001E */
 #define PidTagAddressBookHomeMessageDatabase_Error                           PROP_TAG(PT_ERROR     , 0x8006)  /* 0x8006000A */
 #define PidTagAddressBookIsMaster                                            PROP_TAG(PT_BOOLEAN   , 0xFFFB)  /* 0xFFFB000B */
 #define PidTagAddressBookIsMaster_Error                                      PROP_TAG(PT_ERROR     , 0xFFFB)  /* 0xFFFB000A */

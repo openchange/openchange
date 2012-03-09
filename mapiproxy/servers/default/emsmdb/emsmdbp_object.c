@@ -676,7 +676,7 @@ static int emsmdbp_object_destructor(void *data)
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_TABLE:
-		if (emsmdbp_is_mapistore(object) && object->object.table->handle > 0) {
+		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
 			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
 		}
                 if (object->object.table->subscription_list) {
@@ -1242,7 +1242,7 @@ end:
 
 	return ret;
 }
- 
+
 _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, 
 							  struct emsmdbp_object *parent_object, 
 							  uint32_t table_type, uint32_t handle_id)

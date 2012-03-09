@@ -192,11 +192,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
-	/* uint32_t			contextID; */
-	uint32_t			handle;
 	struct oxcmsg_prop_index	prop_index;
-	/* bool				mapistore = false; */
-	/* struct indexing_folders_list	*flist; */
 	int				i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
@@ -238,7 +234,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	folderID = request->FolderId;
 
 	/* Initialize Message object */
-	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &object_handle);
 
 	if (request->OpenModeFlags == ReadOnly) {

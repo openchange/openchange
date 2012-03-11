@@ -42,6 +42,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PR_SURNAME,				"sn",			false,	NULL			},
 	{ PR_TRANSMITTABLE_DISPLAY_NAME,	"displayName",		false,	NULL			},
 	{ PR_7BIT_DISPLAY_NAME,			"displayName",		false,	NULL			},
+	{ PR_7BIT_DISPLAY_NAME_UNICODE,		"displayName",		false,	NULL			},
 	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
 	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
 	{ PidTagCompanyName,			"company",		false,	NULL			},

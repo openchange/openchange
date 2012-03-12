@@ -340,7 +340,7 @@ dnl ---------------------------------------------------------------------------
 dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(TALLOC, talloc)
-PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent)
+PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent samba-credentials)
 PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb)
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)

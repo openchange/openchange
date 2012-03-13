@@ -647,16 +647,23 @@ static struct pidtags pidtags[] = {
 	{ 0,                                                                   NULL         }
 };
 
-_PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
+_PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t propTag)
 {
-	uint32_t i;
-	
+	uint32_t i, uniPropTag;
+
+	if ((propTag & 0x0FFF) == PT_STRING8) {
+		uniPropTag = ((propTag & 0xfffff000) | PT_UNICODE);
+	}
+	else {
+		uniPropTag = propTag;
+	}
+
 	for (i = 0; pidtags[i].pidtag; i++) {
-		if (pidtags[i].proptag == proptag) {
+		if (pidtags[i].proptag == uniPropTag) {
 			return pidtags[i].pidtag;
 		}
 	}
-	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\n", __FUNCTION__, __LINE__, proptag));
+	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\n", __FUNCTION__, __LINE__, propTag));
 	
 	return NULL;
 }

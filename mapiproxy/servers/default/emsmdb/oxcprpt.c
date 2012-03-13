@@ -576,6 +576,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
                 goto end;
 	}
 
+	if (request->PropertyTag == PidTagSecurityDescriptorAsXml) {
+		/* exception; see oxcperm - 3.1.4.1 Retrieving Folder Permissions */
+		mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+                goto end;
+	}
+
 	/* TODO: implementation status:
 	   - OpenStream_ReadOnly (supported)
 	   - OpenStream_ReadWrite (supported)

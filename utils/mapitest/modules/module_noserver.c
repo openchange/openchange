@@ -293,7 +293,7 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 10;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 10);
-	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 10) {
@@ -388,7 +388,7 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 16;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 16);
-	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 16) {

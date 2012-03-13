@@ -118,7 +118,7 @@ NTSTATUS		emsmdb_transaction(struct emsmdb_context *, TALLOC_CTX *, struct mapi_
 NTSTATUS		emsmdb_transaction_ext2(struct emsmdb_context *, TALLOC_CTX *, struct mapi_request *, struct mapi_response **);
 NTSTATUS		emsmdb_transaction_wrapper(struct mapi_session *, TALLOC_CTX *, struct mapi_request *, struct mapi_response **);
 struct emsmdb_info	*emsmdb_get_info(struct mapi_session *);
-void			emsmdb_get_SRowSet(TALLOC_CTX *, struct loadparm_context *, struct SRowSet *, struct SPropTagArray *, DATA_BLOB *);
+void			emsmdb_get_SRowSet(TALLOC_CTX *, struct SRowSet *, struct SPropTagArray *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/cdo_mapi.c */
 enum MAPISTATUS		MapiLogonEx(struct mapi_context *, struct mapi_session **, const char *, const char *);

@@ -457,9 +457,6 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx,
 	return lpProps;
 }
 
-/*
-  TODO: should this be public?
-*/
 _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
@@ -549,11 +546,6 @@ _PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct
 	return lpProps;
 }
 
-
-
-/*
-  TODO: should this be public?
-*/
 _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {

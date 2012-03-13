@@ -1456,6 +1456,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_FOLDER_XVIEWINFO_E);
 		SPropTagArray_add(properties, properties, PR_FOLDER_VIEWLIST);
 		SPropTagArray_add(properties, properties, PR_FREEBUSY_ENTRYIDS);
+		SPropTagArray_add(properties, properties, 0x36de0003); /* some unknown prop that outlook sets */
 		*propertiesp = properties;
 
 		retval = MAPISTORE_SUCCESS;

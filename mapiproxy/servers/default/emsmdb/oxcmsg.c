@@ -192,11 +192,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
-	/* uint32_t			contextID; */
-	uint32_t			handle;
 	struct oxcmsg_prop_index	prop_index;
-	/* bool				mapistore = false; */
-	/* struct indexing_folders_list	*flist; */
 	int				i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
@@ -238,7 +234,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	folderID = request->FolderId;
 
 	/* Initialize Message object */
-	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
 
 	if (request->OpenModeFlags == ReadOnly) {
@@ -415,7 +410,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	/* Initialize Message object */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &message_handle);
-	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_handle, emsmdbp_ctx, messageID, folder_object);
 	message_object->object.message->read_write = true;
@@ -448,6 +442,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
 		break;
 	}
+
+	handles[mapi_repl->handle_idx] = message_handle->handle;
 
 	/* Add default properties to message MS-OXCMSG 3.2.5.2 */
 	retval = mapi_handles_set_private_data(message_handle, message_object);

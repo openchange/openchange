@@ -412,6 +412,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_CLSID:
 		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
+	case PT_SVREID:
 		return (const void *)&lpProps->value.bin;
 	case PT_OBJECT:
 		return (const void *)&lpProps->value.object;
@@ -462,6 +463,7 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx,
 _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 		return false;
 	}
@@ -521,6 +523,7 @@ _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *l
 		lpProps->value.MVszW = *((const struct mapi_SLPSTRArrayW *)data);
 		break;
 	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
 		return false;
@@ -554,6 +557,7 @@ _PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct
 _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 		return false;
 	}
@@ -577,6 +581,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
+	case PT_SVREID:
 		lpProps->value.bin = *((const struct Binary_r *)data);
 		break;
 	case PT_UNICODE:
@@ -619,6 +624,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.object = *((const uint32_t *)data);
 		break;
 	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
 		return false;
@@ -1429,6 +1435,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
 /*         return size; */
 /* } */
 
+#warning the get_XXX NDR wrapper should be normalized
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob
 
@@ -1473,6 +1480,48 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
 	return TimeZoneStruct;
 }
 
+
+/**
+   \details Retrieve a PtypServerId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw PtypServerId data
+
+   \return Allocated PtypServerId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated PtypServerId when
+   finished.
+ */
+_PUBLIC_ struct PtypServerId *get_PtypServerId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct PtypServerId	*PtypServerId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	PtypServerId = talloc_zero(mem_ctx, struct PtypServerId);
+	ndr_err_code = ndr_pull_PtypServerId(ndr, NDR_SCALARS, PtypServerId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(PtypServerId);
+		return NULL;
+	}
+
+	return PtypServerId;
+}
 
 /**
    \details Retrieve a GlobalObjectId structure from a binary blob
@@ -1559,6 +1608,48 @@ _PUBLIC_ struct MessageEntryId *get_MessageEntryId(TALLOC_CTX *mem_ctx, struct B
 	}
 
 	return MessageEntryId;
+}
+
+/**
+   \details Retrieve a FolderEntryId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw FolderEntryId data
+
+   \return Allocated FolderEntryId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated FolderEntryId when
+   finished.
+ */
+_PUBLIC_ struct FolderEntryId *get_FolderEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct FolderEntryId	*FolderEntryId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	FolderEntryId = talloc_zero(mem_ctx, struct FolderEntryId);
+	ndr_err_code = ndr_pull_FolderEntryId(ndr, NDR_SCALARS, FolderEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(FolderEntryId);
+		return NULL;
+	}
+
+	return FolderEntryId;
 }
 
 /**

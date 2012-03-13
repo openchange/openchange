@@ -1106,10 +1106,10 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 
 			/** remaining props */
-			if (table_object->object.table->prop_count > 5) {
-				query_props.cValues = table_object->object.table->prop_count - 5;
-				query_props.aulPropTag = table_object->object.table->properties + 5;
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 5, (enum MAPISTATUS *) retvals + 5);
+			if (table_object->object.table->prop_count > 7) {
+				query_props.cValues = table_object->object.table->prop_count - 7;
+				query_props.aulPropTag = table_object->object.table->properties + 7;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 7, (enum MAPISTATUS *) retvals + 7);
 			}
 
 		end_row:

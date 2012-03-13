@@ -676,7 +676,7 @@ static int emsmdbp_object_destructor(void *data)
 		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
 		break;
 	case EMSMDBP_OBJECT_TABLE:
-		if (emsmdbp_is_mapistore(object) && object->object.table->handle > 0) {
+		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
 			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
 		}
                 if (object->object.table->subscription_list) {
@@ -1242,7 +1242,7 @@ end:
 
 	return ret;
 }
- 
+
 _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx, 
 							  struct emsmdbp_object *parent_object, 
 							  uint32_t table_type, uint32_t handle_id)
@@ -2619,9 +2619,9 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 	uint32_t			contextID;
         uint32_t                        *obj_count;
 	uint8_t				*has_subobj;
-	time_t				unix_time;
-	NTTIME				nt_time;
-	struct FILETIME			*ft;
+	/* time_t				unix_time; */
+	/* NTTIME				nt_time; */
+	/* struct FILETIME			*ft; */
 
 	contextID = emsmdbp_get_contextID(object);
 
@@ -2679,17 +2679,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax) {
-			/* TODO: temporary hack */
-			unix_time = time(NULL) & 0xffffff00;
-			unix_to_nt_time(&nt_time, unix_time);
-			ft = talloc_zero(data_pointers, struct FILETIME);
-			ft->dwLowDateTime = (nt_time & 0xffffffff);
-			ft->dwHighDateTime = nt_time >> 32;
-			data_pointers[i] = ft;
-			retval = MAPI_E_SUCCESS;
-		}
-		else if (properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
 			struct mapistore_property_data prop_data;
 
 			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,

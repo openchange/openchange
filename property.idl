@@ -9,13 +9,27 @@ import "exchange.idl";
 ]
 interface property
 {
+	typedef [v1_enum] enum {
+		seOpenToDelete		= 0x00000001,
+		seNoFrame		= 0x00000008,
+		seCoerceToInbox		= 0x00000010,
+		seOpenToCopy		= 0x00000020,
+		seOpenToMove		= 0x00000040,
+		seOpenForCtxMenu	= 0x00000100,
+		seCannotUndoDelete	= 0x00000400,
+		seCannotUndoCopy	= 0x00000800,
+		seCannotUndoMove	= 0x00001000,
+		seHasScript		= 0x00002000,
+		seOpenToPermDelete	= 0x00004000
+	} SideEffects;
+
 	typedef [enum16bit] enum {
 		RecurFrequency_Daily	= 0x200A,
 		RecurFrequency_Weekly	= 0x200B,
 		RecurFrequency_Monthly	= 0x200C,
 		RecurFrequency_Yearly	= 0x200D
 	} RecurFrequency;
-	
+
 	typedef [enum16bit] enum {
 		PatternType_Day		= 0x0,
 		PatternType_Week	= 0x1,
@@ -277,6 +291,14 @@ interface property
 		eitLTPMappedPublicMessage	= 0x0b,
 		eitLTPPublicNewsgroupFolder	= 0x0c
 	} EntryIdFolderType;
+
+	/* PtypServerId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8			ours;
+		dlong			FolderId;
+		dlong			MessageId;
+		int32			Instance;
+	} PtypServerId;
 
 	/* FolderEntryId */
 	typedef [public,flag(NDR_NOALIGN)] struct {

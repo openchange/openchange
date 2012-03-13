@@ -234,7 +234,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	folderID = request->FolderId;
 
 	/* Initialize Message object */
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &object_handle);
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &object_handle);
 
 	if (request->OpenModeFlags == ReadOnly) {
 		ret = emsmdbp_object_message_open(object_handle, emsmdbp_ctx, context_object, folderID, messageID, false, &object, &msg);

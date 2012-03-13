@@ -1420,14 +1420,6 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         return size;
 }
 
-/* _PUBLIC_ size_t set_ExtendedException_size(const struct ExtendedException *ext_exc) */
-/* { */
-/*         size_t size = SIZE_DFLT_EXTENDEDEXCEPTION; */
-
-/*         return size; */
-/* } */
-
-#warning the get_XXX NDR wrapper should be normalized
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob
 

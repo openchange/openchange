@@ -26,6 +26,7 @@
    \brief Address Book Provider implementation
  */
 
+#define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
 

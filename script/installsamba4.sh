@@ -221,6 +221,12 @@ download() {
 # Apply patches to samba4
 #
 patch() {
+
+    pushd samba4/source3
+    sed "s/deps='ndr security NDR_SECURITY samba-util UTIL_TDB'/deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan'/g" wscript_build > wscript_build2
+    mv wscript_build2 wscript_build
+    popd
+
     case "$HOST_OS" in
 	*freebsd*)
 

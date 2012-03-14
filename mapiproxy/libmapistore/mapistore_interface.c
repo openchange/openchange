@@ -170,7 +170,6 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-#warning the "owner" parameter should be deduced from the uri
 _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
 						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
 {

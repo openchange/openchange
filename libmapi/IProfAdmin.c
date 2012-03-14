@@ -1068,8 +1068,6 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 		struct Restriction_r		Filter;
 		struct SPropValue		*lpProp = NULL;
 		struct PropertyTagArray_r	*MIds = NULL;
-		struct PropertyTagArray_r	MIds2;
-		uint32_t			instance_key = 0;
 		uint32_t			index = 0;
 		char				*password;
 		struct mapi_session     *session = NULL;
@@ -1136,12 +1134,7 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 		OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, mem_ctx);
 		OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, mem_ctx);
 		OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, mem_ctx);
-
-		instance_key = MIds->aulPropTag[0];
 		MAPIFreeBuffer(MIds);
-
-		MIds2.cValues = 0x1;
-		MIds2.aulPropTag = &instance_key;
 
 		set_profile_attribute(mapi_ctx, profile_dst, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 		mapi_profile_delete_string_attr(mapi_ctx, profile_dst, "EmailAddress", oldEmailAddress);

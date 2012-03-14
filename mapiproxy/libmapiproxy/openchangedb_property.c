@@ -156,11 +156,14 @@ static struct pidtags pidtags[] = {
 	{ PidTagCreationTime,                                                 "PidTagCreationTime" },
 	{ PidTagCreatorEntryId,                                               "PidTagCreatorEntryId" },
 	{ PidTagCreatorName,                                                  "PidTagCreatorName" },
+	{ PidTagCreatorSId,						      "PidTagCreatorSId" },
 	{ PidTagCreatorSimpleDisplayName,                                     "PidTagCreatorSimpleDisplayName" },
 	{ PidTagCustomerId,                                                   "PidTagCustomerId" },
 	{ PidTagDamBackPatched,                                               "PidTagDamBackPatched" },
 	{ PidTagDamOriginalEntryId,                                           "PidTagDamOriginalEntryId" },
+	{ PidTagDefaultFormName,	                                      "PidTagDefaultFormName" },
 	{ PidTagDefaultPostMessageClass,                                      "PidTagDefaultPostMessageClass" },
+	{ PidTagDefaultViewEntryId,					      "PidTagDefaultViewEntryId" },
 	{ PidTagDeferredActionMessageOriginalEntryId,                         "PidTagDeferredActionMessageOriginalEntryId" },
 	{ PidTagDeferredDeliveryTime,                                         "PidTagDeferredDeliveryTime" },
 	{ PidTagDeferredSendNumber,                                           "PidTagDeferredSendNumber" },
@@ -169,9 +172,11 @@ static struct pidtags pidtags[] = {
 	{ PidTagDelegateFlags,                                                "PidTagDelegateFlags" },
 	{ PidTagDelegatedByRule,                                              "PidTagDelegatedByRule" },
 	{ PidTagDeleteAfterSubmit,                                            "PidTagDeleteAfterSubmit" },
+	{ PidTagDeletedCountTotal,                                            "PidTagDeletedCountTotal" },
 	{ PidTagDeletedOn,                                                    "PidTagDeletedOn" },
 	{ PidTagDepartmentName,                                               "PidTagDepartmentName" },
 	{ PidTagDepth,                                                        "PidTagDepth" },
+	{ PidTagDesignInProgress,					      "PidTagDesignInProgress" },
 	{ PidTagDisplayBcc,                                                   "PidTagDisplayBcc" },
 	{ PidTagDisplayCc,                                                    "PidTagDisplayCc" },
 	{ PidTagDisplayName,                                                  "PidTagDisplayName" },
@@ -195,6 +200,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagExpiryNumber,                                                 "PidTagExpiryNumber" },
 	{ PidTagExpiryTime,                                                   "PidTagExpiryTime" },
 	{ PidTagExpiryUnits,                                                  "PidTagExpiryUnits" },
+	{ PidTagExtendedACLData,					      "PidTagExtendedACLData" },
 	{ PidTagExtendedFolderFlags,                                          "PidTagExtendedFolderFlags" },
 	{ PidTagExtendedRuleMessageActions,                                   "PidTagExtendedRuleMessageActions" },
 	{ PidTagExtendedRuleMessageCondition,                                 "PidTagExtendedRuleMessageCondition" },
@@ -206,8 +212,13 @@ static struct pidtags pidtags[] = {
 	{ PidTagFlagStatus,                                                   "PidTagFlagStatus" },
 	{ PidTagFlatUrlName,                                                  "PidTagFlatUrlName" },
 	{ PidTagFolderAssociatedContents,                                     "PidTagFolderAssociatedContents" },
+	{ PidTagFolderFlags,                                                  "PidTagFolderFlags" },
 	{ PidTagFolderId,                                                     "PidTagFolderId" },
 	{ PidTagFolderType,                                                   "PidTagFolderType" },
+	{ PidTagFolderViewList,						      "PidTagFolderViewList" },
+	{ PidTagFolderViewsOnly,					      "PidTagFolderViewsOnly" },
+	{ PidTagFolderExtendedViewInfo,					      "PidTagFolderExtendedViewInfo" },
+	{ PidTagFolderWebViewInfo,					      "PidTagFolderWebViewInfo" },
 	{ PidTagFollowupIcon,                                                 "PidTagFollowupIcon" },
 	{ PidTagFreeBusyCountMonths,                                          "PidTagFreeBusyCountMonths" },
 	{ PidTagFreeBusyEntryIds,                                             "PidTagFreeBusyEntryIds" },
@@ -280,6 +291,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagIpmDraftsEntryId,                                             "PidTagIpmDraftsEntryId" },
 	{ PidTagIpmJournalEntryId,                                            "PidTagIpmJournalEntryId" },
 	{ PidTagIpmNoteEntryId,                                               "PidTagIpmNoteEntryId" },
+	{ PidTagIpmPublicFoldersEntryId,				      "PidTagIpmPublicFoldersEntryId" },
 	{ PidTagIpmTaskEntryId,                                               "PidTagIpmTaskEntryId" },
 	{ PidTagIsdnNumber,                                                   "PidTagIsdnNumber" },
 	{ PidTagJunkAddRecipientsToSafeSendersList,                           "PidTagJunkAddRecipientsToSafeSendersList" },
@@ -292,6 +304,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagLastModificationTime,                                         "PidTagLastModificationTime" },
 	{ PidTagLastModifierEntryId,                                          "PidTagLastModifierEntryId" },
 	{ PidTagLastModifierName,                                             "PidTagLastModifierName" },
+	{ PidTagLastModifierSId,					      "PidTagLastModifierSId" },
 	{ PidTagLastModifierSimpleDisplayName,                                "PidTagLastModifierSimpleDisplayName" },
 	{ PidTagLastVerbExecuted,                                             "PidTagLastVerbExecuted" },
 	{ PidTagLastVerbExecutionTime,                                        "PidTagLastVerbExecutionTime" },
@@ -299,6 +312,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagListSubscribe,                                                "PidTagListSubscribe" },
 	{ PidTagListUnsubscribe,                                              "PidTagListUnsubscribe" },
 	{ PidTagLocalCommitTime,                                              "PidTagLocalCommitTime" },
+	{ PidTagLocalCommitTimeMax,                                           "PidTagLocalCommitTimeMax" },
 	{ PidTagLocaleId,                                                     "PidTagLocaleId" },
 	{ PidTagLocality,                                                     "PidTagLocality" },
 	{ PidTagLocation,                                                     "PidTagLocation" },
@@ -376,6 +390,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagOriginalSubmitTime,                                           "PidTagOriginalSubmitTime" },
 	{ PidTagOriginatorDeliveryReportRequested,                            "PidTagOriginatorDeliveryReportRequested" },
 	{ PidTagOriginatorNonDeliveryReportRequested,                         "PidTagOriginatorNonDeliveryReportRequested" },
+	{ PidTagOstOstId,			                              "PidTagOstOstId" },
 	{ PidTagOtherAddressCity,                                             "PidTagOtherAddressCity" },
 	{ PidTagOtherAddressCountry,                                          "PidTagOtherAddressCountry" },
 	{ PidTagOtherAddressPostOfficeBox,                                    "PidTagOtherAddressPostOfficeBox" },
@@ -445,6 +460,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagRecordKey,                                                    "PidTagRecordKey" },
 	{ PidTagReferredByName,                                               "PidTagReferredByName" },
 	{ PidTagRemindersOnlineEntryId,                                       "PidTagRemindersOnlineEntryId" },
+	{ PidTagRemindersOfflineEntryId,				      "PidTagRemindersOfflineEntryId" },
 	{ PidTagRemoteMessageTransferAgent,                                   "PidTagRemoteMessageTransferAgent" },
 	{ PidTagRenderingPosition,                                            "PidTagRenderingPosition" },
 	{ PidTagReplyRecipientEntries,                                        "PidTagReplyRecipientEntries" },
@@ -530,6 +546,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagSearchFolderRecreateInfo,                                     "PidTagSearchFolderRecreateInfo" },
 	{ PidTagSearchFolderStorageType,                                      "PidTagSearchFolderStorageType" },
 	{ PidTagSearchKey,                                                    "PidTagSearchKey" },
+	{ PidTagSecureOrigination,					      "PidTagSecureOrigination" },
 	{ PidTagSecureSubmitFlags,                                            "PidTagSecureSubmitFlags" },
 	{ PidTagSecurityDescriptor,                                           "PidTagSecurityDescriptor" },
 	{ PidTagSecurityDescriptorAsXml,                                      "PidTagSecurityDescriptorAsXml" },
@@ -556,6 +573,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagSentRepresentingSearchKey,                                    "PidTagSentRepresentingSearchKey" },
 	{ PidTagSentRepresentingSimpleDisplayName,                            "PidTagSentRepresentingSimpleDisplayName" },
 	{ PidTagSessionInitiationProtocolUri,                                 "PidTagSessionInitiationProtocolUri" },
+	{ PidTagShorttermEntryIdFromObject,				      "PidTagShorttermEntryIdFromObject" },
 	{ PidTagSortLocaleId,                                                 "PidTagSortLocaleId" },
 	{ PidTagSourceKey,                                                    "PidTagSourceKey" },
 	{ PidTagSpokenName,                                                   "PidTagSpokenName" },
@@ -568,6 +586,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagStartRecip,                                                   "PidTagStartRecip" },
 	{ PidTagStartSubFld,                                                  "PidTagStartSubFld" },
 	{ PidTagStartTopFld,                                                  "PidTagStartTopFld" },
+	{ PidTagStorageQuotaLimit,					      "PidTagStorageQuotaLimit" },
 	{ PidTagStateOrProvince,                                              "PidTagStateOrProvince" },
 	{ PidTagStoreEntryId,                                                 "PidTagStoreEntryId" },
 	{ PidTagStoreState,                                                   "PidTagStoreState" },
@@ -624,19 +643,27 @@ static struct pidtags pidtags[] = {
 	{ PidTagWlinkSection,                                                 "PidTagWlinkSection" },
 	{ PidTagWlinkStoreEntryId,                                            "PidTagWlinkStoreEntryId" },
 	{ PidTagWlinkType,                                                    "PidTagWlinkType" },
+	{ PidTagNTSDModificationTime,					      "PidTagNTSDModificationTime" },
 	{ 0,                                                                   NULL         }
 };
 
-_PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
+_PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t propTag)
 {
-	uint32_t i;
-	
+	uint32_t i, uniPropTag;
+
+	if ((propTag & 0x0FFF) == PT_STRING8) {
+		uniPropTag = ((propTag & 0xfffff000) | PT_UNICODE);
+	}
+	else {
+		uniPropTag = propTag;
+	}
+
 	for (i = 0; pidtags[i].pidtag; i++) {
-		if (pidtags[i].proptag == proptag) {
+		if (pidtags[i].proptag == uniPropTag) {
 			return pidtags[i].pidtag;
 		}
 	}
-	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\n", __FUNCTION__, __LINE__, proptag));
+	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\n", __FUNCTION__, __LINE__, propTag));
 	
 	return NULL;
 }

@@ -1418,13 +1418,19 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_DISPLAY_NAME_UNICODE);
 		SPropTagArray_add(properties, properties, PR_COMMENT_UNICODE);
 		SPropTagArray_add(properties, properties, PR_ACCESS);
-		SPropTagArray_add(properties, properties, PR_CREATION_TIME);
+		SPropTagArray_add(properties, properties, PR_ACCESS_LEVEL);
+		SPropTagArray_add(properties, properties, PidTagExtendedFolderFlags);
+		SPropTagArray_add(properties, properties, PidTagDesignInProgress);
+		SPropTagArray_add(properties, properties, PidTagSecureOrigination);
 		SPropTagArray_add(properties, properties, PR_NTSD_MODIFICATION_TIME);
-		SPropTagArray_add(properties, properties, PR_LAST_MODIFICATION_TIME);
 		SPropTagArray_add(properties, properties, PR_ADDITIONAL_REN_ENTRYIDS);
 		SPropTagArray_add(properties, properties, PR_ADDITIONAL_REN_ENTRYIDS_EX);
+		SPropTagArray_add(properties, properties, PR_CREATION_TIME);
 		SPropTagArray_add(properties, properties, PR_CREATOR_SID);
+		SPropTagArray_add(properties, properties, PR_CREATOR_ENTRYID);
+		SPropTagArray_add(properties, properties, PR_LAST_MODIFICATION_TIME);
 		SPropTagArray_add(properties, properties, PR_LAST_MODIFIER_SID);
+		SPropTagArray_add(properties, properties, PR_LAST_MODIFIER_ENTRYID);
 		SPropTagArray_add(properties, properties, PR_ATTR_HIDDEN);
 		SPropTagArray_add(properties, properties, PR_ATTR_SYSTEM);
 		SPropTagArray_add(properties, properties, PR_ATTR_READONLY);
@@ -1450,6 +1456,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_FOLDER_XVIEWINFO_E);
 		SPropTagArray_add(properties, properties, PR_FOLDER_VIEWLIST);
 		SPropTagArray_add(properties, properties, PR_FREEBUSY_ENTRYIDS);
+		SPropTagArray_add(properties, properties, 0x36de0003); /* some unknown prop that outlook sets */
 		*propertiesp = properties;
 
 		retval = MAPISTORE_SUCCESS;
@@ -2635,22 +2642,9 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				data_pointers[i] = obj_count;
 			}
                 }
-		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			owner = emsmdbp_get_owner(object);
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
-			data_pointers[i] = binr;
-			retval = MAPI_E_SUCCESS;
-		}
-		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
-			obj_count = talloc_zero(data_pointers, uint32_t);
-			*obj_count = FOLDER_GENERIC;
-			data_pointers[i] = obj_count;
-			retval = MAPI_E_SUCCESS;
-		}
                 else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
-                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object,
-								  MAPISTORE_FAI_TABLE, obj_count);
+                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
 			if (!retval) {
 				data_pointers[i] = obj_count;
 			}
@@ -2671,6 +2665,18 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				data_pointers[i] = has_subobj;
 			}
 			talloc_free(obj_count);
+		}
+		else if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
+			owner = emsmdbp_get_owner(object);
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.folder->folderID, &binr);
+			data_pointers[i] = binr;
+			retval = MAPI_E_SUCCESS;
+		}
+		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			*obj_count = FOLDER_GENERIC;
+			data_pointers[i] = obj_count;
+			retval = MAPI_E_SUCCESS;
 		}
 		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
 			/* TODO: temporary hack */

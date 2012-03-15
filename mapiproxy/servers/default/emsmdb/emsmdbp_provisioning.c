@@ -195,7 +195,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	struct mapistore_contexts_list		*contexts_list;
 	struct StringArrayW_r			*existing_uris;
 	struct mapistore_contexts_list		*main_entries[MAPISTORE_MAX_ROLES], *secondary_entries[MAPISTORE_MAX_ROLES], *next_entry, *current_entry;
-	static const char			*folder_names[] = {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"};
+	static const char			*folder_names[] = {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"};
 	static struct emsmdbp_special_folder	special_folders[] = {{MAPISTORE_DRAFTS_ROLE, PR_IPM_DRAFTS_ENTRYID, "Drafts"},
 								     {MAPISTORE_CALENDAR_ROLE, PR_IPM_APPOINTMENT_ENTRYID, "Calendar"},
 								     {MAPISTORE_CONTACTS_ROLE, PR_IPM_CONTACT_ENTRYID, "Contacts"},
@@ -203,6 +203,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 								     {MAPISTORE_NOTES_ROLE, PR_IPM_NOTE_ENTRYID, "Notes"},
 								     {MAPISTORE_JOURNAL_ROLE, PR_IPM_JOURNAL_ENTRYID, "Journal"}};
 	const char				**container_classes;
+	const char				*search_container_classes[] = {"Outlook.Reminder", "IPF.Task", "IPF.Note"};
 	uint32_t				context_id;
 	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, found_fid, current_cn;
 	char					*fallback_url, *entryid_dump;
@@ -213,7 +214,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	DATA_BLOB				entryid_data;
 	struct FolderEntryId			folder_entryid;
 	struct Binary_r				*entryId;
-	bool					exists;
+	bool					exists, reminders_created;
 	void					*backend_object;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
@@ -322,10 +323,10 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	if (ret != MAPI_E_SUCCESS) {
 		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
 	}
-	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 2); /* allocate max needed until the end of the function */
+	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;
 	property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;
-	for (i = EMSMDBP_DEFERRED_ACTION; i < EMSMDBP_TOP_INFORMATION_STORE; i++) {
+	for (i = EMSMDBP_DEFERRED_ACTION; i < EMSMDBP_REMINDERS; i++) {
 		/* TODO: mapistore_tag change */
 		ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, i, &current_fid);
 		if (ret != MAPI_E_SUCCESS) {
@@ -333,7 +334,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
 			mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
 			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, mailbox_fid, current_fid, current_cn, mapistore_url, i);
-			property_row.lpProps->value.lpszW = folder_names[i];
+			property_row.lpProps[0].value.lpszW = folder_names[i];
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
@@ -341,6 +342,28 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
 			mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 		}
+	}
+
+	reminders_created = false;
+	j = 0;
+	property_row.cValues = 3;
+	property_row.lpProps[1].ulPropTag = PidTagContainerClass;
+	property_row.lpProps[2].ulPropTag = PidTagFolderType;
+	property_row.lpProps[2].value.l = 2;
+	for (i = EMSMDBP_REMINDERS; i < EMSMDBP_TOP_INFORMATION_STORE; i++) {
+		ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, i, &current_fid);
+		if (ret != MAPI_E_SUCCESS) {
+			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &current_fid);
+			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, mailbox_fid, current_fid, current_cn, NULL, i);
+			property_row.lpProps[0].value.lpszW = folder_names[i];
+			property_row.lpProps[1].value.lpszW = search_container_classes[j];
+			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+			if (i == EMSMDBP_REMINDERS) {
+				reminders_created = true;
+			}
+		}
+		j++;
 	}
 
 	/* IPM and subfolders */
@@ -489,6 +512,23 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		}
 	}
 	/* DEBUG(5, ("size of operation: %ld\n", talloc_total_size(mem_ctx))); */
+
+	/* PidTagRemindersOnlineEntryId */
+	if (reminders_created) {
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_REMINDERS, &found_fid);
+		folder_entryid.FolderGlobalCounter.value = (found_fid >> 16);
+		ndr_push_struct_blob(&entryid_data, mem_ctx, &folder_entryid, (ndr_push_flags_fn_t)ndr_push_FolderEntryId);
+		property_row.cValues = 1;
+		property_row.lpProps[0].ulPropTag = PidTagRemindersOnlineEntryId;
+		property_row.lpProps[0].value.bin.cb = entryid_data.length;
+		property_row.lpProps[0].value.bin.lpb = entryid_data.data;
+
+		entryid_dump = ndr_print_struct_string(mem_ctx, (ndr_print_fn_t) ndr_print_FolderEntryId, "Reminders", &folder_entryid);
+		DEBUG(5, ("%s\n", entryid_dump));
+
+		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, mailbox_fid, &property_row);
+		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, inbox_fid, &property_row);
+	}
 
 	/* secondary folders */
 	property_row.cValues = 2;

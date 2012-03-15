@@ -1436,8 +1436,6 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_ATTR_READONLY);
 		SPropTagArray_add(properties, properties, PR_EXTENDED_ACL_DATA);
 		SPropTagArray_add(properties, properties, PR_CONTAINER_CLASS_UNICODE);
-		SPropTagArray_add(properties, properties, PR_MESSAGE_CLASS_UNICODE);
-		SPropTagArray_add(properties, properties, PR_RIGHTS);
 		SPropTagArray_add(properties, properties, PR_CONTENT_COUNT);
 		SPropTagArray_add(properties, properties, PidTagAssociatedContentCount);
 		SPropTagArray_add(properties, properties, PR_SUBFOLDERS);
@@ -2689,7 +2687,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_RIGHTS || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
 			struct mapistore_property_data prop_data;
 
 			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,

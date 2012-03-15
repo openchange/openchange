@@ -49,8 +49,13 @@ if len(args) != 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
+_setupdir = os.path.dirname(__file__)
+if not os.path.exists(os.path.join(_setupdir, "AD")):
+    _setupdir = samba.param.setup_dir()
+
 def setup_path(*args):
-    return os.path.join(os.path.dirname(__file__), *args)
+    global _setupdir
+    return os.path.join(_setupdir, *args)
 
 if not opts.openchangedb:
 	openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)

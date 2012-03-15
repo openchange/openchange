@@ -41,17 +41,6 @@ samba-git-update:
 # top level compilation rules
 #################################################################
 
-ifeq ($(PYTHON_CONFIG),)
-PYTHON_CFLAGS=$(shell $(PYTHON_CONFIG) --cflags)
-PYTHON_LIBS=$(shell $(PYTHON_CONFIG) --libs)
-else
-PYTHON_VERSION=$(shell $(PYTHON) -V 2>& 1 | awk '{ print $$2 }')
-PYTHON_MAJOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 1)
-PYTHON_MINOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 2)
-PYTHON_CFLAGS=-I/usr/include/python$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION) -I/usr/include/python
-PYTHON_LIBS=-lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-endif
-
 all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\

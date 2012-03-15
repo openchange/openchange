@@ -303,13 +303,33 @@ dnl ---------------------------------------------------------------------------
 dnl Check for Python
 dnl ---------------------------------------------------------------------------
 
-AC_PATH_PROG(PYTHON,python)
-AC_PATH_PROG(PYTHON_CONFIG,python-config)
+AC_PATH_PROG(PYTHON, python)
+if test x"$PYTHON" = x""; then
+	AC_MSG_WARN([No version of python was found!])
+	AC_MSG_ERROR([Please install python])
+fi
+AC_SUBST(PYTHON)
+
+AC_PATH_PROG(PYTHON_CONFIG, python-config)
+if test x"$PYTHON_CONFIG" = x""; then
+	AC_MSG_WARN([No version of python-config was found!])
+	AC_MSG_ERROR([Please install python-dev 2.7])
+fi
+AC_SUBST(PYTHON_CONFIG)
+
+AC_MSG_CHECKING(python cflags)
+PYTHON_CFLAGS=`$PYTHON_CONFIG --cflags`
+AC_MSG_RESULT($PYTHON_CFLAGS)
+AC_SUBST(PYTHON_CFLAGS)
+
+AC_MSG_CHECKING(python libs)
+PYTHON_LIBS=`$PYTHON_CONFIG --libs`
+AC_MSG_RESULT($PYTHON_LIBS)
+AC_SUBST(PYTHON_LIBS)
 
 AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
 AC_MSG_RESULT($pythondir)
-
 AC_SUBST(pythondir)
 
 dnl ----------------------------------------------------------------------------
@@ -776,7 +796,6 @@ OpenChange Configuration (Please review)
 	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
-	     - Python:			$enable_pymapi
 	     - Qt4:			$enable_openchange_qt4
 
 	   * Installation prefix:	$prefix

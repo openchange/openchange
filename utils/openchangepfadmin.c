@@ -21,7 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapiadmin/libmapiadmin.h"
-#include <samba/popt.h>
+#include <popt.h>
 #include <param.h>
 
 #include "openchangepfadmin.h"

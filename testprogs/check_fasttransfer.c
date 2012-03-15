@@ -23,7 +23,7 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 
-#include <samba/popt.h>
+#include <popt.h>
 #include <ldb.h>
 #include <talloc.h>
 #include <inttypes.h>

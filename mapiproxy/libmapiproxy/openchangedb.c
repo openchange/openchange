@@ -1263,7 +1263,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 		case PR_DEPTH:
 		case PR_SOURCE_KEY:
 		case PR_PARENT_SOURCE_KEY:
-		case PR_CHANGE_KEY:
 		case PR_CREATION_TIME:
 		case PR_LAST_MODIFICATION_TIME:
 			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value->ulPropTag));
@@ -1822,7 +1821,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
 	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, now);
-	ldb_msg_add_fmt(msg, "PidTagNTSDModificationTime", "%"PRIu64, now);
 	if (mailboxDN) {
 		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
 	}

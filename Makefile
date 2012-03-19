@@ -736,6 +736,9 @@ libmapiproxy: mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 libmapiproxy-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
+endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.pc $(DESTDIR)$(libdir)/pkgconfig
 
@@ -783,6 +786,9 @@ libmapiserver: mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
 libmapiserver-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiserver.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION)
+endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver/libmapiserver.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	@$(SED) $(DESTDIR)$(includedir)/*.h
@@ -855,6 +861,9 @@ libmapistore-installpc:
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapistore.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+endif
 	$(INSTALL) -d $(DESTDIR)$(includedir)/mapistore
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/

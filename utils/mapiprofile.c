@@ -402,11 +402,12 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
-	struct mapi_profile	profile;
+	struct mapi_profile	*profile;
 	char			*profname;
 	char			*exchange_version = NULL;
 
 	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_dump");
+	profile = talloc(mem_ctx, struct mapi_profile);
 
 	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
@@ -418,7 +419,7 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
-	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, profile, profname, NULL);
 	talloc_free(profname);
 
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
@@ -427,7 +428,7 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 		exit (1);
 	}
 
-	switch (profile.exchange_version) {
+	switch (profile->exchange_version) {
 	case 0x0:
 		exchange_version = talloc_strdup(mem_ctx, "exchange 2000");
 		break;
@@ -442,15 +443,15 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 		goto end;
 	}
 
-	printf("Profile: %s\n", profile.profname);
+	printf("Profile: %s\n", profile->profname);
 	printf("\texchange server == %s\n", exchange_version);
-	printf("\tencryption      == %s\n", (profile.seal == true) ? "yes" : "no");
-	printf("\tusername        == %s\n", profile.username);
-	printf("\tpassword        == %s\n", profile.password);
-	printf("\tmailbox         == %s\n", profile.mailbox);
-	printf("\tworkstation     == %s\n", profile.workstation);
-	printf("\tdomain          == %s\n", profile.domain);
-	printf("\tserver          == %s\n", profile.server);
+	printf("\tencryption      == %s\n", (profile->seal == true) ? "yes" : "no");
+	printf("\tusername        == %s\n", profile->username);
+	printf("\tpassword        == %s\n", profile->password);
+	printf("\tmailbox         == %s\n", profile->mailbox);
+	printf("\tworkstation     == %s\n", profile->workstation);
+	printf("\tdomain          == %s\n", profile->domain);
+	printf("\tserver          == %s\n", profile->server);
 
 end:
 	talloc_free(mem_ctx);
@@ -461,13 +462,14 @@ static void mapiprofile_attribute(struct mapi_context *mapi_ctx, const char *pro
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
-	struct mapi_profile	profile;
+	struct mapi_profile	*profile;
 	char			*profname = NULL;
 	char			**value = NULL;
 	unsigned int		count = 0;
 	unsigned int		i;
 
 	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_attribute");
+	profile = talloc(mem_ctx, struct mapi_profile);
 
 	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
@@ -478,7 +480,7 @@ static void mapiprofile_attribute(struct mapi_context *mapi_ctx, const char *pro
 		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
 	}
 
-	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, profile, profname, NULL);
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		mapi_errstr("OpenProfile", retval);
 		talloc_free(profname);
@@ -486,7 +488,7 @@ static void mapiprofile_attribute(struct mapi_context *mapi_ctx, const char *pro
 		exit (1);
 	}
 
-	if ((retval = GetProfileAttr(&profile, attribute, &count, &value))) {
+	if ((retval = GetProfileAttr(profile, attribute, &count, &value))) {
 		mapi_errstr("ProfileGetAttr", retval);
 		talloc_free(profname);
 		talloc_free(mem_ctx);

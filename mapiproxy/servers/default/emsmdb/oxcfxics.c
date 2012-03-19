@@ -1498,6 +1498,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	else {						/* keyword: folderChange */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagParentFolderId); /* PidTagParentSourceKey */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagFolderId); /* PidTagSourceKey */
+		properties_exclusion[PidTagMessageClass >> 16] = false;
 	}
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagChangeNumber);
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagChangeKey);

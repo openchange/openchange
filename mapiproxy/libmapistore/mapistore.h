@@ -352,6 +352,7 @@ enum mapistore_error mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_
 uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
 enum mapistore_error mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
 enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, struct MAPINAMEID **);
+enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */
 enum mapistore_error mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);

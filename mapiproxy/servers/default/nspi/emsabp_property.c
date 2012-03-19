@@ -44,6 +44,7 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTag7BitDisplayName,		"displayName",		false,	NULL			},
 	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
 	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
+	{ PidTagDepartmentName,			"department",		false,	NULL			},
 	{ PidTagCompanyName,			"company",		false,	NULL			},
 	{ PidTagDisplayName,			"displayName",		false,	NULL			},
 	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},

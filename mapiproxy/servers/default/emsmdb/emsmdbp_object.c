@@ -1436,8 +1436,6 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_ATTR_READONLY);
 		SPropTagArray_add(properties, properties, PR_EXTENDED_ACL_DATA);
 		SPropTagArray_add(properties, properties, PR_CONTAINER_CLASS_UNICODE);
-		SPropTagArray_add(properties, properties, PR_MESSAGE_CLASS_UNICODE);
-		SPropTagArray_add(properties, properties, PR_RIGHTS);
 		SPropTagArray_add(properties, properties, PR_CONTENT_COUNT);
 		SPropTagArray_add(properties, properties, PidTagAssociatedContentCount);
 		SPropTagArray_add(properties, properties, PR_SUBFOLDERS);
@@ -1491,8 +1489,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         retvals = talloc_array(mem_ctx, enum MAPISTATUS, num_props);
         memset(retvals, 0, sizeof(uint32_t) * num_props);
 
-	contextID = emsmdbp_get_contextID(table_object);
 	if (emsmdbp_is_mapistore(table_object)) {
+		contextID = emsmdbp_get_contextID(table_object);
 		retval = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
 						 table_object->backend_object, data_pointers,
 						 query_type, row_id, &properties);
@@ -1584,6 +1582,9 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		case MAPISTORE_FOLDER_TABLE:
 			ret = emsmdbp_object_open_folder(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFMId, &rowobject);
 			mapistore_folder = emsmdbp_is_mapistore(rowobject);
+			if (mapistore_folder) {
+				contextID = emsmdbp_get_contextID(rowobject);
+			}
 			break;
 		case MAPISTORE_MESSAGE_TABLE:
 			ret = emsmdbp_object_message_open(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, parentFolderId, *(uint64_t *)rowFMId, false, &rowobject, NULL);
@@ -1608,13 +1609,13 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				switch (table->properties[i]) {
 				case PR_CONTENT_COUNT:
 					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
+					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject->backend_object,
 										  MAPISTORE_MESSAGE_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
 				case PidTagAssociatedContentCount:
 					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject,
+					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject->backend_object,
 										  MAPISTORE_FAI_TABLE, obj_count);
 					data_pointers[i] = obj_count;
 					break;
@@ -1627,6 +1628,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 					owner = emsmdbp_get_owner(table_object);
 					emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, rowobject->object.folder->folderID, &binr);
 					data_pointers[i] = binr;
+					retval = MAPI_E_SUCCESS;
 					break;
 				case PR_SUBFOLDERS:
 					obj_count = talloc_zero(NULL, uint32_t);
@@ -2685,7 +2687,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_RIGHTS || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL) {
 			struct mapistore_property_data prop_data;
 
 			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,

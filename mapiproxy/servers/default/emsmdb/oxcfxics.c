@@ -839,8 +839,8 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	SPropTagArray_find(synccontext->properties, PidTagMid, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PidTagChangeNumber, &sync_data->prop_index.change_number);
 	SPropTagArray_find(synccontext->properties, PidTagChangeKey, &sync_data->prop_index.change_key);
-	SPropTagArray_find(synccontext->properties, PidTagLastModificationTime, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PidTagPredecessorChangeList, &sync_data->prop_index.predecessor_change_list);
+	SPropTagArray_find(synccontext->properties, PidTagLastModificationTime, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PidTagAssociated, &sync_data->prop_index.associated);
 	SPropTagArray_find(synccontext->properties, PidTagMessageSize, &sync_data->prop_index.message_size);
 	sync_data->ndr = ndr_push_init_ctx(sync_data);
@@ -1055,18 +1055,29 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 
 			/* change key */
-			bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
+			if (retvals[sync_data->prop_index.change_key]) {
+				bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn);
+			}
+			else {
+				bin_data = data_pointers[sync_data->prop_index.change_key];
+			}
 			query_props.aulPropTag[j] = PidTagChangeKey;
 			header_data_pointers[j] = bin_data;
 			j++;
 
 			/* predecessor... (already computed) */
-			predecessors_data.cb = bin_data->cb + 1;
-			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
-			*predecessors_data.lpb = bin_data->cb & 0xff;
-			memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
 			query_props.aulPropTag[j] = PidTagPredecessorChangeList;
-			header_data_pointers[j] = &predecessors_data;
+			if (retvals[sync_data->prop_index.predecessor_change_list]) {
+				predecessors_data.cb = bin_data->cb + 1;
+				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
+				*predecessors_data.lpb = bin_data->cb & 0xff;
+				memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
+				header_data_pointers[j] = &predecessors_data;
+			}
+			else {
+				bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
+				header_data_pointers[j] = bin_data;
+			}
 			j++;
 					
 			/* display name */
@@ -1147,6 +1158,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	SPropTagArray_find(synccontext->properties, PidTagParentFolderId, &sync_data->prop_index.parent_fid);
 	SPropTagArray_find(synccontext->properties, PidTagFolderId, &sync_data->prop_index.eid);
 	SPropTagArray_find(synccontext->properties, PidTagChangeNumber, &sync_data->prop_index.change_number);
+	SPropTagArray_find(synccontext->properties, PidTagChangeKey, &sync_data->prop_index.change_key);
 	SPropTagArray_find(synccontext->properties, PidTagPredecessorChangeList, &sync_data->prop_index.predecessor_change_list);
 	SPropTagArray_find(synccontext->properties, PidTagLastModificationTime, &sync_data->prop_index.last_modification_time);
 	SPropTagArray_find(synccontext->properties, PidTagDisplayName, &sync_data->prop_index.display_name);

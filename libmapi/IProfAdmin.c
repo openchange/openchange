@@ -1139,6 +1139,8 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 		set_profile_attribute(mapi_ctx, profile_dst, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 		mapi_profile_delete_string_attr(mapi_ctx, profile_dst, "EmailAddress", oldEmailAddress);
 		MAPIFreeBuffer(SRowSet);
+		DLIST_REMOVE(mapi_ctx->session, session);
+		MAPIFreeBuffer(session);
 	}
 
 	/* Change ProxyAddress */

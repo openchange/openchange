@@ -13,5 +13,26 @@ def options(ctx):
 def configure(ctx):
     ctx.load('compiler_c flex bison')
 
+    ctx.check_cfg(package='talloc',
+		  args=['talloc >= 2.0.7', '--cflags', '--libs'],
+		  uselib_store='TALLOC',
+		  msg="Checking for talloc 2.0.7")
+
 def build(bld):
-    return
+    target = bld(
+        features = 'c cshlib',
+        source = [
+            'ocpf.y',
+            'lex.l',
+            'ocpf_context.c',
+            'ocpf_public.c',
+            'ocpf_server.c',
+            'ocpf_dump.c',
+            'ocpf_api.c',
+            'ocpf_write.c'],
+        target = APPNAME,
+        vnum = VERSION,
+        includes = ['.', '../', 'build'],
+        depends_on = 'libmapi',
+        use = [ 'mapi', 'TALLOC']
+        )

@@ -131,7 +131,7 @@ static int iface_comp(struct iface_struct *i1, struct iface_struct *i2)
 
 /* this wrapper is used to remove duplicates from the interface list generated
    above */
-_PUBLIC_ int get_interfaces(struct iface_struct *ifaces, int max_interfaces)
+_PUBLIC_ int get_interfaces_oc(struct iface_struct *ifaces, int max_interfaces)
 {
 	int total, i, j;
 

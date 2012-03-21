@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008-2010.
+   Copyright (C) Julien Kerihuel 2008-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,7 +96,9 @@ _PUBLIC_ void ocpf_dump_folder(uint32_t context_id)
 _PUBLIC_ void ocpf_dump_recipients(uint32_t context_id)
 {
 	struct ocpf_context	*ctx;
-	struct ocpf_recipients	*element;
+	uint32_t		i;
+	struct SPropValue	*lpProps;
+	uint32_t		*RecipClass;
 
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
 	if (!ctx) return;
@@ -104,31 +106,28 @@ _PUBLIC_ void ocpf_dump_recipients(uint32_t context_id)
 	OCPF_DUMP_TITLE(indent, "RECIPIENTS", OCPF_DUMP_TOPLEVEL);
 	indent++;
 
-	INDENT();
-	printf("* To: ");
-	for (element = ctx->recipients; element->next; element = element->next) {
-		if (element->class == OCPF_MAPI_TO) {
-			printf("%s;", element->name);
+	for (i = 0; i < ctx->recipients->cRows; i++) {
+		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTagRecipientType);
+		if (lpProps) {
+			RecipClass = (uint32_t *)get_SPropValue_data(lpProps);
+			if (RecipClass) {
+				switch (*RecipClass) {
+				case MAPI_TO:
+					OCPF_DUMP_TITLE(indent, "TO", OCPF_DUMP_SUBLEVEL);
+					break;
+				case MAPI_CC:
+					OCPF_DUMP_TITLE(indent, "CC", OCPF_DUMP_SUBLEVEL);
+					break;
+				case MAPI_BCC:
+					OCPF_DUMP_TITLE(indent, "BCC", OCPF_DUMP_SUBLEVEL);
+					break;
+				}
+				mapidump_SRow(&ctx->recipients->aRow[i], "\t * ");
+			}
 		}
 	}
-	printf("\n");
 
-	INDENT();
-	printf("* Cc: ");
-	for (element = ctx->recipients; element->next; element = element->next) {
-		if (element->class == OCPF_MAPI_CC) {
-			printf("%s;", element->name);
-		}
-	}
-	printf("\n");
-
-	INDENT();
-	printf("* Bcc: ");
-	for (element = ctx->recipients; element->next; element = element->next) {
-		if (element->class == OCPF_MAPI_BCC) {
-			printf("%s;", element->name);
-		}
-	}
+	indent--;
 	printf("\n");
 }
 

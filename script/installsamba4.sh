@@ -22,6 +22,8 @@ if test x"$SAMBA_PREFIX" = x""; then
     SAMBA_PREFIX="/usr/local/samba"
 fi
 
+export CPPFLAGS="-I${SAMBA_PREFIX}/include"
+
 # use ccache for faster rebuild, where available
 if which ccache 2>/dev/null; then
 	export CC="ccache gcc"
@@ -33,8 +35,10 @@ export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
 pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
 export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
 
-RUNDIR=`dirname $0`
+RUNDIR=$(readlink -f $(dirname $0))
 HOST_OS=`$RUNDIR/../config.guess`
+
+BUILDTOOLS=$RUNDIR/../samba4/buildtools/
 
 #
 # Error check
@@ -68,7 +72,7 @@ cleanup_tdb() {
 }
 
 cleanup_ldb() {
-    cleanup_lib "source4/lib/ldb"
+    cleanup_lib "lib/ldb"
 }
 
 delete_install() {
@@ -189,7 +193,7 @@ download() {
 	case "$answer" in
 	    Y|y|yes)
 		echo "Step0: removing previous samba4 directory"
-		rm -rf samba4
+		sudo rm -rf samba4
 		;;
 	    N|n|no)
 		echo "Step0: Keep existing directory"
@@ -198,14 +202,14 @@ download() {
 	esac
     fi
 
-    echo "Step2: Fetching samba-$SAMBA4_RELEASE tarball"
+    echo "Step1: Fetching samba-$SAMBA4_RELEASE tarball"
     if ! test -e samba-$SAMBA4_RELEASE.tar.gz; then
 	rm -rf samba-$SAMBA4_RELEASE.tar.gz
-	wget http://us1.samba.org/samba/ftp/samba4/samba-$SAMBA4_RELEASE.tar.gz
+	wget http://ftp.samba.org/pub/samba/samba4/samba-$SAMBA4_RELEASE.tar.gz
 	error_check $? "Step1"
     fi     
 
-    echo "Step3: Extracting $SAMBA4_RELEASE"
+    echo "Step2: Extracting $SAMBA4_RELEASE"
     tar xzvf samba-$SAMBA4_RELEASE.tar.gz
     error_check $? "Step2"
     mv samba-$SAMBA4_RELEASE samba4
@@ -217,6 +221,12 @@ download() {
 # Apply patches to samba4
 #
 patch() {
+
+    pushd samba4/source3
+    sed "s/deps='ndr security NDR_SECURITY samba-util UTIL_TDB'/deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan'/g" wscript_build > wscript_build2
+    mv wscript_build2 wscript_build
+    popd
+
     case "$HOST_OS" in
 	*freebsd*)
 
@@ -234,7 +244,6 @@ patch() {
 	    popd
 	    ;;
     esac
-
     return $?
 }
 
@@ -245,13 +254,19 @@ patch() {
 packages() {
     delete_install
 
-    for lib in lib/talloc lib/tdb lib/tevent source4/lib/ldb; do
+    for lib in lib/talloc lib/tdb lib/tevent lib/ldb; do
 	echo "Building and installing $lib library"
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
-	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE
+	extra=""
+	if [ "$lib" == "lib/ldb" ]; then
+	    extra="--disable-tdb2 --builtin-libraries=ccan"
+	fi
+
+	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
+	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	error_check $? "$lib configure"
 
 	$MAKE -j
@@ -270,6 +285,7 @@ packages() {
 	error_check $? "$lib make distclean"
 
 	popd
+	export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
     done
 }
 
@@ -278,10 +294,12 @@ packages() {
 #
 compile() {
     echo "Step1: Preparing Samba4 system"
-    pushd samba4
+    pushd samba4/source4
     error_check $? "samba4 setup"
 
-    ./configure.developer -C --prefix=$SAMBA_PREFIX
+    cd $RUNDIR/../samba4
+    export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --builtin-libraries=ccan,replace --disable-tdb2
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"
@@ -337,9 +355,10 @@ typedef int (*comparison_fn_t)(const void *, const void *);\\
 install() {
     echo "Step1: Installing Samba"
     echo "===> we are in $PWD"
-    pushd samba4
+    pushd samba4/source4
     error_check $? "samba4 setup"
 
+    cd $RUNDIR/../samba4
     if test -w `dirname $SAMBA_PREFIX`; then
 	$MAKE install
 	error_check $? "samba4 install"

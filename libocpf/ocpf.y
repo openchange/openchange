@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008-2010.
+   Copyright (C) Julien Kerihuel 2008-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -47,7 +47,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	char				*var;
 	struct LongArray_r		MVl;
 	struct StringArray_r		MVszA;
-	struct WStringArray_r		MVszW;
+	struct StringArrayW_r		MVszW;
 	struct BinaryArray_r		MVbin;
 }
 
@@ -183,6 +183,56 @@ Set		:
 		}
 		;
 
+Recipient	:
+		kw_RECIPIENT OBRACE recipients EBRACE SEMICOLON
+		{
+		}
+
+recipients	: | recipients recipient
+
+recipient	:
+		kw_TO OBRACE rpcontent EBRACE SEMICOLON
+		{
+			ocpf_recipient_set_class(ctx, MAPI_TO);
+			ocpf_new_recipient(ctx);
+		}
+		| kw_CC OBRACE rpcontent EBRACE SEMICOLON
+		{
+			ocpf_recipient_set_class(ctx, MAPI_CC);
+			ocpf_new_recipient(ctx);
+		}
+		| kw_BCC OBRACE rpcontent EBRACE SEMICOLON
+		{
+			ocpf_recipient_set_class(ctx, MAPI_BCC);
+			ocpf_new_recipient(ctx);
+		}
+		;
+
+rpcontent	: | rpcontent rcontent
+		{
+			memset(&ctx->lpProp, 0, sizeof (union SPropValue_CTR));
+		}
+
+rcontent	:
+		IDENTIFIER EQUAL propvalue
+		{
+			ocpf_propvalue_s(ctx, $1, ctx->lpProp, ctx->ltype, true, kw_RECIPIENT);
+			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
+		}
+		| INTEGER EQUAL propvalue
+		{
+			ocpf_propvalue(ctx, $1, ctx->lpProp, ctx->ltype, true, kw_RECIPIENT);
+			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
+		}
+		| IDENTIFIER EQUAL VAR
+		{
+			ocpf_propvalue_var(ctx, $1, 0x0, $3, true, kw_RECIPIENT);
+		}
+		| INTEGER EQUAL VAR
+		{
+			ocpf_propvalue_var(ctx, NULL, $1, $3, true, kw_RECIPIENT);
+		};
+
 Property	:
 		kw_PROPERTY OBRACE pcontent EBRACE SEMICOLON
 		{
@@ -197,21 +247,21 @@ pcontent       	: | pcontent content
 content		:
 		IDENTIFIER EQUAL propvalue
 		{
-			ocpf_propvalue_s(ctx, $1, ctx->lpProp, ctx->ltype, true);
+			ocpf_propvalue_s(ctx, $1, ctx->lpProp, ctx->ltype, true, kw_PROPERTY);
 			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
 		}
 		| INTEGER EQUAL propvalue
 		{
-			ocpf_propvalue(ctx, $1, ctx->lpProp, ctx->ltype, true);
+			ocpf_propvalue(ctx, $1, ctx->lpProp, ctx->ltype, true, kw_PROPERTY);
 			ocpf_propvalue_free(ctx->lpProp, ctx->ltype);
 		}
 		| IDENTIFIER EQUAL VAR
 		{
-			ocpf_propvalue_var(ctx, $1, 0x0, $3, true);
+			ocpf_propvalue_var(ctx, $1, 0x0, $3, true, kw_PROPERTY);
 		}
 		| INTEGER EQUAL VAR
 		{
-			ocpf_propvalue_var(ctx, NULL, $1, $3, true);
+			ocpf_propvalue_var(ctx, NULL, $1, $3, true, kw_PROPERTY);
 		}
 		;
 
@@ -237,8 +287,6 @@ propvalue	: STRING
 		}
 		| OBRACE mvlong_contents INTEGER EBRACE
 		{
-			TALLOC_CTX	*mem_ctx;
-
 			if (!ctx->lpProp.MVl.cValues) {
 				ctx->lpProp.MVl.cValues = 0;
 				ctx->lpProp.MVl.lpl = talloc_array(ctx, uint32_t, 2);
@@ -247,7 +295,6 @@ propvalue	: STRING
 								     uint32_t,
 								     ctx->lpProp.MVl.cValues + 2);
 			}
-			mem_ctx = (TALLOC_CTX *) ctx->lpProp.MVl.lpl;
 			ctx->lpProp.MVl.lpl[ctx->lpProp.MVl.cValues] = $3;
 			ctx->lpProp.MVl.cValues += 1;
 
@@ -565,44 +612,6 @@ known_kind	: kw_MNID_ID COLON INTEGER COLON IDENTIFIER
 			ctx->nprop.guid = $5;
 		}
 		;
-
-Recipient	: 
-		kw_RECIPIENT recipClass recipients STRING
-		{
-			char	*recipient = NULL;
-
-			recipient = talloc_strdup(ctx, $4);
-			ocpf_recipient_add(ctx, ctx->recip_type, recipient);
-			talloc_free(recipient);
-
-			ctx->recip_type = 0;
-		}
-		;
-
-recipClass	: kw_TO
-		{
-			ctx->recip_type = MAPI_TO;
-		}
-		| kw_CC
-		{
-			ctx->recip_type = MAPI_CC;
-		}
-		| kw_BCC
-		{
-			ctx->recip_type = MAPI_BCC;
-		}
-		;
-
-recipients	: | recipients recipient
-
-recipient	: STRING SEMICOLON
-		{
-			char	*recipient = NULL;
-
-			recipient = talloc_strdup(ctx, $1);
-			ocpf_recipient_add(ctx, ctx->recip_type, recipient);
-			talloc_free(recipient);
-		}
 
 %%
 

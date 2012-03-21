@@ -21,7 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapiadmin/libmapiadmin.h"
-#include <samba/popt.h>
+#include <popt.h>
 #include <param.h>
 
 #include "openchangepfadmin.h"
@@ -185,7 +185,7 @@ static enum MAPISTATUS openchangepfadmin_mkdir(mapi_object_t *obj_container,
 		set_SPropValue_proptag(&props[0], PR_CONTAINER_CLASS, (const void *) type);
 		prop_count++;
 
-		retval = SetProps(&obj_folder, props, prop_count);
+		retval = SetProps(&obj_folder, 0, props, prop_count);
 		mapi_object_release(&obj_folder);
 		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 	}

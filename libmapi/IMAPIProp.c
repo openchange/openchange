@@ -19,6 +19,7 @@
  */
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 #include "libmapi/libmapi_private.h"
 
 
@@ -40,6 +41,8 @@
    named properties.
 
    \param obj the object to get properties on
+   \param flags Flags for behaviour; can be bit-OR of MAPI_UNICODE and
+      MAPI_PROPS_SKIP_NAMEDID_CHECK constants
    \param SPropTagArray an array of MAPI property tags
    \param lpProps the result of the query
    \param PropCount the count of property tags
@@ -56,7 +59,8 @@
 
    \sa SetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj, 
+_PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
+				  uint32_t flags,
 				  struct SPropTagArray *SPropTagArray,
 				  struct SPropValue **lpProps, 
 				  uint32_t *PropCount)
@@ -68,6 +72,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	struct GetProps_req	request;
 	struct mapi_session	*session;
 	struct mapi_nameid	*nameid;
+	struct SPropTagArray	properties;
 	struct SPropTagArray	*SPropTagArray2 = NULL;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
@@ -90,19 +95,20 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetProps");
+	mem_ctx = talloc_named(session, 0, "GetProps");
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
-	retval = mapi_nameid_lookup_SPropTagArray(nameid, SPropTagArray);
-	if (retval == MAPI_E_SUCCESS) {
-		named = true;
-		SPropTagArray2 = talloc_zero(mem_ctx, struct SPropTagArray);
-		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray2);
-		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);		
-		mapi_nameid_map_SPropTagArray(nameid, SPropTagArray, SPropTagArray2);
-		MAPIFreeBuffer(SPropTagArray2);
-
+	if (!(flags & MAPI_PROPS_SKIP_NAMEDID_CHECK)) {
+		retval = mapi_nameid_lookup_SPropTagArray(nameid, SPropTagArray);
+		if (retval == MAPI_E_SUCCESS) {
+			named = true;
+			SPropTagArray2 = talloc_zero(mem_ctx, struct SPropTagArray);
+			retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray2);
+			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);		
+			mapi_nameid_map_SPropTagArray(nameid, SPropTagArray, SPropTagArray2);
+			MAPIFreeBuffer(SPropTagArray2);
+		}
 	}
 	errno = 0;
 
@@ -114,11 +120,13 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	/* Fill the GetProps operation */
 	request.PropertySizeLimit = 0x0;
 	size += sizeof (uint16_t);
-	request.WantUnicode = 0x0;
+	request.WantUnicode = (flags & MAPI_UNICODE) != 0 ? true : 0x0;
 	size += sizeof (uint16_t);
 	request.prop_count = (uint16_t) SPropTagArray->cValues;
 	size += sizeof (uint16_t);
-	request.properties = SPropTagArray->aulPropTag;
+	properties.cValues = SPropTagArray->cValues;
+	properties.aulPropTag = talloc_memdup(mem_ctx, SPropTagArray->aulPropTag, SPropTagArray->cValues * sizeof(enum MAPITAGS));
+	request.properties = properties.aulPropTag;
 	size += request.prop_count * sizeof(uint32_t);
 
 	/* Fill the MAPI_REQ request */
@@ -154,9 +162,8 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	talloc_free(nameid);
 
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
-					   mapi_ctx->lp_ctx,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
-					   SPropTagArray, lpProps, PropCount, 
+					   &properties, lpProps, PropCount, 
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
 	OPENCHANGE_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 	
@@ -173,6 +180,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
    This function sets one or more properties on a specified object.
 
    \param obj the object to set properties on
+   \param flags Flags for behaviour; can be MAPI_PROPS_SKIP_NAMEDID_CHECK
    \param lpProps the list of properties to set
    \param PropCount the number of properties
 
@@ -186,7 +194,8 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 
    \sa GetProps, GetPropList, GetPropsAll, DeleteProps, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj, 
+_PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
+				  uint32_t flags,
 				  struct SPropValue *lpProps, 
 				  unsigned long PropCount)
 {
@@ -215,19 +224,21 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetProps");
+	mem_ctx = talloc_named(session, 0, "SetProps");
 	size = 0;
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
-	retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
-	if (retval == MAPI_E_SUCCESS) {
-		named = true;
-		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
-		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-		mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
-		MAPIFreeBuffer(SPropTagArray);
+	if (!(flags & MAPI_PROPS_SKIP_NAMEDID_CHECK)) {
+		retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
+		if (retval == MAPI_E_SUCCESS) {
+			named = true;
+			SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+			retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
+			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+			mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
+			MAPIFreeBuffer(SPropTagArray);
+		}
 	}
 	errno = 0;
 
@@ -334,7 +345,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	if ((retval = mapi_object_get_logon_id(obj_parent, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SaveChangesAttachment");
+	mem_ctx = talloc_named(session[0], 0, "SaveChangesAttachment");
 	size = 0;
 
 	/* Fill the SaveChangesAttachment operation */
@@ -416,7 +427,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetPropList");
+	mem_ctx = talloc_named(session, 0, "GetPropList");
 
 	/* Reset */
 	proptags->cValues = 0;
@@ -470,6 +481,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
    for a given object.
 
    \param obj the object to get the properties for
+   \param flags Flags for behaviour; can be a MAPI_UNICODE constant
    \param properties the properties / values for the object
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -483,6 +495,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
    \sa GetProps, GetPropList, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
+				     uint32_t flags,
 				     struct mapi_SPropValue_array *properties)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -506,13 +519,13 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetPropsAll");
+	mem_ctx = talloc_named(session, 0, "GetPropsAll");
 	size = 0;
 
 	/* Fill the GetPropsAll operation */
 	request.PropertySizeLimit = 0;
 	size += sizeof (uint16_t);
-	request.WantUnicode = 0;
+	request.WantUnicode = (flags & MAPI_UNICODE) != 0 ? true : 0x0;
 	size += sizeof (uint16_t);
 
 	/* Fill the MAPI_REQ request */
@@ -589,7 +602,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteProps");
+	mem_ctx = talloc_named(session, 0, "DeleteProps");
 	size = 0;
 
 	/* Fill the DeleteProps operation */
@@ -637,6 +650,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
    this function does not result in folder properties being replicated.
 
    \param obj the object to set properties on
+   \param flags Flags for behaviour; can be MAPI_PROPS_SKIP_NAMEDID_CHECK
    \param lpProps the list of properties to set
    \param PropCount the number of properties
 
@@ -652,6 +666,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
    \sa SetProps, DeletePropertiesNoReplicate
 */
 _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
+						  uint32_t flags,
 						  struct SPropValue *lpProps, 
 						  unsigned long PropCount)
 {
@@ -680,19 +695,21 @@ _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetPropertiesNoReplicate");
+	mem_ctx = talloc_named(session, 0, "SetPropertiesNoReplicate");
 	size = 0;
 
 	/* Named property mapping */
 	nameid = mapi_nameid_new(mem_ctx);
-	retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
-	if (retval == MAPI_E_SUCCESS) {
-		named = true;
-		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-		retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
-		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-		mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
-		MAPIFreeBuffer(SPropTagArray);
+	if (!(flags & MAPI_PROPS_SKIP_NAMEDID_CHECK)) {
+		retval = mapi_nameid_lookup_SPropValue(nameid, lpProps, PropCount);
+		if (retval == MAPI_E_SUCCESS) {
+			named = true;
+			SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
+			retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray);
+			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+			mapi_nameid_map_SPropValue(nameid, lpProps, PropCount, SPropTagArray);
+			MAPIFreeBuffer(SPropTagArray);
+		}
 	}
 	errno = 0;
 
@@ -785,7 +802,7 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "DeletePropertiesNoReplicate");
+	mem_ctx = talloc_named(session, 0, "DeletePropertiesNoReplicate");
 	size = 0;
 
 	/* Fill the DeletePropertiesNoReplicate operation */
@@ -875,7 +892,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "GetNamesFromIDs");
+	mem_ctx = talloc_named(session, 0, "GetNamesFromIDs");
 	size = 0;
 
 	/* Fill the GetNamesFromIDs operation */
@@ -987,7 +1004,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "GetIDsFromNames");
+	mem_ctx = talloc_named(session, 0, "GetIDsFromNames");
 	size = 0;
 	
 	/* Fill the GetIDsFromNames operation */
@@ -1100,7 +1117,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 		return retval;
 
 	/* Initialization */
-	mem_ctx = talloc_named(NULL, 0, "QueryNamesFromIDs");
+	mem_ctx = talloc_named(session, 0, "QueryNamesFromIDs");
 	size = 0;
 
 	/* Fill the QueryNamedProperties operation */
@@ -1217,7 +1234,7 @@ _PUBLIC_ enum MAPISTATUS CopyProps(mapi_object_t *obj_src,
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyProps");
+	mem_ctx = talloc_named(session[0], 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */
@@ -1336,7 +1353,7 @@ _PUBLIC_ enum MAPISTATUS CopyTo(mapi_object_t *obj_src,
 	if ((retval = mapi_object_get_logon_id(obj_src, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "CopyProps");
+	mem_ctx = talloc_named(session[0], 0, "CopyProps");
 	size = 0;
 
 	/* Fill the CopyProperties operation */

@@ -80,7 +80,6 @@ int ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const cha
 	struct ldb_result	*res;
 	enum ldb_scope		scope = LDB_SCOPE_SUBTREE;
 	struct ldb_dn		*basedn;
-	int		       	ret;
 	const char * const     	attrs[] = { "*", NULL };
 
 	/* sanity check */
@@ -92,7 +91,7 @@ int ocb_record_init(struct ocb_context *ocb_ctx, const char *objclass, const cha
 	ldb_ctx = ocb_ctx->ldb_ctx;
 
 	/* Check if the record already exists */
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "%s", dn);
+	ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "%s", dn);
 	OCB_RETVAL_IF(res->msgs, "Record already exists", NULL);
 
 	/* Retrieve the record basedn */
@@ -188,7 +187,7 @@ uint32_t ocb_record_add_property(struct ocb_context *ocb_ctx,
 				((lpProp->value.b == true) ? "true" : "false"));
 		break;
 	case PT_I8:
-		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%16"PRIx64, lpProp->value.d);
+		ldb_msg_add_fmt(ocb_ctx->msg, attr, "%"PRId64, lpProp->value.d);
 		break;
 	case PT_SYSTIME:
 		value = ocb_ldb_timestring(mem_ctx, &lpProp->value.ft);

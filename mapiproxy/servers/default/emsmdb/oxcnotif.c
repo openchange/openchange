@@ -54,8 +54,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 							 uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
-	struct mapi_handles	*rec = NULL;
+	struct mapi_handles	*parent_rec = NULL;
+	struct mapi_handles	*subscription_rec = NULL;
 	uint32_t		handle;
+        struct emsmdbp_object   *parent_object;
+        struct emsmdbp_object   *subscription_object;
+        struct mapistore_subscription *subscription;
+        struct mapistore_subscription_list *subscription_list;
+        struct mapistore_object_subscription_parameters subscription_parameters;
+        void                    *data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n"));
 
@@ -66,18 +73,54 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	/* FIXME: Handle this call properly */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->u.mapi_RegisterNotification.handle_idx;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 
 	handle = handles[mapi_req->handle_idx];
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent_rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
+
+        retval = mapi_handles_get_private_data(parent_rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+	parent_object = (struct emsmdbp_object *) data;
+
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &subscription_rec);
 	if (retval) {
 		mapi_repl->error_code = retval;
 		goto end;
 	}
-	handles[mapi_repl->handle_idx] = rec->handle;
+	handles[mapi_repl->handle_idx] = subscription_rec->handle;
+
+        /* emsmdb_object */
+        subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
+        mapi_handles_set_private_data(subscription_rec, subscription_object);
+
+        /* we attach the subscription to the session object.
+           note: a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
+        subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
+        DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
+
+        subscription_parameters.folder_id = mapi_req->u.mapi_RegisterNotification.FolderId.ID;
+        subscription_parameters.object_id = mapi_req->u.mapi_RegisterNotification.MessageId.ID;
+        subscription_parameters.whole_store = mapi_req->u.mapi_RegisterNotification.WantWholeStore;
+
+        subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
+						  emsmdbp_ctx->username, 
+						  subscription_rec->handle,
+						  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
+						  &subscription_parameters);
+        subscription_list->subscription = subscription;
+
+        subscription_object->object.subscription->subscription_list = subscription_list;
 
 end:
 	*size += libmapiserver_RopRegisterNotification_size();

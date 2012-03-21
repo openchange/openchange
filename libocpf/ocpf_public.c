@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008-2010.
+   Copyright (C) Julien Kerihuel 2008-2011.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -227,62 +227,6 @@ static enum MAPISTATUS ocpf_stream(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details Build a SRowSet array with recipients from ocpf context
-
-   This function builds s SRowSet structure of recipient names and
-   type from the ocpf context and information stored.
-
-   \param mem_ctx pointer to the memory context to use for memory
-   allocation
-   \param context_id identifier of the context to use for building a
-   SRowSet array of recipients
-
-   \return Pointer to an allocated SRowSet structure on success,
-   otherwise NULL
- */
-_PUBLIC_ struct SRowSet *ocpf_get_recipients(TALLOC_CTX *mem_ctx,
-					  uint32_t context_id)
-{
-	struct SRowSet		*SRowSet;
-	struct ocpf_context	*ctx;
-	struct ocpf_recipients	*recipient;
-	int			i;
-
-	/* Sanity checks */
-	if (!ocpf) return NULL;
-
-	/* Step 1. Search for the context */
-	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
-	if (!ctx) return NULL;
-
-	/* Step 2. Allocate SRow */
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	SRowSet->cRows = 0;
-
-	/* Count the number of recipients and allocate memory for aRow */
-	for (recipient = ctx->recipients; recipient->next; recipient = recipient->next) {
-		SRowSet->cRows += 1;
-	}
-	SRowSet->aRow = talloc_array(SRowSet, struct SRow, SRowSet->cRows + 1);
-
-	for (i = 0, recipient = ctx->recipients; recipient->next; recipient = recipient->next, i++) {
-		SRowSet->aRow[i].ulAdrEntryPad = 0;
-		SRowSet->aRow[i].cValues = 2;
-		SRowSet->aRow[i].lpProps = talloc_array(SRowSet->aRow, struct SPropValue, 3);
-		
-		SRowSet->aRow[i].lpProps[0].ulPropTag = PR_RECIPIENT_TYPE;
-		SRowSet->aRow[i].lpProps[0].value.l = recipient->class;
-		
-		SRowSet->aRow[i].lpProps[1].ulPropTag = PR_DISPLAY_NAME;
-		SRowSet->aRow[i].lpProps[1].value.lpszA = talloc_strdup(SRowSet->aRow[i].lpProps, 
-									recipient->name);
-	}
-
-	return SRowSet;
-}
-
-
-/**
    \details Build a SPropValue array from ocpf context
 
    This function builds a SPropValue array from the ocpf context and
@@ -386,6 +330,9 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 						     (struct Binary_r *)pel->value);
 				MAPI_RETVAL_IF(retval, retval, NULL);
 			} else {
+				if ((pel->aulPropTag & 0xFFFF) == PT_STRING8) {
+					pel->aulPropTag = (pel->aulPropTag & 0xFFFF) + PT_UNICODE;
+				}
 				ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues, 
 							       pel->aulPropTag, pel->value);
 			}
@@ -394,7 +341,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 	/* Step 6. Add message class */
 	if (ctx->type) {
 		ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,
-					       PR_MESSAGE_CLASS, (const void *)ctx->type);
+					       PidTagMessageClass, (const void *)ctx->type);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -587,38 +534,38 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	SRowSet->aRow[last].lpProps = talloc_zero(mem_ctx, struct SPropValue);
 	
 	/* PR_OBJECT_TYPE */
-	SPropValue.ulPropTag = PR_OBJECT_TYPE;
+	SPropValue.ulPropTag = PidTagObjectType;
 	SPropValue.value.l = MAPI_MAILUSER;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_DISPLAY_TYPE */
-	SPropValue.ulPropTag = PR_DISPLAY_TYPE;
+	SPropValue.ulPropTag = PidTagDisplayType;
 	SPropValue.value.l = 0;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_GIVEN_NAME */
-	SPropValue.ulPropTag = PR_GIVEN_NAME;
-	SPropValue.value.lpszA = username;
+	SPropValue.ulPropTag = PidTagGivenName;
+	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_DISPLAY_NAME;
-	SPropValue.value.lpszA = username;
+	SPropValue.ulPropTag = PidTagDisplayName;
+	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_7BIT_DISPLAY_NAME */
-	SPropValue.ulPropTag = PR_7BIT_DISPLAY_NAME;
-	SPropValue.value.lpszA = username;
+	SPropValue.ulPropTag = PidTag7BitDisplayName;
+	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_SMTP_ADDRESS */
-	SPropValue.ulPropTag = PR_SMTP_ADDRESS;
-	SPropValue.value.lpszA = username;
+	SPropValue.ulPropTag = PidTagPrimarySmtpAddress;
+	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_ADDRTYPE */
-	SPropValue.ulPropTag = PR_ADDRTYPE;
-	SPropValue.value.lpszA = "SMTP";
+	SPropValue.ulPropTag = PidTagAddressType;
+	SPropValue.value.lpszW = "SMTP";
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	SetRecipientType(&(SRowSet->aRow[last]), RecipClass);
@@ -649,16 +596,16 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS			retval;
 	struct ocpf_context		*ctx;
-	struct ocpf_recipients		*element;
 	struct SPropTagArray		*SPropTagArray;
 	struct SPropValue		SPropValue;
-	struct SRowSet			*SRowSet = NULL;
+	struct SPropValue		*lpProps;
+	struct SRowSet			*SRowSet;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	char				**usernames = NULL;
 	int				*recipClass = NULL;
-	uint32_t			count;
 	uint32_t			counter;
 	uint32_t			i;
+	const void			*propdata;
 
 	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
@@ -667,30 +614,33 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
 	MAPI_RETVAL_IF(!ctx, MAPI_E_INVALID_PARAMETER, NULL);
 
-	MAPI_RETVAL_IF(!ctx->recipients->next, MAPI_E_NOT_FOUND, NULL);
+	MAPI_RETVAL_IF(!ctx->recipients->cRows, MAPI_E_NOT_FOUND, NULL);
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
-					  PR_OBJECT_TYPE,
-					  PR_DISPLAY_TYPE,
-					  PR_7BIT_DISPLAY_NAME,
-					  PR_DISPLAY_NAME,
-					  PR_SMTP_ADDRESS,
-					  PR_GIVEN_NAME,
-					  PR_EMAIL_ADDRESS,
-					  PR_ADDRTYPE);
+					  PidTagObjectType,
+					  PidTagDisplayName,
+					  PidTag7BitDisplayName,
+					  PidTagDisplayName,
+					  PidTagPrimarySmtpAddress,
+					  PidTagGivenName,
+					  PidTagEmailAddress,
+					  PidTagAddressType);
 
 	/* Step 1. Group recipients and run ResolveNames */
-	usernames = talloc_array(mem_ctx, char *, 2);
-	recipClass = talloc_array(mem_ctx, int, 2);
-	for (element = ctx->recipients, count = 0; element->next; element = element->next, count ++) {
-		usernames = talloc_realloc(mem_ctx, usernames, char *, count + 2);
-		recipClass = talloc_realloc(mem_ctx, recipClass, int, count + 2);
-		usernames[count] = talloc_strdup((TALLOC_CTX *)usernames, element->name);
-		recipClass[count] = element->class;
-	}
-	usernames[count] = 0;
+	usernames = talloc_array(mem_ctx, char *, ctx->recipients->cRows + 1);
+	recipClass = talloc_array(mem_ctx, int, ctx->recipients->cRows + 1);
+	for (i = 0; i < ctx->recipients->cRows; i++) {
+		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTag7BitDisplayName);
+		propdata = get_SPropValue(lpProps, PidTag7BitDisplayName);
+		usernames[i] = talloc_strdup((TALLOC_CTX *)usernames, (const char *) propdata);
 
-	retval = ResolveNames(mapi_object_get_session(obj_message), (const char **)usernames, 
+		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTagRecipientType);
+		propdata = get_SPropValue(lpProps, PidTagRecipientType);
+		recipClass[i] = *((uint32_t *)propdata);
+	}
+	usernames[i] = NULL;
+
+	retval = ResolveNames(mapi_object_get_session(obj_message), (const char **)usernames,
 			      SPropTagArray, &SRowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, usernames);
@@ -700,17 +650,15 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
 	}
 
-	count = 0;
 	counter = 0;
 	for (i = 0; usernames[i]; i++) {
-		if (flaglist->aulPropTag[count] == MAPI_UNRESOLVED) {
-			set_external_recipients(mem_ctx, SRowSet, usernames[i], recipClass[i]);
+		if (flaglist->aulPropTag[i] == MAPI_UNRESOLVED) {
+			set_external_recipients(mem_ctx, SRowSet, usernames[i], recipClass[i]);			
 		}
-		if (flaglist->aulPropTag[count] == MAPI_RESOLVED) {
+		if (flaglist->aulPropTag[i] == MAPI_RESOLVED) {
 			SetRecipientType(&(SRowSet->aRow[counter]), recipClass[i]);
 			counter++;
 		}
-		count++;
 	}
 
 	/* Step3. Finish to build the ModifyRecipients SRowSet */
@@ -720,10 +668,42 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 
 	/* Step4. Call ModifyRecipients */
 	retval = ModifyRecipients(obj_message, SRowSet);
-	MAPIFreeBuffer(SRowSet);
-	MAPIFreeBuffer(flaglist);
-	MAPIFreeBuffer(usernames);
 	MAPI_RETVAL_IF(retval, retval, NULL);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Get the message recipients from ocpf context
+
+   This function gets the recipient (To, Cc, Bcc) from the ocpf
+   context and information stored.
+
+   \param mem_ctx the memory context to use for memory allocation
+   \param context_id identifier to the context to set recipients for
+   \param SRowSet pointer on pointer to the set of recipients to return
+
+   \return MAPI_E_SUCCESS on success, otherwise NULL
+
+   \sa ocpf
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_get_recipients(TALLOC_CTX *mem_ctx,
+					     uint32_t context_id,
+					     struct SRowSet **SRowSet)
+{
+	struct ocpf_context	*ctx;
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!ocpf, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 1. Search for the context */
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	MAPI_RETVAL_IF(!ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!ctx->recipients->cRows, MAPI_E_NOT_FOUND, NULL);
+
+	*SRowSet = ctx->recipients;
 
 	return MAPI_E_SUCCESS;
 }

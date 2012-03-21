@@ -23,6 +23,7 @@
 #define	__MAPITEST_H__
 
 #include "libmapi/libmapi.h"
+#include "libmapi/mapi_nameid.h"
 
 #include <errno.h>
 #include <err.h>
@@ -197,17 +198,17 @@ struct mt_common_tf_ctx
 #define	MT_HDR_FMT_SUBSECTION	"%-21s: %-10s\n"
 #define	MT_HDR_FMT_VER_NORM	"%-21s: %02d.%02d.%04d.%04d\n"
 
-#define	MT_DIRNAME_TOP		"[MT] Top of Mailbox"
-#define	MT_DIRNAME_APPOINTMENT	"[MT] Calendar"
-#define	MT_DIRNAME_CONTACT	"[MT] Contact"
-#define	MT_DIRNAME_JOURNAL	"[MT] Journal"
-#define	MT_DIRNAME_POST		"[MT] Post"
-#define	MT_DIRNAME_NOTE		"[MT] Note"
-#define	MT_DIRNAME_STICKYNOTE	"[MT] Sticky Notes"
-#define	MT_DIRNAME_TASK		"[MT] Tasks"
-#define	MT_DIRNAME_TEST		"[MT] Test Folder1"
+#define	MT_DIRNAME_TOP		"MT Top of Mailbox"
+#define	MT_DIRNAME_APPOINTMENT	"MT Calendar"
+#define	MT_DIRNAME_CONTACT	"MT Contact"
+#define	MT_DIRNAME_JOURNAL	"MT Journal"
+#define	MT_DIRNAME_POST		"MT Post"
+#define	MT_DIRNAME_NOTE		"MT Note"
+#define	MT_DIRNAME_STICKYNOTE	"MT Sticky Notes"
+#define	MT_DIRNAME_TASK		"MT Tasks"
+#define	MT_DIRNAME_TEST		"MT Test Folder1"
 
-#define	MT_MAIL_SUBJECT		"[MT] Sample E-MAIL"
+#define	MT_MAIL_SUBJECT		"MT Sample E-MAIL"
 #define	MT_MAIL_ATTACH		"Attach1.txt"
 #define	MT_MAIL_ATTACH2		"Attach2.txt"
 

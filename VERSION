@@ -26,7 +26,7 @@ OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes
 # e.g. OPENCHANGE_VERSION_RELEASE_NICKNAME=Nicky Nickname   #
 #  ->  "0.7 (Nicky Nickname)"                               #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NICKNAME=Transporter
+OPENCHANGE_VERSION_RELEASE_NICKNAME=Borg
 
 
 #############################################################
@@ -35,4 +35,4 @@ OPENCHANGE_VERSION_RELEASE_NICKNAME=Transporter
 # e.g. OPENCHANGE_VERSION_RELEASE_VERSION=0.8.2             #
 #  ->  "0.8.2 (Nicky Nickname)"                             #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NUMBER=0.11
+OPENCHANGE_VERSION_RELEASE_NUMBER=1.0

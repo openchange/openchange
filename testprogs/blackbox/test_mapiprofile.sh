@@ -31,7 +31,7 @@ testit "list profiles" $VALGRIND $mapiprofile --database=$profdb --list || faile
 testit "set it as default" $VALGRIND $mapiprofile --database=$profdb -P mapiprofile -S || failed=`expr $failed + 1`
 
 # Check if the default profile has the proper name
-list_test=`mapiprofile --list --database=$profdb | grep default | cut -d= -f2 | sed 's/\[default\]//' | sed 's/\s*//' | sed 's/ //'`
+list_test=`$mapiprofile --list --database=$profdb | grep default | cut -d= -f2 | sed 's/\[default\]//' | sed 's/\s*//' | sed 's/ //'`
 if [ "$list_test" != "mapiprofile" ]; then
     subunit_fail_test "\"$list_test\" is not the default profile"
     failed=`expr $failed + 1`
@@ -40,7 +40,7 @@ fi
 testit "rename profile" $VALGRIND $mapiprofile --database=$profdb -P mapiprofile --rename=mapiprofile_rename || failed=`expr $failed + 1`
 
 # Check if the new profile has the proper name
-rename=`mapiprofile --list --database=$profdb | grep default | cut -d= -f2 | sed 's/\[default\]//' | sed 's/\s*//' | sed 's/ //'`
+rename=`$mapiprofile --list --database=$profdb | grep default | cut -d= -f2 | sed 's/\[default\]//' | sed 's/\s*//' | sed 's/ //'`
 if [ "$rename" != "mapiprofile_rename" ]; then
     subunit_fail_test "mapiprofile was not renamed to mapiprofile_rename"
     failed=`expr $failed + 1`

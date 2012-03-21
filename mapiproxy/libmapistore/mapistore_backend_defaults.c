@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2011
+   Copyright (C) Julien Kerihuel 2011-2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -22,8 +22,6 @@
 #include "mapistore_errors.h"
 #include "mapistore.h"
 #include "mapistore_private.h"
-#include "mapistore_backend.h"
-#include "mapistore_common.h"
 
 /**
    \file mapistore_backend_defaults.c
@@ -32,243 +30,375 @@
  */
 
 
-static enum MAPISTORE_ERROR mapistore_op_defaults_init(void)
+static enum mapistore_error mapistore_op_defaults_init(void)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));	
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_create_context(struct mapistore_backend_context *mstoredb_ctx, 
-								 const char *login_user, 
-								 const char *username,
-								 const char *uri, 
-								 void **private_data)
+static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owner, struct tdb_wrap *indexing,
+								TALLOC_CTX *mem_ctx, 
+								struct mapistore_contexts_list **contexts_listp)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_delete_context(void *private_data)
+static enum mapistore_error mapistore_op_defaults_create_context(TALLOC_CTX *mem_ctx, 
+								 struct mapistore_connection_info *conn_info,
+								 struct tdb_wrap *indexing_ctx,
+								 const char *uri, void **ctx)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_release_record(void *private_data, 
-								 const char *uri, 
-								 uint8_t type)
+static enum mapistore_error mapistore_op_defaults_create_root_folder(const char *username, 
+								     enum mapistore_context_role ctx_role, 
+								     uint64_t fid, 
+								     const char *name,
+								     TALLOC_CTX *mem_ctx,
+								     char **mapistore_urip)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_path(void *private_data, 
-							   const char *uri,  
-							   uint8_t type, 
-							   char **path)
+static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC_CTX *mem_ctx,
+							   uint64_t fmid, char **path)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_mkdir(void *private_data,
-							const char *parent_uri,
-							const char *folder_name,
-							const char *folder_desc,
-							enum FOLDER_TYPE folder_type,
-							char **folder_uri)
+static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_object,
+								  TALLOC_CTX *mem_ctx,
+								  uint64_t fid,
+								  void **root_folder_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_rmdir(void *private_data, 
-							const char *parent_uri, 
-							const char *folder_uri)
+static enum mapistore_error mapistore_op_defaults_open_folder(void *folder_object,
+							      TALLOC_CTX *mem_ctx,
+							      uint64_t fid,
+							      void **child_folder_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_opendir(void *private_data, 
-							  const char *parent_uri, 
-							  const char *folder_uri)
+static enum mapistore_error mapistore_op_defaults_create_folder(void *folder_object,
+								TALLOC_CTX *mem_ctx,
+								uint64_t fid,
+								struct SRow *aRow,
+								void **child_folder_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_closedir(void *private_data)
+static enum mapistore_error mapistore_op_defaults_delete_folder(void *folder_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_readdir_count(void *private_data, 
-								const char *folder_uri,
-								enum MAPISTORE_TABLE_TYPE table_type,
-								uint32_t *RowCount)
+static enum mapistore_error mapistore_op_defaults_open_message(void *folder_object,
+							       TALLOC_CTX *mem_ctx,
+							       uint64_t mid,
+							       bool rw,
+							       void **message_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_table_property(void *private_data, 
-								     const char *folder_uri,
-								     enum MAPISTORE_TABLE_TYPE table_type, 
-								     uint32_t pos,
-								     enum MAPITAGS proptag,
-								     void **data)
+static enum mapistore_error mapistore_op_defaults_create_message(void *folder_object,
+								 TALLOC_CTX *mem_ctx,
+								 uint64_t mid,
+								 uint8_t associated,
+								 void **message_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_openmessage(void *private_data,
-							      const char *folder_uri,
-							      const char *message_uri,
-							      struct mapistore_message *msg)
+static enum mapistore_error mapistore_op_defaults_delete_message(void *folder_object,
+								 uint64_t mid,
+								 uint8_t flags)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_createmessage(void *private_data, 
-								const char *folder_uri,
-								char **message_uri,
-								bool *uri_register)
+static enum mapistore_error mapistore_op_defaults_move_copy_messages(void *target_folder,
+								     void *source_folder,
+								     uint32_t mid_count,
+								     uint64_t *source_mids,
+								     uint64_t *target_mids,
+								     struct Binary_r **target_change_keys,
+								     uint8_t want_copy)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_savechangesmessage(void *private_data, 
-								     const char *message_uri,
-								     uint8_t flags)
+static enum mapistore_error mapistore_op_defaults_get_deleted_fmids(void *folder_object,
+								    TALLOC_CTX *mem_ctx,
+								    enum mapistore_table_type table_type,
+								    uint64_t change_num,
+								    struct I8Array_r **fmidsp,
+								    uint64_t *cnp)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_submitmessage(void *private_data, 
-								const char *message_uri,
-								uint8_t flags)
+static enum mapistore_error mapistore_op_defaults_get_child_count(void *folder_object,
+								  enum mapistore_table_type table_type,
+								  uint32_t *RowCount)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_deletemessage(void *private_data, 
-								const char *message_uri, 
-								enum MAPISTORE_DELETION_TYPE deletion_type)
+static enum mapistore_error mapistore_op_defaults_open_table(void *folder_object,
+							     TALLOC_CTX *mem_ctx,
+							     enum mapistore_table_type table_type,
+							     uint32_t handle_id,
+							     void **table_object,
+							     uint32_t *row_count)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_get_fid_by_name(void *private_data, 
-								  const char *parent_uri,
-								  const char *foldername, 
-								  char **fid)
+static enum mapistore_error mapistore_op_defaults_modify_permissions(void *folder_object,
+								     uint8_t flags,
+								     uint16_t pcount,
+								     struct PermissionData *permissions)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_getprops(void *private_data, 
-							   const char *uri, 
-							   uint8_t type,
-							   struct SPropTagArray *SPropTagArray, 
-							   struct SRow *aRow)
+static enum mapistore_error mapistore_op_defaults_get_message_data(void *message_object,
+								   TALLOC_CTX *mem_ctx,
+								   struct mapistore_message **msg)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_setprops(void *private_data, 
-							   const char *uri,
-							   uint8_t type,
-							   struct SRow *aRow)
+static enum mapistore_error mapistore_op_defaults_modify_recipients(void *message_object,
+								    struct SPropTagArray *columns,
+								    uint16_t count,
+								    struct mapistore_message_recipient *recipients)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_db_create_uri(TALLOC_CTX *mem_ctx, 
-								uint32_t index, 
-								const char *username,
-								char **mapistore_uri)
+static enum mapistore_error mapistore_op_defaults_set_read_flag(void *message_object, uint8_t flag)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_provision_namedprops(TALLOC_CTX *mem_ctx, char **ldif,
-								       enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+static enum mapistore_error mapistore_op_defaults_save(void *message_object)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-
-static enum MAPISTORE_ERROR mapistore_op_defaults_db_mkdir(void *private_data, enum MAPISTORE_DFLT_FOLDERS system_idx,
-							   const char *mapistore_uri, const char *folder_name)
+static enum mapistore_error mapistore_op_defaults_submit(void *message_object, enum SubmitFlags flags)
 {
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-/**
- \brief Set default implementations for all the backend methods
- 
- The default implementations just fail (returning MAPISTORE_ERR_NOT_IMPLEMENTED), but
- that is a lot better than forgetting to implement one and having the backend crash. You should
- call this function before setting any of your own values.
- 
- \param backend the backend to set the defaults on
- 
- \return MAPISTORE_SUCCESS on success, otherwise a MAPISTORE_ERROR value
-*/
+static enum mapistore_error mapistore_op_defaults_open_attachment(void *message_object,
+								  TALLOC_CTX *mem_ctx,
+								  uint32_t aid,
+								  void **attachment_object)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
 
-enum MAPISTORE_ERROR mapistore_backend_init_defaults(struct mapistore_backend *backend)
+static enum mapistore_error mapistore_op_defaults_create_attachment(void *message_object,
+								    TALLOC_CTX *mem_ctx,
+								    void **attachment_object,
+								    uint32_t *aid)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_attachment_table(void *message_object,
+								       TALLOC_CTX *mem_ctx,
+								       void **table_object,
+								       uint32_t *row_count)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_open_embedded_message(void *message_object,
+									TALLOC_CTX *mem_ctx,
+									void **embedded_message_object,
+									uint64_t *mid,
+									struct mapistore_message **msg)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_available_properties(void *x_object,
+									   TALLOC_CTX *mem_ctx,
+									   struct SPropTagArray **propertiesp)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_set_columns(void *table_object,
+							      uint16_t count,
+							      enum MAPITAGS *properties)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_set_restrictions(void *table_object,
+								   struct mapi_SRestriction *restrictions,
+								   uint8_t *table_status)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_set_sort_order(void *table_object,
+								 struct SSortOrderSet *sort_order,
+								 uint8_t *table_status)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_row(void *table_object,
+							  TALLOC_CTX *mem_ctx,
+							  enum mapistore_query_type query_type,
+							  uint32_t rowid,
+							  struct mapistore_property_data **data)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_row_count(void *table_object,
+								enum mapistore_query_type query_type,
+								uint32_t *row_countp)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_handle_destructor(void *table_object,
+								    uint32_t handle_id)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_properties(void *x_object,
+								 TALLOC_CTX *mem_ctx,
+								 uint16_t count,
+								 enum MAPITAGS *properties,
+								 struct mapistore_property_data *data)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_set_properties(void *x_object,
+								 struct SRow *aRow)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_generate_uri(TALLOC_CTX *mem_ctx,
+							       const char *username,
+							       const char *folder,
+							       const char *message,
+							       const char *root_uri,
+							       char **uri)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+extern enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *backend)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Backend information */
-	backend->name = NULL;
-	backend->description = NULL;
-	backend->uri_namespace = NULL;
+	/* Backend operations */
+	backend->backend.name = NULL;
+	backend->backend.description = NULL;
+	backend->backend.namespace = NULL;
+	backend->backend.init = mapistore_op_defaults_init;
+	backend->backend.list_contexts = mapistore_op_defaults_list_contexts;
+	backend->backend.create_context = mapistore_op_defaults_create_context;
+	backend->backend.create_root_folder = mapistore_op_defaults_create_root_folder;
 
-	/* Backend semantics */
-	backend->init = mapistore_op_defaults_init;
-	backend->create_context = mapistore_op_defaults_create_context;
-	backend->delete_context = mapistore_op_defaults_delete_context;
-	backend->release_record = mapistore_op_defaults_release_record;
-	backend->get_path = mapistore_op_defaults_get_path;
+	/* context operations */
+	backend->context.get_path = mapistore_op_defaults_get_path;
+	backend->context.get_root_folder = mapistore_op_defaults_get_root_folder;
 
-	/* Folder semantics */
-	backend->op_mkdir = mapistore_op_defaults_mkdir;
-	backend->op_rmdir = mapistore_op_defaults_rmdir;
-	backend->op_opendir = mapistore_op_defaults_opendir;
-	backend->op_closedir = mapistore_op_defaults_closedir;
-	backend->op_readdir_count = mapistore_op_defaults_readdir_count;
-	backend->op_get_table_property = mapistore_op_defaults_get_table_property;
-	backend->op_get_fid_by_name = mapistore_op_defaults_get_fid_by_name;
+	/* oxcfold semantics */
+	backend->folder.open_folder = mapistore_op_defaults_open_folder;
+	backend->folder.create_folder = mapistore_op_defaults_create_folder;
+	backend->folder.delete = mapistore_op_defaults_delete_folder;
+	backend->folder.open_message = mapistore_op_defaults_open_message;
+	backend->folder.create_message = mapistore_op_defaults_create_message;
+	backend->folder.delete_message = mapistore_op_defaults_delete_message;
+	backend->folder.move_copy_messages = mapistore_op_defaults_move_copy_messages;
+	backend->folder.get_deleted_fmids = mapistore_op_defaults_get_deleted_fmids;
+	backend->folder.get_child_count = mapistore_op_defaults_get_child_count;
+	backend->folder.open_table = mapistore_op_defaults_open_table;
+	backend->folder.modify_permissions = mapistore_op_defaults_modify_permissions;
 
-	/* Message semantics */
-	backend->op_openmessage = mapistore_op_defaults_openmessage;
-	backend->op_createmessage = mapistore_op_defaults_createmessage;
-	backend->op_savechangesmessage = mapistore_op_defaults_savechangesmessage;
-	backend->op_submitmessage = mapistore_op_defaults_submitmessage;
-	backend->op_deletemessage = mapistore_op_defaults_deletemessage;
+	/* oxcmsg operations */
+	backend->message.get_message_data = mapistore_op_defaults_get_message_data;
+	backend->message.modify_recipients = mapistore_op_defaults_modify_recipients;
+	backend->message.set_read_flag = mapistore_op_defaults_set_read_flag;
+	backend->message.save = mapistore_op_defaults_save;
+	backend->message.submit = mapistore_op_defaults_submit;
+	backend->message.open_attachment = mapistore_op_defaults_open_attachment;
+	backend->message.create_attachment = mapistore_op_defaults_create_attachment;
+	backend->message.get_attachment_table = mapistore_op_defaults_get_attachment_table;
+	backend->message.open_embedded_message = mapistore_op_defaults_open_embedded_message;
 
-	/* Common semantics */
-	backend->op_getprops = mapistore_op_defaults_getprops;
-	backend->op_setprops = mapistore_op_defaults_setprops;
+	/* oxctabl operations */
+	backend->table.get_available_properties = mapistore_op_defaults_get_available_properties;
+	backend->table.set_columns = mapistore_op_defaults_set_columns;
+	backend->table.set_restrictions = mapistore_op_defaults_set_restrictions;
+	backend->table.set_sort_order = mapistore_op_defaults_set_sort_order;
+	backend->table.get_row = mapistore_op_defaults_get_row;
+	backend->table.get_row_count = mapistore_op_defaults_get_row_count;
+	backend->table.handle_destructor = mapistore_op_defaults_handle_destructor;
 
-	/* MAPIStoreDB/Store semantics */
-	backend->op_db_create_uri = mapistore_op_defaults_db_create_uri;
-	backend->op_db_provision_namedprops = mapistore_op_defaults_provision_namedprops;
-	backend->op_db_mkdir = mapistore_op_defaults_db_mkdir;
+	/* oxcprpt operations */
+	backend->properties.get_available_properties = mapistore_op_defaults_get_available_properties;
+	backend->properties.get_properties = mapistore_op_defaults_get_properties;
+	backend->properties.set_properties = mapistore_op_defaults_set_properties;
+
+	/* manager operations */
+	backend->manager.generate_uri = mapistore_op_defaults_generate_uri;
 
 	return MAPISTORE_SUCCESS;
 }

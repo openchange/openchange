@@ -9,13 +9,27 @@ import "exchange.idl";
 ]
 interface property
 {
+	typedef [v1_enum] enum {
+		seOpenToDelete		= 0x00000001,
+		seNoFrame		= 0x00000008,
+		seCoerceToInbox		= 0x00000010,
+		seOpenToCopy		= 0x00000020,
+		seOpenToMove		= 0x00000040,
+		seOpenForCtxMenu	= 0x00000100,
+		seCannotUndoDelete	= 0x00000400,
+		seCannotUndoCopy	= 0x00000800,
+		seCannotUndoMove	= 0x00001000,
+		seHasScript		= 0x00002000,
+		seOpenToPermDelete	= 0x00004000
+	} SideEffects;
+
 	typedef [enum16bit] enum {
 		RecurFrequency_Daily	= 0x200A,
 		RecurFrequency_Weekly	= 0x200B,
 		RecurFrequency_Monthly	= 0x200C,
 		RecurFrequency_Yearly	= 0x200D
 	} RecurFrequency;
-	
+
 	typedef [enum16bit] enum {
 		PatternType_Day		= 0x0,
 		PatternType_Week	= 0x1,
@@ -56,6 +70,13 @@ interface property
 		F		= 0x00000020,
 		Sa		= 0x00000040
 	} WeekRecurrencePattern;
+
+	typedef [v1_enum] enum {
+		olFree		= 0x00000000,
+		olTentative	= 0x00000001,
+		olBusy		= 0x00000002,
+		olOutOfOffice	= 0x00000003
+	} FreeBusyStatus; /* oxocal - 2.2.1.2 */
 
 	typedef [v1_enum] enum {
 		RecurrenceN_First	=	0x1,
@@ -99,7 +120,7 @@ interface property
 		FirstDOW_Saturday	= 0x6
 	} FirstDOW;
 
-	typedef [v1_enum] enum {
+	typedef [enum16bit] enum {
 		ARO_SUBJECT		= 0x0001,
 		ARO_MEETINGTYPE		= 0x0002,
 		ARO_REMINDERDELTA	= 0x0004,
@@ -132,6 +153,20 @@ interface property
 		uint32						StartDate;
 		uint32						EndDate;
 	} RecurrencePattern;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {	
+		uint32						ReservedBlockEE1Size;
+		[size_is(ReservedBlockEE1Size)] uint8		ReservedBlockEE1[];
+		uint32						StartDateTime;			
+		uint32						EndDateTime;
+		uint32						OriginalStartDate;
+		uint16						WideCharSubjectLength;
+		[size_is(WideCharSubjectLength+1)] uint16	WideCharSubject[];
+		uint16						WideCharLocationLength;
+		[size_is(WideCharLocationLength+1)] uint16	WideCharLocation[];
+		uint32						ReservedBlockEE2Size;
+		[size_is(ReservedBlockEE2Size)]	uint8		ReservedBlockEE2[];
+	} OldExtendedException;
 	
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32						ChangeHighlightSize;
@@ -140,27 +175,33 @@ interface property
 	} ChangeHighlight;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {	
-		ChangeHighlight		ChangeHighlight;
-		uint32			ReservedBlockEE1Size;
-		uint32			ReservedBlockEE1;
-		uint32			StartDateTime;			
-		uint32			EndDateTime;
-		uint32			OriginalStartDate;
-		uint16			WidCharSubjectLength;
-		uint16			WideCharSubject;
-		uint16			WideCharLocationLength;
-		uint16			WideCharLocation;
-		uint32			ReservedBlockEE2Size;
-		uint32			ReservedBlockEE2;
+		ChangeHighlight					ChangeHighlight;
+		uint32						ReservedBlockEE1Size;
+		[size_is(ReservedBlockEE1Size)] uint8		ReservedBlockEE1[];
+		uint32						StartDateTime;			
+		uint32						EndDateTime;
+		uint32						OriginalStartDate;
+		uint16						WideCharSubjectLength;
+		[size_is(WideCharSubjectLength+1)] uint16	WideCharSubject[];
+		uint16						WideCharLocationLength;
+		[size_is(WideCharLocationLength+1)] uint16	WideCharLocation[];
+		uint32						ReservedBlockEE2Size;
+		[size_is(ReservedBlockEE2Size)]	uint8		ReservedBlockEE2[];
 	} ExtendedException;
 
+	typedef [public,flag(NDR_NOALIGN)] struct {	
+		uint16				msgLength;
+		uint16				msgLength2;
+		[size_is(msgLength)]	uint8	msg[];
+	} Exception_Msg;
+
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[case(0x0000)]			;	
-		[case(0x0001)] 	uint16		sLength;
+		[case(0x0000)]			;
+		[case(0x0001)] 	Exception_Msg	subjectMsg;
 		[case(0x0002)]	uint32		mType;
 		[case(0x0004)]	uint32		rDelta;
 		[case(0x0008)]	uint32		rSet;
-		[case(0x0010)]	uint16		lLength;
+		[case(0x0010)]	Exception_Msg	locationMsg;
 		[case(0x0020)]	uint32		bStatus;
 		[case(0x0040)]	uint32		attachment;
 		[case(0x0080)]	uint32		sType;
@@ -168,53 +209,41 @@ interface property
 		[default];
 	} Exception_Value;
 
-	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
-		[default];
-		[case(0x0001)] 	uint16		subject;
-		[case(0x0010)]	uint32		location;
-
-	} Exception_Msg;
-
 	typedef [public,flag(NDR_NOALIGN)] struct {
 			uint32									StartDateTime;
 			uint32									EndDateTime;
 			uint32									OriginalStartDate;
 			OverrideFlags								OverrideFlags;
-			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			SubjectLength;
-			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			SubjectLength2;
-			[switch_is(OverrideFlags & 0x0001)]	Exception_Msg			Subject;
+			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			Subject;
 			[switch_is(OverrideFlags & 0x0002)]	Exception_Value			MeetingType;
 			[switch_is(OverrideFlags & 0x0004)]	Exception_Value			ReminderDelta;
 			[switch_is(OverrideFlags & 0x0008)]	Exception_Value			ReminderSet;
-			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			LocationLength;
-			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			LocationLength2;
-			[switch_is(OverrideFlags & 0x0010)]	Exception_Msg			Location;
+			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			Location;
 			[switch_is(OverrideFlags & 0x0020)]	Exception_Value			BusyStatus;
 			[switch_is(OverrideFlags & 0x0040)]	Exception_Value			Attachment;
 			[switch_is(OverrideFlags & 0x0080)]	Exception_Value			SubType;
 			[switch_is(OverrideFlags & 0x0100)]	Exception_Value			AppointmentColor;
 	} ExceptionInfo;
 
+	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
+		[case(0x3008)] OldExtendedException	OldExtendedException;
+		[default] ExtendedException		ExtendedException;
+	} ExtendedExceptionData;
 
-
-
-	
-	
 	typedef [public,flag(NDR_NOALIGN)] struct {
-
-		RecurrencePattern				RecurrencePattern;
-		uint32						ReaderVersion2;
-		uint32						WriterVersion2;
-		uint32						StartTimeOffset;
-		uint32						EndTimeOffset;
-		uint16						ExceptionCount;
-		ExceptionInfo					ExceptionInfo[ExceptionCount];
- 		uint32						ReservedBlock1Size;
-		uint32						ReservedBlock1;
-		[flag(NDR_REMAINING)] DATA_BLOB data;
-//  		ExtendedException				ExtendedException[ExceptionCount];
-//  		uint32						ReservedBlock2Size;
-//  		uint32						ReservedBlock2;
+		RecurrencePattern					RecurrencePattern;
+		uint32							ReaderVersion2;
+		uint32							WriterVersion2;
+		uint32							StartTimeOffset;
+		uint32							EndTimeOffset;
+		uint16							ExceptionCount;
+		ExceptionInfo						ExceptionInfo[ExceptionCount];
+		uint32							ReservedBlock1Size;
+		uint32							ReservedBlock1[ReservedBlock1Size];
+		// // ExtendedException					ExtendedException;
+		[switch_is(WriterVersion2)] ExtendedExceptionData	ExtendedExceptionData[ExceptionCount];
+		uint32							ReservedBlock2Size;
+		uint32							ReservedBlock2[ReservedBlock2Size];
 	} AppointmentRecurrencePattern;
 	
 	/* [MS-DIF].pdf Section 2.3.6 */
@@ -252,4 +281,54 @@ interface property
 		uint32			Size;
 		uint8			Data[Size];
 	} GlobalObjectId;
+
+	typedef [enum16bit] enum {
+		eitLTPrivateFolder		= 0x01,
+		eitLTPPublicFolder		= 0x03,
+		eitLTPMappedPublicFolder	= 0x05,
+		eitLTPPrivateMessage		= 0x07,
+		eitLTPPublicMessage		= 0x09,
+		eitLTPMappedPublicMessage	= 0x0b,
+		eitLTPPublicNewsgroupFolder	= 0x0c
+	} EntryIdFolderType;
+
+	/* PtypServerId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8			ours;
+		dlong			FolderId;
+		dlong			MessageId;
+		int32			Instance;
+	} PtypServerId;
+
+	/* FolderEntryId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			Flags;
+		GUID			ProviderUID;
+		EntryIdFolderType	FolderType;
+		GUID			FolderDatabaseGuid;
+		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
+		uint16			Pad;
+	} FolderEntryId;
+
+	/* PR_ENTRYID/PR_TARGET_ENTRYID (messages) */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			Flags;
+		GUID			ProviderUID;
+		EntryIdFolderType	MessageType;
+		GUID			FolderDatabaseGuid;
+		[switch_is(1)] GLOBCNT	FolderGlobalCounter;
+		uint16			Pad1;
+		GUID			MessageDatabaseGuid;
+		[switch_is(1)] GLOBCNT	MessageGlobalCounter;
+		uint16			Pad2;
+	} MessageEntryId;
+
+	/* AddressBookEntryId */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32			Flags;
+		GUID			ProviderUID;
+		uint32			Version;
+		uint32			Type;
+		astring			X500DN;
+	} AddressBookEntryId;
 }

@@ -58,6 +58,50 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAP
 
 
 /**
+   \details Calculate GetPropertiesAll Rop size
+
+   \param request pointer to the GetPropertiesAll EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetPropsAll response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetPropertiesAll_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETPROPERTIESALL;
+	size += libmapiserver_mapi_SPropValue_size(response->u.mapi_GetPropsAll.properties.cValues,
+						   response->u.mapi_GetPropsAll.properties.lpProps);
+	return size;
+}
+
+
+/**
+   \details Calculate GetPropertiesList Rop size
+
+   \param request pointer to the GetPropertiesList EcDoRpc_MAPI_REPL structure
+   
+   \return Size of GetPropertiesList response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetPropertiesList_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETPROPERTIESLIST;
+	size += sizeof (uint32_t) * response->u.mapi_GetPropList.count;
+
+	return size;
+}
+
+
+/**
    \details Calculate SetProperties Rop size
 
    \param response pointer to the SetProperties EcDoRpc_MAPI_REPL
@@ -108,6 +152,28 @@ _PUBLIC_ uint16_t libmapiserver_RopDeleteProperties_size(struct EcDoRpc_MAPI_REP
 	return size;
 }
 
+
+/**
+   \details Calculate CopyTo Rop size
+
+   \param response pointer to the CopyTo EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of SetProperties response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCopyTo_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPCOPYTO;
+        size += response->u.mapi_CopyTo.PropertyProblemCount * sizeof(struct PropertyProblem);
+
+	return size;
+}
 
 /**
    \details Calculate OpenStream Rop size
@@ -178,6 +244,19 @@ _PUBLIC_ uint16_t libmapiserver_RopWriteStream_size(struct EcDoRpc_MAPI_REPL *re
 	return size;
 }
 
+/**
+   \details Calculate CommitStream Rop size
+
+   \param response pointer to the CommitStream
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of CommitStream response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopCommitStream_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	return SIZE_DFLT_MAPI_RESPONSE;
+}
+
 
 /**
    \details Calculate GetStreamSize Rop size
@@ -200,6 +279,62 @@ _PUBLIC_ uint16_t libmapiserver_RopGetStreamSize_size(struct EcDoRpc_MAPI_REPL *
 	return size;
 }
 
+/**
+   \details Calculate SeekStream Rop size
+
+   \param response pointer to the SeekStream EcDoRpc_MAPI_REPL structure
+
+   \return Size of SeekStream response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSeekStream_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPSEEKSTREAM;
+
+	return size;
+}
+
+/**
+   \details Calculate SetStreamSize Rop size
+
+   \param response pointer to the SetStreamSize EcDoRpc_MAPI_REPL structure
+
+   \return Size of SeekStream response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopSetStreamSize_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
+   \details Calculate GetNamesFromIDs Rop size
+
+   \param response pointer to the GetNamesFromIDs
+   EcDoRpc_MAPI_REPL structure
+
+   \return Size of GetNamesFromIDs response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetNamesFromIDs_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint16_t	i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETNAMESFROMIDS;
+	for (i = 0; i < response->u.mapi_GetNamesFromIDs.count; i++) {
+		size += libmapiserver_PropertyName_size(response->u.mapi_GetNamesFromIDs.nameid + i);
+	}
+
+	return size;
+}
 
 /**
    \details Calculate GetPropertyIdsFromNames Rop size
@@ -213,7 +348,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code) {
+	if (!response || (response->error_code && response->error_code != MAPI_W_ERRORS_RETURNED)) {
 		return size;
 	}
 
@@ -225,7 +360,6 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertyIdsFromNames_size(struct EcDoRpc_M
 
 	return size;
 }
-
 
 /**
    \details Calculate DeletePropertiesNoReplicate Rop size
@@ -259,7 +393,6 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
    response blob.
 
    \param mem_ctx pointer to the memory context
-   \param iconv_convenience pointer to the iconv_convenience context
    \param property the property tag which value is meant to be
    appended to the blob
    \param value generic pointer on the property value
@@ -274,14 +407,17 @@ _PUBLIC_ uint16_t libmapiserver_RopDeletePropertiesNoReplicate_size(struct EcDoR
    \return 0 on success;
  */
 _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
-					 struct smb_iconv_convenience *iconv_convenience,
 					 uint32_t property, 
 					 const void *value, 
 					 DATA_BLOB *blob,
 					 uint8_t layout, 
-					 uint8_t flagged)
+					 uint8_t flagged,
+					 uint8_t untyped)
 {
 	struct ndr_push		*ndr;
+        struct SBinary_short    bin;
+        struct BinaryArray_r    *bin_array;
+	uint32_t		i;
 	
 	ndr = ndr_push_init_ctx(mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
@@ -292,7 +428,14 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr->offset = blob->length;
 	}
 
-	/* Step 1. Is the property flagged */
+	/* Step 1. Is the property typed */
+	if (untyped) {
+		ndr_push_uint16(ndr, NDR_SCALARS, property & 0xFFFF);
+	}
+
+
+
+	/* Step 2. Is the property flagged */
 	if (flagged) {
 		switch (property & 0xFFFF) {
 		case PT_ERROR:
@@ -310,7 +453,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 			break;
 		}
 	} else {
-		/* Step 2. Set the layout */
+		/* Step 3. Set the layout */
 		if (layout) {
 			switch (property & 0xFFFF) {
 			case PT_ERROR:
@@ -322,7 +465,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	/* Step 2. Push property data if supported */
+	/* Step 3. Push property data if supported */
 	switch (property & 0xFFFF) {
 	case PT_I2:
 		ndr_push_uint16(ndr, NDR_SCALARS, *(uint16_t *) value);
@@ -350,7 +493,10 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
 		break;
 	case PT_BINARY:
-		ndr_push_SBinary_short(ndr, NDR_SCALARS, (struct SBinary_short *) value);
+                /* PropertyRow expect a 16 bit header for BLOB in RopQueryRows and RopGetPropertiesSpecific */
+		bin.cb = ((struct Binary_r *) value)->cb;
+		bin.lpb = ((struct Binary_r *) value)->lpb;
+		ndr_push_SBinary_short(ndr, NDR_SCALARS, &bin);
 		break;
 	case PT_CLSID:
 		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);
@@ -358,11 +504,33 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 	case PT_SYSTIME:
 		ndr_push_FILETIME(ndr, NDR_SCALARS, (struct FILETIME *) value);
 		break;
+
+	case PT_MV_LONG:
+		ndr_push_mapi_MV_LONG_STRUCT(ndr, NDR_SCALARS, (struct mapi_MV_LONG_STRUCT *) value);
+		break;
+
+	case PT_MV_UNICODE:
+                ndr_push_mapi_SLPSTRArrayW(ndr, NDR_SCALARS, (struct mapi_SLPSTRArrayW *) value);
+		break;
+
+	case PT_MV_BINARY:
+		bin_array = (struct BinaryArray_r *) value;
+		ndr_push_uint32(ndr, NDR_SCALARS, bin_array->cValues);
+		for (i = 0; i < bin_array->cValues; i++) {
+			bin.cb = bin_array->lpbin[i].cb;
+			bin.lpb = bin_array->lpbin[i].lpb;
+			ndr_push_SBinary_short(ndr, NDR_SCALARS, &bin);
+		}
+		break;
 	default:
+		if (property != 0) {
+			DEBUG(5, ("unsupported type: %.4x\n", (property & 0xffff)));
+			abort();
+		}
 		break;
 	}
 end:
-	/* Step 3. Steal ndr context */
+	/* Step 4. Steal ndr context */
 	blob->data = ndr->data;
 	talloc_steal(mem_ctx, blob->data);
 	blob->length = ndr->offset;

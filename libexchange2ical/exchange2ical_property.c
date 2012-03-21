@@ -90,8 +90,8 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 									  PR_ATTACH_DATA_BIN
 									  );
 									  
-				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
-				retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+				lpProps = NULL;
+				retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval == MAPI_E_SUCCESS) {
 
@@ -115,7 +115,7 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 					attachMethod	 = octool_get_propval(&aRow2, PR_ATTACH_METHOD);
 					attachmentHidden = octool_get_propval(&aRow2, PR_ATTACHMENT_HIDDEN);
 
-					if(!(*attachmentFlags & 0x00000007) 
+					if(attachmentFlags && !(*attachmentFlags & 0x00000007) 
 						&& (*attachMethod == 0x00000001) 
 						&& (!attachmentHidden || !(*attachmentHidden))) {
 

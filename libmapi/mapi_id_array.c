@@ -30,7 +30,7 @@
 /**
    \details Initialize a mapi_id_array structure
 
-   \param mapi_ctx pointer to the MAPI context
+   \param mem_ctx pointer to the talloc context
    \param id pointer to a mapi_id_array structure
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
@@ -44,20 +44,16 @@
 
    \sa mapi_id_array_release
  */
-_PUBLIC_ enum MAPISTATUS mapi_id_array_init(struct mapi_context *mapi_ctx,
+_PUBLIC_ enum MAPISTATUS mapi_id_array_init(TALLOC_CTX *mem_ctx,
 					    mapi_id_array_t *id)
 {
-	TALLOC_CTX	*mem_ctx;
-
 	/* Sanity checks */
-	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!id, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = mapi_ctx->mem_ctx;
-
 	id->count = 0;
-	id->lpContainerList = talloc_zero((TALLOC_CTX *)mem_ctx, mapi_container_list_t);
-	
+	id->lpContainerList = talloc_zero(mem_ctx, mapi_container_list_t);
+
 	return MAPI_E_SUCCESS;
 }
 

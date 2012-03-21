@@ -79,6 +79,33 @@ _PUBLIC_ uint16_t libmapiserver_RopGetAddressTypes_size(struct EcDoRpc_MAPI_REPL
 }
 
 /**
+   \details Calculate TransportSend (0x4a) Rop size
+
+   \param response pointer to the TransportSend EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of TransportSend response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopTransportSend_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPTRANSPORTSEND;
+	if (!response->u.mapi_TransportSend.NoPropertiesReturned) {
+		abort();
+	}
+
+	/* The length of the strings is variable, but given by the size parameter */
+	/* size += response->u.mapi_AddressTypes.size; */
+
+	return size;
+}
+
+/**
    \details Calculate GetTransportFolder (0x6d) ROP size
 
    \param response pointer to the GetTransportFolder EcDoRpc_MAPI_REPL structure

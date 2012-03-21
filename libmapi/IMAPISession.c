@@ -32,25 +32,25 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 				      const char *legacyDN, 
 				      bool server)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct nspi_context	*nspi;
-	struct StringsArray_r	pNames;
-	struct SRowSet		*SRowSet;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SPropTagArray	*MId_array;
-	struct StringArray_r	*MVszA = NULL;
-	const char		*binding = NULL;
-	char			*HomeMDB = NULL;
-	char			*server_dn;
-	uint32_t		i;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct nspi_context		*nspi;
+	struct StringsArray_r		pNames;
+	struct SRowSet			*SRowSet;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct PropertyTagArray_r	*MId_array;
+	struct StringArray_r		*MVszA = NULL;
+	const char			*binding = NULL;
+	char				*HomeMDB = NULL;
+	char				*server_dn;
+	uint32_t			i;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
 	OPENCHANGE_RETVAL_IF(!legacyDN, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "FindGoodServer");
+	mem_ctx = talloc_named(session, 0, "FindGoodServer");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 
 	if (server == false) {
@@ -59,7 +59,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 		pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
 
-		MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+		MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 		MAPIFreeBuffer(pNames.Strings);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -84,7 +84,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	pNames.Count = 0x1;
 	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
 	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
-	MId_array = talloc_zero(mem_ctx, struct SPropTagArray);
+	MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);
 	MAPIFreeBuffer(pNames.Strings);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -169,7 +169,7 @@ _PUBLIC_ enum MAPISTATUS OpenPublicFolder(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenPublicFolder");
+	mem_ctx = talloc_named(session, 0, "OpenPublicFolder");
 	size = 0;
 
 	/* Fill the Logon operation */
@@ -223,16 +223,16 @@ retry:
 	store = (mapi_object_store_t*)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[0];
-	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[1];
-	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[2];
-	store->fid_pf_EFormsRegistryRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[3];
-	store->fid_pf_FreeBusyRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[4];
-	store->fid_pf_OfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[5];
-	store->fid_pf_EFormsRegistry = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[6];
-	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[7];
-	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[8];
-	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FolderIds[9];
+	store->fid_pf_public_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.Root;
+	store->fid_pf_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.IPMSubTree;
+	store->fid_pf_non_ipm_subtree = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.NonIPMSubTree;
+	store->fid_pf_EFormsRegistryRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.EFormsRegistry;
+	store->fid_pf_FreeBusyRoot = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.FreeBusy;
+	store->fid_pf_OfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.OAB;
+	store->fid_pf_EFormsRegistry = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalizedEFormsRegistry;
+	store->fid_pf_LocalSiteFreeBusy = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalFreeBusy;
+	store->fid_pf_LocalSiteOfflineAB = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.LocalOAB;
+	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.NNTPIndex;
 	store->store_type = PublicFolder;
 
 	talloc_free(mapi_response);
@@ -333,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_FAILONEPROVIDER, NULL);
 
 retry:
-	mem_ctx = talloc_named(NULL, 0, "OpenMsgStore");
+	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
 	size = 0;
 
 	if (!username) {
@@ -395,19 +395,19 @@ retry:
 	store = (mapi_object_store_t *)obj_store->private_data;
 	OPENCHANGE_RETVAL_IF(!obj_store->private_data, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
-	store->fid_mailbox_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[0];
-	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[1];
-	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[2];
-	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[3];
-	store->fid_inbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[4]; 
-	store->fid_outbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[5];
-	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[6];
-	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[7];
-	store->fid_common_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[8];
-	store->fid_schedule = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[9];
-	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[10];
-	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[11];
-	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.FolderIds[12];
+	store->fid_mailbox_root = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Root;
+	store->fid_deferred_actions = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.DeferredAction;
+	store->fid_spooler_queue = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.SpoolerQueue;
+	store->fid_top_information_store = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.IPMSubTree;
+	store->fid_inbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Inbox;
+	store->fid_outbox = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Outbox;
+	store->fid_sent_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.SentItems;
+	store->fid_deleted_items = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.DeletedItems;
+	store->fid_common_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.CommonViews;
+	store->fid_schedule = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Schedule;
+	store->fid_search = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Search;
+	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Views;
+	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Shortcuts;
 	store->store_type = PrivateFolderWithoutCachedFids;
 
 	talloc_free(mapi_response);

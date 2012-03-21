@@ -516,6 +516,43 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup(uint16_t lid, const char *OLEGUI
 
 
 /**
+   \details Search for a given lid,OLEGUID couple and return the
+   associated canonical propTag.
+
+   \param lid the named property light ID
+   \param OLEGUID the named property GUID for this entry
+   \param propTag pointer on returned named canonical property tag
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup_canonical(uint16_t lid, const char *OLEGUID,
+							  uint32_t *propTag)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!lid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propTag, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].lid == lid &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propTag = mapi_nameid_tags[i].proptag;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
+}
+
+
+/**
    \details Search for a given Name,OLEGUID couple and return the
    associated propType.
 
@@ -545,6 +582,45 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
 		    !strcmp(mapi_nameid_tags[i].Name, Name) &&
 		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
 			*propType = mapi_nameid_tags[i].propType;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_FOUND, NULL);
+}
+
+
+/**
+   \details Search for a given Name,OLEGUID couple and return the
+   associated canonical propTag.
+
+   \param Name the named property name
+   \param OLEGUID the named property GUID for this entry
+   \param propTag pointer on returned named canonical property tag
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND.
+
+   \note Developers may also call GetLastError() to retrieve the last
+   MAPI error code. Possible MAPI error codes are:
+   - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
+   - MAPI_E_NOT_FOUND: no named property found
+ */
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name, 
+							     const char *OLEGUID,
+							     uint32_t *propTag)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!Name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!propTag, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
+		if (mapi_nameid_tags[i].Name &&
+		    !strcmp(mapi_nameid_tags[i].Name, Name) &&
+		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
+			*propTag = mapi_nameid_tags[i].proptag;
 			return MAPI_E_SUCCESS;
 		}
 	}
@@ -782,7 +858,6 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 {
 	enum MAPISTATUS	retval;
 	uint32_t	i;
-	uint16_t	proptype;
 	bool		status = false;
 
 	/* Sanity checks */
@@ -790,7 +865,6 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < SPropTagArray->cValues; i++) {
-		proptype = (SPropTagArray->aulPropTag[i] & 0xFFFF0000) >> 16;
 		if (mapi_nameid_property_lookup(SPropTagArray->aulPropTag[i]) == MAPI_E_SUCCESS) {
 			retval = mapi_nameid_canonical_add(nameid, SPropTagArray->aulPropTag[i]);
 			if (retval == MAPI_E_SUCCESS) {
@@ -888,4 +962,56 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 	}
 
 	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ const char *get_namedid_name(uint32_t proptag)
+{
+	uint32_t idx;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (mapi_nameid_names[idx].proptag == proptag) { 
+			return mapi_nameid_names[idx].propname;
+		}
+	}
+	if (((proptag & 0xFFFF) == PT_STRING8) ||
+	    ((proptag & 0xFFFF) == PT_MV_STRING8)) {
+		proptag += 1; /* try as _UNICODE variant */
+	}
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (mapi_nameid_names[idx].proptag == proptag) { 
+			return mapi_nameid_names[idx].propname;
+		}
+	}
+	return NULL;
+}
+
+_PUBLIC_ uint32_t get_namedid_value(const char *propname)
+{
+	uint32_t idx;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if (!strcmp(mapi_nameid_names[idx].propname, propname)) { 
+			return mapi_nameid_names[idx].proptag;
+		}
+	}
+
+	return 0;
+}
+
+_PUBLIC_ uint16_t get_namedid_type(uint16_t untypedtag)
+{
+	uint32_t	idx;
+	uint16_t	current_type;
+
+	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
+		if ((mapi_nameid_names[idx].proptag >> 16) == untypedtag) {
+			current_type = mapi_nameid_names[idx].proptag & 0xFFFF;
+			if (current_type != PT_ERROR && current_type != PT_STRING8) {
+				return current_type;
+			}
+		}
+	}
+
+	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
+	return 0;
 }

@@ -98,9 +98,6 @@ __BEGIN_DECLS
 
 /* The following definitions come from samba4 framework */
 struct ldb_dn *samdb_search_dn(struct ldb_context *, TALLOC_CTX *, struct ldb_dn *, const char *, ...) _PRINTF_ATTRIBUTE(4,5);
-int samdb_msg_add_string(struct ldb_context *, TALLOC_CTX *,
-			 struct ldb_message *, const char *, const char *);
-int samdb_replace(struct ldb_context *, TALLOC_CTX *, struct ldb_message *);
 struct dom_sid *dom_sid_add_rid(TALLOC_CTX *, const struct dom_sid *, uint32_t);
 bool encode_pw_buffer(uint8_t buffer[516], const char *, int);
 void arcfour_crypt_blob(uint8_t *, int, const DATA_BLOB *);

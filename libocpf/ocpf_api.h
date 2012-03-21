@@ -76,14 +76,6 @@ struct ocpf_nproperty
 	const void		*value;
 };
 
-struct ocpf_recipients
-{
-	struct ocpf_recipients	*prev;
-	struct ocpf_recipients	*next;
-	char			*name;
-	enum ocpf_recipClass	class;
-};
-
 struct ocpf_olfolder
 {
 	int			id;
@@ -108,7 +100,7 @@ struct ocpf_context
 	struct ocpf_oleguid    	*oleguid;
 	struct ocpf_property	*props;
 	struct ocpf_nproperty	*nprops;
-	struct ocpf_recipients	*recipients;
+	struct SRowSet		*recipients;
 	struct SPropValue	*lpProps;
 	uint32_t		cValues;
 	uint64_t		folder;
@@ -208,14 +200,16 @@ do {								\
 #define	OCPF_INVALID_PROPARRAY		"Invalid property array"
 #define	OCPF_INVALID_FILEHANDLE		"Invalid file handle"
 
+#define	OCPF_INVALID_RECIPIENTS		"Invalid recipients"
 
 #define	OCPF_PROPERTY_BEGIN		"PROPERTY {\n"
 #define	OCPF_NPROPERTY_BEGIN		"NPROPERTY {\n"
 #define	OCPF_END			"};\n"
 #define	OCPF_NEWLINE			"\n"
-#define	OCPF_RECIPIENT_TO		"RECIPIENT TO "
-#define	OCPF_RECIPIENT_CC		"RECIPIENT CC "
-#define	OCPF_RECIPIENT_BCC		"RECIPIENT BCC "
+#define	OCPF_RECIPIENT_BEGIN		"RECIPIENT {\n"
+#define	OCPF_RECIPIENT_TO		"TO {\n"
+#define	OCPF_RECIPIENT_CC		"CC {\n"
+#define	OCPF_RECIPIENT_BCC		"BCC {\n"
 
 #define	DATE_FORMAT     "%Y-%m-%d %H:%M:%S"
 

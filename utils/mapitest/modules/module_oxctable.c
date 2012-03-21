@@ -43,7 +43,6 @@
  */
 _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_htable;
 	struct SPropTagArray	*SPropTagArray;
 
@@ -57,7 +56,7 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
 					  PR_DISPLAY_NAME,
 					  PR_FID,
 					  PR_FOLDER_CHILD_COUNT);
-	retval = SetColumns(&obj_htable, SPropTagArray);
+	SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print_retval(mt, "SetColumns");
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -88,7 +87,6 @@ _PUBLIC_ bool mapitest_oxctable_SetColumns(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_htable;
 	mapi_object_t		obj_test_folder;
 	struct SPropTagArray	columns;
@@ -101,7 +99,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 	}
 
 	/* Step 2. QueryColumns */
-	retval = QueryColumns(&obj_htable, &columns);
+	QueryColumns(&obj_htable, &columns);
 	mapitest_print_retval(mt, "QueryColumns");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -123,7 +121,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryColumns(struct mapitest *mt)
 
 
 	/* Step 4. QueryColumns on a contents folder */
-	retval = QueryColumns(&(obj_test_folder), &columns);
+	QueryColumns(&(obj_test_folder), &columns);
 	mapitest_print_retval(mt, "QueryColumns");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -323,7 +321,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	}
 
 	/* Step 5. Set Table Columns on the test folder */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_BODY, PR_BODY_HTML);
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x2, PR_BODY, PR_MESSAGE_CLASS);
 	retval = SetColumns(&obj_test_folder, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) {
@@ -355,13 +353,13 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 						return false;
 					}
 					lpProp = SRowSet.aRow[i].lpProps[1];
-					if (lpProp.ulPropTag != PR_BODY_HTML) {
+					if (lpProp.ulPropTag != PR_MESSAGE_CLASS) {
 						mapitest_print(mt, "* %-35s: Bad proptag1 (0x%x)\n", 
 							       "QueryRows", lpProp.ulPropTag);
 						return false;
 					}
 					data = get_SPropValue_data(&lpProp);
-					if (0 != strncmp(data, "<!DOCTYPE HTML PUBLIC", 21)) {
+					if (0 != strncmp(data, "IPM.Note", 8)) {
 						mapitest_print(mt, "* %-35s: Bad propval1 (%s)\n", 
 							       "QueryRows", data);
 						return false;
@@ -392,7 +390,6 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	bool			ret = true;
 	mapi_object_t		obj_htable;
 	uint8_t			TableStatus;
@@ -403,7 +400,7 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
 	}
 
 	/* Step 2. GetStatus */
-	retval = GetStatus(&obj_htable, &TableStatus);
+	GetStatus(&obj_htable, &TableStatus);
 	mapitest_print_retval(mt, "GetStatus");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;
@@ -435,7 +432,6 @@ _PUBLIC_ bool mapitest_oxctable_GetStatus(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_htable;
 	uint32_t		count;
 
@@ -445,19 +441,19 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
 	}
 
 	/* Step 2. SeekRow */
-	retval = SeekRow(&obj_htable, BOOKMARK_BEGINNING, 0, &count);
+	SeekRow(&obj_htable, BOOKMARK_BEGINNING, 0, &count);
 	mapitest_print_retval_fmt(mt, "SeekRow", "(BOOKMARK_BEGINNING)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	retval = SeekRow(&obj_htable, BOOKMARK_END, 0, &count);
+	SeekRow(&obj_htable, BOOKMARK_END, 0, &count);
 	mapitest_print_retval_fmt(mt, "SeekRow", "(BOOKMARK_END)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	retval = SeekRow(&obj_htable, BOOKMARK_CURRENT, 0, &count);
+	SeekRow(&obj_htable, BOOKMARK_CURRENT, 0, &count);
 	mapitest_print_retval_fmt(mt, "SeekRow", "(BOOKMARK_CURRENT)");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
@@ -485,7 +481,6 @@ _PUBLIC_ bool mapitest_oxctable_SeekRow(struct mapitest *mt)
  */
 _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 {
-	enum MAPISTATUS		retval;
 	mapi_object_t		obj_htable;
 
 	/* Step 1. Logon */
@@ -494,19 +489,19 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowApprox(struct mapitest *mt)
 	}
 
 	/* Step 2. SeekRowApprox */
-	retval = SeekRowApprox(&obj_htable, 0, 1);
+	SeekRowApprox(&obj_htable, 0, 1);
 	mapitest_print_retval_fmt(mt, "SeekRowApprox", "0/1");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	retval = SeekRowApprox(&obj_htable, 1, 1);
+	SeekRowApprox(&obj_htable, 1, 1);
 	mapitest_print_retval_fmt(mt, "SeekRowApprox", "1/1");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;
 	}
 
-	retval = SeekRowApprox(&obj_htable, 1, 2);
+	SeekRowApprox(&obj_htable, 1, 2);
 	mapitest_print_retval_fmt(mt, "SeekRowApprox", "1/2");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		return false;

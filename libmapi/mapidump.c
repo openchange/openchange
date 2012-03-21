@@ -19,6 +19,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/mapi_nameid.h"
 #include "libmapi/mapidump.h"
 #include <time.h>
 
@@ -47,7 +48,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 	const void			*data;
 	TALLOC_CTX			*mem_ctx = NULL;
 	const struct StringArray_r	*StringArray_r = NULL;
-	const struct WStringArray_r	*WStringArray_r = NULL;
+	const struct StringArrayW_r	*StringArrayW_r = NULL;
 	const struct BinaryArray_r	*BinaryArray_r = NULL;
 	const struct LongArray_r	*LongArray_r = NULL;
 	uint32_t			i;
@@ -140,12 +141,12 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		printf("%s\n", StringArray_r->lppszA[i]);
 		break;
 	case PT_MV_UNICODE:
-		WStringArray_r = (const struct WStringArray_r *) get_SPropValue_data(&lpProp);
+		StringArrayW_r = (const struct StringArrayW_r *) get_SPropValue_data(&lpProp);
 		printf("%s%s: ", sep?sep:"", proptag);
-		for (i = 0; i < WStringArray_r->cValues - 1; i++) {
-			printf("%s, ", WStringArray_r->lppszW[i]);
+		for (i = 0; i < StringArrayW_r->cValues - 1; i++) {
+			printf("%s, ", StringArrayW_r->lppszW[i]);
 		}
-		printf("%s\n", WStringArray_r->lppszW[i]);
+		printf("%s\n", StringArrayW_r->lppszW[i]);
 		break;
 	case PT_MV_BINARY:
 		BinaryArray_r = (const struct BinaryArray_r *) get_SPropValue_data(&lpProp);
@@ -242,7 +243,7 @@ _PUBLIC_ void mapidump_Recipients(const char **usernames, struct SRowSet *rowset
 	uint32_t		j;
 
 	for (i = 0, j= 0; i < flaglist->cValues; i++) {
-		switch (flaglist->aulPropTag[i]) {
+	  switch ((int)flaglist->aulPropTag[i]) {
 		case MAPI_UNRESOLVED:
 			printf("\tUNRESOLVED (%s)\n", usernames[i]);
 			break;
@@ -397,21 +398,32 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;
-	ssize_t				len;
 
-	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
-	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
-	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
+	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID_UNICODE);
+	if (!msgid)
+		msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID);
+	subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC_UNICODE);
+	if (!subject)
+		subject = (const char *) find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
 	if (!body) {
-		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY_UNICODE);
+		body = (const char *) find_mapi_SPropValue_data(properties, PR_BODY);
 		if (!body) {
 			html = (const struct SBinary_short *) find_mapi_SPropValue_data(properties, PR_HTML);
 		}
 	}
-	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
-	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
-	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
-	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
+	from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME_UNICODE);
+	if (!from)
+		from = (const char *) find_mapi_SPropValue_data(properties, PR_SENT_REPRESENTING_NAME);
+	to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO_UNICODE);
+	if (!to)
+		to = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_TO);
+	cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC_UNICODE);
+	if (!cc)
+		cc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_CC);
+	bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC_UNICODE);
+	if (!bcc)
+		bcc = (const char *) find_mapi_SPropValue_data(properties, PR_DISPLAY_BCC);
 
 	has_attach = (const uint8_t *)find_mapi_SPropValue_data(properties, PR_HASATTACH);
 
@@ -460,8 +472,8 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	if (body) {
 		printf("%s\n", body);
 	} else if (html) {
-		len = write(1, html->lpb, html->cb);
-		len = write(1, "\n", 1);
+		write(1, html->lpb, html->cb);
+		write(1, "\n", 1);
 		fflush(0);
 	}
 }
@@ -823,7 +835,7 @@ _PUBLIC_ void mapidump_foldercreated(struct FolderCreatedNotification *data, con
 	fflush(0);
 	printf("%sFolder Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->FID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+	mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
 }
 
 _PUBLIC_ void mapidump_folderdeleted(struct FolderDeletedNotification *data, const char *sep)
@@ -877,7 +889,9 @@ _PUBLIC_ void mapidump_messagecreated(struct MessageCreatedNotification *data, c
 	fflush(0);
 	printf("%sMessage Entry ID: 0x%"PRIx64"\n", sep?sep:"", data->MID);
 	fflush(0);
-	mapidump_tags (data->Tags, data->TagCount, sep);
+        if (data->TagCount != 0xffff) {
+                mapidump_tags (data->NotificationTags.Tags, data->TagCount, sep);
+        }
 }
 
 _PUBLIC_ void mapidump_messagemodified(struct MessageModifiedNotification *data, const char *sep)

@@ -93,7 +93,7 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	if ((retval = mapi_object_get_logon_id(obj_store, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "OpenMessage");
+	mem_ctx = talloc_named(session, 0, "OpenMessage");
 
 	/* Fill the OpenMessage operation */
 	request.handle_idx = 0x1;
@@ -157,18 +157,18 @@ _PUBLIC_ enum MAPISTATUS OpenMessage(mapi_object_t *obj_store,
 	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
-		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,
+		emsmdb_get_SRow((TALLOC_CTX *)message,
 				&(message->SRowSet.aRow[i]), &message->SPropTagArray, 
-				reply->recipients[i].RecipientRow.prop_count,
-				&reply->recipients[i].RecipientRow.prop_values,
-				reply->recipients[i].RecipientRow.layout, 1);
+				reply->RecipientRows[i].RecipientRow.prop_count,
+				&reply->RecipientRows[i].RecipientRow.prop_values,
+				reply->RecipientRows[i].RecipientRow.layout, 1);
 
 		lpProp.ulPropTag = PR_RECIPIENT_TYPE;
-		lpProp.value.l = reply->recipients[i].RecipClass;
+		lpProp.value.l = reply->RecipientRows[i].RecipientType;
 		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
 
 		lpProp.ulPropTag = PR_INTERNET_CPID;
-		lpProp.value.l = reply->recipients[i].codepage;
+		lpProp.value.l = reply->RecipientRows[i].CodePageId;
 		SRow_addprop(&(message->SRowSet.aRow[i]), lpProp);
 	}
 
@@ -232,7 +232,7 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	if ((retval = mapi_object_get_logon_id(obj_message, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ReloadCachedInformation");
+	mem_ctx = talloc_named(session, 0, "ReloadCachedInformation");
 
 	/* Fill the ReloadCachedInformation operation */
 	request.Reserved = 0x0000;
@@ -275,7 +275,7 @@ _PUBLIC_ enum MAPISTATUS ReloadCachedInformation(mapi_object_t *obj_message)
 	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
-		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,
+		emsmdb_get_SRow((TALLOC_CTX *)message,
 				&(message->SRowSet.aRow[i]), &message->SPropTagArray, 
 				reply->RecipientRows[i].RecipientRow.prop_count,
 				&reply->RecipientRows[i].RecipientRow.prop_values,

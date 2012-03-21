@@ -2,33 +2,6 @@
 # AttributeSchema added
 ##############################################################################
 
-
-
-
-# 
-# msExch-Proxy-Gen-Options
-#
-dn: CN=msExch-Proxy-Gen-Options,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: msExch-Proxy-Gen-Options
-distinguishedName: CN=msExch-Proxy-Gen-Options,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.50044
-attributeSyntax: 2.5.5.9
-isSingleValued: TRUE
-showInAdvancedViewOnly: TRUE
-adminDisplayName: msExch-Proxy-Gen-Options
-adminDescription: msExch-Proxy-Gen-Options
-oMSyntax: 2
-searchFlags: 0
-lDAPDisplayName: msExchProxyGenOptions
-name: msExch-Proxy-Gen-Options
-schemaIDGUID: 974c9a02-33fc-11d3-aa6e-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
-
-
-
 #
 # ms-Exch-Access-Control-Map	
 # Contains the mapping for the access controls.

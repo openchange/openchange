@@ -22,7 +22,7 @@
 #include "utils/mapitest/mapitest.h"
 #include "utils/openchange-tools.h"
 
-#include <samba/popt.h>
+#include <popt.h>
 #include <param.h>
 
 #include "config.h"

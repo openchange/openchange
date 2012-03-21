@@ -19,6 +19,11 @@ struct mapi_nameid_tags {
 	uint32_t		position;
 };
 
+struct mapi_nameid_names {
+	uint32_t		proptag;
+	const char		*propname;
+};
+
 struct mapi_nameid {
 	struct MAPINAMEID	*nameid;
 	uint16_t		count;
@@ -609,4 +614,5 @@ struct mapi_nameid {
 #define PidNameThumbnail                                             0xa0d70102          
 #define PidNameTitle                                                 0xa0d8001f          
 #define PidNameWordCount                                             0xa0d90003          
+#define PidLidRemoteTransferSize                                     0x8f050003          
 #endif /* ! MAPI_NAMEID_H__ */

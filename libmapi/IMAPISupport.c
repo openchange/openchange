@@ -101,7 +101,7 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 	if ((retval = mapi_object_get_logon_id(obj, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "Subscribe");
+	mem_ctx = talloc_named(session, 0, "Subscribe");
 
 	/* Fill the Subscribe operation */
 	request.handle_idx = 0x1;
@@ -228,7 +228,8 @@ enum MAPISTATUS ProcessNotification(struct mapi_notify_ctx *notify_ctx,
 	void			*NotificationData;
 	uint32_t		i;
 
-	if (!mapi_response || !mapi_response->mapi_repl) return MAPI_E_INVALID_PARAMETER;
+	OPENCHANGE_RETVAL_IF(!mapi_response, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_SUCCESS, NULL);
 
 	for (i = 0; mapi_response->mapi_repl[i].opnum; i++) {
 		if (mapi_response->mapi_repl[i].opnum == op_MAPI_Notify) {
@@ -400,6 +401,7 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void 
         mapi_notify_continue_callback_t callback;
 	void                    *data;
 	struct timeval          *tv;
+	struct timeval          tvi;
 	enum MAPISTATUS		retval;
 
 	/* sanity checks */
@@ -409,13 +411,14 @@ _PUBLIC_ enum MAPISTATUS MonitorNotification(struct mapi_session *session, void 
 	notify_ctx = session->notify_ctx;
 	callback = cb_data ? cb_data->callback : NULL;
 	data = cb_data ? cb_data->data : NULL;
-	tv = cb_data ? &cb_data->tv : NULL;
+	tv = cb_data ? &tvi : NULL;
 
 	nread = 0;
 	is_done = 0;
 	while (!is_done) {
-	        FD_ZERO(&read_fds);
+		FD_ZERO(&read_fds);
 		FD_SET(notify_ctx->fd, &read_fds);
+		if( cb_data ) tvi = cb_data->tv;
 
 		err = select(notify_ctx->fd + 1, &read_fds, NULL, NULL, tv);
 		if (FD_ISSET(notify_ctx->fd, &read_fds)) {

@@ -131,7 +131,7 @@ _PUBLIC_ enum MAPISTATUS MapiLogonProvider(struct mapi_context *mapi_ctx,
 	
 	/* If the session doesn't exist, create a new one */
 	if (!*session) {
-		el = talloc_zero((TALLOC_CTX *)mapi_ctx->session, struct mapi_session);
+		el = talloc_zero(mapi_ctx->mem_ctx, struct mapi_session);
 		memset(el->logon_ids, 0, 255);
 		el->mapi_ctx = mapi_ctx;
 		OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
@@ -238,8 +238,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const c
 	mapi_ctx->mem_ctx = mem_ctx;
 	mapi_ctx->dumpdata = false;
 	mapi_ctx->session = NULL;
-	mapi_ctx->lp_ctx = loadparm_init(mapi_ctx->mem_ctx);
-	lpcfg_load_default(mapi_ctx->lp_ctx);
+	mapi_ctx->lp_ctx = loadparm_init_global(true);
 
 	/* Enable logging on stdout */
 	setup_logging(NULL, DEBUG_STDOUT);
@@ -249,7 +248,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const c
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* Initialize dcerpc subsystem */
-	dcerpc_init(mapi_ctx->lp_ctx);
+	dcerpc_init();
 
 	errno = 0;
 	
@@ -334,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS SetMAPIDebugLevel(struct mapi_context *mapi_ctx, uint32
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	debuglevel = talloc_asprintf(talloc_autofree_context(), "%u", level);
+	debuglevel = talloc_asprintf(mapi_ctx->mem_ctx, "%u", level);
 	ret = lpcfg_set_cmdline(mapi_ctx->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 

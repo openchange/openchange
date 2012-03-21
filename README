@@ -54,7 +54,7 @@ directory, described below.
 (in DOCUMENTATION) for the various contents of this directory.
 
 - gen_ndr/  This directory contains routines for handling the Network
-Data Representation (NDR) for various Exhange RPC calls. The contents
+Data Representation (NDR) for various Exchange RPC calls. The contents
 of this directory are generated (using Samba's pidl IDL compiler) at
 build time. The main input file is exchange.idl (see top level
 directory).
@@ -97,9 +97,6 @@ use this to provide transparent proxying, or to change / monitor
 connections between the client and server. For more information,
 consult the API documentation (either build yourself, or online at
 http://apidocs.openchange.org/mapiproxy/index.html) 
-
-- pymapi/  This directory contains hand-written python bindings for
-libmapi functions. 
 
 - python/  This directory contains python scripts used to set up
 ("provision") the server side. They are not required for the client

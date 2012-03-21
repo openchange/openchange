@@ -64,7 +64,7 @@ static struct mapi_proptags canonical_property_tags[] = {
 	{ PidTagAddressBookHierarchicalRootDepartment_Error,                  PT_ERROR,     "PidTagAddressBookHierarchicalRootDepartment_Error"                 },
 	{ PidTagAddressBookHierarchicalShowInDepartments,                     PT_OBJECT,    "PidTagAddressBookHierarchicalShowInDepartments"                    },
 	{ PidTagAddressBookHierarchicalShowInDepartments_Error,               PT_ERROR,     "PidTagAddressBookHierarchicalShowInDepartments_Error"              },
-	{ PidTagAddressBookHomeMessageDatabase,                               PT_STRING8,   "PidTagAddressBookHomeMessageDatabase"                              },
+	{ PidTagAddressBookHomeMessageDatabase,                               PT_UNICODE,   "PidTagAddressBookHomeMessageDatabase"                              },
 	{ PidTagAddressBookHomeMessageDatabase_Error,                         PT_ERROR,     "PidTagAddressBookHomeMessageDatabase_Error"                        },
 	{ PidTagAddressBookIsMaster,                                          PT_BOOLEAN,   "PidTagAddressBookIsMaster"                                         },
 	{ PidTagAddressBookIsMaster_Error,                                    PT_ERROR,     "PidTagAddressBookIsMaster_Error"                                   },
@@ -1324,3 +1324,23 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 
 	return 0;
 }
+
+_PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
+{
+	uint32_t	idx;
+	uint16_t	current_type;
+
+	for (idx = 0; canonical_property_tags[idx].proptag; idx++) {
+		if ((canonical_property_tags[idx].proptag >> 16) == untypedtag) {
+			current_type = canonical_property_tags[idx].proptype;
+			if (current_type != PT_ERROR && current_type != PT_STRING8) {
+				return current_type;
+			}
+		}
+	}
+
+	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
+	return 0;
+}
+
+

@@ -26,6 +26,7 @@
    \brief Address Book Provider implementation
  */
 
+#define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
 
@@ -63,6 +64,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	tevent_loop_allow_nesting(ev);
 
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;
@@ -171,9 +173,9 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	const char		*username = NULL;
 	struct ldb_message	*ldb_msg = NULL;
 
-	username = dce_call->context->conn->auth_state.session_info->info->account_name;
+	username = dcesrv_call_account_name(dce_call);
 
-	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, "emsabp_verify_user");
+	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, __FUNCTION__);
 
 	ret = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
 	
@@ -247,8 +249,6 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_EphemeralEntryID(struct emsabp_context *emsa
 	ephEntryID->R4 = 0x1;
 	ephEntryID->DisplayType = DisplayType;
 	ephEntryID->MId = MId;
-
-	talloc_free(guid);
 
 	return MAPI_E_SUCCESS;
 }
@@ -381,7 +381,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
 	OPENCHANGE_RETVAL_IF(!bin, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Remove const char * size and replace it with effective dn string length */
-	bin->cb = sizeof (*permEntryID) - 4 + strlen(permEntryID->dn) + 1;
+	bin->cb = 28 + strlen(permEntryID->dn) + 1;
 	bin->lpb = talloc_array(mem_ctx, uint8_t, bin->cb);
 
 	/* Copy PermanantEntryID intro bin->lpb */
@@ -434,6 +434,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	const char			*attribute;
 	const char			*ref_attribute;
 	const char			*ldb_string = NULL;
+	const struct ldb_val		*ldb_val;
 	char				*tmp_str;
 	struct Binary_r			*bin;
 	struct StringArray_r		*mvszA;
@@ -449,8 +450,22 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	switch (ulPropTag) {
 	case PR_ADDRTYPE:
 	case PR_ADDRTYPE_UNICODE:
-		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE);
+		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
+	case PR_SMTP_ADDRESS:
+	case PR_SMTP_ADDRESS_UNICODE:
+	  data = NULL;
+	  ldb_element = ldb_msg_find_element(msg, emsabp_property_get_attribute(PR_EMS_AB_PROXY_ADDRESSES_UNICODE));
+	  if (ldb_element) {
+		  for (i = 0; !data && i < ldb_element->num_values; i++) {
+			  ldb_string = (const char *) ldb_element->values[i].data;
+			  if (!strncmp(ldb_string, "SMTP:", 5)) {
+				  data = (void *) talloc_strdup(mem_ctx, ldb_string + 5);
+			  }
+		  }
+	  }
+
+	  return data;
 	case PR_OBJECT_TYPE:
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = MAPI_MAILUSER;
@@ -459,7 +474,20 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = DT_MAILUSER;
 		return data;
+	case PR_SEND_RICH_INFO:
+		data = talloc_zero(mem_ctx, uint8_t);
+		*((uint8_t *)data) = false;
+		return data;
+	case PR_SEND_INTERNET_ENCODING:
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = 0x00160000;
+		return data;
+	case PidTagAddressBookHierarchicalIsHierarchicalGroup:
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = 0;
+		return data;
 	case PR_ENTRYID:
+	case PR_ORIGINAL_ENTRYID:
 		bin = talloc(mem_ctx, struct Binary_r);
 		if (dwFlags & fEphID) {
 			retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
@@ -490,6 +518,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin->lpb[1] = (MId >> 8)  & 0xFF;
 		bin->lpb[2] = (MId >> 16) & 0xFF;
 		bin->lpb[3] = (MId >> 24) & 0xFF;
+		return bin;
+	case PR_EMS_AB_OBJECT_GUID:
+		ldb_val = ldb_msg_find_ldb_val(msg, emsabp_property_get_attribute(PR_EMS_AB_OBJECT_GUID));
+		if (!ldb_val) return NULL;
+		bin = talloc_zero(mem_ctx, struct Binary_r);
+		bin->cb = ldb_val->length;
+		bin->lpb = talloc_memdup(bin, ldb_val->data, ldb_val->length);
 		return bin;
 	default:
 		break;
@@ -569,7 +604,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	const char	*dn;
 	void		*data;
 	uint32_t	ulPropTag;
-	uint32_t	i;
+	int		i;
+
+	OPENCHANGE_RETVAL_IF(pPropTags == NULL, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Create MId if necessary */
 	if (MId == 0) {
@@ -639,7 +676,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	int			ret;
 	uint32_t		ulPropTag;
 	void			*data;
-	uint32_t		i;
+	int			i;
 
 	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
@@ -759,10 +796,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			case PR_EMS_AB_CONTAINERID:
 				lpProps.value.l = 0x0;
 				break;
-			case PR_DISPLAY_NAME:
-				lpProps.value.lpszA = NULL;
-				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = NULL;
 				break;
 			case PR_EMS_AB_IS_MASTER:
@@ -818,7 +852,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				}
 				lpProps.value.l = containerID;
 				break;
-			case PR_DISPLAY_NAME:
+			case PidTagDisplayName_string8:
 				lpProps.value.lpszA = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszA) {
 					proptag = (int) lpProps.ulPropTag;
@@ -827,7 +861,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 					lpProps.ulPropTag = (enum MAPITAGS) proptag;
 				}
 				break;
-			case PR_DISPLAY_NAME_UNICODE:
+			case PidTagDisplayName:
 				lpProps.value.lpszW = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(msg, "displayName", NULL));
 				if (!lpProps.value.lpszW) {
 					proptag = (int) lpProps.ulPropTag;
@@ -1003,17 +1037,19 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-				       struct SPropTagArray *MIds, struct Restriction_r *restriction,
+				       struct PropertyTagArray_r *MIds, struct Restriction_r *restriction,
 				       struct STAT *pStat, uint32_t limit)
 {
 	enum MAPISTATUS			retval;
 	struct ldb_result		*res = NULL;
 	struct PropertyRestriction_r	*res_prop = NULL;
-	const char			*recipient = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL };
 	int				ret;
 	uint32_t			i;
 	const char			*dn;
+	char				*fmt_str;
+	const char			*fmt_attr;
+	char				*attr;
 
 	/* Step 0. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (pStat->SortType == SortTypePhoneticDisplayName) {
@@ -1037,41 +1073,60 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			return MAPI_E_TOO_COMPLEX;
 		}
 
-		/* FIXME: We only support PR_ANR */
 		res_prop = (struct PropertyRestriction_r *)&(restriction->res.resProperty);
-		if ((res_prop->ulPropTag != PR_ANR) && (res_prop->ulPropTag != PR_ANR_UNICODE)) {
+		fmt_attr = emsabp_property_get_attribute(res_prop->ulPropTag);
+		if (fmt_attr == NULL) {
+			return MAPI_E_NO_SUPPORT;
+		} 
+
+		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
 		}
 		
-		recipient = (res_prop->ulPropTag == PR_ANR) ?
-			res_prop->lpProp->value.lpszA :
-			res_prop->lpProp->value.lpszW;
-
-		ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs,
-				 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-				 recipient);
-
-		if (ret != LDB_SUCCESS) {
-			return MAPI_E_NOT_FOUND;
+		if ((res_prop->ulPropTag & 0xFFFF) == 0x101e) {
+			struct StringArray_r *attr_ml = (struct StringArray_r *) get_SPropValue_data(res_prop->lpProp);
+			attr = (char *)attr_ml->lppszA[0];
+		} else {
+			attr = (char *)get_SPropValue_data(res_prop->lpProp);
 		}
-		if (res == NULL) {
-			return MAPI_E_INVALID_OBJECT;
+		if (attr == NULL) {
+			return MAPI_E_NO_SUPPORT;
 		}
-		if (!res->count) {
-			return MAPI_E_NOT_FOUND;
+
+		/* Special case: anr doesn't return correct result with partial search */
+		if (!strcmp(fmt_attr, "anr")) {
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(userPrincipalName=%s))(!(objectClass=computer)))", fmt_attr, attr, attr);
+		} else if (!strcmp(fmt_attr, "legacyExchangeDN")) {
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(%s%s)(anr=%s))(!(objectClass=computer)))", fmt_attr, attr, fmt_attr, attr, attr);
+		} else {
+			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}
 	} else {
-		/* FIXME Check restriction == NULL */
+		fmt_str = talloc_strdup(mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		attr = NULL;
+	}
+
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx, &res,
+			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs, fmt_str, attr);
+	talloc_free(fmt_str);			
+	
+	if (ret != LDB_SUCCESS) {
+		return MAPI_E_NOT_FOUND;
+	}
+	if (res == NULL) {
 		return MAPI_E_INVALID_OBJECT;
+	}
+	if (!res->count) {
+		return MAPI_E_NOT_FOUND;
 	}
 
 	if (limit && res->count > limit) {
 		return MAPI_E_TABLE_TOO_BIG;
 	}
 
-	MIds->aulPropTag = (enum MAPITAGS *) talloc_array(emsabp_ctx->mem_ctx, uint32_t, res->count);
+	MIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, res->count);
 	MIds->cValues = res->count;
 
 	/* Step 2. Create session MId for all fetched records */

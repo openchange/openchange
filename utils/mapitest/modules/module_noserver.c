@@ -265,8 +265,8 @@ _PUBLIC_ bool mapitest_noserver_rtfcp_large(struct mapitest *mt)
 	return true;
 }
 
-#define SROWSET_UNTAGGED "005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203800005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203900005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203700005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203600005b4d545d2044756d6d793400426f6479206f66206d657373616765203400005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203500005b4d545d2044756d6d793300426f6479206f66206d657373616765203300005b4d545d2044756d6d793100426f6479206f66206d657373616765203100005b4d545d2044756d6d793200426f6479206f66206d657373616765203200005b4d545d2044756d6d793000426f6479206f66206d657373616765203000"
-#define SROWSET_UNTAGGED_LEN 330
+#define SROWSET_UNTAGGED "004d542044756d6d792046726f6d00426f6479206f66206d657373616765203800004d542044756d6d792046726f6d00426f6479206f66206d657373616765203900004d542044756d6d792046726f6d00426f6479206f66206d657373616765203700004d542044756d6d792046726f6d00426f6479206f66206d657373616765203600004d542044756d6d793400426f6479206f66206d657373616765203400004d542044756d6d792046726f6d00426f6479206f66206d657373616765203500004d542044756d6d793300426f6479206f66206d657373616765203300004d542044756d6d793100426f6479206f66206d657373616765203100004d542044756d6d793200426f6479206f66206d657373616765203200004d542044756d6d793000426f6479206f66206d657373616765203000"
+#define SROWSET_UNTAGGED_LEN 310
 
 static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 {
@@ -293,7 +293,7 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 10;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 10);
-	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 10) {
@@ -313,25 +313,25 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 		referenceRowSet.aRow[rowNum].lpProps[1].ulPropTag = PR_BODY;
 		referenceRowSet.aRow[rowNum].lpProps[1].dwAlignPad = 0;
 	}
-	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[0].lpProps[1].value.lpszA = "Body of message 8";
-	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[1].lpProps[1].value.lpszA = "Body of message 9";
-	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[2].lpProps[1].value.lpszA = "Body of message 7";
-	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[3].lpProps[1].value.lpszA = "Body of message 6";
-	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "[MT] Dummy4";
+	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "MT Dummy4";
 	referenceRowSet.aRow[4].lpProps[1].value.lpszA = "Body of message 4";
-	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[5].lpProps[1].value.lpszA = "Body of message 5";
-	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "[MT] Dummy3";
+	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "MT Dummy3";
 	referenceRowSet.aRow[6].lpProps[1].value.lpszA = "Body of message 3";
-	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "[MT] Dummy1";
+	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "MT Dummy1";
 	referenceRowSet.aRow[7].lpProps[1].value.lpszA = "Body of message 1";
-	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "[MT] Dummy2";
+	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "MT Dummy2";
 	referenceRowSet.aRow[8].lpProps[1].value.lpszA = "Body of message 2";
-	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "[MT] Dummy0";
+	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "MT Dummy0";
 	referenceRowSet.aRow[9].lpProps[1].value.lpszA = "Body of message 0";
 
 
@@ -359,8 +359,8 @@ static bool mapitest_noserver_srowset_untagged(struct mapitest *mt)
 	return true;
 }
 
-#define SROWSET_TAGGED	"01005b4d545d2044756d6d792046726f6d000a0f010480005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203500005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203600005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203700005b4d545d2044756d6d792046726f6d00426f6479206f66206d657373616765203800005b4d545d2044756d6d792046726f6d00426f6479206f66206d65737361676520390001005b4d545d2044756d6d7930000a0f010480005b4d545d2044756d6d793000426f6479206f66206d65737361676520300001005b4d545d2044756d6d7931000a0f010480005b4d545d2044756d6d793100426f6479206f66206d65737361676520310001005b4d545d2044756d6d7932000a0f010480005b4d545d2044756d6d793200426f6479206f66206d65737361676520320001005b4d545d2044756d6d7933000a0f010480005b4d545d2044756d6d793300426f6479206f66206d65737361676520330001005b4d545d2044756d6d7934000a0f010480005b4d545d2044756d6d793400426f6479206f66206d657373616765203400"
-#define SROWSET_TAGGED_LEN 448
+#define SROWSET_TAGGED	"01004d542044756d6d792046726f6d000a0f010480004d542044756d6d792046726f6d00426f6479206f66206d657373616765203500004d542044756d6d792046726f6d00426f6479206f66206d657373616765203600004d542044756d6d792046726f6d00426f6479206f66206d657373616765203700004d542044756d6d792046726f6d00426f6479206f66206d657373616765203800004d542044756d6d792046726f6d00426f6479206f66206d65737361676520390001004d542044756d6d7930000a0f010480004d542044756d6d793000426f6479206f66206d65737361676520300001004d542044756d6d7931000a0f010480004d542044756d6d793100426f6479206f66206d65737361676520310001004d542044756d6d7932000a0f010480004d542044756d6d793200426f6479206f66206d65737361676520320001004d542044756d6d7933000a0f010480004d542044756d6d793300426f6479206f66206d65737361676520330001004d542044756d6d7934000a0f010480004d542044756d6d793400426f6479206f66206d657373616765203400"
+#define SROWSET_TAGGED_LEN 416
 
 
 static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
@@ -388,7 +388,7 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 	proptags = set_SPropTagArray(mt->mem_ctx, 2, PR_SENDER_NAME,  PR_BODY);
 	rowSet.cRows = 16;
 	rowSet.aRow = talloc_array(mt->mem_ctx, struct SRow, 16);
-	emsmdb_get_SRowSet(mt->mem_ctx, lp_ctx, &rowSet, proptags, &rawData);
+	emsmdb_get_SRowSet(mt->mem_ctx, &rowSet, proptags, &rawData);
 
 	/* Check the resulting SRowSet */
 	if (rowSet.cRows != 16) {
@@ -408,43 +408,43 @@ static bool mapitest_noserver_srowset_tagged(struct mapitest *mt)
 		referenceRowSet.aRow[rowNum].lpProps[1].ulPropTag = PR_BODY;
 		referenceRowSet.aRow[rowNum].lpProps[1].dwAlignPad = 0;
 	}
-	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[0].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[0].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[0].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[1].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[1].lpProps[1].value.lpszA = "Body of message 5";
-	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[2].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[2].lpProps[1].value.lpszA = "Body of message 6";
-	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[3].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[3].lpProps[1].value.lpszA = "Body of message 7";
-	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[4].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[4].lpProps[1].value.lpszA = "Body of message 8";
-	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "[MT] Dummy From";
+	referenceRowSet.aRow[5].lpProps[0].value.lpszA = "MT Dummy From";
 	referenceRowSet.aRow[5].lpProps[1].value.lpszA = "Body of message 9";
-	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "[MT] Dummy0";
+	referenceRowSet.aRow[6].lpProps[0].value.lpszA = "MT Dummy0";
 	referenceRowSet.aRow[6].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[6].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "[MT] Dummy0";
+	referenceRowSet.aRow[7].lpProps[0].value.lpszA = "MT Dummy0";
 	referenceRowSet.aRow[7].lpProps[1].value.lpszA = "Body of message 0";
-	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "[MT] Dummy1";
+	referenceRowSet.aRow[8].lpProps[0].value.lpszA = "MT Dummy1";
 	referenceRowSet.aRow[8].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[8].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "[MT] Dummy1";
+	referenceRowSet.aRow[9].lpProps[0].value.lpszA = "MT Dummy1";
 	referenceRowSet.aRow[9].lpProps[1].value.lpszA = "Body of message 1";
-	referenceRowSet.aRow[10].lpProps[0].value.lpszA = "[MT] Dummy2";
+	referenceRowSet.aRow[10].lpProps[0].value.lpszA = "MT Dummy2";
 	referenceRowSet.aRow[10].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[10].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[11].lpProps[0].value.lpszA = "[MT] Dummy2";
+	referenceRowSet.aRow[11].lpProps[0].value.lpszA = "MT Dummy2";
 	referenceRowSet.aRow[11].lpProps[1].value.lpszA = "Body of message 2";
-	referenceRowSet.aRow[12].lpProps[0].value.lpszA = "[MT] Dummy3";
+	referenceRowSet.aRow[12].lpProps[0].value.lpszA = "MT Dummy3";
 	referenceRowSet.aRow[12].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[12].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[13].lpProps[0].value.lpszA = "[MT] Dummy3";
+	referenceRowSet.aRow[13].lpProps[0].value.lpszA = "MT Dummy3";
 	referenceRowSet.aRow[13].lpProps[1].value.lpszA = "Body of message 3";
-	referenceRowSet.aRow[14].lpProps[0].value.lpszA = "[MT] Dummy4";
+	referenceRowSet.aRow[14].lpProps[0].value.lpszA = "MT Dummy4";
 	referenceRowSet.aRow[14].lpProps[1].ulPropTag = PR_BODY_ERROR;
 	referenceRowSet.aRow[14].lpProps[1].value.err = MAPI_E_NOT_FOUND;
-	referenceRowSet.aRow[15].lpProps[0].value.lpszA = "[MT] Dummy4";
+	referenceRowSet.aRow[15].lpProps[0].value.lpszA = "MT Dummy4";
 	referenceRowSet.aRow[15].lpProps[1].value.lpszA = "Body of message 4";
 
 	/* compare result with reference rowset */
@@ -913,8 +913,8 @@ static bool mapitest_no_server_props_mv_unicode(struct mapitest *mt)
 {
 	bool res;
 	struct SPropValue propvalue;
-	struct WStringArray_r unicodearray;
-	const struct WStringArray_r *unicodearrayget;
+	struct StringArrayW_r unicodearray;
+	const struct StringArrayW_r *unicodearrayget;
 
 	// create and initialise unicodearray
 	unicodearray.cValues = 4;
@@ -930,7 +930,7 @@ static bool mapitest_no_server_props_mv_unicode(struct mapitest *mt)
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue set with PT_MV_UNICODE");
 		return false;
 	}
-	unicodearrayget = (const struct WStringArray_r *)get_SPropValue_data(&propvalue);
+	unicodearrayget = (const struct StringArrayW_r *)get_SPropValue_data(&propvalue);
 	if (!unicodearrayget || (unicodearray.cValues != unicodearrayget->cValues) || (unicodearray.lppszW != unicodearrayget->lppszW)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue get/set with PT_MV_UNICODE");
@@ -1117,7 +1117,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	valarray.lpProps[5].value.bin.lpb[1] = 0x00;
 	valarray.lpProps[5].value.bin.lpb[2] = 0x20;
 	valarray.lpProps[5].value.bin.lpb[3] = 0x00;
-	valarray.lpProps[6].ulPropTag = PidTagScheduleInfoMonthsBusy;
+	valarray.lpProps[6].ulPropTag = PR_SCHDINFO_MONTHS_BUSY;
 	valarray.lpProps[6].value.MVl.cValues = 2;
 	valarray.lpProps[6].value.MVl.lpl = talloc_array(mt->mem_ctx, uint32_t, 2);
 	valarray.lpProps[6].value.MVl.lpl[0] = 32130;
@@ -1189,7 +1189,7 @@ _PUBLIC_ bool mapitest_noserver_mapi_properties(struct mapitest *mt)
 	mapitest_print(mt, "* %-40s: [SUCCESS]\n", "mapi_SPropValue find with PT_BINARY");
 
 
-	mvi4get = find_mapi_SPropValue_data(&valarray, PidTagScheduleInfoMonthsBusy);
+	mvi4get = find_mapi_SPropValue_data(&valarray, PR_SCHDINFO_MONTHS_BUSY);
 	if (!mvi4get || (mvi4get->cValues != 2 ) || (mvi4get->lpl[0] != 32130) || (mvi4get->lpl[1] != 32131)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "mapi_SPropValue find with PT_MV_LONG");

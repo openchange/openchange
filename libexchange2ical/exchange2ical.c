@@ -354,7 +354,7 @@ static uint8_t exchange2ical_exception_from_ExceptionInfo(struct exchange2ical *
 		
 		/*summary from Subject if subject is set*/
 		if (exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->OverrideFlags & 0x0001) {
-			exchange2ical->Subject=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Subject.subject;
+			exchange2ical->Subject=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Subject.subjectMsg.msg;
 			ical_property_SUMMARY(exchange2ical);
 		}
 		
@@ -374,7 +374,7 @@ static uint8_t exchange2ical_exception_from_ExceptionInfo(struct exchange2ical *
 
 		/*Location*/
 		if(exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->OverrideFlags & 0x0010){
-			exchange2ical->Location=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Location.location;
+			exchange2ical->Location=(const char *) &exchange2ical->AppointmentRecurrencePattern->ExceptionInfo->Location.locationMsg.msg;
 			ical_property_LOCATION(exchange2ical);
 		}
 		
@@ -425,8 +425,8 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 									  PR_ATTACHMENT_HIDDEN
 									  );
 									  
-				lpProps = talloc_zero(exchange2ical->mem_ctx, struct SPropValue);
-				retval = GetProps(&obj_attach, SPropTagArray, &lpProps, &count);
+				lpProps = NULL;
+				retval = GetProps(&obj_attach, 0, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {
 					return 1;
@@ -443,7 +443,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 					attachMethod	 = (uint32_t *) octool_get_propval(&aRow2, PR_ATTACH_METHOD);
 					attachmentHidden = (uint8_t *) octool_get_propval(&aRow2, PR_ATTACHMENT_HIDDEN);
 
-					if((*attachmentFlags & 0x00000002) 
+					if(attachmentFlags && (*attachmentFlags & 0x00000002) 
 						&& (*attachMethod == 0x00000005) 
 						&& (attachmentHidden && (*attachmentHidden))) {
 					
@@ -506,7 +506,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 								  
 								  
 		
-							retval = GetProps(&exception.obj_message, SPropTagArray, &lpProps, &count);
+							retval = GetProps(&exception.obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 							
 							if (retval == MAPI_E_SUCCESS) {	
 								aRow2.ulAdrEntryPad = 0;
@@ -559,7 +559,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 								/*has a modified summary*/
 								if(dBody && *dBody){
 									SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x1, PR_BODY_HTML_UNICODE);
-									retval = GetProps(&exception.obj_message, SPropTagArray, &lpProps, &count);
+									retval = GetProps(&exception.obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 									MAPIFreeBuffer(SPropTagArray);
 									if (retval == MAPI_E_SUCCESS) {
 										aRowT.ulAdrEntryPad = 0;
@@ -606,7 +606,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 	uint32_t			count;
 	int				i;
 
-	mem_ctx = talloc_named(NULL, 0, "exchange2ical");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "exchange2ical");
 	exchange2ical_init(mem_ctx, &exchange2ical);
 	
 	/* Open the contents table */
@@ -696,7 +696,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 								  );
 								  
 								  
-				retval = GetProps(&exchange2ical.obj_message, SPropTagArray, &lpProps, &count);
+				retval = GetProps(&exchange2ical.obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 
 				MAPIFreeBuffer(SPropTagArray);
 	
@@ -728,7 +728,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 					
 					/*Set PR_BODY_HTML for x_alt_desc property*/
 					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_BODY_HTML_UNICODE);
-					retval = GetProps(&exchange2ical.obj_message, SPropTagArray, &lpProps, &count);
+					retval = GetProps(&exchange2ical.obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 					MAPIFreeBuffer(SPropTagArray);
 					if (retval == MAPI_E_SUCCESS) {
 						aRowT.ulAdrEntryPad = 0;

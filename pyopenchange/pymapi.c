@@ -73,7 +73,7 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 	self->SPropValue = talloc_realloc(self->mem_ctx, self->SPropValue, struct SPropValue, self->cValues + 2);
 
 	switch (proptag & 0xFFFF) {
-	case PT_SHORT:
+	case PT_I2:
 		if (!PyInt_Check(data)) {
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
 			return NULL;
@@ -96,13 +96,13 @@ static PyObject *py_SPropValue_add(PySPropValueObject *self, PyObject *args)
 		break;
 	case PT_BOOLEAN:
 		if (!PyBool_Check(data)) {
-			PyErr_SetString(PyExc_TypeError, "Property Tag requires long");
+			PyErr_SetString(PyExc_TypeError, "Property Tag requires boolean");
 			return NULL;
 		}
 		self->SPropValue[self->cValues].value.b = PyInt_AsLong(data);
 		break;
 	case PT_I8:
-		if (!PyInt_Check(data)) {
+		if (!PyLong_Check(data)) {
 			PyErr_SetString(PyExc_TypeError, "Property Tag requires long long int");
 			return NULL;
 		}

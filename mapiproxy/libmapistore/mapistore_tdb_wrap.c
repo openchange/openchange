@@ -19,18 +19,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include "mapistore_errors.h"
+#include "config.h"
+#include <stdio.h>
+#include <string.h>
+
 #include "mapistore.h"
 #include "mapistore_private.h"
 #include <dlinklist.h>
 
-#include <stdio.h>
-#include <string.h>
-
 static struct tdb_wrap *tdb_list;
 
 /* destroy the last connection to a tdb */
-static int tdb_wrap_destructor(struct tdb_wrap *w)
+static int mapistore_tdb_wrap_destructor(struct tdb_wrap *w)
 {
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
@@ -40,19 +40,18 @@ static int tdb_wrap_destructor(struct tdb_wrap *w)
 /*
  Log tdb messages via DEBUG().
 */
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...) PRINTF_ATTRIBUTE(3,4);
+static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
+				   const char *format, ...) PRINTF_ATTRIBUTE(3,4);
 
-static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
-			 const char *format, ...)
+static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
+				   const char *format, ...)
 {
 	va_list ap;
 	char	*ptr = NULL;
 	int	dl;
-	int	ret;
 
 	va_start(ap, format);
-	ret = vasprintf(&ptr, format, ap);
+	vasprintf(&ptr, format, ap);
 	va_end(ap);
 	
 	switch (level) {
@@ -95,14 +94,14 @@ static void tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
    \return pointer to an allocated tdb_wrap structure on success,
    otherwise NULL
  */
-struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx, const char *name, 
-			       int hash_size, int tdb_flags,
-			       int open_flags, mode_t mode)
+struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *mem_ctx, const char *name, 
+					 int hash_size, int tdb_flags,
+					 int open_flags, mode_t mode)
 {
 	struct tdb_wrap			*w;
 	struct tdb_logging_context	log_ctx;
 
-	log_ctx.log_fn = tdb_wrap_log;
+	log_ctx.log_fn = mapistore_tdb_wrap_log;
 
 	for (w = tdb_list; w; w = w->next) {
 		if (strcmp(name, w->name) == 0) {
@@ -124,7 +123,7 @@ struct tdb_wrap *tdb_wrap_open(TALLOC_CTX *mem_ctx, const char *name,
 		return NULL;
 	}
 
-	talloc_set_destructor(w, tdb_wrap_destructor);
+	talloc_set_destructor(w, mapistore_tdb_wrap_destructor);
 
 	DLIST_ADD(tdb_list, w);
 

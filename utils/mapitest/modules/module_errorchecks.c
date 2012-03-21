@@ -53,9 +53,6 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	uint64_t	*folder = 0;
 	uint32_t	id = 0x99;
 	uint32_t	arg; 		// an all purpose argument...
-	TALLOC_CTX	*mem_ctx;
-
-	mem_ctx = talloc_autofree_context();
 
 	status = GetDefaultPublicFolder(obj_store, folder, id);
 	if ( ( status != MAPI_E_INVALID_PARAMETER ) || (GetLastError() != MAPI_E_INVALID_PARAMETER) ) {

@@ -4,6 +4,7 @@ libdir=@libdir@
 includedir=@includedir@
 datarootdir=@prefix@/share
 datadir=@datadir@
+modulesdir=@modulesdir@/dcerpc_mapiproxy
 
 Name: MAPIPROXY
 Description: MAPI Proxy and Server Module Library

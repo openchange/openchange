@@ -100,7 +100,7 @@ _PUBLIC_ enum MAPISTATUS GetContentsTable(mapi_object_t *obj_container, mapi_obj
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetContentsTable");
+	mem_ctx = talloc_named(session, 0, "GetContentsTable");
 	size = 0;
 
 	/* Fill the GetContentsTable operation */
@@ -226,7 +226,7 @@ _PUBLIC_ enum MAPISTATUS GetHierarchyTable(mapi_object_t *obj_container, mapi_ob
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetHierarchyTable");
+	mem_ctx = talloc_named(session, 0, "GetHierarchyTable");
 	size = 0;
 
 	/* Fill the GetHierarchyTable operation */
@@ -326,7 +326,7 @@ _PUBLIC_ enum MAPISTATUS GetPermissionsTable(mapi_object_t *obj_container, uint8
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetPermissionsTable");
+	mem_ctx = talloc_named(session, 0, "GetPermissionsTable");
 	size = 0;
 
 	/* Fill the GetPermissionsTable operation */
@@ -421,7 +421,7 @@ _PUBLIC_ enum MAPISTATUS GetRulesTable(mapi_object_t *obj_folder,
 	if ((retval = mapi_object_get_logon_id(obj_folder, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetRulesTable");
+	mem_ctx = talloc_named(session, 0, "GetRulesTable");
 	size = 0;
 
 	/* Fill the GetRulesTable operation */
@@ -527,7 +527,7 @@ _PUBLIC_ enum MAPISTATUS ModifyPermissions(mapi_object_t *obj_table, uint8_t fla
 	if ((retval = mapi_object_get_logon_id(obj_table, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "ModifyPermissions");
+	mem_ctx = talloc_named(session, 0, "ModifyPermissions");
 
 	/* Fill the ModifyPermissions operation */
 	request.rowList = *permsdata;
@@ -644,7 +644,7 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "SetSearchCriteria");
+	mem_ctx = talloc_named(session, 0, "SetSearchCriteria");
 	size = 0;
 
 	/* Fill the SetSearchCriteria operation */
@@ -750,7 +750,7 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 	if ((retval = mapi_object_get_logon_id(obj_container, &logon_id)) != MAPI_E_SUCCESS)
 		return retval;
 
-	mem_ctx = talloc_named(NULL, 0, "GetSearchCriteria");
+	mem_ctx = talloc_named(session, 0, "GetSearchCriteria");
 	size = 0;
 
 	/* Fill the GetSearchCriteria operation */

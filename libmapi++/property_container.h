@@ -177,7 +177,7 @@ class property_container {
 		 */
 		uint32_t fetch()
 		{
-			if (GetProps(&m_mapi_object, m_property_tag_array, &m_property_values, &m_cn_vals) != MAPI_E_SUCCESS)
+			if (GetProps(&m_mapi_object, MAPI_UNICODE, m_property_tag_array, &m_property_values, &m_cn_vals) != MAPI_E_SUCCESS)
 				throw mapi_exception(GetLastError(), "property_container::fetch : GetProps");
 
 			MAPIFreeBuffer(m_property_tag_array);
@@ -190,7 +190,7 @@ class property_container {
 		/// \brief Fetches \b ALL properties of the object associated with this container.
 		void fetch_all()
 		{
-			if (GetPropsAll(&m_mapi_object, &m_property_value_array) != MAPI_E_SUCCESS)
+			if (GetPropsAll(&m_mapi_object, MAPI_UNICODE, &m_property_value_array) != MAPI_E_SUCCESS)
 				throw mapi_exception(GetLastError(), "property_container::fetch_all : GetPropsAll");
 
 			// Free property_tag_array in case user used operator<< by mistake.

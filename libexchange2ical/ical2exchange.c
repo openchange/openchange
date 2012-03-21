@@ -350,7 +350,7 @@ void _IcalEvent2Exchange(mapi_object_t *obj_folder, icalcomponent *vevent)
 	/*sanity check*/
 	if(icalcomponent_isa(vevent) != ICAL_VEVENT_COMPONENT) return;
 	
-	mem_ctx = talloc_named(NULL, 0, "ical2exchange");
+	mem_ctx = talloc_named(mapi_object_get_session(obj_folder), 0, "ical2exchange");
 	ical2exchange.lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
 
 	ical2exchange_init(&ical2exchange, mem_ctx);
@@ -362,7 +362,7 @@ void _IcalEvent2Exchange(mapi_object_t *obj_folder, icalcomponent *vevent)
 	if (retval != MAPI_E_SUCCESS){
 		mapi_errstr("CreateMessage", GetLastError());
 	} else {
-		retval = SetProps(&obj_message, ical2exchange.lpProps, ical2exchange.cValues);
+		retval = SetProps(&obj_message, 0, ical2exchange.lpProps, ical2exchange.cValues);
 		if (retval != MAPI_E_SUCCESS){
 			mapi_errstr("SetProps", GetLastError());
 		} else {

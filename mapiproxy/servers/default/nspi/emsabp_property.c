@@ -34,16 +34,25 @@ struct emsabp_property {
 	const char	*ref_attr;
 };
 
+/* MAPI Property tags to AD attributes mapping */
 static const struct emsabp_property emsabp_property[] = {
-	{ PR_ACCOUNT,				"sAMAccountName",	false,	NULL			},
-	{ PR_COMPANY_NAME,			"company",		false,	NULL			},
-	{ PR_DISPLAY_NAME,			"displayName",		false,	NULL			},
-	{ PR_EMAIL_ADDRESS,			"legacyExchangeDN",	false,	NULL			},
-	{ PR_EMS_AB_HOME_MDB,			"homeMDB",		true,	"legacyExchangeDN"	},
-	{ PR_EMS_AB_PROXY_ADDRESSES,		"proxyAddresses",	false,	NULL			},
-	{ PR_EMS_AB_PROXY_ADDRESSES_UNICODE,	"proxyAddresses",	false,	NULL			},
-	{ PR_EMS_AB_NETWORK_ADDRESS,		"networkAddress",	false,	NULL			},
-	{ PR_TITLE,				"personalTitle",	false,	NULL			},
+	{ PidTagAnr,				"anr",			false,	NULL			},
+	{ PidTagAccount,			"sAMAccountName",	false,	NULL			},
+	{ PidTagGivenName,			"givenName",		false,	NULL			},
+	{ PidTagSurname,			"sn",			false,	NULL			},
+	{ PidTagTransmittableDisplayName,	"displayName",		false,	NULL			},
+	{ PidTag7BitDisplayName,		"displayName",		false,	NULL			},
+	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
+	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
+	{ PidTagDepartmentName,			"department",		false,	NULL			},
+	{ PidTagCompanyName,			"company",		false,	NULL			},
+	{ PidTagDisplayName,			"displayName",		false,	NULL			},
+	{ PidTagEmailAddress,			"legacyExchangeDN",	false,	NULL			},
+	{ PidTagAddressBookHomeMessageDatabase,	"homeMDB",		true,	"legacyExchangeDN"	},
+	{ PidTagAddressBookProxyAddresses,	"proxyAddresses",	false,	NULL			},
+	{ PidTagAddressBookNetworkAddress,	"networkAddress",	false,	NULL			},
+	{ PidTagTitle,				"personalTitle",	false,	NULL			},
+	{ PidTagAddressBookObjectGuid,		"objectGUID",		false,	NULL			},
 	{ 0,					NULL,			false,	NULL			}
 };
 
@@ -59,19 +68,21 @@ static const struct emsabp_property emsabp_property[] = {
 _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 {
 	int		i;
+	uint32_t	uniPropTag;
 
-	/* if ulPropTag type is PT_UNICODE, turn it to PT_STRING8 */
-	if ((ulPropTag & 0xFFFF) == PT_UNICODE) {
-		ulPropTag &= 0xFFFF0000;
-		ulPropTag += PT_STRING8;
+	if ((ulPropTag & 0x0fff) == PT_STRING8) {
+		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
+	}
+	else {
+		uniPropTag = ulPropTag;
 	}
 
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (ulPropTag == emsabp_property[i].ulPropTag) {
+		if (uniPropTag == emsabp_property[i].ulPropTag) {
 			return emsabp_property[i].attribute;
 		}
 	}
-
+	
 	return NULL;
 }
 
@@ -111,11 +122,19 @@ _PUBLIC_ uint32_t emsabp_property_get_ulPropTag(const char *attribute)
 _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 {
 	int		i;
+	uint32_t	uniPropTag;
 
 	if (!ulPropTag) return -1;
 
+	if ((ulPropTag & 0x0fff) == PT_STRING8) {
+		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
+	}
+	else {
+		uniPropTag = ulPropTag;
+	}
+
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (ulPropTag == emsabp_property[i].ulPropTag) {
+		if (uniPropTag == emsabp_property[i].ulPropTag) {
 			return (emsabp_property[i].ref == true) ? 1 : 0;
 		}
 	}
@@ -135,11 +154,19 @@ _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 _PUBLIC_ const char *emsabp_property_get_ref_attr(uint32_t ulPropTag)
 {
 	int		i;
+	uint32_t	uniPropTag;
 
 	if (!ulPropTag) return NULL;
 
+	if ((ulPropTag & 0x0fff) == PT_STRING8) {
+		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
+	}
+	else {
+		uniPropTag = ulPropTag;
+	}
+
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (ulPropTag == emsabp_property[i].ulPropTag) {
+		if (uniPropTag == emsabp_property[i].ulPropTag) {
 			return emsabp_property[i].ref_attr;
 		}
 	}

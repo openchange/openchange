@@ -149,7 +149,6 @@ struct tce_async_context {
 static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct tce_async_context	*actx = talloc_get_type(req->context, struct tce_async_context);
-	int				ret;
 
         switch (ares->type) {
 
@@ -162,7 +161,6 @@ static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 		}
                 break;
         case LDB_REPLY_DONE:
-                ret = 0;
                 break;
         default:
 		DEBUG(3, ("[%s:%d]: unknown Reply Type ignore it\n", __FUNCTION__, __LINE__));
@@ -222,10 +220,10 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	dom_sid = mapiadmin_ctx->user_ctx->user_sid;
 
 	/* initialize memory context */
-	mem_ctx = talloc_named(NULL, 0, "mapiadmin_user_extend");
+	mem_ctx = talloc_named((TALLOC_CTX *)mapiadmin_ctx, 0, "mapiadmin_user_extend");
 
 	/* open LDAP connection */
-	ev = tevent_context_init(talloc_autofree_context());
+	ev = tevent_context_init(mem_ctx);
 	remote_ldb_url = talloc_asprintf(mem_ctx, "ldap://%s", profile->server);
 	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, mapi_ctx->lp_ctx, remote_ldb_url, 
@@ -250,13 +248,12 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 
 	/* message: givenName */
 	exch_attrs[0] = talloc_strdup(mem_ctx, mapiadmin_ctx->username);
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, "givenName", exch_attrs[0]);
+	ret = ldb_msg_add_string(msg, "givenName", exch_attrs[0]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* message: userAccountControl */
 	exch_attrs[1] = talloc_asprintf(mem_ctx, "513");
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, "userAccountControl", 
-				   exch_attrs[1]);
+	ret = ldb_msg_add_string(msg, "userAccountControl", exch_attrs[1]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	msg->elements[1].flags = LDB_FLAG_MOD_REPLACE;
 
@@ -273,18 +270,17 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	MAPI_RETVAL_IF(!realm, MAPI_E_NOT_FOUND, mem_ctx);
 
 	exch_attrs[2] = talloc_asprintf(mem_ctx, "%s@%s", mapiadmin_ctx->username, realm);
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, "mail", exch_attrs[2]);
+	ret = ldb_msg_add_string(msg, "mail", exch_attrs[2]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* message: mailNickname */
 	exch_attrs[3] = talloc_strdup(mem_ctx, mapiadmin_ctx->username);
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, "mailNickname", exch_attrs[3]);
+	ret = ldb_msg_add_string(msg, "mailNickname", exch_attrs[3]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* message: mDBUseDefaults */
 	exch_attrs[4] = talloc_asprintf(mem_ctx, "TRUE");
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
-				   "mDBUseDefaults", exch_attrs[4]);
+	ret = ldb_msg_add_string(msg, "mDBUseDefaults", exch_attrs[4]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* message: legacyExchangeDN */
@@ -292,14 +288,12 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 			     strlen(profile->mailbox) - strlen(profile->username));
 	exch_attrs[5] = talloc_asprintf(mem_ctx, "%s%s", org, mapiadmin_ctx->username);
 	talloc_free(org);
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
-				   "legacyExchangeDN", exch_attrs[5]);
+	ret = ldb_msg_add_string(msg, "legacyExchangeDN", exch_attrs[5]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* message: msExchHomeServerName */
 	exch_attrs[6] = talloc_strdup(mem_ctx, profile->homemdb);
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
-				   "msExchHomeServerName", exch_attrs[6]);
+	ret = ldb_msg_add_string(msg, "msExchHomeServerName", exch_attrs[6]);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* Prior we call ldb_modify, set up async ldb request on
@@ -346,8 +340,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	msg->dn = res->msgs[0]->dn;
 
 	UserAccountControl = talloc_asprintf(mem_ctx, "66048");
-	ret = samdb_msg_add_string(remote_ldb, mem_ctx, msg, 
-				   "UserAccountControl", UserAccountControl);
+	ret = ldb_msg_add_string(msg, "UserAccountControl", UserAccountControl);
 	MAPI_RETVAL_IF((ret == -1), MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 
@@ -370,7 +363,6 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	NTSTATUS			status;
 	enum MAPISTATUS			retval;
 	struct mapi_context		*mapi_ctx;
-	struct mapi_profile		*profile;
 	struct samr_CreateUser2		r;
 	struct samr_GetUserPwInfo	pwp;
 	struct samr_SetUserInfo		s;
@@ -387,7 +379,6 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
 	DEBUG(3, ("Creating account %s\n", mapiadmin_ctx->username));
-	profile = mapiadmin_ctx->session->profile;
 
 	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
 	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, mem_ctx);

@@ -92,8 +92,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_server_set_SPropValue(TALLOC_CTX *mem_ctx,
 	if (ctx->props && ctx->props->next) {
 		for (pel = ctx->props; pel->next; pel = pel->next) {
 			switch (pel->aulPropTag) {
-			case PR_MESSAGE_CLASS:
-			case PR_MESSAGE_CLASS_UNICODE:
+			case PidTagMessageClass:
 				ocpf_server_set_type(context_id, (const char *)pel->value);
 				ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues, 
 							      pel->aulPropTag, pel->value);
@@ -107,7 +106,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_server_set_SPropValue(TALLOC_CTX *mem_ctx,
 	/* Step 4. Add message class */
 	if (ctx->type) {
 		ctx->lpProps = add_SPropValue(ctx, ctx->lpProps, &ctx->cValues,
-					      PR_MESSAGE_CLASS, (const void *)ctx->type);
+					      PidTagMessageClass, (const void *)ctx->type);
 	}
 	
 	return MAPI_E_SUCCESS;	

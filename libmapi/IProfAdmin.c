@@ -48,6 +48,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	struct ldb_message	*msg;
 	const char * const	attrs[] = { "*", NULL };
 
+	memset(profile, 0, sizeof(struct mapi_profile));
 	/* fills in profile name */
 	profile->profname = talloc_strdup(mem_ctx, profname);
 	if (!profile->profname) return MAPI_E_NOT_ENOUGH_RESOURCES;
@@ -56,31 +57,39 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	if (ret != LDB_SUCCESS) return MAPI_E_NOT_FOUND;
 
 	/* profile not found */
-	if (!res->count) return MAPI_E_NOT_FOUND;
+	if (!res->count) {
+		talloc_free(res);
+		return MAPI_E_NOT_FOUND;
+	}
+
 	/* more than one profile */
-	if (res->count > 1) return MAPI_E_COLLISION;
+	if (res->count > 1) {
+		talloc_free(res);
+		return MAPI_E_COLLISION;
+	}
 
 	/* fills in profile with query result */
 	msg = res->msgs[0];
 
-	profile->username = ldb_msg_find_attr_as_string(msg, "username", NULL);
-	profile->password = password ? password : ldb_msg_find_attr_as_string(msg, "password", "");
-	profile->workstation = ldb_msg_find_attr_as_string(msg, "workstation", NULL);
-	profile->realm = ldb_msg_find_attr_as_string(msg, "realm", NULL);
-	profile->domain = ldb_msg_find_attr_as_string(msg, "domain", NULL);
-	profile->mailbox = ldb_msg_find_attr_as_string(msg, "EmailAddress", NULL);
-	profile->homemdb = ldb_msg_find_attr_as_string(msg, "HomeMDB", NULL);
-	profile->localaddr = ldb_msg_find_attr_as_string(msg, "localaddress", NULL);
-	profile->server = ldb_msg_find_attr_as_string(msg, "binding", NULL);
+	profile->username = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "username", NULL));
+	profile->password = password ? password : talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "password", NULL));
+	profile->workstation = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "workstation", NULL));
+	profile->realm = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "realm", NULL));
+	profile->domain = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "domain", NULL));
+	profile->mailbox = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "EmailAddress", NULL));
+	profile->homemdb = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "HomeMDB", NULL));
+	profile->localaddr = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "localaddress", NULL));
+	profile->server = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "binding", NULL));
 	profile->seal = ldb_msg_find_attr_as_bool(msg, "seal", false);
-	profile->org = ldb_msg_find_attr_as_string(msg, "Organization", NULL);
-	profile->ou = ldb_msg_find_attr_as_string(msg, "OrganizationUnit", NULL);
+	profile->org = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "Organization", NULL));
+	profile->ou = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "OrganizationUnit", NULL));
 	profile->codepage = ldb_msg_find_attr_as_int(msg, "codepage", 0);
 	profile->language = ldb_msg_find_attr_as_int(msg, "language", 0);
 	profile->method = ldb_msg_find_attr_as_int(msg, "method", 0);
 	profile->exchange_version = ldb_msg_find_attr_as_int(msg, "exchange_version", 0);
+	profile->kerberos = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "kerberos", NULL));
 
-	if (!profile->password) return MAPI_E_INVALID_PARAMETER;
+	talloc_free(res);
 
 	return MAPI_E_SUCCESS;
 }
@@ -382,7 +391,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_add_string_attr(struct mapi_context *mapi_
 	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_BAD_VALUE, NULL);
 	OPENCHANGE_RETVAL_IF(!value, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapi_profile_add_string_attr");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_profile_add_string_attr");
 	ldb_ctx = mapi_ctx->ldb_ctx;
 
 	/* Retrieve the profile from the database */
@@ -442,7 +451,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_modify_string_attr(struct mapi_context *ma
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = mapi_ctx->ldb_ctx;
-	mem_ctx = talloc_named(NULL, 0, "mapi_profile_modify_string_attr");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_profile_modify_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
@@ -506,7 +515,7 @@ _PUBLIC_ enum MAPISTATUS mapi_profile_delete_string_attr(struct mapi_context *ma
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_BAD_VALUE, NULL);
 
 	ldb_ctx = mapi_ctx->ldb_ctx;
-	mem_ctx = talloc_named(NULL, 0, "mapi_profile_delete_string_attr");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_profile_delete_string_attr");
 
 	/* Retrieve the profile from the database */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx), scope, attrs, "(cn=%s)(cn=Profiles)", profname);
@@ -613,8 +622,8 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 	FILE			*f;
 	struct tevent_context	*ev;
 
-	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_CALL_FAILED, NULL);
-	OPENCHANGE_RETVAL_IF(!ldif_path, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(!profiledb, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ldif_path, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "CreateProfileStore");
 
@@ -687,7 +696,9 @@ _PUBLIC_ enum MAPISTATUS CreateProfileStore(const char *profiledb, const char *l
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
-   \note Developers may also call GetLastError() to retrieve the last
+   \note profile must be talloced because it used as talloc subcontext for
+         data members.
+   Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_ENOUGH_RESOURCES: ldb subsystem initialization failed
    - MAPI_E_NOT_FOUND: the profile was not found in the profile
@@ -713,8 +724,9 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_context *mapi_ctx,
 	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, profile, profname, password);
 
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	profile->mapi_ctx = mapi_ctx;
 
-	return MAPI_E_SUCCESS;	
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -741,6 +753,7 @@ _PUBLIC_ enum MAPISTATUS OpenProfile(struct mapi_context *mapi_ctx,
 _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx, 
 				     struct mapi_profile *profile)
 {
+	enum credentials_use_kerberos use_krb = CRED_AUTO_USE_KERBEROS;
 	TALLOC_CTX *mem_ctx;
 
 	/* Sanity checks */
@@ -748,15 +761,44 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = (TALLOC_CTX *) mapi_ctx->session;
+	mem_ctx = mapi_ctx->mem_ctx;
 
-	profile->credentials = cli_credentials_init(mem_ctx);
+	profile->credentials = cli_credentials_init(profile);
 	OPENCHANGE_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
-	cli_credentials_set_username(profile->credentials, profile->username, CRED_SPECIFIED);
-	cli_credentials_set_password(profile->credentials, profile->password, CRED_SPECIFIED);
-	cli_credentials_set_workstation(profile->credentials, profile->workstation, CRED_SPECIFIED);
-	cli_credentials_set_realm(profile->credentials, profile->realm, CRED_SPECIFIED);
-	cli_credentials_set_domain(profile->credentials, profile->domain, CRED_SPECIFIED);
+	cli_credentials_guess(profile->credentials, mapi_ctx->lp_ctx);
+	if (profile->workstation && *(profile->workstation)) {
+		cli_credentials_set_workstation(profile->credentials, profile->workstation, CRED_SPECIFIED);
+	}
+	if (profile->realm && *(profile->realm)) {
+		cli_credentials_set_realm(profile->credentials, profile->realm, CRED_SPECIFIED);
+	}
+	if (profile->domain && *(profile->domain)) {
+		cli_credentials_set_domain(profile->credentials, profile->domain, CRED_SPECIFIED);
+	}
+	/* we keep the krb value literal as on/off and set the appropriate
+	 * flags at profile load time, to avoid embedding the bits of
+	 * another API in the profile */
+	if (profile->kerberos) {
+		if (!strncmp(profile->kerberos, "yes", 3)) {
+			use_krb = CRED_MUST_USE_KERBEROS;
+		} else {
+			use_krb = CRED_DONT_USE_KERBEROS;
+		}
+	}
+	/* additionally, don't set the username in the ccache if kerberos
+	 * is forced, it causes the samba API to ignore existing kerberos
+	 * credentials.  cli_credentials_guess probably gets the right
+	 * thing anyway in the situations where kerberos is in use */
+	if (profile->username && *(profile->username)
+	    && use_krb != CRED_MUST_USE_KERBEROS) {
+		cli_credentials_set_username(profile->credentials, profile->username, CRED_SPECIFIED);
+	}
+	if (profile->password && *(profile->password)) {
+		cli_credentials_set_password(profile->credentials, profile->password, CRED_SPECIFIED);
+	}
+	if (use_krb != CRED_AUTO_USE_KERBEROS) {
+		cli_credentials_set_kerberos_state(profile->credentials, use_krb);
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -832,7 +874,7 @@ _PUBLIC_ enum MAPISTATUS CreateProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "CreateProfile");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "CreateProfile");
 	retval = ldb_create_profile(mem_ctx, mapi_ctx->ldb_ctx, profile);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
@@ -874,7 +916,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "DeleteProfile");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "DeleteProfile");
 	retval = ldb_delete_profile(mem_ctx, mapi_ctx->ldb_ctx, profile);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	talloc_free(mem_ctx);
@@ -915,7 +957,7 @@ _PUBLIC_ enum MAPISTATUS ChangeProfilePassword(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!profile || !old_password || 
 			     !password, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "ChangeProfilePassword");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "ChangeProfilePassword");
 
 	retval = ldb_test_password(mapi_ctx, mem_ctx, profile, password);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -948,7 +990,7 @@ _PUBLIC_ enum MAPISTATUS CopyProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!profile_src, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!profile_dst, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "CopyProfile");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "CopyProfile");
 
 	retval = ldb_copy_profile(mem_ctx, mapi_ctx->ldb_ctx, profile_src, profile_dst);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
@@ -957,6 +999,12 @@ _PUBLIC_ enum MAPISTATUS CopyProfile(struct mapi_context *mapi_ctx,
 	return retval;
 }
 
+static bool set_profile_attribute(struct mapi_context *mapi_ctx,
+				  const char *profname,
+				  struct SRowSet rowset,
+				  uint32_t index,
+				  uint32_t property,
+				  const char *attr);
 
 /**
    \details Duplicate an existing profile.
@@ -983,9 +1031,9 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	char			*username_src = NULL;
-	char			*EmailAddress = NULL;
 	char			*ProxyAddress = NULL;
-	struct mapi_profile	profile;
+	char			*oldEmailAddress = NULL;
+	struct mapi_profile	*profile;
 	char			**attr_tmp = NULL;
 	char			*tmp = NULL;
 	char			*attr;
@@ -997,48 +1045,115 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!profile_dst, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "DuplicateProfile");
+	profile = talloc(mem_ctx, struct mapi_profile);
+
 	/* Step 1. Copy the profile */
 	retval = CopyProfile(mapi_ctx, profile_src, profile_dst);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* retrieve username, EmailAddress and ProxyAddress */
-	retval = OpenProfile(mapi_ctx, &profile, profile_src, NULL);
+	retval = OpenProfile(mapi_ctx, profile, profile_src, NULL);
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "DuplicateProfile");
 
-	retval = GetProfileAttr(&profile, "username", &count, &attr_tmp);
+	retval = GetProfileAttr(profile, "username", &count, &attr_tmp);
 	OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
 	username_src = talloc_strdup(mem_ctx, attr_tmp[0]);
 	talloc_free(attr_tmp[0]);
 
-	retval = GetProfileAttr(&profile, "EmailAddress", &count, &attr_tmp);
-	OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
-	EmailAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
+	retval = GetProfileAttr(profile, "EmailAddress", &count, &attr_tmp);
+	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, mem_ctx);
+	oldEmailAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
 	talloc_free(attr_tmp[0]);
 
-	retval = GetProfileAttr(&profile, "ProxyAddress", &count, &attr_tmp);
+	retval = GetProfileAttr(profile, "ProxyAddress", &count, &attr_tmp);
 	OPENCHANGE_RETVAL_IF(retval, MAPI_E_NOT_FOUND, mem_ctx);
 	ProxyAddress = talloc_strdup(mem_ctx, attr_tmp[0]);
 	talloc_free(attr_tmp[0]);
 
 	/* Change EmailAddress */
 	{
-		int	i;
+		enum MAPISTATUS			retval;
+		struct nspi_context		*nspi;
+		struct SPropTagArray		*SPropTagArray = NULL;
+		struct SRowSet			*SRowSet;
+		struct Restriction_r		Filter;
+		struct SPropValue		*lpProp = NULL;
+		struct PropertyTagArray_r	*MIds = NULL;
+		uint32_t			index = 0;
+		char				*password;
+		struct mapi_session     *session = NULL;
 
-		tmp = NULL;
-		for (i = strlen(EmailAddress); i > 0; i--) {
-			if (EmailAddress[i] == '=') {
-				tmp = talloc_strndup(mem_ctx, EmailAddress, i + 1);
-				break;
-			}
+		retval = GetProfileAttr(profile, "password", &count, &attr_tmp);
+		OPENCHANGE_RETVAL_IF(retval || !count, MAPI_E_NOT_FOUND, mem_ctx);
+		password = talloc_strdup(mem_ctx, attr_tmp[0]);
+		talloc_free(attr_tmp[0]);
+
+		retval = MapiLogonProvider(mapi_ctx, &session, profile_dst, password, PROVIDER_ID_NSPI);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_errstr("DuplicateProfile", GetLastError());
+			return retval;
 		}
-		OPENCHANGE_RETVAL_IF(!tmp, MAPI_E_INVALID_PARAMETER, mem_ctx);
+		mapi_ctx = session->mapi_ctx;
 
-		attr = talloc_asprintf(mem_ctx, "%s%s", tmp, username);
-		talloc_free(tmp);
-		mapi_profile_modify_string_attr(mapi_ctx, profile_dst, "EmailAddress", attr);
-		talloc_free(attr);
+		OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
+		OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
+		OPENCHANGE_RETVAL_IF(!session->mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+		mem_ctx = talloc_named(NULL, 0, "ProcessNetworkProfile");
+		nspi = (struct nspi_context *) session->nspi->ctx;
+		index = 0;
+
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+		retval = nspi_GetSpecialTable(nspi, mem_ctx, 0x0, &SRowSet);
+		MAPIFreeBuffer(SRowSet);
+		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x1,
+						PR_EMAIL_ADDRESS
+						);
+
+		/* Retrieve the username to match */
+		if (!username) {
+			username = cli_credentials_get_username(nspi->cred);
+			OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, mem_ctx);
+		}
+
+		/* Build the restriction we want for NspiGetMatches */
+		lpProp = talloc_zero(mem_ctx, struct SPropValue);
+		lpProp->ulPropTag = PR_ANR_UNICODE;
+		lpProp->dwAlignPad = 0;
+		lpProp->value.lpszW = username;
+
+		Filter.rt = (enum RestrictionType_r)RES_PROPERTY;
+		Filter.res.resProperty.relop = RES_PROPERTY;
+		Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
+		Filter.res.resProperty.lpProp = lpProp;
+
+		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+		MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+		retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+		MAPIFreeBuffer(SPropTagArray);
+		MAPIFreeBuffer(lpProp);
+		if (retval != MAPI_E_SUCCESS) {
+			MAPIFreeBuffer(MIds);
+			MAPIFreeBuffer(SRowSet);
+			talloc_free(mem_ctx);
+			return retval;
+		}
+
+		/* if there's no match */
+		OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_NOT_FOUND, mem_ctx);
+		OPENCHANGE_RETVAL_IF(!SRowSet->cRows, MAPI_E_NOT_FOUND, mem_ctx);
+		OPENCHANGE_RETVAL_IF(!MIds, MAPI_E_NOT_FOUND, mem_ctx);
+		MAPIFreeBuffer(MIds);
+
+		set_profile_attribute(mapi_ctx, profile_dst, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
+		mapi_profile_delete_string_attr(mapi_ctx, profile_dst, "EmailAddress", oldEmailAddress);
+		MAPIFreeBuffer(SRowSet);
+		DLIST_REMOVE(mapi_ctx->session, session);
+		MAPIFreeBuffer(session);
 	}
 
 	/* Change ProxyAddress */
@@ -1057,6 +1172,7 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 	mapi_profile_modify_string_attr(mapi_ctx, profile_dst, "DisplayName", username);
 	mapi_profile_modify_string_attr(mapi_ctx, profile_dst, "Account", username);
 
+	talloc_free(profile);
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -1167,7 +1283,7 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!profname, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "SetDefaultProfile");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "SetDefaultProfile");
 
 	/* open profile */
 	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, &profile, profname, NULL);
@@ -1270,7 +1386,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileTable(struct mapi_context *mapi_ctx,
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	ldb_ctx = mapi_ctx->ldb_ctx;
-	mem_ctx = talloc_autofree_context();
+	mem_ctx = mapi_ctx->mem_ctx;
 
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, scope, attrs, "(cn=*)");
@@ -1419,17 +1535,18 @@ _PUBLIC_ enum MAPISTATUS FindProfileAttr(struct mapi_profile *profile,
 	basedn = ldb_dn_new(ldb_ctx, ldb_ctx, "CN=Profiles");
 
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, basedn, LDB_SCOPE_SUBTREE, attrs, "(CN=%s)", profile->profname);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, NULL);
-	OPENCHANGE_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, res);
+	OPENCHANGE_RETVAL_IF(!res->count, MAPI_E_NOT_FOUND, res);
 
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
-	OPENCHANGE_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_element, MAPI_E_NOT_FOUND, res);
 
 	val.data = (uint8_t *)talloc_strdup(mem_ctx, value);
 	val.length = strlen(value);
-	OPENCHANGE_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_msg_find_val(ldb_element, &val), MAPI_E_NOT_FOUND, res);
 
+	talloc_free(res);
 	return MAPI_E_SUCCESS;
 }
 
@@ -1536,21 +1653,21 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 					       mapi_profile_callback_t callback, 
 					       const void *private_data)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum MAPISTATUS		retval;
-	struct mapi_context	*mapi_ctx;
-	struct nspi_context	*nspi;
-	struct SPropTagArray	*SPropTagArray = NULL;
-	struct Restriction_r	Filter;
-	struct SRowSet		*SRowSet;
-	struct SPropValue	*lpProp = NULL;
-	struct SPropTagArray	*MIds = NULL;
-	struct SPropTagArray	MIds2;
-	struct SPropTagArray	*MId_server = NULL;
-	struct StringsArray_r	pNames;
-	const char		*profname;
-	uint32_t		instance_key = 0;
-	uint32_t		index = 0;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPISTATUS			retval;
+	struct mapi_context		*mapi_ctx;
+	struct nspi_context		*nspi;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct Restriction_r		Filter;
+	struct SRowSet			*SRowSet;
+	struct SPropValue		*lpProp = NULL;
+	struct PropertyTagArray_r	*MIds = NULL;
+	struct PropertyTagArray_r	MIds2;
+	struct PropertyTagArray_r	*MId_server = NULL;
+	struct StringsArray_r		pNames;
+	const char			*profname;
+	uint32_t			instance_key = 0;
+	uint32_t			index = 0;
 
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_END_OF_SESSION, NULL);
@@ -1558,7 +1675,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 
 	mapi_ctx = session->mapi_ctx;
 
-	mem_ctx = talloc_named(NULL, 0, "ProcessNetworkProfile");
+	mem_ctx = talloc_named(session, 0, "ProcessNetworkProfile");
 	nspi = (struct nspi_context *) session->nspi->ctx;
 	profname = session->profile->profname;
 	index = 0;
@@ -1601,8 +1718,8 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	Filter.res.resProperty.lpProp = lpProp;
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	MIds = talloc_zero(mem_ctx, struct SPropTagArray);
-	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, &SRowSet, &MIds);
+	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+	retval = nspi_GetMatches(nspi, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
 	if (retval != MAPI_E_SUCCESS) {
@@ -1628,7 +1745,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	MAPIFreeBuffer(MIds);
 	
 	MIds2.cValues = 0x1;
-	MIds2.aulPropTag = (enum MAPITAGS *) &instance_key;
+	MIds2.aulPropTag = &instance_key;
 
 	set_profile_attribute(mapi_ctx, profname, *SRowSet, index, PR_EMAIL_ADDRESS, "EmailAddress");
 	set_profile_attribute(mapi_ctx, profname, *SRowSet, index, PR_DISPLAY_NAME, "DisplayName");
@@ -1678,7 +1795,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	pNames.Strings[0] = (const char *) talloc_asprintf(mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);
-	MId_server = talloc_zero(mem_ctx, struct SPropTagArray);
+	MId_server = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_server);
 	MAPIFreeBuffer((char *)pNames.Strings[0]);
 	MAPIFreeBuffer((char **)pNames.Strings);

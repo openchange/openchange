@@ -86,7 +86,7 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray->aulPropTag, MAPI_E_INVALID_PARAMETER, NULL);
 
 	SPropTagArray->cValues += 1;
 	SPropTagArray->aulPropTag = (enum MAPITAGS *) talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
@@ -95,6 +95,79 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_add(TALLOC_CTX *mem_ctx,
 	SPropTagArray->aulPropTag[SPropTagArray->cValues] = (enum MAPITAGS) 0;
 
 	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Delete a property tag from an existing properties array
+
+   \param mem_ctx talloc memory context to use for allocation
+   \param SPropTagArray existing properties array to remove from
+   \param aulPropTag the property tag to remove
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
+*/
+_PUBLIC_ enum MAPISTATUS SPropTagArray_delete(TALLOC_CTX *mem_ctx,
+					      struct SPropTagArray *SPropTagArray,
+					      uint32_t aulPropTag)
+{
+	uint32_t i, removed = 0;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!SPropTagArray->cValues, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < SPropTagArray->cValues; i++) {
+		if (SPropTagArray->aulPropTag[i] == aulPropTag) {
+			removed++;
+		}
+		else if (removed > 0) {
+			SPropTagArray->aulPropTag[i-removed] = SPropTagArray->aulPropTag[i];
+		}
+	}
+
+	SPropTagArray->cValues -= removed;
+	SPropTagArray->aulPropTag = (enum MAPITAGS *) talloc_realloc(mem_ctx, SPropTagArray->aulPropTag,
+								     uint32_t, SPropTagArray->cValues + 1);
+	SPropTagArray->aulPropTag[SPropTagArray->cValues] = (enum MAPITAGS) 0;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Return the index of a property tag in an existing properties array
+
+   \param SPropTagArray existing properties array to remove from
+   \param aulPropTag the property tag to find
+   \param propIdx the index of the found property (undefined when MAPI_E_NOT_FOUND is returned)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+
+   \note Possible MAPI error codes are:
+   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
+   - MAPI_E_INVALID_PARAMETER: SPropTagArray parameter is not correctly set
+*/
+_PUBLIC_ enum MAPISTATUS SPropTagArray_find(struct SPropTagArray SPropTagArray,
+					    enum MAPITAGS aulPropTag, 
+					    uint32_t *propIdx)
+{
+	uint32_t i;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!propIdx, MAPI_E_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < SPropTagArray.cValues; i++) {
+		if (SPropTagArray.aulPropTag[i] == aulPropTag) {
+			*propIdx = i;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	return MAPI_E_NOT_FOUND;
 }
 
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
@@ -160,6 +233,10 @@ _PUBLIC_ struct SPropValue *get_SPropValue_SRow(struct SRow *aRow,
 						uint32_t ulPropTag)
 {
 	uint32_t	i;
+
+	if ( ! aRow) {
+		return NULL;
+	}
 
 	for (i = 0; i < aRow->cValues; i++) {
 		if (ulPropTag == aRow->lpProps[i].ulPropTag) {
@@ -236,7 +313,7 @@ _PUBLIC_ const void *find_SPropValue_data(struct SRow *aRow, uint32_t mapitag)
 {
 	uint32_t i;
 
-	if ( ! aRow) {
+	if (!aRow) {
 		return NULL;
 	}
 
@@ -298,6 +375,8 @@ _PUBLIC_ const void *get_mapi_SPropValue_data(struct mapi_SPropValue *lpProp)
 		return (const void *)(struct mapi_MV_LONG_STRUCT *)&lpProp->value.MVl;
 	case PT_MV_STRING8:
 		return (const void *)(struct mapi_SLPSTRArray *)&lpProp->value.MVszA;
+	case PT_MV_UNICODE:
+		return (const void *)(struct mapi_SLPSTRArrayW *)&lpProp->value.MVszW;
 	case PT_MV_BINARY:
 		return (const void *)(struct mapi_SBinaryArray *)&lpProp->value.MVbin;
 	default:
@@ -333,6 +412,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_CLSID:
 		return (const void *)lpProps->value.lpguid;
 	case PT_BINARY:
+	case PT_SVREID:
 		return (const void *)&lpProps->value.bin;
 	case PT_OBJECT:
 		return (const void *)&lpProps->value.object;
@@ -343,7 +423,7 @@ _PUBLIC_ const void *get_SPropValue_data(struct SPropValue *lpProps)
 	case PT_MV_STRING8:
 		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
 	case PT_MV_UNICODE:
-		return (const void *)(struct WStringArray_r *)&lpProps->value.MVszW;
+		return (const void *)(struct StringArrayW_r *)&lpProps->value.MVszW;
 	case PT_MV_BINARY:
 		return (const void *)(struct BinaryArray_r *)&lpProps->value.MVbin;
 	case PT_MV_SYSTIME:
@@ -376,12 +456,11 @@ _PUBLIC_ struct SPropValue *add_SPropValue(TALLOC_CTX *mem_ctx,
 
 	return lpProps;
 }
-/*
-  TODO: should this be public?
-*/
-_PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
+
+_PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, const void *data)
 {
 	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 		return false;
 	}
@@ -405,6 +484,96 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.lpszA = (const char *) data;
 		break;
 	case PT_BINARY:
+	{
+		struct Binary_r *bin;
+
+		bin = (struct Binary_r *)data;
+		lpProps->value.bin.cb = (uint16_t)bin->cb;
+		lpProps->value.bin.lpb = (void *)bin->lpb;
+	}
+		break;
+	case PT_UNICODE: 
+		lpProps->value.lpszW = (const char *) data;
+		break;
+	case PT_CLSID:
+		lpProps->value.lpguid = *((struct GUID *) data);
+		break;
+	case PT_SYSTIME:
+		lpProps->value.ft = *((const struct FILETIME *) data);
+		break;
+	case PT_ERROR:
+		lpProps->value.err = *((const uint32_t *)data);
+		break;
+	case PT_MV_LONG:
+		lpProps->value.MVl = *((const struct mapi_MV_LONG_STRUCT *)data);
+		break;
+	case PT_MV_STRING8:
+		lpProps->value.MVszA = *((const struct mapi_SLPSTRArray *)data);
+		break;
+	case PT_MV_BINARY:
+		lpProps->value.MVbin = *((const struct mapi_SBinaryArray *)data);
+		break;
+	case PT_MV_CLSID:
+		lpProps->value.MVguid = *((const struct mapi_SGuidArray *)data);
+		break;
+	case PT_MV_UNICODE:
+		lpProps->value.MVszW = *((const struct mapi_SLPSTRArrayW *)data);
+		break;
+	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+
+		return false;
+	}
+
+	return true;
+}
+
+_PUBLIC_ bool set_mapi_SPropValue_proptag(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint32_t aulPropTag, const void *data)
+{
+	lpProps->ulPropTag = aulPropTag;
+
+	return (set_mapi_SPropValue(mem_ctx, lpProps, data));
+}
+
+_PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint16_t *cValues, uint32_t aulPropTag, const void *data)
+{
+	lpProps = talloc_realloc(mem_ctx, lpProps, struct mapi_SPropValue, *cValues + 2);
+	DEBUG(0, ("%d: setting value for 0x%.8x\n", *cValues, aulPropTag));
+	set_mapi_SPropValue_proptag(mem_ctx, &lpProps[*cValues], aulPropTag, data);
+	*cValues = *cValues + 1;
+
+	return lpProps;
+}
+
+_PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
+{
+	if (data == NULL) {
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
+		lpProps->value.err = MAPI_E_NOT_FOUND;
+		return false;
+	}
+	switch (lpProps->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		lpProps->value.i = *((const uint16_t *)data);
+		break;
+	case PT_LONG:
+		lpProps->value.l = *((const uint32_t *)data);
+		break;
+	case PT_DOUBLE:
+		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
+		break;
+	case PT_I8:
+		lpProps->value.d = *((const uint64_t *)data);
+		break;
+	case PT_BOOLEAN:
+		lpProps->value.b = *((const uint8_t *)data);
+		break;
+	case PT_STRING8:
+		lpProps->value.lpszA = (const char *) data;
+		break;
+	case PT_BINARY:
+	case PT_SVREID:
 		lpProps->value.bin = *((const struct Binary_r *)data);
 		break;
 	case PT_UNICODE:
@@ -435,7 +604,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.MVguid = *((const struct FlatUIDArray_r *)data);
 		break;
 	case PT_MV_UNICODE:
-		lpProps->value.MVszW = *((const struct WStringArray_r *)data);
+		lpProps->value.MVszW = *((const struct StringArrayW_r *)data);
 		break;
 	case PT_MV_SYSTIME:
 		lpProps->value.MVft = *((const struct DateTimeArray_r *)data);
@@ -447,6 +616,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.object = *((const uint32_t *)data);
 		break;
 	default:
+		lpProps->ulPropTag = (lpProps->ulPropTag & 0xffff0000) | PT_ERROR;
 		lpProps->value.err = MAPI_E_NOT_FOUND;
 
 		return false;
@@ -481,6 +651,46 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	return 0;
 }
 
+
+/**
+   \details Convenience function to copy an array of struct SPropValue or a
+   part thereof into another array, by duplicating and properly parenting
+   pointer data. The destination array is considered to be preallocated.
+*/
+_PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *source_values, struct SPropValue *dest_values, uint32_t count)
+{
+	uint32_t		i;
+	struct SPropValue	*source_value, *dest_value;
+	uint16_t		prop_type;
+
+	for (i = 0; i < count; i++) {
+		source_value = source_values + i;
+		dest_value = dest_values + i;
+		*dest_value = *source_value;
+
+		prop_type = (source_value->ulPropTag & 0xFFFF);
+		if ((prop_type & MV_FLAG)) {
+			DEBUG(5, ("multivalues not handled\n"));
+			abort();
+		}
+		else {
+			switch(prop_type) {
+			case PT_STRING8:
+				dest_value->value.lpszA = talloc_strdup(mem_ctx, source_value->value.lpszA);
+				break;
+			case PT_UNICODE:
+				dest_value->value.lpszW = talloc_strdup(mem_ctx, source_value->value.lpszW);
+				break;
+			case PT_BINARY:
+				dest_value->value.bin.cb = source_value->value.bin.cb;
+				dest_value->value.bin.lpb = talloc_memdup(mem_ctx, source_value->value.bin.lpb, sizeof(uint8_t) * source_value->value.bin.cb);
+				break;
+			default:
+				*dest_value = *source_value;
+			}
+		}
+	}
+}
 
 /**
    \details Convenience function to convert a SPropValue structure
@@ -574,7 +784,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 							       mapi_sprop->value.MVszW.cValues);
 		for (i = 0; i < mapi_sprop->value.MVszW.cValues; i++) {
 			mapi_sprop->value.MVszW.strings[i].lppszW = sprop->value.MVszW.lppszW[i];
-			size += strlen(mapi_sprop->value.MVszW.strings[i].lppszW) + 1;
+			size += get_utf8_utf16_conv_length(mapi_sprop->value.MVszW.strings[i].lppszW);
 		}
 		return size;
 	}
@@ -605,6 +815,21 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 			mapi_sprop->value.MVl.lpl[i] = sprop->value.MVl.lpl[i];
 		}
 		return sizeof(mapi_sprop->value.MVl.cValues) + (mapi_sprop->value.MVl.cValues * sizeof (uint32_t));
+	}
+	case PT_MV_CLSID:
+	{
+		uint32_t i;
+		DATA_BLOB b;
+
+		mapi_sprop->value.MVguid.cValues = sprop->value.MVguid.cValues;
+		mapi_sprop->value.MVguid.lpguid = talloc_array (mem_ctx, struct GUID, mapi_sprop->value.MVguid.cValues);
+		for (i = 0; i < mapi_sprop->value.MVguid.cValues; i++) {
+			b.data = sprop->value.MVguid.lpguid[i]->ab;
+			b.length = 16;
+
+			GUID_from_ndr_blob(&b, &(mapi_sprop->value.MVguid.lpguid[i]));
+		}
+		return sizeof(mapi_sprop->value.MVguid.cValues) + (mapi_sprop->value.MVguid.cValues * sizeof (struct GUID));
 	}
         default:
                 printf("unhandled conversion case in cast_mapi_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
@@ -664,7 +889,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 	{
 		DATA_BLOB	b;
 		
-		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), talloc_autofree_context(), &b);
+		GUID_to_ndr_blob(&(mapi_sprop->value.lpguid), mem_ctx, &b);
 		sprop->value.lpguid = talloc_zero(mem_ctx, struct FlatUID_r);
 		sprop->value.lpguid = (struct FlatUID_r *)memcpy(sprop->value.lpguid->ab, b.data, 16);
 		return (sizeof (struct FlatUID_r));
@@ -721,7 +946,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		sprop->value.MVszW.lppszW = talloc_array(mem_ctx, const char*, sprop->value.MVszW.cValues);
 		for (i = 0; i < sprop->value.MVszW.cValues; i++) {
 			sprop->value.MVszW.lppszW[i] = mapi_sprop->value.MVszW.strings[i].lppszW;
-			size += 2 * (strlen(sprop->value.MVszW.lppszW[i]) + 1);
+			size += get_utf8_utf16_conv_length(sprop->value.MVszW.lppszW[i]);
 		}
 		return size;
 	}
@@ -746,7 +971,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 			DATA_BLOB	b;
 			
 			sprop->value.MVguid.lpguid[i] = talloc_zero(mem_ctx, struct FlatUID_r);
-			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), talloc_autofree_context(), &b);
+			GUID_to_ndr_blob(&(mapi_sprop->value.MVguid.lpguid[i]), mem_ctx, &b);
 			sprop->value.MVguid.lpguid[i] = (struct FlatUID_r *)memcpy(sprop->value.MVguid.lpguid[i]->ab, b.data, sizeof(struct FlatUID_r));
 			size += (sizeof (struct FlatUID_r));
 		}
@@ -868,7 +1093,7 @@ _PUBLIC_ void mapi_SPropValue_array_named(mapi_object_t *obj,
 	uint16_t		count;
 	uint32_t		i;
 
-	mem_ctx = talloc_named(NULL, 0, "mapi_SPropValue_array_named");
+	mem_ctx = talloc_named(mapi_object_get_session(obj), 0, "mapi_SPropValue_array_named");
 
 	for (i = 0; i < props->cValues; i++) {
 		if ((props->lpProps[i].ulPropTag & 0xFFFF0000) > 0x80000000) {
@@ -1006,8 +1231,66 @@ _PUBLIC_ struct RecurrencePattern *get_RecurrencePattern(TALLOC_CTX *mem_ctx,
 
         return RecurrencePattern;
 }
+
+_PUBLIC_ size_t set_RecurrencePattern_size(const struct RecurrencePattern *rp)
+{
+        size_t size = SIZE_DFLT_RECURRENCEPATTERN;
+
+        switch (rp->PatternType) {
+        case PatternType_MonthNth:
+        case PatternType_HjMonthNth:
+                size += sizeof(uint32_t);
+        case PatternType_Week:
+        case PatternType_Month:
+        case PatternType_MonthEnd:
+        case PatternType_HjMonth:
+        case PatternType_HjMonthEnd:
+                size += sizeof(uint32_t);
+        case PatternType_Day:
+                break;
+        default:
+                DEBUG(0, ("%s: unrecognized pattern type: %d", __PRETTY_FUNCTION__, rp->PatternType));
+        }
+
+        size += rp->DeletedInstanceCount * sizeof(uint32_t);
+        size += rp->ModifiedInstanceCount * sizeof(uint32_t);
+
+        return size;
+}
+
+_PUBLIC_ struct Binary_r *set_RecurrencePattern(TALLOC_CTX *mem_ctx, const struct RecurrencePattern *rp)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+        size_t                          bin_size;
+	
+        /* SANITY CHECKS */
+        if (!rp) return NULL;
+
+        bin_size = set_RecurrencePattern_size(rp);
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = bin_size;
+        bin->lpb = talloc_array(bin, uint8_t, bin_size);
+
+        ndr = talloc_zero(mem_ctx, struct ndr_push);
+        ndr->offset = 0;
+        ndr->data = bin->lpb;
+
+        ndr_err_code = ndr_push_RecurrencePattern(ndr, NDR_SCALARS, rp);
+
+        talloc_free(ndr);
+
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                talloc_free(bin);
+                return NULL;
+        }
+
+        return bin;
+}
+
 _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
-							 struct Binary_r *bin)
+									       struct Binary_r *bin)
 {
         struct AppointmentRecurrencePattern		*arp = NULL;
         struct ndr_pull					*ndr;
@@ -1049,12 +1332,93 @@ _PUBLIC_ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(T
 	arp->RecurrencePattern.DeletedInstanceDates = talloc_reference(arp,arp->RecurrencePattern.DeletedInstanceDates);
 	arp->RecurrencePattern.ModifiedInstanceDates = talloc_reference(arp, arp->RecurrencePattern.ModifiedInstanceDates);
 	
-
-	
-
         return arp;
 }
 
+_PUBLIC_ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrencePattern *arp)
+{
+        size_t size = SIZE_DFLT_APPOINTMENTRECURRENCEPATTERN;
+        uint16_t i;
+
+        size += set_RecurrencePattern_size(&arp->RecurrencePattern);
+        for (i = 0; i < arp->ExceptionCount; i++) {
+                size += set_ExceptionInfo_size(arp->ExceptionInfo + i);
+                /* size += set_ExtendedException_size(arp->ExtendedException +
+                   i); */
+        }
+        size += arp->ReservedBlock1Size * sizeof(uint32_t);
+        /* size += arp->ReservedBlock2Size * sizeof(uint32_t); */
+
+        return size;
+}
+
+_PUBLIC_ struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *arp)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+        size_t                          bin_size;
+	
+        /* SANITY CHECKS */
+        if (!arp) return NULL;
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->offset = 0;
+        bin_size = set_AppointmentRecurrencePattern_size(arp);
+        talloc_free(ndr->data);
+        ndr->data = talloc_array(ndr, uint8_t, bin_size);
+
+        ndr_err_code = ndr_push_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+                return NULL;
+        }
+
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = bin_size;
+        bin->lpb = ndr->data;
+        talloc_steal(bin, bin->lpb);
+
+        talloc_free(ndr);
+
+        return bin;
+}
+
+_PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
+{
+        size_t size = SIZE_DFLT_EXCEPTIONINFO;
+
+        if ((exc_info->OverrideFlags & ARO_SUBJECT)) {
+                size += 3 * sizeof(uint16_t); /* SubjectLength + SubjectLength2 + Subject */
+        }
+        if ((exc_info->OverrideFlags & ARO_MEETINGTYPE)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_REMINDERDELTA)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_REMINDER)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_LOCATION)) {
+                size += 2 * sizeof(uint16_t); /* LocationLength + LocationLength2 */
+                size += sizeof(uint32_t); /* Location */
+        }
+        if ((exc_info->OverrideFlags & ARO_BUSYSTATUS)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_ATTACHMENT)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_SUBTYPE)) {
+                size += sizeof(uint32_t);
+        }
+        if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) {
+                size += sizeof(uint32_t);
+        }
+
+        return size;
+}
 
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob
@@ -1102,6 +1466,48 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details Retrieve a PtypServerId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw PtypServerId data
+
+   \return Allocated PtypServerId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated PtypServerId when
+   finished.
+ */
+_PUBLIC_ struct PtypServerId *get_PtypServerId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct PtypServerId	*PtypServerId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	PtypServerId = talloc_zero(mem_ctx, struct PtypServerId);
+	ndr_err_code = ndr_pull_PtypServerId(ndr, NDR_SCALARS, PtypServerId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(PtypServerId);
+		return NULL;
+	}
+
+	return PtypServerId;
+}
+
+/**
    \details Retrieve a GlobalObjectId structure from a binary blob
 
    \param mem_ctx pointer to the memory context
@@ -1143,6 +1549,131 @@ _PUBLIC_ struct GlobalObjectId *get_GlobalObjectId(TALLOC_CTX *mem_ctx,
 	}
 
 	return GlobalObjectId;
+}
+
+/**
+   \details Retrieve a MessageEntryId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw
+   MessageEntryId data
+
+   \return Allocated MessageEntryId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated MessageEntryId when
+   finished.
+ */
+_PUBLIC_ struct MessageEntryId *get_MessageEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct MessageEntryId	*MessageEntryId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	MessageEntryId = talloc_zero(mem_ctx, struct MessageEntryId);
+	ndr_err_code = ndr_pull_MessageEntryId(ndr, NDR_SCALARS, MessageEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(MessageEntryId);
+		return NULL;
+	}
+
+	return MessageEntryId;
+}
+
+/**
+   \details Retrieve a FolderEntryId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw FolderEntryId data
+
+   \return Allocated FolderEntryId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated FolderEntryId when
+   finished.
+ */
+_PUBLIC_ struct FolderEntryId *get_FolderEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct FolderEntryId	*FolderEntryId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	FolderEntryId = talloc_zero(mem_ctx, struct FolderEntryId);
+	ndr_err_code = ndr_pull_FolderEntryId(ndr, NDR_SCALARS, FolderEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(FolderEntryId);
+		return NULL;
+	}
+
+	return FolderEntryId;
+}
+
+/**
+   \details Retrieve a AddressBookEntryId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw AddressBookEntryId data
+
+   \return Allocated AddressBookEntryId structure on success, otherwise NULL
+
+   \note Developers must free the allocated AddressBookEntryId when finished.
+ */
+_PUBLIC_ struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct AddressBookEntryId	*AddressBookEntryId = NULL;
+	struct ndr_pull			*ndr;
+	enum ndr_err_code		ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	AddressBookEntryId = talloc_zero(mem_ctx, struct AddressBookEntryId);
+	ndr_err_code = ndr_pull_AddressBookEntryId(ndr, NDR_SCALARS, AddressBookEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(AddressBookEntryId);
+		return NULL;
+	}
+
+	return AddressBookEntryId;
 }
 
 /**

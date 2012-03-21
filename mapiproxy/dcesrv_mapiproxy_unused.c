@@ -38,7 +38,7 @@
 #include "gen_ndr/exchange.h"
 
 #include <dcerpc_server.h>
-#include <util.h>
+#include <samba_util.h>
 #include <param.h>
 
 #include "gen_ndr/ndr_exchange.h"
@@ -748,10 +748,10 @@ void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_
 /* 
   EcDoRpcExt 
 */
-void dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct EcDoRpcExt *r)
+enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				  struct EcDoRpcExt *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 /* 

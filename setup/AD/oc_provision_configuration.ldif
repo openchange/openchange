@@ -513,6 +513,7 @@ msExchTemplateRDNs: 404
 msExchTemplateRDNs: 804
 msExchTemplateRDNs: 412
 msExchTemplateRDNs: 40c
+msExchTemplateRDNs: c0c
 msExchTemplateRDNs: 407
 msExchTemplateRDNs: 411
 msExchTemplateRDNs: 409
@@ -569,9 +570,10 @@ adminDisplayName: Arabic
 name: 401
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=401
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -591,9 +593,10 @@ adminDisplayName: Bulgarian
 name: 402
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=402
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -613,9 +616,10 @@ adminDisplayName: Catalan
 name: 403
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=403
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -635,9 +639,10 @@ adminDisplayName: Chinese Traditional
 name: 404
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=404
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -657,9 +662,10 @@ adminDisplayName: Czech
 name: 405
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=405
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -679,9 +685,10 @@ adminDisplayName: Danish
 name: 406
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=406
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -701,9 +708,10 @@ adminDisplayName: German
 name: 407
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=407
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -723,9 +731,10 @@ adminDisplayName: Greek
 name: 408
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=408
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -745,9 +754,10 @@ adminDisplayName: English
 name: 409
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=409
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -767,9 +777,10 @@ adminDisplayName: Finnish
 name: 40b
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40b
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -789,9 +800,33 @@ adminDisplayName: French
 name: 40c
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40c
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# French (Canada) Address-Templates
+#
+dn: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=c0c
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
 msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -811,9 +846,10 @@ adminDisplayName: Hebrew
 name: 40d
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40d
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -833,9 +869,10 @@ adminDisplayName: Hungarian
 name: 40e
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40e
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -855,9 +892,10 @@ adminDisplayName: Italian
 name: 410
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=410
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -877,9 +915,10 @@ adminDisplayName: Japanese
 name: 411
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=411
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -899,9 +938,10 @@ adminDisplayName: Korean
 name: 412
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=412
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -921,9 +961,10 @@ adminDisplayName: Dutch
 name: 413
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=413
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -943,9 +984,10 @@ adminDisplayName: Norwegian
 name: 414
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=414
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -965,9 +1007,10 @@ adminDisplayName: Polish
 name: 415
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=415
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -987,9 +1030,10 @@ adminDisplayName: Brazilian
 name: 416
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=416
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1009,9 +1053,10 @@ adminDisplayName: Romanian
 name: 418
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=418
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1031,9 +1076,10 @@ adminDisplayName: Russian
 name: 419
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=419
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1053,9 +1099,10 @@ adminDisplayName: Croatian
 name: 41a
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41a
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1075,9 +1122,10 @@ adminDisplayName: Slovak
 name: 41b
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41b
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1097,9 +1145,10 @@ adminDisplayName: Swedish
 name: 41d
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41d
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1119,9 +1168,10 @@ adminDisplayName: Thai
 name: 41e
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41e
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1141,9 +1191,10 @@ adminDisplayName: Turkish
 name: 41f
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41f
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1163,9 +1214,10 @@ adminDisplayName: Ukrainian
 name: 422
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=422
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1185,9 +1237,10 @@ adminDisplayName: Slovenian
 name: 424
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=424
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1207,9 +1260,10 @@ adminDisplayName: Estonian
 name: 425
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=425
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1229,9 +1283,10 @@ adminDisplayName: Latvian
 name: 426
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=426
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1251,9 +1306,10 @@ adminDisplayName: Lithuanian
 name: 427
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=427
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1273,9 +1329,10 @@ adminDisplayName: Basque
 name: 42d
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=42d
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1295,9 +1352,10 @@ adminDisplayName: Chinese Simplified
 name: 804
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=804
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1317,9 +1375,10 @@ adminDisplayName: Portuguese
 name: 816
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=816
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1339,9 +1398,10 @@ adminDisplayName: Serbian
 name: 81A
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=81A
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1361,9 +1421,10 @@ adminDisplayName: Spanish
 name: C0A
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=C0A
 objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: CCMAIL
 msExchTemplateRDNs: MSA
-msExchTemplateRDNs: SMTP
 msExchTemplateRDNs: MS
 msExchTemplateRDNs: x400
 
@@ -1552,6 +1613,23 @@ showInAdvancedViewOnly: TRUE
 adminDisplayName: French
 name: 40c
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40c
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# French (Canada) Display-Templates (cocorico)
+#
+dn: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French (Canada)
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=c0c
 objectCategory: CN=Container,${SCHEMADN}
 
 

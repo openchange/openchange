@@ -92,29 +92,29 @@ knownrefs = [
 	"[MS-OXCDATA]",
 	"[MS-OXCETF]",
 	"[MS-OXCFOLD]",
-	"[MS-OXCFXICS]",                                                                                                                                                                                                                            
-	"[MS-OXCHGTR]",                                                                                                                                                                                                                             
-	"[MS-OXCICAL]",                                                                                                                                                                                                                             
-	"[MS-OXCMAIL]",                                                                                                                                                                                                                             
-	"[MS-OXCMSG]",                                                                                                                                                                                                                              
-	"[MS-OXCNOTIF]",                                                                                                                                                                                                                            
-	"[MS-OXCPERM]",                                                                                                                                                                                                                             
-	"[MS-OXCPRPT]",                                                                                                                                                                                                                             
-	"[MS-OXCROPS]",                                                                                                                                                                                                                             
-	"[MS-OXCRPC]",                                                                                                                                                                                                                              
-	"[MS-OXCSPAM]",                                                                                                                                                                                                                             
-	"[MS-OXCSTOR]",                                                                                                                                                                                                                             
-	"[MS-OXCSYNC]",                                                                                                                                                                                                                             
-	"[MS-OXCTABL]",                                                                                                                                                                                                                             
-	"[MS-OXDISCO]",                                                                                                                                                                                                                             
-	"[MS-OXDOCO]",                                                                                                                                                                                                                              
-	"[MS-OXDSCLI]",                                                                                                                                                                                                                             
-	"[MS-OXGLOS]",                                                                                                                                                                                                                              
-	"[MS-OXIMAP4]",                                                                                                                                                                                                                             
-	"[MS-OXLDAP]",                                                                                                                                                                                                                              
-	"[MS-OXMSG]",                                                                                                                                                                                                                               
-	"[MS-OXMVMBX]",                                                                                                                                                                                                                             
-	"[MS-OXOABK]",                                                                                                                                                                                                                              
+	"[MS-OXCFXICS]",
+	"[MS-OXCHGTR]",
+	"[MS-OXCICAL]",
+	"[MS-OXCMAIL]",
+	"[MS-OXCMSG]",
+	"[MS-OXCNOTIF]",
+	"[MS-OXCPERM]",
+	"[MS-OXCPRPT]",
+	"[MS-OXCROPS]",
+	"[MS-OXCRPC]",
+	"[MS-OXCSPAM]",
+	"[MS-OXCSTOR]",
+	"[MS-OXCSYNC]",
+	"[MS-OXCTABL]",
+	"[MS-OXDISCO]",
+	"[MS-OXDOCO]",
+	"[MS-OXDSCLI]",
+	"[MS-OXGLOS]",
+	"[MS-OXIMAP4]",
+	"[MS-OXLDAP]",
+	"[MS-OXMSG]",
+	"[MS-OXMVMBX]",
+	"[MS-OXOABK]",
 	"[MS-OXOABKT]",
 	"[MS-OXOAB]",
 	"[MS-OXOCAL]",
@@ -208,14 +208,16 @@ knownareas = [
         "AB Container",
         "Access Control Properties",
         "Access Control Properties Property set",
-        "address book",
+        "Address book",
         "Address Book",
         "Address Properties",
         "Address Properties Property set",
         "Appointment Property set",
+        "Appointment",
         "Archive",
         "BestBody",
         "Calendar",
+        "Calendar Document",
         "Calendar Document Property set",
         "Calendar Property set",
         "Common",
@@ -229,6 +231,7 @@ knownareas = [
         "Conversation Actions",
         "Conversations",
         "Email",
+        "E-mail",
         "Email Property set",
         "Exchange",
         "Exchange Administrative",
@@ -304,6 +307,7 @@ knownareas = [
         "SMS",
         "Spam",
         "Sticky Notes",
+        "Structured Documents",
         "Structured Documents Property set",
         "Sync",
         "Table Properties",
@@ -404,7 +408,7 @@ def make_properties_list(propsfilename):
 				print "In section 2.%(section)i (%(propname)s):" % { 'section': (next_num -1), 'propname': propname }
 				print "\t", areaname, "isn't an expected area name (typo?)"
 
-		if line.strip().startswith("References:"):
+		if line.strip().startswith("References:") or line.strip().startswith("Reference:"):
 			references = line.strip().split(":")[1].strip()
 			while (1):
 				nextline = propsfile.next().strip()
@@ -413,7 +417,7 @@ def make_properties_list(propsfilename):
 				references += (nextline)
 			propertyinfo["References"] = references
 
-		if line.strip().startswith("Defining references:"):
+		if line.strip().startswith("Defining Reference:") or line.strip().startswith("Defining reference:") or line.strip().startswith("Defining references"):
 			reference = line.strip().split(":")[1].strip()
 			propertyinfo["DefiningReference"] = reference
 
@@ -624,9 +628,34 @@ def make_mapi_properties_file():
 	altnamelines.append("#define PR_FREEBUSY_OOF_MONTHS                                               PidTagScheduleInfoMonthsAway\n")
 	altnamelines.append("#define PR_FREEBUSY_OOF_EVENTS                                               PidTagScheduleInfoFreeBusyAway\n")
 	altnamelines.append("#define PR_REMINDERS_ONLINE_ENTRYID                                          0x36d50102\n")
-	altnamelines.append("#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        0x66310102\n")
+	altnamelines.append("#define PR_IPM_PUBLIC_FOLDERS_ENTRYID                                        PidTagIpmPublicFoldersEntryId\n")
 	altnamelines.append("#define PR_PARENT_FID                                                        PidTagParentFolderId\n")
 	altnamelines.append("#define PR_URL_COMP_NAME_SET                                                 PidTagUrlCompNameSet\n")
+	altnamelines.append("#define PR_ASSOC_CONTENT_COUNT						  PidTagAssociatedContentCount\n")
+	altnamelines.append("#define PR_NTSD_MODIFICATION_TIME						  0x3FD60040\n")
+	altnamelines.append("#define PR_CREATOR_SID							  0x0E580102\n")
+	altnamelines.append("#define PR_LAST_MODIFIER_SID						  0x0E590102\n")
+	altnamelines.append("#define PR_EXTENDED_ACL_DATA						  0x3FFE0102\n")
+	altnamelines.append("#define PR_FOLDER_XVIEWINFO_E						  0x36E00102\n")
+	altnamelines.append("#define PR_FOLDER_VIEWLIST							  0x36EB0102\n")
+	altnamelines.append("#define PR_DELETED_COUNT_TOTAL					          0x670B0003\n")
+	altnamelines.append("#define PR_EMS_AB_HOME_MTA							  0x8007001F\n")
+	altnamelines.append("#define PR_EMS_AB_ASSOC_NT_ACCOUNT						  0x80270102\n")
+	altnamelines.append("#define PR_FX_DEL_PROP							  PidTagFXDelProp\n")
+	altnamelines.append("#define PR_START_RECIP							  PidTagStartRecip\n")
+	altnamelines.append("#define PR_END_RECIP							  PidTagEndToRecip\n")
+	altnamelines.append("#define PR_NEW_ATTACH							  PidTagNewAttach\n")
+	altnamelines.append("#define PR_END_ATTACH							  PidTagEndAttach\n")
+	altnamelines.append("#define PR_ASSOCIATED							  PidTagAssociated\n")
+	altnamelines.append("#define PR_INCR_SYNC_CHG							  PidTagIncrSyncChg\n")
+	altnamelines.append("#define PR_INCR_SYNC_MSG							  PidTagIncrSyncMessage\n")
+	altnamelines.append("#define PR_INCR_SYNC_DEL							  PidTagIncrSyncDel\n")
+	altnamelines.append("#define PR_INCR_SYNC_STATE_BEGIN						  PidTagIncrSyncStateBegin\n")
+	altnamelines.append("#define PR_INCR_SYNC_STATE_END						  PidTagIncrSyncStateEnd\n")
+	altnamelines.append("#define PR_INCR_SYNC_END							  PidTagIncrSyncEnd\n")
+	altnamelines.append("#define PR_DELETED_MSG_COUNT					  	  0x66400003\n")
+	altnamelines.append("#define PR_RECIPIENT_ON_NORMAL_MSG_COUNT					  0x66af0003\n")
+	altnamelines.append("#define PR_CONVERSATION_KEY						  PidTagConversationKey\n")
 	# write properties out to a master header file
 	f = open('libmapi/property_tags.h', 'w')
 	f.write("/* Automatically generated by script/makepropslist.py. Do not edit */\n")
@@ -718,12 +747,34 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 
 	return 0;
 }
+
+_PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
+{
+	uint32_t	idx;
+	uint16_t	current_type;
+
+	for (idx = 0; canonical_property_tags[idx].proptag; idx++) {
+		if ((canonical_property_tags[idx].proptag >> 16) == untypedtag) {
+			current_type = canonical_property_tags[idx].proptype;
+			if (current_type != PT_ERROR && current_type != PT_STRING8) {
+				return current_type;
+			}
+		}
+	}
+
+	DEBUG(5, ("%s: type for property '%x' could not be deduced\\n", __FUNCTION__, untypedtag));
+	return 0;
+}
+
+
 """)
 	f.close()
 
 	# write canonical properties out for IDL input
 	proplines = []
 	previous_idl_proptags = []
+	previous_idl_pidtags = []
+	
 	f = open('properties_enum.h', 'w')
 	f.write("/* Automatically generated by script/makepropslist.py. Do not edit */\n")
 	f.write("typedef [v1_enum, flag(NDR_PAHEX)] enum {\n")
@@ -736,8 +787,17 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 			continue
 		if entry.has_key("PropertyId"):
 			if entry["PropertyId"] in previous_idl_proptags:
-				print "Skipping output of enum entry for", entry["CanonicalName"], "(duplicate)"
-				continue
+				# Generate property tag
+				pidtag = format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
+				if pidtag in previous_idl_pidtags:
+					print "Skipping output of enum entry for", entry["CanonicalName"], "(duplicate)"
+					continue
+				else:
+					propline = "\t" + string.ljust(entry["CanonicalName"], 68)
+					propline += " = 0x" + format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
+					propline += ",\n"
+					proplines.append(propline)
+					continue
 			propline = "\t" + string.ljust(entry["CanonicalName"], 68)
 			propline += " = 0x" + format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
 			propline += ",\n"
@@ -752,10 +812,24 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 			propline += ",\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
-	proplines.append("\t" + string.ljust("PR_IPM_PUBLIC_FOLDERS_ENTRYID", 68) + " = 0x66310102,\n")
+			previous_idl_pidtags.append(format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:])
 	sortedproplines = sorted(proplines)
 	for propline in sortedproplines:
 		f.write(propline)
+
+	# Add additional properties, referenced on MSDN but not in MS-OXCPROPS
+	f.write("\t" + string.ljust("PidTagAssociatedContentCount", 68) + " = 0x36170003,\n")
+	f.write("\t" + string.ljust("PidTagFolderChildCount", 68) + " = 0x66380003,\n")
+	f.write("\t" + string.ljust("PidTagDeletedCountTotal", 68) + " = 0x670B0003,\n")
+	f.write("\t" + string.ljust("PidTagIpmPublicFoldersEntryId", 68) + " = 0x66310102,\n")
+	f.write("\t" + string.ljust("PidTagLocalCommitTimeMax", 68) + " = 0x670a0040,\n")
+	f.write("\t" + string.ljust("PidTagConversationKey", 68) + " = 0x000b0102,\n")
+	f.write("\t" + string.ljust("PidTagContactEmailAddresses", 68) + " = 0x3a56101f,\n")
+	f.write("\t" + string.ljust("PidTagGenerateExchangeViews", 68) + " = 0x36e9000b,\n")
+	f.write("\t" + string.ljust("PidTagLatestDeliveryTime", 68) + " = 0x00190040,\n")
+	f.write("\t" + string.ljust("PidTagMailPermission", 68) + " = 0x3a0e000b,\n")
+	f.write("\t" + string.ljust("PidTagOriginalAuthorName", 68) + " = 0x004d001f,\n")
+
 	f.write("\tMAPI_PROP_RESERVED                                                   = 0xFFFFFFFF\n")
 	f.write("} MAPITAGS;\n")
 	f.close()
@@ -763,6 +837,7 @@ _PUBLIC_ uint32_t get_proptag_value(const char *propname)
 	# write canonical properties out for pyopenchange mapistore
 	proplines = []
 	previous_idl_proptags = []
+	previous_idl_pidtags = []
 	f = open('pyopenchange/pymapi_properties.c', 'w')
 	f.write("""
 /* Automatically generated by script/makepropslist.py. Do not edit */
@@ -782,8 +857,17 @@ int pymapi_add_properties(PyObject *m)
 			continue
 		if entry.has_key("PropertyId"):
 			if entry["PropertyId"] in previous_idl_proptags:
-				print "Skipping output of Python bindings entry for", entry["CanonicalName"], "(duplicate)"
-				continue
+				pidtag = format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
+				if pidtag in previous_idl_pidtags:
+					print "Skipping output of Python bindings entry for", entry["CanonicalName"], "(duplicate)"
+					continue
+				else:
+					propline = "\tPyModule_AddObject(m, \"" + entry["CanonicalName"] + "\", "
+					propline += "PyInt_FromLong(0x" +  format(entry["PropertyId"], "04X")
+					propline += knowndatatypes[entry["DataTypeName"]][2:]
+					propline +=  "));\n"
+					proplines.append(propline)
+					continue
 			propline = "\tPyModule_AddObject(m, \"" + entry["CanonicalName"] + "\", "
 			propline += "PyInt_FromLong(0x" +  format(entry["PropertyId"], "04X")
 			propline += knowndatatypes[entry["DataTypeName"]][2:]
@@ -795,6 +879,7 @@ int pymapi_add_properties(PyObject *m)
 			propline += "));\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
+			previous_idl_pidtags.append(format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:])
 	sortedproplines = sorted(proplines)
 	for propline in sortedproplines:
 		f.write(propline)	
@@ -807,6 +892,7 @@ int pymapi_add_properties(PyObject *m)
 	# write canonical properties out for openchangedb - probably remove this later
 	proplines = []
 	previous_idl_proptags = []
+	previous_idl_pidtags = []
 	f = open('mapiproxy/libmapiproxy/openchangedb_property.c', 'w')
 	f.write("""
 /* Automatically generated by script/makepropslist.py. Do not edit */
@@ -831,12 +917,20 @@ static struct pidtags pidtags[] = {
 			continue
 		if entry.has_key("PropertyId"):
 			if entry["PropertyId"] in previous_idl_proptags:
-				print "Skipping output of pidtags entry for", entry["CanonicalName"], "(duplicate)"
-				continue
+				pidtag = format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:]
+				if pidtag in previous_idl_pidtags:
+					print "Skipping output of pidtags entry for", entry["CanonicalName"], "(duplicate)"
+					continue
+				else:
+					propline = "\t{ " + string.ljust(entry["CanonicalName"] + ",", 68)
+					propline += "\"" + entry["CanonicalName"] + "\" },\n"
+					proplines.append(propline)
+					continue
 			propline = "\t{ " + string.ljust(entry["CanonicalName"] + ",", 68)
-			propline += " \"0x" + format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:] + "\" },\n"
+			propline += "\"" + entry["CanonicalName"] + "\" },\n"
 			proplines.append(propline)
 			previous_idl_proptags.append(entry["PropertyId"])
+			previous_idl_pidtags.append(format(entry["PropertyId"], "04X") + knowndatatypes[entry["DataTypeName"]][2:])
 	sortedproplines = sorted(proplines)
 	for propline in sortedproplines:
 		f.write(propline)
@@ -948,15 +1042,21 @@ def check_areas():
 		if entry.has_key("Area") == False:
 			print "\tIn section %(section)s : there is no area" % { 'section': entry["OXPROPS_Sect"] }
 
-def check_reference_line(entry, line):
+def check_reference_line(entry, line, isdefining):
 	if line.endswith(","):
 		print "\tIn section %(section)s : trailing comma in (defining?) references" % { 'section': entry["OXPROPS_Sect"] }
 		line = line.rstrip(",")
 	for docentry in line.split(","):
 		docentry = docentry.strip()
-		if knownrefs.count(docentry) != 1:
+		if docentry == "":
+			print "\tIn section %(section)s : empty (defining) reference section" % { 'section': entry["OXPROPS_Sect"] }
+		elif knownrefs.count(docentry) != 1:
 			if len(docentry.split(" ")) > 1:
-				print "\tIn section %(section)s : missing comma in (defining?) references" % { 'section': entry["OXPROPS_Sect"] }
+				if docentry.split(" ")[1].strip().startswith("section"):
+					# thats ok
+					pass
+				else:
+					print "\tIn section %(section)s : missing comma in (defining?) references: %(docentry)s" % { 'section': entry["OXPROPS_Sect"], 'docentry': docentry }
 			else:
 				print "\tIn section %(section)s : unknown document: %(docname)s" % { 'section': entry["OXPROPS_Sect"], 'docname': docentry }
 		else:
@@ -975,9 +1075,9 @@ def check_references():
 	print "Checking for references:"
 	for entry in properties:
 		if entry.has_key("References"):
-			check_reference_line(entry, entry["References"])
-		elif (entry.has_key("DefiningReference")):
-			check_reference_line(entry, entry["DefiningReference"])
+			check_reference_line(entry, entry["References"], False)
+		elif entry.has_key("DefiningReference"):
+			check_reference_line(entry, entry["DefiningReference"], True)
 		else:
 			print "\tIn section %(section)s : there is no (defining) reference entry" % { 'section': entry["OXPROPS_Sect"] }
 
@@ -1189,6 +1289,11 @@ struct mapi_nameid_tags {
 	uint32_t		position;
 };
 
+struct mapi_nameid_names {
+	uint32_t		proptag;
+	const char		*propname;
+};
+
 struct mapi_nameid {
 	struct MAPINAMEID	*nameid;
 	uint16_t		count;
@@ -1213,6 +1318,10 @@ struct mapi_nameid {
 			mnstring_id += 1
 			f.write(propline)
 
+	# Additional properties
+	propline = "#define %s %s\n" % (string.ljust("PidLidRemoteTransferSize", 60), string.ljust("0x8f050003", 20))
+	f.write(propline)
+
 	f.write("#endif /* ! MAPI_NAMEID_H__ */")
 	f.close()
 
@@ -1236,9 +1345,41 @@ static struct mapi_nameid_tags mapi_nameid_tags[] = {
 				string.ljust(datatype, 15), "MNID_ID", line[6], "0x0")
 			f.write(propline)
 
+	for line in sortednamedprops:
+		if line[5] == "MNID_STRING":
+			OOM = "%s" % line[1]
+			key = find_key(knowndatatypes, line[4])
+			datatype = datatypemap[key]
+			propline = "{ %s, %s, %s, \"%s\", %s, %s, %s, %s },\n" % (
+				string.ljust(line[0], 60), string.ljust(OOM, 65), line[2], line[3], 
+				string.ljust(datatype, 15), "MNID_STRING", line[6], "0x0")
+			f.write(propline)
+
+	# Addtional named properties
+	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s },\n" % (
+		string.ljust("PidLidRemoteTransferSize", 60), string.ljust("\"RemoteTransferSize\"", 65), "0x8f05",
+		"NULL", string.ljust("PT_LONG", 15), "MNID_ID", "PSETID_Remote", "0x0")
+	f.write(propline)
+
 	propline = "{ %s, %s, %s, %s, %s, %s, %s, %s }\n" % (
 		string.ljust("0x00000000", 60), string.ljust("NULL", 65), "0x0000", "NULL",
 		string.ljust("PT_UNSPECIFIED", 15), "0x0", "NULL", "0x0")
+	f.write(propline)
+	f.write("""
+};
+""")
+
+	f.write("""
+static struct mapi_nameid_names mapi_nameid_names[] = {
+""")
+	for line in sortednamedprops:
+		propline = "{ %s, \"%s\" },\n" % (string.ljust(line[0], 60), line[0])
+		f.write(propline)
+
+	# Additional named properties
+	propline = "{ %s, \"%s\" }\n" % (string.ljust("PidLidRemoteTransferSize", 60), "PidLidRemoteTransferSize")	
+
+	propline = "{ %s, \"%s\" }\n" % (string.ljust("0x00000000", 60), "NULL")
 	f.write(propline)
 	f.write("""
 };
@@ -1263,17 +1404,25 @@ def dump_areas_count():
 
 def fix_problems(propsfilename):
 	retcode = subprocess.call(["sed", "-i",
-				   "-e", "s/.Data type: PtyString, 0x001F/Data type: PtypString, 0x001F/",
 				   "-e", "s/.Dta type: PtypBoolean, 0x000B/Data type: PtypBoolean, 0x000B/",
-				   "-e", "s/.Data type: PtypString8, 0x000E/Data type: PtypString8, 0x001E/",
-				   "-e", "s/.Data type: PtypString, 0x0003/Data type: PtypString, 0x001F/",
-				   "-e", "s/.Propety long ID (LID): 0x00008083/Property long ID (LID): 0x00008083/",
-				   "-e", "s/.Propety long ID (LID): 0x000080A3/Property long ID (LID): 0x000080A3/",
-				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS/Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS_BL_O/",
-				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
+				   "-e", "s/.Data Type: PtypString, 0x001F/Data type: PtypString, 0x001F/",
+				   "-e", "s/.Data type: PtyString, 0x001F/Data type: PtypString, 0x001F/",
+				   "-e", "s/.Area: MAPI Display Tables\[MS-OXOABK\] section 2.2.3.33/Area: MAPI Display Tables\\nDefining Reference: \[MS-OXOABK\] section 2.2.3.33/",
+				   "-e", "s/.Area: ProviderDefinedNonTransmittable\[MS-OXCTABL\] section 2.2.1.2/Area: ProviderDefinedNonTransmittable\\nDefining Reference: \[MS-OXCTABL\] section 2.2.1.2/",
+				   "-e", "s/.Area: Server-Side Rules Properties\[MS-OXORULE\] section 2.2.1.3.2.2/Area: Server-Side Rules Properties\\nDefining Reference: \[MS-OXORULE\] section 2.2.1.3.2.2/",
+				   "-e", "s/.Area: MapiMailUser\[MS-OXOABK\] section 2.2.4.66/Area: MapiMailUser\\nDefining Reference: \[MS-OXOABK\] section 2.2.4.66/",
+				   "-e", "s/.Description: \[MS-OXORULE\] section 2.2.7.3/Defining Reference: \[MS-OXORULE\] section 2.2.7.3/",
 				   "-e", "s/.Property set: PSTID_Sharing {00062040-0000-0000-C000-000000000046}/Property set: PSETID_Sharing {00062040-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C000-00000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
 				   "-e", "s/.Property set: PSETID_Address{00062004-0000-0000-C000-000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
-				    propsfilename])
+				   "-e", "s/.Property set: PSETID_Appointment {00062002-0000-0000-C000-0000000000046}/Property set: PSETID_Appointment {00062002-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Property set: PSETID_Address {00062004-0000-0000-C00-0000000000046}/Property set: PSETID_Address {00062004-0000-0000-C000-000000000046}/",
+				   "-e", "s/.Consuming Reference: \[MS-OXCICAL\] Alternate names: PR_NEXT_SEND_ACCT/Consuming Reference: \[MS-OXCICAL\]\\nAlternate names: PR_NEXT_SEND_ACCT/",
+				   "-e", "s/.Alternate names: PR_WB_SF_ID//",
+				   "-e", "s/.Alternate names: PR_WB_SF_TAG//",
+				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
+				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS//",
+				   propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode
 		sys.exit(retcode)

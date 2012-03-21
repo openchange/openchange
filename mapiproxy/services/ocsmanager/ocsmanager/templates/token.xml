@@ -1,0 +1,6 @@
+<?xml version='1.0' encoding='utf-8'?>
+<ocsmanager>
+  <token type="salt">${c.token_salt}</token>
+  <salt>${c.salt}</salt>
+  <ttl>10</ttl>
+</ocsmanager>

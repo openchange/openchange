@@ -41,8 +41,6 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
 parser.add_option("--firstou", type="string", metavar="FIRSTOU", 
                   help="set OpenChange First Organization Unit (otherwise First Organization Unit)")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
-parser.add_option("--mapistore", type="string", metavar="STORE",
-		  help="The backend storage type to use (only for --openchangedb)")
 opts,args = parser.parse_args()
 if len(args) != 0:
     parser.print_usage()
@@ -51,14 +49,15 @@ if len(args) != 0:
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 
-def setup_path(*args):
-    return os.path.join(os.path.dirname(__file__), *args)
+_setupdir = os.path.dirname(__file__)
+if not os.path.exists(os.path.join(_setupdir, "AD")):
+    _setupdir = samba.param.setup_dir()
 
-backend = "fsocpf" #default
-if opts.mapistore is not None:
-	backend = opts.mapistore
+def setup_path(*args):
+    global _setupdir
+    return os.path.join(_setupdir, *args)
 
 if not opts.openchangedb:
 	openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
 else:
-	openchange.openchangedb_provision(lp, firstorg=opts.firstorg, firstou=opts.firstou, mapistore=backend)
+	openchange.openchangedb_provision(lp, firstorg=opts.firstorg, firstou=opts.firstou)

@@ -25,9 +25,21 @@
    \brief EMSMDB Provider implementation
  */
 
+#define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+
+#include <ldap_ndr.h>
+
+static struct GUID MagicGUID = {
+	.time_low = 0xbeefface,
+	.time_mid = 0xcafe,
+	.time_hi_and_version = 0xbabe,
+	.clock_seq = { 0x12, 0x34 },
+	.node = { 0xde, 0xad, 0xfa, 0xce, 0xca, 0xfe }
+};
+const struct GUID *const MagicGUIDp = &MagicGUID;
 
 /**
    \details Release the MAPISTORE context used by EMSMDB provider
@@ -84,7 +96,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
-	int			ret;
+	int					ret;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -104,6 +116,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	tevent_loop_allow_nesting(ev); 
 
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
@@ -120,22 +133,21 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	emsmdbp_ctx->oc_ctx = ldb_ctx;
 
 	/* Initialize the mapistore context */		
-	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, NULL);
+	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!emsmdbp_ctx->mstore_ctx) {
 		DEBUG(0, ("[%s:%d]: MAPISTORE initialization failed\n", __FUNCTION__, __LINE__));
 
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
-	/* Initialize the mapistore user's indexing database */
-	ret = mapistore_indexing_add(emsmdbp_ctx->mstore_ctx, username);
+	ret = mapistore_set_connection_info(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->samdb_ctx, emsmdbp_ctx->oc_ctx, username);
 	if (ret != MAPI_E_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: MAPISTORE indexing database initialization failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("[%s:%d]: MAPISTORE connection info initialization failed\n", __FUNCTION__, __LINE__));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
+	talloc_set_destructor((void *)emsmdbp_ctx->mstore_ctx, (int (*)(void *))emsmdbp_mapi_store_destructor);
 
 	/* Initialize MAPI handles context */
 	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);
@@ -175,7 +187,9 @@ _PUBLIC_ bool emsmdbp_destructor(void *data)
 
 	if (!emsmdbp_ctx) return false;
 
-	talloc_free(emsmdbp_ctx);
+	talloc_unlink(emsmdbp_ctx, emsmdbp_ctx->oc_ctx);
+	talloc_free(emsmdbp_ctx->mem_ctx);
+
 	DEBUG(0, ("[%s:%d]: emsmdbp_ctx found and released\n", __FUNCTION__, __LINE__));
 
 	return true;
@@ -200,7 +214,7 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "msExchUserAccountControl", NULL };
 
-	username = dce_call->context->conn->auth_state.session_info->info->account_name;
+	username = dcesrv_call_account_name(dce_call);
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
@@ -222,8 +236,9 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 		return false;
 	}
 
-	/* Get a copy of the username for later use */
+	/* Get a copy of the username for later use and setup missing conn_info components */
 	emsmdbp_ctx->username = talloc_strdup(emsmdbp_ctx, username);
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &emsmdbp_ctx->mstore_ctx->conn_info->repl_id, &emsmdbp_ctx->mstore_ctx->conn_info->replica_guid);
 
 	return true;
 }
@@ -341,8 +356,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 		row->prop_values.length = 0;
 		for (i = 0; i < properties->cValues; i++) {
 			switch (properties->aulPropTag[i]) {
-			case PR_SMTP_ADDRESS:
-			case PR_SMTP_ADDRESS_UNICODE:
+			case PidTagSmtpAddress:
 				property = properties->aulPropTag[i];
 				data = (void *) recipient;
 				break;
@@ -353,9 +367,9 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 				break;
 			}
 
-			libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+			libmapiserver_push_property(mem_ctx,
 						    property, (const void *)data, &row->prop_values, 
-						    row->layout, 0);
+						    row->layout, 0, 0);
 		}
 
 		return MAPI_E_SUCCESS;
@@ -377,10 +391,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 		switch (properties->aulPropTag[i]) {
 		case PR_DISPLAY_TYPE:
 		case PR_OBJECT_TYPE:
-		case PR_7BIT_DISPLAY_NAME:
-		case PR_7BIT_DISPLAY_NAME_UNICODE:
-		case PR_SMTP_ADDRESS:
-		case PR_SMTP_ADDRESS_UNICODE:
+		case PidTagAddressBookDisplayNamePrintable:
+		case PidTagSmtpAddress:
 			break;
 		default:
 			row->layout = 1;
@@ -411,14 +423,12 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			l = MAPI_MAILUSER;
 			data = (void *)&l;
 			break;
-		case PR_7BIT_DISPLAY_NAME:
-		case PR_7BIT_DISPLAY_NAME_UNICODE:
+		case PidTagAddressBookDisplayNamePrintable:
 			property = properties->aulPropTag[i];
 			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "mailNickname", NULL);
 			data = (void *) str;
 			break;
-		case PR_SMTP_ADDRESS:
-		case PR_SMTP_ADDRESS_UNICODE:
+		case PidTagSmtpAddress:
 			property = properties->aulPropTag[i];
 			str = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
 			data = (void *) str;
@@ -429,10 +439,91 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			data = (void *)&retval;
 			break;
 		}
-		libmapiserver_push_property(mem_ctx, lpcfg_iconv_convenience(emsmdbp_ctx->lp_ctx),
+		libmapiserver_push_property(mem_ctx,
 					    property, (const void *)data, &row->prop_values, 
-					    row->layout, 0);
+					    row->layout, 0, 0);
 	}
 
 	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ int emsmdbp_guid_to_replid(struct emsmdbp_context *emsmdbp_ctx, const char *username, const struct GUID *guidP, uint16_t *replidP)
+{
+	uint16_t	replid;
+	struct GUID	guid;
+
+	if (GUID_equal(guidP, MagicGUIDp)) {
+		*replidP = 2;
+		return MAPI_E_SUCCESS;
+	}
+
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username, &replid, &guid);
+	if (GUID_equal(guidP, &guid)) {
+		*replidP = replid;
+		return MAPI_E_SUCCESS;
+	}
+
+	if (mapistore_replica_mapping_guid_to_replid(emsmdbp_ctx->mstore_ctx, username, guidP, &replid) == MAPISTORE_SUCCESS) {
+		*replidP = replid;
+		return MAPI_E_SUCCESS;
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+_PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const char *username, const uint16_t replid, struct GUID *guidP)
+{
+	uint16_t	db_replid;
+	struct GUID	guid;
+
+	if (replid == 2) {
+		*guidP = MagicGUID;
+		return MAPI_E_SUCCESS;
+	}
+
+	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username, &db_replid, &guid);
+	if (replid == db_replid) {
+		*guidP = guid;
+		return MAPI_E_SUCCESS;
+	}
+
+	if (mapistore_replica_mapping_replid_to_guid(emsmdbp_ctx->mstore_ctx, username, replid, &guid) == MAPISTORE_SUCCESS) {
+		*guidP = guid;
+		return MAPI_E_SUCCESS;
+	}
+
+	return MAPI_E_NOT_FOUND;
+}
+
+_PUBLIC_ int emsmdbp_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *username, uint64_t fmid, struct Binary_r **source_keyP)
+{
+	struct Binary_r	*source_key;
+	uint64_t	gc;
+	uint16_t	replid;
+	uint8_t		*bytes;
+	int		i;
+
+	replid = fmid & 0xffff;
+	source_key = talloc_zero(NULL, struct Binary_r);
+	source_key->cb = 22;
+	source_key->lpb = talloc_array(source_key, uint8_t, source_key->cb);
+	if (emsmdbp_replid_to_guid(emsmdbp_ctx, username, replid, (struct GUID *) source_key->lpb)) {
+		talloc_free(source_key);
+		return MAPISTORE_ERROR;
+	}
+
+	(void) talloc_reference(mem_ctx, source_key);
+	talloc_unlink(NULL, source_key);
+
+	gc = fmid >> 16;
+
+	bytes = source_key->lpb + 16;
+	for (i = 0; i < 6; i++) {
+		bytes[i] = gc & 0xff;
+		gc >>= 8;
+	}
+
+	*source_keyP = source_key;
+
+	return MAPISTORE_SUCCESS;
 }

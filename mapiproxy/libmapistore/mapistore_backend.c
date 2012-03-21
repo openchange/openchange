@@ -4,10 +4,10 @@
    OpenChange Project
 
    Note: init and load functions have been copied from
-   samba4/source4/param/util.c initially written by Jelmer.
+   samba4/source4/param/util.c initially wrote by Jelmer.
 
    Copyright (C) Jelmer Vernooij 2005-2007
-   Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Julien Kerihuel 2009
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,14 +28,12 @@
 #include <dlfcn.h>
 #include <dirent.h>
 
-#include "mapistore_errors.h"
 #include "mapistore.h"
+#include "mapistore_errors.h"
 #include "mapistore_private.h"
-#include "mapistore_backend.h"
-#include "mapistore_common.h"
 #include <dlinklist.h>
 
-#include <util.h>
+#include <samba_util.h>
 #include <util/debug.h>
 
 /**
@@ -51,56 +49,27 @@ static struct mstore_backend {
 
 int					num_backends;
 
+
 /**
-  \brief Register a backend
- 
-  This function registers a backend with mapistore.
+   \details Register mapistore backends
 
-  The general approach is to create a mapistore_backend object within the 
-  mapistore_init_backend() entry point, fill in the various structure elements
-  and function pointers, and then call mapistore_backend_register().
- 
-  \code
-  enum MAPISTORE_ERROR mapistore_init_backend(void)
-  {
-    enum MAPISTORE_ERROR	retval;
-    struct mapistore_backend	demo_backend;
+   \param backend pointer to the mapistore backend to register
 
-    retval = mapistore_backend_init_defaults(&demo_backend);
-    MAPISTORE_RETVAL_IF(retval, retval, NULL);
-
-    demo_backend.name = "demo";
-    demo_backend.description = "this is just a demostration of the mapistore backend API";
-    demo_backend.uri_namespace = "demo://";
-    demo.init = demo_init; // calls demo_init() on startup
-    ... // more function pointers here.
-    
-    mapistore_backend_register(&demo_backend);
-    if (retval != MAPISTORE_SUCCESS) {
-	MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to register the '%s' mapistore backend\n", demo_backend.name);
-        return retval;
-    }
-
-    return MAPISTORE_SUCCESS;
-  }
-  \endcode
-
-  \param backend pointer to the mapistore backend to register
-
-  \return MAPISTORE_SUCCESS on success
+   \return MAPISTORE_SUCCESS on success
  */
-_PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_register(const struct mapistore_backend *backend)
+_PUBLIC_ enum mapistore_error mapistore_backend_register(const void *_backend)
 {
-	int				i;
+	const struct mapistore_backend	*backend = _backend;
+	uint32_t			i;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!backend, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend && backend && 
-		    backend->name && backends[i].backend->name &&
-		    !strcmp(backends[i].backend->name, backend->name)) {
-			MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' already registered\n", backend->name);
+		    backend->backend.name && backends[i].backend->backend.name &&
+		    !strcmp(backends[i].backend->backend.name, backend->backend.name)) {
+			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->backend.name));
 			return MAPISTORE_SUCCESS;
 		}
 	}
@@ -110,14 +79,38 @@ _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_register(const struct mapistore_
 		smb_panic("out of memory in mapistore_backend_register");
 	}
 
-	backends[num_backends].backend = (struct mapistore_backend *)smb_xmemdup(backend, sizeof (*backend));
-	backends[num_backends].backend->name = smb_xstrdup(backend->name);
+	backends[num_backends].backend = smb_xmemdup(backend, sizeof (*backend));
+	backends[num_backends].backend->backend.name = smb_xstrdup(backend->backend.name);
 
 	num_backends++;
 
-	MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' registered\n", backend->name);
+	DEBUG(3, ("MAPISTORE backend '%s' registered\n", backend->backend.name));
 
 	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Check if the specified backend is registered given its
+   name.
+
+   \param name backend's name to lookup
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_backend_registered(const char *name)
+{
+	int	i;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && !strcmp(backends[i].backend->backend.name, name)) {
+			return MAPISTORE_SUCCESS;
+		}
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
 }
 
 
@@ -131,6 +124,7 @@ _PUBLIC_ const char *mapistore_backend_get_installdir(void)
 {
 	return MAPISTORE_BACKEND_INSTALLDIR;
 }
+
 
 
 /**
@@ -149,16 +143,16 @@ static init_backend_fn load_backend(const char *path)
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
-		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to open %s: %s\n", path, dlerror())
+		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
 		return NULL;
 	}
 
 	init_fn = dlsym(handle, MAPISTORE_INIT_MODULE);
 
 	if (init_fn == NULL) {
-		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Unable to find %s() in %s: %s\n",
-				   MAPISTORE_INIT_MODULE, path, dlerror());
-		MSTORE_DEBUG_ERROR(MSTORE_LEVEL_HIGH, "Loading mapistore backend '%s' failed\n", path);
+		DEBUG(0, ("Unable to find %s() in %s: %s\n",
+			  MAPISTORE_INIT_MODULE, path, dlerror()));
+		DEBUG(1, ("Loading mapistore backend '%s' failed\n", path));
 		dlclose(handle);
 		return NULL;
 	}
@@ -258,6 +252,7 @@ _PUBLIC_ bool mapistore_backend_run_init(init_backend_fn *fns)
 	return ret;
 }
 
+
 /**
    \details Initialize mapistore backends
 
@@ -268,11 +263,11 @@ _PUBLIC_ bool mapistore_backend_run_init(init_backend_fn *fns)
    \return MAPISTORE_SUCCESS on success, otherwise
    MAPISTORE_ERR_BACKEND_INIT
  */
-enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
+enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 {
 	init_backend_fn			*ret;
 	bool				status;
-	enum MAPISTORE_ERROR		retval;
+	int				retval;
 	int				i;
 
 	ret = mapistore_backend_load(mem_ctx, path);
@@ -281,446 +276,467 @@ enum MAPISTORE_ERROR mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend) {
-			MSTORE_DEBUG_INFO(MSTORE_LEVEL_NORMAL, "MAPISTORE backend '%s' loaded\n", backends[i].backend->name);
-			retval = backends[i].backend->init();
+			retval = backends[i].backend->backend.init();
 			if (retval != MAPISTORE_SUCCESS) {
-				 return retval;
-			 }
-		 }
-	 }
+				DEBUG(3, ("[!] MAPISTORE backend '%s' initialization failed\n", backends[i].backend->backend.name));
+			} else {
+				DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
+			}
+		}
+	}
 
-	 return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
- }
+	return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
+}
 
+/**
+   \details List backend contexts for given user
 
-enum MAPISTORE_ERROR mapistore_backend_get_next_backend(const char **backend_name,
-							const char **backend_namespace,
-							const char **backend_description,
-							uint32_t *backend_index)
+   \param mem_ctx pointer to the memory context
+   \param namespace the backend namespace
+   \param uri the backend parameters which can be passes inline
+
+   \return a valid backend_context pointer on success, otherwise NULL
+ */
+enum mapistore_error mapistore_backend_list_contexts(const char *username, struct tdb_wrap *tdbwrap, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
 {
-	int	i;
+	enum mapistore_error		retval;
+	int				i;
+	struct mapistore_contexts_list	*contexts_list = NULL, *current_contexts_list;
 
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!backend_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_namespace, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_description, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_index, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	i = *backend_index;
-	MAPISTORE_RETVAL_IF((i >= num_backends), MAPISTORE_ERR_NOT_FOUND, NULL);
-	MAPISTORE_RETVAL_IF(!backends[i].backend, MAPISTORE_ERR_NOT_FOUND, NULL);
+	for (i = 0; i < num_backends; i++) {
+		retval = backends[i].backend->backend.list_contexts(username, tdbwrap, mem_ctx, &current_contexts_list);
+		if (retval != MAPISTORE_SUCCESS) {
+			return retval;
+		}
+		DLIST_CONCATENATE(contexts_list, current_contexts_list, void);
+	}
 
-	*backend_name = backends[i].backend->name;
-	*backend_namespace = backends[i].backend->uri_namespace;
-	*backend_description = backends[i].backend->description;
-	*backend_index += 1;
+	*contexts_listP = contexts_list;
+	(void) talloc_reference(mem_ctx, contexts_list);
 
 	return MAPISTORE_SUCCESS;
 }
 
 /**
-   \details Return the LDIF data associated to a mapistore backend
+   \details Create backend context
 
-   \param mem_ctx pointer to the mapistore context
-   \param backend_name pointer to the backend name to retrieve LDIF data from
-   \param ldif pointer on pointer to the LDIF data to return
-   \param ntype pointer to the LDIF provision data type to return
+   \param mem_ctx pointer to the memory context
+   \param namespace the backend namespace
+   \param uri the backend parameters which can be passes inline
 
-   \return MAPISTORE_SUCCESS on success, MAPISTORE_ERR_NOT_FOUND if
-   the specified backend name was not found,
-   MAPSITORE_ERR_NOT_IMPLEMENTED if the backend doesn't handle the
-   ldif op, otherwise MAPISTORE error
+   \return a valid backend_context pointer on success, otherwise NULL
  */
-enum MAPISTORE_ERROR mapistore_backend_get_namedprops_ldif(TALLOC_CTX *mem_ctx,
-							   const char *backend_name,
-							   char **ldif,
-							   enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE *ntype)
+enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct tdb_wrap *tdbwrap,
+						      const char *namespace, const char *uri, uint64_t fid, struct backend_context **context_p)
 {
-	enum MAPISTORE_ERROR				retval;
-	enum MAPISTORE_NAMEDPROPS_PROVISION_TYPE	_ntype;
-	char						*_ldif;
-	int						i;
+	struct backend_context		*context;
+	enum mapistore_error		retval;
+	bool				found = false;
+	void				*backend_object = NULL;
+	int				i;
 
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ldif, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!backend_name, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!ntype, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	DEBUG(0, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
+
+	context = talloc_zero(NULL, struct backend_context);
 
 	for (i = 0; i < num_backends; i++) {
-		if (backends[i].backend && backends[i].backend->name && 
-		    !strncmp(backends[i].backend->name, backend_name, strlen(backends[i].backend->name))) {
+		if (backends[i].backend->backend.namespace && 
+		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
+			found = true;
+			retval = backends[i].backend->backend.create_context(context, conn_info, tdbwrap, uri, &backend_object);
+			if (retval != MAPISTORE_SUCCESS) {
+				goto end;
+			}
+
 			break;
 		}
 	}
 
-	if (i >= num_backends) return MAPISTORE_ERR_NOT_FOUND;
-
-	retval = backends[i].backend->op_db_provision_namedprops(mem_ctx, &_ldif, &_ntype);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
-
-	if (_ldif && _ntype != MAPISTORE_NAMEDPROPS_PROVISION_NONE) {
-		*ldif = talloc_strdup(mem_ctx, _ldif);
-		talloc_free(_ldif);
+	if (found == false) {
+		DEBUG(0, ("MAPISTORE: no backend with namespace '%s' is available\n", namespace));
+		retval = MAPISTORE_ERR_NOT_FOUND; 
+		goto end;
 	}
 
-	*ntype = _ntype;
-	
+	context->backend_object = backend_object;
+	context->backend = backends[i].backend;
+	retval = context->backend->context.get_root_folder(backend_object, context, fid, &context->root_folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		goto end;
+	}
+
+	context->ref_count = 1;
+	context->uri = talloc_asprintf(context, "%s%s", namespace, uri);
+	*context_p = context;
+
+	(void) talloc_reference(mem_ctx, context);
+
+end:
+	talloc_unlink(NULL, context);
+
 	return retval;
 }
 
 
-static enum MAPISTORE_ERROR delete_context(void *data)
- {
-	 struct backend_context		*context = (struct backend_context *) data;
-
-	 context->backend->delete_context(context->private_data);
-
-	 return MAPISTORE_SUCCESS;
- }
-
- /**
-    \details Create backend context
-
-    \param mem_ctx pointer to the memory context
-    \param login_user the username used for authentication
-    \param username the username we want to impersonate
-    \param uri_namespace the backend namespace
-    \param uri the backend parameters which can be passes inline
-
-    \return a valid backend_context pointer on success, otherwise NULL
-  */
- struct backend_context *mapistore_backend_create_context(TALLOC_CTX *mem_ctx, 
-							  const char *login_user,
-							  const char *username,
-							  const char *uri_namespace, 
-							  const char *uri)
- {
-	 struct backend_context		*context;
-	 int				retval;
-	 bool				found = false;
-	 void				*private_data = NULL;
-	 int				i;
-
-	 MSTORE_DEBUG_INFO(MSTORE_LEVEL_INFO, "namespace is %s and backend URI is %s\n", uri_namespace, uri);
-	 for (i = 0; i < num_backends; i++) {
-		 if (backends[i].backend->uri_namespace && 
-		     !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
-			 found = true;
-			 retval = backends[i].backend->create_context(mem_ctx, login_user, username, uri, &private_data);
-			 if (retval != MAPISTORE_SUCCESS) {
-				 MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "Failed to create context for backend '%s': %s\n",
-						    backends[i].backend->name, mapistore_errstr(retval));
-				 return NULL;
-			 }
-
-			 break;
-		 }
-	 }
-	 if (found == false) {
-		 MSTORE_DEBUG_ERROR(MSTORE_LEVEL_CRITICAL, "No backend with namespace '%s' is available\n", uri_namespace);
-		 return NULL;
-	 }
-
-	 context = talloc_zero(mem_ctx, struct backend_context);
-	 talloc_set_destructor((void *)context, (int (*)(void *))delete_context);
-	 context->backend = backends[i].backend;
-	 context->private_data = private_data;
-	 context->ref_count = 0;
-	 context->uri = talloc_strdup(context, uri);
-	 talloc_steal(context, private_data);
-
-	 return context;
- }
-
- /**
-    \details Increase the ref count associated to a given backend
-
-    \param bctx pointer to the backend context
-
-    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
-  */
- _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_add_ref_count(struct backend_context *bctx)
- {
-	 /* Sanity checks */
-	 MAPISTORE_RETVAL_IF(!bctx, MAPISTORE_ERROR, NULL);
-
-	 bctx->ref_count += 1;
-
-	 return MAPISTORE_SUCCESS;
- }
-
-
- /**
-    \details Delete a context from the specified backend
-
-    \param bctx pointer to the backend context
-
-    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
-  */
- _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_delete_context(struct backend_context *bctx)
- {
-	 enum MAPISTORE_ERROR	retval;
-
-	 /* Sanity checks */
-	 MAPISTORE_RETVAL_IF(!bctx->backend->delete_context, MAPISTORE_ERROR, NULL);
-
-	 if (bctx->indexing) {
-		 retval = mapistore_indexing_del_ref_count(bctx->indexing);
-	 }
-
-	 if (bctx->ref_count) {
-		 bctx->ref_count -= 1;
-		 return MAPISTORE_ERR_REF_COUNT;
-	 }
-
-	 retval = bctx->backend->delete_context(bctx->private_data);
-	 talloc_set_destructor((void *)bctx, NULL);
-
-	 return retval;
- }
-
-
- _PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_release_record(struct backend_context *bctx, const char *uri, uint8_t type)
- {
-	 return bctx->backend->release_record(bctx->private_data, uri, type);
- }
-
-
-_PUBLIC_ enum MAPISTORE_ERROR mapistore_backend_create_uri(TALLOC_CTX *mem_ctx, 
-							   enum MAPISTORE_DFLT_FOLDERS index, 
-							   const char *uri_namespace,
-							   const char *username, 
-							   char **uri)
+enum mapistore_error mapistore_backend_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
 {
-	enum MAPISTORE_ERROR	retval;
-	char			*_uri = NULL;
-	int			i;
+	enum mapistore_error		retval = MAPISTORE_ERR_NOT_FOUND;
+	int				i;
 
-	for (i = 0; i < num_backends; i++) {
-		if (backends[i].backend->uri_namespace &&
-		    !strcmp(uri_namespace, backends[i].backend->uri_namespace)) {
-			retval = backends[i].backend->op_db_create_uri(mem_ctx, index, username, &_uri);
-			if (retval == MAPISTORE_SUCCESS) {
-				*uri = _uri;
-				return retval;
-			}
+	for (i = 0; retval == MAPISTORE_ERR_NOT_FOUND && i < num_backends; i++) {
+		retval = backends[i].backend->backend.create_root_folder(username, ctx_role, fid, name, mem_ctx, mapistore_urip);
+	}
+
+	return retval;
+}
+
+/**
+   \details Increase the ref count associated to a given backend
+
+   \param bctx pointer to the backend context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+_PUBLIC_ enum mapistore_error mapistore_backend_add_ref_count(struct backend_context *bctx)
+{
+	if (!bctx) {
+		return MAPISTORE_ERROR;
+	}
+
+	bctx->ref_count += 1;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Delete a context from the specified backend
+
+   \param bctx pointer to the backend context
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_backend_delete_context(struct backend_context *bctx)
+{
+	if (bctx->ref_count) {
+		bctx->ref_count -= 1;
+		return MAPISTORE_ERR_REF_COUNT;
+	}
+
+	talloc_free(bctx);
+	
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details find the context matching given context identifier
+
+   \param backend_list_ctx pointer to the backend context list
+   \param context_id the context identifier to search
+
+   \return Pointer to the mapistore_backend context on success, otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context_list *backend_list_ctx,
+							  uint32_t context_id)
+{
+	struct backend_context_list	*el;
+
+	/* Sanity checks */
+	if (!backend_list_ctx) return NULL;
+
+	for (el = backend_list_ctx; el; el = el->next) {
+		if (el->ctx && el->ctx->context_id == context_id) {
+			return el->ctx;
 		}
 	}
 
-	return MAPISTORE_ERR_NOT_FOUND;
+	return NULL;
+}
+
+/**
+   \details find the context matching given uri string
+
+   \param backend_list_ctx pointer to the backend context list
+   \param uri the uri string to search
+
+   \return Pointer to the mapistore_backend context on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *backend_list_ctx,
+								 const char *uri)
+{
+	struct backend_context_list	*el;
+
+	/* sanity checks */
+	if (!backend_list_ctx) return NULL;
+	if (!uri) return NULL;
+
+	for (el = backend_list_ctx; el; el = el->next) {
+		if (el->ctx && el->ctx->uri &&
+		    !strcmp(el->ctx->uri, uri)) {
+			return el->ctx;
+		}
+	}
+	
+	return NULL;
+}
+
+/**
+   \details Return a pointer on backend functions given its name
+
+   \param mem_ctx pointer to the memory context
+   \param name the backend name to lookup
+
+   \return Allocated pointer to the mapistore_backend context on success,
+   otherwise NULL
+ */
+_PUBLIC_ struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *mem_ctx, const char *name)
+{
+	struct backend_context	*context = NULL;
+	int			i;
+
+	/* Sanity checks */
+	if (!name) return NULL;
+
+	for (i = 0; i < num_backends; i++) {
+		if (backends[i].backend && !strcmp(backends[i].backend->backend.name, name)) {
+			context = talloc_zero(mem_ctx, struct backend_context);
+			context->backend = backends[i].backend;
+			context->ref_count = 0;
+			context->uri = NULL;
+
+			return context;
+		}
+	}
+	return NULL;
 }
 
 
-enum MAPISTORE_ERROR mapistore_backend_root_mkdir(struct backend_context *bctx, enum MAPISTORE_DFLT_FOLDERS system_idx,
-						  const char *mapistore_uri, const char *folder_name)
+enum mapistore_error mapistore_backend_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, char **path)
 {
-	return bctx->backend->op_db_mkdir(bctx->private_data, system_idx, mapistore_uri, folder_name);
+	enum mapistore_error	ret;
+	char			*bpath = NULL;
+
+	ret = bctx->backend->context.get_path(bctx->backend_object, mem_ctx, fmid, &bpath);
+
+	if (!ret) {
+		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->backend.namespace, bpath);
+	} else {
+		*path = NULL;
+	}
+
+	return ret;
 }
 
-
- /**
-    \details find the context matching given context identifier
-
-    \param backend_list_ctx pointer to the backend context list
-    \param context_id the context identifier to search
-
-    \return Pointer to the mapistore_backend context on success, otherwise NULL
-  */
- _PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context_list *backend_list_ctx,
-							   uint32_t context_id)
- {
-	 struct backend_context_list	*el;
-
-	 /* Sanity checks */
-	 if (!backend_list_ctx) return NULL;
-
-	 for (el = backend_list_ctx; el; el = el->next) {
-		 if (el->ctx && el->ctx->context_id == context_id) {
-			 return el->ctx;
-		 }
-	 }
-
-	 return NULL;
- }
-
-
- /**
-    \details find the context matching given uri string
-
-    \param backend_list_ctx pointer to the backend context list
-    \param uri the uri string to search
-
-    \return Pointer to the mapistore_backend context on success,
-    otherwise NULL
-  */
- _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *backend_list_ctx,
-								  const char *uri)
- {
-	 struct backend_context_list	*el;
-
-	 /* sanity checks */
-	 if (!backend_list_ctx) return NULL;
-	 if (!uri) return NULL;
-
-	 for (el = backend_list_ctx; el; el = el->next) {
-		 if (el->ctx && el->ctx->uri &&
-		     !strcmp(el->ctx->uri, uri)) {
-			 return el->ctx;
-		 }
-	 }
-
-	 return NULL;
- }
-
- enum MAPISTORE_ERROR mapistore_get_path(struct backend_context *bctx, const char *uri, uint8_t type, char **path)
- {
-	 enum MAPISTORE_ERROR	ret;
-	 char			*bpath = NULL;
-
-	 /* Sanity checks */
-	 MAPISTORE_RETVAL_IF(!bctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	 MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	 MAPISTORE_RETVAL_IF(!path, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	 ret = bctx->backend->get_path(bctx->private_data, uri, type, &bpath);
-
-	 if (!ret) {
-		 *path = talloc_asprintf(bctx, "%s%s", bctx->backend->uri_namespace, bpath);
-	 } else {
-		 *path = NULL;
-	 }
-
-	 return ret;
- }
-
-
- /* enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, uint64_t parent_fid, uint64_t fid) */
- /* { */
- /* 	 return bctx->backend->op_opendir(bctx->private_data, parent_fid, fid); */
- /* } */
-
-enum MAPISTORE_ERROR mapistore_backend_opendir(struct backend_context *bctx, 
-					       const char *parent_uri, 
-					       const char *folder_uri)
+enum mapistore_error mapistore_backend_folder_open_folder(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint64_t fid, void **child_folder)
 {
-	return bctx->backend->op_opendir(bctx->private_data, parent_uri, folder_uri);
+	return bctx->backend->folder.open_folder(folder, mem_ctx, fid, child_folder);
 }
 
-
-enum MAPISTORE_ERROR mapistore_backend_mkdir(struct backend_context *bctx,
-					     char *parent_uri,
-					     const char *folder_name,
-					     const char *folder_desc,
-					     enum FOLDER_TYPE folder_type,
-					     char **folder_uri)
+enum mapistore_error mapistore_backend_folder_create_folder(struct backend_context *bctx, void *folder,
+					   TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *aRow, void **child_folder)
 {
-	enum MAPISTORE_ERROR	retval;
-
-	retval = bctx->backend->op_mkdir(bctx->private_data, parent_uri, folder_name, folder_desc, folder_type, folder_uri);
-
-	return retval;
+	return bctx->backend->folder.create_folder(folder, mem_ctx, fid, aRow, child_folder);
 }
 
-
- enum MAPISTORE_ERROR mapistore_backend_rmdir(struct backend_context *bctx,
-					      const char *parent_uri,
-					      const char *folder_uri)
- {
-	 return bctx->backend->op_rmdir(bctx->private_data, parent_uri, folder_uri);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_readdir_count(struct backend_context *bctx, 
-						      const char *folder_uri,
-						      enum MAPISTORE_TABLE_TYPE table_type, 
-						      uint32_t *RowCount)
- {
-	 enum MAPISTORE_ERROR		retval;
-	 uint32_t			count = 0;
-
-	 retval = bctx->backend->op_readdir_count(bctx->private_data, folder_uri, table_type, &count);
-	 *RowCount = count;
-
-	 return retval;
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_get_table_property(struct backend_context *bctx, 
-							   const char * folder_uri,
-							   enum MAPISTORE_TABLE_TYPE table_type,
-							   uint32_t pos, 
-							   enum MAPITAGS proptag, 
-							   void **data)
- {
-	 return bctx->backend->op_get_table_property(bctx->private_data, folder_uri, table_type, pos, proptag, data);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_openmessage(struct backend_context *bctx, 
-						    const char *parent_uri,
-						    const char *message_uri,
-						    struct mapistore_message *msg)
- {
-	 return bctx->backend->op_openmessage(bctx->private_data, parent_uri, message_uri, msg);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_createmessage(struct backend_context *bctx, 
-						      const char *parent_uri,
-						      char **message_uri, 
-						      bool *uri_register)
- {
-	 return bctx->backend->op_createmessage(bctx->private_data, parent_uri, message_uri, uri_register);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_savechangesmessage(struct backend_context *bctx, 
-							   const char *message_uri, 
-							   uint8_t flags)
- {
-	 return bctx->backend->op_savechangesmessage(bctx->private_data, message_uri, flags);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_submitmessage(struct backend_context *bctx, 
-						      const char *message_uri, 
-						      uint8_t flags)
- {
-	 return bctx->backend->op_submitmessage(bctx->private_data, message_uri, flags);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_getprops(struct backend_context *bctx, 
-						 const char *uri,
-						 uint8_t type, 
-						 struct SPropTagArray *SPropTagArray, 
-						 struct SRow *aRow)
- {
-	 return bctx->backend->op_getprops(bctx->private_data, uri, type, SPropTagArray, aRow);
- }
-
-
- enum MAPISTORE_ERROR mapistore_backend_get_fid_by_name(struct backend_context *bctx,
-							const char *parent_uri,
-							const char *name,
-							char **uri)
- {
-	 return bctx->backend->op_get_fid_by_name(bctx->private_data, parent_uri, name, uri);
- }
-
-
-
- enum MAPISTORE_ERROR mapistore_backend_setprops(struct backend_context *bctx, 
-						 const char *uri, 
-						 uint8_t type, 
-						 struct SRow *aRow)
- {
-	 return bctx->backend->op_setprops(bctx->private_data, uri, type, aRow);
- }
-
- enum MAPISTORE_ERROR mapistore_backend_deletemessage(struct backend_context *bctx, 
-						      const char *message_uri, 
-						      enum MAPISTORE_DELETION_TYPE deletion_type)
+enum mapistore_error mapistore_backend_folder_delete(struct backend_context *bctx, void *folder)
 {
-	return bctx->backend->op_deletemessage(bctx->private_data, message_uri, deletion_type);
+	return bctx->backend->folder.delete(folder);
+}
+
+enum mapistore_error mapistore_backend_folder_open_message(struct backend_context *bctx, void *folder,
+					  TALLOC_CTX *mem_ctx, uint64_t mid, bool read_write, void **messagep)
+{
+	return bctx->backend->folder.open_message(folder, mem_ctx, mid, read_write, messagep);
+}
+
+enum mapistore_error mapistore_backend_folder_create_message(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)
+{
+	return bctx->backend->folder.create_message(folder, mem_ctx, mid, associated, messagep);
+}
+
+enum mapistore_error mapistore_backend_folder_delete_message(struct backend_context *bctx, void *folder, uint64_t mid, uint8_t flags)
+{
+        return bctx->backend->folder.delete_message(folder, mid, flags);
+}
+
+enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_context *bctx, void *target_folder, void *source_folder, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, struct Binary_r **target_change_keys, uint8_t want_copy)
+{
+        return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
+}
+
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+{
+        return bctx->backend->folder.get_deleted_fmids(folder, mem_ctx, table_type, change_num, fmidsp, cnp);
+}
+
+enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_context *bctx, void *folder, enum mapistore_table_type table_type, uint32_t *RowCount)
+{
+	return bctx->backend->folder.get_child_count(folder, table_type, RowCount);
+}
+
+enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backend_context *bctx, void *folder, const char *name, uint64_t *fidp)
+{
+	enum mapistore_error		ret = MAPISTORE_SUCCESS;
+	struct mapi_SRestriction	name_restriction;
+	void				*table;
+	uint8_t				status;
+	TALLOC_CTX			*mem_ctx;
+	enum MAPITAGS			col;
+	struct mapistore_property_data	*data_pointers;
+	uint32_t			row_count;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	
+	if (mapistore_backend_folder_open_table(bctx, folder, mem_ctx, MAPISTORE_FOLDER_TABLE, 0, &table, &row_count)) {
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERROR;
+	}
+
+	name_restriction.rt = RES_PROPERTY;
+	name_restriction.res.resProperty.relop = RELOP_EQ;
+	name_restriction.res.resProperty.ulPropTag = PR_DISPLAY_NAME_UNICODE;
+	name_restriction.res.resProperty.lpProp.ulPropTag = name_restriction.res.resProperty.ulPropTag;
+	name_restriction.res.resProperty.lpProp.value.lpszW = name;
+
+	col = PR_FID;
+	mapistore_backend_table_set_columns(bctx, table, 1, &col);
+	mapistore_backend_table_set_restrictions(bctx, table, &name_restriction, &status);
+	ret = mapistore_backend_table_get_row(bctx, table, mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0, &data_pointers);
+	if (!ret) {
+		if (data_pointers[0].error) {
+			ret = MAPISTORE_ERROR;
+		}
+		else {
+			*fidp = *(uint64_t *) data_pointers[0].data;
+		}
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *bctx, void *folder,
+							 TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint32_t handle_id, void **table, uint32_t *row_count)
+{
+        return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
+}
+
+enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_context *bctx, void *folder,
+						uint8_t flags, uint16_t pcount, struct PermissionData *permissions)
+{
+        return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
+}
+
+enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
+{
+	return bctx->backend->message.get_message_data(message, mem_ctx, msg);
+}
+
+enum mapistore_error mapistore_backend_message_modify_recipients(struct backend_context *bctx, void *message, struct SPropTagArray *columns, uint16_t count, struct mapistore_message_recipient *recipients)
+{
+	return bctx->backend->message.modify_recipients(message, columns, count, recipients);
+}
+
+enum mapistore_error mapistore_backend_message_set_read_flag(struct backend_context *bctx, void *message, uint8_t flag)
+{
+	return bctx->backend->message.set_read_flag(message, flag);
+}
+
+enum mapistore_error mapistore_backend_message_save(struct backend_context *bctx, void *message)
+{
+	return bctx->backend->message.save(message);
+}
+
+enum mapistore_error mapistore_backend_message_submit(struct backend_context *bctx, void *message, enum SubmitFlags flags)
+{
+	return bctx->backend->message.submit(message, flags);
+}
+
+enum mapistore_error mapistore_backend_message_open_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
+{
+        return bctx->backend->message.open_attachment(message, mem_ctx, aid, attachment);
+}
+
+enum mapistore_error mapistore_backend_message_create_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
+{
+        return bctx->backend->message.create_attachment(message, mem_ctx, attachment, aid);
+}
+
+enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
+{
+        return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
+}
+
+enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+{
+        return bctx->backend->message.open_embedded_message(message, mem_ctx, embedded_message, mid, msg);
+}
+
+enum mapistore_error mapistore_backend_table_get_available_properties(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+{
+        return bctx->backend->table.get_available_properties(table, mem_ctx, propertiesp);
+}
+
+enum mapistore_error mapistore_backend_table_set_columns(struct backend_context *bctx, void *table, uint16_t count, enum MAPITAGS *properties)
+{
+        return bctx->backend->table.set_columns(table, count, properties);
+}
+
+enum mapistore_error mapistore_backend_table_set_restrictions(struct backend_context *bctx, void *table, struct mapi_SRestriction *restrictions, uint8_t *table_status)
+{
+        return bctx->backend->table.set_restrictions(table, restrictions, table_status);
+}
+
+enum mapistore_error mapistore_backend_table_set_sort_order(struct backend_context *bctx, void *table, struct SSortOrderSet *sort_order, uint8_t *table_status)
+{
+        return bctx->backend->table.set_sort_order(table, sort_order, table_status);
+}
+
+enum mapistore_error mapistore_backend_table_get_row(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx,
+						     enum mapistore_query_type query_type, uint32_t rowid,
+						     struct mapistore_property_data **data)
+{
+        return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
+}
+
+enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *bctx, void *table, enum mapistore_query_type query_type, uint32_t *row_countp)
+{
+        return bctx->backend->table.get_row_count(table, query_type, row_countp);
+}
+
+enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_context *bctx, void *table, uint32_t handle_id)
+{
+        return bctx->backend->table.handle_destructor(table, handle_id);
+}
+
+enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
+{
+        return bctx->backend->properties.get_available_properties(object, mem_ctx, propertiesp);
+}
+
+enum mapistore_error mapistore_backend_properties_get_properties(struct backend_context *bctx,
+						void *object, TALLOC_CTX *mem_ctx,
+						uint16_t count, enum MAPITAGS
+						*properties,
+						struct mapistore_property_data *data)
+{
+        return bctx->backend->properties.get_properties(object, mem_ctx, count, properties, data);
+}
+
+enum mapistore_error mapistore_backend_properties_set_properties(struct backend_context *bctx, void *object, struct SRow *aRow)
+{
+        return bctx->backend->properties.set_properties(object, aRow);
+}
+
+enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_context *bctx, TALLOC_CTX *mem_ctx, 
+					   const char *username, const char *folder, 
+					   const char *message, const char *root_uri, char **uri)
+{
+	return bctx->backend->manager.generate_uri(mem_ctx, username, folder, message, root_uri, uri);
 }

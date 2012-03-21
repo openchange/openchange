@@ -19,8 +19,8 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include "gen_ndr/ndr_exchange.h"
-#include "gen_ndr/ndr_exchange_c.h"
+#include "ndr_exchange.h"
+#include "ndr_exchange_c.h"
 
 /**
    \file async_emsmdb.c

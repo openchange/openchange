@@ -1,0 +1,59 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapiadmin'
+VERSION = '1.0'
+
+def options(ctx):
+    ctx.load('compiler_c')
+
+def configure(ctx):
+    ctx.load('compiler_c')
+
+    ctx.check_cfg(atleast_pkgconfig_version='0.20')
+    
+    ctx.check_cfg(package='talloc',
+		  args=['talloc >= 2.0.7', '--cflags', '--libs'],
+		  uselib_store='TALLOC',
+		  msg="Checking for talloc 2.0.7")
+
+    ctx.check_cfg(package='dcerpc',
+		  args=['dcerpc >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='DCERPC',
+		  msg="Checking for dcerpc 0.0.1")
+
+    ctx.check_cfg(package='dcerpc_samr',
+                  args=['dcerpc_samr >= 0.0.1', '--cflags', '--libs'],
+                  uselib_store='DCERPC_SAMR',
+                  msg="Checking for dcerpc_samr 0.0.1")
+
+    ctx.check_cfg(package='ndr',
+		  args=['ndr >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='NDR',
+		  msg="Checking for ndr 0.0.1")
+
+    ctx.check_cfg(package='ndr_standard',
+                  args=['ndr_standard >= 0.0.1', '--cflags', '--libs'],
+                  uselib_store='NDR_STANDARD',
+                  msg="Checking for ndr-standard 0.0.1")
+
+    ctx.check_cfg(package='tevent',
+		  args=['tevent >= 0.9.15', '--cflags', '--libs'],
+		  uselib_store='TEVENT',
+		  msg="Checking for tevent 0.9.15")
+
+def build(bld):
+    target = bld.shlib(
+        features = 'c cshlib',
+        source = [
+            'mapiadmin_user.c',
+            'mapiadmin.c'
+            ],
+        target = APPNAME,
+        vnum = VERSION,
+        includes = ['.', '../', 'build'],
+        use = ['TALLOC', 'DCERPC', 'DCERPC_SAMR', 'NDR', 'NDR_STANDARD', 'TEVENT']
+        )

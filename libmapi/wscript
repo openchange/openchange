@@ -1,0 +1,194 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapi'
+VERSION = '1.0'
+
+def options(ctx):
+    ctx.load('compiler_c')
+
+def configure(ctx):
+    ctx.load('compiler_c')
+
+    ctx.check(header_name='sys/types.h')
+    ctx.check(header_name='sys/socket.h')
+    ctx.check(header_name='sys/ioctl.h')
+    ctx.check(header_name='sys/time.h')
+    ctx.check(header_name='stdio.h')
+    ctx.check(header_name='stdlib.h')
+    ctx.check(header_name='stdint.h')
+    ctx.check(header_name='stdbool.h')
+    ctx.check(header_name='unistd.h')
+    ctx.check(header_name='fcntl.h')
+    ctx.check(header_name='errno.h')
+    ctx.check(header_name='string.h')
+    ctx.check(header_name='stdarg.h')
+    ctx.check(header_name='netdb.h')
+    ctx.check(header_name='netinet/in.h')
+    ctx.check(header_name='arpa/inet.h')
+    ctx.check(header_name='net/if.h')
+
+    ctx.check_cc(function_name='strcasestr', header_name='string.h', mandatory=False)
+
+    ctx.env.CPPFLAGS = ['-Wall', '-Werror', '-g3',
+    		       	'-Wp,-D_FORTIFY_SOURCE=2',
+                        '-Wstrict-prototypes',
+			'-Wmissing-prototypes',
+			'-fstrict-aliasing']
+
+    ctx.check_cfg(atleast_pkgconfig_version='0.20')
+    
+    ctx.check_cfg(package='talloc',
+		  args=['talloc >= 2.0.7', '--cflags', '--libs'],
+		  uselib_store='TALLOC',
+		  msg="Checking for talloc 2.0.7")
+
+    ctx.check_cfg(package='dcerpc',
+		  args=['dcerpc >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='DCERPC',
+		  msg="Checking for dcerpc 0.0.1")
+
+    ctx.check_cfg(package='ndr',
+		  args=['ndr >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='NDR',
+		  msg="Checking for ndr 0.0.1")
+
+    ctx.check_cfg(package='ldb',
+		  args=['ldb >= 1.1.4', '--cflags', '--libs'],
+		  uselib_store='LDB',
+		  msg="Checking for ldb 1.1.4")
+
+    ctx.check_cfg(package='tdb',
+		  args=['tdb >= 1.2.9', '--cflags', '--libs'],
+		  uselib_store='TDB',
+		  msg="Checking for tdb 1.2.9")
+
+    ctx.check_cfg(package='samba-hostconfig',
+		  args=['samba-hostconfig >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='SAMBA-HOSTCONFIG',
+		  msg="Checking for samba-hostconfig 0.0.1")
+
+    ctx.check_cfg(package='samba-util',
+		  args=['samba-util >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='SAMBA-UTIL',
+		  msg="Checking for samba-util 0.0.1")
+
+    ctx.check_cfg(package='tevent',
+		  args=['tevent >= 0.9.15', '--cflags', '--libs'],
+		  uselib_store='TEVENT',
+		  msg="Checking for tevent 0.9.15")
+
+    ctx.check_cfg(package='samba-credentials',
+		  args=['samba-credentials >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='SAMBA-CREDENTIALS',
+		  msg="Checking for samba-credentials 0.0.1")
+
+    try:
+	ctx.find_program('pidl', var='PIDL')
+    except ctx.errors.ConfigurationError:
+	self.fatal("PIDL compiler not found")
+
+    def getstr(varname):
+        return getattr(ctx.options, varname, '')
+
+    datadir = getstr('datadir')
+    if not datadir: datadir = os.path.join(ctx.options.prefix, 'share')
+    ctx.env.datadir = datadir
+    ctx.define('DEFAULT_LDIF', os.path.join(ctx.env.datadir, 'setup/profiles'))
+
+def pre(ctx):
+    ctx.exec_command('rm -f libmapi/version.h;./script/mkversion.sh VERSION libmapi/version.h ' + VERSION )
+    ctx.exec_command('./libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi libmapi/conf/mapi-codes')
+    ctx.exec_command('./libmapi/conf/mparse.pl --parser=codepage_lcid --outputdir=libmapi libmapi/conf/codepage-lcid')
+
+def post(ctx):
+    if ctx.cmd == 'install':
+        ctx.exec_command('/sbin/ldconfig')
+
+class idl(Task):
+    run_str = '${PIDL} --outputdir=. --header --ndr-parser --client -- ${SRC}'
+    color = 'BLUE'
+    ext_out = ['.h', '.c']
+
+@extension('.idl')
+def process_idl(self, node):
+    ndr_node = node.change_ext('.c')
+
+    try:
+        ndr_node.name.index("ndr_")
+    except ValueError:
+        ndr_node.name = "ndr_" + ndr_node.name
+
+    h_node = node.change_ext('.h')
+    try:
+        h_node.name.index(".")
+    except ValueError:
+        h_node.name = h_node.name
+
+    ndr_node_c = node.change_ext('_c.c')
+    try:
+        ndr_node_c.name.index("ndr_")
+    except ValueError:
+        ndr_node_c.name = "ndr_" + ndr_node_c.name
+
+    self.create_task('idl', node, [ndr_node, ndr_node_c, h_node])
+    self.source.append(ndr_node)
+    self.source.append(ndr_node_c)
+
+def build(bld):
+    target = bld.shlib(
+        features = 'c cshlib',
+        source = [
+            '../exchange.idl',
+            '../property.idl',
+            '../ndr_mapi.c',
+            'async_emsmdb.c',
+            'cdo_mapi.c',
+            'codepage_lcid.c',
+            'emsmdb.c',
+            'freebusy.c',
+            'FXICS.c',
+            'fxparser.c',
+            'IABContainer.c',
+            'idset.c',
+            'IMAPIContainer.c',
+            'IMAPIFolder.c',
+            'IMAPIProp.c',
+            'IMAPISession.c',
+            'IMAPISupport.c',
+            'IMAPITable.c',
+            'IMessage.c',
+            'IMsgStore.c',
+            'IMSProvider.c',
+            'IProfAdmin.c',
+            'IStoreFolder.c',
+            'IStream.c',
+            'IUnknown.c',
+            'IXPLogon.c',
+            'lzfu.c',
+            'mapicode.c',
+            'mapidump.c',
+            'mapi_id_array.c',
+            'mapi_nameid.c',
+            'mapi_object.c',
+            'notif.c',
+            'nspi.c',
+            'property.c',
+            'property_tags.c',
+            'simple_mapi.c',
+            'utils.c',
+            'x500.c',
+            'socket/interface.c',
+            'socket/netif.c'],
+        target = APPNAME,
+        vnum = VERSION,
+        includes = ['.', '../', '../../', 'build'],
+        use = ['NDR', 'LDB', 'TDB', 'TALLOC', 'TEVENT', 'DCERPC', 
+               'SAMBA-HOSTCONFIG']
+        )
+
+    bld.add_pre_fun(pre)
+    bld.add_post_fun(post)

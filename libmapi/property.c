@@ -20,7 +20,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include <gen_ndr/ndr_property.h>
+#include <ndr_property.h>
 #include <param.h>
 
 /**

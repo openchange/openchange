@@ -19,7 +19,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include "gen_ndr/ndr_exchange.h"
+#include "ndr_exchange.h"
 
 /**
    \file utils.c

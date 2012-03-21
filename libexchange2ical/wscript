@@ -1,0 +1,46 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+
+APPNAME = 'exchange2ical'
+VERSION = '1.0'
+
+def options(ctx):
+    ctx.load('compiler_c')
+
+def configure(ctx):
+    ctx.load('compiler_c')
+
+    ctx.check_cfg(package='popt',
+                  args=['popt >= 1.16', '--cflags', '--libs'],
+                  uselib_store='POPT',
+                  msg="Checking for libpopt 1.16",
+                  mandatory=False)
+
+    ctx.check_cfg(package='libical',
+                  args=['libical >= 0.44', '--cflags', '--libs'],
+                  uselib_store='ICAL',
+                  msg="Checking for libical 0.44",
+                  mandatory=False)
+
+def build(bld):
+    if 'HAVE_ICAL' in bld.env and 'HAVE_POPT' in bld.env:
+        bld.program(
+            source = [
+                '../utils/exchange2ical_tool.c',
+                'libexchange2ical.c',
+                'exchange2ical.c',
+                'exchange2ical_component.c',
+                'exchange2ical_property.c',
+                'exchange2ical_utils.c',
+                'libical2exchange.c',
+                'ical2exchange.c',
+                'ical2exchange_property.c',
+                '../utils/openchange-tools.c'],
+            target='exchange2ical',
+            includes= ['.', '../', 'build'],
+            depends_on = 'libmapi',
+            use='ICAL POPT mapi'
+            )
+

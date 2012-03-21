@@ -89,7 +89,7 @@ def configure(ctx):
     try:
 	ctx.find_program('pidl', var='PIDL')
     except ctx.errors.ConfigurationError:
-	self.fatal("PIDL compiler not found")
+	ctx.fatal("PIDL compiler not found")
 
     def getstr(varname):
         return getattr(ctx.options, varname, '')

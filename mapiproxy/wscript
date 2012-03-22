@@ -2,6 +2,8 @@
 
 def configure(ctx):
     ctx.recurse('libmapiproxy')
+    ctx.recurse('libmapiserver')
 
 def build(bld):
     bld.recurse('libmapiproxy')
+    bld.recurse('libmapiserver')

@@ -8,8 +8,13 @@ APPNAME = 'mapiproxy'
 VERSION = '1.0'
 
 def configure(ctx):
+    ctx.check(header_name='sys/types.h')
     ctx.check(header_name='inttypes.h')
     ctx.check(header_name='time.h')
+    ctx.check(header_name='fcntl.h')
+    ctx.check(header_name='errno.h')
+    ctx.check(header_name='dlfcn.h')
+    ctx.check(header_name='dirent.h')
 
 def build(bld):
     target = bld.shlib(

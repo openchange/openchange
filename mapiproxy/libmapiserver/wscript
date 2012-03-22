@@ -1,0 +1,39 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapiserver'
+VERSION = '1.0'
+
+def configure(ctx):
+    ctx.check(header_name='string.h')
+
+    ctx.check_cfg(package='dcerpc',
+		  args=['dcerpc >= 0.0.1', '--cflags', '--libs'],
+		  uselib_store='DCERPC',
+		  msg="Checking for dcerpc 0.0.1")
+
+
+def build(bld):
+    target = bld.shlib(
+        features = 'c cshlib',
+        source = [
+            'libmapiserver_oxcstor.c',
+            'libmapiserver_oxcprpt.c',
+            'libmapiserver_oxcfold.c',
+            'libmapiserver_oxcfxics.c',
+            'libmapiserver_oxctabl.c',
+            'libmapiserver_oxcmsg.c',
+            'libmapiserver_oxcnotif.c',
+            'libmapiserver_oxomsg.c',
+            'libmapiserver_oxorule.c',
+            'libmapiserver_oxcperm.c',
+            'libmapiserver_oxcdata.c',
+            '../../ndr_mapi.c',
+            '../../exchange.idl'],
+        target = APPNAME,
+        vnum = VERSION,
+        includes = ['.', '../', '../../', 'build'],
+        use = ['DCERPC'])

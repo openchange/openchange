@@ -1,0 +1,120 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+
+def options(ctx):
+    ctx.load('compiler_c')
+
+def configure(ctx):
+    ctx.load('compiler_c')
+
+    ctx.check_cfg(package='popt',
+                  args=['popt >= 1.16', '--cflags', '--libs'],
+                  uselib_store='POPT',
+                  msg="Checking for libpopt 1.16",
+                  mandatory=True)
+    ctx.check_cxx(lib='magic', uselib_store='MAGIC')
+
+def pre(ctx):
+    ctx.exec_command('./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h utils/mapitest/*.c utils/mapitest/modules/*.c')
+
+def build(bld):
+    bld.program(
+        source = [
+            'openchangeclient.c',
+            'openchange-tools.c'
+            ],
+        target = '../openchangeclient',
+        includes = ['.', '../', 'build'],
+        depends_on = ['mapi', 'ocpf'],
+        use = ['mapi', 'ocpf', 'POPT'])
+
+    bld.program(
+        source = [
+            'mapiprofile.c',
+            'openchange-tools.c'
+            ],
+        target = '../mapiprofile',
+        includes = ['.', '../', 'build'],
+        depends_on = ['mapi'],
+        use = ['mapi', 'POPT'])
+
+    bld.program(
+        source = [
+            'openchangepfadmin.c',
+            'openchange-tools.c'
+            ],
+        target = '../openchangepfadmin',
+        includes = ['.', '../', 'build'],
+        depends_on = ['mapi', 'mapiadmin'],
+        use = ['mapi', 'mapiadmin', 'POPT'])
+
+    bld.program(
+        source = [
+            'exchange2mbox.c',
+            'openchange-tools.c'
+            ],
+        target = '../exchange2mbox',
+        includes = ['.', '../', 'build'],
+        depends_on = ['mapi'],
+        use = ['mapi', 'POPT', 'MAGIC'])
+
+    bld.program(
+        source = [
+            'openchange-tools.c',
+            'mapitest/mapitest.c',
+            'mapitest/mapitest_suite.c',
+            'mapitest/mapitest_print.c',
+            'mapitest/mapitest_stat.c',
+            'mapitest/mapitest_common.c',
+            'mapitest/module.c',
+            'mapitest/modules/module_oxcstor.c',
+            'mapitest/modules/module_oxcfold.c',
+            'mapitest/modules/module_oxcfxics.c',
+            'mapitest/modules/module_oxomsg.c',
+            'mapitest/modules/module_oxcmsg.c',
+            'mapitest/modules/module_oxcprpt.c',
+            'mapitest/modules/module_oxctable.c',
+            'mapitest/modules/module_oxorule.c',
+            'mapitest/modules/module_oxcnotif.c',
+            'mapitest/modules/module_oxcperm.c',
+            'mapitest/modules/module_nspi.c',
+            'mapitest/modules/module_noserver.c',
+            'mapitest/modules/module_errorchecks.c',
+            'mapitest/modules/module_lcid.c',
+            'mapitest/modules/module_mapidump.c',
+            'mapitest/modules/module_lzxpress.c'],
+        includes = ['.', '../', 'build'],
+        target = '../mapitest',
+        defines = ['LZFU_DATADIR="%s/mapitest/lzfu"' % bld.env.datadir, 
+                   'LZXPRESS_DATADIR="%s/mapitest/lzxpress"' % bld.env.datadir],
+        depends_on = ['mapi'],
+        use = ['mapi', 'POPT'])
+
+    bld.program(
+        source = [
+            'backup/openchangemapidump.c',
+            'backup/openchangebackup.c',
+            'openchange-tools.c'],
+        includes = ['.', '../', 'build'],
+        target = '../openchangemapidump',
+        depends_on = ['mapi'],
+        use = ['mapi', 'POPT'])
+
+    bld.program(
+        source = ['schemaIDGUID.c'],
+        includes = ['.', '../', 'build'],
+        target = '../schemaIDGUID',
+        use = ['TALLOC', 'LDB', 'SAMBA-UTIL', 'NDR'])
+
+    # FIXME: add check_fasttransfer
+
+    bld.program(
+        source = ['../testprogs/test_asyncnotif.c'],
+        includes = ['.', '../', 'build'],
+        target = '../testprogs_asyncnotif',
+        depends_on = ['mapi'],
+        use = ['mapi', 'POPT'])
+
+    bld.add_pre_fun(pre)

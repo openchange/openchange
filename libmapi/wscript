@@ -101,8 +101,8 @@ def configure(ctx):
 
 def pre(ctx):
     ctx.exec_command('rm -f libmapi/version.h;./script/mkversion.sh VERSION libmapi/version.h ' + VERSION )
-    ctx.exec_command('./libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi libmapi/conf/mapi-codes')
-    ctx.exec_command('./libmapi/conf/mparse.pl --parser=codepage_lcid --outputdir=libmapi libmapi/conf/codepage-lcid')
+    ctx.exec_command('./libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi/ libmapi/conf/mapi-codes')
+    ctx.exec_command('./libmapi/conf/mparse.pl --parser=codepage_lcid --outputdir=libmapi/ libmapi/conf/codepage-lcid')
 
 def post(ctx):
     if ctx.cmd == 'install':

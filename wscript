@@ -19,6 +19,7 @@ def configure(ctx):
     ctx.recurse('libexchange2ical')
     ctx.recurse('libmapiadmin')
     ctx.recurse('libocpf')
+    ctx.recurse('utils')
     ctx.write_config_header('config.h')
 
 def build(ctx):
@@ -27,3 +28,4 @@ def build(ctx):
     ctx.recurse('libexchange2ical')
     ctx.recurse('libmapiadmin')
     ctx.recurse('libocpf')
+    ctx.recurse('utils')

@@ -40,7 +40,6 @@ def build(bld):
                 '../utils/openchange-tools.c'],
             target='exchange2ical',
             includes= ['.', '../', 'build'],
-            depends_on = 'libmapi',
-            use='ICAL POPT mapi'
-            )
+            depends_on = 'mapi',
+            use = ['ICAL', 'POPT', 'mapi'])
 

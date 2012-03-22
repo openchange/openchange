@@ -64,7 +64,7 @@ enum TestResult {
 	ExpectedFailure		/*!< The test was expected to fail, and it did */
 };
 
-#include "utils/mapitest/proto.h"
+#include "mapitest/proto.h"
 
 /**
 	A list of %mapitest tests

@@ -221,6 +221,12 @@ download() {
 # Apply patches to samba4
 #
 patch() {
+
+    pushd samba4/source3
+    sed "s/deps='ndr security NDR_SECURITY samba-util UTIL_TDB'/deps='ndr security NDR_SECURITY samba-util UTIL_TDB ccan'/g" wscript_build > wscript_build2
+    mv wscript_build2 wscript_build
+    popd
+
     case "$HOST_OS" in
 	*freebsd*)
 
@@ -256,7 +262,7 @@ packages() {
 
 	extra=""
 	if [ "$lib" == "lib/ldb" ]; then
-	    extra="--disable-tdb2"
+	    extra="--disable-tdb2 --builtin-libraries=ccan"
 	fi
 
 	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
@@ -293,7 +299,7 @@ compile() {
 
     cd $RUNDIR/../samba4
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
-    ./configure.developer -C --prefix=$SAMBA_PREFIX --disable-tdb2
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --builtin-libraries=ccan,replace --disable-tdb2
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

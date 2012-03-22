@@ -122,6 +122,8 @@ _PUBLIC_ enum MAPISTATUS Release(mapi_object_t *obj)
 	enum MAPISTATUS		retval;
 	uint8_t 		logon_id = 0;
 
+	mapi_response = 0;
+
 	/* Sanity checks */
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);

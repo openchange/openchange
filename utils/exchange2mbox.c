@@ -20,7 +20,7 @@
 */
 
 #include "libmapi/libmapi.h"
-#include <samba/popt.h>
+#include <popt.h>
 #include <ldb.h>
 
 #include <sys/types.h>

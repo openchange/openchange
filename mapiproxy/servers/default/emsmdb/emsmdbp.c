@@ -25,6 +25,7 @@
    \brief EMSMDB Provider implementation
  */
 
+#define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"

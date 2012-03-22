@@ -824,6 +824,21 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 		}
 		return sizeof(mapi_sprop->value.MVl.cValues) + (mapi_sprop->value.MVl.cValues * sizeof (uint32_t));
 	}
+	case PT_MV_CLSID:
+	{
+		uint32_t i;
+		DATA_BLOB b;
+
+		mapi_sprop->value.MVguid.cValues = sprop->value.MVguid.cValues;
+		mapi_sprop->value.MVguid.lpguid = talloc_array (mem_ctx, struct GUID, mapi_sprop->value.MVguid.cValues);
+		for (i = 0; i < mapi_sprop->value.MVguid.cValues; i++) {
+			b.data = sprop->value.MVguid.lpguid[i]->ab;
+			b.length = 16;
+
+			GUID_from_ndr_blob(&b, &(mapi_sprop->value.MVguid.lpguid[i]));
+		}
+		return sizeof(mapi_sprop->value.MVguid.cValues) + (mapi_sprop->value.MVguid.cValues * sizeof (struct GUID));
+	}
         default:
                 printf("unhandled conversion case in cast_mapi_SPropValue(): 0x%x\n", (sprop->ulPropTag & 0xFFFF));
                 OPENCHANGE_ASSERT();
@@ -1412,13 +1427,6 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
 
         return size;
 }
-
-/* _PUBLIC_ size_t set_ExtendedException_size(const struct ExtendedException *ext_exc) */
-/* { */
-/*         size_t size = SIZE_DFLT_EXTENDEDEXCEPTION; */
-
-/*         return size; */
-/* } */
 
 #warning the get_XXX NDR wrapper should be normalized
 /**

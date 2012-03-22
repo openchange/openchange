@@ -349,7 +349,7 @@ arguments with appropriate entries):
 If you need to add a user, run the following command (replacing <username> and
 <password> with appropriate entries):
 
-# samba4/bin/samba-tool newuser <username> <password>
+# samba4/bin/samba-tool user add <username> <password>
 
 [0x5b] Extending Samba AD schema
 ================================
@@ -380,10 +380,7 @@ You now need to add the dispatcher database for user mailboxes.
 
 # ./setup/openchange_provision --openchangedb
 
-You can now create the mailbox for the user in the dispatcher database
-
-# ./setup/openchange_newuser --mailbox <username>
-
+Mailbox will automatically be provisioned by backends when user first logs in.
 
 [0x5c] Setting smb.conf
 =======================

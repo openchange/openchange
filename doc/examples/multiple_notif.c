@@ -39,7 +39,7 @@
 
 #include <libmapi/libmapi.h>
 #include <pthread.h> 
-#include <samba/popt.h>
+#include <popt.h>
 
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 

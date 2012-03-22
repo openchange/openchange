@@ -633,7 +633,7 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
 	/* If length equals length field then skipping subcontext */
 	if (r->length > sizeof (uint16_t)) {
 		_mem_save_mapi_repl_0 = NDR_PULL_GET_MEM_CTX(ndr);
-		r->mapi_repl = talloc_array(_mem_save_mapi_repl_0, struct EcDoRpc_MAPI_REPL, 2);
+		r->mapi_repl = talloc_zero_array(_mem_save_mapi_repl_0, struct EcDoRpc_MAPI_REPL, 2);
 		NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_mapi_repl, 0, r->length - 2));
 		for (cntr_mapi_repl_0 = 0; _ndr_mapi_repl->offset < _ndr_mapi_repl->data_size - 2; cntr_mapi_repl_0++) {
 			NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL(_ndr_mapi_repl, NDR_SCALARS, &r->mapi_repl[cntr_mapi_repl_0]));
@@ -642,6 +642,8 @@ enum ndr_err_code ndr_pull_mapi_response(struct ndr_pull *ndr, int ndr_flags, st
 		r->mapi_repl[cntr_mapi_repl_0].opnum = 0;
 		NDR_CHECK(ndr_pull_subcontext_end(ndr, _ndr_mapi_repl, 4, -1));
 		talloc_free(_ndr_mapi_repl);
+	} else {
+		r->mapi_repl = NULL;
 	}
 
 	_mem_save_handles_0 = NDR_PULL_GET_MEM_CTX(ndr);

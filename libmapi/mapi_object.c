@@ -95,17 +95,19 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 	if (obj->handle == INVALID_HANDLE_VALUE) return;
 
 	retval = Release(obj);
-	if (retval == MAPI_E_SUCCESS) {
-		if (obj->private_data) {
-			talloc_free(obj->private_data);
-		}
-
-		if (obj->store == true && obj->session) {
-			obj->session->logon_ids[obj->logon_id] = 0;
-		}
-
-		mapi_object_reset(obj);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(1, ("Release has failed"));
 	}
+
+	if (obj->private_data) {
+		talloc_free(obj->private_data);
+	}
+
+	if (obj->store == true && obj->session) {
+		obj->session->logon_ids[obj->logon_id] = 0;
+	}
+
+	mapi_object_reset(obj);
 }
 
 

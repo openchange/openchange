@@ -120,7 +120,7 @@ interface property
 		FirstDOW_Saturday	= 0x6
 	} FirstDOW;
 
-	typedef [v1_enum] enum {
+	typedef [enum16bit] enum {
 		ARO_SUBJECT		= 0x0001,
 		ARO_MEETINGTYPE		= 0x0002,
 		ARO_REMINDERDELTA	= 0x0004,

@@ -1699,7 +1699,7 @@ _PUBLIC_ enum MAPISTATUS OpenEmbeddedMessage(mapi_object_t *obj_attach,
 	message->SPropTagArray.aulPropTag = talloc_steal(message, reply->RecipientColumns.aulPropTag);
 
 	for (i = 0; i < reply->RowCount; i++) {
-		emsmdb_get_SRow((TALLOC_CTX *)message, mapi_ctx->lp_ctx,
+		emsmdb_get_SRow((TALLOC_CTX *)message,
 				&(message->SRowSet.aRow[i]), &message->SPropTagArray,
 				reply->RecipientRows[i].RecipientRow.prop_count,
 				&reply->RecipientRows[i].RecipientRow.prop_values,

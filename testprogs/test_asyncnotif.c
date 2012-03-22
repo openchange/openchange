@@ -21,7 +21,7 @@
 
 #include "libmapi/libmapi.h"
 
-#include <samba/popt.h>
+#include <popt.h>
 #include <talloc.h>
 
 static void popt_openchange_version_callback(poptContext con,

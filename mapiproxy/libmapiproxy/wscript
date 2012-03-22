@@ -1,0 +1,35 @@
+#!/usr/bin/env python
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+import os
+
+APPNAME = 'mapiproxy'
+VERSION = '1.0'
+
+def configure(ctx):
+    ctx.check(header_name='inttypes.h')
+    ctx.check(header_name='time.h')
+
+def build(bld):
+    target = bld.shlib(
+        features = 'c cshlib',
+        source = [
+            'dcesrv_mapiproxy_module.c',
+            'dcesrv_mapiproxy_server.c',
+            'dcesrv_mapiproxy_session.c',
+            'openchangedb.c',
+            'openchangedb_table.c',
+            'openchangedb_message.c',
+            'openchangedb_property.c',
+            'mapi_handles.c',
+            'entryid.c',
+            'modules.c'],
+        target = APPNAME,
+        vnum = VERSION,
+        includes = ['.', '../', '../../', 'build'],
+        defines = ['MODULESDIR="%s"' % bld.env.modulesdir],
+        depends_on = ['mapi'],
+        use = ['mapi']
+        )
+    return

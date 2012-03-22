@@ -752,6 +752,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray		*SPropTagArray;
 	struct SPropValue		SPropValue;
 	struct SRowSet			*SRowSet = NULL;
+	struct PropertyRowSet_r		*RowSet = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	mapi_id_t			id_outbox;
 	mapi_object_t			obj_outbox;
@@ -800,12 +801,13 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 
 	/* ResolveNames */
 	retval = ResolveNames(mapi_object_get_session(&obj_message), (const char **)oclient->usernames, 
-			      SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+			      SPropTagArray, &RowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	if (!SRowSet) {
-		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	if (!RowSet) {
+		cast_PropertyRowSet_to_SRowSet(mem_ctx, RowSet, SRowSet);
 	}
 
 	set_usernames_RecipientType(mem_ctx, &index, SRowSet, oclient->mapi_to, flaglist, MAPI_TO);

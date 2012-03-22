@@ -594,7 +594,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
  */
 _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 						     struct emsabp_context *emsabp_ctx,
-						     struct SRow *aRow,
+						     struct PropertyRow_r *aRow,
 						     struct ldb_message *ldb_msg,
 						     uint32_t MId, uint32_t dwFlags,
 						     struct SPropTagArray *pPropTags)
@@ -622,9 +622,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 1. Retrieve property values and build aRow */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = pPropTags->cValues;
-	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+	aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
 
 	for (i = 0; i < aRow->cValues; i++) {
 		ulPropTag = pPropTags->aulPropTag[i];
@@ -635,7 +635,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 		
 		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
-		set_SPropValue(&(aRow->lpProps[i]), data);
+		set_PropertyValue(&(aRow->lpProps[i]), data);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -664,7 +664,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-					    struct SRow *aRow, uint32_t MId, uint32_t dwFlags,
+					    struct PropertyRow_r *aRow, uint32_t MId, uint32_t dwFlags,
 					    struct SPropTagArray *pPropTags)
 {
 	enum MAPISTATUS		retval;
@@ -694,9 +694,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
 	/* Step 2. Retrieve property values and build aRow */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = pPropTags->cValues;
-	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+	aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
 
 	for (i = 0; i < aRow->cValues; i++) {
 		ulPropTag = pPropTags->aulPropTag[i];
@@ -708,7 +708,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 
 		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
-		set_SPropValue(&(aRow->lpProps[i]), data);
+		set_PropertyValue(&(aRow->lpProps[i]), data);
 	}
 
 
@@ -737,14 +737,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-						  struct SRow *aRow, uint32_t dwFlags,
+						  struct PropertyRow_r *aRow, uint32_t dwFlags,
 						  struct PermanentEntryID *permEntryID,
 						  struct PermanentEntryID *parentPermEntryID,
 						  struct ldb_message *msg, bool child)
 {
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		lpProps;
+	struct PropertyValue_r		lpProps;
 	int				proptag;
 	uint32_t			i;
 	uint32_t			containerID = 0;
@@ -771,9 +771,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 	}
 
 	/* Step 2. Allocate SPropValue array and update SRow cValues field */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = 0x0;
-	aRow->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	aRow->lpProps = talloc_zero(mem_ctx, struct PropertyValue_r);
 
 	/* Step 3. Global Address List or real container */
 	if (!msg) {
@@ -804,8 +804,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			default:
 				break;
 			}
-			SRow_addprop(aRow, lpProps);
-			/* SRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
+			PropertyRow_addprop(aRow, lpProps);
+			/* PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
 			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME || 
 			    SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME_UNICODE) {
 				aRow->lpProps[aRow->cValues - 1].value.lpszA = NULL;
@@ -879,7 +879,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			default:
 				break;
 			}
-			SRow_addprop(aRow, lpProps);
+			PropertyRow_addprop(aRow, lpProps);
 		}
 	}
 
@@ -900,10 +900,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE
  */
 _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-						   uint32_t dwFlags, struct SRowSet **SRowSet)
+						   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
 {
 	enum MAPISTATUS			retval;
-	struct SRow			*aRow;
+	struct PropertyRow_r			*aRow;
 	struct PermanentEntryID		gal;
 	struct PermanentEntryID		parentPermEntryID;
 	struct PermanentEntryID		permEntryID;
@@ -920,7 +920,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	uint32_t			i;
 
 	/* Step 1. Build the 'Global Address List' object using PermanentEntryID */
-	aRow = talloc_zero(mem_ctx, struct SRow);
+	aRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	aRow_idx = 0;
 
@@ -948,7 +948,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 			 scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
-	aRow = talloc_realloc(mem_ctx, aRow, struct SRow, aRow_idx + 1);
+	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + 1);
 	retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_CONTAINER, res->msgs[0], &parentPermEntryID);
 	emsabp_table_fetch_attrs(mem_ctx, emsabp_ctx, &aRow[aRow_idx], dwFlags, &parentPermEntryID, NULL, res->msgs[0], false);
 	aRow_idx++;
@@ -979,7 +979,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 		OPENCHANGE_RETVAL_IF(1, MAPI_E_CORRUPT_STORE, aRow);
 	}
 
-	aRow = talloc_realloc(mem_ctx, aRow, struct SRow, aRow_idx + res->count + 1);
+	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + res->count + 1);
 
 	for (i = 0; res->msgs[i]; i++) {
 		retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_CONTAINER, res->msgs[i], &permEntryID);
@@ -1012,7 +1012,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE 
  */
 _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-							   uint32_t dwFlags, struct SRowSet **SRowSet)
+							   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
 {
 	return MAPI_E_SUCCESS;
 }
@@ -1078,16 +1078,16 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			return MAPI_E_NO_SUPPORT;
 		} 
 
-		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		attr = (char *)get_PropertyValue_data(res_prop->lpProp);
 		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
 		}
 		
 		if ((res_prop->ulPropTag & 0xFFFF) == 0x101e) {
-			struct StringArray_r *attr_ml = (struct StringArray_r *) get_SPropValue_data(res_prop->lpProp);
+			struct StringArray_r *attr_ml = (struct StringArray_r *) get_PropertyValue_data(res_prop->lpProp);
 			attr = (char *)attr_ml->lppszA[0];
 		} else {
-			attr = (char *)get_SPropValue_data(res_prop->lpProp);
+			attr = (char *)get_PropertyValue_data(res_prop->lpProp);
 		}
 		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;

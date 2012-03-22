@@ -71,9 +71,9 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	uint32_t		i;
 	uint32_t		propID = -1;
 	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRow		*SRow;
+	struct PropertyRow_r	*Row;
 	struct StringArray_r	*slpstr;
-	struct SPropValue	*lpProp;
+	struct PropertyValue_r	*lpProp;
 
 	/* Sanity checks */
 	if (!r->out.ppRows) return false;
@@ -91,8 +91,8 @@ bool mapiproxy_NspiGetProps(struct dcesrv_call_state *dce_call, struct NspiGetPr
 	if (propID == -1) return false;
 
 	/* Step 2. Retrieve the SLPSTRArray */
-	SRow = *r->out.ppRows;
-	lpProp = &SRow->lpProps[propID];
+	Row = *r->out.ppRows;
+	lpProp = &Row->lpProps[propID];
 
 	if (!lpProp) return false;
 	if (lpProp->ulPropTag != PR_EMS_AB_NETWORK_ADDRESS) return false;
@@ -127,8 +127,8 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	uint32_t		i;
 	uint32_t		propID = -1;
 	struct SPropTagArray	*SPropTagArray = NULL;
-	struct SRowSet		*SRowSet;
-	struct SPropValue	*lpProp;
+	struct PropertyRowSet_r	*RowSet;
+	struct PropertyValue_r	*lpProp;
 	char			*lpszA;
 	char			*exchname;
 
@@ -151,8 +151,8 @@ bool mapiproxy_NspiQueryRows(struct dcesrv_call_state *dce_call, struct NspiQuer
 	if (propID == -1) return false;
 
 	/* Retrieve the lpszA */
-	SRowSet = *r->out.ppRows;
-	lpProp = &(SRowSet->aRow->lpProps[propID]);
+	RowSet = *r->out.ppRows;
+	lpProp = &(RowSet->aRow->lpProps[propID]);
 
 	if (!lpProp) return false;
 	if (lpProp->ulPropTag != PR_EMS_AB_HOME_MDB) return false;

@@ -242,7 +242,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 					struct SPropTagArray *pPropTags,
 					struct PropertyTagArray_r *MIds, 
 					uint32_t count,
-					struct SRowSet **ppRows)
+					struct PropertyRowSet_r **ppRows)
 {
 	struct NspiQueryRows		r;
 	NTSTATUS			status;
@@ -299,7 +299,7 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
    \param nspi_ctx pointer to the NSPI connection context
    \param mem_ctx pointer to the memory context
    \param SortType the table sort order to use
-   \param pTarget SPropValue struct holding the value being sought
+   \param pTarget PropertyValue_r struct holding the value being sought
    \param pPropTags pointer to an array of property tags of columns
    that the client wants to be returned for each row returned.
    \param pMIds pointer to a list of Mid that comprise a restricted
@@ -324,10 +324,10 @@ _PUBLIC_ enum MAPISTATUS nspi_QueryRows(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_SeekEntries(struct nspi_context *nspi_ctx,
 					  TALLOC_CTX *mem_ctx,
 					  enum TableSortOrders SortType,
-					  struct SPropValue *pTarget,
+					  struct PropertyValue_r *pTarget,
 					  struct SPropTagArray *pPropTags,
 					  struct PropertyTagArray_r *pMIds,
-					  struct SRowSet **pRows)
+					  struct PropertyRowSet_r **pRows)
 {
 	struct NspiSeekEntries		r;
 	NTSTATUS			status;
@@ -406,7 +406,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetMatches(struct nspi_context *nspi_ctx,
 					 struct SPropTagArray *pPropTags,
 					 struct Restriction_r *Filter,
 					 uint32_t ulRequested,
-					 struct SRowSet **ppRows,
+					 struct PropertyRowSet_r **ppRows,
 					 struct PropertyTagArray_r **ppOutMIds)
 {
 	struct NspiGetMatches		r;
@@ -616,13 +616,13 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
 				       TALLOC_CTX *mem_ctx,
 				       struct SPropTagArray *pPropTags, 
 				       struct PropertyTagArray_r *MId,
-				       struct SRowSet **SRowSet)
+				       struct PropertyRowSet_r **SRowSet)
 
 {
 	struct NspiGetProps	r;
 	NTSTATUS		status;
 	enum MAPISTATUS		retval;
-	struct SRow		*ppRows;
+	struct PropertyRow_r	*ppRows;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -641,7 +641,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
 
  	r.in.pPropTags = pPropTags;
 
-	ppRows = talloc(mem_ctx, struct SRow);
+	ppRows = talloc(mem_ctx, struct PropertyRow_r);
 	r.out.ppRows = &ppRows;
 
 	status = dcerpc_NspiGetProps_r(nspi_ctx->rpc_connection->binding_handle, mem_ctx, &r);
@@ -650,8 +650,8 @@ _PUBLIC_ enum MAPISTATUS nspi_GetProps(struct nspi_context *nspi_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL)
 
 	SRowSet[0]->cRows = 1;
-	SRowSet[0]->aRow = talloc(mem_ctx, struct SRow);
-	SRowSet[0]->aRow->ulAdrEntryPad = ppRows->ulAdrEntryPad;
+	SRowSet[0]->aRow = talloc(mem_ctx, struct PropertyRow_r);
+	SRowSet[0]->aRow->Reserved = ppRows->Reserved;
 	SRowSet[0]->aRow->cValues = ppRows->cValues;
 	SRowSet[0]->aRow->lpProps = ppRows->lpProps;
 	
@@ -718,7 +718,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
 				       TALLOC_CTX *mem_ctx,
 				       uint32_t MId,
 				       struct SPropTagArray *pPropTags,
-				       struct SRow *pRow)
+				       struct PropertyRow_r *pRow)
 {
 	struct NspiModProps	r;
 	NTSTATUS		status;
@@ -775,7 +775,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ModProps(struct nspi_context *nspi_ctx,
 _PUBLIC_ enum MAPISTATUS nspi_GetSpecialTable(struct nspi_context *nspi_ctx, 
 					      TALLOC_CTX *mem_ctx,
 					      uint32_t Type,
-					      struct SRowSet **ppRows)
+					      struct PropertyRowSet_r **ppRows)
 {
 	struct NspiGetSpecialTable	r;
 	NTSTATUS			status;
@@ -832,7 +832,7 @@ _PUBLIC_ enum MAPISTATUS nspi_GetTemplateInfo(struct nspi_context *nspi_ctx,
 					      uint32_t dwFlags,
 					      uint32_t ulType,
 					      char *pDN,
-					      struct SRow **ppData)
+					      struct PropertyRow_r **ppData)
 {
 	struct NspiGetTemplateInfo	r;
 	NTSTATUS			status;
@@ -1078,7 +1078,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 					   TALLOC_CTX *mem_ctx,
 					   const char **usernames, 
 					   struct SPropTagArray *pPropTags, 
-					   struct SRowSet ***pppRows,
+					   struct PropertyRowSet_r ***pppRows,
 					   struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNames r;
@@ -1141,7 +1141,7 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNamesW(struct nspi_context *nspi_ctx,
 					    TALLOC_CTX *mem_ctx,
 					    const char **usernames, 
 					    struct SPropTagArray *pPropTags, 
-					    struct SRowSet ***pppRows,
+					    struct PropertyRowSet_r ***pppRows,
 					    struct PropertyTagArray_r ***pppMIds)
 {
 	struct NspiResolveNamesW	r;

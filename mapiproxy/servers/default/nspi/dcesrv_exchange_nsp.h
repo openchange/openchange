@@ -125,12 +125,12 @@ enum MAPISTATUS		emsabp_set_EphemeralEntryID(struct emsabp_context *, uint32_t, 
 enum MAPISTATUS		emsabp_set_PermanentEntryID(struct emsabp_context *, uint32_t, struct ldb_message *, struct PermanentEntryID *);
 enum MAPISTATUS		emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *, struct EphemeralEntryID *, struct Binary_r *);
 enum MAPISTATUS		emsabp_PermanentEntryID_to_Binary_r(TALLOC_CTX *, struct PermanentEntryID *, struct Binary_r *);
-enum MAPISTATUS		emsabp_get_HierarchyTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
-enum MAPISTATUS		emsabp_get_CreationTemplatesTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct SRowSet **);
+enum MAPISTATUS		emsabp_get_HierarchyTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct PropertyRowSet_r **);
+enum MAPISTATUS		emsabp_get_CreationTemplatesTable(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct PropertyRowSet_r **);
 void			*emsabp_query(TALLOC_CTX *, struct emsabp_context *, struct ldb_message *, uint32_t, uint32_t, uint32_t);
-enum MAPISTATUS		emsabp_fetch_attrs_from_msg(TALLOC_CTX *, struct emsabp_context *, struct SRow *, struct ldb_message *, uint32_t, uint32_t, struct SPropTagArray *);
-enum MAPISTATUS		emsabp_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, uint32_t, struct SPropTagArray *);
-enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct SRow *, uint32_t, struct PermanentEntryID *, 
+enum MAPISTATUS		emsabp_fetch_attrs_from_msg(TALLOC_CTX *, struct emsabp_context *, struct PropertyRow_r *, struct ldb_message *, uint32_t, uint32_t, struct SPropTagArray *);
+enum MAPISTATUS		emsabp_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct PropertyRow_r *, uint32_t, uint32_t, struct SPropTagArray *);
+enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *, struct PropertyRow_r *, uint32_t, struct PermanentEntryID *, 
 						 struct PermanentEntryID *, struct ldb_message *, bool);
 enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct PropertyTagArray_r *, struct Restriction_r *, struct STAT *, uint32_t);
 enum MAPISTATUS		emsabp_search_dn(struct emsabp_context *, const char *, struct ldb_message **);

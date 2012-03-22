@@ -94,23 +94,23 @@ __BEGIN_DECLS
 struct nspi_context	*nspi_bind(TALLOC_CTX *, struct dcerpc_pipe *, struct cli_credentials *, uint32_t, uint32_t, uint32_t);
 enum MAPISTATUS		nspi_unbind(struct nspi_context *);
 enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, uint32_t *);
-enum MAPISTATUS		nspi_QueryRows(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MIds, uint32_t, struct SRowSet **);
-enum MAPISTATUS		nspi_SeekEntries(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct SPropValue *, struct SPropTagArray *, struct PropertyTagArray_r *pMIds, struct SRowSet **);
-enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, uint32_t ulRequested, struct SRowSet **, struct PropertyTagArray_r **ppOutMIds);
+enum MAPISTATUS		nspi_QueryRows(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MIds, uint32_t, struct PropertyRowSet_r **);
+enum MAPISTATUS		nspi_SeekEntries(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct PropertyValue_r *, struct SPropTagArray *, struct PropertyTagArray_r *pMIds, struct PropertyRowSet_r **);
+enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, uint32_t ulRequested, struct PropertyRowSet_r **, struct PropertyTagArray_r **ppOutMIds);
 enum MAPISTATUS		nspi_ResortRestriction(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct PropertyTagArray_r *pInMIds, struct PropertyTagArray_r **ppMIds);
 enum MAPISTATUS		nspi_DNToMId(struct nspi_context *, TALLOC_CTX *, struct StringsArray_r *, struct PropertyTagArray_r **ppMIds);
 enum MAPISTATUS		nspi_GetPropList(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct SPropTagArray **);
-enum MAPISTATUS		nspi_GetProps(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MId, struct SRowSet **);
+enum MAPISTATUS		nspi_GetProps(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MId, struct PropertyRowSet_r **);
 enum MAPISTATUS		nspi_CompareMIds(struct nspi_context *, TALLOC_CTX *, uint32_t, uint32_t, uint32_t *);
-enum MAPISTATUS		nspi_ModProps(struct nspi_context *, TALLOC_CTX *, uint32_t, struct SPropTagArray *, struct SRow *);
-enum MAPISTATUS		nspi_GetSpecialTable(struct nspi_context *, TALLOC_CTX *, uint32_t, struct SRowSet **);
-enum MAPISTATUS		nspi_GetTemplateInfo(struct nspi_context *, TALLOC_CTX *, uint32_t, uint32_t, char *, struct SRow **);
+enum MAPISTATUS		nspi_ModProps(struct nspi_context *, TALLOC_CTX *, uint32_t, struct SPropTagArray *, struct PropertyRow_r *);
+enum MAPISTATUS		nspi_GetSpecialTable(struct nspi_context *, TALLOC_CTX *, uint32_t, struct PropertyRowSet_r **);
+enum MAPISTATUS		nspi_GetTemplateInfo(struct nspi_context *, TALLOC_CTX *, uint32_t, uint32_t, char *, struct PropertyRow_r **);
 enum MAPISTATUS		nspi_ModLinkAtt(struct nspi_context *, bool, uint32_t, uint32_t, struct BinaryArray_r *);
 enum MAPISTATUS		nspi_QueryColumns(struct nspi_context *, TALLOC_CTX *, bool, struct SPropTagArray **);
 enum MAPISTATUS		nspi_GetNamesFromIDs(struct nspi_context *, TALLOC_CTX *, struct FlatUID_r *, struct SPropTagArray *, struct SPropTagArray **, struct PropertyNameSet_r **);
 enum MAPISTATUS		nspi_GetIDsFromNames(struct nspi_context *, TALLOC_CTX *, bool, uint32_t, struct PropertyName_r *, struct SPropTagArray **);
-enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct PropertyTagArray_r ***);
-enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct SRowSet ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNames(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
+enum MAPISTATUS		nspi_ResolveNamesW(struct nspi_context *, TALLOC_CTX *, const char **, struct SPropTagArray *, struct PropertyRowSet_r ***, struct PropertyTagArray_r ***);
 
 /* The following public definitions come from libmapi/emsmdb.c */
 NTSTATUS		emsmdb_transaction_null(struct emsmdb_context *, struct mapi_response **);
@@ -167,7 +167,7 @@ void			mapidump_SPropValue(struct SPropValue, const char *);
 void			mapidump_SPropTagArray(struct SPropTagArray *);
 void			mapidump_SRowSet(struct SRowSet *, const char *);
 void			mapidump_SRow(struct SRow *, const char *);
-void			mapidump_PAB_entry(struct SRow *);
+void			mapidump_PAB_entry(struct PropertyRow_r *);
 void			mapidump_Recipients(const char **, struct SRowSet *, struct PropertyTagArray_r *flaglist);
 void			mapidump_date(struct mapi_SPropValue_array *, uint32_t, const char *);
 void			mapidump_date_SPropValue(struct SPropValue, const char *, const char *);
@@ -289,11 +289,24 @@ const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
 bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);
 
+struct PropertyValue_r	*get_PropertyValue_PropertyRow(struct PropertyRow_r *, enum MAPITAGS);
+struct PropertyValue_r	*get_PropertyValue_PropertyRowSet(struct PropertyRowSet_r *, enum MAPITAGS);
+const void		*get_PropertyValue_PropertyRowSet_data(struct PropertyRowSet_r *, uint32_t);
+bool			set_PropertyValue(struct PropertyValue_r *, const void *);
+const void		*get_PropertyValue(struct PropertyValue_r *, enum MAPITAGS);
+const void		*get_PropertyValue_data(struct PropertyValue_r *);
+enum MAPISTATUS		PropertyRow_addprop(struct PropertyRow_r *, struct PropertyValue_r);
+const void		*find_PropertyValue_data(struct PropertyRow_r *, uint32_t);
+uint32_t		PropertyRowSet_propcpy(TALLOC_CTX *, struct PropertyRowSet_r *, struct PropertyValue_r);
+void			cast_PropertyValue_to_SPropValue(struct PropertyValue_r *, struct SPropValue *);
+void			cast_PropertyRow_to_SRow(TALLOC_CTX *, struct PropertyRow_r *, struct SRow *);
+void			cast_PropertyRowSet_to_SRowSet(TALLOC_CTX *, struct PropertyRowSet_r *, struct SRowSet *);
+
 /* The following public definitions come from libmapi/IABContainer.c */
-enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct SRowSet **,  struct PropertyTagArray_r **, uint32_t);
-enum MAPISTATUS		GetGALTable(struct mapi_session *, struct SPropTagArray *, struct SRowSet **, uint32_t, uint8_t);
+enum MAPISTATUS		ResolveNames(struct mapi_session *, const char **, struct SPropTagArray *, struct PropertyRowSet_r **,  struct PropertyTagArray_r **, uint32_t);
+enum MAPISTATUS		GetGALTable(struct mapi_session *, struct SPropTagArray *, struct PropertyRowSet_r **, uint32_t, uint8_t);
 enum MAPISTATUS		GetGALTableCount(struct mapi_session *, uint32_t *);
-enum MAPISTATUS		GetABRecipientInfo(struct mapi_session *, const char *, struct SPropTagArray *, struct SRowSet **);
+enum MAPISTATUS		GetABRecipientInfo(struct mapi_session *, const char *, struct SPropTagArray *, struct PropertyRowSet_r **);
 
 /* The following public definitions come from libmapi/IProfAdmin.c */
 enum MAPISTATUS		mapi_profile_add_string_attr(struct mapi_context *, const char *, const char *, const char *);

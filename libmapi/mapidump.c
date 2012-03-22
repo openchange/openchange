@@ -219,17 +219,17 @@ _PUBLIC_ void mapidump_SRow(struct SRow *aRow, const char *sep)
   The SRow is assumed to contain entries for PR_ADDRTYPE_UNICODE, PR_DISPLAY_NAME_UNICODE,
   PR_EMAIL_ADDRESS_UNICODE and PR_ACCOUNT_UNICODE.
 */
-_PUBLIC_ void mapidump_PAB_entry(struct SRow *aRow)
+_PUBLIC_ void mapidump_PAB_entry(struct PropertyRow_r *aRow)
 {
 	const char	*addrtype;
 	const char	*name;
 	const char	*email;
 	const char	*account;
 
-	addrtype = (const char *)find_SPropValue_data(aRow, PR_ADDRTYPE_UNICODE);
-	name = (const char *)find_SPropValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
-	email = (const char *)find_SPropValue_data(aRow, PR_EMAIL_ADDRESS_UNICODE);
-	account = (const char *)find_SPropValue_data(aRow, PR_ACCOUNT_UNICODE);
+	addrtype = (const char *)find_PropertyValue_data(aRow, PR_ADDRTYPE_UNICODE);
+	name = (const char *)find_PropertyValue_data(aRow, PR_DISPLAY_NAME_UNICODE);
+	email = (const char *)find_PropertyValue_data(aRow, PR_EMAIL_ADDRESS_UNICODE);
+	account = (const char *)find_PropertyValue_data(aRow, PR_ACCOUNT_UNICODE);
 
 	printf("[%s] %s:\n\tName: %-25s\n\tEmail: %-25s\n", 
 	       addrtype, account, name, email);

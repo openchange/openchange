@@ -224,9 +224,10 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 {
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray;
+	struct PropertyRowSet_r		*RowSet = NULL;
 	struct SRowSet			*SRowSet = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
-	struct SPropValue		SPropValue;
+	struct PropertyValue_r		value;
 	struct SPropValue		lpProps[4];
 	const char			*username[2];
 	const char			*body;
@@ -253,28 +254,31 @@ _PUBLIC_ bool mapitest_common_message_fill(struct mapitest *mt,
 	username[0] = (char *)mt->profile->mailbox;
 	username[1] = NULL;
 
-	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mt->mem_ctx, struct PropertyRowSet_r);
 	flaglist = talloc_zero(mt->mem_ctx, struct PropertyTagArray_r);
 
 	retval = ResolveNames(mapi_object_get_session(obj_message), username, SPropTagArray, 
-			      &SRowSet, &flaglist, MAPI_UNICODE);
+			      &RowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "(Common) ResolveNames");
-		talloc_free(SRowSet);
+		talloc_free(RowSet);
 		talloc_free(flaglist);
 		return false;
 	}
 
-	SPropValue.ulPropTag = PR_SEND_INTERNET_ENCODING;
-	SPropValue.value.l = 0;
-	ret = SRowSet_propcpy(mt->mem_ctx, SRowSet, SPropValue);
+	value.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	value.value.l = 0;
+	ret = PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
 	if (ret) return false;
+
+	SRowSet = talloc_zero(RowSet, struct SRowSet);
+	cast_PropertyRowSet_to_SRowSet(SRowSet, RowSet, SRowSet);
 
 	/* Set Recipients */
 	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
 	retval = ModifyRecipients(obj_message, SRowSet);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(flaglist);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "(Common) ModifyRecipients");

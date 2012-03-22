@@ -66,7 +66,7 @@
 _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
 				      const char **usernames, 
 				      struct SPropTagArray *props, 
-				      struct SRowSet **rowset, 
+				      struct PropertyRowSet_r **rowset, 
 				      struct PropertyTagArray_r **flaglist, 
 				      uint32_t flags)
 {
@@ -150,20 +150,20 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
  */
 _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 				     struct SPropTagArray *SPropTagArray, 
-				     struct SRowSet **SRowSet, 
+				     struct PropertyRowSet_r **rowsetp,
 				     uint32_t count,
 				     uint8_t ulFlags)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
-	struct SRowSet		*srowset;
+	struct PropertyRowSet_r	*rowset;
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi, MAPI_E_SESSION_LIMIT, NULL);
 	OPENCHANGE_RETVAL_IF(!session->nspi->ctx, MAPI_E_SESSION_LIMIT, NULL);
-	OPENCHANGE_RETVAL_IF(!SRowSet, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!rowsetp, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(session, 0, "GetGALTable");
@@ -176,10 +176,10 @@ _PUBLIC_ enum MAPISTATUS GetGALTable(struct mapi_session *session,
 		nspi->pStat->TotalRecs = 0xffffffff;
 	}
 
-	srowset = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi, mem_ctx, SPropTagArray, NULL, count, &srowset);
-	srowset = talloc_steal(session, srowset);
-	*SRowSet = srowset;
+	rowset = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_QueryRows(nspi, mem_ctx, SPropTagArray, NULL, count, &rowset);
+	rowset = talloc_steal(session, rowset);
+	*rowsetp = rowset;
 
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 	talloc_free(mem_ctx);
@@ -217,7 +217,7 @@ _PUBLIC_ enum MAPISTATUS GetGALTableCount(struct mapi_session *session,
 	TALLOC_CTX		*mem_ctx;
 	struct nspi_context	*nspi;
 	enum MAPISTATUS		retval;
-	struct SRowSet		*srowset;
+	struct PropertyRowSet_r	*rowset;
 
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_SESSION_LIMIT, NULL);
@@ -232,8 +232,8 @@ _PUBLIC_ enum MAPISTATUS GetGALTableCount(struct mapi_session *session,
 	nspi->pStat->NumPos = 0;
 	nspi->pStat->TotalRecs = 0xffffffff;
 
-	srowset = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi, mem_ctx, NULL, NULL, 0, &srowset);
+	rowset = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_QueryRows(nspi, mem_ctx, NULL, NULL, 0, &rowset);
 
 	*totalRecs = nspi->pStat->TotalRecs;
 	
@@ -273,12 +273,12 @@ _PUBLIC_ enum MAPISTATUS GetGALTableCount(struct mapi_session *session,
 _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 				       const char *username,
 				       struct SPropTagArray *pPropTags,
-				       struct SRowSet **ppRowSet)
+				       struct PropertyRowSet_r **ppRowSet)
 {
 	enum MAPISTATUS			retval;
 	TALLOC_CTX			*mem_ctx;
 	struct nspi_context		*nspi_ctx;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct SPropTagArray		*SPropTagArray = NULL;
 	struct PropertyTagArray_r	*pMId = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
@@ -302,7 +302,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 	usernames[0] = username;
 	usernames[1] = NULL;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0xc,
 					  PR_ENTRYID,
 					  PR_DISPLAY_NAME_UNICODE,
@@ -316,15 +316,15 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
 					  PR_7BIT_DISPLAY_NAME_UNICODE,
 					  PR_SMTP_ADDRESS_UNICODE);
-	retval = ResolveNames(session, usernames, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+	retval = ResolveNames(session, usernames, SPropTagArray, &RowSet, &flaglist, MAPI_UNICODE);
 	MAPIFreeBuffer(SPropTagArray);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
-	username = (const char *) get_SPropValue_SRowSet_data(SRowSet, PR_7BIT_DISPLAY_NAME_UNICODE);
-	email = talloc_strdup(mem_ctx, (const char *) get_SPropValue_SRowSet_data(SRowSet, PR_EMAIL_ADDRESS_UNICODE));
-	MAPIFreeBuffer(SRowSet);
+	username = (const char *) get_PropertyValue_PropertyRowSet_data(RowSet, PR_7BIT_DISPLAY_NAME_UNICODE);
+	email = talloc_strdup(mem_ctx, (const char *) get_PropertyValue_PropertyRowSet_data(RowSet, PR_EMAIL_ADDRESS_UNICODE));
+	MAPIFreeBuffer(RowSet);
 
 	/* Step 2. Map recipient DN to MId */
 	pNames.Count = 0x1;
@@ -348,16 +348,16 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 		SPropTagArray = pPropTags;
 	}
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_GetProps(nspi_ctx, SRowSet, SPropTagArray, pMId, &SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_GetProps(nspi_ctx, RowSet, SPropTagArray, pMId, &RowSet);
 	if (allocated == true) {
 		MAPIFreeBuffer(SPropTagArray);
 	}
 	MAPIFreeBuffer(pMId);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	SRowSet = talloc_steal((TALLOC_CTX *)session, SRowSet);
-	*ppRowSet = SRowSet;
+	RowSet = talloc_steal((TALLOC_CTX *)session, RowSet);
+	*ppRowSet = RowSet;
 
 	talloc_free(mem_ctx);
 

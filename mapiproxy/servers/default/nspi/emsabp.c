@@ -452,20 +452,6 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
-	case PR_SMTP_ADDRESS:
-	case PR_SMTP_ADDRESS_UNICODE:
-	  data = NULL;
-	  ldb_element = ldb_msg_find_element(msg, emsabp_property_get_attribute(PR_EMS_AB_PROXY_ADDRESSES_UNICODE));
-	  if (ldb_element) {
-		  for (i = 0; !data && i < ldb_element->num_values; i++) {
-			  ldb_string = (const char *) ldb_element->values[i].data;
-			  if (!strncmp(ldb_string, "SMTP:", 5)) {
-				  data = (void *) talloc_strdup(mem_ctx, ldb_string + 5);
-			  }
-		  }
-	  }
-
-	  return data;
 	case PR_OBJECT_TYPE:
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = MAPI_MAILUSER;

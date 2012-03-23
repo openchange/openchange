@@ -343,7 +343,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct PropertyRowSet_r		*pRows;
-	uint32_t			i, j;
+	uint32_t			i, j, count;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -391,15 +391,19 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		if (ldb_res->count) {
-			pRows->cRows = ldb_res->count - r->in.pStat->NumPos;
-			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pRows->cRows);
+		count = ldb_res->count - r->in.pStat->NumPos;
+		if (r->in.Count < count) {
+			count = r->in.Count;
+		}
+		if (count) {
+			pRows->cRows = count;
+			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, count);
 		}
 
 		/* fetch required attributes for every entry found */
-		for (i = r->in.pStat->NumPos; i < ldb_res->count; i++) {
-			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &(pRows->aRow[i-r->in.pStat->NumPos]),
-							     ldb_res->msgs[i], 0, r->in.dwFlags, pPropTags);
+		for (i = 0; i < count; i++) {
+			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
+							     ldb_res->msgs[i+r->in.pStat->NumPos], 0, r->in.dwFlags, pPropTags);
 			if (!MAPI_STATUS_IS_OK(retval)) {
 				goto failure;
 			}

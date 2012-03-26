@@ -60,6 +60,10 @@ __BEGIN_DECLS
 void obfuscate_data(uint8_t *, uint32_t, uint8_t);
 enum ndr_err_code ndr_pull_lzxpress_decompress(struct ndr_pull *, struct ndr_pull **, ssize_t);
 enum ndr_err_code ndr_push_lzxpress_compress(struct ndr_push *, struct ndr_push *);
+enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *, int, uint16_t, const struct ExceptionInfo *, const struct ExtendedException *);
+enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *, int, uint16_t, const struct ExceptionInfo *, struct ExtendedException *);
+enum ndr_err_code ndr_push_AppointmentRecurrencePattern(struct ndr_push *, int, const struct AppointmentRecurrencePattern *);
+enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull *, int, struct AppointmentRecurrencePattern *);
 
 /* The following private definitions come from libmapi/nspi.c */
 int nspi_disconnect_dtor(void *);

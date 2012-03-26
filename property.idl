@@ -155,44 +155,9 @@ interface property
 	} RecurrencePattern;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {	
-		uint32						ReservedBlockEE1Size;
-		[size_is(ReservedBlockEE1Size)] uint8		ReservedBlockEE1[];
-		uint32						StartDateTime;			
-		uint32						EndDateTime;
-		uint32						OriginalStartDate;
-		uint16						WideCharSubjectLength;
-		[size_is(WideCharSubjectLength+1)] uint16	WideCharSubject[];
-		uint16						WideCharLocationLength;
-		[size_is(WideCharLocationLength+1)] uint16	WideCharLocation[];
-		uint32						ReservedBlockEE2Size;
-		[size_is(ReservedBlockEE2Size)]	uint8		ReservedBlockEE2[];
-	} OldExtendedException;
-	
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint32						ChangeHighlightSize;
-		uint32						ChangeHighlightValue;
-		uint32						Reserved;
-	} ChangeHighlight;
-
-	typedef [public,flag(NDR_NOALIGN)] struct {	
-		ChangeHighlight					ChangeHighlight;
-		uint32						ReservedBlockEE1Size;
-		[size_is(ReservedBlockEE1Size)] uint8		ReservedBlockEE1[];
-		uint32						StartDateTime;			
-		uint32						EndDateTime;
-		uint32						OriginalStartDate;
-		uint16						WideCharSubjectLength;
-		[size_is(WideCharSubjectLength+1)] uint16	WideCharSubject[];
-		uint16						WideCharLocationLength;
-		[size_is(WideCharLocationLength+1)] uint16	WideCharLocation[];
-		uint32						ReservedBlockEE2Size;
-		[size_is(ReservedBlockEE2Size)]	uint8		ReservedBlockEE2[];
-	} ExtendedException;
-
-	typedef [public,flag(NDR_NOALIGN)] struct {	
 		uint16				msgLength;
 		uint16				msgLength2;
-		[size_is(msgLength)]	uint8	msg[];
+		uint8				msg[msgLength2];
 	} Exception_Msg;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
@@ -210,27 +175,43 @@ interface property
 	} Exception_Value;
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
-			uint32									StartDateTime;
-			uint32									EndDateTime;
-			uint32									OriginalStartDate;
-			OverrideFlags								OverrideFlags;
-			[switch_is(OverrideFlags & 0x0001)]	Exception_Value			Subject;
-			[switch_is(OverrideFlags & 0x0002)]	Exception_Value			MeetingType;
-			[switch_is(OverrideFlags & 0x0004)]	Exception_Value			ReminderDelta;
-			[switch_is(OverrideFlags & 0x0008)]	Exception_Value			ReminderSet;
-			[switch_is(OverrideFlags & 0x0010)]	Exception_Value			Location;
-			[switch_is(OverrideFlags & 0x0020)]	Exception_Value			BusyStatus;
-			[switch_is(OverrideFlags & 0x0040)]	Exception_Value			Attachment;
-			[switch_is(OverrideFlags & 0x0080)]	Exception_Value			SubType;
-			[switch_is(OverrideFlags & 0x0100)]	Exception_Value			AppointmentColor;
+		uint32								StartDateTime;
+		uint32								EndDateTime;
+		uint32								OriginalStartDate;
+		OverrideFlags							OverrideFlags;
+		[switch_is(OverrideFlags & 0x0001)]	Exception_Value		Subject;
+		[switch_is(OverrideFlags & 0x0002)]	Exception_Value		MeetingType;
+		[switch_is(OverrideFlags & 0x0004)]	Exception_Value		ReminderDelta;
+		[switch_is(OverrideFlags & 0x0008)]	Exception_Value		ReminderSet;
+		[switch_is(OverrideFlags & 0x0010)]	Exception_Value		Location;
+		[switch_is(OverrideFlags & 0x0020)]	Exception_Value		BusyStatus;
+		[switch_is(OverrideFlags & 0x0040)]	Exception_Value		Attachment;
+		[switch_is(OverrideFlags & 0x0080)]	Exception_Value		SubType;
+		[switch_is(OverrideFlags & 0x0100)]	Exception_Value		AppointmentColor;
 	} ExceptionInfo;
 
-	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
-		[case(0x3008)] OldExtendedException	OldExtendedException;
-		[default] ExtendedException		ExtendedException;
-	} ExtendedExceptionData;
-
 	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32						ChangeHighlightSize;
+		uint32						ChangeHighlightValue;
+		uint8						Reserved[ChangeHighlightSize-4];
+	} ChangeHighlight;
+
+	typedef [nopull,nopush,flag(NDR_NOALIGN)] struct {	
+		ChangeHighlight					ChangeHighlight;
+		uint32						ReservedBlockEE1Size;
+		uint8						ReservedBlockEE1[ReservedBlockEE1Size];
+		uint32						StartDateTime;			
+		uint32						EndDateTime;
+		uint32						OriginalStartDate;
+		uint16						WideCharSubjectLength;
+		uint16						WideCharSubject[WideCharSubjectLength];
+		uint16						WideCharLocationLength;
+		uint16						WideCharLocation[WideCharLocationLength];
+		uint32						ReservedBlockEE2Size;
+		uint8						ReservedBlockEE2[ReservedBlockEE2Size];
+	} ExtendedException;
+
+	typedef [nopull,nopush,flag(NDR_NOALIGN)] struct {
 		RecurrencePattern					RecurrencePattern;
 		uint32							ReaderVersion2;
 		uint32							WriterVersion2;
@@ -240,8 +221,7 @@ interface property
 		ExceptionInfo						ExceptionInfo[ExceptionCount];
 		uint32							ReservedBlock1Size;
 		uint32							ReservedBlock1[ReservedBlock1Size];
-		// // ExtendedException					ExtendedException;
-		[switch_is(WriterVersion2)] ExtendedExceptionData	ExtendedExceptionData[ExceptionCount];
+		ExtendedException					ExtendedException[ExceptionCount];
 		uint32							ReservedBlock2Size;
 		uint32							ReservedBlock2[ReservedBlock2Size];
 	} AppointmentRecurrencePattern;

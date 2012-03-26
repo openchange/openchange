@@ -1581,9 +1581,11 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		switch (table_object->object.table->ulType) {
 		case MAPISTORE_FOLDER_TABLE:
 			ret = emsmdbp_object_open_folder(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFMId, &rowobject);
-			mapistore_folder = emsmdbp_is_mapistore(rowobject);
-			if (mapistore_folder) {
-				contextID = emsmdbp_get_contextID(rowobject);
+			if (ret == MAPISTORE_SUCCESS) {
+				mapistore_folder = emsmdbp_is_mapistore(rowobject);
+				if (mapistore_folder) {
+					contextID = emsmdbp_get_contextID(rowobject);
+				}
 			}
 			break;
 		case MAPISTORE_MESSAGE_TABLE:

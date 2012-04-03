@@ -2462,7 +2462,7 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 				      struct mapi_session *session)
 {
 	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		*SRowSet;
+	struct PropertyRowSet_r	*RowSet;
 	uint32_t		i;
 	uint32_t		count;
 	uint8_t			ulFlags;
@@ -2490,18 +2490,18 @@ static bool openchangeclient_userlist(TALLOC_CTX *mem_ctx,
 	ulFlags = TABLE_START;
 	do {
 		count += 0x2;
-		GetGALTable(session, SPropTagArray, &SRowSet, count, ulFlags);
-		if ((!SRowSet) || (!(SRowSet->aRow))) {
+		GetGALTable(session, SPropTagArray, &RowSet, count, ulFlags);
+		if ((!RowSet) || (!(RowSet->aRow))) {
 			return false;
 		}
-		rowsFetched = SRowSet->cRows;
+		rowsFetched = RowSet->cRows;
 		if (rowsFetched) {
 			for (i = 0; i < rowsFetched; i++) {
-				mapidump_PAB_entry(&SRowSet->aRow[i]);
+				mapidump_PAB_entry(&RowSet->aRow[i]);
 			}
 		}
 		ulFlags = TABLE_CUR;
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 	} while (rowsFetched == count);
 	mapi_errstr("GetPABTable", GetLastError());
 

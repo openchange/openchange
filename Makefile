@@ -41,17 +41,6 @@ samba-git-update:
 # top level compilation rules
 #################################################################
 
-ifeq ($(PYTHON_CONFIG),)
-PYTHON_CFLAGS=$(shell $(PYTHON_CONFIG) --cflags)
-PYTHON_LIBS=$(shell $(PYTHON_CONFIG) --libs)
-else
-PYTHON_VERSION=$(shell $(PYTHON) -V 2>& 1 | awk '{ print $$2 }')
-PYTHON_MAJOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 1)
-PYTHON_MINOR_VERSION=$(shell echo $(PYTHON_VERSION) | cut -d . -f 2)
-PYTHON_CFLAGS=-I/usr/include/python$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION) -I/usr/include/python
-PYTHON_LIBS=-lpython$(PYTHON_MAJOR_VERSION).$(PYTHON_MINOR_VERSION)
-endif
-
 all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
@@ -359,9 +348,10 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	libmapi++/src/message.po		\
 	libmapi++/src/object.po			\
 	libmapi++/src/profile.po		\
-	libmapi++/src/session.po
+	libmapi++/src/session.po \
+	libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
 
 libmapixx-installpc:
 	@echo "[*] install: libmapi++ pc files"
@@ -746,6 +736,9 @@ libmapiproxy: mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 libmapiproxy-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
+endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy/libmapiproxy.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.pc $(DESTDIR)$(libdir)/pkgconfig
 
@@ -778,7 +771,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/modules.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS)
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -793,6 +786,9 @@ libmapiserver: mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION)
 libmapiserver-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiserver.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapiserver.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION)
+endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver/libmapiserver.h $(DESTDIR)$(includedir)/
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	@$(SED) $(DESTDIR)$(includedir)/*.h
@@ -865,6 +861,9 @@ libmapistore-installpc:
 libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 	$(INSTALL) -m 0755 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
 	ln -sf libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapistore.$(SHLIBEXT)
+ifeq ($(MANUALLY_CREATE_SYMLINKS), yes)
+	ln -sf libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+endif
 	$(INSTALL) -d $(DESTDIR)$(includedir)/mapistore
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore.h $(DESTDIR)$(includedir)/mapistore/
 	$(INSTALL) -m 0644 mapiproxy/libmapistore/mapistore_errors.h $(DESTDIR)$(includedir)/mapistore/
@@ -876,6 +875,7 @@ libmapistore-install:	$(OC_MAPISTORE_INSTALL)
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
+	rm -f mapiproxy/libmapistore/mgmt/*.po mapiproxy/libmapistore/mgmt/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
@@ -1509,7 +1509,7 @@ $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT):	pyopenchange/pymapi.c				\
 						pyopenchange/pymapi_properties.c		\
 						libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
+	@$(CC) $(CFLAGS) -fno-strict-aliasing $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS) 
 
 # $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT):	pyopenchange/pyocpf.c				\
 # 						libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)		\
@@ -1525,7 +1525,7 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS)
+	@$(CC) $(CFLAGS) -fno-strict-aliasing $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS)
 
 
 pyopenchange/pymapi_properties.c:		\

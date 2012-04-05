@@ -1870,6 +1870,9 @@ _PUBLIC_ bool set_PropertyValue(struct PropertyValue_r *lpProp, const void *data
 	case PT_SHORT:
 		lpProp->value.i = *((const uint16_t *)data);
 		break;
+	case PT_BOOLEAN:
+		lpProp->value.b = *((const uint8_t *)data);
+		break;
 	case PT_LONG:
 		lpProp->value.l = *((const uint32_t *)data);
 		break;

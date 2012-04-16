@@ -342,8 +342,8 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
-	struct SRowSet			*pRows;
-	uint32_t			i, j;
+	struct PropertyRowSet_r		*pRows;
+	uint32_t			i, j, count;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -378,7 +378,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Allocate RowSet to be filled in */
-	pRows = talloc_zero(mem_ctx, struct SRowSet);
+	pRows = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 
 	/* Step 2. Fill ppRows  */
 	if (r->in.lpETable == NULL) {
@@ -391,15 +391,19 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		if (ldb_res->count) {
-			pRows->cRows = ldb_res->count - r->in.pStat->NumPos;
-			pRows->aRow = talloc_array(mem_ctx, struct SRow, pRows->cRows);
+		count = ldb_res->count - r->in.pStat->NumPos;
+		if (r->in.Count < count) {
+			count = r->in.Count;
+		}
+		if (count) {
+			pRows->cRows = count;
+			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, count);
 		}
 
 		/* fetch required attributes for every entry found */
-		for (i = r->in.pStat->NumPos; i < ldb_res->count; i++) {
-			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &(pRows->aRow[i-r->in.pStat->NumPos]),
-							     ldb_res->msgs[i], 0, r->in.dwFlags, pPropTags);
+		for (i = 0; i < count; i++) {
+			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
+							     ldb_res->msgs[i+r->in.pStat->NumPos], 0, r->in.dwFlags, pPropTags);
 			if (!MAPI_STATUS_IS_OK(retval)) {
 				goto failure;
 			}
@@ -413,7 +417,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		j = 0;
 		if (r->in.pStat->NumPos < r->in.dwETableCount) {
 			pRows->cRows = r->in.dwETableCount - r->in.pStat->NumPos;
-			pRows->aRow = talloc_array(mem_ctx, struct SRow, pRows->cRows);
+			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pRows->cRows);
 			for (i = r->in.pStat->NumPos; i < r->in.dwETableCount; i++) {
 				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[j]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
 				if (retval != MAPI_E_SUCCESS) {
@@ -515,10 +519,10 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		goto end;
 	}
 
-	r->out.pRows = talloc_zero(mem_ctx, struct SRowSet *);
-	r->out.pRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	r->out.pRows = talloc_zero(mem_ctx, struct PropertyRowSet_r *);
+	r->out.pRows[0] = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	r->out.pRows[0]->cRows = mids->cValues;
-	r->out.pRows[0]->aRow = talloc_array(mem_ctx, struct SRow, mids->cValues);
+	r->out.pRows[0]->aRow = talloc_array(mem_ctx, struct PropertyRow_r, mids->cValues);
 	for (row = 0; row < mids->cValues; row++) {
 		ret = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.pRows[0]->aRow[row]), 
 					    mids->aulPropTag[row], fEphID, r->in.pPropTags);
@@ -577,7 +581,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	failure:
 		r->out.pStat = r->in.pStat;
 		*r->out.ppOutMIds = ppOutMIds;	
-		r->out.ppRows = talloc(mem_ctx, struct SRowSet *);
+		r->out.ppRows = talloc(mem_ctx, struct PropertyRowSet_r *);
 		r->out.ppRows[0] = NULL;
 		DCESRV_NSP_RETURN(r, retval, NULL);
 	}
@@ -585,10 +589,10 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	*r->out.ppOutMIds = ppOutMIds;
 
 	/* Step 2. Retrieve requested properties for these MIds */
-	r->out.ppRows = talloc_zero(mem_ctx, struct SRowSet *);
-	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	r->out.ppRows = talloc_zero(mem_ctx, struct PropertyRowSet_r *);
+	r->out.ppRows[0] = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	r->out.ppRows[0]->cRows = ppOutMIds->cValues;
-	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct SRow, ppOutMIds->cValues);
+	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct PropertyRow_r, ppOutMIds->cValues);
 
 	for (i = 0; i < ppOutMIds->cValues; i++) {
 		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 
@@ -742,9 +746,8 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 2. Fetch properties */
-	r->out.ppRows = talloc_array(mem_ctx, struct SRow *, 2);
-	r->out.ppRows[0] = talloc_zero(r->out.ppRows, struct SRow);
-	r->out.ppRows[0]->ulAdrEntryPad = 0;
+	r->out.ppRows = talloc_array(mem_ctx, struct PropertyRow_r *, 2);
+	r->out.ppRows[0] = talloc_zero(r->out.ppRows, struct PropertyRow_r);
 
 	pPropTags = r->in.pPropTags;
 	if (!pPropTags) {
@@ -769,19 +772,19 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 		/* Is MId is not found, proceed as if no attributes were found */
 		if (retval == MAPI_E_INVALID_BOOKMARK) {
 			uint32_t	ulPropTag;
-			struct SRow	*aRow;
+			struct PropertyRow_r	*aRow;
 			
 			aRow = r->out.ppRows[0];
-			aRow->ulAdrEntryPad = 0x0;
+			aRow->Reserved = 0x0;
 			aRow->cValues = r->in.pPropTags->cValues;
-			aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+			aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
 			for (i = 0; i < aRow->cValues; i++) {
 				ulPropTag = r->in.pPropTags->aulPropTag[i];
 				ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 
 				aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 				aRow->lpProps[i].dwAlignPad = 0x0;
-				set_SPropValue(&(aRow->lpProps[i]), NULL);
+				set_PropertyValue(&(aRow->lpProps[i]), NULL);
 			}
 			retval = MAPI_W_ERRORS_RETURNED;
 		} else {
@@ -880,11 +883,11 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	*r->out.lpVersion = 0x1;
 
 	/* Step 2. Allocate output SRowSet and call associated emsabp function */
-	r->out.ppRows = talloc_zero(mem_ctx, struct SRowSet *);
+	r->out.ppRows = talloc_zero(mem_ctx, struct PropertyRowSet_r *);
 	if (!r->out.ppRows) {
 		DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
-	r->out.ppRows[0] = talloc_zero(mem_ctx, struct SRowSet);
+	r->out.ppRows[0] = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	if (!r->out.ppRows[0]) {
 		DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
@@ -1042,7 +1045,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	struct SPropTagArray		*pPropTags;
 	const char			*purportedSearch;
 	struct PropertyTagArray_r	*pMIds = NULL;
-	struct SRowSet			*pRows = NULL;
+	struct PropertyRowSet_r			*pRows = NULL;
 	struct StringsArray_r		*paStr;
 	uint32_t			i;
 	int				ret;
@@ -1092,9 +1095,9 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paStr->Count;
 	pMIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, pMIds->cValues);
-	pRows = talloc(mem_ctx, struct SRowSet);
+	pRows = talloc(mem_ctx, struct PropertyRowSet_r);
 	pRows->cRows = 0;
-	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
+	pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pMIds->cValues);
 
 	/* Step 2. Fetch AB container records */
 	for (i = 0; i < paStr->Count; i++) {
@@ -1157,7 +1160,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	struct SPropTagArray		*pPropTags;
 	const char			*purportedSearch;
 	struct PropertyTagArray_r	*pMIds = NULL;
-	struct SRowSet			*pRows = NULL;
+	struct PropertyRowSet_r			*pRows = NULL;
 	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
 	int				ret;
@@ -1208,9 +1211,9 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	pMIds = talloc(mem_ctx, struct PropertyTagArray_r);
 	pMIds->cValues = paWStr->Count;
 	pMIds->aulPropTag = talloc_array(mem_ctx, uint32_t, pMIds->cValues);
-	pRows = talloc(mem_ctx, struct SRowSet);
+	pRows = talloc(mem_ctx, struct PropertyRowSet_r);
 	pRows->cRows = 0;
-	pRows->aRow = talloc_array(mem_ctx, struct SRow, pMIds->cValues);
+	pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pMIds->cValues);
 
 	/* Step 2. Fetch AB container records */
 	for (i = 0; i < paWStr->Count; i++) {

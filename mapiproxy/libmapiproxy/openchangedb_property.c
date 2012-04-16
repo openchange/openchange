@@ -77,6 +77,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagAssistant,                                                    "PidTagAssistant" },
 	{ PidTagAssistantTelephoneNumber,                                     "PidTagAssistantTelephoneNumber" },
 	{ PidTagAssociated,                                                   "PidTagAssociated" },
+	{ PidTagAssociatedContentCount,                                       "PidTagAssociatedContentCount" },
 	{ PidTagAttachAdditionalInformation,                                  "PidTagAttachAdditionalInformation" },
 	{ PidTagAttachContentBase,                                            "PidTagAttachContentBase" },
 	{ PidTagAttachContentId,                                              "PidTagAttachContentId" },

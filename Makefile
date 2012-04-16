@@ -995,6 +995,9 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 # mapiproxy servers
 ####################
 provision-install: python-install
+	$(INSTALL) -d $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 0755 setup/openchange_provision $(DESTDIR)$(sbindir)/
+	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/

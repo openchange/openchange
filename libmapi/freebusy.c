@@ -67,7 +67,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	mapi_object_t			obj_message;
 	mapi_object_t			obj_htable;
 	mapi_object_t			obj_ctable;
-	struct SRowSet			*pRowSet;
+	struct PropertyRowSet_r		*pRowSet;
 	struct SRowSet			SRowSet;
 	struct SPropValue		*lpProps;
 	struct mapi_SRestriction	res;
@@ -95,11 +95,11 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	mem_ctx = (TALLOC_CTX *) session;
 
 	/* Step 0. Retrieve the user Email Address and build FreeBusy strings */
-	pRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	pRowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	retval = GetABRecipientInfo(session, recipient, NULL, &pRowSet);
 	OPENCHANGE_RETVAL_IF(retval, retval, pRowSet);
 
-	email = (const char *) get_SPropValue_SRowSet_data(pRowSet, PR_EMAIL_ADDRESS_UNICODE);
+	email = (const char *) get_PropertyValue_PropertyRowSet_data(pRowSet, PR_EMAIL_ADDRESS_UNICODE);
 	o = x500_get_dn_element(mem_ctx, email, ORG);
 	ou = x500_get_dn_element(mem_ctx, email, ORG_UNIT);
 	username = x500_get_dn_element(mem_ctx, email, "/cn=Recipients/cn=");

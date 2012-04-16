@@ -56,7 +56,7 @@ struct mapi_profile
 	const char		*kerberos;
 };
 
-typedef int (*mapi_profile_callback_t)(struct SRowSet *, const void *);
+typedef int (*mapi_profile_callback_t)(struct PropertyRowSet_r *, const void *);
 
 #define	OC_PROFILE_NOPASSWORD	1
 

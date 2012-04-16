@@ -472,7 +472,7 @@ _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *l
 		lpProps->value.l = *((const uint32_t *)data);
 		break;
 	case PT_DOUBLE:
-		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
+		lpProps->value.dbl = *((const double *)data);
 		break;
 	case PT_I8:
 		lpProps->value.d = *((const uint64_t *)data);
@@ -561,7 +561,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.l = *((const uint32_t *)data);
 		break;
 	case PT_DOUBLE:
-		memcpy(&lpProps->value.dbl, (uint8_t *)data, 8);
+		lpProps->value.dbl = *((const double *)data);
 		break;
 	case PT_I8:
 		lpProps->value.d = *((const uint64_t *)data);
@@ -719,7 +719,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 		mapi_sprop->value.l = sprop->value.l;
 		return sizeof(uint32_t);
 	case PT_DOUBLE:
-		memcpy(&mapi_sprop->value.dbl, (uint8_t *)&sprop->value.dbl, 8);
+		mapi_sprop->value.dbl = sprop->value.dbl;
 		return sizeof(double);
 	case PT_I8:
 		mapi_sprop->value.d = sprop->value.d;
@@ -1802,4 +1802,363 @@ size_t get_utf8_utf16_conv_length(const char *inbuf)
 	}
 
 	return (max_out - out_left);
+}
+
+struct PropertyValue_r* get_PropertyValue_PropertyRow(struct PropertyRow_r *aRow, enum MAPITAGS ulPropTag)
+{
+	uint32_t	i;
+
+	if (!aRow) {
+		return NULL;
+	}
+
+	for (i = 0; i < aRow->cValues; i++) {
+		if (ulPropTag == aRow->lpProps[i].ulPropTag) {
+			return (&aRow->lpProps[i]);
+		}
+	}
+
+	return NULL;
+}
+
+_PUBLIC_ struct PropertyValue_r *get_PropertyValue_PropertyRowSet(struct PropertyRowSet_r *RowSet, 
+								  enum MAPITAGS ulPropTag)
+{
+	uint32_t	i;
+	uint32_t	j;
+
+	/* Sanity Checks */
+	if (!RowSet) return NULL;
+
+	for (i = 0; i != RowSet->cRows; i++) {
+		for (j = 0; j < RowSet->aRow[i].cValues; j++) {
+			if (ulPropTag == RowSet->aRow[i].lpProps[j].ulPropTag) {
+				return (&RowSet->aRow[i].lpProps[j]);
+			}
+		}
+	}
+
+	return NULL;
+}
+
+_PUBLIC_ const void *get_PropertyValue_PropertyRowSet_data(struct PropertyRowSet_r *RowSet,
+							   uint32_t ulPropTag)
+{
+	struct PropertyValue_r *lpProp;
+
+	lpProp = get_PropertyValue_PropertyRowSet(RowSet, ulPropTag);
+	return get_PropertyValue(lpProp, ulPropTag);
+}
+
+_PUBLIC_ bool set_PropertyValue(struct PropertyValue_r *lpProp, const void *data)
+{
+	if (data == NULL) {
+		lpProp->ulPropTag = (lpProp->ulPropTag & 0xffff0000) | PT_ERROR;
+		lpProp->value.err = MAPI_E_NOT_FOUND;
+		return false;
+	}
+	switch (lpProp->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		lpProp->value.i = *((const uint16_t *)data);
+		break;
+	case PT_BOOLEAN:
+		lpProp->value.b = *((const uint8_t *)data);
+		break;
+	case PT_LONG:
+		lpProp->value.l = *((const uint32_t *)data);
+		break;
+	case PT_STRING8:
+		lpProp->value.lpszA = (const char *) data;
+		break;
+	case PT_BINARY:
+	case PT_SVREID:
+		lpProp->value.bin = *((const struct Binary_r *)data);
+		break;
+	case PT_UNICODE:
+		lpProp->value.lpszW = (const char *) data;
+		break;
+	case PT_CLSID:
+		lpProp->value.lpguid = (struct FlatUID_r *) data;
+		break;
+	case PT_SYSTIME:
+		lpProp->value.ft = *((const struct FILETIME *) data);
+		break;
+	case PT_ERROR:
+		lpProp->value.err = *((enum MAPISTATUS *)data);
+		break;
+	case PT_MV_SHORT:
+		lpProp->value.MVi = *((const struct ShortArray_r *)data);
+		break;
+	case PT_MV_LONG:
+		lpProp->value.MVl = *((const struct LongArray_r *)data);
+		break;
+	case PT_MV_STRING8:
+		lpProp->value.MVszA = *((const struct StringArray_r *)data);
+		break;
+	case PT_MV_BINARY:
+		lpProp->value.MVbin = *((const struct BinaryArray_r *)data);
+		break;
+	case PT_MV_CLSID:
+		lpProp->value.MVguid = *((const struct FlatUIDArray_r *)data);
+		break;
+	case PT_MV_UNICODE:
+		lpProp->value.MVszW = *((const struct StringArrayW_r *)data);
+		break;
+	case PT_MV_SYSTIME:
+		lpProp->value.MVft = *((const struct DateTimeArray_r *)data);
+		break;
+	case PT_NULL:
+		lpProp->value.null = *((const uint32_t *)data);
+		break;
+	default:
+		lpProp->ulPropTag = (lpProp->ulPropTag & 0xffff0000) | PT_ERROR;
+		lpProp->value.err = MAPI_E_NOT_FOUND;
+
+		return false;
+	}
+
+	return true;
+}
+
+_PUBLIC_ const void *get_PropertyValue(struct PropertyValue_r *lpProps, enum MAPITAGS ulPropTag)
+{
+	uint32_t	i;
+
+	/* Sanity checks */
+	if (!lpProps) return NULL;
+
+	for (i = 0; lpProps[i].ulPropTag; i++) {
+		if (ulPropTag == lpProps[i].ulPropTag) {
+			return get_PropertyValue_data(&lpProps[i]);
+		}
+	}
+	return NULL;
+}
+
+_PUBLIC_ const void *get_PropertyValue_data(struct PropertyValue_r *lpProps)
+{
+	if (lpProps->ulPropTag == 0) {
+		return NULL;
+	}
+
+	switch(lpProps->ulPropTag & 0xFFFF) {
+	case PT_SHORT:
+		return (const void *)&lpProps->value.i;
+	case PT_BOOLEAN:
+		return (const void *)&lpProps->value.b;
+	case PT_STRING8:
+		return (const void *)lpProps->value.lpszA;
+	case PT_UNICODE:
+		return (const void *)lpProps->value.lpszW;
+	case PT_SYSTIME:
+		return (const void *)(struct FILETIME *)&lpProps->value.ft;
+	case PT_ERROR:
+		return (const void *)&lpProps->value.err;
+	case PT_LONG:
+		return (const void *)&lpProps->value.l;
+	case PT_CLSID:
+		return (const void *)lpProps->value.lpguid;
+	case PT_BINARY:
+	case PT_SVREID:
+		return (const void *)&lpProps->value.bin;
+	case PT_MV_SHORT:
+		return (const void *)(struct ShortArray_r *)&lpProps->value.MVi;
+	case PT_MV_LONG:
+		return (const void *)(struct LongArray_r *)&lpProps->value.MVl;
+	case PT_MV_STRING8:
+		return (const void *)(struct StringArray_r *)&lpProps->value.MVszA;
+	case PT_MV_UNICODE:
+		return (const void *)(struct StringArrayW_r *)&lpProps->value.MVszW;
+	case PT_MV_BINARY:
+		return (const void *)(struct BinaryArray_r *)&lpProps->value.MVbin;
+	case PT_MV_SYSTIME:
+		return (const void *)(struct DateTimeArray_r *)&lpProps->value.MVft;
+	case PT_NULL:
+		return (const void *)&lpProps->value.null;
+	default:
+		return NULL;
+	}
+}
+
+/**
+   \details add a PropertyValue_r structure to a PropertyRow_r array
+
+   \param aRow pointer to the PropertyRow_r array where propValue should be appended
+   \param propValue the PropertyValue_r structure to add to aRow
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_INVALID_PARAMETER.
+ */
+_PUBLIC_ enum MAPISTATUS PropertyRow_addprop(struct PropertyRow_r *aRow, struct PropertyValue_r propValue)
+{
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		cValues;
+	struct PropertyValue_r	lpProp;
+	uint32_t		i;
+	
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = (TALLOC_CTX *) aRow;
+
+	/* If the property tag already exist, overwrite its value */
+	for (i = 0; i < aRow->cValues; i++) {
+		if (aRow->lpProps[i].ulPropTag == propValue.ulPropTag) {
+			aRow->lpProps[i] = propValue;
+			return MAPI_E_SUCCESS;
+		}
+	}
+
+	cValues = aRow->cValues + 1;
+	aRow->lpProps = talloc_realloc(mem_ctx, aRow->lpProps, struct PropertyValue_r, cValues);
+	lpProp = aRow->lpProps[cValues-1];
+	lpProp.ulPropTag = propValue.ulPropTag;
+	lpProp.dwAlignPad = 0;
+	set_PropertyValue(&(lpProp), get_PropertyValue_data(&propValue));
+	aRow->cValues = cValues;
+	aRow->lpProps[cValues - 1] = lpProp;
+
+	return MAPI_E_SUCCESS;
+}
+
+_PUBLIC_ const void *find_PropertyValue_data(struct PropertyRow_r *aRow, uint32_t mapitag)
+{
+	uint32_t i;
+
+	if (!aRow) {
+		return NULL;
+	}
+
+	for (i = 0; i < aRow->cValues; i++) {
+		if (aRow->lpProps[i].ulPropTag == mapitag) {
+			return get_PropertyValue_data(&(aRow->lpProps[i]));
+		}
+	}
+	return NULL;
+}
+
+/**
+   \details Append a PropertyValue_r structure to given PropertyRowSet_r
+
+   \param mem_ctx pointer to the memory context
+   \param RowSet pointer to the PropertyRowSet_r array to update
+   \param value the PropertyValue_r to append within SRowSet
+
+   \return 0 on success, otherwise 1
+ */
+_PUBLIC_ uint32_t PropertyRowSet_propcpy(TALLOC_CTX *mem_ctx, struct PropertyRowSet_r *RowSet, struct PropertyValue_r value)
+{
+	uint32_t		rows;
+	uint32_t		cValues;
+	struct PropertyValue_r	lpProp;
+
+	/* Sanity checks */
+	if (!RowSet) return 1;
+
+	for (rows = 0; rows < RowSet->cRows; rows++) {
+		cValues = RowSet->aRow[rows].cValues + 1;
+		RowSet->aRow[rows].lpProps = talloc_realloc(mem_ctx, RowSet->aRow[rows].lpProps, struct PropertyValue_r, cValues);
+		lpProp = RowSet->aRow[rows].lpProps[cValues-1];
+		lpProp.ulPropTag = value.ulPropTag;
+		lpProp.dwAlignPad = 0;
+		set_PropertyValue(&(lpProp), (void *)&value.value);
+		RowSet->aRow[rows].cValues = cValues;
+		RowSet->aRow[rows].lpProps[cValues - 1] = lpProp;
+	}
+	return 0;
+}
+
+/**
+   \details Convenience function to convert a PropertyValue_r structure into a SPropValue structure.
+
+   \param propvalue pointer to the PropertyValue_r structure to copy data to
+   \param spropvalue pointer to the SPropValue structure to copy data from
+ */
+_PUBLIC_ void cast_PropertyValue_to_SPropValue(struct PropertyValue_r *propvalue, struct SPropValue *spropvalue)
+{
+	spropvalue->ulPropTag = propvalue->ulPropTag;
+
+	switch (propvalue->ulPropTag & 0xFFFF) {
+	case PT_BOOLEAN:
+		spropvalue->value.b = propvalue->value.b;
+		break;
+	case PT_I2:
+		spropvalue->value.i = propvalue->value.i;
+		break;
+	case PT_LONG:
+		spropvalue->value.l = propvalue->value.l;
+		break;
+	case PT_STRING8:
+		spropvalue->value.lpszA = propvalue->value.lpszA;
+		break;
+	case PT_UNICODE:
+		spropvalue->value.lpszW = propvalue->value.lpszW;
+		break;
+	case PT_SYSTIME:
+		propvalue->value.ft = propvalue->value.ft;
+		break;
+	case PT_CLSID:
+		spropvalue->value.lpguid = propvalue->value.lpguid;
+		break;
+	case PT_SVREID:
+	case PT_BINARY:
+		spropvalue->value.bin = propvalue->value.bin;
+		break;
+        case PT_ERROR:
+                spropvalue->value.err = propvalue->value.err;
+		break;
+	case PT_MV_LONG:
+		spropvalue->value.MVl = propvalue->value.MVl;
+		break;
+	case PT_MV_STRING8:
+		spropvalue->value.MVszA = propvalue->value.MVszA;
+		break;
+        case PT_MV_UNICODE:
+		spropvalue->value.MVszW = propvalue->value.MVszW;
+		break;
+	case PT_MV_CLSID:
+		spropvalue->value.MVguid = propvalue->value.MVguid;
+		break;
+	case PT_MV_BINARY:
+		spropvalue->value.MVbin = propvalue->value.MVbin;
+		break;
+        default:
+                printf("unhandled conversion case in cast_PropvalueValue(): 0x%x\n", (propvalue->ulPropTag & 0xFFFF));
+                OPENCHANGE_ASSERT();
+	}
+}
+
+/**
+   \details Convenience function to convert a PropertyRow_r structure into a SRow structure.
+
+   \param mem_ctx pointer to the allocation context for structure members
+   \param proprow pointer to the PropertyRow_r structure to copy data to
+   \param srow pointer to the SRow structure to copy data from
+ */
+_PUBLIC_ void cast_PropertyRow_to_SRow(TALLOC_CTX *mem_ctx, struct PropertyRow_r *proprow, struct SRow *srow)
+{
+	uint32_t i;
+
+	srow->cValues = proprow->cValues;
+	srow->lpProps = talloc_array(mem_ctx, struct SPropValue, srow->cValues);
+	for (i = 0; i < srow->cValues; i++) {
+		cast_PropertyValue_to_SPropValue(proprow->lpProps + i, srow->lpProps + i);
+	}
+}
+
+/**
+   \details Convenience function to convert a PropertyRowSet_r structure into a SRowSet structure.
+
+   \param mem_ctx pointer to the allocation context for structure members
+   \param prowset pointer to the PropertyRowSet_r structure to copy data to
+   \param setrowset pointer to the SRowSet structure to copy data from
+ */
+_PUBLIC_ void cast_PropertyRowSet_to_SRowSet(TALLOC_CTX *mem_ctx, struct PropertyRowSet_r *prowset, struct SRowSet *srowset)
+{
+	uint32_t i;
+
+	srowset->cRows = prowset->cRows;
+	srowset->aRow = talloc_array(mem_ctx, struct SRow, srowset->cRows);
+	for (i = 0; i < srowset->cRows; i++) {
+		cast_PropertyRow_to_SRow(mem_ctx, prowset->aRow + i, srowset->aRow + i);
+	}
 }

@@ -494,7 +494,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	TALLOC_CTX                      *mem_ctx;
 	struct SPropTagArray            *SPropTagArray;
 	const char                      *names[2];
-	struct SRowSet                  *rows = NULL;
+	struct PropertyRowSet_r		*rows = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	struct mapi_PermissionsData     rowList;
 
@@ -527,8 +527,7 @@ _PUBLIC_ enum MAPISTATUS AddUserPermission(mapi_object_t *obj_folder, const char
 	rowList.PermissionsData[0].PermissionDataFlags = ROW_ADD;
 	rowList.PermissionsData[0].lpProps.cValues = 2;
 	rowList.PermissionsData[0].lpProps.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
-	cast_mapi_SPropValue((TALLOC_CTX *)rowList.PermissionsData[0].lpProps.lpProps,
-			     &rowList.PermissionsData[0].lpProps.lpProps[0], &rows->aRow[0].lpProps[0]);
+	set_mapi_SPropValue(NULL, &rowList.PermissionsData[0].lpProps.lpProps[0], get_PropertyValue_data(&rows->aRow[0].lpProps[0]));
 	rowList.PermissionsData[0].lpProps.lpProps[1].ulPropTag = PR_MEMBER_RIGHTS;
 	rowList.PermissionsData[0].lpProps.lpProps[1].value.l = role;
 
@@ -569,7 +568,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 	struct SPropTagArray		*SPropTagArray;
 	const char			*names[2];
 	const char			*user = NULL;
-	struct SRowSet			*rows = NULL;
+	struct PropertyRowSet_r		*rows = NULL;
 	struct SRowSet			rowset;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	struct mapi_PermissionsData	rowList;
@@ -596,7 +595,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	if (flaglist->aulPropTag[0] == MAPI_RESOLVED) {
-	  user = (const char *) find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	  user = (const char *) find_PropertyValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 	} else {
 		/* Special case: Not a AD user account but Default or
 		 * Anonymous. Since names are language specific, we
@@ -687,7 +686,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	struct SPropTagArray		*SPropTagArray;
 	const char			*names[2];
 	const char			*user = NULL;
-	struct SRowSet			*rows = NULL;
+	struct PropertyRowSet_r		*rows = NULL;
 	struct SRowSet			rowset;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	struct mapi_PermissionsData	rowList;
@@ -714,7 +713,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	/* Check if the username was found */
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
-	user = (const char *)find_SPropValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
+	user = (const char *)find_PropertyValue_data(&(rows->aRow[0]), PR_DISPLAY_NAME);
 
 	mapi_object_init(&obj_table);
 	retval = GetPermissionsTable(obj_folder, 0x00, &obj_table);

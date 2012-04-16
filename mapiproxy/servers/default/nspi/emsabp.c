@@ -452,20 +452,6 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
-	case PR_SMTP_ADDRESS:
-	case PR_SMTP_ADDRESS_UNICODE:
-	  data = NULL;
-	  ldb_element = ldb_msg_find_element(msg, emsabp_property_get_attribute(PR_EMS_AB_PROXY_ADDRESSES_UNICODE));
-	  if (ldb_element) {
-		  for (i = 0; !data && i < ldb_element->num_values; i++) {
-			  ldb_string = (const char *) ldb_element->values[i].data;
-			  if (!strncmp(ldb_string, "SMTP:", 5)) {
-				  data = (void *) talloc_strdup(mem_ctx, ldb_string + 5);
-			  }
-		  }
-	  }
-
-	  return data;
 	case PR_OBJECT_TYPE:
 		data = talloc_zero(mem_ctx, uint32_t);
 		*((uint32_t *)data) = MAPI_MAILUSER;
@@ -595,7 +581,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
  */
 _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 						     struct emsabp_context *emsabp_ctx,
-						     struct SRow *aRow,
+						     struct PropertyRow_r *aRow,
 						     struct ldb_message *ldb_msg,
 						     uint32_t MId, uint32_t dwFlags,
 						     struct SPropTagArray *pPropTags)
@@ -623,9 +609,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 1. Retrieve property values and build aRow */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = pPropTags->cValues;
-	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+	aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
 
 	for (i = 0; i < aRow->cValues; i++) {
 		ulPropTag = pPropTags->aulPropTag[i];
@@ -636,7 +622,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 		
 		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
-		set_SPropValue(&(aRow->lpProps[i]), data);
+		set_PropertyValue(&(aRow->lpProps[i]), data);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -665,7 +651,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-					    struct SRow *aRow, uint32_t MId, uint32_t dwFlags,
+					    struct PropertyRow_r *aRow, uint32_t MId, uint32_t dwFlags,
 					    struct SPropTagArray *pPropTags)
 {
 	enum MAPISTATUS		retval;
@@ -695,9 +681,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, NULL);
 
 	/* Step 2. Retrieve property values and build aRow */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = pPropTags->cValues;
-	aRow->lpProps = talloc_array(mem_ctx, struct SPropValue, aRow->cValues);
+	aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
 
 	for (i = 0; i < aRow->cValues; i++) {
 		ulPropTag = pPropTags->aulPropTag[i];
@@ -709,7 +695,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 
 		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
-		set_SPropValue(&(aRow->lpProps[i]), data);
+		set_PropertyValue(&(aRow->lpProps[i]), data);
 	}
 
 
@@ -738,14 +724,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-						  struct SRow *aRow, uint32_t dwFlags,
+						  struct PropertyRow_r *aRow, uint32_t dwFlags,
 						  struct PermanentEntryID *permEntryID,
 						  struct PermanentEntryID *parentPermEntryID,
 						  struct ldb_message *msg, bool child)
 {
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		lpProps;
+	struct PropertyValue_r		lpProps;
 	int				proptag;
 	uint32_t			i;
 	uint32_t			containerID = 0;
@@ -772,9 +758,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 	}
 
 	/* Step 2. Allocate SPropValue array and update SRow cValues field */
-	aRow->ulAdrEntryPad = 0x0;
+	aRow->Reserved = 0x0;
 	aRow->cValues = 0x0;
-	aRow->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	aRow->lpProps = talloc_zero(mem_ctx, struct PropertyValue_r);
 
 	/* Step 3. Global Address List or real container */
 	if (!msg) {
@@ -805,8 +791,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			default:
 				break;
 			}
-			SRow_addprop(aRow, lpProps);
-			/* SRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
+			PropertyRow_addprop(aRow, lpProps);
+			/* PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
 			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME || 
 			    SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME_UNICODE) {
 				aRow->lpProps[aRow->cValues - 1].value.lpszA = NULL;
@@ -880,7 +866,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			default:
 				break;
 			}
-			SRow_addprop(aRow, lpProps);
+			PropertyRow_addprop(aRow, lpProps);
 		}
 	}
 
@@ -901,10 +887,10 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE
  */
 _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-						   uint32_t dwFlags, struct SRowSet **SRowSet)
+						   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
 {
 	enum MAPISTATUS			retval;
-	struct SRow			*aRow;
+	struct PropertyRow_r			*aRow;
 	struct PermanentEntryID		gal;
 	struct PermanentEntryID		parentPermEntryID;
 	struct PermanentEntryID		permEntryID;
@@ -921,7 +907,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	uint32_t			i;
 
 	/* Step 1. Build the 'Global Address List' object using PermanentEntryID */
-	aRow = talloc_zero(mem_ctx, struct SRow);
+	aRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	aRow_idx = 0;
 
@@ -949,7 +935,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 			 scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
-	aRow = talloc_realloc(mem_ctx, aRow, struct SRow, aRow_idx + 1);
+	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + 1);
 	retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_CONTAINER, res->msgs[0], &parentPermEntryID);
 	emsabp_table_fetch_attrs(mem_ctx, emsabp_ctx, &aRow[aRow_idx], dwFlags, &parentPermEntryID, NULL, res->msgs[0], false);
 	aRow_idx++;
@@ -980,7 +966,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 		OPENCHANGE_RETVAL_IF(1, MAPI_E_CORRUPT_STORE, aRow);
 	}
 
-	aRow = talloc_realloc(mem_ctx, aRow, struct SRow, aRow_idx + res->count + 1);
+	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + res->count + 1);
 
 	for (i = 0; res->msgs[i]; i++) {
 		retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_CONTAINER, res->msgs[i], &permEntryID);
@@ -1013,7 +999,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE 
  */
 _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
-							   uint32_t dwFlags, struct SRowSet **SRowSet)
+							   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
 {
 	return MAPI_E_SUCCESS;
 }
@@ -1079,16 +1065,16 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			return MAPI_E_NO_SUPPORT;
 		} 
 
-		attr = (char *)get_SPropValue_data(res_prop->lpProp);
+		attr = (char *)get_PropertyValue_data(res_prop->lpProp);
 		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
 		}
 		
 		if ((res_prop->ulPropTag & 0xFFFF) == 0x101e) {
-			struct StringArray_r *attr_ml = (struct StringArray_r *) get_SPropValue_data(res_prop->lpProp);
+			struct StringArray_r *attr_ml = (struct StringArray_r *) get_PropertyValue_data(res_prop->lpProp);
 			attr = (char *)attr_ml->lppszA[0];
 		} else {
-			attr = (char *)get_SPropValue_data(res_prop->lpProp);
+			attr = (char *)get_PropertyValue_data(res_prop->lpProp);
 		}
 		if (attr == NULL) {
 			return MAPI_E_NO_SUPPORT;
@@ -1287,13 +1273,17 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_by_id(TALLOC_CTX *mem_ctx,
 _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 						  struct emsabp_context *emsabp_ctx,
 						  uint32_t ContainerID,
-						  struct ldb_result **ldb_res)
+						  struct ldb_result **ldb_resp)
 {
-	enum MAPISTATUS		retval;
-	int			ldb_ret;
-	struct ldb_message	*ldb_msg_ab;
-	const char		*purportedSearch;
-	const char * const	recipient_attrs[] = { "*", NULL };
+	enum MAPISTATUS			retval;
+	int				ldb_ret;
+	struct ldb_request		*ldb_req;
+	struct ldb_result		*ldb_res;
+	struct ldb_message		*ldb_msg_ab;
+	const char			*purportedSearch;
+	char				*expression;
+	const char * const		recipient_attrs[] = { "*", NULL };
+	struct ldb_server_sort_control	**ldb_sort_controls;
 
 	/* Fetch AB container record */
 	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, ContainerID, &ldb_msg_ab);
@@ -1301,16 +1291,63 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 
 	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
 	if (!purportedSearch) {
-		*ldb_res = talloc_zero(mem_ctx, struct ldb_result);
+		*ldb_resp = talloc_zero(mem_ctx, struct ldb_result);
 		return MAPI_E_SUCCESS;
 	}
 	OPENCHANGE_RETVAL_IF(!purportedSearch, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	/* Search AD with purportedSearch filter */
-	ldb_ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, ldb_res,
-			     ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			     LDB_SCOPE_SUBTREE, recipient_attrs, 
-			     "%s", purportedSearch);
+
+	ldb_res = talloc_zero(mem_ctx, struct ldb_result);
+	if (!ldb_res) {
+		*ldb_resp = NULL;
+		return MAPI_E_NOT_FOUND;
+	}
+
+	expression = talloc_asprintf(mem_ctx, "%s", purportedSearch);
+	if (!expression) {
+		talloc_free(ldb_res);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	ldb_req = NULL;
+	ldb_ret = ldb_build_search_req(&ldb_req, emsabp_ctx->samdb_ctx, mem_ctx,
+				       ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				       LDB_SCOPE_SUBTREE,
+				       expression,
+				       recipient_attrs,
+				       NULL,
+				       ldb_res,
+				       ldb_search_default_callback,
+				       NULL);
+	if (ldb_ret != LDB_SUCCESS) goto done;
+
+	ldb_sort_controls = talloc_array(expression, struct ldb_server_sort_control *, 2);
+	ldb_sort_controls[0] = talloc(ldb_sort_controls, struct ldb_server_sort_control);
+	ldb_sort_controls[0]->attributeName = talloc_strdup(ldb_sort_controls, "displayName");
+	ldb_sort_controls[0]->orderingRule = NULL;
+	ldb_sort_controls[0]->reverse = 0;
+	ldb_sort_controls[1] = NULL;
+	ldb_request_add_control(ldb_req, LDB_CONTROL_SERVER_SORT_OID, false, ldb_sort_controls);
+
+	ldb_ret = ldb_request(emsabp_ctx->samdb_ctx, ldb_req);
+		
+	if (ldb_ret == LDB_SUCCESS) {
+		ldb_ret = ldb_wait(ldb_req->handle, LDB_WAIT_ALL);
+	}
+
+done:
+	talloc_free(expression);
+	if (ldb_req) {
+		talloc_free(ldb_req);
+	}
+	
+	if (ldb_ret != LDB_SUCCESS) {
+		talloc_free(ldb_res);
+		ldb_res = NULL;
+	}
+	
+	*ldb_resp = ldb_res;
 
 	return (ldb_ret != LDB_SUCCESS) ? MAPI_E_NOT_FOUND : MAPI_E_SUCCESS;
 }

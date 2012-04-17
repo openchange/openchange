@@ -42,14 +42,14 @@ _PUBLIC_ bool mapitest_nspi_UpdateStat(struct mapitest *mt)
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
 	uint32_t       		plDelta = 1;
-	struct SRowSet		*SRowSet;
+	struct PropertyRowSet_r	*RowSet;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_UpdateStat");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &SRowSet);
-	MAPIFreeBuffer(SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &RowSet);
+	MAPIFreeBuffer(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		talloc_free(mem_ctx);
 		return false;
@@ -81,9 +81,9 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	enum MAPISTATUS			retval;
 	struct nspi_context		*nspi_ctx;
 	struct PropertyTagArray_r	*MIds;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		*lpProp;
+	struct PropertyValue_r		*lpProp;
 	struct Restriction_r		Filter;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_QueryRows");
@@ -94,7 +94,7 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 					  PR_DISPLAY_TYPE);
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
@@ -104,11 +104,11 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_ACCOUNT;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -118,9 +118,9 @@ _PUBLIC_ bool mapitest_nspi_QueryRows(struct mapitest *mt)
 	}
 
 	/* Query the rows */
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
-	MAPIFreeBuffer(SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
+	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "NspiQueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
@@ -146,9 +146,9 @@ _PUBLIC_ bool mapitest_nspi_SeekEntries(struct mapitest *mt)
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	struct SPropValue	pTarget;
+	struct PropertyValue_r	pTarget;
 	struct SPropTagArray	*pPropTags;
-	struct SRowSet		*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct emsmdb_context	*emsmdb;
 	bool			ret = true;
 
@@ -156,36 +156,36 @@ _PUBLIC_ bool mapitest_nspi_SeekEntries(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	emsmdb = (struct emsmdb_context *) mt->session->emsmdb->ctx;
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	
 	pTarget.ulPropTag = PR_DISPLAY_NAME;
 	pTarget.dwAlignPad = 0x0;
 	pTarget.value.lpszA = emsmdb->info.szDisplayName;
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
-	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &SRowSet);
+	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	mapitest_print_retval_clean(mt, "NspiSeekEntries", retval);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(pPropTags);
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 
 	pTarget.ulPropTag = PR_DISPLAY_NAME_UNICODE;
 	pTarget.dwAlignPad = 0x0;
 	pTarget.value.lpszA = emsmdb->info.szDisplayName;
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_ACCOUNT);
-	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &SRowSet);
+	retval = nspi_SeekEntries(nspi_ctx, mem_ctx, SortTypeDisplayName, &pTarget, pPropTags, NULL, &RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 	}
 
 	mapitest_print_retval_clean(mt, "NspiSeekEntries", retval);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(pPropTags);
 
 	talloc_free(mem_ctx);
@@ -207,9 +207,9 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	enum MAPISTATUS			retval;
 	struct nspi_context		*nspi_ctx;
 	struct PropertyTagArray_r	*MIds;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		*lpProp;
+	struct PropertyValue_r		*lpProp;
 	struct Restriction_r		Filter;
 	bool				ret = true;
 
@@ -221,7 +221,7 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 					  PR_DISPLAY_TYPE);
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
@@ -231,11 +231,11 @@ _PUBLIC_ bool mapitest_nspi_GetMatches(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_ACCOUNT;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MIds);
 	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
@@ -261,9 +261,9 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 	enum MAPISTATUS			retval;
 	struct nspi_context		*nspi_ctx;
 	struct Restriction_r		Filter;
-	struct SRowSet			*SRowSet = NULL;
+	struct PropertyRowSet_r		*RowSet = NULL;
 	struct SPropTagArray		*SPropTagArray = NULL;
-	struct SPropValue		*lpProp = NULL;
+	struct PropertyValue_r		*lpProp = NULL;
 	struct PropertyTagArray_r	*MIds = NULL;
 	struct PropertyTagArray_r	*ppMIds = NULL;
 	bool				ret = true;
@@ -287,7 +287,7 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 					  );
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_OBJECT_TYPE;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.l = 6;
@@ -297,12 +297,12 @@ _PUBLIC_ bool mapitest_nspi_ResortRestriction(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_OBJECT_TYPE;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
@@ -378,17 +378,17 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	struct nspi_context		*nspi_ctx;
 	struct SPropTagArray		*pPropTags = 0;
 	struct PropertyTagArray_r	*MIds;
-	struct SPropValue		*lpProp;
+	struct PropertyValue_r		*lpProp;
 	struct Restriction_r		Filter;
 	struct SPropTagArray		*SPropTagArray;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_GetPropList");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	/* Step 1. Query for current profile username */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ANR_UNICODE;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszW = mt->mapi_ctx->session->profile->username;
@@ -398,12 +398,12 @@ _PUBLIC_ bool mapitest_nspi_GetPropList(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_ANR_UNICODE;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(lpProp);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
@@ -448,7 +448,7 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 	struct StringsArray_r		pNames;
 	struct PropertyTagArray_r	*MId;
 	struct SPropTagArray		*SPropTagArray;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_GetProps");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -469,13 +469,13 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 		return false;
 	}
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_EMS_AB_NETWORK_ADDRESS);
-	retval = nspi_GetProps(nspi_ctx, mem_ctx, SPropTagArray, MId, &SRowSet);
+	retval = nspi_GetProps(nspi_ctx, mem_ctx, SPropTagArray, MId, &RowSet);
 	mapitest_print_retval_clean(mt, "NspiGetProps", retval);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPIFreeBuffer(MId);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 
 	talloc_free(mem_ctx);
 
@@ -501,9 +501,9 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 	struct nspi_context		*nspi_ctx;
 	uint32_t			plResult;
 	struct PropertyTagArray_r	*MIds;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		*lpProp;
+	struct PropertyValue_r		*lpProp;
 	struct Restriction_r		Filter;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_CompareMIds");
@@ -513,7 +513,7 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME);
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_OBJECT_TYPE;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.l = 6;
@@ -523,12 +523,12 @@ _PUBLIC_ bool mapitest_nspi_CompareMIds(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_OBJECT_TYPE;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
 	MAPIFreeBuffer(SPropTagArray);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
@@ -571,13 +571,13 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	TALLOC_CTX			*mem_ctx;
 	enum MAPISTATUS			retval;
 	struct nspi_context		*nspi_ctx;
-	struct SRow			*pRow;
+	struct PropertyRow_r		*pRow;
 	struct SPropTagArray		*pPropTags;
-	struct SPropValue		modProp;
+	struct PropertyValue_r		modProp;
 	struct PropertyTagArray_r	*MIds;
-	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct SPropTagArray		*SPropTagArray;
-	struct SPropValue		*lpProp;
+	struct PropertyValue_r		*lpProp;
 	struct Restriction_r		Filter;
 	const char			*original_office_location;
 	bool				ret = true;
@@ -590,7 +590,7 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 					  PR_DISPLAY_TYPE);
 
 	/* Build the restriction we want for NspiGetMatches */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
 	lpProp->value.lpszA = mt->mapi_ctx->session->profile->username;
@@ -600,11 +600,11 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	Filter.res.resProperty.ulPropTag = PR_ACCOUNT;
 	Filter.res.resProperty.lpProp = lpProp;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &SRowSet, &MIds);
+	retval = nspi_GetMatches(nspi_ctx, mem_ctx, SPropTagArray, &Filter, 5000, &RowSet, &MIds);
 	MAPIFreeBuffer(lpProp);
-	MAPIFreeBuffer(SRowSet);
+	MAPIFreeBuffer(RowSet);
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print_retval_clean(mt, "nspi_GetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
@@ -614,30 +614,30 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	}
 
 	/* Query the rows */
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
 	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 		talloc_free(mem_ctx);
 		return false;
 	}
-	if (SRowSet->cRows != 1) {
-		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+	if (RowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", RowSet->cRows);
 		MAPIFreeBuffer(MIds);
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 		talloc_free(mem_ctx);
 		return false;
 	}
-	original_office_location = (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION);
+	original_office_location = (const char *)find_PropertyValue_data(&(RowSet->aRow[0]), PR_OFFICE_LOCATION);
 	mapitest_print(mt, "original PR_OFFICE_LOCATION value: %s\n", original_office_location);
 
 	/* Build the SRow and SPropTagArray for NspiModProps */
-	pRow = talloc_zero(mem_ctx, struct SRow);
+	pRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	modProp.ulPropTag = PR_OFFICE_LOCATION;
 	modProp.value.lpszA = "MT office location";
-	SRow_addprop(pRow, modProp);
+	PropertyRow_addprop(pRow, modProp);
 
 	pPropTags = set_SPropTagArray(mem_ctx, 0x1, PR_OFFICE_LOCATION);
 	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
@@ -652,34 +652,34 @@ _PUBLIC_ bool mapitest_nspi_ModProps(struct mapitest *mt)
 	}
 
 	/* Check that the property was set correctly */
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
 	mapitest_print_retval_clean(mt, "nspi_QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 		talloc_free(mem_ctx);
 		return false;
 	}
-	if (SRowSet->cRows != 1) {
-		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", SRowSet->cRows);
+	if (RowSet->cRows != 1) {
+		mapitest_print(mem_ctx, "unexpected number of rows: %i\n", RowSet->cRows);
 		MAPIFreeBuffer(MIds);
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 		talloc_free(mem_ctx);
 		return false;
 	}
-	if (strcmp((const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION), "MT office location") != 0) {
-		mapitest_print(mt, "PR_OFFICE_LOCATION string value mismatch: %s", (const char *)find_SPropValue_data(&(SRowSet->aRow[0]), PR_OFFICE_LOCATION));
+	if (strcmp((const char *)find_PropertyValue_data(&(RowSet->aRow[0]), PR_OFFICE_LOCATION), "MT office location") != 0) {
+		mapitest_print(mt, "PR_OFFICE_LOCATION string value mismatch: %s", (const char *)find_PropertyValue_data(&(RowSet->aRow[0]), PR_OFFICE_LOCATION));
 		ret = false;
 	} else {
 		mapitest_print(mt, "correctly set PR_OFFICE_LOCATION\n");
 	}
 
 	/* try to reset the office location back to the original value */
-	pRow = talloc_zero(mem_ctx, struct SRow);
+	pRow = talloc_zero(mem_ctx, struct PropertyRow_r);
 	modProp.ulPropTag = PR_OFFICE_LOCATION;
 	modProp.value.lpszA = original_office_location;
-	SRow_addprop(pRow, modProp);
+	PropertyRow_addprop(pRow, modProp);
 
 	retval = nspi_ModProps(nspi_ctx, mem_ctx, MIds->aulPropTag[0], pPropTags, pRow);
 	mapitest_print_retval_clean(mt, "nspi_ModProps (reset original value)", retval);
@@ -709,14 +709,14 @@ _PUBLIC_ bool mapitest_nspi_GetSpecialTable(struct mapitest *mt)
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	struct SRowSet		*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_GetSpecialTable");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
-	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x0, &SRowSet);
-	MAPIFreeBuffer(SRowSet);
+	RowSet = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x0, &RowSet);
+	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "NspiGetSpecialTable (Hierarchy Table)", retval);
 
 	if (retval != MAPI_E_SUCCESS) {
@@ -724,9 +724,9 @@ _PUBLIC_ bool mapitest_nspi_GetSpecialTable(struct mapitest *mt)
 		return false;
 	}
 
-	SRowSet = talloc_zero(mt->mem_ctx, struct SRowSet);
-	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &SRowSet);
-	MAPIFreeBuffer(SRowSet);
+	RowSet = talloc_zero(mt->mem_ctx, struct PropertyRowSet_r);
+	retval = nspi_GetSpecialTable(nspi_ctx, mem_ctx, 0x2, &RowSet);
+	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "NspiGetSpecialTable (Address Creation Template)", retval);
 	talloc_free(mem_ctx);
 
@@ -750,12 +750,12 @@ _PUBLIC_ bool mapitest_nspi_GetTemplateInfo(struct mapitest *mt)
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	struct SRow		*ppData = NULL;
+	struct PropertyRow_r	*ppData = NULL;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_GetTemplateInfo");
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
-	ppData = talloc_zero(mem_ctx, struct SRow);
+	ppData = talloc_zero(mem_ctx, struct PropertyRow_r);
 	retval = nspi_GetTemplateInfo(nspi_ctx, mem_ctx,
 				      TI_TEMPLATE|TI_SCRIPT|TI_EMT|TI_HELPFILE_NAME|TI_HELPFILE_CONTENTS,
 				      0, NULL, &ppData);
@@ -935,7 +935,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 {
 	enum MAPISTATUS			retval;
 	struct SPropTagArray		*SPropTagArray = NULL;
-	struct SRowSet			*SRowSet = NULL;
+	struct PropertyRowSet_r		*RowSet = NULL;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	const char			*username[2];
 	const char     			*username_err[2];
@@ -964,7 +964,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 
 	/* Test with existing username */
 	/* NspiResolveNames (0x13) */
-	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &RowSet, &flaglist, 0);
 	mapitest_print_retval_clean(mt, "NspiResolveNames - existing", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SPropTagArray);
@@ -981,14 +981,14 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
-	talloc_free(SRowSet);
+	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SPropTagArray);
 		return false;
 	}
 
 	/* NspiResolveNamesW (0x14) */
-	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &RowSet, &flaglist, MAPI_UNICODE);
 	mapitest_print_retval_clean(mt, "NspiResolveNamesW - existing", retval);
 	if (flaglist->aulPropTag[0] != MAPI_RESOLVED) {
 		mapitest_print(mt, "Expected 2 (MAPI_RESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
@@ -996,7 +996,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
-	talloc_free(SRowSet);
+	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SPropTagArray);
 		return false;
@@ -1004,7 +1004,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 
 	/* Test with non-existant username */
 	/* NspiResolveNames (0x13) */
-	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &SRowSet, &flaglist, 0);
+	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &RowSet, &flaglist, 0);
 	mapitest_print_retval_clean(mt, "NspiResolveNames - non existant user name", retval);
 	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
 		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNames returned: %i\n", flaglist->aulPropTag[0]);
@@ -1012,14 +1012,14 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
-	talloc_free(SRowSet);
+	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SPropTagArray);
 		return false;
 	}
 
 	/* NspiResolveNamesW (0x14) */
-	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &SRowSet, &flaglist, MAPI_UNICODE);
+	retval = ResolveNames(mt->session, (const char **)username_err, SPropTagArray, &RowSet, &flaglist, MAPI_UNICODE);
 	mapitest_print_retval_clean(mt, "NspiResolveNamesW - non existant user name", retval);
 	if (flaglist->aulPropTag[0] != MAPI_UNRESOLVED) {
 		mapitest_print(mt, "Expected 0 (MAPI_UNRESOLVED), but NspiResolveNamesW returned: %i\n", flaglist->aulPropTag[0]);
@@ -1027,7 +1027,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 		mapitest_print(mt, "\tGot expected resolution flag\n");
 	}
 	talloc_free(flaglist);
-	talloc_free(SRowSet);
+	talloc_free(RowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(SPropTagArray);
 		return false;
@@ -1046,7 +1046,7 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 _PUBLIC_ bool mapitest_nspi_GetGALTable(struct mapitest *mt)
 {
 	struct SPropTagArray	*SPropTagArray;
-	struct SRowSet		*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	enum MAPISTATUS		retval;
 	uint32_t		i;
 	uint32_t		count;
@@ -1072,21 +1072,21 @@ _PUBLIC_ bool mapitest_nspi_GetGALTable(struct mapitest *mt)
 	count = 0x20;
 	ulFlags = TABLE_START;
 	do {
-		retval = GetGALTable(mt->session, SPropTagArray, &SRowSet, count, ulFlags);
+		retval = GetGALTable(mt->session, SPropTagArray, &RowSet, count, ulFlags);
 		mapitest_print_retval_clean(mt, "GetGALTable", retval);
-		if ((!SRowSet) || (!(SRowSet->aRow))) {
+		if ((!RowSet) || (!(RowSet->aRow))) {
 			ret = false;
 			goto cleanup;
 		}
-		rowsFetched = SRowSet->cRows;
+		rowsFetched = RowSet->cRows;
 		totalRowsFetched += rowsFetched;
 		if (rowsFetched) {
 			for (i = 0; i < rowsFetched; i++) {
-				mapitest_print_PAB_entry(mt, &SRowSet->aRow[i]);
+				mapitest_print_PAB_entry(mt, &RowSet->aRow[i]);
 			}
 		}
 		ulFlags = TABLE_CUR;
-		MAPIFreeBuffer(SRowSet);
+		MAPIFreeBuffer(RowSet);
 	} while (rowsFetched == count);
 
 	if (totalRowsFetched < 1) {

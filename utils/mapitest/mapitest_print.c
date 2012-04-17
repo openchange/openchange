@@ -674,7 +674,7 @@ _PUBLIC_ void mapitest_print_SPropValue(struct mapitest *mt, struct SPropValue l
   
   \note this is a simple wrapper for mapidump_PAB_entry(), only for use in mapitest.
 */
-_PUBLIC_ void mapitest_print_PAB_entry(struct mapitest *mt, struct SRow *aRow)
+_PUBLIC_ void mapitest_print_PAB_entry(struct mapitest *mt, struct PropertyRow_r *aRow)
 {
 	if (mt->subunit_output) {
 		return;

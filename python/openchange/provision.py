@@ -270,8 +270,6 @@ def newuser(lp, creds, username=None):
     extended_user = """
 dn: %s
 changetype: modify
-add: displayName
-displayName: %s
 add: auxiliaryClass
 auxiliaryClass: msExchBaseClass
 add: mailNickName
@@ -289,8 +287,24 @@ proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
 proxyAddresses: SMTP:%s@%s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
-""" % (user_dn, username, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
+""" % (user_dn, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
     db.modify_ldif(extended_user)
+
+    res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])
+    if len(res) == 1:
+        record = res[0]
+    else:
+        raise Exception, \
+            "this should never happen as we just modified the record..."
+    record_keys = map(lambda x: x.lower(), record.keys())
+
+    if "displayname" not in record_keys:
+        extended_user = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (user_dn, username)
+        db.modify_ldif(extended_user)
+
+    if "mail" not in record_keys:
+        extended_user = "dn: %s\nadd: mail\nmail: %s@%s\n" % (user_dn, username, names.dnsdomain)
+        db.modify_ldif(extended_user)
 
     print "[+] User %s extended and enabled" % username
 

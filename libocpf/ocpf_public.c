@@ -600,6 +600,7 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	struct SPropValue		SPropValue;
 	struct SPropValue		*lpProps;
 	struct SRowSet			*SRowSet;
+	struct PropertyRowSet_r		*RowSet;
 	struct PropertyTagArray_r	*flaglist = NULL;
 	char				**usernames = NULL;
 	int				*recipClass = NULL;
@@ -641,13 +642,14 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	usernames[i] = NULL;
 
 	retval = ResolveNames(mapi_object_get_session(obj_message), (const char **)usernames,
-			      SPropTagArray, &SRowSet, &flaglist, 0);
+			      SPropTagArray, &RowSet, &flaglist, 0);
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, usernames);
 
 	/* Step2. Associate resolved recipients to their respective recipClass */
-	if (!SRowSet) {
-		SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
+	if (RowSet) {
+		cast_PropertyRowSet_to_SRowSet(mem_ctx, RowSet, SRowSet);
 	}
 
 	counter = 0;

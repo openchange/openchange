@@ -23,6 +23,7 @@
 #include "libmapi/libmapi_private.h"
 #include <ndr.h>
 #include "gen_ndr/ndr_exchange.h"
+#include "gen_ndr/ndr_property.h"
 
 #define MIN(a,b) ((a)<(b)?(a):(b))
 
@@ -2119,5 +2120,236 @@ enum ndr_err_code ndr_push_BufferTooSmall_repl(struct ndr_push *ndr, int ndr_fla
 
 enum ndr_err_code ndr_pull_BufferTooSmall_repl(struct ndr_pull *ndr, int ndr_flags, struct BufferTooSmall_repl *r)
 {
+	return NDR_ERR_SUCCESS;
+}
+
+/* property.idl */
+
+_PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, const struct ExtendedException *r)
+{
+	bool subjectIsSet, locationIsSet; 
+	uint32_t cntr_WideCharSubject_0;
+	uint32_t cntr_WideCharLocation_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+
+
+		subjectIsSet = (ExceptionInfo->OverrideFlags & ARO_SUBJECT) == ARO_SUBJECT;
+		locationIsSet = (ExceptionInfo->OverrideFlags & ARO_LOCATION) == ARO_LOCATION;
+
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			if (WriterVersion2 > 0x3008) {
+				NDR_CHECK(ndr_push_ChangeHighlight(ndr, NDR_SCALARS, &r->ChangeHighlight));
+			}
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlockEE1Size));
+			NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->ReservedBlockEE1, r->ReservedBlockEE1Size));
+			if (subjectIsSet || locationIsSet) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->StartDateTime));
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->EndDateTime));
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->OriginalStartDate));
+			}
+			if (subjectIsSet) {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharSubjectLength));
+				for (cntr_WideCharSubject_0 = 0; cntr_WideCharSubject_0 < r->WideCharSubjectLength; cntr_WideCharSubject_0++) {
+					NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharSubject[cntr_WideCharSubject_0]));
+				}
+			}
+			if (locationIsSet) {
+				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharLocationLength));
+				for (cntr_WideCharLocation_0 = 0; cntr_WideCharLocation_0 < r->WideCharLocationLength; cntr_WideCharLocation_0++) {
+					NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharLocation[cntr_WideCharLocation_0]));
+				}
+			}
+			if (subjectIsSet || locationIsSet) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlockEE2Size));
+				NDR_CHECK(ndr_push_array_uint8(ndr, NDR_SCALARS, r->ReservedBlockEE2, r->ReservedBlockEE2Size));
+			}
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, struct ExtendedException *r)
+{
+	bool subjectIsSet, locationIsSet; 
+	uint32_t cntr_WideCharSubject_0;
+	TALLOC_CTX *_mem_save_WideCharSubject_0;
+	uint32_t cntr_WideCharLocation_0;
+	TALLOC_CTX *_mem_save_WideCharLocation_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+
+		subjectIsSet = (ExceptionInfo->OverrideFlags & ARO_SUBJECT) == ARO_SUBJECT;
+		locationIsSet = (ExceptionInfo->OverrideFlags & ARO_LOCATION) == ARO_LOCATION;
+
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			if (WriterVersion2 > 0x3008) {
+				NDR_CHECK(ndr_pull_ChangeHighlight(ndr, NDR_SCALARS, &r->ChangeHighlight));
+			}
+			else {
+				memset(&r->ChangeHighlight, 0, sizeof(struct ChangeHighlight));
+			}
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlockEE1Size));
+			NDR_PULL_ALLOC_N(ndr, r->ReservedBlockEE1, r->ReservedBlockEE1Size);
+			NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->ReservedBlockEE1, r->ReservedBlockEE1Size));
+			if (subjectIsSet || locationIsSet) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->StartDateTime));
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->EndDateTime));
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->OriginalStartDate));
+			}
+			if (subjectIsSet) {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharSubjectLength));
+				NDR_PULL_ALLOC_N(ndr, r->WideCharSubject, r->WideCharSubjectLength);
+				_mem_save_WideCharSubject_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->WideCharSubject, 0);
+				for (cntr_WideCharSubject_0 = 0; cntr_WideCharSubject_0 < r->WideCharSubjectLength; cntr_WideCharSubject_0++) {
+					NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharSubject[cntr_WideCharSubject_0]));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_WideCharSubject_0, 0);
+			}
+			if (locationIsSet) {
+				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharLocationLength));
+				NDR_PULL_ALLOC_N(ndr, r->WideCharLocation, r->WideCharLocationLength);
+				_mem_save_WideCharLocation_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->WideCharLocation, 0);
+				for (cntr_WideCharLocation_0 = 0; cntr_WideCharLocation_0 < r->WideCharLocationLength; cntr_WideCharLocation_0++) {
+					NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharLocation[cntr_WideCharLocation_0]));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_WideCharLocation_0, 0);
+			}
+			if (subjectIsSet || locationIsSet) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlockEE2Size));
+				NDR_PULL_ALLOC_N(ndr, r->ReservedBlockEE2, r->ReservedBlockEE2Size);
+				NDR_CHECK(ndr_pull_array_uint8(ndr, NDR_SCALARS, r->ReservedBlockEE2, r->ReservedBlockEE2Size));
+			}
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_push_AppointmentRecurrencePattern(struct ndr_push *ndr, int ndr_flags, const struct AppointmentRecurrencePattern *r)
+{
+	uint32_t cntr_ExceptionInfo_0;
+	uint32_t cntr_ReservedBlock1_0;
+	uint32_t cntr_ExtendedException_0;
+	uint32_t cntr_ReservedBlock2_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			NDR_CHECK(ndr_push_RecurrencePattern(ndr, NDR_SCALARS, &r->RecurrencePattern));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReaderVersion2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->WriterVersion2));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->StartTimeOffset));
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->EndTimeOffset));
+			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->ExceptionCount));
+			for (cntr_ExceptionInfo_0 = 0; cntr_ExceptionInfo_0 < r->ExceptionCount; cntr_ExceptionInfo_0++) {
+				NDR_CHECK(ndr_push_ExceptionInfo(ndr, NDR_SCALARS, &r->ExceptionInfo[cntr_ExceptionInfo_0]));
+			}
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlock1Size));
+			for (cntr_ReservedBlock1_0 = 0; cntr_ReservedBlock1_0 < r->ReservedBlock1Size; cntr_ReservedBlock1_0++) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlock1[cntr_ReservedBlock1_0]));
+			}
+			for (cntr_ExtendedException_0 = 0; cntr_ExtendedException_0 < r->ExceptionCount; cntr_ExtendedException_0++) {
+				NDR_CHECK(ndr_push_ExtendedException(ndr, NDR_SCALARS, r->WriterVersion2, r->ExceptionInfo + cntr_ExtendedException_0, &r->ExtendedException[cntr_ExtendedException_0]));
+			}
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlock2Size));
+			for (cntr_ReservedBlock2_0 = 0; cntr_ReservedBlock2_0 < r->ReservedBlock2Size; cntr_ReservedBlock2_0++) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlock2[cntr_ReservedBlock2_0]));
+			}
+			NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_push_RecurrencePattern(ndr, NDR_BUFFERS, &r->RecurrencePattern));
+			for (cntr_ExceptionInfo_0 = 0; cntr_ExceptionInfo_0 < r->ExceptionCount; cntr_ExceptionInfo_0++) {
+				NDR_CHECK(ndr_push_ExceptionInfo(ndr, NDR_BUFFERS, &r->ExceptionInfo[cntr_ExceptionInfo_0]));
+			}
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull *ndr, int ndr_flags, struct AppointmentRecurrencePattern *r)
+{
+	uint32_t cntr_ExceptionInfo_0;
+	TALLOC_CTX *_mem_save_ExceptionInfo_0;
+	uint32_t cntr_ReservedBlock1_0;
+	TALLOC_CTX *_mem_save_ReservedBlock1_0;
+	uint32_t cntr_ExtendedException_0;
+	TALLOC_CTX *_mem_save_ExtendedException_0;
+	uint32_t cntr_ReservedBlock2_0;
+	TALLOC_CTX *_mem_save_ReservedBlock2_0;
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		NDR_PULL_CHECK_FLAGS(ndr, ndr_flags);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			NDR_CHECK(ndr_pull_RecurrencePattern(ndr, NDR_SCALARS, &r->RecurrencePattern));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReaderVersion2));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->WriterVersion2));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->StartTimeOffset));
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->EndTimeOffset));
+			NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->ExceptionCount));
+			NDR_PULL_ALLOC_N(ndr, r->ExceptionInfo, r->ExceptionCount);
+			_mem_save_ExceptionInfo_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ExceptionInfo, 0);
+			for (cntr_ExceptionInfo_0 = 0; cntr_ExceptionInfo_0 < r->ExceptionCount; cntr_ExceptionInfo_0++) {
+				NDR_CHECK(ndr_pull_ExceptionInfo(ndr, NDR_SCALARS, &r->ExceptionInfo[cntr_ExceptionInfo_0]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExceptionInfo_0, 0);
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1Size));
+			NDR_PULL_ALLOC_N(ndr, r->ReservedBlock1, r->ReservedBlock1Size);
+			_mem_save_ReservedBlock1_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock1, 0);
+			for (cntr_ReservedBlock1_0 = 0; cntr_ReservedBlock1_0 < r->ReservedBlock1Size; cntr_ReservedBlock1_0++) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1[cntr_ReservedBlock1_0]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock1_0, 0);
+			NDR_PULL_ALLOC_N(ndr, r->ExtendedException, r->ExceptionCount);
+			_mem_save_ExtendedException_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ExtendedException, 0);
+			for (cntr_ExtendedException_0 = 0; cntr_ExtendedException_0 < r->ExceptionCount; cntr_ExtendedException_0++) {
+				NDR_CHECK(ndr_pull_ExtendedException(ndr, NDR_SCALARS, r->WriterVersion2, r->ExceptionInfo + cntr_ExtendedException_0, &r->ExtendedException[cntr_ExtendedException_0]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExtendedException_0, 0);
+			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2Size));
+			NDR_PULL_ALLOC_N(ndr, r->ReservedBlock2, r->ReservedBlock2Size);
+			_mem_save_ReservedBlock2_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock2, 0);
+			for (cntr_ReservedBlock2_0 = 0; cntr_ReservedBlock2_0 < r->ReservedBlock2Size; cntr_ReservedBlock2_0++) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2[cntr_ReservedBlock2_0]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock2_0, 0);
+			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+			NDR_CHECK(ndr_pull_RecurrencePattern(ndr, NDR_BUFFERS, &r->RecurrencePattern));
+			_mem_save_ExceptionInfo_0 = NDR_PULL_GET_MEM_CTX(ndr);
+			NDR_PULL_SET_MEM_CTX(ndr, r->ExceptionInfo, 0);
+			for (cntr_ExceptionInfo_0 = 0; cntr_ExceptionInfo_0 < r->ExceptionCount; cntr_ExceptionInfo_0++) {
+				NDR_CHECK(ndr_pull_ExceptionInfo(ndr, NDR_BUFFERS, &r->ExceptionInfo[cntr_ExceptionInfo_0]));
+			}
+			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExceptionInfo_0, 0);
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
 	return NDR_ERR_SUCCESS;
 }

@@ -60,6 +60,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 	struct GetProps_req	*request;
 	struct GetProps_repl	*response;
 	uint32_t		handle;
+	uint16_t		property_id, property_type;
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
 	struct emsmdbp_object	*object;
@@ -125,8 +126,22 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
         for (i = 0; i < request->prop_count; i++) {
                 properties->aulPropTag[i] = request->properties[i];
                 if ((request->properties[i] & 0xffff) == 0) {
-                        properties->aulPropTag[i] |= get_property_type(request->properties[i] >> 16);
-                        untyped_status[i] = true;
+			property_id = request->properties[i] >> 16;
+			if (property_id < 0x8000) {
+				property_type = get_property_type(property_id);
+			}
+			else {
+				property_type = 0;
+				mapistore_namedprops_get_nameid_type(emsmdbp_ctx->mstore_ctx->nprops_ctx, property_id, &property_type);
+			}
+			if (property_type) {
+				properties->aulPropTag[i] |= property_type;
+				untyped_status[i] = true;
+			}
+			else {
+				properties->aulPropTag[i] |= PT_ERROR; /* fail with a MAPI_E_NOT_FOUND */
+				untyped_status[i] = false;
+			}
                 }
                 else {
                         untyped_status[i] = false;

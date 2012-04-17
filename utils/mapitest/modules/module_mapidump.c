@@ -224,27 +224,27 @@ _PUBLIC_ bool mapitest_mapidump_srowset(struct mapitest *mt)
 */ 
 _PUBLIC_ bool mapitest_mapidump_pabentry(struct mapitest *mt)
 {
-	struct SRow		pabentry;
-	struct SPropValue       SPropValue;
+	struct PropertyRow_r	pabentry;
+	struct PropertyValue_r	value;
 
 	pabentry.cValues = 0;
-	pabentry.lpProps = talloc_zero(mt->mem_ctx, struct SPropValue);
+	pabentry.lpProps = talloc_zero(mt->mem_ctx, struct PropertyValue_r);
 
-	SPropValue.ulPropTag = PR_ADDRTYPE_UNICODE;
-	SPropValue.value.lpszA = "dummy addrtype";
-	SRow_addprop(&(pabentry), SPropValue);
+	value.ulPropTag = PR_ADDRTYPE_UNICODE;
+	value.value.lpszA = "dummy addrtype";
+	PropertyRow_addprop(&(pabentry), value);
 
-	SPropValue.ulPropTag = PR_DISPLAY_NAME_UNICODE;
-	SPropValue.value.lpszA = "dummy display name";
-	SRow_addprop(&(pabentry), SPropValue);
+	value.ulPropTag = PR_DISPLAY_NAME_UNICODE;
+	value.value.lpszA = "dummy display name";
+	PropertyRow_addprop(&(pabentry), value);
 
-	SPropValue.ulPropTag = PR_EMAIL_ADDRESS_UNICODE;
-	SPropValue.value.lpszA = "dummy@example.com";
-	SRow_addprop(&(pabentry), SPropValue);
+	value.ulPropTag = PR_EMAIL_ADDRESS_UNICODE;
+	value.value.lpszA = "dummy@example.com";
+	PropertyRow_addprop(&(pabentry), value);
 
-	SPropValue.ulPropTag = PR_ACCOUNT_UNICODE;
-	SPropValue.value.lpszA = "dummy account";
-	SRow_addprop(&(pabentry), SPropValue);
+	value.ulPropTag = PR_ACCOUNT_UNICODE;
+	value.value.lpszA = "dummy account";
+	PropertyRow_addprop(&(pabentry), value);
 
 	mapidump_PAB_entry(&pabentry);
 

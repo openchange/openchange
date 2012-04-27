@@ -11,6 +11,55 @@ import ocsmanager.lib.config as OCSConfig
 from ocsmanager.config.routing import make_map
 import openchange.mapistore as mapistore
 
+# samba
+import samba.param
+from samba.samdb import SamDB
+from samba.auth import system_session, admin_session
+
+FIRST_ORGANIZATION = "First Organization"
+FIRST_ORGANIZATION_UNIT = "First Administrative Group"
+
+def _load_samba_environment():
+    """Load the samba configuration vars from smb.conf and the sam.db.
+    
+    """
+
+    params = samba.param.LoadParm()
+    params.load_default()
+
+    netbiosname = params.get("netbios name")
+    hostname = netbiosname.lower()
+
+    dnsdomain = params.get("realm")
+    dnsdomain = dnsdomain.lower()
+
+    serverrole = params.get("server role")
+    if serverrole == "domain controller":
+        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
+    else:
+        domaindn = "CN=" + netbiosname
+
+    rootdn = domaindn
+    configdn = "CN=Configuration," + rootdn
+    firstorg = FIRST_ORGANIZATION
+    firstou = FIRST_ORGANIZATION_UNIT
+
+    samdb_ldb = SamDB(url=params.samdb_url(), lp=params)
+    sam_environ = {"samdb_ldb": samdb_ldb,
+                   "domaindn": domaindn,
+                   "firstorgdn": ("CN=%s,CN=Microsoft Exchange,CN=Services,%s"
+                                  % (firstorg, configdn)),
+                   "legacyserverdn": ("/o=%s/ou=%s/cn=Configuration/cn=Servers"
+                                      "/cn=%s"
+                                      % (firstorg, firstou, netbiosname)),
+                   "hostname": hostname,
+                   "dnsdomain": dnsdomain}
+
+    # OpenChange dispatcher DB names
+
+    return sam_environ
+
+
 def load_environment(global_conf, app_conf):
     """Configure the Pylons environment via the ``pylons.config``
     object
@@ -48,6 +97,8 @@ def load_environment(global_conf, app_conf):
     # any Pylons config options)
     ocsconfig = OCSConfig.OCSConfig(os.path.join(config.get('here'), 'ocsmanager.ini'))
     config['ocsmanager'] = ocsconfig.load()
+
+    config['samba'] = _load_samba_environment()
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     config['mapistore'] = mapistore.mapistore(config['ocsmanager']['main']['mapistore_root']).management()

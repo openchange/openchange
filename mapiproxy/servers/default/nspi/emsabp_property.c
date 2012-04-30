@@ -40,7 +40,6 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagAccount,			"sAMAccountName",	false,	NULL			},
 	{ PidTagGivenName,			"givenName",		false,	NULL			},
 	{ PidTagSurname,			"sn",			false,	NULL			},
-	{ PidTagOriginalDisplayName,		"displayName",		false,	NULL			},
 	{ PidTagTransmittableDisplayName,	"displayName",		false,	NULL			},
 	{ PidTagPrimarySmtpAddress,		"mail",			false,	NULL			},
 	{ PidTag7BitDisplayName,		"displayName",		false,	NULL			},

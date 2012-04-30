@@ -21,7 +21,6 @@ def make_map(config):
     # CUSTOM ROUTES HERE
 
     map.connect('/autodiscover/{action}.xml', controller="autodiscover")
-    map.connect('/{controller}')
     map.connect('/{controller}/{action}')
     map.connect('/{controller}/{action}/{id}')
 

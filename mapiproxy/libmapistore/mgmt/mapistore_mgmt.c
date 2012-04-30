@@ -157,8 +157,6 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	}
 
 	/* Setup asynchronous notification request on this message queue */
-
-	/** TODO: fix signal handler before restoring this code
 	sa.sa_sigaction = mgmt_ipc_notif_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
@@ -175,7 +173,6 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 		talloc_free(mgmt_ctx);
 		return NULL;
 	}
-	*/
 
 	/* Empty queue since new notification only occurs flushed/empty queue */
 	ret = mq_getattr(mgmt_ctx->mq_ipc, &attr);

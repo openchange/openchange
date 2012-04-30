@@ -19,17 +19,14 @@
 #
 
 from base64 import b64encode
-import os,sys
-import struct
-import samba
+import os
 from openchange import mailbox
-from samba import param, Ldb, dsdb, substitute_var, read_and_sub_file
+from samba import Ldb, dsdb
 from samba.samdb import SamDB
 import ldb
-from ldb import (SCOPE_SUBTREE, SCOPE_BASE, FLAG_MOD_REPLACE, FLAG_MOD_ADD, FLAG_MOD_DELETE)
-from samba.auth import system_session, admin_session
-from samba.provision import (setup_add_ldif, setup_modify_ldif, setup_ldb,find_provision_key_parameters)
-from samba.upgradehelpers import (get_paths, get_ldbs)
+from ldb import SCOPE_SUBTREE
+from samba.auth import system_session
+from samba.provision import (setup_add_ldif, setup_modify_ldif)
 from openchange.urlutils import openchangedb_url
 
 __docformat__ = 'restructuredText'

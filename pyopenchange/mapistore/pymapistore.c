@@ -484,7 +484,7 @@ static PyMethodDef py_mapistore_global_methods[] = {
 
 void initmapistore(void)
 {
-	PyObject	*m;
+	PyObject	*m, *em;
 
 	if (PyType_Ready(&PyMAPIStore) < 0) {
 		return;
@@ -521,4 +521,12 @@ void initmapistore(void)
 	Py_INCREF(&PyMAPIStore);
 
 	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);
+
+	em = Py_InitModule3("errors", NULL,
+			    "Error codes of the mapistore operations");
+	if (em == NULL) {
+		return;
+	}
+	PyModule_AddObject(m, "errors", em);
+	register_mapistore_errors(em);
 }

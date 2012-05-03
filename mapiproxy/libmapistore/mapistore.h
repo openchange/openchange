@@ -253,6 +253,19 @@ struct mapistore_context {
 	mqd_t					mq_ipc;
 };
 
+struct mapistore_freebusy_properties {
+	uint16_t	nbr_months;
+	uint32_t	*months_ranges;
+	struct Binary_r	*freebusy_tentative;
+	struct Binary_r	*freebusy_busy;
+	struct Binary_r	*freebusy_away;
+	struct Binary_r	*freebusy_merged;
+	uint32_t	publish_start;
+	uint32_t	publish_end;
+	// char		*email_address;
+	struct FILETIME	timestamp;
+};
+
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -296,6 +309,7 @@ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *
 enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 enum mapistore_error mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 enum mapistore_error mapistore_folder_modify_permissions(struct mapistore_context *, uint32_t, void *, uint8_t, uint16_t, struct PermissionData *);
+enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *, uint32_t, void *, struct tm *, struct tm *, TALLOC_CTX *, struct mapistore_freebusy_properties **);
 
 enum mapistore_error mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
 enum mapistore_error mapistore_message_modify_recipients(struct mapistore_context *, uint32_t, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
@@ -318,6 +332,7 @@ enum mapistore_error mapistore_table_handle_destructor(struct mapistore_context 
 enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
+
 
 /* definitions from mapistore_processing.c */
 enum mapistore_error mapistore_set_mapping_path(const char *);

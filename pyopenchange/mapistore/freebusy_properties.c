@@ -22,7 +22,7 @@
 #include <Python.h>
 #include <structmember.h>
 
-#include <mapistore/mapistore.h>
+#include "mapiproxy/libmapistore/mapistore.h"
 
 #include <gen_ndr/exchange.h>
 
@@ -37,6 +37,7 @@ struct PyMemberDef PyMAPIStoreFreeBusyProperties_members[] = {
 	{ "publish_end", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, publish_end), RO, "docstring of publish_end" },
 
 	/* tuples of tuples of date ranges, based on event/participation status */
+	{ "free", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, free), RO, "docstring of free" },
 	{ "tentative", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, tentative), RO, "docstring of tentative" },
 	{ "busy", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, busy), RO, "docstring of busy" },
 	{ "away", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, away), RO, "docstring of away" },
@@ -137,6 +138,9 @@ PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapi
 	fb_props_object->publish_end = value;
 	Py_INCREF(value);
 
+	value = make_fb_tuple(fb_props, fb_props->freebusy_free);
+	fb_props_object->free = value;
+	Py_INCREF(value);
 	value = make_fb_tuple(fb_props, fb_props->freebusy_tentative);
 	fb_props_object->tentative = value;
 	Py_INCREF(value);

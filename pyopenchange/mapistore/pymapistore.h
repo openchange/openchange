@@ -70,6 +70,7 @@ typedef struct {
 	PyObject *publish_start;
 	PyObject *publish_end;
 
+	PyObject *free;
 	PyObject *tentative;
 	PyObject *busy;
 	PyObject *away;

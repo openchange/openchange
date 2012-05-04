@@ -1147,7 +1147,7 @@ enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore
 	NTTIME					nt_time;
 	struct mapi_SRestriction_and		time_restrictions[2];
 	int					i, month, nbr_months;
-	uint8_t					**minutes_array, **tentative_array, **busy_array, **oof_array;
+	uint8_t					**minutes_array, **free_array, **tentative_array, **busy_array, **oof_array;
 	char					*tz;
 
 	/* Sanity checks */
@@ -1257,10 +1257,13 @@ enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore
 	}
 
 	/* fetch events and fill freebusy arrays */
+	free_array = talloc_array(local_mem_ctx, uint8_t *, nbr_months);
 	tentative_array = talloc_array(local_mem_ctx, uint8_t *, nbr_months);
 	busy_array = talloc_array(local_mem_ctx, uint8_t *, nbr_months);
 	oof_array = talloc_array(local_mem_ctx, uint8_t *, nbr_months);
 	for (i = 0; i < nbr_months; i++) {
+		free_array[i] = talloc_array(free_array, uint8_t, max_mins_per_month);
+		memset(free_array[i], 0, max_mins_per_month);
 		tentative_array[i] = talloc_array(tentative_array, uint8_t, max_mins_per_month);
 		memset(tentative_array[i], 0, max_mins_per_month);
 		busy_array[i] = talloc_array(tentative_array, uint8_t, max_mins_per_month);
@@ -1273,6 +1276,9 @@ enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore
 	while (mapistore_table_get_row(mstore_ctx, context_id, table, local_mem_ctx, MAPISTORE_PREFILTERED_QUERY, i, &row_data) == MAPISTORE_SUCCESS) {
 		if (row_data[0].error == MAPISTORE_SUCCESS && row_data[1].error == MAPISTORE_SUCCESS && row_data[2].error == MAPISTORE_SUCCESS) {
 			switch (*((uint32_t *) row_data[2].data)) {
+			case olFree:
+				minutes_array = free_array;
+				break;
 			case olTentative:
 				minutes_array = tentative_array;
 				break;
@@ -1294,11 +1300,13 @@ enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore
 
         /* compile minutes array into arrays of ranges */
 	fb_props->nbr_months = nbr_months;
+	fb_props->freebusy_free = talloc_array(fb_props, struct Binary_r, nbr_months);
 	fb_props->freebusy_tentative = talloc_array(fb_props, struct Binary_r, nbr_months);
 	fb_props->freebusy_busy = talloc_array(fb_props, struct Binary_r, nbr_months);
 	fb_props->freebusy_away = talloc_array(fb_props, struct Binary_r, nbr_months);
 	fb_props->freebusy_merged = talloc_array(fb_props, struct Binary_r, nbr_months);
 	for (i = 0; i < nbr_months; i++) {
+		mapistore_freebusy_compile_fbarray(fb_props, free_array[i], fb_props->freebusy_free + i);
 		mapistore_freebusy_compile_fbarray(fb_props, tentative_array[i], fb_props->freebusy_tentative + i);
 		mapistore_freebusy_compile_fbarray(fb_props, busy_array[i], fb_props->freebusy_busy + i);
 		mapistore_freebusy_compile_fbarray(fb_props, oof_array[i], fb_props->freebusy_away + i);

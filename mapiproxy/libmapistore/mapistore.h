@@ -256,6 +256,7 @@ struct mapistore_context {
 struct mapistore_freebusy_properties {
 	uint16_t	nbr_months;
 	uint32_t	*months_ranges;
+	struct Binary_r	*freebusy_free;
 	struct Binary_r	*freebusy_tentative;
 	struct Binary_r	*freebusy_busy;
 	struct Binary_r	*freebusy_away;

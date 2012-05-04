@@ -39,7 +39,7 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 	
 	folder->context = self;
-	folder->folder_object = NULL;
+	folder->folder_object = self->folder_object;
 	folder->fid = self->fid;
 	
 	Py_INCREF(self);

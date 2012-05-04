@@ -32,6 +32,9 @@ extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, 
 
 void initmapistore(void);
 
+PyObject *datetime_module;
+PyObject *datetime_datetime_class;
+
 static struct ldb_context	*samdb_ctx = NULL;
 static struct ldb_context	*openchange_ldb_ctx = NULL;
 
@@ -490,6 +493,23 @@ static PyMethodDef py_mapistore_global_methods[] = {
 	{ NULL },
 };
 
+static void load_modules(void)
+{
+	PyObject *datetime_dict;
+
+	datetime_module = PyImport_ImportModule("datetime");
+	if (datetime_module) {
+		datetime_dict = PyModule_GetDict(datetime_module);
+		datetime_datetime_class = PyDict_GetItemString(datetime_dict, "datetime");
+		if (!PyType_Check(datetime_datetime_class)) {
+			fprintf (stderr, "failure loading datetime.datetime class\n");
+		}
+	}
+	else {
+		fprintf (stderr, "failure loading datetime module\n");
+	}
+}
+
 void initmapistore(void)
 {
 	PyObject	*m;
@@ -517,8 +537,10 @@ void initmapistore(void)
 	}
 
 
-	initmapistore_folder(m);
+	load_modules();
 
+	initmapistore_folder(m);
+	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
 
 	Py_INCREF(&PyMAPIStore);

@@ -64,6 +64,21 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD	
+
+	PyObject *timestamp;
+
+	PyObject *publish_start;
+	PyObject *publish_end;
+
+	PyObject *tentative;
+	PyObject *busy;
+	PyObject *away;
+
+	PyObject *merged;
+} PyMAPIStoreFreeBusyPropertiesObject;
+
+typedef struct {
+	PyObject_HEAD	
 } PyMAPIStoreTableObject;
 
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
@@ -83,11 +98,18 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 #endif
 
 __BEGIN_DECLS
+
+extern PyObject *datetime_module;
+extern PyObject *datetime_datetime_class;
+
 void PyErr_SetMAPIStoreError(uint32_t);
 
 /* internal calls */
 void initmapistore_folder(PyObject *);
+void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_errors(PyObject *);
+
+PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapistore_freebusy_properties *);
 
 __END_DECLS
 

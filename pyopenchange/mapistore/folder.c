@@ -89,9 +89,114 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	return PyInt_FromLong(RowCount);
 }
 
+static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
+{
+	PyObject *value;
+
+	value = PyObject_GetAttrString(datetime, "year");
+	tm->tm_year = PyInt_AS_LONG(value) - 1900;
+	value = PyObject_GetAttrString(datetime, "month");
+	tm->tm_mon = PyInt_AS_LONG(value) - 1;
+	value = PyObject_GetAttrString(datetime, "day");
+	tm->tm_mday = PyInt_AS_LONG(value);
+	value = PyObject_GetAttrString(datetime, "hour");
+	tm->tm_hour = PyInt_AS_LONG(value);
+	value = PyObject_GetAttrString(datetime, "minute");
+	tm->tm_min = PyInt_AS_LONG(value);
+	value = PyObject_GetAttrString(datetime, "second");
+	tm->tm_sec = PyInt_AS_LONG(value);
+
+#ifdef	__USE_BSD
+	value = PyObject_CallMethod(datetime, "utcoffset", NULL);
+	if (value && value != Py_None) {
+		tm->tm_gmtoff = PyInt_AS_LONG(value);
+	}
+	else {
+		tm->tm_gmtoff = 0;
+	}
+	value = PyObject_CallMethod(datetime, "tzname", NULL);
+	if (value && value != Py_None) {
+		tm->tm_zone = talloc_strdup(mem_ctx, PyString_AsString(value));
+	}
+	else {
+		tm->tm_zone = NULL;
+	}
+#else
+	value = PyObject_CallMethod(datetime, "utcoffset", NULL);
+	if (value && value != Py_None) {
+		tm->__tm_gmtoff = PyInt_AS_LONG(value);
+	}
+	else {
+		tm->__tm_gmtoff = 0;
+	}
+	value = PyObject_CallMethod(datetime, "tzname", NULL);
+	if (value && value != Py_None) {
+		tm->__tm_zone = talloc_strdup(mem_ctx, PyString_AsString(value));
+	}
+	else {
+		tm->__tm_zone = NULL;
+	}
+#endif
+}
+
+static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	TALLOC_CTX		*mem_ctx;
+	char			*kwnames[] = { "startdate", "enddate", NULL };
+	PyObject		*start = NULL, *end = NULL, *result = NULL;
+	struct tm		*start_tm, *end_tm;
+	enum mapistore_error	retval;
+	struct mapistore_freebusy_properties *fb_props;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", kwnames, &start, &end)) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	if (start) {
+		if (!PyObject_IsInstance(start, datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'start' must either be a datetime.datetime instance of None");
+			goto end;
+		}
+		start_tm = talloc_zero(mem_ctx, struct tm);
+		convert_datetime_to_tm(mem_ctx, start, start_tm);
+	}
+	else {
+		start_tm = NULL;
+	}
+
+	if (end) {
+		if (!PyObject_IsInstance(end, datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'end' must either be a datetime.datetime instance of None");
+			goto end;
+		}
+		end_tm = talloc_zero(mem_ctx, struct tm);
+		convert_datetime_to_tm(mem_ctx, end, end_tm);
+	}
+	else {
+		end_tm = NULL;
+	}
+
+	retval = mapistore_folder_fetch_freebusy_properties(self->context->mstore_ctx, self->context->context_id, self->folder_object, start_tm, end_tm, mem_ctx, &fb_props);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_MAPIStore_IS_ERR_RAISE(retval);
+		goto end;
+	}
+	result = (PyObject *) instantiate_freebusy_properties(fb_props);
+
+end:
+	talloc_free(mem_ctx);
+
+	return result;
+/* enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, struct tm *start_tm, struct tm *end_tm, TALLOC_CTX *mem_ctx, struct mapistore_freebusy_properties **fb_props_p) */
+
+}
+
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
+	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
 

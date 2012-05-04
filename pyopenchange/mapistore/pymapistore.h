@@ -72,9 +72,6 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 
-/* external calls */
-void register_mapistore_errors(PyObject *);
-
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {
@@ -87,6 +84,11 @@ void register_mapistore_errors(PyObject *);
 
 __BEGIN_DECLS
 void PyErr_SetMAPIStoreError(uint32_t);
+
+/* internal calls */
+void initmapistore_folder(PyObject *);
+void initmapistore_errors(PyObject *);
+
 __END_DECLS
 
 #define PyErr_MAPIStore_IS_ERR_RAISE(retval)		\

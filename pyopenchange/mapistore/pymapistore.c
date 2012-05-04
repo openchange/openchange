@@ -492,7 +492,7 @@ static PyMethodDef py_mapistore_global_methods[] = {
 
 void initmapistore(void)
 {
-	PyObject	*m, *em;
+	PyObject	*m;
 
 	if (PyType_Ready(&PyMAPIStore) < 0) {
 		return;
@@ -506,10 +506,6 @@ void initmapistore(void)
 		return;
 	}
 
-	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
-		return;
-	}
-
 	if (PyType_Ready(&PyMAPIStoreTable) < 0) {
 		return;
 	}
@@ -520,21 +516,12 @@ void initmapistore(void)
 		return;
 	}
 
-	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
-	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));
 
-	PyModule_AddObject(m, "NONE", PyInt_FromLong(0x0));
-	PyModule_AddObject(m, "OPEN_IF_EXISTS", PyInt_FromLong(0x1));
+	initmapistore_folder(m);
+
+	initmapistore_errors(m);
 
 	Py_INCREF(&PyMAPIStore);
 
 	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);
-
-	em = Py_InitModule3("errors", NULL,
-			    "Error codes of the mapistore operations");
-	if (em == NULL) {
-		return;
-	}
-	PyModule_AddObject(m, "errors", em);
-	register_mapistore_errors(em);
 }

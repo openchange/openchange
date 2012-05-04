@@ -110,3 +110,16 @@ PyTypeObject PyMAPIStoreFolder = {
 	.tp_dealloc = (destructor)py_MAPIStoreFolder_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
+
+void initmapistore_folder(PyObject *m)
+{
+	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
+		return;
+	}
+
+	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));
+
+	PyModule_AddObject(m, "NONE", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "OPEN_IF_EXISTS", PyInt_FromLong(0x1));
+}

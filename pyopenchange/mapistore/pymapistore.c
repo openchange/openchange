@@ -23,11 +23,16 @@
 #include "pyopenchange/mapistore/pymapistore.h"
 #include "pyopenchange/pymapi.h"
 
+#include <param.h>
+#include <samba/session.h>
+
 /* static PyTypeObject *SPropValue_Type; */
+
+extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
 
 void initmapistore(void);
 
-/* static struct ldb_context	*sam_ldb_ctx = NULL; */
+static struct ldb_context	*samdb_ctx = NULL;
 static struct ldb_context	*openchange_ldb_ctx = NULL;
 
 void PyErr_SetMAPIStoreError(uint32_t retval)
@@ -36,53 +41,55 @@ void PyErr_SetMAPIStoreError(uint32_t retval)
 			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
 }
 
-/* static void *sam_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath) */
-/* { */
-/* 	char			*ldb_path; */
-/* 	struct tevent_context	*ev; */
-/* 	int			ret; */
-/* 	struct ldb_result	*res; */
-/* 	struct ldb_dn		*tmp_dn = NULL; */
-/* 	static const char	*attrs[] = { */
-/* 		"rootDomainNamingContext", */
-/* 		"defaultNamingContext", */
-/* 		NULL */
-/* 	}; */
+static void sam_ldb_init(const char *syspath)
+{
+	TALLOC_CTX		*mem_ctx;
+	/* char			*ldb_path; */
+	struct loadparm_context *lp_ctx;
+	struct tevent_context	*ev;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_dn		*tmp_dn = NULL;
+	static const char	*attrs[] = {
+		"rootDomainNamingContext",
+		"defaultNamingContext",
+		NULL
+	};
 
-/* 	/\* Sanity checks *\/ */
-/* 	if (sam_ldb_ctx) return sam_ldb_ctx; */
+	/* Sanity checks */
+	if (samdb_ctx) return;
 
-/* 	ev = tevent_context_init(talloc_autofree_context()); */
-/* 	if (!ev) return NULL; */
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-/* 	/\* Step 1. Retrieve a LDB context pointer on sam.ldb database *\/ */
-/* 	ldb_path = talloc_asprintf(mem_ctx, "%s/sam.ldb", syspath); */
-/* 	sam_ldb_ctx = ldb_init(mem_ctx, ev); */
-/* 	if (!sam_ldb_ctx) return NULL; */
+	ev = tevent_context_init(talloc_autofree_context());
+	if (!ev) goto end;
 
-/* 	/\* Step 2. Connect to the database *\/ */
-/* 	ret = ldb_connect(sam_ldb_ctx, ldb_path, 0, NULL); */
-/* 	talloc_free(ldb_path); */
-/* 	if (ret != LDB_SUCCESS) return NULL; */
+	/* /\* Step 1. Retrieve a LDB context pointer on sam.ldb database *\/ */
+	/* ldb_path = talloc_asprintf(mem_ctx, "%s/sam.ldb", syspath); */
 
-/* 	/\* Step 3. Search for rootDSE record *\/ */
-/* 	ret = ldb_search(sam_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, sam_ldb_ctx, "@ROOTDSE"), */
-/* 			 LDB_SCOPE_BASE, attrs, NULL); */
-/* 	if (ret != LDB_SUCCESS) return NULL; */
-/* 	if (res->count != 1) return NULL; */
+	/* Step 2. Connect to the database */
+	lp_ctx = loadparm_init_global(true);
+	samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
+	if (!samdb_ctx) goto end;
 
-/* 	/\* Step 4. Set opaque naming *\/ */
-/* 	tmp_dn = ldb_msg_find_attr_as_dn(sam_ldb_ctx, sam_ldb_ctx, */
-/* 					 res->msgs[0], "rootDomainNamingContext"); */
-/* 	ldb_set_opaque(sam_ldb_ctx, "rootDomainNamingContext", tmp_dn); */
+	/* Step 3. Search for rootDSE record */
+	ret = ldb_search(samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, samdb_ctx, "@ROOTDSE"),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) goto end;
+	if (res->count != 1) goto end;
+
+	/* Step 4. Set opaque naming */
+	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+					 res->msgs[0], "rootDomainNamingContext");
+	ldb_set_opaque(samdb_ctx, "rootDomainNamingContext", tmp_dn);
 	
-/* 	tmp_dn = ldb_msg_find_attr_as_dn(sam_ldb_ctx, sam_ldb_ctx, */
-/* 					 res->msgs[0], "defaultNamingContext"); */
-/* 	ldb_set_opaque(sam_ldb_ctx, "defaultNamingContext", tmp_dn); */
+	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+					 res->msgs[0], "defaultNamingContext");
+	ldb_set_opaque(samdb_ctx, "defaultNamingContext", tmp_dn);
 
-/* 	return sam_ldb_ctx; */
-
-/* } */
+end:
+	talloc_free(mem_ctx);
+}
 
 static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 {
@@ -141,10 +148,17 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	char				*kwnames[] = { "syspath", "path", NULL };
 	const char			*path = NULL;
 	const char			*syspath = NULL;
-	struct ldb_context		*samdb_ctx = NULL;
 	struct ldb_context		*ocdb_ctx = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", kwnames, &syspath, &path)) {
+		return NULL;
+	}
+
+	/* Initialize ldb context on sam.ldb */
+	sam_ldb_init(syspath);
+	if (samdb_ctx == NULL) {
+		PyErr_SetString(PyExc_SystemError,
+				"error in sam_ldb_init");
 		return NULL;
 	}
 
@@ -154,14 +168,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	/* Initialize ldb context on sam.ldb */
-/*	samdb_ctx = sam_ldb_init(mem_ctx, syspath);
-	if (samdb_ctx == NULL) {
-		printf("Error in sam_ldb_init\n");
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-*/
 	/* Initialize ldb context on openchange.ldb */
 	ocdb_ctx = openchange_ldb_init(mem_ctx, syspath);
 	if (ocdb_ctx == NULL) {

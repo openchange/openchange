@@ -171,7 +171,8 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize ldb context on openchange.ldb */
 	ocdb_ctx = openchange_ldb_init(mem_ctx, syspath);
 	if (ocdb_ctx == NULL) {
-		printf("Error in openchange_ldb_init\n");
+		PyErr_SetString(PyExc_SystemError,
+				"error in openchange_ldb_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -183,7 +184,8 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, path);
 	if (mstore_ctx == NULL) {
-		printf("Error in mapistore_init\n");
+		PyErr_SetString(PyExc_SystemError,
+				"error in mapistore_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -238,7 +240,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 		return NULL;
 	}
 
-	printf("Add context: %s\n", uri);
+	/* printf("Add context: %s\n", uri); */
 
 	/* Initialize connection info */
 	ret = mapistore_set_connection_info(self->mstore_ctx, self->samdb_ctx, self->ocdb_ctx, username);

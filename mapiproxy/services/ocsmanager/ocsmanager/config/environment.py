@@ -101,8 +101,10 @@ def load_environment(global_conf, app_conf):
     config['samba'] = _load_samba_environment()
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
-    config['mapistore'] = mapistore.mapistore(config['ocsmanager']['main']['mapistore_root']).management()
+    mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])
+    config['mapistore'] = mstore
+    config['management'] = mstore.management()
     if config['ocsmanager']['main']['debug'] == "yes":
-        config['mapistore'].verbose = True;
+        config['management'].verbose = True;
     
     return config

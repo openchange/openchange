@@ -449,19 +449,15 @@ static PyMethodDef mapistore_methods[] = {
 	{ NULL },
 };
 
-static PyGetSetDef mapistore_getsetters[] = {
-	{ NULL }
-};
-
 PyTypeObject PyMAPIStore = {
 	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "mapistore",
+	.tp_name = "mapistore.MAPIStore",
 	.tp_basicsize = sizeof (PyMAPIStoreObject),
-	.tp_methods = mapistore_methods,
-	.tp_getset = mapistore_getsetters,
 	.tp_doc = "mapistore object",
+	.tp_methods = mapistore_methods,
+	/* .tp_getset = mapistore_getsetters, */
 	.tp_new = py_MAPIStore_new,
-	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
+	.tp_dealloc = (destructor)py_MAPIStore_dealloc, 
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
@@ -536,7 +532,6 @@ void initmapistore(void)
 		return;
 	}
 
-
 	load_modules();
 
 	initmapistore_folder(m);
@@ -545,5 +540,5 @@ void initmapistore(void)
 
 	Py_INCREF(&PyMAPIStore);
 
-	PyModule_AddObject(m, "mapistore", (PyObject *)&PyMAPIStore);
+	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 }

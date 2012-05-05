@@ -13,6 +13,7 @@ import openchange.mapistore as mapistore
 
 # samba
 import samba.param
+from samba import Ldb
 from samba.samdb import SamDB
 from samba.auth import system_session, admin_session
 
@@ -46,7 +47,10 @@ def _load_samba_environment():
 
     samdb_ldb = SamDB(url=params.samdb_url(), lp=params)
     sam_environ = {"samdb_ldb": samdb_ldb,
+                   "private_dir": params.get("private dir"),
                    "domaindn": domaindn,
+                   "oc_user_basedn": "CN=%s,CN=%s,CN=%s,%s" \
+                       % (firstou, firstorg, netbiosname, domaindn),
                    "firstorgdn": ("CN=%s,CN=Microsoft Exchange,CN=Services,%s"
                                   % (firstorg, configdn)),
                    "legacyserverdn": ("/o=%s/ou=%s/cn=Configuration/cn=Servers"
@@ -58,6 +62,19 @@ def _load_samba_environment():
     # OpenChange dispatcher DB names
 
     return sam_environ
+
+
+def _load_ocdb():
+    """Return a Ldb object pointing to the openchangedb.ldb
+    
+    """
+
+    params = samba.param.LoadParm()
+    params.load_default()
+
+    ocdb = Ldb(os.path.join(params.get("private dir"), "openchange.ldb"))
+
+    return ocdb
 
 
 def load_environment(global_conf, app_conf):
@@ -99,6 +116,7 @@ def load_environment(global_conf, app_conf):
     config['ocsmanager'] = ocsconfig.load()
 
     config['samba'] = _load_samba_environment()
+    config['oc_ldb'] = _load_ocdb()
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])

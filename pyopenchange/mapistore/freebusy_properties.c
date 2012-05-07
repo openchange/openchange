@@ -84,18 +84,36 @@ static PyObject *make_datetime_from_minutes(uint32_t minutes)
 	return make_datetime_from_nttime(nt_time);
 }
 
-static PyObject *make_range_tuple_from_range(struct mapistore_freebusy_properties *fb_props, uint16_t *minutes_range_start)
+static PyObject *make_datetime_from_ymon_and_minutes(uint32_t ymon, uint16_t offset_mins)
+{
+	struct tm tm;
+	int year, hours;
+	time_t unix_time;
+	const char *tz;
+
+	memset(&tm, 0, sizeof(struct tm));
+	year = ymon >> 4;
+	tm.tm_year = year - 1900;
+	tm.tm_mon = (ymon & 0x000f) - 1;
+
+	tm.tm_min = offset_mins % 60;
+	hours = offset_mins / 60;
+	tm.tm_mday = 1 + (hours / 24);
+	tm.tm_hour = hours % 24;
+
+	unix_time = mktime(&tm);
+
+	return PyObject_CallMethod(datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
+}
+
+static PyObject *make_range_tuple_from_range(uint32_t ymon, uint16_t *minutes_range_start)
 {
 	PyObject *range_tuple, *datetime;
-	uint32_t date_min;
 
 	range_tuple = PyTuple_New(2);
-	date_min = fb_props->publish_start + minutes_range_start[0];
-	datetime = make_datetime_from_minutes(date_min);
+	datetime = make_datetime_from_ymon_and_minutes(ymon, minutes_range_start[0]);
 	PyTuple_SET_ITEM(range_tuple, 0, datetime);
-
-	date_min = fb_props->publish_start + minutes_range_start[1];
-	datetime = make_datetime_from_minutes(date_min);
+	datetime = make_datetime_from_ymon_and_minutes(ymon, minutes_range_start[1]);
 	PyTuple_SET_ITEM(range_tuple, 1, datetime);
 
 	return range_tuple;
@@ -103,18 +121,29 @@ static PyObject *make_range_tuple_from_range(struct mapistore_freebusy_propertie
 
 static PyObject *make_fb_tuple(struct mapistore_freebusy_properties *fb_props, struct Binary_r *ranges)
 {
-	int i, nbr_ranges;
+	int i, j, range_nbr, nbr_ranges, nbr_minute_ranges;
+	struct Binary_r *current_ranges;
 	uint16_t *minutes_range_start;
 	PyObject *tuple, *range_tuple;
 
-	nbr_ranges = ranges->cb / (2 * sizeof(uint16_t));
-	minutes_range_start = (uint16_t *) ranges->lpb;
+	nbr_ranges = 0;
+	for (i = 0; i < fb_props->nbr_months; i++) {
+		current_ranges = ranges + i;
+		nbr_ranges += (current_ranges->cb / (2 * sizeof(uint16_t)));
+	}
 
 	tuple = PyTuple_New(nbr_ranges);
-	for (i = 0; i < nbr_ranges; i++) {
-		range_tuple = make_range_tuple_from_range(fb_props, minutes_range_start);
-		PyTuple_SET_ITEM(tuple, i, range_tuple);
-		minutes_range_start += 2;
+	range_nbr = 0;
+	for (i = 0; i < fb_props->nbr_months; i++) {
+		current_ranges = ranges + i;
+		minutes_range_start = (uint16_t *) current_ranges->lpb;
+		nbr_minute_ranges = (current_ranges->cb / (2 * sizeof(uint16_t)));
+		for (j = 0; j < nbr_minute_ranges; j++) {
+ 			range_tuple = make_range_tuple_from_range(fb_props->months_ranges[i], minutes_range_start);
+			PyTuple_SET_ITEM(tuple, range_nbr, range_tuple);
+			minutes_range_start += 2;
+			range_nbr++;
+		}
 	}
 
 	return tuple;

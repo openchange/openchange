@@ -336,12 +336,15 @@ class ExchangeService(ServiceBase):
                     "tentative": "Tentative",
                     "busy": "Busy",
                     "away": "OOF"}
+
+        offset = datetime.timedelta(0, timezone.Bias * 60)
+
         for (fb_attribute, label) in fb_types.iteritems():
             fb_event_list = getattr(freebusy_props, fb_attribute)
             for fb_event in fb_event_list:
                 event = CalendarEvent()
-                event.StartTime = fb_event[0]
-                event.EndTime = fb_event[1]
+                event.StartTime = fb_event[0] + offset
+                event.EndTime = fb_event[1] + offset
                 event.BusyType = label
                 events.append(event)
         fb_response.FreeBusyView.CalendarEventArray = events

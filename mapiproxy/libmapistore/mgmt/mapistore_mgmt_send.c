@@ -218,21 +218,21 @@ enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_m
 	/* fnevNewmail subscription case */
 	ret = mapistore_mgmt_registered_folder_subscription(mgmt_ctx, username, NULL, 
 							    mgmt_notification_type_newmail);
-	/* if (ret == MAPISTORE_SUCCESS) { */
-	/* 	memset(&cmd, 0x0, sizeof (struct mapistore_mgmt_command)); */
-	/* 	cmd.type = MAPISTORE_MGMT_NOTIF; */
-	/* 	cmd.command.notification.status = MAPISTORE_MGMT_SEND; */
-	/* 	cmd.command.notification.NotificationFlags = mgmt_notification_type_newmail | mgmt_notification_type_Mbit; */
-	/* 	cmd.command.notification.username = username; */
-	/* 	cmd.command.notification.WholeStore = 0; */
-	/* 	cmd.command.notification.FolderID = FolderID; */
-	/* 	cmd.command.notification.MessageID = MessageID; */
-	/* 	cmd.command.notification.MAPIStoreURI = MAPIStoreURI; */
-	/* 	cmd.command.notification.TotalNumberOfMessages = 0; */
-	/* 	cmd.command.notification.UnreadNumberOfMessages = 0; */
-	/* 	mapistore_mgmt_push_send(mem_ctx, mqfd, cmd); */
-	/* 	printf("NEWMAIL notification sent on %s\n", queue); */
-	/* } */
+	 if (ret == MAPISTORE_SUCCESS) { 
+	 	memset(&cmd, 0x0, sizeof (struct mapistore_mgmt_command));
+	 	cmd.type = MAPISTORE_MGMT_NOTIF; 
+	 	cmd.command.notification.status = MAPISTORE_MGMT_SEND; 
+	 	cmd.command.notification.NotificationFlags = mgmt_notification_type_newmail | mgmt_notification_type_Mbit; 
+	 	cmd.command.notification.username = username; 
+	 	cmd.command.notification.WholeStore = 0; 
+	 	cmd.command.notification.FolderID = FolderID; 
+	 	cmd.command.notification.MessageID = MessageID; 
+	 	cmd.command.notification.MAPIStoreURI = MAPIStoreURI; 
+	 	cmd.command.notification.TotalNumberOfMessages = 0; 
+	 	cmd.command.notification.UnreadNumberOfMessages = 0; 
+	 	mapistore_mgmt_push_send(mem_ctx, mqfd, cmd); 
+	 	printf("NEWMAIL notification sent on %s\n", queue); 
+	 } 
 
 	/* fnevObjectModified subscription case (fntevTbit + fnevUbit) (0x3010) but only 0x10 looked up */
 	ret = mapistore_mgmt_registered_folder_subscription(mgmt_ctx, username, NULL,

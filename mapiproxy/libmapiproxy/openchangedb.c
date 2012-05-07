@@ -1650,27 +1650,33 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", partialURI);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
+	printf("count: %d\n", res->count);
 	*count = res->count;
-	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count);
+	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count + 1);
 	*users = talloc_array(parent_ctx, char *, *count);
 
 	for (i = 0; i != *count; i++) {
 		tmp = ldb_msg_find_attr_as_string(res->msgs[i], "MAPIStoreURI", NULL);
+		printf("(MAPIStoreURI[%d]: tmp = %s\n", i, tmp);
 		*MAPIStoreURI[i] = talloc_strdup((TALLOC_CTX *)*MAPIStoreURI, tmp);
 
 		/* Retrieve the system user name */
 		mailboxDN = ldb_msg_find_attr_as_string(res->msgs[i], "mailboxDN", NULL);
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, mailboxDN);
+		printf("mailboxDN: %s\n", mailboxDN);
 		ret = ldb_search(ldb_ctx, mem_ctx, &mres, dn, LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=%s)", mailboxDN);
+		printf("ret = %d\n", ret);
 		/* This should NEVER happen */
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 		tmp = ldb_msg_find_attr_as_string(mres->msgs[0], "cn", NULL);
+		printf("tmp = %s\n", tmp);
 		*users[i] = talloc_strdup((TALLOC_CTX *)*users, tmp);
 		talloc_free(mres);
 	}
 
 	talloc_free(mem_ctx);
 
+	printf("here\n");
 	return MAPI_E_SUCCESS;
 }
 
@@ -1823,6 +1829,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, now);
 	if (mailboxDN) {
 		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
+	} else {
+		ldb_msg_add_string(msg, "mailboxDN", parentDN);
 	}
 	if (parentFolderID) {
 		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);

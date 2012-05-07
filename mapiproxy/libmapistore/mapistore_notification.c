@@ -383,7 +383,9 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 	}
 
 	data.data = talloc_size((TALLOC_CTX *)mstore_ctx, attr.mq_msgsize);
+	DEBUG(0, ("###### attr.mq_msgsize = %d\n", attr.mq_msgsize));
 	while ((data.length = mq_receive(s->mqueue, (char *)data.data, attr.mq_msgsize, &prio)) != -1) {
+		DEBUG(0, ("data.length = %d\n", data.length));
 		if (!nlist) {
 			nlist = talloc_zero((TALLOC_CTX *)mstore_ctx, struct mapistore_notification_list);
 		}

@@ -165,10 +165,11 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 
 	ret = mapistore_mgmt_generate_uri(self->mgmt_ctx, backend, vuser, folder, NULL, NULL, &uri);
 	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
-	printf("uri: %s\n", uri);
+	printf("=> uri: %s\n", uri);
 
 	ret = openchangedb_get_users_from_partial_uri(self->mgmt_ctx, self->parent->ocdb_ctx, uri, 
 						      &count, &MAPIStoreURI, &users);
+	printf("ret = 0x%x\n", ret);
 	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
 
 	PyDict_SetItemString(dict, "count", PyLong_FromLong(count));

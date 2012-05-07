@@ -103,6 +103,7 @@ static void mgmt_ipc_notif_handler(int signo, siginfo_t *info, void *unused)
 	se.sigev_value = info->si_value;
 	se.sigev_notify = SIGEV_SIGNAL;
 	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
+		perror("plop2");
 		perror("mq_notify");
 		return;
 	}
@@ -157,6 +158,8 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	}
 
 	/* Setup asynchronous notification request on this message queue */
+
+	/* TODO: fix signal handler before restoring this code */
 	sa.sa_sigaction = mgmt_ipc_notif_handler;
 	sigemptyset(&sa.sa_mask);
 	sa.sa_flags = SA_SIGINFO;
@@ -169,6 +172,7 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	se.sigev_signo = SIGIO;
 	se.sigev_value.sival_ptr = (void *) mgmt_ctx;
 	if (mq_notify(mgmt_ctx->mq_ipc, &se) == -1) {
+		perror("plop");
 		perror("mq_notify");
 		talloc_free(mgmt_ctx);
 		return NULL;

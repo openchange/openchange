@@ -203,7 +203,8 @@ static void ocsmanager_mail_transaction_commit(void *txn,
 			i_debug("# backend = %s", msg->backend);
 
 			/* FIXME: I'm ashamed but I'm tired */
-			command = p_strdup_printf(ctx->pool, "python %s --config %s --backend %s --user %s --folder %s --msgid %d", msg->bin, msg->config, msg->backend, msg->username, msg->destination_folder, msg->uid);
+//			command = p_strdup_printf(ctx->pool, "python %s --config %s --backend %s --user %s --folder %s --msgid %d", msg->bin, msg->config, msg->backend, msg->username, msg->destination_folder, msg->uid);
+			command = p_strdup_printf(ctx->pool, "python %s --config %s --backend %s --user %s --folder mail/folderINBOX --msgid %d", msg->bin, msg->config, msg->backend, msg->username, msg->uid);
 			system(command);
 		}
 	}

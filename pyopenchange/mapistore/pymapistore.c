@@ -235,8 +235,7 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	}
 	obj->mem_ctx = self->mem_ctx;
 	obj->parent = self;
-
-	Py_INCREF(self);
+	Py_INCREF(obj->parent);
 
 	return (PyObject *) obj;
 }

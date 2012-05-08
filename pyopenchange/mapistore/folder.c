@@ -27,7 +27,9 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 {
 	PyMAPIStoreFolderObject *self = (PyMAPIStoreFolderObject *)_self;
 
-	Py_DECREF(self->context);
+	talloc_unlink(NULL, self->folder_object);
+
+	Py_XDECREF(self->context);
 	PyObject_Del(_self);
 }
 
@@ -191,8 +193,6 @@ end:
 	talloc_free(mem_ctx);
 
 	return result;
-/* enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, struct tm *start_tm, struct tm *end_tm, TALLOC_CTX *mem_ctx, struct mapistore_freebusy_properties **fb_props_p) */
-
 }
 
 static PyMethodDef mapistore_folder_methods[] = {
@@ -223,6 +223,7 @@ void initmapistore_folder(PyObject *m)
 	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
 		return;
 	}
+	Py_INCREF(&PyMAPIStoreFolder);
 
 	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));

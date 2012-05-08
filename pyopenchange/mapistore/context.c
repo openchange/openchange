@@ -39,10 +39,12 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 	
 	folder->context = self;
+	Py_INCREF(folder->context);
+
 	folder->folder_object = self->folder_object;
+	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = self->fid;
 	
-	Py_INCREF(self);
 	return (PyObject *)folder;
 }
 

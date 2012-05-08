@@ -28,6 +28,8 @@
 
 #include "pymapistore.h"
 
+static void py_MAPIStoreFreeBusyProperties_dealloc(PyObject *_self);
+
 struct PyMemberDef PyMAPIStoreFreeBusyProperties_members[] = {
 	{ "timestamp", T_OBJECT_EX, offsetof(PyMAPIStoreFreeBusyPropertiesObject, timestamp), RO, "docstring of publish_start" },
 
@@ -54,18 +56,18 @@ PyTypeObject PyMAPIStoreFreeBusyProperties = {
 	.tp_members = PyMAPIStoreFreeBusyProperties_members,
 	.tp_basicsize = sizeof (PyMAPIStoreFreeBusyPropertiesObject),
 	.tp_doc = "mapistore freebusy properties object",
+	.tp_dealloc = (destructor)py_MAPIStoreFreeBusyProperties_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
-
 
 static PyObject *make_datetime_from_nttime(NTTIME nt_time)
 {
 	time_t		unix_time;
 	PyMAPIStoreGlobals *globals;
- 
- 	unix_time = nt_time_to_unix(nt_time);
+
+	unix_time = nt_time_to_unix(nt_time);
 	globals = get_PyMAPIStoreGlobals();
- 
+
 	return PyObject_CallMethod(globals->datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
 }
 
@@ -92,7 +94,6 @@ static PyObject *make_datetime_from_ymon_and_minutes(uint32_t ymon, uint16_t off
 	struct tm tm;
 	int year, hours;
 	time_t unix_time;
-	const char *tz;
 	PyMAPIStoreGlobals *globals;
 
 	memset(&tm, 0, sizeof(struct tm));
@@ -192,9 +193,26 @@ PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapi
 	return fb_props_object;
 }
 
+static void py_MAPIStoreFreeBusyProperties_dealloc(PyObject *_self)
+{
+	PyMAPIStoreFreeBusyPropertiesObject *self = (PyMAPIStoreFreeBusyPropertiesObject *)_self;
+
+	Py_XDECREF(self->timestamp);
+	Py_XDECREF(self->publish_start);
+	Py_XDECREF(self->publish_end);
+	Py_XDECREF(self->free);
+	Py_XDECREF(self->tentative);
+	Py_XDECREF(self->busy);
+	Py_XDECREF(self->away);
+	Py_XDECREF(self->merged);
+
+	PyObject_Del(_self);
+}
+
 void initmapistore_freebusy_properties(PyObject *parent_module)
 {
 	if (PyType_Ready(&PyMAPIStoreFreeBusyProperties) < 0) {
 		return;
 	}
+	Py_INCREF(&PyMAPIStoreFreeBusyProperties);
 }

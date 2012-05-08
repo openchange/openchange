@@ -53,8 +53,8 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 						     name, &fid);
 	if (ret == MAPISTORE_SUCCESS) {
 		if (flags != OPEN_IF_EXISTS) {
-			PyErr_MAPIStore_IS_ERR_RAISE(MAPISTORE_ERR_EXIST);
-			Py_RETURN_NONE;
+			PyErr_SetMAPIStoreError(ret);
+			return NULL;
 		}
 	}
 	
@@ -182,7 +182,7 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 
 	retval = mapistore_folder_fetch_freebusy_properties(self->context->mstore_ctx, self->context->context_id, self->folder_object, start_tm, end_tm, mem_ctx, &fb_props);
 	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_MAPIStore_IS_ERR_RAISE(retval);
+		PyErr_SetMAPIStoreError(retval);
 		goto end;
 	}
 	result = (PyObject *) instantiate_freebusy_properties(fb_props);

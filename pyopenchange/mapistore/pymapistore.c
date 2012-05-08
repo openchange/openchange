@@ -230,7 +230,7 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
 	obj->mgmt_ctx = mapistore_mgmt_init(self->mstore_ctx);
 	if (obj->mgmt_ctx == NULL) {
-		PyErr_MAPIStore_IS_ERR_RAISE(MAPISTORE_ERR_NOT_INITIALIZED);
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
 		return NULL;
 	}
 	obj->mem_ctx = self->mem_ctx;
@@ -273,7 +273,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 
 	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
 	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		PyErr_SetMAPIStoreError(ret);
 		return NULL;
 	}
 

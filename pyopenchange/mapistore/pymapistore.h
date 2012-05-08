@@ -118,10 +118,4 @@ PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapi
 
 __END_DECLS
 
-#define PyErr_MAPIStore_IS_ERR_RAISE(retval)		\
-	if (retval != MAPISTORE_SUCCESS) {		\
-		PyErr_SetMAPIStoreError(retval);	\
-		return NULL;				\
-        }
-
 #endif	/* ! __PYMAPISTORE_H_ */

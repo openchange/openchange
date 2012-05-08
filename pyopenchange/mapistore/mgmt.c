@@ -115,6 +115,7 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 	PyObject	*retlist;
 	uint64_t	mid;
 	int		ret;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTuple(args, "ssss", &backend, &user, &uri, &messageID)) {
 		return NULL;
@@ -123,7 +124,8 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 	retlist = PyList_New(0);
 
 	/* Gets a new message ID */
-	ret = openchangedb_get_new_folderID(self->parent->ocdb_ctx, &mid);
+	globals = get_PyMAPIStoreGlobals();
+	ret = openchangedb_get_new_folderID(globals->ocdb_ctx, &mid);
 	if (ret) return (PyObject *)retlist;
 
 	/* Register the message within specified user indexing database */
@@ -151,6 +153,7 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 	const char	*folder;
 	int		ret;
 	int		i;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTuple(args, "sss", &backend, &vuser, &folder)) {
 		return NULL;
@@ -167,7 +170,8 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
 	printf("uri: %s\n", uri);
 
-	ret = openchangedb_get_users_from_partial_uri(self->mgmt_ctx, self->parent->ocdb_ctx, uri, 
+	globals = get_PyMAPIStoreGlobals();
+	ret = openchangedb_get_users_from_partial_uri(self->mgmt_ctx, globals->ocdb_ctx, uri, 
 						      &count, &MAPIStoreURI, &users);
 	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
 
@@ -220,6 +224,7 @@ static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyOb
 	uint64_t	FolderID;
 	uint64_t	MessageID;
 	bool		softdeleted;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTuple(args, "ssss", &username, &storeuser, &FolderURI, &MessageURI)) {
 		return NULL;
@@ -233,7 +238,8 @@ static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyOb
 	}
 
 	/* Turn FolderURI into FolderID from openchangedb or indexing database */
-	ret = openchangedb_get_fid(self->parent->ocdb_ctx, FolderURI, &FolderID);
+	globals = get_PyMAPIStoreGlobals();
+	ret = openchangedb_get_fid(globals->ocdb_ctx, FolderURI, &FolderID);
 	if (ret != MAPI_E_SUCCESS) {
 		ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, FolderURI, false,
 							 &FolderID, &softdeleted);

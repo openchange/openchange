@@ -147,6 +147,7 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 	struct tm		*start_tm, *end_tm;
 	enum mapistore_error	retval;
 	struct mapistore_freebusy_properties *fb_props;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", kwnames, &start, &end)) {
 		return NULL;
@@ -154,9 +155,10 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
+	globals = get_PyMAPIStoreGlobals();
 	if (start) {
-		if (!PyObject_IsInstance(start, datetime_datetime_class)) {
-			PyErr_SetString(PyExc_TypeError, "'start' must either be a datetime.datetime instance of None");
+		if (!PyObject_IsInstance(start, globals->datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'start' must either be a datetime.datetime instance or None");
 			goto end;
 		}
 		start_tm = talloc_zero(mem_ctx, struct tm);
@@ -167,8 +169,8 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 	}
 
 	if (end) {
-		if (!PyObject_IsInstance(end, datetime_datetime_class)) {
-			PyErr_SetString(PyExc_TypeError, "'end' must either be a datetime.datetime instance of None");
+		if (!PyObject_IsInstance(end, globals->datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'end' must either be a datetime.datetime instance or None");
 			goto end;
 		}
 		end_tm = talloc_zero(mem_ctx, struct tm);

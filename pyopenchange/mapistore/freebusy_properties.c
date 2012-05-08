@@ -57,13 +57,16 @@ PyTypeObject PyMAPIStoreFreeBusyProperties = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+
 static PyObject *make_datetime_from_nttime(NTTIME nt_time)
 {
 	time_t		unix_time;
-
-	unix_time = nt_time_to_unix(nt_time);
-
-	return PyObject_CallMethod(datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
+	PyMAPIStoreGlobals *globals;
+ 
+ 	unix_time = nt_time_to_unix(nt_time);
+	globals = get_PyMAPIStoreGlobals();
+ 
+	return PyObject_CallMethod(globals->datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
 }
 
 static PyObject *make_datetime_from_filetime(struct FILETIME *filetime)
@@ -90,6 +93,7 @@ static PyObject *make_datetime_from_ymon_and_minutes(uint32_t ymon, uint16_t off
 	int year, hours;
 	time_t unix_time;
 	const char *tz;
+	PyMAPIStoreGlobals *globals;
 
 	memset(&tm, 0, sizeof(struct tm));
 	year = ymon >> 4;
@@ -103,7 +107,9 @@ static PyObject *make_datetime_from_ymon_and_minutes(uint32_t ymon, uint16_t off
 
 	unix_time = mktime(&tm);
 
-	return PyObject_CallMethod(datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
+	globals = get_PyMAPIStoreGlobals();
+
+	return PyObject_CallMethod(globals->datetime_datetime_class, "utcfromtimestamp", "i", unix_time);
 }
 
 static PyObject *make_range_tuple_from_range(uint32_t ymon, uint16_t *minutes_range_start)

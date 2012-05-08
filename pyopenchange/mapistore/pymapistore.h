@@ -30,11 +30,16 @@
 #include <tevent.h>
 
 typedef struct {
+	PyObject		*datetime_module;
+	PyObject		*datetime_datetime_class;
+	struct ldb_context	*samdb_ctx;
+	struct ldb_context	*ocdb_ctx;
+} PyMAPIStoreGlobals;
+
+typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;
-	struct ldb_context		*samdb_ctx;
-	struct ldb_context		*ocdb_ctx;
 } PyMAPIStoreObject;
 
 typedef struct {
@@ -48,7 +53,6 @@ typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;
-	struct ldb_context		*ocdb_ctx;
 	uint64_t			fid;
 	void				*folder_object;
 	uint32_t			context_id;
@@ -57,6 +61,7 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
 	PyMAPIStoreContextObject	*context;
 	void				*folder_object;
 	uint64_t			fid;
@@ -100,12 +105,11 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 
 __BEGIN_DECLS
 
-extern PyObject *datetime_module;
-extern PyObject *datetime_datetime_class;
-
 void PyErr_SetMAPIStoreError(uint32_t);
 
 /* internal calls */
+PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
+
 void initmapistore_folder(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_errors(PyObject *);

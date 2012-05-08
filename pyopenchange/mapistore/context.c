@@ -59,6 +59,7 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 	struct mapistore_subscription			*subscription;
 	struct mapistore_object_subscription_parameters	subscription_params;
 	uint32_t					random_int;
+	PyMAPIStoreGlobals				*globals;
 
 	if (!PyArg_ParseTuple(args, "sbh", &mapistoreURI, &WholeStore, &NotificationFlags)) {
 		return NULL;
@@ -73,7 +74,9 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 		n.MAPIStoreURI = NULL;
 	} else {
 		/* Retrieve folderID from mapistoreURI in openchange.ldb */
-		ret = openchangedb_get_fid(self->parent->ocdb_ctx, mapistoreURI, &FolderID);
+
+		globals = get_PyMAPIStoreGlobals();
+		ret = openchangedb_get_fid(globals->ocdb_ctx, mapistoreURI, &FolderID);
 		if (ret != MAPISTORE_SUCCESS) {
 			/* Try to retrieve URI from user indexing.tdb */
 			ret = mapistore_indexing_record_get_fmid(self->mstore_ctx, 
@@ -126,6 +129,7 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 	uint16_t				NotificationFlags;
 	uint64_t				FolderID;
 	uint32_t				identifier;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTuple(args, "sbhi", &mapistoreURI, &WholeStore, &NotificationFlags, &identifier)) {
 		return NULL;
@@ -140,7 +144,8 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 		n.MAPIStoreURI = NULL;
 	} else {
 		/* Retrieve folderID from mapistoreURI in openchange.ldb */
-		ret = openchangedb_get_fid(self->parent->ocdb_ctx, mapistoreURI, &FolderID);
+		globals = get_PyMAPIStoreGlobals();
+		ret = openchangedb_get_fid(globals->ocdb_ctx, mapistoreURI, &FolderID);
 		if (ret != MAPISTORE_SUCCESS) {
 			/* Try to retrieve URI from user indexing.tdb */
 		}

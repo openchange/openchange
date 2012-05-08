@@ -32,16 +32,17 @@ extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, 
 
 void initmapistore(void);
 
-PyObject *datetime_module;
-PyObject *datetime_datetime_class;
-
-static struct ldb_context	*samdb_ctx = NULL;
-static struct ldb_context	*openchange_ldb_ctx = NULL;
+static PyMAPIStoreGlobals globals;
 
 void PyErr_SetMAPIStoreError(uint32_t retval)
 {
 	PyErr_SetObject(PyExc_RuntimeError,
 			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
+}
+
+PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
+{
+	return &globals;
 }
 
 static void sam_ldb_init(const char *syspath)
@@ -60,7 +61,7 @@ static void sam_ldb_init(const char *syspath)
 	};
 
 	/* Sanity checks */
-	if (samdb_ctx) return;
+	if (globals.samdb_ctx) return;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -72,30 +73,32 @@ static void sam_ldb_init(const char *syspath)
 
 	/* Step 2. Connect to the database */
 	lp_ctx = loadparm_init_global(true);
-	samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
-	if (!samdb_ctx) goto end;
+	globals.samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
+	if (!globals.samdb_ctx) goto end;
 
 	/* Step 3. Search for rootDSE record */
-	ret = ldb_search(samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, samdb_ctx, "@ROOTDSE"),
+	ret = ldb_search(globals.samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, globals.samdb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) goto end;
 	if (res->count != 1) goto end;
 
 	/* Step 4. Set opaque naming */
-	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
-	ldb_set_opaque(samdb_ctx, "rootDomainNamingContext", tmp_dn);
+	ldb_set_opaque(globals.samdb_ctx, "rootDomainNamingContext", tmp_dn);
 	
-	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "defaultNamingContext");
-	ldb_set_opaque(samdb_ctx, "defaultNamingContext", tmp_dn);
+	ldb_set_opaque(globals.samdb_ctx, "defaultNamingContext", tmp_dn);
 
 end:
 	talloc_free(mem_ctx);
 }
 
-static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
+static void openchange_ldb_init(const char *syspath)
 {
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_context	*ldb_ctx;
 	char			*ldb_path;
 	struct tevent_context	*ev;
 	int			ret;
@@ -108,38 +111,50 @@ static void *openchange_ldb_init(TALLOC_CTX *mem_ctx, const char *syspath)
 	};
 
 	/* Sanity checks */
-	if (openchange_ldb_ctx) return openchange_ldb_ctx;
+	if (globals.ocdb_ctx) return;
 
-	ev = tevent_context_init(talloc_autofree_context());
-	if (!ev) return NULL;
+	/* ev = tevent_context_init(talloc_autofree_context()); */
+	/* if (!ev) { */
+	/* 	return NULL; */
+	/* } */
+	ev = NULL;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	/* Step 1. Retrieve a LDB context pointer on openchange.ldb database */
-	ldb_path = talloc_asprintf(mem_ctx, "%s/openchange.ldb", syspath);
-	openchange_ldb_ctx = ldb_init(mem_ctx, ev);
-	if (!openchange_ldb_ctx) return NULL;
+	ldb_ctx = ldb_init(mem_ctx, ev);
+	if (!ldb_ctx) {
+		goto end;
+	}
 
 	/* Step 2. Connect to the database */
-	ret = ldb_connect(openchange_ldb_ctx, ldb_path, 0, NULL);
-	talloc_free(ldb_path);
-	if (ret != LDB_SUCCESS) return NULL;
+	ldb_path = talloc_asprintf(mem_ctx, "%s/openchange.ldb", syspath);
+	ret = ldb_connect(ldb_ctx, ldb_path, 0, NULL);
+	if (ret != LDB_SUCCESS) {
+		goto end;
+	}
 
 	/* Step 3. Search for rootDSE record */
-	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, openchange_ldb_ctx, "@ROOTDSE"),
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, ldb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) return NULL;
-	if (res->count != 1) return NULL;
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		goto end;
+	}
 
 	/* Step 4. Set opaque naming */
-	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx, 
+	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx, 
 					 res->msgs[0], "rootDomainNamingContext");
-	ldb_set_opaque(openchange_ldb_ctx, "rootDomainNamingContext", tmp_dn);
+	ldb_set_opaque(ldb_ctx, "rootDomainNamingContext", tmp_dn);
 	
-	tmp_dn = ldb_msg_find_attr_as_dn(openchange_ldb_ctx, openchange_ldb_ctx,
+	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx,
 					 res->msgs[0], "defaultNamingContext");
-	ldb_set_opaque(openchange_ldb_ctx, "defaultNamingContext", tmp_dn);
+	ldb_set_opaque(ldb_ctx, "defaultNamingContext", tmp_dn);
 
-	return openchange_ldb_ctx;
-
+	globals.ocdb_ctx = ldb_ctx;
+	(void) talloc_reference(NULL, globals.ocdb_ctx);
+	
+end:
+	talloc_free(mem_ctx);
 }
 
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -151,7 +166,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	char				*kwnames[] = { "syspath", "path", NULL };
 	const char			*path = NULL;
 	const char			*syspath = NULL;
-	struct ldb_context		*ocdb_ctx = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", kwnames, &syspath, &path)) {
 		return NULL;
@@ -159,7 +173,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 
 	/* Initialize ldb context on sam.ldb */
 	sam_ldb_init(syspath);
-	if (samdb_ctx == NULL) {
+	if (globals.samdb_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
 				"error in sam_ldb_init");
 		return NULL;
@@ -172,8 +186,8 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	}
 
 	/* Initialize ldb context on openchange.ldb */
-	ocdb_ctx = openchange_ldb_init(mem_ctx, syspath);
-	if (ocdb_ctx == NULL) {
+	openchange_ldb_init(syspath);
+	if (globals.ocdb_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
 				"error in openchange_ldb_init");
 		talloc_free(mem_ctx);
@@ -196,8 +210,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
 	msobj->mem_ctx = mem_ctx;
 	msobj->mstore_ctx = mstore_ctx;
-	msobj->samdb_ctx = samdb_ctx;
-	msobj->ocdb_ctx = ocdb_ctx;
 
 	return (PyObject *) msobj;
 }
@@ -246,16 +258,16 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	/* printf("Add context: %s\n", uri); */
 
 	/* Initialize connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, self->samdb_ctx, self->ocdb_ctx, username);
+	ret = mapistore_set_connection_info(self->mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		PyErr_SetMAPIStoreError(ret);
 		return NULL;
 	}
 
 	/* Get FID given mapistore_uri and username */
-	ret = openchangedb_get_fid(self->ocdb_ctx, uri, &fid);
+	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
 	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_MAPIStore_IS_ERR_RAISE(ret)
+		PyErr_SetMAPIStoreError(ret);
 		return NULL;
 	}
 
@@ -493,11 +505,15 @@ static void load_modules(void)
 {
 	PyObject *datetime_dict;
 
-	datetime_module = PyImport_ImportModule("datetime");
-	if (datetime_module) {
-		datetime_dict = PyModule_GetDict(datetime_module);
-		datetime_datetime_class = PyDict_GetItemString(datetime_dict, "datetime");
-		if (!PyType_Check(datetime_datetime_class)) {
+	globals.datetime_module = PyImport_ImportModule("datetime");
+	Py_INCREF(globals.datetime_module);
+	if (globals.datetime_module) {
+		datetime_dict = PyModule_GetDict(globals.datetime_module);
+		globals.datetime_datetime_class = PyDict_GetItemString(datetime_dict, "datetime");
+		if (PyType_Check(globals.datetime_datetime_class)) {
+			Py_INCREF(globals.datetime_datetime_class);
+		}
+		else {
 			fprintf (stderr, "failure loading datetime.datetime class\n");
 		}
 	}

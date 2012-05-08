@@ -110,8 +110,11 @@ void PyErr_SetMAPIStoreError(uint32_t);
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
 
+void initmapistore_context(PyObject *);
 void initmapistore_folder(PyObject *);
+void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
+void initmapistore_table(PyObject *);
 void initmapistore_errors(PyObject *);
 
 PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapistore_freebusy_properties *);

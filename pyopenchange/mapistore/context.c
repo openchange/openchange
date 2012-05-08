@@ -214,3 +214,11 @@ PyTypeObject PyMAPIStoreContext = {
 	.tp_dealloc = (destructor)py_MAPIStoreContext_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
+
+void initmapistore_context(PyObject *m)
+{
+	if (PyType_Ready(&PyMAPIStoreContext) < 0) {
+		return;
+	}
+	Py_INCREF(&PyMAPIStoreContext);
+}

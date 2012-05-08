@@ -527,21 +527,9 @@ void initmapistore(void)
 {
 	PyObject	*m;
 
-	if (PyType_Ready(&PyMAPIStore) < 0) {
-		return;
-	}
+	memset(&globals, 0, sizeof(PyMAPIStoreGlobals));
 
-	if (PyType_Ready(&PyMAPIStoreMGMT) < 0) {
-		return;
-	}
-
-	if (PyType_Ready(&PyMAPIStoreContext) < 0) {
-		return;
-	}
-
-	if (PyType_Ready(&PyMAPIStoreTable) < 0) {
-		return;
-	}
+	load_modules();
 
 	m = Py_InitModule3("mapistore", py_mapistore_global_methods,
 			   "An interface to OpenChange MAPIStore");
@@ -549,13 +537,16 @@ void initmapistore(void)
 		return;
 	}
 
-	load_modules();
+	if (PyType_Ready(&PyMAPIStore) < 0) {
+		return;
+	}
+	Py_INCREF(&PyMAPIStore);
+	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 
+	initmapistore_mgmt(m);
+	initmapistore_context(m);
 	initmapistore_folder(m);
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
-
-	Py_INCREF(&PyMAPIStore);
-
-	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
+	initmapistore_table(m);
 }

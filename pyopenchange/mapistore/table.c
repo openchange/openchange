@@ -46,3 +46,11 @@ PyTypeObject PyMAPIStoreTable = {
 	.tp_dealloc = (destructor)py_MAPIStoreTable_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
+
+void initmapistore_table(PyObject *m)
+{
+	if (PyType_Ready(&PyMAPIStoreTable) < 0) {
+		return;
+	}
+	Py_INCREF(&PyMAPIStoreTable);
+}

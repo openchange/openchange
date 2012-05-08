@@ -22,8 +22,6 @@
 #include <Python.h>
 #include "pyopenchange/mapistore/pymapistore.h"
 
-void initmapistore_mgmt(void);
-
 static void py_MAPIStoreMGMT_dealloc(PyObject *_self)
 {
 	PyMAPIStoreMGMTObject *self = (PyMAPIStoreMGMTObject *)_self;
@@ -295,3 +293,11 @@ PyTypeObject PyMAPIStoreMGMT = {
 	.tp_dealloc = (destructor)py_MAPIStoreMGMT_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
+
+void initmapistore_mgmt(PyObject *m)
+{
+	if (PyType_Ready(&PyMAPIStoreMGMT) < 0) {
+		return;
+	}
+	Py_INCREF(&PyMAPIStoreMGMT);
+}

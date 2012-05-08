@@ -290,19 +290,20 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	return (PyObject *) context;
 }
 
-static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *args)
-{
-	PyMAPIStoreContextObject	*context;
-	int				ret = MAPISTORE_SUCCESS;
+/* static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *args) */
+/* { */
+/* 	PyMAPIStoreContextObject	*context; */
+/* 	int				ret = MAPISTORE_SUCCESS; */
 
-	if (!PyArg_ParseTuple(args, "O", &context)) {
-		return NULL;
-	}
+/* 	if (!PyArg_ParseTuple(args, "O", &context)) { */
+/* 		return NULL; */
+/* 	} */
 
-	mapistore_del_context(context->mstore_ctx, context->context_id);
-	Py_CLEAR(context);
-	return PyInt_FromLong(ret);
-}
+/* 	/\* mapistore_del_context(context->mstore_ctx, context->context_id); *\/ */
+/* 	/\* Py_XDECREF(context); *\/ */
+
+/* 	return PyInt_FromLong(ret); */
+/* } */
 
 /* static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyObject *args) */
 /* { */
@@ -451,7 +452,7 @@ static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *
 static PyMethodDef mapistore_methods[] = {
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
-	{ "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS },
+	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */
 	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
 	/* { "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS }, */
 	/* { "create_folder", (PyCFunction)py_MAPIStore_create_folder, METH_VARARGS }, */

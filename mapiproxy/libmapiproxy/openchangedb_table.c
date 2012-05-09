@@ -264,6 +264,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 
 	/* If live filtering, make sure the specified row match the restrictions */
 	if (live_filtered) {
+		TALLOC_CTX *local_mem_ctx;
+
 		switch (table->table_type) {
 		case 0x3 /* EMSMDBP_TABLE_FAI_TYPE */:
 		case 0x2 /* EMSMDBP_TABLE_MESSAGE_TYPE */:
@@ -281,17 +283,15 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 			DEBUG(0, ("ldb object must have a '%s' field\n", childIdAttr));
 			abort();
 		}
-		ldb_filter = openchangedb_table_build_filter(NULL, table, *row_fmid, table->restrictions);
+
+		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+		ldb_filter = openchangedb_table_build_filter(local_mem_ctx, table, *row_fmid, table->restrictions);
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
 		DEBUG(0, ("  row ldb_filter = %s\n", ldb_filter));
-		ret = ldb_search(ldb_ctx, NULL, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
-		talloc_free(ldb_filter);
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_INVALID_OBJECT, NULL);
-		if (live_res->count == 0) {
-			talloc_free(live_res);
-			return MAPI_E_INVALID_OBJECT;
-		}
-		talloc_free(live_res);
+		ret = ldb_search(ldb_ctx, local_mem_ctx, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
+		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || live_res->count == 0, MAPI_E_INVALID_OBJECT, local_mem_ctx);
+		talloc_free(local_mem_ctx);
 	}
 
 	/* hacks for some attributes specific to tables */

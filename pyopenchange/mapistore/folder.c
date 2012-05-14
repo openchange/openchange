@@ -27,7 +27,9 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 {
 	PyMAPIStoreFolderObject *self = (PyMAPIStoreFolderObject *)_self;
 
-	Py_DECREF(self->context);
+	talloc_unlink(NULL, self->folder_object);
+
+	Py_XDECREF(self->context);
 	PyObject_Del(_self);
 }
 
@@ -53,8 +55,8 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 						     name, &fid);
 	if (ret == MAPISTORE_SUCCESS) {
 		if (flags != OPEN_IF_EXISTS) {
-			PyErr_MAPIStore_IS_ERR_RAISE(MAPISTORE_ERR_EXIST);
-			Py_RETURN_NONE;
+			PyErr_SetMAPIStoreError(ret);
+			return NULL;
 		}
 	}
 	
@@ -147,6 +149,7 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 	struct tm		*start_tm, *end_tm;
 	enum mapistore_error	retval;
 	struct mapistore_freebusy_properties *fb_props;
+	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|OO", kwnames, &start, &end)) {
 		return NULL;
@@ -154,9 +157,10 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
+	globals = get_PyMAPIStoreGlobals();
 	if (start) {
-		if (!PyObject_IsInstance(start, datetime_datetime_class)) {
-			PyErr_SetString(PyExc_TypeError, "'start' must either be a datetime.datetime instance of None");
+		if (!PyObject_IsInstance(start, globals->datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'start' must either be a datetime.datetime instance or None");
 			goto end;
 		}
 		start_tm = talloc_zero(mem_ctx, struct tm);
@@ -167,8 +171,8 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 	}
 
 	if (end) {
-		if (!PyObject_IsInstance(end, datetime_datetime_class)) {
-			PyErr_SetString(PyExc_TypeError, "'end' must either be a datetime.datetime instance of None");
+		if (!PyObject_IsInstance(end, globals->datetime_datetime_class)) {
+			PyErr_SetString(PyExc_TypeError, "'end' must either be a datetime.datetime instance or None");
 			goto end;
 		}
 		end_tm = talloc_zero(mem_ctx, struct tm);
@@ -180,7 +184,7 @@ static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderO
 
 	retval = mapistore_folder_fetch_freebusy_properties(self->context->mstore_ctx, self->context->context_id, self->folder_object, start_tm, end_tm, mem_ctx, &fb_props);
 	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_MAPIStore_IS_ERR_RAISE(retval);
+		PyErr_SetMAPIStoreError(retval);
 		goto end;
 	}
 	result = (PyObject *) instantiate_freebusy_properties(fb_props);
@@ -189,8 +193,6 @@ end:
 	talloc_free(mem_ctx);
 
 	return result;
-/* enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, struct tm *start_tm, struct tm *end_tm, TALLOC_CTX *mem_ctx, struct mapistore_freebusy_properties **fb_props_p) */
-
 }
 
 static PyMethodDef mapistore_folder_methods[] = {
@@ -221,6 +223,7 @@ void initmapistore_folder(PyObject *m)
 	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
 		return;
 	}
+	Py_INCREF(&PyMAPIStoreFolder);
 
 	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));

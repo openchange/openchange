@@ -341,7 +341,7 @@ static struct pidtags pidtags[] = {
 	{ PidTagMessageStatus,                                                "PidTagMessageStatus" },
 	{ PidTagMessageSubmissionId,                                          "PidTagMessageSubmissionId" },
 	{ PidTagMessageToMe,                                                  "PidTagMessageToMe" },
-	{ PidTagMid,                                                          "PidTagMid" },
+	{ PidTagMid,                                                          "PidTagMessageId" },
 	{ PidTagMiddleName,                                                   "PidTagMiddleName" },
 	{ PidTagMimeSkeleton,                                                 "PidTagMimeSkeleton" },
 	{ PidTagMobileTelephoneNumber,                                        "PidTagMobileTelephoneNumber" },

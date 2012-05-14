@@ -315,6 +315,31 @@ class ExchangeService(ServiceBase):
         return cal_folder
 
     @staticmethod
+    def _timezone_datetime(year, tz_time):
+        # we round the dates to midnight since events are unlikely to start at
+        # such an early time of day
+        return datetime.datetime(year, tz_time.Month, tz_time.DayOrder)
+
+    @staticmethod
+    def _freebusy_date(timezone, utcdate):
+        bias = timezone.Bias
+        if timezone.DaylightTime is not None:
+            std_datetime = ExchangeService._timezone_datetime(utcdate.year, timezone.StandardTime)
+            dst_datetime = ExchangeService._timezone_datetime(utcdate.year, timezone.DaylightTime)
+            if std_datetime < dst_datetime:
+                if utcdate >= std_datetime and utcdate < dst_datetime:
+                    bias = bias + timezone.StandardTime.Bias
+                else:
+                    bias = bias + timezone.DaylightTime.Bias
+            else:
+                if utcdate >= dst_datetime and utcdate < std_datetime:
+                    bias = bias + timezone.DaylightTime.Bias
+                else:
+                    bias = bias + timezone.StandardTime.Bias
+
+        return utcdate - datetime.timedelta(0, bias * 60)
+
+    @staticmethod
     def _freebusy_response(cal_folder, timezone, freebusy_view_options):
         start = freebusy_view_options.TimeWindow.StartTime
         end = freebusy_view_options.TimeWindow.EndTime
@@ -336,12 +361,13 @@ class ExchangeService(ServiceBase):
                     "tentative": "Tentative",
                     "busy": "Busy",
                     "away": "OOF"}
+
         for (fb_attribute, label) in fb_types.iteritems():
             fb_event_list = getattr(freebusy_props, fb_attribute)
             for fb_event in fb_event_list:
                 event = CalendarEvent()
-                event.StartTime = fb_event[0]
-                event.EndTime = fb_event[1]
+                event.StartTime = ExchangeService._freebusy_date(timezone, fb_event[0])
+                event.EndTime = ExchangeService._freebusy_date(timezone, fb_event[1])
                 event.BusyType = label
                 events.append(event)
         fb_response.FreeBusyView.CalendarEventArray = events

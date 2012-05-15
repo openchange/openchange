@@ -26,4 +26,7 @@ def make_map(config):
     map.connect('/{controller}/{action}')
     map.connect('/{controller}/{action}/{id}')
 
+    # RPC over HTTP
+    map.connect('/rpc/rpcproxy.dll', controller='rpcproxy')
+
     return map

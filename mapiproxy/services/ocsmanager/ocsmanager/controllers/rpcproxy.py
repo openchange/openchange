@@ -14,7 +14,6 @@ class RpcproxyController(BaseController):
         auth = RPCProxyAuthenticateModel.RPCProxyAuthenticateModel()
         if request.method == 'RPC_IN_DATA':
             log.debug('IN Channel Request')
-            # Check credentials
             retval = auth.Authenticate(request.authorization)
             response.headers['Content-Type'] = 'application/rpc'
             if retval == 1:

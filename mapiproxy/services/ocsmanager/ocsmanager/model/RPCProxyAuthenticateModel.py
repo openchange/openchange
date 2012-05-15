@@ -10,10 +10,6 @@ log = logging.getLogger(__name__)
 class RPCProxyAuthenticateModel:
 
     def __init__(self):
-        self.basic = {}
-        self.basic["username"] = None
-        self.basic["password"] = None
-        self.ntlmssp = None
         self.auth_type = None
         self.ldap = {}
         self.ldap['host'] = config['ocsmanager']['rpcproxy']['ldap_host']

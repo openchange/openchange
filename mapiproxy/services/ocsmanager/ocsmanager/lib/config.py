@@ -89,6 +89,12 @@ class OCSConfig(object):
             self.__get_option(section, 'filter', 'auth', None, '(cn=%s)')
             self.__get_option(section, 'attrs', 'auth', None, '*')
 
+    def __parse_rpcproxy(self):
+        self.__get_section('rpcproxy:ldap')
+        self.__get_option('rpcproxy:ldap', 'host', 'rpcproxy', 'ldap_host')
+        self.__get_option('rpcproxy:ldap', 'port', 'rpcproxy', 'ldap_port')
+        self.__get_option('rpcproxy:ldap', 'basedn', 'rpcproxy', 'ldap_basedn')
+
     def load(self):
         """Load the configuration file.
         """
@@ -109,5 +115,6 @@ class OCSConfig(object):
 
         self.__parse_main()
         self.__parse_auth()
+        self.__parse_rpcproxy()
         
         return self.d

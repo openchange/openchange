@@ -1,5 +1,7 @@
 """Pylons middleware initialization"""
+
 from beaker.middleware import SessionMiddleware
+from paste.auth.basic import AuthBasicHandler
 from paste.cascade import Cascade
 from paste.registry import RegistryManager
 from paste.urlparser import StaticURLParser
@@ -9,6 +11,8 @@ from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
 
 from ocsmanager.config.environment import load_environment
+
+from ocsmanager.model.OCSAuthenticator import *
 
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """Create a Pylons WSGI application and return it
@@ -42,6 +46,9 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     # Routing/Session Middleware
     app = RoutesMiddleware(app, config['routes.map'])
     app = SessionMiddleware(app, config)
+
+    authenticator = OCSAuthenticator(config)
+    app = AuthBasicHandler(app, "OCSManager", authenticator)
 
     # CUSTOM MIDDLEWARE HERE (filtered by error handling middlewares)
 

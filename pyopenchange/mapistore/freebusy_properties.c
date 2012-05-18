@@ -132,12 +132,17 @@ static PyObject *make_fb_tuple(struct mapistore_freebusy_properties *fb_props, s
 	struct Binary_r *current_ranges;
 	uint16_t *minutes_range_start;
 	PyObject *tuple, *range_tuple;
+	char *tz;
 
 	nbr_ranges = 0;
 	for (i = 0; i < fb_props->nbr_months; i++) {
 		current_ranges = ranges + i;
 		nbr_ranges += (current_ranges->cb / (2 * sizeof(uint16_t)));
 	}
+
+	tz = getenv("TZ");
+	setenv("TZ", "", 1);
+	tzset();
 
 	tuple = PyTuple_New(nbr_ranges);
 	range_nbr = 0;
@@ -152,6 +157,14 @@ static PyObject *make_fb_tuple(struct mapistore_freebusy_properties *fb_props, s
 			range_nbr++;
 		}
 	}
+
+	if (tz) {
+		setenv("TZ", tz, 1);
+	}
+	else {
+		unsetenv("TZ");
+	}
+	tzset();
 
 	return tuple;
 }

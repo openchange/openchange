@@ -344,10 +344,10 @@ class ExchangeService(ServiceBase):
         start = freebusy_view_options.TimeWindow.StartTime
         end = freebusy_view_options.TimeWindow.EndTime
 
-        a = time()
-        print "fetching freebusy"
+        # a = time()
+        # print "fetching freebusy"
         freebusy_props = cal_folder.fetch_freebusy_properties(start, end)
-        print "fetched freebusy: %f secs" % (time() - a)
+        # print "fetched freebusy: %f secs" % (time() - a)
 
         fb_response = FreeBusyResponse()
         fb_response.ResponseMessage = ResponseMessageType()

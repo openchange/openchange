@@ -318,7 +318,7 @@ class ExchangeService(ServiceBase):
     def _timezone_datetime(year, tz_time):
         # we round the dates to midnight since events are unlikely to start at
         # such an early time of day
-        return datetime.datetime(year, tz_time.Month, tz_time.DayOrder)
+        return datetime.datetime(year, tz_time.Month + 1, tz_time.DayOrder + 1)
 
     @staticmethod
     def _freebusy_date(timezone, utcdate):

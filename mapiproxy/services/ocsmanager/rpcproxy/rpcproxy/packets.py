@@ -142,46 +142,71 @@ class RTSParsingException(IOError):
     pass
 
 
-# FIXME: command parameters are either int32 values or binary blobs, both when
-# parsing and when producing
-# FIXME: "RTSInPacket" is not a really appropriate name since this class can
-# contain other non-RTS packets
-# FIXME: we should read the whole packets at once
-class RTSInPacket(object):
-    def __init__(self, input_file, logger=None):
-        self.input_file = input_file
-        self.file_is_socket = isinstance(input_file, _socketobject)
+class RPCPacket(object):
+    def __init__(self, data, logger=None):
         self.logger = logger
 
+        # BLOB level
+        self.data = data
         self.size = 0
-        self.offset = 0
-        self.is_rts = False
 
+        # parsed offset from the start of the "data" blob
+        self.offset = 0
+
+        # header is common to all PDU
         self.header = None
 
-        # RTS packets
-        self.commands = []
+    @staticmethod
+    def from_file(input_file, logger=None):
+        """This static method acts as a constructor and returns an input
+        packet with the proper class, based on the packet headers.
+        The "input_file" parameter must either be a file or a sockect object.
 
-        ## other types (entire packet blob)
-        self.data = None
+        """
 
-        self.parse()
+        if isinstance(input_file, _socketobject):
+            def read_file(count):
+                return input_file.recv(count, MSG_WAITALL)
+        elif hasattr(file, "read") and callable(file.read):
+            def read_file(count):
+                return input_file.read(count)
+        else:
+            raise ValueError("'input_file' must either be a socket object or"
+                             " provide a 'read' method")
+
+        fields = ("rpc_vers", "rpc_vers_minor", "ptype", "pfc_flags", "drep",
+                  "frag_length", "auth_length", "call_id")
+
+        header_data = read_file(16)
+        # TODO: value validation
+        values = unpack_from("<bbbblhhl", header_data)
+        if values[2] == DCERPC_PKT_RTS:
+            packet_class = RPCRTSPacket
+        else:
+            packet_class = RPCPacket
+        body_data = read_file(values[5] - 16)
+
+        packet = packet_class(header_data + body_data, logger)
+        packet.header = dict(zip(fields, values))
+        packet.offset = 16
+        packet.size = values[5]
+        packet.parse()
+
+        return packet
 
     def parse(self):
-        self._parse_header()
-        self.size = self.header["frag_length"]
-        if self.is_rts:
-            for counter in xrange(self.header["nbr_commands"]):
-                self._parse_command()
-
-        if (self.size != self.offset):
-            raise RTSParsingException("sizes do not match: declared = %d,"
-                                      " actual = %d"
-                                      % (self.size, self.offset))
-
-        return self.offset
+        pass
 
     def pretty_dump(self):
+        (fields, values) = self.make_dump_output()
+
+        output = []
+        for pos in xrange(len(fields)):
+            output.append("%s: %s" % (fields[pos], str(values[pos])))
+
+        return "; ".join(output)
+
+    def make_dump_output(self):
         values = []
         
         ptype = self.header["ptype"]
@@ -203,125 +228,87 @@ class RTSInPacket(object):
         for field in fields[2:]:
             values.append(self.header[field])
 
-        if ptype == DCERPC_PKT_RTS:
-            flags = self.header["flags"]
-            if flags == RTS_FLAG_NONE:
-                values.append("RTS_FLAG_NONE")
-            else:
-                flags_value = []
-                for exp in xrange(7):
-                    flag = 1 << exp
-                    if flags & flag > 0:
-                        flags_value.append(RTS_FLAG_LABELS[exp])
-                values.append(", ".join(flags_value))
+        return (fields, values)
 
-            values.append(self.header["nbr_commands"])
-            
-        output = []
-        for pos in xrange(len(fields)):
-            output.append("%s: %s" % (fields[pos], str(values[pos])))
+# FIXME: command parameters are either int32 values or binary blobs, both when
+# parsing and when producing
+class RPCRTSPacket(RPCPacket):
+    parsers = None
 
-        return "; ".join(output)
+    def __init__(self, data, logger=None):
+        RPCPacket.__init__(self, data, logger)
 
-    def _read_file(self, count):
-        if self.file_is_socket:
-            data = self.input_file.recv(count, MSG_WAITALL)
-            data_len = len(data)
-            if data_len < count:
-                raise Exception("requested %d bytes but received only %d"
-                                % (count, data_len))
-        else:
-            attempt = 0
-            success = False
-            while not success:
-                try:
-                    data = self.input_file.read(count)
-                    success = True
-                except IOError:
-                    if attempt > 2:
-                        raise
-                    attempt = attempt + 1
+        # RTS commands
+        self.commands = []
 
-        return data
+    def parse(self):
+        fields = ("flags", "nbr_commands")
+        values = unpack_from("<hh", self.data, self.offset)
+        self.offset = self.offset + 4
+        self.header.update(zip(fields, values))
 
-    def _parse_header(self):
-        blob = self._read_file(16)
+        for counter in xrange(self.header["nbr_commands"]):
+            self._parse_command()
 
-        # TODO: value validation
-        fields = ("rpc_vers", "rpc_vers_minor", "ptype", "pfc_flags", "drep",
-                  "frag_length", "auth_length", "call_id")
-        values = unpack_from("<bbbblhhl", blob)
-        packet = dict(zip(fields, values))
-        self.header = packet
-
-        if packet["ptype"] == DCERPC_PKT_RTS:
-            # RTS packet
-            blob = self._read_file(4)
-            self.offset = 20
-            self.is_rts = True
-            fields = ("flags", "nbr_commands")
-            values = unpack_from("<hh", blob)
-            packet.update(zip(fields, values))
-        else:
-            # other types
-            data_len = packet["frag_length"] - 16
-            self.offset = packet["frag_length"]
-            self.data = blob + self._read_file(data_len)
-
+        if (self.size != self.offset):
+            raise RTSParsingException("sizes do not match: expected = %d,"
+                                      " actual = %d"
+                                      % (self.size, self.offset))
 
     def _parse_command(self):
-        blob = self._read_file(4)
-        (command_type,) = unpack_from("<l", blob)
+        (command_type,) = unpack_from("<l", self.data, self.offset)
         if command_type < 0 or command_type > 15:
-            raise RTSParsingException("command type unknown: %d (%s)" %
-                                      (command_type, str(type(command_type))))
-
+            raise RTSParsingException("command type unknown: %d"
+                                      % command_type)
         self.offset = self.offset + 4
 
         command = {"type": command_type}
         command_size = RTS_CMD_SIZES[command_type]
         if command_size > 4:
-            data_label = RTS_CMD_DATA_LABELS[command_type]
-            base_data_len = command_size - 4
-            data_blob = self._read_file(base_data_len)
-            self.offset = self.offset + base_data_len
-            if command_type == RTS_CMD_FLOW_CONTROL_ACK:
-                data_value = self._parse_command_flow_control_ack(data_blob)
-            elif (command_type == RTS_CMD_COOKIE
-                  or command_type == RTS_CMD_ASSOCIATION_GROUP_ID):
-                data_value = self._parse_command_cookie(data_blob)
-            elif command_type == RTS_CMD_PADDING:
-                data_value = self._parse_command_padding_data(data_blob)
-            elif command_type == RTS_CMD_CLIENT_ADDRESS:
-                data_value = self._parse_command_client_address(data_blob)
-            else:
+            data_size = command_size - 4
+            if command_type in self.parsers:
+                parser = self.parsers[command_type]
+                data_value = parser(self, data_size)
+            elif data_size == 4:
                 # commands with int32 values
-                (data_value,) = unpack_from("<l", data_blob)
+                (data_value,) = unpack_from("<l", self.data, self.offset)
+                self.offset = self.offset + 4
+            else:
+                raise RTSParsingException("command is badly handled: %d"
+                                          % command_type)
+
+            data_label = RTS_CMD_DATA_LABELS[command_type]
             command[data_label] = data_value
 
         self.commands.append(command)
 
-    @staticmethod
-    def _parse_command_flow_control_ack(data_blob):
+    def _parse_command_flow_control_ack(self, data_size):
+        data_blob = self.data[self.offset:self.offset+data_size]
+        self.offset = self.offset + data_size
         # dumb method
         return data_blob
     
-    @staticmethod
-    def _parse_command_cookie(data_blob):
+    def _parse_command_cookie(self, data_size):
+        data_blob = self.data[self.offset:self.offset+data_size]
+        self.offset = self.offset + data_size
         # dumb method
         return data_blob
 
-    def _parse_command_padding_data(self, data_blob):
+    def _parse_command_padding_data(self, data_size):
         # the length of the padding bytes is specified in the
         # ConformanceCount field
-        (count,) = unpack_from("<l", data_blob)
-        data_value = self._read_file(count)
+        (count,) = unpack_from("<l", self.data, self.offset)
+        self.offset = self.offset + 4
+
+        data_blob = self.data[self.offset:self.offset+count]
         self.offset = self.offset + count
 
         return data_value
 
     def _parse_command_client_address(self, data_blob):
-        (address_type,) = unpack_from("<l", data_blob)
+        (address_type,) = unpack_from("<l", self.data, self.offset)
+        self.offset = self.offset + 4
+
         if address_type == 0: # ipv4
             address_size = 4
         elif address_type == 1: # ipv6
@@ -330,17 +317,47 @@ class RTSInPacket(object):
             raise RTSParsingException("unknown client address type: %d"
                                       % address_type)
 
-        data_value = self._read_file(address_size)
+        data_blob = self.data[self.offset:self.offset+address_size]
+
+        # compute offset with padding, which is ignored
         self.offset = self.offset + address_size + 12
 
         return data_value
 
+    def make_dump_output(self):
+        (fields, values) = RPCPacket.make_dump_output(self)
+        fields.extend(("flags", "nbr_commands"))
 
-class RTSOutPacket(object):
+        flags = self.header["flags"]
+        if flags == RTS_FLAG_NONE:
+            values.append("RTS_FLAG_NONE")
+        else:
+            flags_value = []
+            for exp in xrange(7):
+                flag = 1 << exp
+                if flags & flag > 0:
+                    flags_value.append(RTS_FLAG_LABELS[exp])
+                values.append(", ".join(flags_value))
+
+        values.append(self.header["nbr_commands"])
+
+        return (fields, values)
+
+
+# Those are the parser method for commands with a size > 4. They are defined
+# here since the "RPCRTSPacket" symbol is not accessible as long as the class
+# definition is not over
+RPCRTSPacket.parsers = {RTS_CMD_FLOW_CONTROL_ACK: RPCRTSPacket._parse_command_flow_control_ack,
+                        RTS_CMD_COOKIE: RPCRTSPacket._parse_command_cookie,
+                        RTS_CMD_ASSOCIATION_GROUP_ID: RPCRTSPacket._parse_command_cookie,
+                        RTS_CMD_PADDING: RPCRTSPacket._parse_command_padding_data,
+                        RTS_CMD_CLIENT_ADDRESS: RPCRTSPacket._parse_command_client_address}
+
+
+class RPCRTSOutPacket(object):
     def __init__(self, logger=None):
         self.logger = logger
         self.size = 0
-        self.is_rts = True # always true?
 
         # RTS packets
         self.flags = RTS_FLAG_NONE
@@ -353,11 +370,11 @@ class RTSOutPacket(object):
         self._make_header()
 
         data = "".join(self.command_data)
-        data_len = len(data)
+        data_size = len(data)
 
-        if (data_len != self.size):
+        if (data_size != self.size):
             raise RTSParsingException("sizes do not match: declared = %d,"
-                                      " actual = %d" % (self.size, data_len))
+                                      " actual = %d" % (self.size, data_size))
         self.command_data = None
 
         if self.logger is not None:

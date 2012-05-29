@@ -18,22 +18,20 @@
 #
 
 import os
-from select import poll, POLLIN, POLLOUT, POLLHUP, POLLERR, POLLNVAL
+from select import poll, POLLIN, POLLHUP
 from socket import socket, AF_INET, AF_UNIX, SOCK_STREAM, MSG_WAITALL, \
     error as socket_error
 from struct import pack, unpack_from
-from traceback import format_exc
 import sys
 from time import time, sleep
 from uuid import UUID
 
 # from rpcproxy.RPCH import RPCH, RTS_FLAG_ECHO
 from fdunix import send_socket, receive_socket
-from utils import prettify_dict
 from packets import RTS_CMD_CONNECTION_TIMEOUT, RTS_CMD_VERSION, \
     RTS_CMD_RECEIVE_WINDOW_SIZE, RTS_CMD_CONNECTION_TIMEOUT, \
     RTS_FLAG_ECHO, \
-    RTSInPacket, RTSOutPacket
+    RPCPacket, RPCRTSPacket, RPCRTSOutPacket
 
 
 """Documentation:
@@ -87,6 +85,8 @@ class RPCProxyChannelHandler(object):
     def __init__(self, logger):
         self.logger = logger
 
+        self.client_socket = None # placeholder for wsgi.input
+
         self.bytes_read = 0
         self.bytes_written = 0
         self.startup_time = time()
@@ -97,23 +97,18 @@ class RPCProxyChannelHandler(object):
     def handle_echo_request(self, environ, start_response):
         self.logger.info("handling echo request")
 
-        packet = RTSOutPacket()
+        packet = RPCRTSOutPacket()
         packet.flags = RTS_FLAG_ECHO
         data = packet.make()
+        self.bytes_written = self.bytes_written + packet.size
 
         start_response("200 Success", [("Content-length", "%d" % packet.size),
                                        ("Content-Type", "application/rpc")])
 
         return [data]
 
-    @staticmethod
-    def success_response(environ, start_response):
-        start_response("200 Success", [("Content-Type", "application/rpc"),
-                                       ("Content-length", "0")])
-        return [""]
-
     def log_connection_stats(self):
-        self.logger.info("request took %f ms; %d bytes received; %d bytes sent"
+        self.logger.info("request took %f secs; %d bytes received; %d bytes sent"
                          % ((time() - self.startup_time),
                             self.bytes_read, self.bytes_written))
 
@@ -131,12 +126,15 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         # CONN/B1 RTS PDU (TODO: validation)
         # receive the cookie
         self.logger.info("IN: receiving CONN/B1")
-        packet = RTSInPacket(self.client_socket, logger=self.logger)
+
+        packet = RPCPacket.from_file(self.client_socket, self.logger)
+        if not isinstance(packet, RPCRTSPacket):
+            raise Exception("Unexpected non-rts packet received for CONN/B1")
         self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
         self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
-        self.client_keep_alive = packet.commands[4]["ClientKeepalive"]
+        self.client_keepalive = packet.commands[4]["ClientKeepalive"]
         self.association_group_id = str(UUID(bytes=packet.commands[5] \
-                                             ["AssociationGroupId"]))
+                                                 ["AssociationGroupId"]))
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
@@ -192,13 +190,14 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         status = True
         while status:
             try:
-                oc_packet = RTSInPacket(self.client_socket)
+                oc_packet = RPCPacket.from_file(self.client_socket,
+                                                self.logger)
                 self.bytes_read = self.bytes_read + oc_packet.size
 
                 self.logger.info("IN: packet headers = "
                                  + oc_packet.pretty_dump())
 
-                if oc_packet.is_rts:
+                if isinstance(oc_packet, RPCRTSPacket):
                     # or oc_packet.header["ptype"] == DCERPC_PKT_AUTH3):
                     # we do not forward rts packets
                     self.logger.info("IN: ignored RTS packet")
@@ -236,8 +235,12 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
         if connected:
             self.logger.info("IN: connection succeeded")
-            sock.sendall(INBOUND_PROXY_ID + "q")
-            sock.close()
+            try:
+                sock.sendall(INBOUND_PROXY_ID + "q")
+                sock.close()
+            except:
+                # UNIX socket might already have been closed by OUT channel
+                pass
         else:
             self.logger.error("too many failed attempts to establish a"
                               " connection to OUT channel")
@@ -266,16 +269,22 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             self._receive_conn_b1()
             connected = self._connect_to_OUT_channel()
 
-            for data in self.success_response(environ, start_response):
-                yield data
-
             if connected:
+                start_response("200 Success",
+                               [("Content-Type", "application/rpc"),
+                                ("Content-length", "0")])
                 self._runloop()
 
             self._terminate_oc_socket()
 
             self.log_connection_stats()
             self.logger.info("IN: Exiting (2) from do_RPC_IN_DATA")
+            
+            # TODO: error handling
+            start_response("200 Success",
+                           [("Content-length", "0"),
+                            ("Content-Type", "application/rpc")])
+            yield ""
         else:
             raise Exception("This content-length is not handled")
 
@@ -300,18 +309,20 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         self.in_window_size = 0
         self.in_conn_timeout = 0
 
-    def _receive_conn_a1(self, client_socket):
+    def _receive_conn_a1(self):
         # receive the cookie
         # TODO: validation of CONN/A1
         self.logger.info("OUT: receiving CONN/A1")
-        packet = RTSInPacket(client_socket)
+        packet = RPCPacket.from_file(self.client_socket, self.logger)
+        if not isinstance(packet, RPCRTSPacket):
+            raise Exception("Unexpected non-rts packet received for CONN/A1")
         self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
         self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
 
     def _send_conn_a3(self):
         self.logger.info("OUT: sending CONN/A3 to client")
             # send the A3 response to the client
-        packet = RTSOutPacket(logger=self.logger)
+        packet = RPCRTSOutPacket(self.logger)
         # we set the min timeout value allowed, as we would actually need
         # either configuration values from Apache or from some config file
         packet.add_command(RTS_CMD_CONNECTION_TIMEOUT, 120000)
@@ -322,7 +333,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def _send_conn_c2(self):
         self.logger.info("OUT: sending CONN/C2 to client")
             # send the C2 response to the client
-        packet = RTSOutPacket()
+        packet = RPCRTSOutPacket(self.logger)
         # we set the min timeout value allowed, as we would actually need
         # either configuration values from Apache or from some config file
         packet.add_command(RTS_CMD_VERSION, 1)
@@ -393,26 +404,29 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         status = True
         while status:
             for data in fd_pool.poll(1000):
-                fd = data[0]
-                event_no = data[1]
+                fd, event_no = data
                 if fd == oc_fd:
-                    # self.logger.info("received event '%d' on oc socket" % event_no)
+                    # self.logger.info("received event '%d' on oc socket"
+                    #                   % event_no)
                     if event_no & POLLHUP > 0:
                         # FIXME: notify IN channel?
                         self.logger.info("OUT: connection closed from OC")
                         status = False
                     elif event_no & POLLIN > 0:
-                        oc_packet = RTSInPacket(self.oc_conn)
-
+                        oc_packet = RPCPacket.from_file(self.oc_conn,
+                                                        self.logger)
                         self.logger.info("OUT: packet headers = "
                                          + oc_packet.pretty_dump())
+                        if isinstance(oc_packet, RPCRTSPacket):
+                            raise Exception("Unexpected rts packet received")
 
                         self.logger.info("OUT: sending data to client")
                         self.bytes_read = self.bytes_read + oc_packet.size
                         self.bytes_written = self.bytes_written + oc_packet.size
                         yield oc_packet.data
                         # else:
-                        #     self.logger.info("ignored event '%d' on oc socket" % event_no)
+                        # self.logger.info("ignored event '%d' on oc socket"
+                        #                  % event_no)
                 elif fd == unix_fd:
                     self.logger.info("OUT: ignored event '%d' on unix socket"
                                      % event_no)
@@ -446,10 +460,11 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             for data in self.handle_echo_request(environ, start_response):
                 yield data
         elif content_length == 76:
-            self.logger.info("OUT: Processing nonreplacement Out channel request")
+            self.logger.info("OUT: Processing nonreplacement Out channel"
+                             "request")
 
-            client_socket = environ["wsgi.input"]
-            self._receive_conn_a1(client_socket)
+            self.client_socket = environ["wsgi.input"]
+            self._receive_conn_a1()
 
             # Content-length = 1 Gib
             start_response("200 Success",
@@ -462,7 +477,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             self._wait_IN_channel()
 
             yield self._send_conn_c2()
-            self.logger.info("OUT: total bytes sent yet: %d" % self.bytes_written)
+            self.logger.info("OUT: total bytes sent yet: %d"
+                             % self.bytes_written)
             for data in self._runloop():
                 yield data
             self._terminate_sockets()

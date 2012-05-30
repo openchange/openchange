@@ -19,11 +19,13 @@
 import logging
 from socket import _socketobject, MSG_WAITALL
 from struct import pack, unpack_from
+from uuid import UUID
 
 
 PFC_FIRST_FRAG = 1
 PFC_LAST_FRAG = 2
 PFC_PENDING_CANCEL = 4
+PFC_SUPPORT_HEADER_SIGN = 4
 PFC_RESERVED_1 = 8
 PFC_CONC_MPX = 16
 PFC_DID_NOT_EXECUTE = 32
@@ -31,7 +33,7 @@ PFC_MAYBE = 64
 PFC_OBJECT_UUID = 128
 PFC_FLAG_LABELS = ("PFC_FIRST_FRAG",
                    "PFC_LAST_FRAG", 
-                   "PFC_PENDING_CANCEL", 
+                   "PFC_(PENDING_CANCEL|SUPPORT_HEADER_SIGN)", 
                    "PFC_RESERVED_1", 
                    "PFC_CONC_MPX", 
                    "PFC_DID_NOT_EXECUTE",
@@ -76,8 +78,8 @@ DCERPC_PKG_LABELS = ("DCERPC_PKT_REQUEST",
                      "DCERPC_PKT_BIND_ACK",
                      "DCERPC_PKT_BIND_NAK",
                      "DCERPC_PKT_ALTERA",
-                     "DCERPC_PKT_ALTER_RESPA",
-                     "DCERPC_PKT_UNKNOWN_16",
+                     "DCERPC_PKT_ALTER_RESP",
+                     "DCERPC_PKT_AUTH_3",
                      "DCERPC_PKT_SHUTDOWN",
                      "DCERPC_PKT_CO_CANCEL",
                      "DCERPC_PKT_ORPHANED",
@@ -132,6 +134,22 @@ RTS_CMD_DATA_LABELS = ("ReceiveWindowSize",
                        "Destination",
                        "PingTrafficSentNotify")
 
+RPC_C_AUTHN_NONE = 0x0
+RPC_C_AUTHN_GSS_NEGOTIATE = 0x9 # SPNEGO
+RPC_C_AUTHN_WINNT = 0xa # NTLM
+RPC_C_AUTHN_GSS_SCHANNEL = 0xe # TLS
+RPC_C_AUTHN_GSS_KERBEROS = 0x10 # Kerberos
+RPC_C_AUTHN_NETLOGON = 0x44 # Netlogon
+RPC_C_AUTHN_DEFAULT = 0xff # (NTLM)
+
+RPC_C_AUTHN_LEVEL_DEFAULT = 0
+RPC_C_AUTHN_LEVEL_NONE = 1
+RPC_C_AUTHN_LEVEL_CONNECT = 2
+RPC_C_AUTHN_LEVEL_CALL = 3
+RPC_C_AUTHN_LEVEL_PKT = 4
+RPC_C_AUTHN_LEVEL_PKT_INTEGRITY = 5
+RPC_C_AUTHN_LEVEL_PKT_PRIVACY = 6
+
 
 class RTSParsingException(IOError):
     """This exception occurs when a serious issue occurred while parsing an
@@ -180,7 +198,13 @@ class RPCPacket(object):
         header_data = read_file(16)
         # TODO: value validation
         values = unpack_from("<bbbblhhl", header_data)
-        if values[2] == DCERPC_PKT_RTS:
+        if values[2] == DCERPC_PKT_FAULT:
+            packet_class = RPCFaultPacket
+        elif values[2] == DCERPC_PKT_BIND_ACK:
+            packet_class = RPCBindACKPacket
+        elif values[2] == DCERPC_PKT_BIND_NAK:
+            packet_class = RPCBindNAKPacket
+        elif values[2] == DCERPC_PKT_RTS:
             packet_class = RPCRTSPacket
         else:
             packet_class = RPCPacket
@@ -200,9 +224,8 @@ class RPCPacket(object):
     def pretty_dump(self):
         (fields, values) = self.make_dump_output()
 
-        output = []
-        for pos in xrange(len(fields)):
-            output.append("%s: %s" % (fields[pos], str(values[pos])))
+        output = ["%s: %s" % (fields[pos], str(values[pos]))
+                  for pos in xrange(len(fields))]
 
         return "; ".join(output)
 
@@ -229,6 +252,31 @@ class RPCPacket(object):
             values.append(self.header[field])
 
         return (fields, values)
+
+
+
+# fault PDU (stub)
+class RPCFaultPacket(RPCPacket):
+    def __init__(self, data, logger=None):
+        RPCPacket.__init__(self, data, logger)
+
+
+# bind_ack PDU (incomplete)
+class RPCBindACKPacket(RPCPacket):
+    def __init__(self, data, logger=None):
+        RPCPacket.__init__(self, data, logger)
+        self.ntlm_payload = None
+        
+    def parse(self):
+        auth_offset = self.header["frag_length"] - self.header["auth_length"]
+        self.ntlm_payload = self.data[auth_offset:]
+
+
+# bind_nak PDU (stub)
+class RPCBindNAKPacket(RPCPacket):
+    def __init__(self, data, logger=None):
+        RPCPacket.__init__(self, data, logger)
+
 
 # FIXME: command parameters are either int32 values or binary blobs, both when
 # parsing and when producing
@@ -337,7 +385,7 @@ class RPCRTSPacket(RPCPacket):
                 flag = 1 << exp
                 if flags & flag > 0:
                     flags_value.append(RTS_FLAG_LABELS[exp])
-                values.append(", ".join(flags_value))
+            values.append(", ".join(flags_value))
 
         values.append(self.header["nbr_commands"])
 
@@ -354,6 +402,186 @@ RPCRTSPacket.parsers = {RTS_CMD_FLOW_CONTROL_ACK: RPCRTSPacket._parse_command_fl
                         RTS_CMD_CLIENT_ADDRESS: RPCRTSPacket._parse_command_client_address}
 
 
+
+### OUT packets
+
+# bind PDU (strict minimum required for NTLMSSP auth)
+class RPCBindOutPacket(object):
+    def __init__(self, logger=None):
+        self.logger = logger
+
+        self.size = 0
+        self.data = None
+
+        self.call_id = 1
+        self.ntlm_payload = None
+
+    def make(self):
+        if self.data is None:
+            self._make_packet_data()
+
+        return self.data
+
+    def _make_packet_data(self):
+        if self.ntlm_payload is None:
+            raise ValueError("'ntlm_payload' attribute must not be None")
+
+        ntlm_payload_size = len(self.ntlm_payload)
+        align_modulo = ntlm_payload_size % 4
+        if align_modulo > 0:
+            padding = (4 - align_modulo) * "\0"
+        else:
+            padding = ""
+        len_padding = len(padding)
+
+
+        # rfr: 1544f5e0-613c-11d1-93df-00c04fd7bd09, v1
+        # mgmt: afa8bd80-7d8a-11c9-bef4-08002b102989, v1
+        svc_guid = UUID('{afa8bd80-7d8a-11c9-bef4-08002b102989}')
+        iface_version_major = 1
+        iface_version_minor = 0
+
+        p_content_elem = ("\x01\x00\x00\x00\x00\x00\x01\x00"
+                          "%s%s"
+                          "\x04\x5d\x88\x8a\xeb\x1c\xc9\x11\x9f\xe8\x08\x00"
+                          "\x2b\x10\x48\x60\x02\x00\x00\x00"
+                          % (svc_guid.bytes_le,
+                             pack("<hh",
+                                  iface_version_major,
+                                  iface_version_minor)))
+        # p_content_elem = ("\x00\x00\x00\x00")
+        len_p_content_elem = len(p_content_elem)
+
+        header_data = pack("<bbbbbbbbhhl hhl %ds bbbbl" % len_p_content_elem,
+
+                           ## common headers:
+                           5, 0, # rpc_vers, rpc_vers_minor
+                           DCERPC_PKT_BIND, # ptype
+                           # pfc_flags:
+                           PFC_FIRST_FRAG
+                           | PFC_LAST_FRAG
+                           | PFC_SUPPORT_HEADER_SIGN,
+                           # | PFC_CONC_MPX,
+                           # drep: RPC spec chap14.htm (Data Representation Format Label)
+                           (1 << 4) | 0, 0, 0, 0,
+                           (32 + ntlm_payload_size + len_padding + len_p_content_elem), # frag_length
+                           ntlm_payload_size + len_padding, # auth_length
+                           self.call_id, # call_id
+
+                           ## bind specific:
+                           4088, 4088, # max_xmit/recv_frag
+                           0, # assoc_group_id
+
+                           # p_context_elem
+                           p_content_elem,
+
+                           # p_context_elem (flattened to int32):
+                           # 0,
+
+                           # sec_trailer:
+                           RPC_C_AUTHN_WINNT, # auth_verifier.auth_type
+                           # auth_verifier.auth_level:
+                           RPC_C_AUTHN_LEVEL_CONNECT,
+                           len_padding, # auth_verifier.auth_pad_length
+                           0, # auth_verifier.auth_reserved
+                           1 # auth_verifier.auth_context_id
+                           )
+        self.size = len(header_data) + ntlm_payload_size + len_padding
+        self.data = header_data + self.ntlm_payload + padding
+
+
+# auth_3 PDU
+class RPCAuth3OutPacket(object):
+    def __init__(self, logger=None):
+        self.logger = logger
+
+        self.size = 0
+        self.data = None
+
+        self.pfc_flags = PFC_FIRST_FRAG | PFC_LAST_FRAG
+        self.call_id = 1
+
+        self.ntlm_payload = None
+
+    def make(self):
+        if self.data is None:
+            self._make_packet_data()
+
+        return self.data
+
+    def _make_packet_data(self):
+        if self.ntlm_payload is None:
+            raise ValueError("'ntlm_payload' attribute must not be None")
+
+        ntlm_payload_size = len(self.ntlm_payload)
+        align_modulo = ntlm_payload_size % 4
+        if align_modulo > 0:
+            len_padding = (4 - align_modulo)
+        else:
+            len_padding = 0
+
+        header_data = pack("<bbbbbbbbhhl 4s bbbbl",
+                           5, 0, # rpc_vers, rpc_vers_minor
+                           DCERPC_PKT_AUTH_3, # ptype
+                           # pfc_flags
+                           self.pfc_flags,
+                           # drep: RPC spec chap14.htm (Data Representation Format Label)
+                           (1 << 4) | 0, 0, 0, 0,
+                           (28 + ntlm_payload_size + len_padding), # frag_length
+                           ntlm_payload_size + len_padding, # auth_length
+                           self.call_id, # call_id
+
+                           ## auth 3 specific:
+                           "",
+
+                           # sec_trailer:
+                           RPC_C_AUTHN_WINNT, # auth_verifier.auth_type
+                           # auth_verifier.auth_level:
+                           RPC_C_AUTHN_LEVEL_CONNECT,
+                           len_padding, # auth_verifier.auth_pad_length
+                           0, # auth_verifier.auth_reserved
+                           1 # auth_verifier.auth_context_id
+                           )
+        self.size = len(header_data) + ntlm_payload_size + len_padding
+        self.data = header_data + self.ntlm_payload + len_padding * "\x00"
+
+
+# ping PDU
+class RPCPingOutPacket(object):
+    def __init__(self, logger=None):
+        self.logger = logger
+
+        self.size = 0
+        self.data = None
+
+        self.pfc_flags = PFC_FIRST_FRAG | PFC_LAST_FRAG
+        self.call_id = 1
+
+    def make(self):
+        if self.data is None:
+            self._make_packet_data()
+
+        return self.data
+
+    def _make_packet_data(self):
+        header_data = pack("<bbbbbbbbhhl",
+
+                           ## common headers:
+                           5, 0, # rpc_vers, rpc_vers_minor
+                           DCERPC_PKT_PING, # ptype
+                           # pfc_flags
+                           self.pfc_flags,
+                           # drep: RPC spec chap14.htm (Data Representation Format Label)
+                           (1 << 4) | 0, 0, 0, 0,
+                           16, # frag_length
+                           0, # auth_length
+                           self.call_id # call_id
+                           )
+        self.size = len(header_data)
+        self.data = header_data
+
+
+# rts PDU
 class RPCRTSOutPacket(object):
     def __init__(self, logger=None):
         self.logger = logger

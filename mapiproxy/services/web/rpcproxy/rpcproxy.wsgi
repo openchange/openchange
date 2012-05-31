@@ -19,13 +19,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import sys
-
-sys.path.extend(("/usr/local/samba/lib/python2.7/site-packages",
-                 "/home/wsourdeau/src/openchange/mapiproxy/services/ocsmanager/rpcproxy"))
+# this is the WSGI starting point for rpcproxy
 
 from rpcproxy.NTLMAuthHandler import *
 from rpcproxy.RPCProxyApplication import *
 
 application = NTLMAuthHandler(RPCProxyApplication())
-# application = RPCProxyApplication()

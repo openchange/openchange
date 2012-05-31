@@ -318,7 +318,7 @@ class ExchangeService(ServiceBase):
     def _timezone_datetime(year, tz_time):
         # we round the dates to midnight since events are unlikely to start at
         # such an early time of day
-        return datetime.datetime(year, tz_time.Month, tz_time.DayOrder)
+        return datetime.datetime(year, tz_time.Month + 1, tz_time.DayOrder + 1)
 
     @staticmethod
     def _freebusy_date(timezone, utcdate):
@@ -344,10 +344,10 @@ class ExchangeService(ServiceBase):
         start = freebusy_view_options.TimeWindow.StartTime
         end = freebusy_view_options.TimeWindow.EndTime
 
-        a = time()
-        print "fetching freebusy"
+        # a = time()
+        # print "fetching freebusy"
         freebusy_props = cal_folder.fetch_freebusy_properties(start, end)
-        print "fetched freebusy: %f secs" % (time() - a)
+        # print "fetched freebusy: %f secs" % (time() - a)
 
         fb_response = FreeBusyResponse()
         fb_response.ResponseMessage = ResponseMessageType()

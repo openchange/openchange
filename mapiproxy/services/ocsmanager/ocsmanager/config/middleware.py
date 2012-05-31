@@ -1,4 +1,5 @@
 """Pylons middleware initialization"""
+
 from beaker.middleware import SessionMiddleware
 from paste.cascade import Cascade
 from paste.registry import RegistryManager
@@ -9,6 +10,11 @@ from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
 
 from ocsmanager.config.environment import load_environment
+
+# from paste.auth.basic import AuthBasicHandler
+# from ocsmanager.model.OCSAuthenticator import *
+
+from NTLMAuthHandler import NTLMAuthHandler
 
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """Create a Pylons WSGI application and return it
@@ -55,6 +61,10 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
             app = StatusCodeRedirect(app, [417])
         else:
             app = StatusCodeRedirect(app, [400, 401, 403, 404, 417, 500])
+
+    # authenticator = OCSAuthenticator(config)
+    # app = AuthBasicHandler(app, "OCSManager", authenticator)
+    app = NTLMAuthHandler(app)
 
     # Establish the Registry for this application
     app = RegistryManager(app)

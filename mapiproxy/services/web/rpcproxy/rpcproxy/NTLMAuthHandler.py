@@ -17,7 +17,11 @@
 #
 
 """This module provides the NTLMAuthHandler class, a WSGI middleware that
-enables authentication via RPC to Samba
+enables NTLM authentication via RPC to Samba.
+
+It works by proxying the NTLMSSP payload between the client and the samba
+server. Accessorily it could be used against an MS Exchange service, but this
+is untested.
 
 """
 
@@ -81,7 +85,7 @@ class NTLMAuthHandler(object):
 
         return cookies
 
-    def _stage0(self, client_id, env, start_response):
+    def _handle_negotiate(self, client_id, env, start_response):
         # print >>sys.stderr, "* client auth stage0"
 
         auth = env["HTTP_AUTHORIZATION"]
@@ -122,7 +126,7 @@ class NTLMAuthHandler(object):
 
         return response
 
-    def _stage1(self, client_id, env, start_response):
+    def _handle_auth(self, client_id, env, start_response):
         # print >>sys.stderr, "* client auth stage1"
 
         server = self.client_status[client_id]["server"]
@@ -207,11 +211,12 @@ class NTLMAuthHandler(object):
             if client_id is None or client_id not in self.client_status:
                 # stage 0, where the cookie has not been set yet and where we
                 # know the NTLM payload is a NEGOTIATE message
-                response = self._stage0(client_id, env, start_response)
+                response = self._handle_negotiate(client_id,
+                                                  env, start_response)
             else:
                 # stage 1, where the client has already received the challenge
                 # from the server and is now sending an AUTH message
-                response = self._stage1(client_id, env, start_response)
+                response = self._handle_auth(client_id, env, start_response)
         else:
             if client_id is None or client_id not in self.client_status:
                 # this client has never been seen

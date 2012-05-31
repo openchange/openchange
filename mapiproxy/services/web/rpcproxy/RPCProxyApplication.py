@@ -66,13 +66,13 @@ class RPCProxyApplication(object):
                     log_stream = sys.stderr
 
                 logHandler = logging.StreamHandler(log_stream)
-                fmter = logging.Formatter("[%(name)-%(process)d] %(levelname)s: %(message)s")
+                fmter = logging.Formatter("[%(process)d:%(name)s] %(levelname)s: %(message)s")
                 logHandler.setFormatter(fmter)
-                logHandler.set_name(method)
 
-                logger = logging.Logger("rpcproxy")
+                logger = logging.Logger(method)
                 logger.setLevel(logging.INFO)
                 logger.addHandler(logHandler)
+                # logger.set_name(method)
 
                 method_method_method = getattr(self, method_method)
                 response = method_method_method(logger, environ, start_response)
@@ -93,11 +93,11 @@ class RPCProxyApplication(object):
         return [msg]
 
     def _do_RPC_IN_DATA(self, logger, environ, start_response):
-        handler = RPCProxyInboundChannelHandler(self.sockets_dir, self.logger)
+        handler = RPCProxyInboundChannelHandler(self.sockets_dir, logger)
         return handler.sequence(environ, start_response)
 
     def _do_RPC_OUT_DATA(self, logger, environ, start_response):
         handler = RPCProxyOutboundChannelHandler(self.sockets_dir,
                                                  self.samba_host,
-                                                 self.logger)
+                                                 logger)
         return handler.sequence(environ, start_response)

@@ -114,8 +114,8 @@ class RPCProxyChannelHandler(object):
 
 
 class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
-    def __init__(self, logger):
-        RPCProxyChannelHandler.__init__(self, logger)
+    def __init__(self, sockets_dir, logger):
+        RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
         self.oc_conn = None
         self.window_size = 0
         self.conn_timeout = 0

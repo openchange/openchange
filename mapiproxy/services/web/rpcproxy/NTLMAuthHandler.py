@@ -35,7 +35,6 @@ from packets import *
 
 
 COOKIE_NAME = "ocs-ntlm-auth"
-SAMBA_HOST = "localhost"
 SAMBA_PORT = 1024
 
 
@@ -48,10 +47,11 @@ class NTLMAuthHandler(object):
 
     """
 
-    def __init__(self, application):
+    def __init__(self, application, samba_host="localhost"):
         # TODO: client expiration and/or cleanup
         self.client_status = {}
         self.application = application
+        self.samba_host = samba_host
 
     def _in_progress_response(self, start_response,
                               ntlm_data=None, client_id=None):
@@ -93,7 +93,7 @@ class NTLMAuthHandler(object):
 
         # print >> sys.stderr, "connecting to host"
         server = socket(AF_INET, SOCK_STREAM)
-        server.connect((SAMBA_HOST, SAMBA_PORT))
+        server.connect((self.samba_host, SAMBA_PORT))
         # print >> sys.stderr, "host: %s" % str(server.getsockname())
 
         # print >> sys.stderr, "building bind packet"

@@ -17,37 +17,65 @@
 #
 
 import logging
+from errno import EEXIST
+from os import umask, mkdir, rmdir, listdir
+from os.path import join
+from uuid import uuid4
 import sys
+
 
 from channels import RPCProxyInboundChannelHandler,\
     RPCProxyOutboundChannelHandler
 
 
 class RPCProxyApplication(object):
-    def __init__(self):
+    def __init__(self, samba_host, log_level=logging.DEBUG):
         print >>sys.stderr, "RPCProxy started"
 
+        has_socket_dir = False
+        umask(0077)
+        while not has_socket_dir:
+            leafname = "rpcproxy-%s" % str(uuid4())
+            dirname = "/tmp/%s" % leafname
+            try:
+                mkdir(dirname)
+                has_socket_dir = True
+                self.sockets_dir = dirname
+            except OSError, e:
+                if e.errno != EEXIST:
+                    raise
+
+        self.samba_host = samba_host
+        self.log_level = log_level
+
+    def __del__(self):
+        for filename in listdir(self.sockets_dir):
+            print >>sys.stderr, \
+                "RPCProxyApplication: removing stale socket '%s'" % filename
+            unlink(join(self.sockets_dir, filename))
+        rmdir(self.sockets_dir)
+
     def __call__(self, environ, start_response):
-        if "wsgi.errors" in environ:
-            log_stream = environ["wsgi.errors"]
-        else:
-            log_stream = sys.stderr
-
-        logHandler = logging.StreamHandler(log_stream)
-        fmter = logging.Formatter("[%(process)d] [%(levelname)s] %(message)s")
-        logHandler.setFormatter(fmter)
-
-        logger = logging.Logger("rpcproxy")
-        logger.setLevel(logging.INFO)
-        logger.addHandler(logHandler)
-        self.logger = logger
-
         if "REQUEST_METHOD" in environ:
             method = environ["REQUEST_METHOD"]
             method_method = "_do_" + method
             if hasattr(self, method_method):
+                if "wsgi.errors" in environ:
+                    log_stream = environ["wsgi.errors"]
+                else:
+                    log_stream = sys.stderr
+
+                logHandler = logging.StreamHandler(log_stream)
+                fmter = logging.Formatter("[%(name)-%(process)d] %(levelname)s: %(message)s")
+                logHandler.setFormatter(fmter)
+                logHandler.set_name(method)
+
+                logger = logging.Logger("rpcproxy")
+                logger.setLevel(logging.INFO)
+                logger.addHandler(logHandler)
+
                 method_method_method = getattr(self, method_method)
-                response = method_method_method(environ, start_response)
+                response = method_method_method(logger, environ, start_response)
             else:
                 response = self._unsupported_method(environ, start_response)
         else:
@@ -64,10 +92,12 @@ class RPCProxyApplication(object):
 
         return [msg]
 
-    def _do_RPC_IN_DATA(self, environ, start_response):
-        handler = RPCProxyInboundChannelHandler(self.logger)
+    def _do_RPC_IN_DATA(self, logger, environ, start_response):
+        handler = RPCProxyInboundChannelHandler(self.sockets_dir, self.logger)
         return handler.sequence(environ, start_response)
 
-    def _do_RPC_OUT_DATA(self, environ, start_response):
-        handler = RPCProxyOutboundChannelHandler(self.logger)
+    def _do_RPC_OUT_DATA(self, logger, environ, start_response):
+        handler = RPCProxyOutboundChannelHandler(self.sockets_dir,
+                                                 self.samba_host,
+                                                 self.logger)
         return handler.sequence(environ, start_response)

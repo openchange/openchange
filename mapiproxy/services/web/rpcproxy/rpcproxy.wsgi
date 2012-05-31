@@ -21,7 +21,15 @@
 
 # this is the WSGI starting point for rpcproxy
 
+import logging
+
 from NTLMAuthHandler import *
 from RPCProxyApplication import *
 
-application = NTLMAuthHandler(RPCProxyApplication())
+
+SOCKETS_DIR = "/tmp/rpcproxy"
+SAMBA_HOST = "127.0.0.1"
+LOG_LEVEL = logging.INFO
+
+application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST),
+                              samba_host=SAMBA_HOST)

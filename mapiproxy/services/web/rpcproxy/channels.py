@@ -78,11 +78,10 @@ from packets import RTS_CMD_CONNECTION_TIMEOUT, RTS_CMD_VERSION, \
 # those id must have the same length
 INBOUND_PROXY_ID = "IP"
 OUTBOUND_PROXY_ID = "OP"
-SOCKETS_DIR = "/tmp/rpcproxy"
-OC_HOST = "127.0.0.1"
 
 class RPCProxyChannelHandler(object):
-    def __init__(self, logger):
+    def __init__(self, sockets_dir, logger):
+        self.sockets_dir = sockets_dir
         self.logger = logger
 
         self.client_socket = None # placeholder for wsgi.input
@@ -145,7 +144,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         # channel
 
         # connect as a client to the cookie unix socket
-        socket_name = os.path.join(SOCKETS_DIR, self.connection_cookie)
+        socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.info("IN: connecting to OUT via unix socket '%s'"
                          % socket_name)
         sock = socket(AF_UNIX, SOCK_STREAM)
@@ -217,7 +216,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
     def _notify_OUT_channel(self):
         self.logger.info("IN: notifying OUT channel of shutdown")
 
-        socket_name = os.path.join(SOCKETS_DIR, self.connection_cookie)
+        socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.info("IN: connecting to OUT via unix socket '%s'"
                          % socket_name)
         sock = socket(AF_UNIX, SOCK_STREAM)
@@ -305,8 +304,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         # return [msg]
 
 class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
-    def __init__(self, logger):
-        RPCProxyChannelHandler.__init__(self, logger)
+    def __init__(self, sockets_dir, samba_host, logger):
+        RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
+        self.samba_host = samba_host
         self.unix_socket = None
         self.oc_conn = None
         self.in_window_size = 0
@@ -350,12 +350,12 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
 
     def _setup_oc_socket(self):
         # create IP connection to OpenChange
-        self.logger.info("OUT: connecting to OC_HOST:1024")
+        self.logger.info("OUT: connecting to %s:1024" % self.samba_host)
         connected = False
         while not connected:
             try:
                 oc_conn = socket(AF_INET, SOCK_STREAM)
-                oc_conn.connect((OC_HOST, 1024))
+                oc_conn.connect((self.samba_host, 1024))
                 connected = True
             except socket_error:
                 self.logger.info("OUT: failure to connect, retrying...")
@@ -368,11 +368,11 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         # TODO: add code to create missing socket dir
         # create the corresponding unix socket
 
-        if not os.access(SOCKETS_DIR, os.R_OK | os.W_OK | os.X_OK):
+        if not os.access(self.sockets_dir, os.R_OK | os.W_OK | os.X_OK):
             raise IOError("Socket directory '%s' does not exist or has the"
-                          " wrong permissions" % SOCKETS_DIR)
+                          " wrong permissions" % self.sockets_dir)
 
-        socket_name = os.path.join(SOCKETS_DIR, self.connection_cookie)
+        socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.info("OUT: creating unix socket '%s'" % socket_name)
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
@@ -449,7 +449,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             # self.logger.info("OUT: data sent to client")
 
     def _terminate_sockets(self):
-        socket_name = os.path.join(SOCKETS_DIR, self.connection_cookie)
+        socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.info("OUT: removing and closing unix socket '%s'"
                          % socket_name)
         if os.access(socket_name, os.F_OK):

@@ -21,9 +21,13 @@
 
 # this is the WSGI starting point for rpcproxy
 
+import sys
+
+print >>sys.stderr, "path: %s" % ":".join(sys.path)
+
 import logging
 
-from NTLMAuthHandler import *
+from openchange.web.auth.NTLMAuthHandler import *
 from RPCProxyApplication import *
 
 

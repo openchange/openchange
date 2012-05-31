@@ -27,11 +27,11 @@ from time import time, sleep
 from uuid import UUID
 
 # from rpcproxy.RPCH import RPCH, RTS_FLAG_ECHO
-from fdunix import send_socket, receive_socket
-from packets import RTS_CMD_CONNECTION_TIMEOUT, RTS_CMD_VERSION, \
-    RTS_CMD_RECEIVE_WINDOW_SIZE, RTS_CMD_CONNECTION_TIMEOUT, \
-    RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, RTS_CMD_DATA_LABELS, \
-    RPCPacket, RPCRTSPacket, RPCRTSOutPacket
+from openchange.utils.fdunix import send_socket, receive_socket
+from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
+    RTS_CMD_VERSION, RTS_CMD_RECEIVE_WINDOW_SIZE, \
+    RTS_CMD_CONNECTION_TIMEOUT, RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, \
+    RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket
 
 
 """Documentation:

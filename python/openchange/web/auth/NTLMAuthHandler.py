@@ -31,7 +31,7 @@ from socket import socket, _socketobject, SHUT_RDWR, AF_INET, AF_UNIX, \
     SOCK_STREAM, MSG_WAITALL, error as socket_error
 from struct import pack, error as struct_error
 
-from packets import *
+from openchange.utils.packets import *
 
 
 COOKIE_NAME = "ocs-ntlm-auth"

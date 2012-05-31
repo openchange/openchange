@@ -26,10 +26,11 @@ is untested.
 """
 
 import httplib
-from uuid import uuid4, UUID
 from socket import socket, _socketobject, SHUT_RDWR, AF_INET, AF_UNIX, \
     SOCK_STREAM, MSG_WAITALL, error as socket_error
 from struct import pack, error as struct_error
+import sys
+from uuid import uuid4, UUID
 
 from openchange.utils.packets import *
 
@@ -92,8 +93,15 @@ class NTLMAuthHandler(object):
         ntlm_payload = auth[5:].decode("base64")
 
         # print >> sys.stderr, "connecting to host"
-        server = socket(AF_INET, SOCK_STREAM)
-        server.connect((self.samba_host, SAMBA_PORT))
+        try:
+            server = socket(AF_INET, SOCK_STREAM)
+            server.connect((self.samba_host, SAMBA_PORT))
+        except:
+            print >>sys.stderr, \
+                ("NTLMAuthHandler: caught exception when connecting to samba"
+                 " host")
+            raise
+
         # print >> sys.stderr, "host: %s" % str(server.getsockname())
 
         # print >> sys.stderr, "building bind packet"

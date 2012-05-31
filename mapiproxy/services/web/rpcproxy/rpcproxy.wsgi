@@ -21,7 +21,7 @@
 
 # this is the WSGI starting point for rpcproxy
 
-from rpcproxy.NTLMAuthHandler import *
-from rpcproxy.RPCProxyApplication import *
+from NTLMAuthHandler import *
+from RPCProxyApplication import *
 
 application = NTLMAuthHandler(RPCProxyApplication())

@@ -9,12 +9,12 @@ from pylons.middleware import ErrorHandler, StatusCodeRedirect
 from pylons.wsgiapp import PylonsApp
 from routes.middleware import RoutesMiddleware
 
+from openchange.web.auth.NTLMAuthHandler import NTLMAuthHandler
+
 from ocsmanager.config.environment import load_environment
 
 # from paste.auth.basic import AuthBasicHandler
 # from ocsmanager.model.OCSAuthenticator import *
-
-from NTLMAuthHandler import NTLMAuthHandler
 
 def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     """Create a Pylons WSGI application and return it
@@ -64,7 +64,8 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # authenticator = OCSAuthenticator(config)
     # app = AuthBasicHandler(app, "OCSManager", authenticator)
-    app = NTLMAuthHandler(app)
+    fqdn = "%(hostname)s.%(dnsdomain)s" % config["samba"]
+    app = NTLMAuthHandler(app, samba_host=fqdn)
 
     # Establish the Registry for this application
     app = RegistryManager(app)

@@ -30,7 +30,7 @@ from uuid import UUID
 from fdunix import send_socket, receive_socket
 from packets import RTS_CMD_CONNECTION_TIMEOUT, RTS_CMD_VERSION, \
     RTS_CMD_RECEIVE_WINDOW_SIZE, RTS_CMD_CONNECTION_TIMEOUT, \
-    RTS_FLAG_ECHO, \
+    RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, RTS_CMD_DATA_LABELS, \
     RPCPacket, RPCRTSPacket, RPCRTSOutPacket
 
 
@@ -108,7 +108,8 @@ class RPCProxyChannelHandler(object):
         return [data]
 
     def log_connection_stats(self):
-        self.logger.info("request took %f secs; %d bytes received; %d bytes sent"
+        self.logger.info("channel keep alive during %f secs;"
+                         " %d bytes received; %d bytes sent"
                          % ((time() - self.startup_time),
                             self.bytes_read, self.bytes_written))
 
@@ -130,6 +131,8 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         packet = RPCPacket.from_file(self.client_socket, self.logger)
         if not isinstance(packet, RPCRTSPacket):
             raise Exception("Unexpected non-rts packet received for CONN/B1")
+        self.logger.info("IN: packet headers = " + packet.pretty_dump())
+
         self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
         self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
         self.client_keepalive = packet.commands[4]["ClientKeepalive"]
@@ -194,13 +197,13 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                                                 self.logger)
                 self.bytes_read = self.bytes_read + oc_packet.size
 
-                self.logger.info("IN: packet headers = "
-                                 + oc_packet.pretty_dump())
-
                 if isinstance(oc_packet, RPCRTSPacket):
-                    # or oc_packet.header["ptype"] == DCERPC_PKT_AUTH3):
-                    # we do not forward rts packets
-                    self.logger.info("IN: ignored RTS packet")
+                    self.logger.info("IN: ignored RTS packet: "
+                                     + oc_packet.pretty_dump())
+                    if oc_packet.header["flags"] == RTS_FLAG_OTHER_CMD:
+                        labels = [RTS_CMD_DATA_LABELS[command["type"]]
+                                  for command in oc_packet.commands]
+                        self.logger.info("IN:  commands: %s" % ", ".join(labels))
                 else:
                     self.logger.info("IN: sending packet to OC")
                     self.oc_conn.sendall(oc_packet.data)
@@ -316,6 +319,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         packet = RPCPacket.from_file(self.client_socket, self.logger)
         if not isinstance(packet, RPCRTSPacket):
             raise Exception("Unexpected non-rts packet received for CONN/A1")
+        self.logger.info("OUT: packet headers = " + packet.pretty_dump())
+
         self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
         self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
 
@@ -362,6 +367,11 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def _setup_channel_socket(self):
         # TODO: add code to create missing socket dir
         # create the corresponding unix socket
+
+        if not os.access(SOCKETS_DIR, os.R_OK | os.W_OK | os.X_OK):
+            raise IOError("Socket directory '%s' does not exist or has the"
+                          " wrong permissions" % SOCKETS_DIR)
+
         socket_name = os.path.join(SOCKETS_DIR, self.connection_cookie)
         self.logger.info("OUT: creating unix socket '%s'" % socket_name)
         if os.access(socket_name, os.F_OK):

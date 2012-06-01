@@ -21,19 +21,15 @@
 
 # this is the WSGI starting point for rpcproxy
 
-import sys
-
-print >>sys.stderr, "path: %s" % ":".join(sys.path)
-
 import logging
 
 from openchange.web.auth.NTLMAuthHandler import *
-from RPCProxyApplication import *
+from rpcproxy.RPCProxyApplication import *
 
 
-SOCKETS_DIR = "/tmp/rpcproxy"
 SAMBA_HOST = "127.0.0.1"
 LOG_LEVEL = logging.DEBUG
+
 
 application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
                                                   log_level=LOG_LEVEL),

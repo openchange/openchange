@@ -84,6 +84,7 @@ class RPCProxyChannelHandler(object):
         self.sockets_dir = sockets_dir
         self.logger = logger
 
+        self.unix_socket = None
         self.client_socket = None # placeholder for wsgi.input
 
         self.bytes_read = 0
@@ -147,13 +148,14 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("connecting to OUT via unix socket '%s'"
                          % socket_name)
-        sock = socket(AF_UNIX, SOCK_STREAM)
+        unix_socket = socket(AF_UNIX, SOCK_STREAM)
         connected = False
         attempt = 0
         while not connected:
             try:
                 attempt = attempt + 1
-                sock.connect(socket_name)
+                unix_socket.connect(socket_name)
+                self.unix_socket = unix_socket
                 connected = True
             except socket_error:
                 self.logger.debug("handling socket.error: %s"
@@ -168,18 +170,17 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             self.logger.debug("sending window size and connection timeout")
 
             # identify ourselves as the IN proxy
-            sock.sendall(INBOUND_PROXY_ID)
+            unix_socket.sendall(INBOUND_PROXY_ID)
 
             # send window_size to 256Kib (max size allowed)
             # and conn_timeout (in seconds, max size allowed)
-            sock.sendall(pack("<ll", (256 * 1024), 14400000))
+            unix_socket.sendall(pack("<ll", (256 * 1024), 14400000))
 
             # recv oc socket
-            self.oc_conn = receive_socket(sock)
+            self.oc_conn = receive_socket(unix_socket)
 
             self.logger.debug("oc_conn received (fileno=%d)"
                              % self.oc_conn.fileno())
-            sock.close()
         else:
             self.logger.error("too many failed attempts to establish a"
                               " connection to OUT channel")
@@ -212,45 +213,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("handling socket.error: %s"
                                   % str(sys.exc_info()))
                 # exc = sys.exc_info()
-                self._notify_OUT_channel()
                 self.logger.error("client connection closed")
-
-    def _notify_OUT_channel(self):
-        self.logger.debug("IN: notifying OUT channel of shutdown")
-
-        socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
-        self.logger.debug("IN: connecting to OUT via unix socket '%s'"
-                         % socket_name)
-        sock = socket(AF_UNIX, SOCK_STREAM)
-        connected = False
-        attempt = 0
-        while not connected:
-            try:
-                attempt = attempt + 1
-                sock.connect(socket_name)
-                connected = True
-            except socket_error:
-                self.logger.debug("IN: handling socket.error: %s"
-                                 % str(sys.exc_info()))
-                if attempt < 10:
-                    self.logger.warn("IN: reattempting to connect to OUT"
-                                     " channel... (%d/10)" % attempt)
-                    sleep(1)
-
-        if connected:
-            self.logger.debug("IN: connection succeeded")
-            try:
-                sock.sendall(INBOUND_PROXY_ID + "q")
-                sock.close()
-            except:
-                # UNIX socket might already have been closed by OUT channel
-                pass
-        else:
-            self.logger.error("too many failed attempts to establish a"
-                              " connection to OUT channel")
-
-    def _terminate_oc_socket(self):
-        self.oc_conn.close()
 
     def sequence(self, environ, start_response):
         self.logger.debug("processing request")
@@ -279,7 +242,16 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                                 ("Content-length", "0")])
                 self._runloop()
 
-            self._terminate_oc_socket()
+                # shutting down sockets
+                self.logger.debug("notifying OUT channel of shutdown")
+                try:
+                    self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
+                    self.unix_socket.close()
+                except socket_error:
+                    # OUT channel already closed the connection
+                    pass
+
+                self.oc_conn.close()
 
             self.log_connection_stats()
             self.logger.debug("exiting from main sequence")
@@ -309,7 +281,6 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def __init__(self, sockets_dir, samba_host, logger):
         RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
         self.samba_host = samba_host
-        self.unix_socket = None
         self.oc_conn = None
         self.in_window_size = 0
         self.in_conn_timeout = 0

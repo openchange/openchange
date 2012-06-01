@@ -17,21 +17,25 @@
 #
 
 """This module provides the NTLMAuthHandler class, a WSGI middleware that
-enables authentication via RPC to Samba
+enables NTLM authentication via RPC to Samba.
+
+It works by proxying the NTLMSSP payload between the client and the samba
+server. Accessorily it could be used against an MS Exchange service, but this
+is untested.
 
 """
 
 import httplib
-from uuid import uuid4, UUID
 from socket import socket, _socketobject, SHUT_RDWR, AF_INET, AF_UNIX, \
     SOCK_STREAM, MSG_WAITALL, error as socket_error
 from struct import pack, error as struct_error
+import sys
+from uuid import uuid4, UUID
 
-from packets import *
+from openchange.utils.packets import *
 
 
 COOKIE_NAME = "ocs-ntlm-auth"
-SAMBA_HOST = "localhost"
 SAMBA_PORT = 1024
 
 
@@ -44,10 +48,11 @@ class NTLMAuthHandler(object):
 
     """
 
-    def __init__(self, application):
+    def __init__(self, application, samba_host="localhost"):
         # TODO: client expiration and/or cleanup
         self.client_status = {}
         self.application = application
+        self.samba_host = samba_host
 
     def _in_progress_response(self, start_response,
                               ntlm_data=None, client_id=None):
@@ -81,15 +86,22 @@ class NTLMAuthHandler(object):
 
         return cookies
 
-    def _stage0(self, client_id, env, start_response):
+    def _handle_negotiate(self, client_id, env, start_response):
         # print >>sys.stderr, "* client auth stage0"
 
         auth = env["HTTP_AUTHORIZATION"]
         ntlm_payload = auth[5:].decode("base64")
 
         # print >> sys.stderr, "connecting to host"
-        server = socket(AF_INET, SOCK_STREAM)
-        server.connect((SAMBA_HOST, SAMBA_PORT))
+        try:
+            server = socket(AF_INET, SOCK_STREAM)
+            server.connect((self.samba_host, SAMBA_PORT))
+        except:
+            print >>sys.stderr, \
+                ("NTLMAuthHandler: caught exception when connecting to samba"
+                 " host")
+            raise
+
         # print >> sys.stderr, "host: %s" % str(server.getsockname())
 
         # print >> sys.stderr, "building bind packet"
@@ -122,7 +134,7 @@ class NTLMAuthHandler(object):
 
         return response
 
-    def _stage1(self, client_id, env, start_response):
+    def _handle_auth(self, client_id, env, start_response):
         # print >>sys.stderr, "* client auth stage1"
 
         server = self.client_status[client_id]["server"]
@@ -207,11 +219,12 @@ class NTLMAuthHandler(object):
             if client_id is None or client_id not in self.client_status:
                 # stage 0, where the cookie has not been set yet and where we
                 # know the NTLM payload is a NEGOTIATE message
-                response = self._stage0(client_id, env, start_response)
+                response = self._handle_negotiate(client_id,
+                                                  env, start_response)
             else:
                 # stage 1, where the client has already received the challenge
                 # from the server and is now sending an AUTH message
-                response = self._stage1(client_id, env, start_response)
+                response = self._handle_auth(client_id, env, start_response)
         else:
             if client_id is None or client_id not in self.client_status:
                 # this client has never been seen

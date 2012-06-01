@@ -19,13 +19,22 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
+# this is the WSGI starting point for rpcproxy
+
 import sys
 
-sys.path.extend(("/usr/local/samba/lib/python2.7/site-packages",
-                 "/home/wsourdeau/src/openchange/mapiproxy/services/ocsmanager/rpcproxy"))
+print >>sys.stderr, "path: %s" % ":".join(sys.path)
 
-from rpcproxy.NTLMAuthHandler import *
-from rpcproxy.RPCProxyApplication import *
+import logging
 
-application = NTLMAuthHandler(RPCProxyApplication())
-# application = RPCProxyApplication()
+from openchange.web.auth.NTLMAuthHandler import *
+from RPCProxyApplication import *
+
+
+SOCKETS_DIR = "/tmp/rpcproxy"
+SAMBA_HOST = "127.0.0.1"
+LOG_LEVEL = logging.DEBUG
+
+application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
+                                                  log_level=LOG_LEVEL),
+                              samba_host=SAMBA_HOST)

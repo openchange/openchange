@@ -33,7 +33,8 @@ from RPCProxyApplication import *
 
 SOCKETS_DIR = "/tmp/rpcproxy"
 SAMBA_HOST = "127.0.0.1"
-LOG_LEVEL = logging.INFO
+LOG_LEVEL = logging.DEBUG
 
-application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST),
+application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
+                                                  log_level=LOG_LEVEL),
                               samba_host=SAMBA_HOST)

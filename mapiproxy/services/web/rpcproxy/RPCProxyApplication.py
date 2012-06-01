@@ -70,7 +70,7 @@ class RPCProxyApplication(object):
                 logHandler.setFormatter(fmter)
 
                 logger = logging.Logger(method)
-                logger.setLevel(logging.INFO)
+                logger.setLevel(self.log_level)
                 logger.addHandler(logHandler)
                 # logger.set_name(method)
 

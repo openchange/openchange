@@ -606,7 +606,7 @@ class RPCRTSOutPacket(object):
         self.command_data = None
 
         if self.logger is not None:
-            self.logger.info("returning packet: %s" % repr(data))
+            self.logger.debug("returning packet: %s" % repr(data))
 
         return data
 

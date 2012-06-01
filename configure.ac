@@ -103,7 +103,7 @@ AC_DEFUN([OC_RULE_ADD],
 [ 
 AC_ARG_VAR([NAME], [rule name])
 AC_ARG_VAR([TYPE], [rule type])
-if test "x$1_set" != "xset"; then
+if test "x${$1}set" != "xset"; then
    case "$2" in
    	LIBS)
 		OC_$2="$OC_$2 $1"
@@ -361,7 +361,8 @@ dnl Samba4 modules
 dnl ---------------------------------------------------------------------------
 PKG_CHECK_MODULES(TALLOC, talloc)
 PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent samba-credentials)
-PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb)
+PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server, [], [AC_MSG_WARN([No mapiproxy support])])
+PKG_CHECK_MODULES(SAMDB, samdb, [], [AC_MSG_WARN([No mapiproxy support])])
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
 
@@ -387,6 +388,9 @@ AC_MSG_RESULT($DCERPC_SERVER_MODULESDIR)
 dnl ---------------------------------------------------------------------------
 dnl Finally add libmapi to the library list
 dnl ---------------------------------------------------------------------------
+if test "x$SAMBA_LIBS" != "x" ; then
+    libmapi=1
+fi
 OC_RULE_ADD(libmapi, LIBS)
 
 dnl nasty hack: only compile IDL if we have a library
@@ -489,6 +493,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
    if test x"$ov_cv_boost_thread" = "xyes"; then
       AC_PROG_CXX 
+      libmapixx=1
       OC_RULE_ADD(libmapixx, LIBS)
    fi
 fi
@@ -506,10 +511,12 @@ if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
    AC_PATH_PROG([BISON], [bison], [bison])
 
    if test x"$BISON" != x""; then
+      libocpf=1
       OC_RULE_ADD(libocpf, LIBS)
       AC_SUBST(BISON)
    fi
 else
+   libocpf=1
    OC_RULE_ADD(libocpf, LIBS)
 fi
 
@@ -527,6 +534,7 @@ PKG_CHECK_EXISTS([ dcerpc_samr ],
 
 if test x"$enable_libmapiadmin" = x"yes"; then
    	PKG_CHECK_MODULES(SAMR, dcerpc_samr ndr_standard)
+	libmapiadmin=1
 	OC_RULE_ADD(libmapiadmin, LIBS)
 fi
 
@@ -561,28 +569,37 @@ AC_CHECK_LIB([popt], [poptFreeContext],
 
 if test x"$enable_libpopt" = x"yes"; then
    	if test x"$enable_libmapiadmin" = x"yes"; then
-	   OC_RULE_ADD(openchangepfadmin, TOOLS)
-	   OC_RULE_ADD(mapitest, TOOLS)
+	   openchangepfadmin=1
+	   mapitest=1
 	fi
 
 	if test x"$enable_libocpf" = x"yes"; then
-	   OC_RULE_ADD(openchangeclient, TOOLS)
-           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+	   openchangeclient=1
 	fi
 
 	if test x"$have_libical" = x"yes"; then
-	    OC_RULE_ADD(exchange2ical, TOOLS)
+	    exchange2ical=1
 	fi
 
 	MAPISTORE_TEST=mapistore_test
-	OC_RULE_ADD(mapiprofile, TOOLS)
-	OC_RULE_ADD(openchangemapidump, TOOLS)
-	OC_RULE_ADD(schemaIDGUID, TOOLS)
-
-	OC_RULE_ADD(check_fasttransfer, TOOLS)
-	OC_RULE_ADD(test_asyncnotif, TOOLS)
+	mapiprofile=1
+	openchangemapidump=1
+	schemaIDGUID=1
+	check_fasttransfer=1
+	test_asyncnotif=1
 fi
 AC_SUBST(MAPISTORE_TEST)
+OC_RULE_ADD(openchangeclient, TOOLS)
+#OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+OC_RULE_ADD(exchange2ical, TOOLS)
+OC_RULE_ADD(openchangepfadmin, TOOLS)
+OC_RULE_ADD(mapitest, TOOLS)
+OC_RULE_ADD(mapiprofile, TOOLS)
+OC_RULE_ADD(openchangemapidump, TOOLS)
+OC_RULE_ADD(schemaIDGUID, TOOLS)
+
+OC_RULE_ADD(check_fasttransfer, TOOLS)
+OC_RULE_ADD(test_asyncnotif, TOOLS)
 
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
@@ -605,9 +622,10 @@ if test x"$enable_libmagic" = x"yes"; then
 		       AC_MSG_ERROR([Z library not found, please install zlib-devel.], [1])
 		     ])
    	if test x"$enable_libpopt" = x"yes"; then
-		OC_RULE_ADD(exchange2mbox, TOOLS)
+		exchange2mbox=1
 	fi
 fi
+OC_RULE_ADD(exchange2mbox, TOOLS)
 
 dnl ##########################################################################
 dnl libmapistore dependencies
@@ -644,8 +662,11 @@ dnl ##########################################################################
 dnl mapiproxy server
 dnl ##########################################################################
 if test x$PYTHON != x; then
-	OC_RULE_ADD(mapiproxy, SERVER)
+	if test "x$SAMDB_LIBS" != x -a "x$SAMBASERVER_LIBS" != x ; then
+		mapiproxy=1
+	fi
 fi
+OC_RULE_ADD(mapiproxy, SERVER)
 
 AC_ARG_WITH(modulesdir, 
 [AS_HELP_STRING([--with-modulesdir], [Modules path to use])],

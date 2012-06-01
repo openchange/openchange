@@ -141,9 +141,6 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
-        # FIXME: we might need to keep a persistant connection to the OUT
-        # channel
-
         # connect as a client to the cookie unix socket
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("connecting to OUT via unix socket '%s'"
@@ -151,7 +148,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         unix_socket = socket(AF_UNIX, SOCK_STREAM)
         connected = False
         attempt = 0
-        while not connected:
+        while not connected and attempt < 10:
             try:
                 attempt = attempt + 1
                 unix_socket.connect(socket_name)
@@ -160,10 +157,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             except socket_error:
                 self.logger.debug("handling socket.error: %s"
                                  % str(sys.exc_info()))
-                if attempt < 10:
-                    self.logger.warn("CUICUI reattempting to connect to OUT"
-                                     " channel... (%d/10)" % attempt)
-                    sleep(1)
+                self.logger.warn("reattempting to connect to OUT"
+                                 " channel... (%d/10)" % attempt)
+                sleep(1)
 
         if connected:
             self.logger.debug("connection succeeded")
@@ -247,7 +243,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 try:
                     self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
                     self.unix_socket.close()
+                    self.logger.debug("OUT channel successfully notified")
                 except socket_error:
+                    self.logger.debug("(OUT channel already shutdown the unix socket)")
                     # OUT channel already closed the connection
                     pass
 

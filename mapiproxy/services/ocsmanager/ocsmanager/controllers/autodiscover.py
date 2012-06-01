@@ -188,7 +188,7 @@ class AutodiscoverHandler(object):
 
         response_tree = {"Type": "EXPR",
                          "Server": samba_server_name,
-                         "SSL": "On",
+                         "SSL": "Off",
                          "AuthPackage": "Ntlm"}
         self._append_elements(prot_element, response_tree)
 

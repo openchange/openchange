@@ -108,7 +108,7 @@ class RPCProxyChannelHandler(object):
         return [data]
 
     def log_connection_stats(self):
-        self.logger.debug("channel keep alive during %f secs;"
+        self.logger.debug("channel kept alive during %f secs;"
                          " %d bytes received; %d bytes sent"
                          % ((time() - self.startup_time),
                             self.bytes_read, self.bytes_written))
@@ -141,9 +141,6 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
-        # FIXME: we might need to keep a persistant connection to the OUT
-        # channel
-
         # connect as a client to the cookie unix socket
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("connecting to OUT via unix socket '%s'"
@@ -151,7 +148,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         unix_socket = socket(AF_UNIX, SOCK_STREAM)
         connected = False
         attempt = 0
-        while not connected:
+        while not connected and attempt < 10:
             try:
                 attempt = attempt + 1
                 unix_socket.connect(socket_name)
@@ -160,10 +157,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             except socket_error:
                 self.logger.debug("handling socket.error: %s"
                                  % str(sys.exc_info()))
-                if attempt < 10:
-                    self.logger.warn("CUICUI reattempting to connect to OUT"
-                                     " channel... (%d/10)" % attempt)
-                    sleep(1)
+                self.logger.warn("reattempting to connect to OUT"
+                                 " channel... (%d/10)" % attempt)
+                sleep(1)
 
         if connected:
             self.logger.debug("connection succeeded")
@@ -247,7 +243,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 try:
                     self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
                     self.unix_socket.close()
+                    self.logger.debug("OUT channel successfully notified")
                 except socket_error:
+                    self.logger.debug("(OUT channel already shutdown the unix socket)")
                     # OUT channel already closed the connection
                     pass
 
@@ -349,29 +347,84 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         self.logger.debug("creating unix socket '%s'" % socket_name)
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
-        sock = socket(AF_UNIX, SOCK_STREAM)
-        sock.bind(socket_name)
-        sock.listen(2)
-        self.unix_socket = sock
+        server_socket = socket(AF_UNIX, SOCK_STREAM)
+        server_socket.bind(socket_name)
+        server_socket.listen(2)
+        self.server_socket = server_socket
 
     def _wait_IN_channel(self):
         self.logger.debug("waiting for connection from IN")
+
         # wait for the IN channel to connect as a B1 should be occurring
         # on the other side
-        in_sock = self.unix_socket.accept()[0]
-        data = in_sock.recv(2, MSG_WAITALL)
-        if data != INBOUND_PROXY_ID:
-            raise IOError("connection must be from IN proxy (1): /%s/"
-                          % data)
 
-        self.logger.debug("receiving window size + conn_timeout")
+        fd_pool = poll()
+        fd_pool.register(self.server_socket.fileno(), POLLIN)
+
+        # wait for 10 seconds
+        data = fd_pool.poll(1000.0)
+        if data is not None:
+            unix_socket = self.server_socket.accept()[0]
+            self.logger.debug("connection established with IN channel")
+
+            data = unix_socket.recv(2, MSG_WAITALL)
+            if data != INBOUND_PROXY_ID:
+                raise IOError("connection must be from IN proxy (1): /%s/"
+                              % data)
+
+            self.logger.debug("receiving window size + conn_timeout")
             # receive the WindowSize + ConnectionTimeout
-        (self.in_window_size, self.in_conn_timeout) = \
-            unpack_from("<ll", in_sock.recv(8, MSG_WAITALL))
+            (self.in_window_size, self.in_conn_timeout) = \
+                unpack_from("<ll", unix_socket.recv(8, MSG_WAITALL))
             # send OC socket
-        self.logger.debug("sending OC socket to IN")
-        send_socket(in_sock, self.oc_conn)
-        in_sock.close()
+            self.logger.debug("sending OC socket to IN")
+            send_socket(unix_socket, self.oc_conn)
+            self.unix_socket = unix_socket
+
+            connected = True
+        else:
+            self.logger.info("IN channel failed to connect in the last"
+                             " 10 seconds")
+            connected = False
+        
+        return connected
+
+    def _process_server_event(self, unix_fd, oc_fd, data):
+        status = True
+        server_data = None
+
+        fd, event_no = data
+        if fd == oc_fd:
+            # self.logger.debug("received event '%d' on oc socket"
+            #                   % event_no)
+            if event_no & POLLHUP > 0:
+                # FIXME: notify IN channel?
+                self.logger.debug("connection closed from OC")
+                status = False
+            elif event_no & POLLIN > 0:
+                oc_packet = RPCPacket.from_file(self.oc_conn, self.logger)
+                self.logger.debug("packet headers = "
+                                  + oc_packet.pretty_dump())
+                if isinstance(oc_packet, RPCRTSPacket):
+                    raise Exception("Unexpected rts packet received")
+
+                self.logger.debug("sending data to client")
+                self.bytes_read = self.bytes_read + oc_packet.size
+
+                server_data = oc_packet.data
+        elif fd == unix_fd:
+            if event_no & POLLHUP > 0:
+                # FIXME: notify IN channel?
+                self.logger.debug("connection closed from IN channel")
+                status = False
+            self.logger.debug("ignored event '%d' on unix socket (closing)"
+                              % event_no)
+            # FIXME: we should listen to what the IN channel has to say
+            status = False
+        else:
+            raise Exception("invalid poll event: %s" % str(data))
+
+        return (status, server_data)
 
     def _runloop(self):
         self.logger.debug("runloop")
@@ -386,40 +439,21 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         # Listen for data from the listener
         status = True
         while status:
-            for data in fd_pool.poll(1000):
-                fd, event_no = data
-                if fd == oc_fd:
-                    # self.logger.debug("received event '%d' on oc socket"
-                    #                   % event_no)
-                    if event_no & POLLHUP > 0:
-                        # FIXME: notify IN channel?
-                        self.logger.debug("connection closed from OC")
-                        status = False
-                    elif event_no & POLLIN > 0:
-                        oc_packet = RPCPacket.from_file(self.oc_conn,
-                                                        self.logger)
-                        self.logger.debug("packet headers = "
-                                         + oc_packet.pretty_dump())
-                        if isinstance(oc_packet, RPCRTSPacket):
-                            raise Exception("Unexpected rts packet received")
+            self.logger.debug("step in loop")
+            chunks = fd_pool.poll(2000.0)
 
-                        self.logger.debug("sending data to client")
-                        self.bytes_read = self.bytes_read + oc_packet.size
-                        self.bytes_written = self.bytes_written + oc_packet.size
-                        yield oc_packet.data
-                        # else:
-                        # self.logger.debug("ignored event '%d' on oc socket"
-                        #                  % event_no)
-                elif fd == unix_fd:
-                    self.logger.debug("ignored event '%d' on unix socket"
-                                     % event_no)
-                    # FIXME: we should listen to what the IN channel has to say
-                    status = False
-                else:
-                    raise Exception("invalid poll event: %s" % str(data))
-            # write(oc_packet.header_data)
-            # write(oc_packet.data)
-            # self.logger.debug("data sent to client")
+            if len(chunks) == 0:
+                pass
+            else:
+                for data in chunks:
+                    event_status, server_data \
+                        = self._process_server_event(unix_fd, oc_fd, data)
+                    if server_data is not None:
+                        self.bytes_written \
+                            = self.bytes_written + len(server_data)
+                        self.logger.debug("data sent")
+                        yield server_data
+                    status = status and event_status
 
     def _terminate_sockets(self):
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
@@ -427,7 +461,9 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
                          % socket_name)
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
-        self.unix_socket.close()
+        if self.unix_socket is not None:
+            self.unix_socket.close()
+        self.server_socket.close()
         self.oc_conn.close()
 
     def sequence(self, environ, start_response):
@@ -457,14 +493,16 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             yield self._send_conn_a3()
             self._setup_oc_socket()
             self._setup_channel_socket()
-            self._wait_IN_channel()
+            connected = self._wait_IN_channel()
 
-            yield self._send_conn_c2()
-            self.logger.debug("total bytes sent yet: %d"
-                             % self.bytes_written)
-            for data in self._runloop():
-                yield data
+            if connected:
+                yield self._send_conn_c2()
+                self.logger.debug("total bytes sent yet: %d"
+                                  % self.bytes_written)
+                for data in self._runloop():
+                    yield data
             self._terminate_sockets()
+
         elif content_length == 120:
             # Out channel request: replacement OUT channel
             raise Exception("Replacement OUT channel request not handled")

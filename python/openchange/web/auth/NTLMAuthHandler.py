@@ -61,22 +61,20 @@ ACTIVITY_TIMEOUT = CLIENT_TIMEOUT # 5 minutes since any socket has been used
 class _NTLMDaemon(object):
     def __init__(self, samba_host, socket_filename):
         self.socket_filename = socket_filename
-        self.client_data = {}
         self.samba_host = samba_host
+        self.client_data = {}
 
     def run(self, lockf):
         if exists(self.socket_filename):
             unlink(self.socket_filename)
         child_pid = fork()
         if child_pid == 0:
-            is_parent = False
             self._daemonize()
             sys.exit(0)
         elif child_pid > 0:
             # we wait for the child to exit before going on
             waitpid(child_pid, 0)
 
-            is_parent = True
             # we are the child
             # print >> sys.stderr, "waiting for ntlm daemon to create socket (%d)" % getpid()
             while not exists(self.socket_filename):
@@ -84,8 +82,6 @@ class _NTLMDaemon(object):
             # print >> sys.stderr, "socket of ntlm daemon now exists (%d)" % getpid()
         else:
             raise Exception("failure to fork NTLM daemon")
-
-        return is_parent
 
     def _daemonize(self):
         # this code is inspire by the recipe described here:
@@ -125,7 +121,8 @@ class _NTLMDaemon(object):
         if child_pid > 0:
             _exit(0)
 
-        print >> sys.stderr, "NTLM daemon spawned with pid %d" % getpid()
+        print >> sys.stderr, ("NTLMAuthHandler daemon spawned with pid %d"
+                              % getpid())
         
         # forked processes inherits lock created by flock, so we need to
         # unlock the file here
@@ -210,7 +207,8 @@ class _NTLMDaemon(object):
         [safe_close(client_socket)
          for client_socket in client_sockets.itervalues()]
         
-        print >> sys.stderr, "daemon shutdown"
+        print >> sys.stderr, ("NTLMAuthHandler daemon shutdown (%d)"
+                              % getpid())
 
     def _cleanup_client_data(self, time_limit):
         def _cleanup_record(client_id):
@@ -334,6 +332,8 @@ class _NTLMDaemon(object):
         server.close()
         del self.client_data[client_id]["server"]
 
+        # print >> sys.stderr, "* done with client auth stage1"
+
         return response
 
     def _handle_negotiate(self, client_id, ntlm_payload):
@@ -352,9 +352,9 @@ class _NTLMDaemon(object):
                 server.connect((self.samba_host, SAMBA_PORT))
                 connected = True
             except:
-                print >> sys.stderr, \
-                    ("NTLMAuthHandler: caught exception when connecting to samba"
-                     " host: attempt %d" % attempt)
+                print >> sys.stderr, ("NTLMAuthHandler: caught exception when"
+                                      " connecting to samba host: attempt %d"
+                                      % attempt)
                 sleep(1)
 
         # print >> sys.stderr, "host: %s" % str(server.getsockname())
@@ -382,6 +382,8 @@ class _NTLMDaemon(object):
             response = 0
             ntlm_payload = ""
 
+        # print >> sys.stderr, "* done with client auth stage0"
+
         return (response, ntlm_payload)
 
 
@@ -396,37 +398,9 @@ class NTLMAuthHandler(object):
 
     def __init__(self, application, directory="/var/run/ntlmauthhandler", samba_host="localhost"):
         self.application = application
-
-        lock_filename = join(directory, "ntlm.lock")
-        if not exists(lock_filename):
-            lockf = open(lock_filename, "w+")
-            lockf.close()
-        lockf = open(lock_filename, "r")
-        lock_fd = lockf.fileno()
-        flock(lock_fd, LOCK_EX)
-        if self._connect_to_daemon(directory, samba_host, lockf):
-            flock(lock_fd, LOCK_UN)
-            lockf.close()
-
-    def _connect_to_daemon(self, directory, samba_host, lockf):
-        socket_filename = join(directory, "ntlm.sock")
-        ntlm_server = socket(AF_UNIX, SOCK_STREAM)
-        retry = True
-        is_parent = True
-        try:
-            ntlm_server.connect(socket_filename)
-            retry = False
-        except socket_error:
-            # print >> sys.stderr, "spawning daemon (%d)" % getpid()
-            daemon = _NTLMDaemon(samba_host, socket_filename)
-            is_parent = daemon.run(lockf)
-
-        if is_parent:
-            if retry:
-                ntlm_server.connect(socket_filename)
-            self.ntlm_server = ntlm_server
-
-        return is_parent
+        self.directory = directory
+        self.samba_host = samba_host
+        self.ntlm_server = None
 
     @staticmethod
     def _in_progress_response(start_response, ntlm_data=None, client_id=None):
@@ -534,8 +508,8 @@ class NTLMAuthHandler(object):
     def _server_knows_client(self, client_id):
         # print >> sys.stderr, "server knows client? (%d)" % getpid()
         payload = "k%s%s" % (pack("<l", len(client_id)), client_id)
-        self.ntlm_server.sendall(payload)
-        payload = self.ntlm_server.recv(1, MSG_WAITALL)
+        self._send_to_server(payload)
+        payload = self._recv_from_server(1)
         if len(payload) > 0:
             code = unpack_from("<B", payload)[0]
             # print >> sys.stderr, ("server knows client: %d (%d)"
@@ -547,18 +521,22 @@ class NTLMAuthHandler(object):
         return code != 0
 
     def _server_ntlm_transaction(self, client_id="", ntlm_payload=""):
+        if self.ntlm_server is None:
+            self._setup_server_connection()
+
         # print >> sys.stderr, "ntlm_transaction (%d)" % getpid()
 
         payload = ("t%s%s%s%s"
                    % (pack("<l", len(client_id)), client_id,
                       pack("<l", len(ntlm_payload)), ntlm_payload))
-        self.ntlm_server.sendall(payload)
-        payload = self.ntlm_server.recv(5, MSG_WAITALL)
+        self._send_to_server(payload)
+        payload = self._recv_from_server(5)
         if len(payload) > 0:
             (code, len_ntlm_payload) = unpack_from("<Bl", payload)
             if len_ntlm_payload > 0:
-                ntlm_payload = self.ntlm_server.recv(len_ntlm_payload,
-                                                     MSG_WAITALL)
+                ntlm_payload = self._recv_from_server(len_ntlm_payload)
+                if len(ntlm_payload) != len_ntlm_payload:
+                    code = 0
             else:
                 ntlm_payload = ""
         else:
@@ -566,6 +544,76 @@ class NTLMAuthHandler(object):
             code = 0
             ntlm_payload = ""
 
-        # print >> sys.stderr, "ntlm_transaction success: %d (%d)" % (code, getpid())
+        # print >> sys.stderr, "ntlm_transaction result: %d (%d)" % (code, getpid())
 
         return (code != 0, ntlm_payload)
+
+    def _send_to_server(self, payload):
+        # print >>sys.stderr, "sending data (%d)" % getpid()
+        # sends a series of bytes to the server and make sure it receives them
+        # by restarting it if needed
+        if self.ntlm_server is None:
+            self._setup_server_connection()
+
+        sent = False
+        while not sent:
+            try:
+                self.ntlm_server.sendall(payload)
+                sent = True
+            except IOError:
+                # print >> sys.stderr, ("(send) reconnecting to server (%d)..."
+                #                      % getpid())
+                sleep(1)
+                self._setup_server_connection()
+        # print >>sys.stderr, "sent data (%d)" % getpid()
+
+    def _setup_server_connection(self):
+        # we create a lock in order to make sure that we would be the only
+        # process or thread starting a daemon if needed
+        lock_filename = join(self.directory, "ntlm.lock")
+        if not exists(lock_filename):
+            lockf = open(lock_filename, "w+")
+            lockf.close()
+        lockf = open(lock_filename, "r")
+        # print >> sys.stderr, "acquiring lock (%d)" % getpid()
+        lock_fd = lockf.fileno()
+        flock(lock_fd, LOCK_EX)
+        # print >> sys.stderr, "acquired lock (%d)" % getpid()
+        self._connect_to_daemon(lockf)
+        flock(lock_fd, LOCK_UN)
+        lockf.close()
+        # print >> sys.stderr, "released lock (%d)" % getpid()
+
+    def _connect_to_daemon(self, lockf):
+        socket_filename = join(self.directory, "ntlm.sock")
+        ntlm_server = socket(AF_UNIX, SOCK_STREAM)
+        retry = True
+        is_parent = True
+        try:
+            ntlm_server.connect(socket_filename)
+            retry = False
+        except socket_error:
+            # print >> sys.stderr, "spawning daemon (%d)" % getpid()
+            daemon = _NTLMDaemon(self.samba_host, socket_filename)
+            daemon.run(lockf)
+
+        if retry:
+            ntlm_server.connect(socket_filename)
+        self.ntlm_server = ntlm_server
+
+    def _recv_from_server(self, nbr_bytes):
+        # print >>sys.stderr, "receiving data (%d)" % getpid()
+
+        # receives a payload from the server and returns an empty string if
+        # something went wrong, just as if the actual request failed
+        try:
+            payload = self.ntlm_server.recv(nbr_bytes, MSG_WAITALL)
+            if payload is None:
+                payload = ""
+        except IOError:
+            # if the server has died, we must return an error anyway
+            payload = ""
+
+        # print >>sys.stderr, "received data (%d)" % getpid()
+
+        return payload

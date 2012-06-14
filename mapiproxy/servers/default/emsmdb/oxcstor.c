@@ -267,6 +267,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 	uint32_t				handle;
 
 	handle = handles[request->handle_idx];
+#if 0
 next:
 	for (el = emsmdbp_ctx->mstore_ctx->subscriptions; el; el = el->next) {
 		if (handle == el->subscription->handle) {
@@ -279,6 +280,7 @@ next:
 			goto next;
 		}
 	}
+#endif
 
 	/* If we have notification's subscriptions attached to this handle, we
 	   obviously remove them in order to avoid invoking them once all ROPs

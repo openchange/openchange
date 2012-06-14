@@ -100,12 +100,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
+#if 0
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {
 		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
+#endif
 
 	return mstore_ctx;
 }

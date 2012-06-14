@@ -28,6 +28,7 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.h"
 
+#if 0
 static int mapistore_subscription_destructor(void *data)
 {
 	struct mapistore_subscription	*subscription = (struct mapistore_subscription *) data;
@@ -46,8 +47,10 @@ static int mapistore_subscription_destructor(void *data)
 		DEBUG(0, ("%s unlinked\n", subscription->mqueue_name));
 		talloc_free(subscription->mqueue_name);
 	}
+
 	return 0;
 }
+#endif
 
 struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx, 
 							  struct mapistore_context *mstore_ctx,
@@ -56,6 +59,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
                                                           uint16_t notification_types,
                                                           void *notification_parameters)
 {
+#if 0
 	int						ret;
 	struct mapistore_connection_info		c;
 	struct mapistore_mgmt_notif			n;
@@ -132,10 +136,14 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 	}
 
         return new_subscription;
+#endif
+
+	return NULL;
 }
 
 _PUBLIC_ void mapistore_push_notification(struct mapistore_context *mstore_ctx, uint8_t object_type, enum mapistore_notification_type event, void *parameters)
 {
+#if 0
         struct mapistore_notification *new_notification;
         struct mapistore_notification_list *new_list;
         struct mapistore_table_notification_parameters *table_parameters;
@@ -163,8 +171,11 @@ _PUBLIC_ void mapistore_push_notification(struct mapistore_context *mstore_ctx, 
 		}
 	}
 	DLIST_ADD_END(mstore_ctx->notifications, new_list, void);
+
+#endif
 }
 
+#if 0
 static struct mapistore_notification_list *mapistore_notification_process_mqueue_notif(TALLOC_CTX *mem_ctx, 
 										       DATA_BLOB data)
 										       
@@ -267,7 +278,7 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 	/* HACK: we only support NewMail notifications for now */
 	return nl;
 }
-
+#endif
 
 /**
    \details Return the list of pending mapistore notifications
@@ -283,6 +294,8 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapisto
 								  const char *mqueue_name,
 								  struct mapistore_notification_list **nl)
 {
+	bool					found = false;
+#if 0
 	int					ret;
 	mqd_t					mqueue;
 	struct mapistore_notification_list	*nlist = NULL;
@@ -290,7 +303,6 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapisto
 	unsigned int				prio;
 	struct mq_attr				attr;
 	DATA_BLOB				data;
-	bool					found = false;
 
 	printf("[%s:%d]: queue name = %s\n", __FUNCTION__, __LINE__, ((mqueue_name) ? mqueue_name : NULL));
 	/* Sanity checks */
@@ -338,6 +350,7 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapisto
 	if (mq_close(mqueue) == -1) {
 		perror("mq_close");
 	}
+#endif
 
 	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
 }
@@ -356,13 +369,14 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 							    struct mapistore_subscription *s,
 							    struct mapistore_notification_list **nl)
 {
+	bool					found = false;
+#if 0
 	int					ret;
 	struct mapistore_notification_list	*nlist = NULL;
 	struct mapistore_notification_list	*el = NULL;
 	unsigned int				prio;
 	struct mq_attr				attr;
 	DATA_BLOB				data;
-	bool					found = false;
 
 	DEBUG(0, ("mapistore_get_queued_notifications: queue name = %s\n", s->mqueue_name));
 	DEBUG(0, ("mapistore_get_queued_notifications: before sanity checks\n"));
@@ -403,9 +417,12 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_con
 
 	DEBUG(0, ("mapistore_get_queued_notification: found = %s\n", 
 		  (found == false) ? "MAPISTORE_ERR_NOT_FOUND" : "MAPISTORE_SUCCESS"));
+#endif
+
 	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
 }
 
+#if 0
 static bool notification_matches_subscription(struct mapistore_notification *notification, struct mapistore_subscription *subscription)
 {
         bool result;
@@ -460,6 +477,7 @@ static bool notification_matches_subscription(struct mapistore_notification *not
 
         return result;
 }
+#endif
 
 _PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_context *mstore_ctx, uint32_t identifier, 
 							    uint16_t NotificationFlags)
@@ -475,8 +493,10 @@ _PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_con
 			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
 			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
 			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+#if 0
 			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
 			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
+#endif
 			DLIST_REMOVE(mstore_ctx->subscriptions, el);
 			talloc_free(el);
 			return MAPISTORE_SUCCESS;
@@ -488,6 +508,7 @@ _PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_con
 
 _PUBLIC_ struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *mstore_ctx, struct mapistore_notification *notification)
 {
+#if 0
         struct mapistore_subscription_list *matching_subscriptions, *new_element, *current_element;
 
 	if (!mstore_ctx) return NULL;
@@ -504,4 +525,6 @@ _PUBLIC_ struct mapistore_subscription_list *mapistore_find_matching_subscriptio
         }
         
         return matching_subscriptions;
+#endif
+	return NULL;
 }

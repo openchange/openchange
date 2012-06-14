@@ -1250,6 +1250,7 @@ notif:
 		talloc_free(notification_holder);
 	}
 	
+#if 0
 	DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
 	/* Process notifications available on subscriptions queues */
 	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
@@ -1275,6 +1276,7 @@ notif:
 			talloc_free(nlist);
 		}
 	}
+#endif
 
 	if (mapi_response->mapi_repl) {
 		mapi_response->mapi_repl[idx].opnum = 0;
@@ -1403,10 +1405,13 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	retval = mapistore_mgmt_interface_register_bind(emsmdbp_ctx->mstore_ctx->conn_info,
+	/* retval = mapistore_mgmt_interface_register_bind(emsmdbp_ctx->mstore_ctx->conn_info,
 							r->in.cbContext, r->in.rgbContext,
 							r->in.cbCallbackAddress, r->in.rgbCallbackAddress);
-	DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
+	*/
+	retval = MAPI_E_SUCCESS;
+
+	/* DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval)); */
 	if (retval == MAPI_E_SUCCESS) {
 		r->out.handle = r->in.handle;
 		/* FIXME: Create a notification object and return associated handle */

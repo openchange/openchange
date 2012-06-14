@@ -73,6 +73,7 @@ static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 	talloc_free(ndr_pull);
 }
 
+#if 0
 static void mgmt_ipc_notif_handler(int signo, siginfo_t *info, void *unused)
 {
 	struct mapistore_mgmt_context	*mgmt_ctx;
@@ -121,6 +122,7 @@ static void mgmt_ipc_notif_handler(int signo, siginfo_t *info, void *unused)
 
 	talloc_free(data.data);
 }
+#endif
 
 /**
    \details Initialize a mapistore manager context.
@@ -260,6 +262,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_backend(struct mapistore
 	return mapistore_backend_registered(backend);
 }
 
+#if 0
 static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 				      unsigned msg_prio,
 				      struct mapistore_connection_info *conn_info,
@@ -302,7 +305,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;	
 }
-
+#endif
 
 /**
    \details Retrieve the list of registered usernames
@@ -364,6 +367,7 @@ _PUBLIC_ struct mapistore_mgmt_users_list *mapistore_mgmt_registered_users(struc
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
+#if 0
 _PUBLIC_ enum mapistore_error mapistore_mgmt_backend_register_user(struct mapistore_connection_info *conn_info,
 								   const char *backend,
 								   const char *vuser)
@@ -372,6 +376,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_backend_register_user(struct mapist
 					  MAPISTORE_COMMAND_USER_REGISTER_PRIO, 
 					  conn_info, backend, vuser);
 }
+#endif
 
 
 /**
@@ -384,6 +389,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_backend_register_user(struct mapist
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
+#if 0
 _PUBLIC_ enum mapistore_error mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *conn_info,
 								     const char *backend,
 								     const char *vuser)
@@ -392,6 +398,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_backend_unregister_user(struct mapi
 					  MAPISTORE_COMMAND_USER_UNREGISTER_PRIO, 
 					  conn_info, backend, vuser);
 }
+#endif
 
 
 /**
@@ -601,6 +608,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 	return ((found == true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_NOT_FOUND);
 }
 
+#if 0
 static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 					      unsigned msg_prio,
 					      struct mapistore_connection_info *conn_info,
@@ -656,6 +664,7 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
+#endif
 
 /**
    \details Register a subscription for the given user
@@ -665,6 +674,7 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
+#if 0
 _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *conn_info,
 									     struct mapistore_mgmt_notif *notification)
 {
@@ -672,6 +682,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_subscription(str
 						  MAPISTORE_COMMAND_NOTIF_REGISTER_PRIO,
 						  conn_info, notification);
 }
+#endif
 
 /**
    \details Unregister a subscription for the given user
@@ -681,6 +692,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_subscription(str
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
+#if 0
 _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *conn_info,
 									       struct mapistore_mgmt_notif *notification)
 {
@@ -688,8 +700,10 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_unregister_subscription(s
 						  MAPISTORE_COMMAND_NOTIF_UNREGISTER_PRIO,
 						  conn_info, notification);
 }
+#endif
 
 
+#if 0
 static enum mapistore_error mgmt_bind_registration_command(enum mapistore_mgmt_status status,
 							   unsigned msg_prio,
 							   struct mapistore_connection_info *conn_info,
@@ -735,7 +749,7 @@ static enum mapistore_error mgmt_bind_registration_command(enum mapistore_mgmt_s
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
-
+#endif
 
 /**
    \details Register a callback address for UDP notifications to be
@@ -749,6 +763,7 @@ static enum mapistore_error mgmt_bind_registration_command(enum mapistore_mgmt_s
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
+#if 0
 _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *conn_info,
 								     uint16_t cbContext, uint8_t *rgbContext,
 								     uint16_t cbCallbackAddress, uint8_t *rgbCallbackAddress)
@@ -758,3 +773,4 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_interface_register_bind(struct mapi
 					      conn_info, cbContext, rgbContext, 
 					      cbCallbackAddress, rgbCallbackAddress);
 }
+#endif

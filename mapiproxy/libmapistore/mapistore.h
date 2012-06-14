@@ -46,7 +46,9 @@
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#if 0
 #include <mqueue.h>
+#endif
 
 #include <tdb.h>
 #include <ldb.h>
@@ -250,7 +252,9 @@ struct mapistore_context {
 	struct mapistore_notification_list	*notifications;
 	struct ldb_context			*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
+#if 0
 	mqd_t					mq_ipc;
+#endif
 };
 
 struct mapistore_freebusy_properties {
@@ -371,11 +375,13 @@ enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint1
 enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */
+#if 0
 enum mapistore_error mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
 enum mapistore_error mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 enum mapistore_error mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 enum mapistore_error mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 enum mapistore_error mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *, uint16_t, uint8_t *, uint16_t, uint8_t *);
+#endif
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 
@@ -404,8 +410,10 @@ struct mapistore_subscription {
 		struct mapistore_table_subscription_parameters table_parameters;
 		struct mapistore_object_subscription_parameters object_parameters;
 	} parameters;
+#if 0
 	char		*mqueue_name;
 	mqd_t		mqueue;
+#endif
 };
 
 struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, struct mapistore_context *, const char *, uint32_t, uint16_t, void *);

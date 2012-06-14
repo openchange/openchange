@@ -443,6 +443,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             chunks = fd_pool.poll(2000.0)
 
             if len(chunks) == 0:
+                # send ping packets?
                 pass
             else:
                 for data in chunks:

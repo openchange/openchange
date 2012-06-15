@@ -43,20 +43,25 @@ from uuid import uuid4
 from openchange.utils.packets import RPCAuth3OutPacket, RPCBindACKPacket, \
     RPCBindOutPacket, RPCFaultPacket, RPCPacket, RPCPingOutPacket
 
-COOKIE_NAME = "ocs-ntlm-auth"
+
+# TODO: we should make use of port 135 to discover which port our service uses
 SAMBA_PORT = 1024
 
+# those are left unconfigurable, at least for now
 CLIENT_TIMEOUT = 60 * 5 # 5 minutes since last use
 ACTIVITY_TIMEOUT = CLIENT_TIMEOUT # 5 minutes since any socket has been used
+
 
 ## client-daemon protocol:
 # * server knows client?
 # client -> server "k" + sizeof(cookie) + cookie
 # server->client = 0 or 1 (binary)
+#
 # * ntlm transaction
 # client -> server "t" + sizeof(cookie) + cookie + sizeof(ntlm-payload) +
 #      ntlm-payload
 # server -> client = 0 or 1 (binary) + sizeof(ntlm-payload) + ntlm-payload
+
 
 def _safe_close(socket_obj):
     try:
@@ -65,13 +70,14 @@ def _safe_close(socket_obj):
     except:
         pass
 
+
 class _NTLMDaemon(object):
     def __init__(self, samba_host, socket_filename):
         self.socket_filename = socket_filename
         self.samba_host = samba_host
         self.client_data = {}
 
-    def run(self, lockf):
+    def run(self):
         if exists(self.socket_filename):
             unlink(self.socket_filename)
         child_pid = fork()
@@ -203,7 +209,7 @@ class _NTLMDaemon(object):
 
         # close server socket and remove fs entry
         _safe_close(server_socket)
-        unlink(self.socket_filename)
+        # unlink(self.socket_filename)
         # close client sockets
         [_safe_close(client_socket)
          for client_socket in client_sockets.itervalues()]
@@ -215,7 +221,7 @@ class _NTLMDaemon(object):
         def _cleanup_record(client_id):
             record = self.client_data[client_id]
             if "server" in record:
-                print >> sys.stderr, "closing server socket"
+                # print >> sys.stderr, "closing server socket"
                 server = record["server"]
                 _safe_close(server)
             del self.client_data[client_id]
@@ -384,129 +390,13 @@ class _NTLMDaemon(object):
         return (response, ntlm_payload)
 
 
-class NTLMAuthHandler(object):
-    """
-    HTTP/1.0 ``NTLM`` authentication middleware
-
-    Parameters: application -- the application object that is called only upon
-    successful authentication.
-
-    """
-
-    def __init__(self, application, directory="/var/run/ntlmauthhandler", samba_host="localhost"):
-        self.application = application
-        self.directory = directory
+class _NTLMAuthClient(object):
+    def __init__(self, work_dir, samba_host):
+        self.work_dir = work_dir
         self.samba_host = samba_host
-        self.ntlm_server = None
+        self.connection = None
 
-    def __del__(self):
-        if self.ntlm_server is not None:
-            _safe_close(self.ntlm_server)
-
-    @staticmethod
-    def _in_progress_response(start_response, ntlm_data=None, client_id=None):
-        status = "401 %s" % httplib.responses[401]
-        content = "More data needed..."
-        headers = [("Content-Type", "text/plain"),
-                   ("Content-Length", "%d" % len(content))]
-        if ntlm_data is None:
-            www_auth_value = "NTLM"
-        else:
-            enc_ntlm_data = ntlm_data.encode("base64")
-            www_auth_value = ("NTLM %s"
-                              % enc_ntlm_data.strip().replace("\n", ""))
-
-        if client_id is not None:
-            # MUST occur when ntlm_data is None, can still occur otherwise
-            headers.append(("Set-Cookie", "%s=%s" % (COOKIE_NAME, client_id)))
-
-        headers.append(("WWW-Authenticate", www_auth_value))
-        start_response(status, headers)
-
-        return [content]
-
-    @staticmethod
-    def _get_cookies(env):
-        cookies = {}
-        if "HTTP_COOKIE" in env:
-            cookie_str = env["HTTP_COOKIE"]
-            for pair in cookie_str.split(";"):
-                (key, value) = pair.strip().split("=")
-                cookies[key] = value
-
-        return cookies
-
-    def _handle_negotiate(self, env, start_response):
-        client_id = str(uuid4())
-
-        auth = env["HTTP_AUTHORIZATION"]
-        ntlm_payload = auth[5:].decode("base64")
-
-        (success, ntlm_payload) = self._server_ntlm_transaction(client_id,
-                                                                ntlm_payload)
-        if success:
-            response = self._in_progress_response(start_response,
-                                                  ntlm_payload,
-                                                  client_id)
-        else:
-            response = self._in_progress_response(start_response)
-
-        return response
-
-    def _handle_auth(self, client_id, env, start_response):
-        auth = env["HTTP_AUTHORIZATION"]
-
-        ntlm_payload = auth[5:].decode("base64")
-        (success, ntlm_payload) = self._server_ntlm_transaction(client_id,
-                                                                ntlm_payload)
-
-        if success:
-            response = self.application(env, start_response)
-        else:
-            response = self._in_progress_response(start_response)
-
-        return response
-
-    def __call__(self, env, start_response):
-        # TODO: validate authorization payload
-
-        # old model that only works with mod_wsgi:
-        # if "REMOTE_ADDR" in env and "REMOTE_PORT" in env:
-        #     client_id = "%(REMOTE_ADDR)s:%(REMOTE_PORT)s".format(env)
-
-        has_auth = "HTTP_AUTHORIZATION" in env
-
-        cookies = self._get_cookies(env)
-        if COOKIE_NAME in cookies:
-            client_id = cookies[COOKIE_NAME]
-            server_knows_client = self._server_knows_client(client_id)
-            # print >> sys.stderr, \
-                # "server knows client (pid: %d): %s" % (getpid(),
-            # str(server_knows_client))
-        else:
-            server_knows_client = False
-            # print >> sys.stderr, "client did not pass auth cookie"
-
-        if has_auth:
-            if server_knows_client:
-                # stage 1, where the client has already received the challenge
-                # from the server and is now sending an AUTH message
-                response = self._handle_auth(client_id, env, start_response)
-            else:
-                # stage 0, where the cookie has not been set yet and where we
-                # know the NTLM payload is a NEGOTIATE message
-                response = self._handle_negotiate(env, start_response)
-        else:
-            if server_knows_client:
-                # authenticated, where no NTLM payload is provided anymore
-                response = self.application(env, start_response)
-            else:
-                # this client has never been seen
-                response = self._in_progress_response(start_response, None)
-
-        return response
-
-    def _server_knows_client(self, client_id):
+    def server_knows_client(self, client_id):
         # print >> sys.stderr, "server knows client? (%d)" % getpid()
         payload = "k%s%s" % (pack("<l", len(client_id)), client_id)
         self._send_to_server(payload)
@@ -521,10 +411,7 @@ class NTLMAuthHandler(object):
 
         return code != 0
 
-    def _server_ntlm_transaction(self, client_id="", ntlm_payload=""):
-        if self.ntlm_server is None:
-            self._setup_server_connection()
-
+    def ntlm_transaction(self, client_id="", ntlm_payload=""):
         # print >> sys.stderr, "ntlm_transaction (%d)" % getpid()
 
         payload = ("t%s%s%s%s"
@@ -550,57 +437,24 @@ class NTLMAuthHandler(object):
         return (code != 0, ntlm_payload)
 
     def _send_to_server(self, payload):
-        # print >>sys.stderr, "sending data (%d)" % getpid()
+        if self.connection is None:
+            self._make_connection()
+
         # sends a series of bytes to the server and make sure it receives them
         # by restarting it if needed
-        if self.ntlm_server is None:
-            self._setup_server_connection()
 
+        # print >>sys.stderr, "sending data (%d)" % getpid()
         sent = False
         while not sent:
             try:
-                self.ntlm_server.sendall(payload)
+                self.connection.sendall(payload)
                 sent = True
             except IOError:
                 # print >> sys.stderr, ("(send) reconnecting to server (%d)..."
                 #                      % getpid())
                 sleep(1)
-                self._setup_server_connection()
+                self._make_connection()
         # print >>sys.stderr, "sent data (%d)" % getpid()
-
-    def _setup_server_connection(self):
-        # we create a lock in order to make sure that we would be the only
-        # process or thread starting a daemon if needed
-        lock_filename = join(self.directory, "ntlm.lock")
-        if not exists(lock_filename):
-            lockf = open(lock_filename, "w+")
-            lockf.close()
-        lockf = open(lock_filename, "r")
-        # print >> sys.stderr, "acquiring lock (%d)" % getpid()
-        lock_fd = lockf.fileno()
-        flock(lock_fd, LOCK_EX)
-        # print >> sys.stderr, "acquired lock (%d)" % getpid()
-        self._connect_to_daemon(lockf)
-        flock(lock_fd, LOCK_UN)
-        lockf.close()
-        # print >> sys.stderr, "released lock (%d)" % getpid()
-
-    def _connect_to_daemon(self, lockf):
-        socket_filename = join(self.directory, "ntlm.sock")
-        ntlm_server = socket(AF_UNIX, SOCK_STREAM)
-        retry = True
-        is_parent = True
-        try:
-            ntlm_server.connect(socket_filename)
-            retry = False
-        except socket_error:
-            # print >> sys.stderr, "spawning daemon (%d)" % getpid()
-            daemon = _NTLMDaemon(self.samba_host, socket_filename)
-            daemon.run(lockf)
-
-        if retry:
-            ntlm_server.connect(socket_filename)
-        self.ntlm_server = ntlm_server
 
     def _recv_from_server(self, nbr_bytes):
         # print >>sys.stderr, "receiving data (%d)" % getpid()
@@ -608,7 +462,7 @@ class NTLMAuthHandler(object):
         # receives a payload from the server and returns an empty string if
         # something went wrong, just as if the actual request failed
         try:
-            payload = self.ntlm_server.recv(nbr_bytes, MSG_WAITALL)
+            payload = self.connection.recv(nbr_bytes, MSG_WAITALL)
             if payload is None:
                 payload = ""
         except IOError:
@@ -618,3 +472,178 @@ class NTLMAuthHandler(object):
         # print >>sys.stderr, "received data (%d)" % getpid()
 
         return payload
+
+    def _make_connection(self):
+        # we create a lock in order to make sure that we would be the only
+        # process or thread starting a daemon if needed
+
+        lock_filename = join(self.work_dir, "ntlm-%s.lock" % self.samba_host)
+        if not exists(lock_filename):
+            lockf = open(lock_filename, "w+")
+            lockf.close()
+        lockf = open(lock_filename, "r")
+        # print >> sys.stderr, "acquiring lock (%d)" % getpid()
+        lock_fd = lockf.fileno()
+        flock(lock_fd, LOCK_EX)
+        # print >> sys.stderr, "acquired lock (%d)" % getpid()
+        self.connection = self._connect_to_daemon(self.work_dir,
+                                                  self.samba_host)
+        flock(lock_fd, LOCK_UN)
+        lockf.close()
+
+    @staticmethod
+    def _connect_to_daemon(work_dir, samba_host):
+        socket_filename = join(work_dir, "ntlm-%s" % samba_host)
+        connection = socket(AF_UNIX, SOCK_STREAM)
+        try:
+            connection.connect(socket_filename)
+        except socket_error:
+            # the socket does not exist or is invalid, therefore we need to
+            # respawn the daemon
+            daemon = _NTLMDaemon(samba_host, socket_filename)
+            daemon.run()
+            connection.connect(socket_filename)
+
+        return connection
+
+    def close(self):
+        if self.connection is not None:
+            _safe_close(self.connection)
+            self.connection = None
+
+
+class NTLMAuthHandler(object):
+    """
+    HTTP/1.0 ``NTLM`` authentication middleware
+
+    Parameters: application -- the application object that is called only upon
+    successful authentication.
+
+    """
+
+    def __init__(self, application):
+        self.application = application
+
+    def __call__(self, env, start_response):
+        (work_dir, samba_host, cookie_name, has_auth) \
+            = self._read_environment(env)
+
+        connection = _NTLMAuthClient(work_dir, samba_host)
+
+        # TODO: validate authorization payload
+
+        cookies = self._get_cookies(env)
+        if cookie_name in cookies:
+            client_id = cookies[cookie_name]
+            server_knows_client = connection.server_knows_client(client_id)
+            # print >> sys.stderr, \
+                # "server knows client (pid: %d): %s" % (getpid(),
+            # str(server_knows_client))
+        else:
+            server_knows_client = False
+            # print >> sys.stderr, "client did not pass auth cookie"
+
+        if has_auth:
+            auth = env["HTTP_AUTHORIZATION"]
+            ntlm_payload = auth[5:].decode("base64")
+            if server_knows_client:
+                # stage 1, where the client has already received the challenge
+                # from the server and is now sending an AUTH message
+                # server_knows_client implies that client_id is valid
+                (success, payload) \
+                    = connection.ntlm_transaction(client_id, ntlm_payload)
+                if success:
+                    connection.close()
+                    response = self.application(env, start_response)
+                else:
+                    response = self._in_progress_response(start_response)
+            else:
+                # stage 0, where the cookie has not been set yet and where we
+                # know the NTLM payload is a NEGOTIATE message
+                client_id = str(uuid4())
+                (success, ntlm_payload) \
+                    = connection.ntlm_transaction(client_id, ntlm_payload)
+                if success:
+                    response = self._in_progress_response(start_response,
+                                                          ntlm_payload,
+                                                          client_id,
+                                                          cookie_name)
+                else:
+                    response = self._in_progress_response(start_response)
+        else:
+            if server_knows_client:
+                # authenticated, where no NTLM payload is provided anymore
+                connection.close()
+                response = self.application(env, start_response)
+            else:
+                # this client has never been seen
+                # note: this is the only case where the "connection" object is
+                # uselessly instantiated
+                response = self._in_progress_response(start_response, None)
+
+        connection.close()
+
+        return response
+
+    @staticmethod
+    def _read_environment(env):
+        if "NTLMAUTHHANDLER_WORKDIR" in env:
+            work_dir = env["NTLMAUTHHANDLER_WORKDIR"]
+            if not exists(work_dir):
+                raise ValueError("the directory specified for"
+                                 " 'NTLMAUTHHANDLER_WORKDIR' does not exist:"
+                                 " '%s'" % work_dir)
+        else:
+            raise ValueError("'NTLMAUTHHANDLER_WORKDIR' is not set in"
+                             " the environment")
+
+        if "SAMBA_HOST" in env:
+            samba_host = env["SAMBA_HOST"]
+        else:
+            print >> sys.stderr, \
+                "'SAMBA_HOST' not configured, 'localhost' will be used"
+            samba_host = "localhost"
+
+        if "NTLMAUTHHANDLER_COOKIENAME" in env:
+            cookie_name = env["NTLMAUTHHANDLER_COOKIENAME"]
+        else:
+            cookie_name = "oc-ntlm-auth"
+
+        has_auth = "HTTP_AUTHORIZATION" in env
+
+        return (work_dir, samba_host, cookie_name, has_auth)
+
+    @staticmethod
+    def _get_cookies(env):
+        cookies = {}
+        if "HTTP_COOKIE" in env:
+            cookie_str = env["HTTP_COOKIE"]
+            for pair in cookie_str.split(";"):
+                (key, value) = pair.strip().split("=")
+                cookies[key] = value
+
+        return cookies
+
+    @staticmethod
+    def _in_progress_response(start_response, ntlm_data=None,
+                              client_id=None, cookie_name=None):
+        status = "401 %s" % httplib.responses[401]
+        content = "More data needed..."
+        headers = [("Content-Type", "text/plain"),
+                   ("Content-Length", "%d" % len(content))]
+        if ntlm_data is None:
+            www_auth_value = "NTLM"
+        else:
+            enc_ntlm_data = ntlm_data.encode("base64")
+            www_auth_value = ("NTLM %s"
+                              % enc_ntlm_data.strip().replace("\n", ""))
+
+        if client_id is not None:
+            # MUST occur when ntlm_data is None, can still occur otherwise
+            headers.append(("Set-Cookie", "%s=%s" % (cookie_name, client_id)))
+
+        headers.append(("WWW-Authenticate", www_auth_value))
+        start_response(status, headers)
+
+        return [content]
+

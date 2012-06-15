@@ -18,11 +18,11 @@
 
 import logging
 from errno import EEXIST
-from os import umask, mkdir, rmdir, listdir
+from os import umask, mkdir, rmdir, listdir, getpid
 from os.path import join
 from uuid import uuid4
+from shutil import rmtree
 import sys
-
 
 from channels import RPCProxyInboundChannelHandler,\
     RPCProxyOutboundChannelHandler
@@ -30,30 +30,40 @@ from channels import RPCProxyInboundChannelHandler,\
 
 class RPCProxyApplication(object):
     def __init__(self, samba_host, log_level=logging.DEBUG):
+        # we keep a reference to the rmtree function until our instance is
+        # deleted
+        self.rmtree = rmtree
+
+        dirname = "/tmp/rpcproxy"
+        try:
+            mkdir(dirname)
+        except:
+            pass
+
+        self.sockets_dir = dirname
+
         print >>sys.stderr, "RPCProxy started"
 
-        has_socket_dir = False
-        umask(0077)
-        while not has_socket_dir:
-            leafname = "rpcproxy-%s" % str(uuid4())
-            dirname = "/tmp/%s" % leafname
-            try:
-                mkdir(dirname)
-                has_socket_dir = True
-                self.sockets_dir = dirname
-            except OSError, e:
-                if e.errno != EEXIST:
-                    raise
+        # has_socket_dir = False
+        # umask(0077)
+        # while not has_socket_dir:
+            # # leafname = "rpcproxy-%s" % str(uuid4())
+            # leafname = "rpcproxy" # % getpid()
+            # dirname = "/tmp/%s" % leafname
+            # try:
+            #     mkdir(dirname)
+            #     has_socket_dir = True
+            #     self.sockets_dir = dirname
+            # except OSError, e:
+            #     if e.errno != EEXIST:
+            #         raise
 
         self.samba_host = samba_host
         self.log_level = log_level
 
     def __del__(self):
-        for filename in listdir(self.sockets_dir):
-            print >>sys.stderr, \
-                "RPCProxyApplication: removing stale socket '%s'" % filename
-            unlink(join(self.sockets_dir, filename))
-        rmdir(self.sockets_dir)
+        # self.rmtree(self.sockets_dir)
+        pass
 
     def __call__(self, environ, start_response):
         if "REQUEST_METHOD" in environ:

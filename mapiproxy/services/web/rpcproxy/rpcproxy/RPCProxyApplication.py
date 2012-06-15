@@ -58,8 +58,8 @@ class RPCProxyApplication(object):
     def __call__(self, environ, start_response):
         if "REQUEST_METHOD" in environ:
             method = environ["REQUEST_METHOD"]
-            method_method = "_do_" + method
-            if hasattr(self, method_method):
+            method_name = "_do_" + method
+            if hasattr(self, method_name):
                 if "wsgi.errors" in environ:
                     log_stream = environ["wsgi.errors"]
                 else:
@@ -74,8 +74,9 @@ class RPCProxyApplication(object):
                 logger.addHandler(logHandler)
                 # logger.set_name(method)
 
-                method_method_method = getattr(self, method_method)
-                response = method_method_method(logger, environ, start_response)
+                channel_method = getattr(self, method_name)
+                channel = channel_method(logger)
+                response = channel.sequence(environ, start_response)
             else:
                 response = self._unsupported_method(environ, start_response)
         else:
@@ -92,12 +93,10 @@ class RPCProxyApplication(object):
 
         return [msg]
 
-    def _do_RPC_IN_DATA(self, logger, environ, start_response):
-        handler = RPCProxyInboundChannelHandler(self.sockets_dir, logger)
-        return handler.sequence(environ, start_response)
+    def _do_RPC_IN_DATA(self, logger):
+        return RPCProxyInboundChannelHandler(self.sockets_dir, logger)
 
-    def _do_RPC_OUT_DATA(self, logger, environ, start_response):
-        handler = RPCProxyOutboundChannelHandler(self.sockets_dir,
-                                                 self.samba_host,
-                                                 logger)
-        return handler.sequence(environ, start_response)
+    def _do_RPC_OUT_DATA(self, logger):
+        return RPCProxyOutboundChannelHandler(self.sockets_dir,
+                                              self.samba_host,
+                                              logger)

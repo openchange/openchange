@@ -69,7 +69,12 @@ class RPCProxyApplication(object):
                 fmter = logging.Formatter("[%(process)d:%(name)s] %(levelname)s: %(message)s")
                 logHandler.setFormatter(fmter)
 
-                logger = logging.Logger(method)
+                if "REMOTE_PORT" in environ:
+                    rmt_port = environ["REMOTE_PORT"]
+                else:
+                    rmt_port = "<unknown>"
+
+                logger = logging.Logger(method + ":" + rmt_port)
                 logger.setLevel(self.log_level)
                 logger.addHandler(logHandler)
                 # logger.set_name(method)

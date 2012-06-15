@@ -79,6 +79,15 @@ from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
 INBOUND_PROXY_ID = "IP"
 OUTBOUND_PROXY_ID = "OP"
 
+
+def _safe_close(socket_obj):
+    try:
+        socket_obj.shutdown(SHUT_RDWR)
+        socket_obj.close()
+    except:
+        pass
+
+
 class RPCProxyChannelHandler(object):
     def __init__(self, sockets_dir, logger):
         self.sockets_dir = sockets_dir
@@ -242,16 +251,14 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("notifying OUT channel of shutdown")
                 try:
                     self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
-                    self.unix_socket.shutdown(SHUT_RDWR)
-                    self.unix_socket.close()
+                    _safe_close(self.unix_socket)
                     self.logger.debug("OUT channel successfully notified")
                 except socket_error:
                     self.logger.debug("(OUT channel already shutdown the unix socket)")
                     # OUT channel already closed the connection
                     pass
 
-                self.oc_conn.shutdown(SHUT_RDWR)
-                self.oc_conn.close()
+                _safe_close(self.oc_conn)
 
             self.log_connection_stats()
             self.logger.debug("exiting from main sequence")
@@ -465,12 +472,9 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
         if self.unix_socket is not None:
-            self.unix_socket.shutdown(SHUT_RDWR)
-            self.unix_socket.close()
-        self.server_socket.shutdown(SHUT_RDWR)
-        self.server_socket.close()
-        self.oc_conn.shutdown(SHUT_RDWR)
-        self.oc_conn.close()
+            _safe_close(self.unix_socket)
+        _safe_close(self.server_socket)
+        _safe_close(self.oc_conn)
 
     def sequence(self, environ, start_response):
         self.logger.debug("processing request")

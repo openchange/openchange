@@ -95,7 +95,9 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 	}
 	
 
+#if 0
 	ret = mapistore_mgmt_interface_register_subscription(self->mstore_ctx->conn_info, &n);
+#endif
 
 	/* Upon success attach subscription to session object using
 	 * existing mapistore_notification.c implementation */
@@ -157,8 +159,9 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 		n.MAPIStoreURI = mapistoreURI;
 	}
 	
-
+#if 0
 	ret = mapistore_mgmt_interface_unregister_subscription(self->mstore_ctx->conn_info, &n);
+#endif
 
 	/* Remove matching notifications from mapistore_notification system */
 	if (ret == MAPISTORE_SUCCESS) {

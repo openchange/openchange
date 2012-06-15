@@ -20,7 +20,7 @@
 import os
 from select import poll, POLLIN, POLLHUP
 from socket import socket, AF_INET, AF_UNIX, SOCK_STREAM, MSG_WAITALL, \
-    error as socket_error
+    SHUT_RDWR, error as socket_error
 from struct import pack, unpack_from
 import sys
 from time import time, sleep
@@ -242,6 +242,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("notifying OUT channel of shutdown")
                 try:
                     self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
+                    self.unix_socket.shutdown(SHUT_RDWR)
                     self.unix_socket.close()
                     self.logger.debug("OUT channel successfully notified")
                 except socket_error:
@@ -249,6 +250,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                     # OUT channel already closed the connection
                     pass
 
+                self.oc_conn.shutdown(SHUT_RDWR)
                 self.oc_conn.close()
 
             self.log_connection_stats()
@@ -463,8 +465,11 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
         if self.unix_socket is not None:
+            self.unix_socket.shutdown(SHUT_RDWR)
             self.unix_socket.close()
+        self.server_socket.shutdown(SHUT_RDWR)
         self.server_socket.close()
+        self.oc_conn.shutdown(SHUT_RDWR)
         self.oc_conn.close()
 
     def sequence(self, environ, start_response):

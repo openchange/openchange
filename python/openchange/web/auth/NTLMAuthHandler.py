@@ -58,6 +58,13 @@ ACTIVITY_TIMEOUT = CLIENT_TIMEOUT # 5 minutes since any socket has been used
 #      ntlm-payload
 # server -> client = 0 or 1 (binary) + sizeof(ntlm-payload) + ntlm-payload
 
+def _safe_close(socket_obj):
+    try:
+        socket_obj.shutdown(SHUT_RDWR)
+        socket_obj.close()
+    except:
+        pass
+
 class _NTLMDaemon(object):
     def __init__(self, samba_host, socket_filename):
         self.socket_filename = socket_filename
@@ -70,7 +77,7 @@ class _NTLMDaemon(object):
         child_pid = fork()
         if child_pid == 0:
             self._daemonize()
-            sys.exit(0)
+            _exit(0)
         elif child_pid > 0:
             # we wait for the child to exit before going on
             waitpid(child_pid, 0)
@@ -133,12 +140,6 @@ class _NTLMDaemon(object):
         self._run_as_daemon()
 
     def _run_as_daemon(self):
-        def safe_close(socket_obj):
-            try:
-                socket_obj.close()
-            except:
-                pass
-
         client_sockets = {}
         last_cleanup = time()
         last_activity = time()
@@ -193,7 +194,7 @@ class _NTLMDaemon(object):
                                                                 now)):
                             # print >> sys.stderr, ("removed client socket from"
                             # " pool (%d)" % getpid())
-                            safe_close(client_socket)
+                            _safe_close(client_socket)
                             fd_pool.unregister(filedesc)
                             del client_sockets[filedesc]
                     else:
@@ -201,10 +202,10 @@ class _NTLMDaemon(object):
                                         " (%d)" % (filedesc, getpid()))
 
         # close server socket and remove fs entry
-        safe_close(server_socket)
+        _safe_close(server_socket)
         unlink(self.socket_filename)
         # close client sockets
-        [safe_close(client_socket)
+        [_safe_close(client_socket)
          for client_socket in client_sockets.itervalues()]
         
         print >> sys.stderr, ("NTLMAuthHandler daemon shutdown (%d)"
@@ -216,11 +217,7 @@ class _NTLMDaemon(object):
             if "server" in record:
                 print >> sys.stderr, "closing server socket"
                 server = record["server"]
-                try:
-                    server.close()
-                except:
-                    # socket already closed?
-                    pass
+                _safe_close(server)
             del self.client_data[client_id]
 
         [_cleanup_record(client_id) \
@@ -266,7 +263,7 @@ class _NTLMDaemon(object):
                 # amount of sockets in use
                 if "server" in self.client_data[client_id]:
                     server = self.client_data[client_id]["server"]
-                    server.close()
+                    _safe_close(server)
                 del self.client_data[client_id]
 
             len_ntlm_payload = len(ntlm_payload)
@@ -329,7 +326,7 @@ class _NTLMDaemon(object):
             # we start over with the whole process
             del self.client_data[client_id]
 
-        server.close()
+        _safe_close(server)
         del self.client_data[client_id]["server"]
 
         # print >> sys.stderr, "* done with client auth stage1"
@@ -401,6 +398,10 @@ class NTLMAuthHandler(object):
         self.directory = directory
         self.samba_host = samba_host
         self.ntlm_server = None
+
+    def __del__(self):
+        if self.ntlm_server is not None:
+            _safe_close(self.ntlm_server)
 
     @staticmethod
     def _in_progress_response(start_response, ntlm_data=None, client_id=None):

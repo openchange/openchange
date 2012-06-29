@@ -1511,7 +1511,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_create_attachment(struct mapisto
 	return mapistore_backend_message_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, enum OpenEmbeddedMessage_OpenModeFlags mode, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1523,7 +1523,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	return mapistore_backend_message_attachment_open_embedded_message(backend_ctx, message, mem_ctx, embedded_message, mid, msg);
+	return mapistore_backend_message_attachment_open_embedded_message(backend_ctx, message, mode, mem_ctx, embedded_message, mid, msg);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_table_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)

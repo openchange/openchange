@@ -1509,9 +1509,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 
 		contextID = emsmdbp_get_contextID(attachment_object);
 		ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
-									    NULL, &backend_attachment_message,
-									    &messageID,
-									    &msg);
+									 mapi_req->u.mapi_OpenEmbeddedMessage.OpenModeFlags,
+									 NULL, &backend_attachment_message,
+									 &messageID,
+									 &msg);
                 if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			goto end;

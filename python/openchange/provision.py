@@ -24,7 +24,7 @@ from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
 import ldb
-from ldb import SCOPE_SUBTREE
+from ldb import SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
 from samba.provision import (setup_add_ldif, setup_modify_ldif)
 from openchange.urlutils import openchangedb_url

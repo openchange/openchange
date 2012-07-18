@@ -1136,6 +1136,36 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *l
 }
 
 /**
+   \details Returns the change number that will be allocated when openchangedb_get_new_changeNumber is next invoked
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param cn pointer to the cn value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct ldb_context *ldb_ctx, uint64_t *cn)
+{
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	const char * const	attrs[] = { "ChangeNumber", NULL };
+
+	/* Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_changeNumber");
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*cn = ldb_msg_find_attr_as_uint64(res->msgs[0], "ChangeNumber", 1);
+
+	talloc_free(mem_ctx);
+
+	*cn = (exchange_globcnt(*cn) << 16) | 0x0001;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Reserve a range of FMID
    
    \param ldb_ctx pointer to the openchange LDB context

@@ -322,13 +322,11 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapi_nameid.h libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h mapiproxy/libmapistore/mapistore_nameid.h: \
-	libmapi/conf/mapi-properties								\
-	libmapi/conf/mapi-codes									\
-	libmapi/conf/mapi-named-properties							\
-	libmapi/conf/codepage-lcid								\
-	libmapi/conf/mparse.pl
-	@./libmapi/conf/build.sh
+libmapi/mapicode.c mapicodes_enum.h: libmapi/conf/mparse.pl libmapi/conf/mapi-codes
+	libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi/ libmapi/conf/mapi-codes
+
+libmapi/codepage_lcid.c: libmapi/conf/mparse.pl libmapi/conf/codepage-lcid
+	libmapi/conf/mparse.pl --parser=codepage_lcid --outputdir=libmapi/ libmapi/conf/codepage-lcid
 
 #################################################################
 # libmapi++ compilation rules
@@ -853,6 +851,13 @@ libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
+mapiproxy/libmapistore/mapistore_nameid.h: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	libmapi/conf/mparse.pl --parser=mapistore_nameid --outputdir=mapiproxy/libmapistore/ libmapi/conf/mapi-named-properties
+
+setup/mapistore/mapistore_namedprops.ldif: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	-mkdir --parent "setup/mapistore"
+	libmapi/conf/mparse.pl --parser=mapistore_namedprops --outputdir=setup/mapistore/ libmapi/conf/mapi-named-properties
+
 libmapistore-installpc:
 	@echo "[*] install: libmapistore pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
@@ -911,13 +916,10 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 
+mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
+
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
-
-setup/mapistore/mapistore_namedprops.ldif: 	\
-	libmapi/conf/mapi-named-properties	\
-	libmapi/conf/mparse.pl			
-	@./libmapi/conf/build.sh
 
 #####################
 # mapistore backends
@@ -1535,11 +1537,6 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 
 pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h
 		pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
-
-pyopenchange/pymapi_properties.c:		\
-	libmapi/conf/mapi-properties		\
-	libmapi/conf/mparse.pl		
-	@./libmapi/conf/build.sh
 
 pyopenchange-clean:
 	rm -f pyopenchange/*.o

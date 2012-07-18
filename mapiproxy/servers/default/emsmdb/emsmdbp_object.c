@@ -1757,8 +1757,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;
 	if (!parent) return NULL;
-        if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MAILBOX) {
-		DEBUG(5, ("expecting EMSMDBP_OBJECT_FOLDER/_MAILBOX as type of parent object\n"));
+        if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MAILBOX && parent->type != EMSMDBP_OBJECT_ATTACHMENT) {
+		DEBUG(5, ("expecting EMSMDBP_OBJECT_FOLDER/_MAILBOX/_ATTACHMENT as type of parent object\n"));
 		return NULL;
 	}
 

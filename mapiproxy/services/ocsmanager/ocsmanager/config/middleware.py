@@ -65,7 +65,7 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     # authenticator = OCSAuthenticator(config)
     # app = AuthBasicHandler(app, "OCSManager", authenticator)
     fqdn = "%(hostname)s.%(dnsdomain)s" % config["samba"]
-    app = NTLMAuthHandler(app, samba_host=fqdn)
+    app = NTLMAuthHandler(app)
 
     # Establish the Registry for this application
     app = RegistryManager(app)

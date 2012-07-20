@@ -48,6 +48,8 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 	return (PyObject *)folder;
 }
 
+/* FIXME: fix subscription code before reenabling this */
+#if 0
 static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObject *self, PyObject *args)
 {
 	int						ret;
@@ -196,12 +198,15 @@ static PyObject *py_MAPIStoreContext_get_notifications(PyMAPIStoreContextObject 
 	}
 	return Py_None;
 }
+#endif /* disabled notifications */
 
 static PyMethodDef mapistore_context_methods[] = {
 	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },
+#if 0
 	{ "add_subscription", (PyCFunction)py_MAPIStoreContext_register_subscription, METH_VARARGS },
 	{ "delete_subscription", (PyCFunction)py_MAPIStoreContext_unregister_subscription, METH_VARARGS },
 	{ "get_notifications", (PyCFunction)py_MAPIStoreContext_get_notifications, METH_VARARGS },
+#endif /* disabled notifications */
 	{ NULL },
 };
 

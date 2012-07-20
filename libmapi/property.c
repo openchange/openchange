@@ -1365,29 +1365,29 @@ _PUBLIC_ struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
         struct Binary_r                 *bin = NULL;
         struct ndr_push			*ndr;
         enum ndr_err_code		ndr_err_code;
-        size_t                          bin_size;
+	TALLOC_CTX			*local_mem_ctx;
 	
         /* SANITY CHECKS */
         if (!arp) return NULL;
 
-	ndr = ndr_push_init_ctx(mem_ctx);
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	ndr = ndr_push_init_ctx(local_mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	ndr->offset = 0;
-        bin_size = set_AppointmentRecurrencePattern_size(arp);
-        talloc_free(ndr->data);
-        ndr->data = talloc_array(ndr, uint8_t, bin_size);
 
         ndr_err_code = ndr_push_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
         if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(local_mem_ctx);
                 return NULL;
         }
 
         bin = talloc_zero(mem_ctx, struct Binary_r);
-        bin->cb = bin_size;
+        bin->cb = ndr->offset;
         bin->lpb = ndr->data;
-        talloc_steal(bin, bin->lpb);
+        (void) talloc_reference(bin, bin->lpb);
 
-        talloc_free(ndr);
+        talloc_free(local_mem_ctx);
 
         return bin;
 }

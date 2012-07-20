@@ -666,7 +666,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			}
 
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
 			emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
@@ -695,7 +695,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 				abort();
 			}
-			cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
+			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
@@ -811,10 +811,10 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		}
 		if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
 			for (i = 0; i < deleted_eids->cValues; i++) {
-				RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, deleted_eids->lpi8[i] >> 16);
+				RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpi8[i] >> 16) & 0x0000ffffffffffff);
 			}
 			if (deleted_eids->cValues > 0) {
-				RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn >> 16);
+				RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, (cn >> 16) & 0x0000ffffffffffff);
 			}
 		}
 	}
@@ -1016,7 +1016,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 				continue;
 			}
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 
 			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
 			emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
@@ -1045,9 +1045,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for folder\n"));
 				abort();
 			}
-			else {
-				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
-			}
+			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				DEBUG(5, (__location__": folder changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
@@ -2808,7 +2806,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 		if (data_pointers) {
 			eid = *(uint64_t *) data_pointers[0];
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, eid >> 16);
+			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 			
 			if (retvals[1]) {
 				unix_time = oc_version_time;
@@ -2827,9 +2825,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 				abort();
 			}
-			else {
-				cn = (*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16;
-			}
+			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 			
 			talloc_free(retvals);

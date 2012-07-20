@@ -673,9 +673,14 @@ enum mapistore_error mapistore_backend_message_get_attachment_table(struct backe
         return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
 }
 
-enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *message, enum OpenEmbeddedMessage_OpenModeFlags mode, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
-        return bctx->backend->message.open_embedded_message(message, mode, mem_ctx, embedded_message, mid, msg);
+        return bctx->backend->message.open_embedded_message(attachment, mem_ctx, embedded_message, mid, msg);
+}
+
+enum mapistore_error mapistore_backend_message_attachment_create_embedded_message(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, struct mapistore_message **msg)
+{
+        return bctx->backend->message.create_embedded_message(attachment, mem_ctx, embedded_message, msg);
 }
 
 enum mapistore_error mapistore_backend_table_get_available_properties(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)

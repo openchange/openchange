@@ -195,9 +195,10 @@ struct mapistore_backend {
                 enum mapistore_error	(*create_attachment)(void *, TALLOC_CTX *, void **, uint32_t *);
                 enum mapistore_error	(*get_attachment_table)(void *, TALLOC_CTX *, void **, uint32_t *);
 
-		/* attachments */
-                enum mapistore_error	(*open_embedded_message)(void *, enum OpenEmbeddedMessage_OpenModeFlags, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **);
-        } message;
+		/* attachment operations */
+                enum mapistore_error	(*open_embedded_message)(void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **);
+                enum mapistore_error	(*create_embedded_message)(void *, TALLOC_CTX *, void **, struct mapistore_message **);
+	} message;
 
         /** oxctabl operations */
         struct {
@@ -324,7 +325,8 @@ enum mapistore_error mapistore_message_submit(struct mapistore_context *, uint32
 enum mapistore_error mapistore_message_open_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint32_t, void **);
 enum mapistore_error mapistore_message_create_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
 enum mapistore_error mapistore_message_get_attachment_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
-enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *, uint32_t, void *, enum OpenEmbeddedMessage_OpenModeFlags, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
+enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
+enum mapistore_error mapistore_message_attachment_create_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, struct mapistore_message **msg);
 
 enum mapistore_error mapistore_table_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_table_set_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);

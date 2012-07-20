@@ -1448,6 +1448,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
                                                         struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                         uint32_t *handles, uint16_t *size)
 {
+	struct OpenEmbeddedMessage_req	*request;
+	struct OpenEmbeddedMessage_repl	*response;
 	enum mapistore_error		ret;
 	enum MAPISTATUS                 retval;
         uint32_t                        handle;
@@ -1472,6 +1474,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	request = &mapi_req->u.mapi_OpenEmbeddedMessage;
+	response = &mapi_repl->u.mapi_OpenEmbeddedMessage;
+
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_OpenEmbeddedMessage.handle_idx;
@@ -1491,7 +1496,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-        memset(&mapi_repl->u.mapi_OpenEmbeddedMessage, 0, sizeof(struct OpenEmbeddedMessage_repl));
+        memset(response, 0, sizeof(struct OpenEmbeddedMessage_repl));
 
 	mapistore = emsmdbp_is_mapistore(attachment_object);
 	switch (mapistore) {
@@ -1499,58 +1504,61 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Not implemented - shouldn't occur\n"));
 		break;
 	case true:
-                if (mapi_req->u.mapi_OpenEmbeddedMessage.OpenModeFlags == MAPI_CREATE) {
+		contextID = emsmdbp_get_contextID(attachment_object);
+                if (request->OpenModeFlags == MAPI_CREATE) {
                         retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
                         if (retval) {
                                 mapi_repl->error_code = MAPI_E_NO_SUPPORT;
                                 goto end;
                         }
-                }
 
-		contextID = emsmdbp_get_contextID(attachment_object);
-		ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
-									 mapi_req->u.mapi_OpenEmbeddedMessage.OpenModeFlags,
-									 NULL, &backend_attachment_message,
-									 &messageID,
-									 &msg);
-                if (ret != MAPISTORE_SUCCESS) {
-			mapi_repl->error_code = MAPI_E_NOT_FOUND;
-			goto end;
+			ret = mapistore_message_attachment_create_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
+										   NULL, &backend_attachment_message, &msg);
+			if (ret != MAPISTORE_SUCCESS) {
+				mapi_repl->error_code = MAPI_E_NOT_FOUND;
+				goto end;
+			}
                 }
+		else {
+			ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
+										 NULL, &backend_attachment_message, &messageID, &msg);
+			if (ret != MAPISTORE_SUCCESS) {
+				mapi_repl->error_code = MAPI_E_NOT_FOUND;
+				goto end;
+			}
+		}
 
-                mapi_repl->u.mapi_OpenEmbeddedMessage.MessageId = messageID;
+                response->MessageId = messageID;
 
 		if (msg->subject_prefix && strlen(msg->subject_prefix) > 0) {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.SubjectPrefix.StringType = StringType_UNICODE;
-			mapi_repl->u.mapi_OpenEmbeddedMessage.SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, msg->subject_prefix);
+			response->SubjectPrefix.StringType = StringType_UNICODE;
+			response->SubjectPrefix.String.lpszW = talloc_strdup(mem_ctx, msg->subject_prefix);
 		}
 		else {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.SubjectPrefix.StringType = StringType_EMPTY;
+			response->SubjectPrefix.StringType = StringType_EMPTY;
 		}
 		if (msg->normalized_subject && strlen(msg->normalized_subject) > 0) {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.NormalizedSubject.StringType = StringType_UNICODE;
-			mapi_repl->u.mapi_OpenEmbeddedMessage.NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, msg->normalized_subject);
+			response->NormalizedSubject.StringType = StringType_UNICODE;
+			response->NormalizedSubject.String.lpszW = talloc_strdup(mem_ctx, msg->normalized_subject);
 		}
 		else {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.NormalizedSubject.StringType = StringType_EMPTY;
+			response->NormalizedSubject.StringType = StringType_EMPTY;
 		}
 		if (msg->columns) {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientColumns.cValues = msg->columns->cValues;
-			mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientColumns.aulPropTag = msg->columns->aulPropTag;
+			response->RecipientColumns.cValues = msg->columns->cValues;
+			response->RecipientColumns.aulPropTag = msg->columns->aulPropTag;
 		}
 		else {
-			mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientColumns.cValues = 0;
+			response->RecipientColumns.cValues = 0;
 		}
 
-		mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientCount = msg->recipients_count;
-		mapi_repl->u.mapi_OpenEmbeddedMessage.RowCount = msg->recipients_count;
+		response->RecipientCount = msg->recipients_count;
+		response->RowCount = msg->recipients_count;
 		if (msg->recipients_count > 0) {
-                        mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientRows = talloc_array(mem_ctx, 
-                                                                                           struct OpenRecipientRow, 
-                                                                                           msg->recipients_count + 1);
+                        response->RecipientRows = talloc_array(mem_ctx, struct OpenRecipientRow, msg->recipients_count + 1);
 			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_OpenEmbeddedMessage.RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
 			}
                 }
 
@@ -1561,6 +1569,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 
                 message_object = emsmdbp_object_message_init((TALLOC_CTX *)message_rec, emsmdbp_ctx, messageID, attachment_object);
                 message_object->backend_object = backend_attachment_message;
+		message_object->object.message->read_write = (request->OpenModeFlags != MAPI_READONLY);
 		talloc_reference(message_object, backend_attachment_message);
 		talloc_free(backend_attachment_message);
 		talloc_free(msg);

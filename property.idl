@@ -10,6 +10,15 @@ import "exchange.idl";
 interface property
 {
 	typedef [v1_enum] enum {
+		afNone			= 0x00000000,
+		afByValue		= 0x00000001,
+		afByReference		= 0x00000002,
+		afByReferenceOnly	= 0x00000004,
+		afEmbeddedMessage	= 0x00000005,
+		afStorage		= 0x00000006
+	} AttachmentMethod;
+
+	typedef [v1_enum] enum {
 		seOpenToDelete		= 0x00000001,
 		seNoFrame		= 0x00000008,
 		seCoerceToInbox		= 0x00000010,

@@ -592,9 +592,18 @@ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrenceP
    -# EndDateTime: uint32_t
    -# OriginalStartDate: uint32_t
    -# OverrideFlags: uint16_t
+   -# AppointmentColor uint32_t
+   -# ReservedBlock1Size uint32_t
  */
-#define	SIZE_DFLT_EXCEPTIONINFO 14
+#define	SIZE_DFLT_EXCEPTIONINFO 22
 size_t set_ExceptionInfo_size(const struct ExceptionInfo *);
+
+/**
+   \details struct ExceptionInfo has not fixed response size
+ */
+#define	SIZE_DFLT_EXTENDEDEXCEPTION 0
+
+size_t set_ExtendedException_size(uint32_t, enum OverrideFlags, const struct ExtendedException *);
 
 /**
    \details struct ExtendedException has fixed response size for:

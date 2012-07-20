@@ -1351,11 +1351,10 @@ _PUBLIC_ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRe
         size += set_RecurrencePattern_size(&arp->RecurrencePattern);
         for (i = 0; i < arp->ExceptionCount; i++) {
                 size += set_ExceptionInfo_size(arp->ExceptionInfo + i);
-                /* size += set_ExtendedException_size(arp->ExtendedException +
-                   i); */
+                size += set_ExtendedException_size(arp->WriterVersion2, (arp->ExceptionInfo + i)->OverrideFlags, arp->ExtendedException + i);
         }
         size += arp->ReservedBlock1Size * sizeof(uint32_t);
-        /* size += arp->ReservedBlock2Size * sizeof(uint32_t); */
+	size += arp->ReservedBlock2Size * sizeof(uint32_t);
 
         return size;
 }
@@ -1398,6 +1397,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
 
         if ((exc_info->OverrideFlags & ARO_SUBJECT)) {
                 size += 3 * sizeof(uint16_t); /* SubjectLength + SubjectLength2 + Subject */
+		size += exc_info->Subject.subjectMsg.msgLength2;
         }
         if ((exc_info->OverrideFlags & ARO_MEETINGTYPE)) {
                 size += sizeof(uint32_t);
@@ -1410,7 +1410,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         }
         if ((exc_info->OverrideFlags & ARO_LOCATION)) {
                 size += 2 * sizeof(uint16_t); /* LocationLength + LocationLength2 */
-                size += sizeof(uint32_t); /* Location */
+		size += exc_info->Location.locationMsg.msgLength2;
         }
         if ((exc_info->OverrideFlags & ARO_BUSYSTATUS)) {
                 size += sizeof(uint32_t);
@@ -1421,8 +1421,35 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         if ((exc_info->OverrideFlags & ARO_SUBTYPE)) {
                 size += sizeof(uint32_t);
         }
-        if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) {
-                size += sizeof(uint32_t);
+	size += exc_info->ReservedBlock1Size;
+        /* if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) { */
+        /*         size += sizeof(uint32_t); */
+        /* } */
+
+        return size;
+}
+
+size_t set_ExtendedException_size(uint32_t WriterVersion2, enum OverrideFlags flags, const struct ExtendedException *ext_exc)
+{
+        size_t size = SIZE_DFLT_EXTENDEDEXCEPTION;
+	bool subject_or_location;
+
+	subject_or_location = (flags & (ARO_SUBJECT | ARO_LOCATION));
+
+	if (WriterVersion2 > 0x00003008) {
+		size += ext_exc->ChangeHighlight.Size;
+	}
+
+        if (subject_or_location) {
+		size += 3 * sizeof(uint32_t); // StartDateTime + EndDateTime + OriginalStartDate */
+		size += sizeof(uint32_t) + ext_exc->ReservedBlockEE2Size;
+        }
+
+        if ((flags & ARO_SUBJECT)) {
+                size += sizeof(uint16_t) + ext_exc->WideCharSubjectLength;
+        }
+        if ((flags & ARO_LOCATION)) {
+                size += sizeof(uint16_t) + ext_exc->WideCharLocationLength;
         }
 
         return size;

@@ -450,11 +450,11 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 		if (SPropTagArray_find(*msg->columns, PidTagDisplayName, &cn_idx) == MAPI_E_NOT_FOUND
 		    && SPropTagArray_find(*msg->columns, PidTag7BitDisplayName, &cn_idx) == MAPI_E_NOT_FOUND
 		    && SPropTagArray_find(*msg->columns, PidTagRecipientDisplayName, &cn_idx) == MAPI_E_NOT_FOUND) {
-			cn_idx = (uint32_t) -1;;
+			cn_idx = (uint32_t) -1;
 		}
 		if (SPropTagArray_find(*msg->columns, PidTagEmailAddress, &email_idx) == MAPI_E_NOT_FOUND
 		    && SPropTagArray_find(*msg->columns, PidTagSmtpAddress, &email_idx) == MAPI_E_NOT_FOUND) {
-			email_idx = (uint32_t) -1;;
+			email_idx = (uint32_t) -1;
 		}
 
 		retvals = talloc_array(local_mem_ctx, enum MAPISTATUS, msg->columns->cValues);
@@ -510,9 +510,9 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 	static enum MAPITAGS	prop_tags[] = { PidTagAttachMethod, PidTagAttachTag, PidTagAttachSize, PidTagAttachEncoding, PidTagAttachFlags, PidTagAttachmentFlags, PidTagAttachmentHidden, PidTagAttachmentLinkId, PidTagAttachExtension, PidTagAttachFilename, PidTagAttachLongFilename, PidTagAttachContentId, PidTagAttachMimeTag, PidTagDisplayName, PidTagCreationTime, PidTagLastModificationTime, PidTagAttachDataBinary, PidTagAttachmentContactPhoto, PidTagRenderingPosition, PidTagRecordKey };
 	static const int	prop_count = sizeof(prop_tags) / sizeof (enum MAPITAGS);
 	struct SPropTagArray	query_props;
-	uint32_t		i;
+	uint32_t		i, method, contextID;
 	enum MAPISTATUS		*retvals;
-	void			**data_pointers;
+	void			**data_pointers, *attachment_object;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageAttachments);
@@ -521,8 +521,9 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 	if (table_object && table_object->object.table->denominator > 0) {
 		table_object->object.table->properties = prop_tags;
 		table_object->object.table->prop_count = prop_count;
+		contextID = emsmdbp_get_contextID(table_object);
 		if (emsmdbp_is_mapistore(table_object)) {
-			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, prop_count, prop_tags);
+			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, prop_count, prop_tags);
 		}
 		for (i = 0; i < table_object->object.table->denominator; i++) {
 			local_mem_ctx = talloc_zero(NULL, void);
@@ -593,7 +594,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
-	uint32_t			unix_time;
+	uint32_t			unix_time, contextID;
 	struct SPropTagArray		query_props;
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
@@ -609,6 +610,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	/* messageChangeFull = IncrSyncChg messageChangeHeader IncrSyncMessage propList messageChildren */
 
 	local_mem_ctx = talloc_zero(NULL, void);
+
+	contextID = emsmdbp_get_contextID(folder_object);
 
  	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0); 
 	if (!table_object) {
@@ -629,8 +632,8 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, owner, original_cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, properties->cValues, properties->aulPropTag);
-		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, properties->cValues, properties->aulPropTag);
+		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	} else {
 		/* FIXME: openchangedb case */
 		/* set columns */
@@ -809,7 +812,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		else {
 			cn = 0;
 		}
-		if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
+		if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
 			for (i = 0; i < deleted_eids->cValues; i++) {
 				RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpi8[i] >> 16) & 0x0000ffffffffffff);
 			}
@@ -958,7 +961,7 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	struct Binary_r		*bin_data;
 	struct FILETIME		*lm_time;
 	NTTIME			nt_time;
-	int32_t			unix_time;
+	int32_t			unix_time, contextID;
 	uint32_t		i, j;
 	enum MAPISTATUS		*retvals, *header_retvals;
 	void			**data_pointers, **header_data_pointers;
@@ -967,6 +970,8 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	struct GUID		replica_guid;
 
 	local_mem_ctx = talloc_zero(NULL, void);
+
+	contextID = emsmdbp_get_contextID(folder_object);
 
 	/* 2b. we build the stream */
 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, MAPISTORE_FOLDER_TABLE, 0); 
@@ -979,9 +984,9 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, owner, synccontext->cnset_seen);
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID,
 					    table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
-		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
+		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {

@@ -171,7 +171,7 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	}
 
 	DLIST_ADD_END(parser->ranges, range, void);
-	/* DEBUG(5, ("  added range: [%.12Lx:%.12Lx] %p  %p %p\n", range->low, range->high, range, range->prev, range->next)); */
+	/* DEBUG(5, ("  added range: [%.16"PRIx64":%.16"PRIx64"] %p  %p %p\n", range->low, range->high, range, range->prev, range->next)); */
 	parser->range_count++;
 
 	if (!parser->ranges) {
@@ -1173,6 +1173,18 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 	static struct GUID *zero_guid = NULL;
 
 	if (!rawidset) return;
+
+	/* DEBUG(0, ("pushing %.16"PRIx64" into idset...\n", globcnt)); */
+
+	if (globcnt == 0) {
+		DEBUG(0, ("attempting to push a null globcnt\n"));
+		abort();
+	}
+
+	if ((globcnt & 0xffff000000000000)) {
+		DEBUG(0, ("attempting to push a globcnt that has not been shifted by 16 bits beforehand\n"));
+		abort();
+	}
 
 	glob_idset = RAWIDSET_find_by_GUID(rawidset, guid, &last_glob_idset);
 	if (!glob_idset) {

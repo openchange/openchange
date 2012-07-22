@@ -550,7 +550,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 {
 	struct emsmdbp_object	*table_object;
 	TALLOC_CTX		*local_mem_ctx;
-	static enum MAPITAGS	prop_tags[] = { PidTagAttachMethod, PidTagAttachTag, PidTagAttachSize, PidTagAttachEncoding, PidTagAttachFlags, PidTagAttachmentFlags, PidTagAttachmentHidden, PidTagAttachmentLinkId, PidTagAttachExtension, PidTagAttachFilename, PidTagAttachLongFilename, PidTagAttachContentId, PidTagAttachMimeTag, PidTagDisplayName, PidTagCreationTime, PidTagLastModificationTime, PidTagAttachDataBinary, PidTagAttachmentContactPhoto, PidTagRenderingPosition, PidTagRecordKey };
+	static enum MAPITAGS	prop_tags[] = { PidTagAttachMethod, PidTagAttachTag, PidTagAttachSize, PidTagAttachEncoding, PidTagAttachFlags, PidTagAttachmentFlags, PidTagAttachmentHidden, PidTagAttachmentLinkId, PidTagAttachExtension, PidTagAttachFilename, PidTagAttachLongFilename, PidTagAttachContentId, PidTagAttachMimeTag, PidTagDisplayName, PidTagCreationTime, PidTagLastModificationTime, PidTagAttachDataBinary, PidTagAttachmentContactPhoto, PidTagRenderingPosition, PidTagRecordKey, PidTagExceptionStartTime, PidTagExceptionEndTime, PidTagExceptionReplaceTime };
 	static const int	prop_count = sizeof(prop_tags) / sizeof (enum MAPITAGS);
 	struct SPropTagArray	query_props;
 	uint32_t		i, method, contextID;

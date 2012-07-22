@@ -200,9 +200,22 @@ interface property
 		uint8								ReservedBlock1[ReservedBlock1Size];
 	} ExceptionInfo;
 
+	typedef [v1_enum] enum {
+		BIT_CH_START	= 0x00000001,
+		BIT_CH_END	= 0x00000002,
+		BIT_CH_RECUR	= 0x00000004,
+		BIT_CH_LOCATION = 0x00000008,
+		BIT_CH_SUBJECT	= 0x00000010,
+		BIT_CH_REQATT	= 0x00000020,
+		BIT_CH_OPTATT	= 0x00000040,
+		BIT_CH_BODY	= 0x00000080,
+		BIT_CH_RESPONSE	= 0x00000200,
+		BIT_CH_PROPOSE	= 0x00000400
+	} ChangeHighlightFlags;
+
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32						Size;
-		uint32						Value;
+		ChangeHighlightFlags				Value;
 		uint8						Reserved[Size-4];
 	} ChangeHighlight;
 

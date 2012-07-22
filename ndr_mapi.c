@@ -2128,8 +2128,6 @@ enum ndr_err_code ndr_pull_BufferTooSmall_repl(struct ndr_pull *ndr, int ndr_fla
 _PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, const struct ExtendedException *r)
 {
 	bool subjectIsSet, locationIsSet; 
-	uint32_t cntr_WideCharSubject_0;
-	uint32_t cntr_WideCharLocation_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 
@@ -2152,16 +2150,16 @@ _PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int 
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->OriginalStartDate));
 			}
 			if (subjectIsSet) {
-				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharSubjectLength));
-				for (cntr_WideCharSubject_0 = 0; cntr_WideCharSubject_0 < r->WideCharSubjectLength; cntr_WideCharSubject_0++) {
-					NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharSubject[cntr_WideCharSubject_0]));
-				}
+				uint32_t _flags_save_string = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE2);
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->Subject));
+				ndr->flags = _flags_save_string;
 			}
 			if (locationIsSet) {
-				NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharLocationLength));
-				for (cntr_WideCharLocation_0 = 0; cntr_WideCharLocation_0 < r->WideCharLocationLength; cntr_WideCharLocation_0++) {
-					NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->WideCharLocation[cntr_WideCharLocation_0]));
-				}
+				uint32_t _flags_save_string = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE2);
+				NDR_CHECK(ndr_push_string(ndr, NDR_SCALARS, r->Location));
+				ndr->flags = _flags_save_string;
 			}
 			if (subjectIsSet || locationIsSet) {
 				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->ReservedBlockEE2Size));
@@ -2179,10 +2177,6 @@ _PUBLIC_ enum ndr_err_code ndr_push_ExtendedException(struct ndr_push *ndr, int 
 _PUBLIC_ enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *ndr, int ndr_flags, uint16_t WriterVersion2, const struct ExceptionInfo *ExceptionInfo, struct ExtendedException *r)
 {
 	bool subjectIsSet, locationIsSet; 
-	uint32_t cntr_WideCharSubject_0;
-	TALLOC_CTX *_mem_save_WideCharSubject_0;
-	uint32_t cntr_WideCharLocation_0;
-	TALLOC_CTX *_mem_save_WideCharLocation_0;
 	{
 		uint32_t _flags_save_STRUCT = ndr->flags;
 
@@ -2208,24 +2202,16 @@ _PUBLIC_ enum ndr_err_code ndr_pull_ExtendedException(struct ndr_pull *ndr, int 
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->OriginalStartDate));
 			}
 			if (subjectIsSet) {
-				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharSubjectLength));
-				NDR_PULL_ALLOC_N(ndr, r->WideCharSubject, r->WideCharSubjectLength);
-				_mem_save_WideCharSubject_0 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->WideCharSubject, 0);
-				for (cntr_WideCharSubject_0 = 0; cntr_WideCharSubject_0 < r->WideCharSubjectLength; cntr_WideCharSubject_0++) {
-					NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharSubject[cntr_WideCharSubject_0]));
-				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_WideCharSubject_0, 0);
+				uint32_t _flags_save_string = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE2);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->Subject));
+				ndr->flags = _flags_save_string;
 			}
 			if (locationIsSet) {
-				NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharLocationLength));
-				NDR_PULL_ALLOC_N(ndr, r->WideCharLocation, r->WideCharLocationLength);
-				_mem_save_WideCharLocation_0 = NDR_PULL_GET_MEM_CTX(ndr);
-				NDR_PULL_SET_MEM_CTX(ndr, r->WideCharLocation, 0);
-				for (cntr_WideCharLocation_0 = 0; cntr_WideCharLocation_0 < r->WideCharLocationLength; cntr_WideCharLocation_0++) {
-					NDR_CHECK(ndr_pull_uint16(ndr, NDR_SCALARS, &r->WideCharLocation[cntr_WideCharLocation_0]));
-				}
-				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_WideCharLocation_0, 0);
+				uint32_t _flags_save_string = ndr->flags;
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_SIZE2);
+				NDR_CHECK(ndr_pull_string(ndr, NDR_SCALARS, &r->Location));
+				ndr->flags = _flags_save_string;
 			}
 			if (subjectIsSet || locationIsSet) {
 				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlockEE2Size));

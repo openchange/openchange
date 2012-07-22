@@ -213,10 +213,8 @@ interface property
 		uint32						StartDateTime;			
 		uint32						EndDateTime;
 		uint32						OriginalStartDate;
-		uint16						WideCharSubjectLength;
-		uint16						WideCharSubject[WideCharSubjectLength];
-		uint16						WideCharLocationLength;
-		uint16						WideCharLocation[WideCharLocationLength];
+		string						Subject;
+		string						Location;
 		uint32						ReservedBlockEE2Size;
 		uint8						ReservedBlockEE2[ReservedBlockEE2Size];
 	} ExtendedException;

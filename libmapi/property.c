@@ -1421,7 +1421,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         if ((exc_info->OverrideFlags & ARO_SUBTYPE)) {
                 size += sizeof(uint32_t);
         }
-	size += exc_info->ReservedBlock1Size;
+	/* size += exc_info->ReservedBlock1Size; */
         /* if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) { */
         /*         size += sizeof(uint32_t); */
         /* } */
@@ -1446,10 +1446,10 @@ size_t set_ExtendedException_size(uint32_t WriterVersion2, enum OverrideFlags fl
         }
 
         if ((flags & ARO_SUBJECT)) {
-                size += sizeof(uint16_t) + ext_exc->WideCharSubjectLength;
+                size += sizeof(uint16_t) + strlen_m_ext(ext_exc->Subject, CH_UTF8, CH_UTF16LE) * 2;
         }
         if ((flags & ARO_LOCATION)) {
-                size += sizeof(uint16_t) + ext_exc->WideCharLocationLength;
+                size += sizeof(uint16_t) + strlen_m_ext(ext_exc->Location, CH_UTF8, CH_UTF16LE) * 2;
         }
 
         return size;

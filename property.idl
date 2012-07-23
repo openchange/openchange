@@ -226,8 +226,8 @@ interface property
 		uint32						StartDateTime;			
 		uint32						EndDateTime;
 		uint32						OriginalStartDate;
-		string						Subject;
-		string						Location;
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_CHARLEN)] string		Subject;
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_CHARLEN)] string		Location;
 		uint32						ReservedBlockEE2Size;
 		uint8						ReservedBlockEE2[ReservedBlockEE2Size];
 	} ExtendedException;

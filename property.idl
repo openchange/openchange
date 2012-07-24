@@ -196,7 +196,7 @@ interface property
 		[switch_is(OverrideFlags & 0x0020)]	Exception_Value		BusyStatus;
 		[switch_is(OverrideFlags & 0x0040)]	Exception_Value		Attachment;
 		[switch_is(OverrideFlags & 0x0080)]	Exception_Value		SubType;
-		[switch_is(OverrideFlags & 0x0 100)]	Exception_Value		AppointmentColor;
+		[switch_is(OverrideFlags & 0x0100)]	Exception_Value		AppointmentColor;
 		/* Those are fantom fields: even if they are mentionned in the documentation, they must not be read/written to. */
 		// uint32								ReservedBlock1Size;
 		// uint8								ReservedBlock1[ReservedBlock1Size];

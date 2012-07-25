@@ -64,7 +64,7 @@ class StreamSection(object):
                 print "= values for %s '%s' are the same" % (label, key)
             else:
                 print "! values for %s '%s' differ:" % (label, key)
-                print "  left has: '%s'" % self_value.strip()
+                print "   left has: '%s'" % self_value.strip()
                 print "  right has: '%s'" % other_value.strip()
 
 class SyncStream(object):

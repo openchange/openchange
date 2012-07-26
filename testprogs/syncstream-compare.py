@@ -130,7 +130,13 @@ class SyncStream(object):
         prop_id = int(prop_id_str, 16)
         if prop_id > 0x80000000:
             guid = prop_data[2][10:]
-            dispid = prop_data[3][14:]
+            line3 = prop_data[3]
+            proptype = line3[4:8]
+            if proptype == "name":
+                col_idx = line3.find(":", 9)
+                dispid = line3[col_idx+2:]
+            else:
+                dispid = line3[14:]
             value = prop_data[4:]
             section.named_properties[guid+dispid] = "\n".join(value)
         else:

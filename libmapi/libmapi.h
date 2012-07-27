@@ -280,6 +280,7 @@ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX
 struct Binary_r *set_RecurrencePattern(TALLOC_CTX *, const struct RecurrencePattern *);
 struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
+struct Binary_r		*set_TimeZoneStruct(TALLOC_CTX *, const struct TimeZoneStruct *);
 struct PtypServerId	*get_PtypServerId(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);

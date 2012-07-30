@@ -73,16 +73,15 @@ class SyncStream(object):
         self.sections = None
 
     def _parse(self):
-        with open(self.filename) as inf:
-            lines = inf.readlines()
-
         sections = {}
         section_name = None
         current_section = None
 
         current_prop_data = []
 
-        for line in lines:
+        inf = open(self.filename)
+        line = inf.readline()
+        if line != "":
             len_line = len(line)
             if len_line > 0 and line[-1] == "\n":
                 line = line[:-1]
@@ -112,6 +111,7 @@ class SyncStream(object):
                                                          current_prop_data)
                                     current_prop_data = []
                         current_prop_data.append(line)
+            line = inf.readline()
         if current_section is not None and len(current_prop_data) > 0:
             self._push_prop_data(current_section,
                                  current_prop_data)

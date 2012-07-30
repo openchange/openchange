@@ -328,12 +328,12 @@ class _NTLMDaemon(object):
         if response == 1:
             # authentication completed
             self.client_data[client_id]["status"] = "ok"
+            del self.client_data[client_id]["server"]
         else:
             # we start over with the whole process
             del self.client_data[client_id]
 
         _safe_close(server)
-        del self.client_data[client_id]["server"]
 
         # print >> sys.stderr, "* done with client auth stage1"
 

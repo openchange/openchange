@@ -1002,10 +1002,12 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 0755 setup/openchange_provision $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
-	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)/setup/AD
+	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)
+	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
 

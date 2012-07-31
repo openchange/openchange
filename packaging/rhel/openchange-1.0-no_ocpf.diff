@@ -1,0 +1,686 @@
+diff -durpN openchange-1.0.0.20120405.sogo.old/Makefile openchange-1.0.0.20120405.sogo/Makefile
+--- openchange-1.0.0.20120405.sogo.old/Makefile	2012-04-03 14:42:40.000000000 -0400
++++ openchange-1.0.0.20120405.sogo/Makefile	2012-04-05 11:49:50.000000000 -0400
+@@ -76,7 +76,7 @@ distclean:: clean
+ 	rm -f Doxyfile
+ 	rm -f libmapi/Doxyfile
+ 	rm -f libmapiadmin/Doxyfile
+-	rm -f libocpf/Doxyfile
++	# rm -f libocpf/Doxyfile
+ 	rm -f libmapi++/Doxyfile
+ 	rm -f mapiproxy/Doxyfile
+ 	rm -f mapiproxy/libmapistore/Doxyfile
+@@ -603,7 +603,7 @@ endif
+ 	rm -f libocpf.$(SHLIBEXT).$(PACKAGE_VERSION) libocpf.$(SHLIBEXT).* \
+ 		  libocpf.$(SHLIBEXT)
+ 
+-clean:: libocpf-clean
++# clean:: libocpf-clean
+ 
+ libocpf-distclean::
+ 	rm -f libocpf.pc
+@@ -1095,8 +1095,8 @@ clean:: openchangeclient-clean
+ 
+ bin/openchangeclient: 	utils/openchangeclient.o			\
+ 			utils/openchange-tools.o			\
+-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+-			libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
++			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
++			# libocpf.$(SHLIBEXT).$(PACKAGE_VERSION)
+ 	@echo "Linking $@"
+ 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+ 
+@@ -1601,7 +1601,6 @@ doxygen:	
+ 		$(DOXYGEN) Doxyfile;						\
+ 		$(DOXYGEN) libmapi/Doxyfile;					\
+ 		$(DOXYGEN) libmapiadmin/Doxyfile;				\
+-		$(DOXYGEN) libocpf/Doxyfile;					\
+ 		$(DOXYGEN) libmapi++/Doxyfile;					\
+ 		$(DOXYGEN) mapiproxy/Doxyfile;					\
+ 		$(DOXYGEN) utils/mapitest/Doxyfile;				\
+@@ -1611,7 +1610,7 @@ doxygen:	
+ 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
+ 		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
+ 		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
+-		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
++		$(DOXYGEN) libocpf/Doxyfile;					\
+ 		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
+ 		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
+ 		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
+@@ -1620,6 +1619,9 @@ doxygen:	
+ 		rm -f apidocs/man/man3/bug.3;					\
+ 		rm -f apidocs/man/man3/*.c.3;					\
+ 	fi								
++	#	$(DOXYGEN) libocpf/Doxyfile;					\
++	#	cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
++
+ 
+ etags:
+ 	etags `find $(srcdir) -name "*.[ch]"`
+@@ -1645,8 +1647,8 @@ coverage-init:
+ 
+ coverage::
+ 	rm -f libmapi/\<stdout\>.gcov
+-	rm -f ./libocpf/lex.yy.gcda
+-	rm -f libocpf/\<stdout\>.gcov
++	# rm -f ./libocpf/lex.yy.gcda
++	# rm -f libocpf/\<stdout\>.gcov
+ 	rm -f ./\<stdout\>.gcov
+ 	lcov --base-directory .  --directory . --output-file oc_cov.info --capture
+ 	genhtml -o covresults oc_cov.info
+diff -durpN openchange-1.0.0.20120405.sogo.old/configure.ac openchange-1.0.0.20120405.sogo/configure.ac
+--- openchange-1.0.0.20120405.sogo.old/configure.ac	2012-04-03 14:42:40.000000000 -0400
++++ openchange-1.0.0.20120405.sogo/configure.ac	2012-04-05 11:49:50.000000000 -0400
+@@ -337,24 +337,26 @@ dnl Check for Flex
+ dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
+ dnl default version provided under FreeBSD or RHL5
+ dnl ----------------------------------------------------------------------------
+-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+-   AC_ARG_VAR([FLEX], [Location of the flex program.])
+-   AC_CHECK_PROG([FLEX], [flex], [flex])
++dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
++dnl    AC_ARG_VAR([FLEX], [Location of the flex program.])
++dnl    AC_CHECK_PROG([FLEX], [flex], [flex])
+ 
+-   if test x"$FLEX" = x""; then
+-      	AC_MSG_WARN([No version of flex was found!])
+-	AC_MSG_ERROR([Please install flex])
+-   else
+-	V=`$FLEX --version | awk '{print $NF}'`
+-   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
+-   	if test "x$W" != x ; then
+-	   AC_MSG_WARN([Adjust your FLEX environment variable])
+-      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
+-      	fi
+-   fi
++dnl    if test x"$FLEX" = x""; then
++dnl       	AC_MSG_WARN([No version of flex was found!])
++dnl 	AC_MSG_ERROR([Please install flex])
++dnl    else
++dnl 	V=`$FLEX --version | awk '{print $NF}'`
++dnl    	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
++dnl    	if test "x$W" != x ; then
++dnl 	   AC_MSG_WARN([Adjust your FLEX environment variable])
++dnl       	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
++dnl       	fi
++dnl    fi
+ 
+-   AC_SUBST(FLEX)
+-fi
++dnl    AC_SUBST(FLEX)
++dnl fi
++FLEX=/bin/false
++AC_SUBST(FLEX)
+ 
+ dnl ---------------------------------------------------------------------------
+ dnl Samba4 modules
+@@ -501,17 +503,17 @@ dnl ####################################
+ dnl ---------------------------------------------------------------------------
+ dnl Check for Bison
+ dnl ---------------------------------------------------------------------------
+-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+-   AC_ARG_VAR([BISON], [Location of the bison program.])
+-   AC_PATH_PROG([BISON], [bison], [bison])
++dnl if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
++dnl    AC_ARG_VAR([BISON], [Location of the bison program.])
++dnl    AC_PATH_PROG([BISON], [bison], [bison])
+ 
+-   if test x"$BISON" != x""; then
+-      OC_RULE_ADD(libocpf, LIBS)
+-      AC_SUBST(BISON)
+-   fi
+-else
+-   OC_RULE_ADD(libocpf, LIBS)
+-fi
++dnl    if test x"$BISON" != x""; then
++dnl       OC_RULE_ADD(libocpf, LIBS)
++dnl       AC_SUBST(BISON)
++dnl    fi
++dnl else
++dnl    OC_RULE_ADD(libocpf, LIBS)
++dnl fi
+ 
+ 
+ 
+@@ -565,11 +567,6 @@ if test x"$enable_libpopt" = x"yes"; the
+ 	   OC_RULE_ADD(mapitest, TOOLS)
+ 	fi
+ 
+-	if test x"$enable_libocpf" = x"yes"; then
+-	   OC_RULE_ADD(openchangeclient, TOOLS)
+-           #	   OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+-	fi
+-
+ 	if test x"$have_libical" = x"yes"; then
+ 	    OC_RULE_ADD(exchange2ical, TOOLS)
+ 	fi
+@@ -738,9 +735,9 @@ AC_SUBST(OPENCHANGE_QT4)
+ dnl ***********************
+ dnl Makefiles 
+ dnl ***********************
+-AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc libocpf.pc mapiproxy/libmapiproxy.pc
++AC_CONFIG_FILES([config.mk libmapi.pc libmapiadmin.pc mapiproxy/libmapiproxy.pc
+ 		 mapiproxy/libmapiserver.pc mapiproxy/libmapistore.pc libmapi++.pc
+-		 Doxyfile libmapi++/Doxyfile libocpf/Doxyfile libmapiadmin/Doxyfile
++		 Doxyfile libmapi++/Doxyfile libmapiadmin/Doxyfile
+ 		 libmapi/Doxyfile mapiproxy/Doxyfile utils/mapitest/Doxyfile
+ 		 mapiproxy/libmapistore/Doxyfile])
+ AC_OUTPUT
+@@ -752,7 +749,7 @@ dnl ####################################
+ 
+ OC_SETVAL(libmapi)
+ OC_SETVAL(libmapiadmin)
+-OC_SETVAL(libocpf)
++dnl OC_SETVAL(libocpf)
+ OC_SETVAL(libmapixx)
+ 
+ OC_SETVAL(openchangeclient)
+@@ -777,7 +774,6 @@ OpenChange Configuration (Please review)
+ 		      Thread support:	$enable_pthread $enable_thread_lib
+ 	     - libmapi++ (C++ library):	$enable_libmapixx
+ 	     - libmapiadmin:		$enable_libmapiadmin
+-	     - libocpf:			$enable_libocpf
+ 
+ 	   * OpenChange Server:
+ 	     - mapiproxy:		$enable_mapiproxy
+diff -durpN openchange-1.0.0.20120405.sogo.old/utils/openchangeclient.c openchange-1.0.0.20120405.sogo/utils/openchangeclient.c
+--- openchange-1.0.0.20120405.sogo.old/utils/openchangeclient.c	2012-04-03 14:11:37.000000000 -0400
++++ openchange-1.0.0.20120405.sogo/utils/openchangeclient.c	2012-04-05 11:49:50.000000000 -0400
+@@ -2511,199 +2511,199 @@ static bool openchangeclient_userlist(TA
+ }
+ 
+ 
+-static bool openchangeclient_ocpf_syntax(struct oclient *oclient)
+-{
+-	int			ret;
+-	struct ocpf_file	*element;
+-	uint32_t		context_id;
++/* static bool openchangeclient_ocpf_syntax(struct oclient *oclient) */
++/* { */
++/* 	int			ret; */
++/* 	struct ocpf_file	*element; */
++/* 	uint32_t		context_id; */
+ 
+-	/* Sanity checks */
+-	if (!oclient->ocpf_files || !oclient->ocpf_files->next) {
+-		errno = MAPI_E_INVALID_PARAMETER;
+-		return false;
+-	}
++/* 	/\* Sanity checks *\/ */
++/* 	if (!oclient->ocpf_files || !oclient->ocpf_files->next) { */
++/* 		errno = MAPI_E_INVALID_PARAMETER; */
++/* 		return false; */
++/* 	} */
+ 
+-	/* Step 1. Initialize OCPF context */
+-	ret = ocpf_init();
+-	if (ret == -1) {
+-		errno = MAPI_E_CALL_FAILED;
+-		return false;
+-	}
++/* 	/\* Step 1. Initialize OCPF context *\/ */
++/* 	ret = ocpf_init(); */
++/* 	if (ret == -1) { */
++/* 		errno = MAPI_E_CALL_FAILED; */
++/* 		return false; */
++/* 	} */
+ 
+-	/* Step2. Parse OCPF files */
+-	for (element = oclient->ocpf_files; element->next; element = element->next) {
+-	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ);
+-		if (ret == -1) {
+-			errno = MAPI_E_INVALID_PARAMETER;
+-			return false;
+-		}
+-		ret = ocpf_parse(context_id);
+-		if (ret == -1) {
+-			DEBUG(0, ("ocpf_parse failed ...\n"));
+-			errno = MAPI_E_INVALID_PARAMETER;
+-			return false;
+-		}
++/* 	/\* Step2. Parse OCPF files *\/ */
++/* 	for (element = oclient->ocpf_files; element->next; element = element->next) { */
++/* 	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ); */
++/* 		if (ret == -1) { */
++/* 			errno = MAPI_E_INVALID_PARAMETER; */
++/* 			return false; */
++/* 		} */
++/* 		ret = ocpf_parse(context_id); */
++/* 		if (ret == -1) { */
++/* 			DEBUG(0, ("ocpf_parse failed ...\n")); */
++/* 			errno = MAPI_E_INVALID_PARAMETER; */
++/* 			return false; */
++/* 		} */
+ 
+-		/* Dump OCPF contents */
+-		ocpf_dump(context_id);
++/* 		/\* Dump OCPF contents *\/ */
++/* 		ocpf_dump(context_id); */
+ 
+-		ret = ocpf_del_context(context_id);
+-	}
++/* 		ret = ocpf_del_context(context_id); */
++/* 	} */
+ 
+ 
+-	/* Step4. Release OCPF context */
+-	ret = ocpf_release();
+-	if (ret == -1) {
+-		errno = MAPI_E_CALL_FAILED;
+-		return false;
+-	}
++/* 	/\* Step4. Release OCPF context *\/ */
++/* 	ret = ocpf_release(); */
++/* 	if (ret == -1) { */
++/* 		errno = MAPI_E_CALL_FAILED; */
++/* 		return false; */
++/* 	} */
+ 
+-	return true;
+-}
++/* 	return true; */
++/* } */
+ 
+ 
+-static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+-{
+-	enum MAPISTATUS		retval;
+-	int			ret;
+-	struct ocpf_file	*element;
+-	mapi_object_t		obj_folder;
+-	mapi_object_t		obj_message;
+-	uint32_t		cValues = 0;
+-	struct SPropValue	*lpProps;
+-	uint32_t		context_id;
++/* static bool openchangeclient_ocpf_sender(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient) */
++/* { */
++/* 	enum MAPISTATUS		retval; */
++/* 	int			ret; */
++/* 	struct ocpf_file	*element; */
++/* 	mapi_object_t		obj_folder; */
++/* 	mapi_object_t		obj_message; */
++/* 	uint32_t		cValues = 0; */
++/* 	struct SPropValue	*lpProps; */
++/* 	uint32_t		context_id; */
+ 
+-	/* Sanity Check */
+-	if (!oclient->ocpf_files || !oclient->ocpf_files->next) {
+-		errno = MAPI_E_INVALID_PARAMETER;
+-		return false;
+-	}
++/* 	/\* Sanity Check *\/ */
++/* 	if (!oclient->ocpf_files || !oclient->ocpf_files->next) { */
++/* 		errno = MAPI_E_INVALID_PARAMETER; */
++/* 		return false; */
++/* 	} */
+ 
+-	/* Step1. Initialize OCPF context */
+-	ret = ocpf_init();
+-	if (ret == -1) {
+-		errno = MAPI_E_CALL_FAILED;
+-		return false;
+-	}
++/* 	/\* Step1. Initialize OCPF context *\/ */
++/* 	ret = ocpf_init(); */
++/* 	if (ret == -1) { */
++/* 		errno = MAPI_E_CALL_FAILED; */
++/* 		return false; */
++/* 	} */
+ 
+-	/* Step2. Parse OCPF files */
+-	for (element = oclient->ocpf_files; element->next; element = element->next) {
+-	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ);
+-		ret = ocpf_parse(context_id);
+-		if (ret == -1) {
+-			errno = MAPI_E_INVALID_PARAMETER;
+-			return false;
+-		}
+-	}
++/* 	/\* Step2. Parse OCPF files *\/ */
++/* 	for (element = oclient->ocpf_files; element->next; element = element->next) { */
++/* 	  ret = ocpf_new_context(element->filename, &context_id, OCPF_FLAGS_READ); */
++/* 		ret = ocpf_parse(context_id); */
++/* 		if (ret == -1) { */
++/* 			errno = MAPI_E_INVALID_PARAMETER; */
++/* 			return false; */
++/* 		} */
++/* 	} */
+ 
+-	/* Step3. Open destination folder using ocpf API */
+-	mapi_object_init(&obj_folder);
+-	retval = ocpf_OpenFolder(context_id, obj_store, &obj_folder);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step3. Open destination folder using ocpf API *\/ */
++/* 	mapi_object_init(&obj_folder); */
++/* 	retval = ocpf_OpenFolder(context_id, obj_store, &obj_folder); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step4. Create the message */
+-	mapi_object_init(&obj_message);
+-	retval = CreateMessage(&obj_folder, &obj_message);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step4. Create the message *\/ */
++/* 	mapi_object_init(&obj_message); */
++/* 	retval = CreateMessage(&obj_folder, &obj_message); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step5, Set message recipients */
+-	retval = ocpf_set_Recipients(mem_ctx, context_id, &obj_message);
+-	if (retval != MAPI_E_SUCCESS && GetLastError() != MAPI_E_NOT_FOUND) return false;
+-	errno = MAPI_E_SUCCESS;
++/* 	/\* Step5, Set message recipients *\/ */
++/* 	retval = ocpf_set_Recipients(mem_ctx, context_id, &obj_message); */
++/* 	if (retval != MAPI_E_SUCCESS && GetLastError() != MAPI_E_NOT_FOUND) return false; */
++/* 	errno = MAPI_E_SUCCESS; */
+ 
+-	/* Step6. Set message properties */
+-	retval = ocpf_set_SPropValue(mem_ctx, context_id, &obj_folder, &obj_message);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step6. Set message properties *\/ */
++/* 	retval = ocpf_set_SPropValue(mem_ctx, context_id, &obj_folder, &obj_message); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step7. Set message properties */
+-	lpProps = ocpf_get_SPropValue(context_id, &cValues);
++/* 	/\* Step7. Set message properties *\/ */
++/* 	lpProps = ocpf_get_SPropValue(context_id, &cValues); */
+ 
+-	retval = SetProps(&obj_message, 0, lpProps, cValues);
+-	MAPIFreeBuffer(lpProps);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	retval = SetProps(&obj_message, 0, lpProps, cValues); */
++/* 	MAPIFreeBuffer(lpProps); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step8. Save message */
+-	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step8. Save message *\/ */
++/* 	retval = SaveChangesMessage(&obj_folder, &obj_message, KeepOpenReadOnly); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	mapi_object_release(&obj_message);
+-	mapi_object_release(&obj_folder);
++/* 	mapi_object_release(&obj_message); */
++/* 	mapi_object_release(&obj_folder); */
+ 
+-	ocpf_del_context(context_id);
++/* 	ocpf_del_context(context_id); */
+ 
+-	return true;
+-}
++/* 	return true; */
++/* } */
+ 
+ 
+-static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient)
+-{
+-	enum MAPISTATUS			retval;
+-	int				ret;
+-	mapi_object_t			obj_folder;
+-	mapi_object_t			obj_message;
+-	mapi_id_t			id_tis;
+-	const char			*fid_str;
+-	uint64_t			fid;
+-	uint64_t			mid;
+-	const char			*item = NULL;
+-	char				*filename = NULL;
+-	struct mapi_SPropValue_array	lpProps;
+-	uint32_t			context_id;
++/* static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, struct oclient *oclient) */
++/* { */
++/* 	enum MAPISTATUS			retval; */
++/* 	int				ret; */
++/* 	mapi_object_t			obj_folder; */
++/* 	mapi_object_t			obj_message; */
++/* 	mapi_id_t			id_tis; */
++/* 	const char			*fid_str; */
++/* 	uint64_t			fid; */
++/* 	uint64_t			mid; */
++/* 	const char			*item = NULL; */
++/* 	char				*filename = NULL; */
++/* 	struct mapi_SPropValue_array	lpProps; */
++/* 	uint32_t			context_id; */
+ 
+ 
+-	/* retrieve the FID/MID for ocpf_dump parameter */
+-	item = oclient->ocpf_dump;
++/* 	/\* retrieve the FID/MID for ocpf_dump parameter *\/ */
++/* 	item = oclient->ocpf_dump; */
+ 
+-	fid_str = strsep((char **)&item, "/");
+-	if (!fid_str || !item) {
+-		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
+-		errno = MAPI_E_INVALID_PARAMETER;
+-		return false;
+-	}
++/* 	fid_str = strsep((char **)&item, "/"); */
++/* 	if (!fid_str || !item) { */
++/* 		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null")); */
++/* 		errno = MAPI_E_INVALID_PARAMETER; */
++/* 		return false; */
++/* 	} */
+ 
+-	fid = strtoull(fid_str, NULL, 16);
+-	mid = strtoull(item, NULL, 16);
++/* 	fid = strtoull(fid_str, NULL, 16); */
++/* 	mid = strtoull(item, NULL, 16); */
+ 
+-	/* Step 1. search the folder from Top Information Store */
+-	mapi_object_init(&obj_folder);
+-	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step 1. search the folder from Top Information Store *\/ */
++/* 	mapi_object_init(&obj_folder); */
++/* 	retval = GetDefaultFolder(obj_store, &id_tis, olFolderTopInformationStore); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	retval = folder_lookup(mem_ctx, fid, obj_store, id_tis, &obj_folder);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	retval = folder_lookup(mem_ctx, fid, obj_store, id_tis, &obj_folder); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step 2. search the message */
+-	mapi_object_init(&obj_message);
+-	retval = message_lookup(mem_ctx, mid, &obj_folder, &obj_message);
+-	if (retval != MAPI_E_SUCCESS) return false;
++/* 	/\* Step 2. search the message *\/ */
++/* 	mapi_object_init(&obj_message); */
++/* 	retval = message_lookup(mem_ctx, mid, &obj_folder, &obj_message); */
++/* 	if (retval != MAPI_E_SUCCESS) return false; */
+ 
+-	/* Step 3. retrieve all message properties */
+-	retval = GetPropsAll(&obj_message, MAPI_UNICODE, &lpProps);
++/* 	/\* Step 3. retrieve all message properties *\/ */
++/* 	retval = GetPropsAll(&obj_message, MAPI_UNICODE, &lpProps); */
+ 
+-	/* Step 4. save the message */
+-	ret = ocpf_init();
++/* 	/\* Step 4. save the message *\/ */
++/* 	ret = ocpf_init(); */
+ 
+-	filename = talloc_asprintf(mem_ctx, "%"PRIx64".ocpf", mid);
+-	DEBUG(0, ("OCPF output file: %s\n", filename));
++/* 	filename = talloc_asprintf(mem_ctx, "%"PRIx64".ocpf", mid); */
++/* 	DEBUG(0, ("OCPF output file: %s\n", filename)); */
+ 
+-	ret = ocpf_new_context(filename, &context_id, OCPF_FLAGS_CREATE);
+-	talloc_free(filename);
+-	ret = ocpf_write_init(context_id, fid);
++/* 	ret = ocpf_new_context(filename, &context_id, OCPF_FLAGS_CREATE); */
++/* 	talloc_free(filename); */
++/* 	ret = ocpf_write_init(context_id, fid); */
+ 
+-	ret = ocpf_write_auto(context_id, &obj_message, &lpProps);
+-	if (ret == OCPF_SUCCESS) {
+-		ret = ocpf_write_commit(context_id);
+-	} 
++/* 	ret = ocpf_write_auto(context_id, &obj_message, &lpProps); */
++/* 	if (ret == OCPF_SUCCESS) { */
++/* 		ret = ocpf_write_commit(context_id); */
++/* 	}  */
+ 
+-	ret = ocpf_del_context(context_id);
++/* 	ret = ocpf_del_context(context_id); */
+ 
+-	ret = ocpf_release();
++/* 	ret = ocpf_release(); */
+ 
+-	mapi_object_release(&obj_message);
+-	mapi_object_release(&obj_folder);
++/* 	mapi_object_release(&obj_message); */
++/* 	mapi_object_release(&obj_folder); */
+ 
+-	return true;
+-}
++/* 	return true; */
++/* } */
+ 
+ 
+ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *oclient)
+@@ -2828,8 +2828,8 @@ int main(int argc, const char *argv[])
+ 	bool			opt_mkdir = false;
+ 	bool			opt_rmdir = false;
+ 	bool			opt_userlist = false;
+-	bool			opt_ocpf_syntax = false;
+-	bool			opt_ocpf_sender = false;
++	/* bool			opt_ocpf_syntax = false; */
++	/* bool			opt_ocpf_sender = false; */
+ 	const char		*opt_profdb = NULL;
+ 	char			*opt_profname = NULL;
+ 	const char		*opt_username = NULL;
+@@ -2852,8 +2852,9 @@ int main(int argc, const char *argv[])
+ 	      OPT_MAPI_TASKSTATUS, OPT_MAPI_IMPORTANCE, OPT_MAPI_LABEL, OPT_PF, 
+ 	      OPT_FOLDER, OPT_MAPI_COLOR, OPT_SENDNOTE, OPT_MKDIR, OPT_RMDIR,
+ 	      OPT_FOLDER_NAME, OPT_FOLDER_COMMENT, OPT_USERLIST, OPT_MAPI_PRIVATE,
+-	      OPT_UPDATE, OPT_DELETEITEMS, OPT_OCPF_FILE, OPT_OCPF_SYNTAX,
+-	      OPT_OCPF_SENDER, OPT_OCPF_DUMP, OPT_FREEBUSY, OPT_FORCE, OPT_FETCHSUMMARY,
++	      OPT_UPDATE, OPT_DELETEITEMS,
++	      /* OPT_OCPF_FILE, OPT_OCPF_SYNTAX, OPT_OCPF_SENDER, OPT_OCPF_DUMP, */
++	      OPT_FREEBUSY, OPT_FORCE, OPT_FETCHSUMMARY,
+ 	      OPT_USERNAME };
+ 
+ 	struct poptOption long_options[] = {
+@@ -2907,10 +2908,10 @@ int main(int argc, const char *argv[])
+ 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUG, "set Debug Level", NULL },
+ 		{"dump-data", 0, POPT_ARG_NONE, NULL, OPT_DUMPDATA, "dump the hex data", NULL },
+ 		{"private", 0, POPT_ARG_NONE, NULL, OPT_MAPI_PRIVATE, "set the private flag on messages", NULL },
+-		{"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "set OCPF file", NULL },
+-		{"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "dump message into OCPF file", NULL },
+-		{"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "check OCPF files syntax", NULL },
+-		{"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "send message using OCPF files contents", NULL },
++		/* {"ocpf-file", 0, POPT_ARG_STRING, NULL, OPT_OCPF_FILE, "set OCPF file", NULL }, */
++		/* {"ocpf-dump", 0, POPT_ARG_STRING, NULL, OPT_OCPF_DUMP, "dump message into OCPF file", NULL }, */
++		/* {"ocpf-syntax", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SYNTAX, "check OCPF files syntax", NULL }, */
++		/* {"ocpf-sender", 0, POPT_ARG_NONE, NULL, OPT_OCPF_SENDER, "send message using OCPF files contents", NULL }, */
+ 		POPT_OPENCHANGE_VERSION
+ 		{NULL, 0, 0, NULL, 0, NULL, NULL}
+ 	};
+@@ -3077,28 +3078,28 @@ int main(int argc, const char *argv[])
+ 		case OPT_MAPI_PRIVATE:
+ 			oclient.private = true;
+ 			break;
+-		case OPT_OCPF_FILE:
+-		{
+-			struct ocpf_file	*element;
++		/* case OPT_OCPF_FILE: */
++		/* { */
++		/* 	struct ocpf_file	*element; */
+ 			
+-			if (!oclient.ocpf_files) {
+-				oclient.ocpf_files = talloc_zero(mem_ctx, struct ocpf_file);
+-			}
++		/* 	if (!oclient.ocpf_files) { */
++		/* 		oclient.ocpf_files = talloc_zero(mem_ctx, struct ocpf_file); */
++		/* 	} */
+ 			
+-			element = talloc_zero(mem_ctx, struct ocpf_file);
+-			element->filename = talloc_strdup(mem_ctx, poptGetOptArg(pc));
+-			DLIST_ADD(oclient.ocpf_files, element);
+-			break;
+-		}
+-		case OPT_OCPF_SYNTAX:
+-			opt_ocpf_syntax = true;
+-			break;
+-		case OPT_OCPF_SENDER:
+-			opt_ocpf_sender = true;
+-			break;
+-		case OPT_OCPF_DUMP:
+-			oclient.ocpf_dump = poptGetOptArg(pc);
+-			break;
++		/* 	element = talloc_zero(mem_ctx, struct ocpf_file); */
++		/* 	element->filename = talloc_strdup(mem_ctx, poptGetOptArg(pc)); */
++		/* 	DLIST_ADD(oclient.ocpf_files, element); */
++		/* 	break; */
++		/* } */
++		/* case OPT_OCPF_SYNTAX: */
++		/* 	opt_ocpf_syntax = true; */
++		/* 	break; */
++		/* case OPT_OCPF_SENDER: */
++		/* 	opt_ocpf_sender = true; */
++		/* 	break; */
++		/* case OPT_OCPF_DUMP: */
++		/* 	oclient.ocpf_dump = poptGetOptArg(pc); */
++		/* 	break; */
+ 		case OPT_FORCE:
+ 			oclient.force = true;
+ 			break;
+@@ -3161,14 +3162,14 @@ int main(int argc, const char *argv[])
+ 	/* One of the rare options which doesn't require MAPI to get
+ 	 *   initialized 
+ 	 */
+-	if (opt_ocpf_syntax) {
+-		bool ret = openchangeclient_ocpf_syntax(&oclient);
+-		mapi_errstr("OCPF Syntax", GetLastError());
+-		if (ret != true) {
+-			exit(1);
+-		}
+-		exit (0);
+-	}
++	/* if (opt_ocpf_syntax) { */
++	/* 	bool ret = openchangeclient_ocpf_syntax(&oclient); */
++	/* 	mapi_errstr("OCPF Syntax", GetLastError()); */
++	/* 	if (ret != true) { */
++	/* 		exit(1); */
++	/* 	} */
++	/* 	exit (0); */
++	/* } */
+ 	
+ 	/**
+ 	 * Initialize MAPI subsystem
+@@ -3242,21 +3243,21 @@ int main(int argc, const char *argv[])
+ 	/**
+ 	 * OCPF sending command
+ 	 */
+-	if (opt_ocpf_sender) {
+-		bool ret = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient);
+-		mapi_errstr("OCPF Sender", GetLastError());
+-		if (ret != true) {
+-			goto end;
+-		}
+-	}
++	/* if (opt_ocpf_sender) { */
++	/* 	bool ret = openchangeclient_ocpf_sender(mem_ctx, &obj_store, &oclient); */
++	/* 	mapi_errstr("OCPF Sender", GetLastError()); */
++	/* 	if (ret != true) { */
++	/* 		goto end; */
++	/* 	} */
++	/* } */
+ 
+-	if (oclient.ocpf_dump) {
+-		bool ret = openchangeclient_ocpf_dump(mem_ctx, &obj_store, &oclient);
+-		mapi_errstr("OCPF Dump", GetLastError());
+-		if (ret != true) {
+-			goto end;
+-		}
+-	}
++	/* if (oclient.ocpf_dump) { */
++	/* 	bool ret = openchangeclient_ocpf_dump(mem_ctx, &obj_store, &oclient); */
++	/* 	mapi_errstr("OCPF Dump", GetLastError()); */
++	/* 	if (ret != true) { */
++	/* 		goto end; */
++	/* 	} */
++	/* } */
+ 
+ 	if (opt_fetchitems) {
+ 		bool ret = openchangeclient_fetchitems(mem_ctx, &obj_store, opt_fetchitems, &oclient);

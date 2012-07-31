@@ -60,7 +60,7 @@ override_dh_auto_install:
 	mkdir -p $(DESTDIR)/etc/ocsmanager
 	install -m 0644 mapiproxy/services/ocsmanager/ocsmanager.ini $(DESTDIR)/etc/ocsmanager/
 	mkdir -p $(DESTDIR)/etc/apache2/conf.d
-	install -m 0644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $(DESTDIR)/etc/apache2/conf.d/
+	install -m 0644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $(DESTDIR)/etc/apache2/conf.d/ocsmanager.conf
 	mkdir -p $(DESTDIR)/var/lib/ntlmauthhandler
 
 override_dh_install:

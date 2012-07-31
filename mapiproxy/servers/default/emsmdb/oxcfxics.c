@@ -519,6 +519,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 	ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment, NULL, &embedded_message, &messageID, &msg);
 	if (ret == MAPISTORE_SUCCESS) {
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagStartEmbed);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 		ret = mapistore_properties_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, embedded_message, mem_ctx, &available_properties);
 		prop_data = talloc_array(mem_ctx, struct mapistore_property_data, available_properties->cValues);
@@ -543,6 +544,9 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 		}
 		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, available_properties, data_pointers, retvals);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndEmbed);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
+		RAWIDSET_push_guid_glob(sync_data->eid_set, &sync_data->replica_guid, (messageID >> 16) & 0x0000ffffffffffff);
 	}
 }
 

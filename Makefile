@@ -993,6 +993,8 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 
+samba_setupdir = $(shell $(PYTHON) -c 'import samba; print samba.param.setup_dir();')
+
 ####################
 # mapiproxy servers
 ####################
@@ -1001,18 +1003,18 @@ provision-install: python-install
 	$(INSTALL) -m 0755 setup/openchange_provision $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
-	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
-	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/
-	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(datadir)/setup/AD/
+	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_modify.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_ADSC.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/prefixMap.txt
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_modify.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_ADSC.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/prefixMap.txt
 	rm -rf $(DESTDIR)$(datadir)/setup/AD
 	rm -rf $(DESTDIR)$(datadir)/setup/openchangedb
 

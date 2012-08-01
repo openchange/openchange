@@ -282,3 +282,13 @@ Description: Working instance of python-ocsmanager
  .
  This package is alpha software.
 
+Package: openchange-rpcproxy
+Architecture: all
+Depends: libapache2-mod-wsgi,
+         python,
+         ${misc:Depends},
+         ${python:Depends},
+         ${shlibs:Depends}
+Description: A RPC-over-HTTP implementation for Samba, using wsgi
+ This package contains a a RPC-over-HTTP python implementation
+ for Samba, using wsgi.

@@ -29,14 +29,6 @@ Source2: openchange-ocsmanager.init
 Patch0: openchange-1.0-no_ocpf.diff
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoReqProv: 0
-%if %{python_sys_pyver} < 33947648
-Requires: python26-pylons
-Requires: python26-rpclib
-%else
-Requires: python-pylons
-Requires: python-rpclib
-%endif
-
 Requires: samba4 >= %{samba4_version}
 ### Build Dependencies ###
 
@@ -74,10 +66,34 @@ Requires: devhelp
 Group: Applications/System
 Summary: OpenChange - web services
 Requires: openchange = %{version}-%{release}
+%if %{python_sys_pyver} < 33947648
+Requires: python26
+Requires: python26-pylons
+Requires: python26-rpclib
+%else
+Requires: python
+Requires: python-pylons
+Requires: python-rpclib
+%endif
 
 %description ocsmanager
 This packages provides web services for OpenChange in the form of a Pylons
 application.
+
+%package rpcproxy
+Group: Applications/System
+Summary: OpenChange - RPC-over-HTTP proxy
+Requires: openchange = %{version}-%{release}
+Requires: mod_wsgi
+%if %{python_sys_pyver} < 33947648
+Requires: python26
+%else
+Requires: python
+%endif
+
+%description rpcproxy
+This package contains a a RPC-over-HTTP python implementation
+for Samba, using wsgi.
 
 # %package devel
 # Summary: Developer tools for OpenChange libraries
@@ -156,22 +172,8 @@ done
 %install
 rm -rf $RPM_BUILD_ROOTS
 
-mkdir -p $RPM_BUILD_ROOT/etc/ocsmanager
-install -m 644 mapiproxy/services/ocsmanager/ocsmanager.ini $RPM_BUILD_ROOT/etc/ocsmanager
-
-mkdir -p $RPM_BUILD_ROOT/etc/httpd/conf.d/
-install -m 644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $RPM_BUILD_ROOT/etc/httpd/conf.d/ocsmanager.conf
-
-# used by ocsmanager
-mkdir -p $RPM_BUILD_ROOT/var/lib/ntlmauthhandler
-
-mkdir -p $RPM_BUILD_ROOT/etc/init.d
-install -m 755 %{_sourcedir}/openchange-ocsmanager.init $RPM_BUILD_ROOT/etc/init.d/openchange-ocsmanager
-
 make install DESTDIR=$RPM_BUILD_ROOT SERVER_MODULESDIR=%{_libdir}/samba4/modules/dcerpc_server
 cp -r libmapi++ $RPM_BUILD_ROOT%{_includedir}
-(cd mapiproxy/services/ocsmanager; %{__python} setup.py install --root=$RPM_BUILD_ROOT --prefix=/usr)
-
 
 # This makes the right links, as rpmlint requires that the
 # ldconfig-created links be recorded in the RPM.
@@ -185,23 +187,45 @@ cp -r apidocs/man/man3 $RPM_BUILD_ROOT%{_mandir}
 # Page is still reachable as "mapi_obj_bookmark".
 rm -rf $RPM_BUILD_ROOT%{_mandir}/man3/index.3
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi
+install -d $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi
 cp -r apidocs/html/libmapi/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapiadmin
+install -d $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapiadmin
 cp -r apidocs/html/libmapiadmin/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapiadmin
 
 # mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libocpf
 # cp -r apidocs/html/libocpf/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libocpf
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapitest
+install -d $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapitest
 cp -r apidocs/html/mapitest/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapitest
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapiproxy
+install -d $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapiproxy
 cp -r apidocs/html/mapiproxy/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-mapiproxy
 
-mkdir -p $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi++
+install -d $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi++
 cp -r apidocs/html/libmapi++/* $RPM_BUILD_ROOT%{_datadir}/devhelp/books/openchange-libmapi++
+
+# OCSMANAGER
+install -d $RPM_BUILD_ROOT/etc/ocsmanager
+install -m 644 mapiproxy/services/ocsmanager/ocsmanager.ini $RPM_BUILD_ROOT/etc/ocsmanager
+
+install -d $RPM_BUILD_ROOT/etc/httpd/conf.d/
+install -m 644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $RPM_BUILD_ROOT/etc/httpd/conf.d/ocsmanager.conf
+
+install -d $RPM_BUILD_ROOT/etc/init.d
+install -m 755 %{_sourcedir}/openchange-ocsmanager.init $RPM_BUILD_ROOT/etc/init.d/openchange-ocsmanager
+
+# used by ocsmanager and rpcproxy
+install -d -m 700 -o apache -g apache $RPM_BUILD_ROOT/var/cache/ntlmauthhandler
+
+(cd mapiproxy/services/ocsmanager; %{__python} setup.py install --root=$RPM_BUILD_ROOT --prefix=/usr)
+
+# RPCPROXY
+install -m 0644 mapiproxy/services/web/rpcproxy/rpcproxy.conf $RPM_BUILD_ROOT/etc/httpd/conf.d/rpcproxy.conf
+install -d $RPM_BUILD_ROOT/usr/lib/openchange/web/rpcproxy
+install -m 0644 mapiproxy/services/web/rpcproxy/rpcproxy.wsgi $RPM_BUILD_ROOT/usr/lib/openchange/web/rpcproxy/rpcproxy.wsgi
+(cd mapiproxy/services/web/rpcproxy; python$* setup.py install --install-lib=/usr/lib/openchange/web/rpcproxy --root $RPM_BUILD_ROOT \
+  --install-scripts=/usr/lib/openchange/web/rpcproxy)
 
 %clean
 rm -rf $RPM_BUILD_ROOT
@@ -222,10 +246,8 @@ rm -rf $RPM_BUILD_ROOT
 %defattr(-,root,root,-)
 %doc ChangeLog COPYING IDL_LICENSE.txt VERSION
 
-%config(noreplace) /etc/ocsmanager/*
-%config(noreplace) /etc/httpd/conf.d/ocsmanager.conf
-/etc/init.d/*
-/var/lib/ntlmauthhandler
+/var/cache/ntlmauthhandler
+
 # %{_libdir}/libmapi-openchange.so.*
 %{_libdir}/libmapiadmin.so.*
 %{_libdir}/libmapi.so.*
@@ -256,7 +278,6 @@ rm -rf $RPM_BUILD_ROOT
 # %files python
 # %defattr(-,root,root,-)
 %{python_sitearch}/openchange
-%{python_noarch_sitearch}/ocsmanager*
 # %endif
 
 # %if %{build_server_package}
@@ -271,7 +292,23 @@ rm -rf $RPM_BUILD_ROOT
 %{_datadir}/samba/*
 # %endif
 
+%files ocsmanager
+%config(noreplace) /etc/init.d/openchange-ocsmanager
+%config(noreplace) /etc/ocsmanager/*
+%config(noreplace) /etc/httpd/conf.d/ocsmanager.conf
+%{python_noarch_sitearch}/ocsmanager*
+
+%files rpcproxy
+%config(noreplace)  /etc/httpd/conf.d/rpcproxy.conf
+/usr/lib/openchange/web/rpcproxy/*
+/usr/lib/openchange/web/rpcproxy/rpcproxy/*
+
 %changelog
+* Wed Aug 1 2012 Jean Raby <jraby@inverse.ca> 1.0.prerelease
+- split openchange, ocsmanager and rpcproxy
+- use install -d instead of mkdir, for consistency
+- add rpcproxy
+
 * Tue Jul 31 2012 Jean Raby <jraby@inverse.ca> 1.0.prerelease
 - use ocsmanager.ini from the distribution
 - install the apache config now shipped with the distribution

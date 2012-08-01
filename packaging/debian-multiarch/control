@@ -166,6 +166,7 @@ Description: Experimental MAPI (Exchange/Outlook) server - development files
 Package: openchangeproxy
 Architecture: any
 Depends: samba4 (>= 4.0.0~),
+         openchangeproxy (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: Experimental MAPI (Exchange/Outlook) proxy

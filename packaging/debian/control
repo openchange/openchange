@@ -136,6 +136,7 @@ Description: Command-line client for the MAPI (Exchange/Outlook) protocol
 Package: openchangeserver
 Architecture: any
 Depends: samba4 (>= 4.0.0~),
+         openchangeproxy (= ${binary:Version}),
          ${misc:Depends},
          ${python:Depends},
          ${shlibs:Depends}

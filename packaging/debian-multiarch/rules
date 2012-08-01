@@ -11,7 +11,7 @@ PYVERS = $(shell pyversions -rv)
 export PYTHON="$(shell which `pyversions -r`)"
 
 %:
-	dh $*
+	dh $@ --with python2
 
 override_dh_auto_configure:
 	test -f configure || ./autogen.sh
@@ -52,11 +52,11 @@ override_dh_auto_install:
 	rm -f $(DESTDIR)/usr/bin/test_asyncnotif
 	rm -f $(DESTDIR)/usr/lib/python*/dist-packages/openchange/mapi.so
 	rm -rf $(DESTDIR)/usr/lib/python*/dist-packages/openchange/tests
+	# ocsmanager app
 	install -m 0644 -D debian/openchangeserver.lintian debian/openchangeserver/usr/share/lintian/overrides/openchangeserver
 	(cd mapiproxy/services/ocsmanager; python$* setup.py install --prefix=/usr --root $(DESTDIR) \
-		--single-version-externally-managed $(py_setup_install_args))
+		--single-version-externally-managed --install-layout=deb $(py_setup_install_args))
 	find $(PKGDIR) -name '*.pth' -delete
-	# ocsmanager app
 	mkdir -p $(DESTDIR)/etc/ocsmanager
 	install -m 0644 mapiproxy/services/ocsmanager/ocsmanager.ini $(DESTDIR)/etc/ocsmanager/
 	mkdir -p $(DESTDIR)/etc/apache2/conf.d

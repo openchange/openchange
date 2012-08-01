@@ -1,2 +1,2 @@
-usr/lib/python*/site-packages/ocsmanager
-usr/lib/python*/site-packages/ocsmanager*egg-info
+usr/lib/python*/dist-packages/ocsmanager
+usr/lib/python*/dist-packages/ocsmanager*egg-info

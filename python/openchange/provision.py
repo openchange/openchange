@@ -27,6 +27,8 @@ import ldb
 from ldb import SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
 from samba.provision import (setup_add_ldif, setup_modify_ldif)
+from samba.net import Net
+from samba.dcerpc import nbt
 from openchange.urlutils import openchangedb_url
 
 __docformat__ = 'restructuredText'
@@ -71,6 +73,7 @@ class ProvisionNames(object):
         self.netbiosname = None
         self.domain = None
         self.hostname = None
+        self.serverrole = None
         self.firstorg = None
         self.firstou = None
         self.firstorgdn = None
@@ -93,7 +96,7 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     dnsdomain = dnsdomain.lower()
 
     serverrole = lp.get("server role")
-    if serverrole == "domain controller":
+    if serverrole in ("domain controller", "member server"):
         domain = lp.get("workgroup")
         domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
     else:
@@ -106,6 +109,7 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     sitename = DEFAULTSITE
 
     names = ProvisionNames()
+    names.serverrole = serverrole
     names.rootdn = rootdn
     names.domaindn = domaindn
     names.configdn = configdn
@@ -249,6 +253,18 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
     print "[SUCCESS] Done!"
 
+def get_user_dn(ldb, basedn, username):
+    if not isinstance(ldb, Ldb):
+        raise TypeError("'ldb' argument must be an Ldb intance")
+
+    ldb_filter = "(&(objectClass=user)(sAMAccountName=%s))" % username
+    res = ldb.search(base=basedn, scope=SCOPE_SUBTREE, expression=ldb_filter, attrs=["*"])
+    user_dn = None
+    if len(res) == 1:
+        user_dn = res[0].dn
+
+    return user_dn
+
 def newuser(lp, creds, username=None):
     """extend user record with OpenChange settings.
     
@@ -258,11 +274,15 @@ def newuser(lp, creds, username=None):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-
-    db = Ldb(url=lp.samdb_url(), session_info=system_session(), 
+    if names.serverrole == "member server":
+        net = Net(creds, lp)
+        dc = net.finddc(domain=names.dnsdomain, flags=nbt.NBT_SERVER_LDAP)
+        url = "ldap://" + dc.pdc_dns_name
+    else:
+        url = lp.samdb_url()
+    db = Ldb(url=url, session_info=system_session(), 
              credentials=creds, lp=lp)
-
-    user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
+    user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
 
     extended_user = """
 dn: %s
@@ -316,11 +336,15 @@ def accountcontrol(lp, creds, username=None, value=0):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-
-    db = Ldb(url=os.path.join(lp.get("private dir"), lp.samdb_url()), 
-             session_info=system_session(), credentials=creds, lp=lp)
-
-    user_dn = "CN=%s,CN=Users,%s" % (username, names.domaindn)
+    if names.serverrole == "member server":
+        net = Net(creds, lp)
+        dc = net.finddc(domain=names.dnsdomain, flags=nbt.NBT_SERVER_LDAP)
+        url = "ldap://" + dc.pdc_dns_name
+    else:
+        url = lp.samdb_url()
+    db = Ldb(url=url, session_info=system_session(), 
+             credentials=creds, lp=lp)
+    user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     extended_user = """
 dn: %s
 changetype: modify

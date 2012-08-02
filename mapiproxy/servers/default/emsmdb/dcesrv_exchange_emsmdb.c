@@ -83,7 +83,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	struct policy_handle		wire_handle;
 	struct exchange_emsmdb_session	*session;
 	struct ldb_message		*msg;
-	const char			*cn;
+	const char			*mailNickname;
 	const char			*userDN;
 	char				*dnprefix;
 
@@ -149,9 +149,9 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the dinstinguished name of the server */
-	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
+	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = strstr(userDN, mailNickname);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;
@@ -1540,7 +1540,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	struct policy_handle		wire_handle;
 	struct exchange_emsmdb_session	*session;
 	struct ldb_message		*msg;
-	const char			*cn;
+	const char			*mailNickname;
 	const char			*userDN;
 	char				*dnprefix;
 
@@ -1601,9 +1601,9 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the distinguished name of the server */
-	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
+	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = strstr(userDN, mailNickname);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;

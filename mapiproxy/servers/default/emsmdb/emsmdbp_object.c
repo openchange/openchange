@@ -1048,7 +1048,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 							    bool mailboxstore)
 {
 	struct emsmdbp_object		*object;
-	const char			*displayName, *cn;
+	const char			*displayName, *accountName;
 	const char * const		recipient_attrs[] = { "*", NULL };
 	int				ret;
 	struct ldb_result		*res = NULL;
@@ -1081,9 +1081,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
 				 object->object.mailbox->owner_EssDN);
 		if (!ret && res->count == 1) {
-			cn = ldb_msg_find_attr_as_string(res->msgs[0], "cn", NULL);
-			if (cn) {
-				object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox,  cn);
+			accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
+			if (accountName) {
+				object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox, accountName);
 
 				/* Retrieve Mailbox folder identifier */
 				openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,

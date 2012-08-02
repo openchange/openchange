@@ -131,7 +131,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
 
 	ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &res,
 			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "CN=%s",
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccoutName=%s",
 			 username);
 	OPENCHANGE_RETVAL_IF((ret != LDB_SUCCESS || !res->count), MAPI_E_NOT_FOUND, NULL);
 

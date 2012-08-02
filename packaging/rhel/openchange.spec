@@ -27,6 +27,7 @@ Source0: http://downloads.sourceforge.net/openchange/openchange-%{version}.tar.g
 Source1: doxygen_to_devhelp.xsl
 Source2: openchange-ocsmanager.init
 Patch0: openchange-1.0-no_ocpf.diff
+Patch1: ocsmanager-ini-path-fix.diff
 BuildRoot: %(mktemp -ud %{_tmppath}/%{name}-%{version}-%{release}-XXXXXX)
 AutoReqProv: 0
 Requires: samba4 >= %{samba4_version}
@@ -146,6 +147,7 @@ for Samba, using wsgi.
 %prep
 %setup -q -n %{name}-%{version}
 %patch0 -p1
+%patch1 -p0
 
 %build
 ./autogen.sh

@@ -96,7 +96,10 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     dnsdomain = dnsdomain.lower()
 
     serverrole = lp.get("server role")
-    if serverrole in ("domain controller", "member server"):
+    # Note: "server role" can have many forms, even for the same function:
+    # "member server", "domain controller", "active directory domain
+    # controller"...
+    if "domain controller" in serverrole or serverrole == "member server":
         domain = lp.get("workgroup")
         domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
     else:
@@ -151,7 +154,8 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+    names = guess_names_from_smbconf(lp, None, None)
+    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                credentials=creds, lp=lp)
 
     db.transaction_start()
@@ -187,7 +191,8 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     session_info = system_session()
 
-    db = SamDB(url=lp.samdb_url(), session_info=session_info,
+    names = guess_names_from_smbconf(lp, None, None)
+    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                credentials=creds, lp=lp)
 
     db.transaction_start()
@@ -219,13 +224,13 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     lp.set("dsdb:schema update allowed", "yes")
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    samdb = SamDB(url=lp.samdb_url(), session_info=session_info,
+    names = guess_names_from_smbconf(lp, None, None)
+    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                   credentials=creds, lp=lp)
 
     schemadn = str(names.schemadn)
-    current = samdb.search(expression="objectClass=*", base=schemadn, 
+    current = samdb.search(expression="objectClass=*", base=schemadn,
                            scope=SCOPE_SUBTREE)
-    
 
     schema_ldif = ""
     prefixmap_data = ""
@@ -253,6 +258,16 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
     print "[SUCCESS] Done!"
 
+def get_ldb_url(lp, creds, names):
+    if names.serverrole == "member server":
+        net = Net(creds, lp)
+        dc = net.finddc(domain=names.dnsdomain, flags=nbt.NBT_SERVER_LDAP)
+        url = "ldap://" + dc.pdc_dns_name
+    else:
+        url = lp.samdb_url()
+
+    return url
+
 def get_user_dn(ldb, basedn, username):
     if not isinstance(ldb, Ldb):
         raise TypeError("'ldb' argument must be an Ldb intance")
@@ -261,7 +276,7 @@ def get_user_dn(ldb, basedn, username):
     res = ldb.search(base=basedn, scope=SCOPE_SUBTREE, expression=ldb_filter, attrs=["*"])
     user_dn = None
     if len(res) == 1:
-        user_dn = res[0].dn
+        user_dn = res[0].dn.get_linearized()
 
     return user_dn
 
@@ -274,56 +289,58 @@ def newuser(lp, creds, username=None):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-    if names.serverrole == "member server":
-        net = Net(creds, lp)
-        dc = net.finddc(domain=names.dnsdomain, flags=nbt.NBT_SERVER_LDAP)
-        url = "ldap://" + dc.pdc_dns_name
-    else:
-        url = lp.samdb_url()
-    db = Ldb(url=url, session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
-
-    extended_user = """
-dn: %s
+    if user_dn:
+        extended_user = """
+dn: %(user_dn)s
 changetype: modify
 add: auxiliaryClass
 auxiliaryClass: msExchBaseClass
 add: mailNickName
-mailNickname: %s
+mailNickname: %(username)s
 add: homeMDB
-homeMDB: CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%s
+homeMDB: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
 add: homeMTA
-homeMTA: CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%s
+homeMTA: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
 add: legacyExchangeDN
-legacyExchangeDN: /o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
+legacyExchangeDN: /o=%(firstorg)s/ou=First Administrative Group/cn=Recipients/cn=%(username)s
 add: proxyAddresses
-proxyAddresses: =EX:/o=%s/ou=First Administrative Group/cn=Recipients/cn=%s
-proxyAddresses: smtp:postmaster@%s
-proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%s
-proxyAddresses: SMTP:%s@%s
+proxyAddresses: =EX:/o=%(firstorg)s/ou=First Administrative Group/cn=Recipients/cn=%(username)s
+proxyAddresses: smtp:postmaster@%(dnsdomain)s
+proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%(username)s
+proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
-""" % (user_dn, username, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.netbiosname, names.netbiosname, names.firstorg, names.domaindn, names.firstorg, username, names.firstorg, username, names.dnsdomain, username, username, names.dnsdomain)
-    db.modify_ldif(extended_user)
+"""
+        ldif_value = extended_user % {"user_dn": user_dn,
+                                      "username": username,
+                                      "netbiosname": names.netbiosname,
+                                      "firstorg": names.firstorg,
+                                      "domaindn": names.domaindn,
+                                      "dnsdomain": names.dnsdomain}
+        db.modify_ldif(ldif_value)
 
-    res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])
-    if len(res) == 1:
-        record = res[0]
+        res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])
+        if len(res) == 1:
+            record = res[0]
+        else:
+            raise Exception, \
+                "this should never happen as we just modified the record..."
+        record_keys = map(lambda x: x.lower(), record.keys())
+
+        if "displayname" not in record_keys:
+            extended_user = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (user_dn, username)
+            db.modify_ldif(extended_user)
+
+        if "mail" not in record_keys:
+            extended_user = "dn: %s\nadd: mail\nmail: %s@%s\n" % (user_dn, username, names.dnsdomain)
+            db.modify_ldif(extended_user)
+
+        print "[+] User %s extended and enabled" % username
     else:
-        raise Exception, \
-            "this should never happen as we just modified the record..."
-    record_keys = map(lambda x: x.lower(), record.keys())
-
-    if "displayname" not in record_keys:
-        extended_user = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (user_dn, username)
-        db.modify_ldif(extended_user)
-
-    if "mail" not in record_keys:
-        extended_user = "dn: %s\nadd: mail\nmail: %s@%s\n" % (user_dn, username, names.dnsdomain)
-        db.modify_ldif(extended_user)
-
-    print "[+] User %s extended and enabled" % username
+        print "[!] User '%s' not found" % username
 
 
 def accountcontrol(lp, creds, username=None, value=0):
@@ -336,13 +353,7 @@ def accountcontrol(lp, creds, username=None, value=0):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-    if names.serverrole == "member server":
-        net = Net(creds, lp)
-        dc = net.finddc(domain=names.dnsdomain, flags=nbt.NBT_SERVER_LDAP)
-        url = "ldap://" + dc.pdc_dns_name
-    else:
-        url = lp.samdb_url()
-    db = Ldb(url=url, session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     extended_user = """

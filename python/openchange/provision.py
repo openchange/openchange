@@ -301,8 +301,6 @@ def newuser(lp, creds, username=None):
         extended_user = """
 dn: %(user_dn)s
 changetype: modify
-add: auxiliaryClass
-auxiliaryClass: msExchBaseClass
 add: mailNickName
 mailNickname: %(username)s
 add: homeMDB

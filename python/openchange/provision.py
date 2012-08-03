@@ -24,7 +24,7 @@ from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
 import ldb
-from ldb import SCOPE_SUBTREE, SCOPE_BASE
+from ldb import LdbError, SCOPE_SUBTREE, SCOPE_BASE
 from samba.auth import system_session
 from samba.provision import (setup_add_ldif, setup_modify_ldif)
 from samba.net import Net
@@ -141,8 +141,8 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
     return names
 
-def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
-    """Provision schema using LDIF specified file
+def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
+    """Provision/modify schema using LDIF specified file
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
@@ -150,11 +150,10 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
+    :param modify_mode: whether entries are added or modified
     """
 
     session_info = system_session()
-
-    names = guess_names_from_smbconf(lp, None, None)
     db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                credentials=creds, lp=lp)
 
@@ -162,7 +161,11 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
     try:
         reporter.reportNextStep(msg)
-        setup_add_ldif(db, setup_path(ldif), {
+        if modify_mode:
+            ldif_function = setup_modify_ldif
+        else:
+            ldif_function = setup_add_ldif
+        ldif_function(db, setup_path(ldif), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
                 "CONFIGDN": names.configdn,
@@ -189,25 +192,7 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     :param msg: reporter message
     """
 
-    session_info = system_session()
-
-    names = guess_names_from_smbconf(lp, None, None)
-    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
-               credentials=creds, lp=lp)
-
-    db.transaction_start()
-
-    try:
-        reporter.reportNextStep(msg)
-        setup_modify_ldif(db, setup_path(ldif), {
-                "SCHEMADN": names.schemadn,
-                "CONFIGDN": names.configdn
-                })
-    except:
-        db.transaction_cancel()
-        raise
-
-    db.transaction_commit()
+    return provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
 
 
 def install_schemas(setup_path, names, lp, creds, reporter):

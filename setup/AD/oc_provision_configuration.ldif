@@ -17,9 +17,6 @@ showInAdvancedViewOnly: TRUE
 adminDisplayName: Microsoft Exchange
 name: Microsoft Exchange
 objectCategory: CN=ms-Exch-Configuration-Container,${SCHEMADN}
-addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-templateRoots: CN=Addressing,${FIRSTORGDN}
 #msExchPolicyRoots: CN=System Policies,${FIRSTORGDN}
 #msExchPolicyRoots: CN=Recipient Policies,${FIRSTORGDN}
 
@@ -66,7 +63,6 @@ distinguishedName: CN=First Administrative Group,CN=Administrative Groups,${FIRS
 displayName: First Administrative Group
 showInAdvancedViewOnly: TRUE
 siteFolderGUID: 4b2d197b-1cb3-486a-b8c3-42e8c5c08e27
-siteFolderServer: CN=Public Folder Store (${FIRSTORG}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 name: First Administrative Group
 legacyExchangeDN: /o=${FIRSTORG}/ou=First Administrative Group
 objectCategory: CN=ms-Exch-Admin-Group,${SCHEMADN}
@@ -163,7 +159,7 @@ displayName: Public Folder Store (${NETBIOSNAME})
 activationStyle: 1
 messageSizeLimit: 10240
 showInAdvancedViewOnly: TRUE
-homeMTA: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+# finalize? homeMTA: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 adminDisplayName: Public Folder Store (${NETBIOSNAME})
 proxyAddresses: SMTP:${NETBIOSNAME}-IS@${DNSDOMAIN}
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=EXCH2K3-IS;
@@ -186,6 +182,32 @@ msExchMaxCachedViews: 11
 msExchDatabaseCreated: TRUE
 msExchPoliciesIncluded: {627410A4-E1A9-4DD0-9568-FA22DEACB6B8},{26491CFC-9E50-
  4857-861B-0CB8DF22B5D7}
+
+#
+# Mailbox Store (${NETBIOSNAME})
+#
+dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: msExchMDB
+objectClass: msExchPrivateMDB
+cn: Mailbox Store (${NETBIOSNAME})
+distinguishedName: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+displayName: Mailbox Store (${NETBIOSNAME})
+activationStyle: 1
+deletedItemFlags: 5
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Mailbox Store (${NETBIOSNAME})
+deliveryMechanism: 1
+garbageCollPeriod: 604800
+quotaNotificationStyle: 1
+name: Mailbox Store (${NETBIOSNAME})
+systemFlags: 1610612736
+legacyExchangeDN: /o=${FIRSTORG}/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Private MDB
+objectCategory: CN=ms-Exch-Private-MDB,${SCHEMADN}
+msExchMailboxRetentionPeriod: 2592000
+msExchMaxCachedViews: 11
+msExchDatabaseCreated: TRUE
+
 
 #
 # Address Lists Containers
@@ -217,58 +239,45 @@ showInAdvancedViewOnly: TRUE
 name: Offline Address Lists
 objectCategory: CN=ms-Exch-Container,${SCHEMADN}
 
-
+# disabled because CN=ms-Exch-OAB,${SCHEMADN} is not provisioned
 #
 # Default Offline Address List
 #
-dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-objectClass: top
-objectClass: msExchOAB
-cn: Default Offline Address List
-distinguishedName: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-showInAdvancedViewOnly: TRUE
-offLineABStyle: 1
-offLineABContainers: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-offLineABSchedule:: AAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAA
-offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-siteFolderGUID: e72eae5f-ee8e-4908-becb-fb58af7c62aa
-siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
-doOABVersion: 0
-name: Default Offline Address List
-systemFlags: 1610612736
-legacyExchangeDN: /o=${FIRSTORG}/cn=addrlists/cn=oabs/cn=Default Offline Address List
-objectCategory: CN=ms-Exch-OAB,${SCHEMADN}
-objectGUID: f4d2ff48-0a08-4f96-8cfc-967401492989
-msExchOABDefault: TRUE
-msExchOABFolder: AA==
+# dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# objectClass: top
+# objectClass: msExchOAB
+# cn: Default Offline Address List
+# distinguishedName: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# showInAdvancedViewOnly: TRUE
+# offLineABStyle: 1
+# offLineABContainers: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# offLineABSchedule:: AAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAA
+# offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+# siteFolderGUID: e72eae5f-ee8e-4908-becb-fb58af7c62aa
+# siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
+# doOABVersion: 0
+# name: Default Offline Address List
+# systemFlags: 1610612736
+# legacyExchangeDN: /o=${FIRSTORG}/cn=addrlists/cn=oabs/cn=Default Offline Address List
+# objectCategory: CN=ms-Exch-OAB,${SCHEMADN}
+# objectGUID: f4d2ff48-0a08-4f96-8cfc-967401492989
+# msExchOABDefault: TRUE
+# msExchOABFolder: AA==
 
 #
-# Mailbox Store (${NETBIOSNAME})
+# All Address Lists
+# description: Address book recipient
 #
-dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+dn: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
 objectClass: top
-objectClass: msExchMDB
-objectClass: msExchPrivateMDB
-cn: Mailbox Store (${NETBIOSNAME})
-distinguishedName: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-displayName: Mailbox Store (${NETBIOSNAME})
-activationStyle: 1
-deletedItemFlags: 5
+objectClass: addressBookContainer
+cn: All Address Lists
+distinguishedName: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Address Lists
 showInAdvancedViewOnly: TRUE
-adminDisplayName: Mailbox Store (${NETBIOSNAME})
-deliveryMechanism: 1
-garbageCollPeriod: 604800
-quotaNotificationStyle: 1
-name: Mailbox Store (${NETBIOSNAME})
+name: All Address Lists
 systemFlags: 1610612736
-legacyExchangeDN: /o=${FIRSTORG}/ou=First Administrative Group/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Private MDB
-objectCategory: CN=ms-Exch-Private-MDB,${SCHEMADN}
-msExchUseOAB: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-msExchHomePublicMDB: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-msExchMailboxRetentionPeriod: 2592000
-msExchMaxCachedViews: 11
-msExchDatabaseCreated: TRUE
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
 
 #
 # All Global Address Lists
@@ -360,21 +369,6 @@ msExchDomainGlobalGroupSid: S-1-5-21-1226241484-1028146065-4277480997-1109
 #msExchPollInterval: 60
 #msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 #msExchDomainLink: CN=Configuration,${DOMAINDN}
-
-#
-# All Address Lists
-# description: Address book recipient
-#
-dn: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-objectClass: top
-objectClass: addressBookContainer
-cn: All Address Lists
-distinguishedName: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-displayName: All Address Lists
-showInAdvancedViewOnly: TRUE
-name: All Address Lists
-systemFlags: 1610612736
-objectCategory: CN=Address-Book-Container,${SCHEMADN}
 
 #
 # All Users

@@ -1,0 +1,24 @@
+
+
+#
+# Finalize First Administrative Group
+#
+dn: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+
+#
+#  Finalize root Exchange service
+#
+
+dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
+addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+templateRoots: CN=Addressing,${FIRSTORGDN}
+
+#
+# Finalize Mailbox Store (${NETBIOSNAME})
+#
+dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+# (disabled, see previous ldif) msExchUseOAB: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+msExchHomePublicMDB: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}

@@ -1,0 +1,15 @@
+Index: mapiproxy/services/ocsmanager/ocsmanager.ini
+===================================================================
+--- mapiproxy/services/ocsmanager/ocsmanager.ini	(revision 4075)
++++ mapiproxy/services/ocsmanager/ocsmanager.ini	(working copy)
+@@ -14,8 +14,8 @@
+ # auth = file
+ #auth = ldap
+ auth = single
+-mapistore_root = /var/lib/samba/private
+-mapistore_data = /var/lib/samba/private/mapistore
++mapistore_root = /var/lib/samba4/private
++mapistore_data = /var/lib/samba4/private/mapistore
+ debug = no
+ 
+ [auth:file]

@@ -213,35 +213,55 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                   credentials=creds, lp=lp)
 
-    schemadn = str(names.schemadn)
-    current = samdb.search(expression="objectClass=*", base=schemadn,
-                           scope=SCOPE_SUBTREE)
-
-    schema_ldif = ""
-    prefixmap_data = ""
-    for ent in current:
-        schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
-
-    prefixmap_data = open(setup_path("AD/prefixMap.txt"), 'r').read()
-    prefixmap_data = b64encode(prefixmap_data)
-
-    # We don't actually add this ldif, just parse it
-    prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
     reporter.reportNextStep("Register Exchange OIDs")
-    dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
 
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Add Exchange objectCategory to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Add Exchange containers to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Add Exchange *sub* containers to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Add Exchange CfgProtocol subcontainers to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Add Exchange mailGateway subcontainers to Samba schema")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
-    modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
-    modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
-    provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
-    print "[SUCCESS] Done!"
+    try:
+        schemadn = str(names.schemadn)
+        current = samdb.search(expression="objectClass=*", base=schemadn,
+                               scope=SCOPE_SUBTREE)
+
+        schema_ldif = ""
+        prefixmap_data = ""
+        for ent in current:
+            schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
+
+            prefixmap_data = open(setup_path("AD/prefixMap.txt"), 'r').read()
+            prefixmap_data = b64encode(prefixmap_data)
+
+            # We don't actually add this ldif, just parse it
+            prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
+            dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif,
+            schema_ldif, schemadn)
+    except RuntimeError as err:
+        print ("[!] error while provisioning the prefixMap: %s"
+               % str(err))
+    except LdbError as err:
+        print ("[!] error while provisioning the prefixMap: %s"
+               % str(err))
+
+    try:
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Add Exchange objectCategory to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Add Exchange containers to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Add Exchange *sub* containers to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Add Exchange CfgProtocol subcontainers to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Add Exchange mailGateway subcontainers to Samba schema")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
+    except LdbError, ldb_error:
+        print ("[!] error while provisioning the Exchange"
+               " schema classes (%d): %s"
+               % ldb_error.args)
+
+    try:
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize Exchange configuration objects")
+        print "[SUCCESS] Done!"
+    except LdbError, ldb_error:
+        print ("[!] error while provisioning the Exchange configuration"
+               " objects (%d): %s" % ldb_error.args)
 
 def get_ldb_url(lp, creds, names):
     if names.serverrole == "member server":

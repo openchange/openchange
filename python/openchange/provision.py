@@ -25,6 +25,7 @@ from samba import Ldb, dsdb
 from samba.samdb import SamDB
 import ldb
 from ldb import LdbError, SCOPE_SUBTREE, SCOPE_BASE
+from samba import read_and_sub_file
 from samba.auth import system_session
 from samba.provision import (setup_add_ldif, setup_modify_ldif)
 from samba.net import Net
@@ -195,6 +196,102 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     return provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
 
 
+
+def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
+    """Deprovision/unmodify schema using LDIF specified file, by reverting the
+    modifications contained therein.
+
+    :param setup_path: Path to the setup directory.
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ldif: path to the LDIF file
+    :param msg: reporter message
+    :param modify_mode: whether entries are added or modified
+    """
+
+    session_info = system_session()
+    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
+               credentials=creds, lp=lp)
+
+    db.transaction_start()
+
+    try:
+        reporter.reportNextStep(msg)
+
+        ldif_content = read_and_sub_file(setup_path(ldif),
+                                         {"FIRSTORG": names.firstorg,
+                                          "FIRSTORGDN": names.firstorgdn,
+                                          "CONFIGDN": names.configdn,
+                                          "SCHEMADN": names.schemadn,
+                                          "DOMAINDN": names.domaindn,
+                                          "DOMAIN": names.domain,
+                                          "DNSDOMAIN": names.dnsdomain,
+                                          "NETBIOSNAME": names.netbiosname,
+                                          "HOSTNAME": names.hostname
+                                          })
+        if modify_mode:
+            lines = ldif_content.splitlines()
+            keep_line = False
+            entries = []
+            current_entry = []
+            entries.append(current_entry)
+            for line in lines:
+                skip_this_line = False
+                if line.startswith("dn:") or line == "":
+                    # current_entry.append("")
+                    current_entry = []
+                    entries.append(current_entry)
+                    keep_line = True
+                elif line.startswith("add:"):
+                    keep_line = True
+                    line = "delete:" + line[4:]
+                elif line.startswith("replace:"):
+                    keep_line = False
+                elif line.startswith("#") or line.strip() == "":
+                    skip_this_line = True
+
+                if keep_line and not skip_this_line:
+                    current_entry.append(line)
+
+            entries.reverse()
+            for entry in entries:
+                ldif_content = "\n".join(entry)
+                print ldif_content
+                try:
+                    db.modify_ldif(ldif_content)
+                except:
+                    pass
+        else:
+            lines = ldif_content.splitlines()
+            lines.reverse()
+            for line in lines:
+                if line.startswith("dn:"):
+                    db.delete(line[4:])
+
+    except:
+        db.transaction_cancel()
+        raise
+
+    db.transaction_commit()
+
+def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
+    """Unmodify schema using LDIF specified file
+
+    :param setup_path: Path to the setup directory.
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    :param ldif: path to the LDIF file
+    :param msg: reporter message
+    """
+
+    return deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
+
+
+
 def install_schemas(setup_path, names, lp, creds, reporter):
     """Install the OpenChange-specific schemas in the SAM LDAP database. 
     
@@ -217,7 +314,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         schemadn = str(names.schemadn)
-        current = samdb.search(expression="objectClass=*", base=schemadn,
+        current = samdb.search(expression="objectClass=classSchema", base=schemadn,
                                scope=SCOPE_SUBTREE)
 
         schema_ldif = ""
@@ -230,8 +327,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
             # We don't actually add this ldif, just parse it
             prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
-            dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif,
-            schema_ldif, schemadn)
+            dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
     except RuntimeError as err:
         print ("[!] error while provisioning the prefixMap: %s"
                % str(err))
@@ -393,6 +489,57 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None)
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds, reporter)
+
+
+def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
+    """Remote all configuration entries added by the OpenChange
+    installation.
+
+    :param setup_path: Path to the setup directory.
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    """
+
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    session_info = system_session()
+
+    lp.set("dsdb:schema update allowed", "yes")
+
+    names = guess_names_from_smbconf(lp, None, None)
+
+    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
+                  credentials=creds, lp=lp)
+
+    try:
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+    except LdbError, ldb_error:
+        print ("[!] error while deprovisioning the Exchange configuration"
+               " objects (%d): %s" % ldb_error.args)
+    except RuntimeError as err:
+        print ("[!] error while deprovisioning the Exchange configuration"
+               " objects (%d): %s" % ldb_error.args)
+
+    ## NOTE: AD schema objects cannot be deleted (it's a feature!)
+    # try:
+    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Remove exchange attributes from existing Samba classes")
+    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Remove possSuperior attributes to Exchange classes")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Remove Exchange classes from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Remove Exchange mailGateway subcontainers from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Remove Exchange CfgProtocol subcontainers from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Remove Exchange *sub* containers from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Remove Exchange containers from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Remove Exchange objectCategory from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Remove Exchange auxiliary classes from Samba schema")
+    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Remove Exchange attributes from Samba schema")
+    #     print "[SUCCESS] Done!"
+    # except LdbError, ldb_error:
+    #     print ("[!] error while deprovisioning the Exchange"
+    #            " schema classes (%d): %s"
+               # % ldb_error.args)
 
 
 def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):

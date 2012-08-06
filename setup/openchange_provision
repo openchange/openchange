@@ -41,6 +41,7 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
 parser.add_option("--firstou", type="string", metavar="FIRSTOU", 
                   help="set OpenChange First Organization Unit (otherwise First Organization Unit)")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
+parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 opts,args = parser.parse_args()
 if len(args) != 0:
     parser.print_usage()
@@ -58,6 +59,9 @@ def setup_path(*args):
     return os.path.join(_setupdir, *args)
 
 if not opts.openchangedb:
+    if opts.deprovision:
+	openchange.deprovision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+    else:
 	openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
 else:
 	openchange.openchangedb_provision(lp, firstorg=opts.firstorg, firstou=opts.firstou)

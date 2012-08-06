@@ -29,8 +29,8 @@ is untested.
 
 from fcntl import flock, LOCK_EX, LOCK_UN
 import httplib
-from os import _exit, getpid, fork, setsid, umask, unlink, waitpid, \
-    close as close_fd
+from os import _exit, getpid, getuid, fork, setsid, stat, umask, unlink, \
+    waitpid, close as close_fd
 from os.path import join, exists
 from select import poll, POLLIN, POLLHUP
 from socket import socket, SHUT_RDWR, AF_INET, AF_UNIX, \
@@ -72,8 +72,9 @@ def _safe_close(socket_obj):
 
 
 class _NTLMDaemon(object):
-    def __init__(self, samba_host, socket_filename):
+    def __init__(self, samba_host, socket_filename, owner_pair):
         self.socket_filename = socket_filename
+        self.owner_pair = owner_pair
         self.samba_host = samba_host
         self.client_data = {}
 
@@ -157,6 +158,22 @@ class _NTLMDaemon(object):
         server_socket = socket(AF_UNIX, SOCK_STREAM)
         server_socket.bind(self.socket_filename)
         server_socket.listen(10)
+
+        # The socket must have the same owner as its parent directory, this is
+        # achieved in two ways: either we are running as root and no fence
+        # shall stop us, or we cannot run as anyother used because the socket
+        # creation will already have failed in the target directory.
+        current_uid = getuid()
+        if current_uid == 0:
+            chown(self.socket_filename,
+                  self.owner_pair[0], self.owner_pair[1])
+        elif current_uid != self.owner_pair[0]:
+            unlink(self.socket_filename)
+            raise IOError("The NTLMAuthHandler daemon must either be started"
+                          " as root or as the owner of the directory"
+                          " specified for 'NTLMAUTHHANDLER_WORKDIR' (current"
+                          " uid=%d)."
+                          % current_uid)
 
         server_fd = server_socket.fileno()
 
@@ -494,13 +511,14 @@ class _NTLMAuthClient(object):
     @staticmethod
     def _connect_to_daemon(work_dir, samba_host):
         socket_filename = join(work_dir, "ntlm-%s" % samba_host)
+        stat_s = stat(work_dir)
         connection = socket(AF_UNIX, SOCK_STREAM)
         try:
             connection.connect(socket_filename)
         except socket_error:
             # the socket does not exist or is invalid, therefore we need to
             # respawn the daemon
-            daemon = _NTLMDaemon(samba_host, socket_filename)
+            daemon = _NTLMDaemon(samba_host, socket_filename, (stat_s.st_uid, stat_s.st_gid))
             daemon.run()
             connection.connect(socket_filename)
 

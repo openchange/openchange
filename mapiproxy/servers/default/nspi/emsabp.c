@@ -485,7 +485,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		return bin;
 	case PR_SEARCH_KEY:
 		/* retrieve email address attribute, i.e. legacyExchangeDN */
-		ldb_string = ldb_msg_find_attr_as_string(msg, emsabp_property_get_attribute(PR_EMAIL_ADDRESS), NULL);
+		ldb_string = ldb_msg_find_attr_as_string(msg, emsabp_property_get_attribute(PidTagEmailAddress), NULL);
 		if (!ldb_string) return NULL;
 		tmp_str = talloc_strdup_upper(mem_ctx, ldb_string);
 		if (!tmp_str) return NULL;

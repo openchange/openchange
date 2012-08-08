@@ -43,6 +43,7 @@
 #include <sys/stat.h>
 
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
@@ -339,6 +340,8 @@ enum mapistore_error mapistore_table_handle_destructor(struct mapistore_context 
 enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
+
+enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error);
 
 
 /* definitions from mapistore_processing.c */

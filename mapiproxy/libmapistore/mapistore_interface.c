@@ -1698,3 +1698,64 @@ _PUBLIC_ enum mapistore_error mapistore_properties_set_properties(struct mapisto
 	/* Step 2. Call backend operation */
 	return mapistore_backend_properties_set_properties(backend_ctx, object, aRow);
 }
+
+_PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_err)
+{
+	enum MAPISTATUS mapi_err;
+
+	switch(mapistore_err) {
+	case MAPISTORE_SUCCESS:
+		mapi_err = MAPI_E_SUCCESS;
+		break;
+	case MAPISTORE_ERROR:
+		mapi_err = MAPI_E_NO_SUPPORT;
+		break;
+	case MAPISTORE_ERR_NO_MEMORY:
+		mapi_err = MAPI_E_NOT_ENOUGH_MEMORY;
+		break;
+	case MAPISTORE_ERR_ALREADY_INITIALIZED:
+	case MAPISTORE_ERR_NOT_INITIALIZED:
+		mapi_err = MAPI_E_NOT_INITIALIZED;
+		break;
+	case MAPISTORE_ERR_CORRUPTED:
+		mapi_err = MAPI_E_CORRUPT_STORE;
+		break;
+	case MAPISTORE_ERR_INVALID_PARAMETER:
+		mapi_err = MAPI_E_INVALID_PARAMETER;
+		break;
+	case MAPISTORE_ERR_NO_DIRECTORY:
+	case MAPISTORE_ERR_DATABASE_INIT:
+	case MAPISTORE_ERR_DATABASE_OPS:
+	case MAPISTORE_ERR_BACKEND_REGISTER:
+	case MAPISTORE_ERR_BACKEND_INIT:
+	case MAPISTORE_ERR_CONTEXT_FAILED:
+	case MAPISTORE_ERR_INVALID_NAMESPACE:
+		mapi_err = MAPI_E_DISK_ERROR;
+		break;
+	case MAPISTORE_ERR_NOT_FOUND:
+		mapi_err = MAPI_E_NOT_FOUND;
+		break;
+	case MAPISTORE_ERR_REF_COUNT:
+		mapi_err = MAPI_E_COLLISION;
+		break;
+	case MAPISTORE_ERR_EXIST:
+		mapi_err = MAPI_E_COLLISION;
+		break;
+	case MAPISTORE_ERR_INVALID_DATA:
+	case MAPISTORE_ERR_MSG_SEND:
+	case MAPISTORE_ERR_MSG_RCV:
+		mapi_err = MAPI_E_DISK_ERROR;
+		break;
+	case MAPISTORE_ERR_DENIED:
+		mapi_err = MAPI_E_NO_ACCESS;
+		break;
+	case MAPISTORE_ERR_NOT_IMPLEMENTED:
+		mapi_err = MAPI_E_NOT_IMPLEMENTED;
+		break;
+	default:
+		DEBUG (4, ("[%s] unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, mapistore_err));
+		mapi_err = MAPI_E_INVALID_PARAMETER;
+	}
+
+	return mapi_err;
+}

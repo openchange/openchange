@@ -366,6 +366,43 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_co
 	type = ldb_msg_find_attr_as_int(res->msgs[0], "propType", 0);
 	MAPISTORE_RETVAL_IF(!type, MAPISTORE_ERROR, mem_ctx);
 
+	switch (type) {
+	case PT_SHORT:
+	case PT_LONG:
+	case PT_FLOAT:
+	case PT_DOUBLE:
+	case PT_CURRENCY:
+	case PT_APPTIME:
+	case PT_ERROR:
+	case PT_BOOLEAN:
+	case PT_OBJECT:
+	case PT_I8:
+	case PT_STRING8:
+	case PT_UNICODE:
+	case PT_SYSTIME:
+	case PT_CLSID:
+	case PT_SVREID:
+	case PT_SRESTRICT:
+	case PT_ACTIONS:
+	case PT_BINARY:
+	case PT_MV_SHORT:
+	case PT_MV_LONG:
+	case PT_MV_FLOAT:
+	case PT_MV_DOUBLE:
+	case PT_MV_CURRENCY:
+	case PT_MV_APPTIME:
+	case PT_MV_I8:
+	case PT_MV_STRING8:
+	case PT_MV_UNICODE:
+	case PT_MV_SYSTIME:
+	case PT_MV_CLSID:
+	case PT_MV_BINARY:
+		break;
+	default:
+		DEBUG(0, ("%d is not a valid type for a named property (%.4x)\n", type, propID));
+		abort();
+	}
+
 	*propTypeP = type;
 
 	talloc_free(mem_ctx);

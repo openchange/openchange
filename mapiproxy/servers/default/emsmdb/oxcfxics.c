@@ -173,7 +173,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
                         property = properties->aulPropTag[i];
 			if (property > 0x80000000) {
 				propID = (property & 0xffff0000) >> 16;
-				retval = mapistore_namedprops_get_nameid(nprops_ctx, propID, &nameid);
+				retval = mapistore_namedprops_get_nameid(nprops_ctx, propID, NULL, &nameid);
 				if (retval != MAPISTORE_SUCCESS) {
 					continue;
 				}
@@ -190,6 +190,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					ndr_push_string(ndr, NDR_SCALARS, nameid->kind.lpwstr.Name);
 					break;
 				}
+				talloc_free(nameid);
 			} else {
 				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}

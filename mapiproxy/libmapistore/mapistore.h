@@ -376,7 +376,7 @@ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_c
 enum mapistore_error mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID, uint16_t *);
 uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
 enum mapistore_error mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
-enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, struct MAPINAMEID **);
+enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
 enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */

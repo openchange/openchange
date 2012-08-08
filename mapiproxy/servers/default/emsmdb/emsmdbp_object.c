@@ -330,18 +330,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		retval = mapistore_folder_create_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_folder), parent_folder->backend_object, new_folder, fid, rowp, &new_folder->backend_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			talloc_free(new_folder);
-			if (retval == MAPISTORE_ERR_EXIST) {
-				/* folder with this name already exists */
-				DEBUG(5, (__location__": folder already exists\n"));
-				return MAPI_E_COLLISION;
-			}
-			else if (retval == MAPISTORE_ERR_DENIED) {
-				DEBUG(5, (__location__": folder creation denied\n"));
-				return MAPI_E_NO_ACCESS;
-			}
-			else {
-				return MAPI_E_NOT_FOUND;
-			}
+			return mapistore_error_to_mapi(retval);
 		}
 	}
 	else {
@@ -1497,14 +1486,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				data_pointers[i] = properties[i].data;
                                         
 				if (properties[i].error) {
-					if (properties[i].error == MAPISTORE_ERR_NOT_FOUND)
-						retvals[i] = MAPI_E_NOT_FOUND;
-					else if (properties[i].error == MAPISTORE_ERR_NO_MEMORY)
-						retvals[i] = MAPI_E_NOT_ENOUGH_MEMORY;
-					else {
-						retvals[i] = MAPI_E_NO_SUPPORT;
-						DEBUG (4, ("%s: unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, properties[i].error));
-					}
+					retvals[i] = mapistore_error_to_mapi(properties[i].error);
 				}
 				else {
 					if (properties[i].data == NULL) {
@@ -2360,7 +2342,17 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 							    properties->aulPropTag + i,
 							    &prop_data);
 			data_pointers[i] = prop_data.data;
-			retval = prop_data.error;
+			if (prop_data.error) {
+				retval = mapistore_error_to_mapi(prop_data.error);
+			}
+			else {
+				if (prop_data.data == NULL) {
+					retval = MAPI_E_NOT_FOUND;
+				}
+				else {
+					retval = MAPI_E_SUCCESS;
+				}
+			}
 		}
                 else {
 			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, properties->aulPropTag[i], folder->folderID, data_pointers + i);
@@ -2432,13 +2424,7 @@ static int emsmdbp_object_get_properties_mapistore(TALLOC_CTX *mem_ctx, struct e
 	if (ret == MAPISTORE_SUCCESS) {
 		for (i = 0; i < properties->cValues; i++) {
 			if (prop_data[i].error) {
-				if (prop_data[i].error == MAPISTORE_ERR_NOT_FOUND) {
-					retvals[i] = MAPI_E_NOT_FOUND;
-				}
-				else {
-					retvals[i] = MAPI_E_NO_SUPPORT;
-					DEBUG (4, ("%s: unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, prop_data[i].error));
-				}
+				retvals[i] = mapistore_error_to_mapi(prop_data[i].error);
 			}
 			else {
 				if (prop_data[i].data == NULL) {

@@ -1156,7 +1156,7 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct emsmdbp_object	*dest_parent;
 	uint32_t		contextID;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x35)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x36)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

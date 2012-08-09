@@ -282,7 +282,7 @@ uint16_t libmapiserver_RopCopyFolder_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
 
-	if (!response || response->error_code) {
+	if (!response || (response->error_code && response->error_code != ecDstNullObject)) {
 		return size;
 	}
 

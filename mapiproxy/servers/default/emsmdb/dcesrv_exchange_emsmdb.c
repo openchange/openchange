@@ -648,9 +648,11 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS				retval;
 	struct mapi_response			*mapi_response;
         struct mapistore_notification_list	*notification_holder;
+/*
 	struct mapistore_notification_list	*nlist;
 	struct mapistore_notification_list	*el;
 	struct mapistore_subscription_list	*sel;
+*/
         struct mapistore_subscription_list	*subscription_list;
 	struct mapistore_subscription_list	*subscription_holder;
 	uint32_t		handles_length;
@@ -1392,7 +1394,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 {
 	int				retval;
 	struct exchange_emsmdb_session	*session;
-	struct emsmdbp_context		*emsmdbp_ctx = NULL;
+	/* struct emsmdbp_context		*emsmdbp_ctx = NULL; */
 
 	DEBUG(3, ("exchange_emsmdb: EcRRegisterPushNotification (0x4)\n"));
 
@@ -1407,7 +1409,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 	/* Retrieve the emsmdbp_context from the session management system */
 	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
 	if (session) {
-		emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+		/* emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data; */
 	} else {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();

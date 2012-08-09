@@ -260,9 +260,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    uint32_t *handles,
 					    uint16_t *size)
 {
-        /* struct mapistore_subscription_list *subscription_list, *subscription_holder; */
-        /* struct mapistore_subscription *subscription; */
-	struct mapistore_subscription_list	*el;
+        /* struct mapistore_subscription_list *subscription_list, *subscription_holder;
+	   struct mapistore_subscription *subscription;
+	   struct mapistore_subscription_list	*el;*/
 	enum MAPISTATUS				retval;
 	uint32_t				handle;
 

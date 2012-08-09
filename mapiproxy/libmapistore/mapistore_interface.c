@@ -740,6 +740,45 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 	return mapistore_backend_folder_move_copy_messages(backend_ctx, target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 }
 
+/**
+
+ */
+_PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
+							   void *target_folder, void *source_folder, uint64_t fid, const char *new_folder_name)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_move_folder(backend_ctx, target_folder, source_folder, fid, new_folder_name);
+}
+
+
+/**
+
+ */
+_PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
+							   void *target_folder, void *source_folder, uint64_t fid, bool recursive, const char *new_folder_name)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_copy_folder(backend_ctx, target_folder, source_folder, fid, recursive, new_folder_name);
+}
+
 
 /**
    \details Get the array of deleted items following a specific change number

@@ -138,8 +138,10 @@ _PUBLIC_ struct mapistore_mgmt_context *mapistore_mgmt_init(struct mapistore_con
 	unsigned int			prio;
 	DATA_BLOB			data;
 	struct mq_attr			attr;
+/*
 	struct sigaction		sa;
 	struct sigevent			se;
+*/
 
 	if (!mstore_ctx) return NULL;
 

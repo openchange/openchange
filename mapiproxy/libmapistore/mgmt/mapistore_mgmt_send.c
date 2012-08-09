@@ -55,7 +55,7 @@ enum mapistore_error mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_
 			if (len == -1) {
 				perror("send");
 			} else {
-				printf("UDP NOTIFICATION SENT, size is: %d\n", len);
+				printf("UDP NOTIFICATION SENT, size is: %zu\n", len);
 				found = true;
 			}
 		}

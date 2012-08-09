@@ -217,6 +217,8 @@ install -m 644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $RPM_BUILD_R
 install -d $RPM_BUILD_ROOT/etc/init.d
 install -m 755 %{_sourcedir}/openchange-ocsmanager.init $RPM_BUILD_ROOT/etc/init.d/openchange-ocsmanager
 
+install -d $RPM_BUILD_ROOT/var/log/ocsmanager
+
 # used by ocsmanager and rpcproxy
 install -d -m 700 -o apache -g apache $RPM_BUILD_ROOT/var/cache/ntlmauthhandler
 
@@ -299,6 +301,7 @@ rm -rf $RPM_BUILD_ROOT
 %config(noreplace) /etc/ocsmanager/*
 %config(noreplace) /etc/httpd/conf.d/ocsmanager.conf
 %{python_noarch_sitearch}/ocsmanager*
+/var/log/ocsmanager
 
 %files rpcproxy
 %config(noreplace)  /etc/httpd/conf.d/rpcproxy.conf
@@ -306,6 +309,9 @@ rm -rf $RPM_BUILD_ROOT
 /usr/lib/openchange/web/rpcproxy/rpcproxy/*
 
 %changelog
+* Wed Aug 9 2012 Jean Raby <jraby@inverse.ca> 1.0.prerelease
+- add missing log folder for ocsmanager
+
 * Wed Aug 1 2012 Jean Raby <jraby@inverse.ca> 1.0.prerelease
 - split openchange, ocsmanager and rpcproxy
 - use install -d instead of mkdir, for consistency

@@ -695,6 +695,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoRpc_MAPI_REPL(struct ndr_push *ndr, int 
 							NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
 						}
 						break; }
+					case op_MAPI_MoveFolder:
+					case op_MAPI_CopyFolder: {
+						/* ecDstNullObject requires the return of an additional uint32_t for DestHandleIndex */
+						if (r->error_code == ecDstNullObject) {
+							NDR_CHECK(ndr_push_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_push_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						break; }
 					default:
 						break;
 					}
@@ -725,6 +733,12 @@ enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags
 				NDR_CHECK(ndr_pull_MAPISTATUS(ndr, NDR_SCALARS, &r->error_code));
 				if ( r->error_code == MAPI_E_SUCCESS) {
 					NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+					if (r->opnum == op_MAPI_MoveFolder) {
+						r->u.mapi_MoveFolder.HasDestHandleIndex = false;
+					}
+					else if (r->opnum == op_MAPI_CopyFolder) {
+						r->u.mapi_CopyFolder.HasDestHandleIndex = false;
+					}
 					NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
 				} else {
 					switch (r->opnum) {
@@ -740,6 +754,28 @@ enum ndr_err_code ndr_pull_EcDoRpc_MAPI_REPL(struct ndr_pull *ndr, int ndr_flags
 							NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
 						}
 						break;}
+					case op_MAPI_MoveFolder: {
+						/* ecDstNullObject requires the return of an additional uint32_t for DestHandleIndex */
+						if (r->error_code == ecDstNullObject) {
+							r->u.mapi_MoveFolder.HasDestHandleIndex = true;
+							NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						else {
+							r->u.mapi_MoveFolder.HasDestHandleIndex = false;
+						}
+						break; }
+					case op_MAPI_CopyFolder: {
+						/* ecDstNullObject requires the return of an additional uint32_t for DestHandleIndex */
+						if (r->error_code == ecDstNullObject) {
+							r->u.mapi_CopyFolder.HasDestHandleIndex = true;
+							NDR_CHECK(ndr_pull_set_switch_value(ndr, &r->u, r->opnum));
+							NDR_CHECK(ndr_pull_EcDoRpc_MAPI_REPL_UNION(ndr, NDR_SCALARS, &r->u));
+						}
+						else {
+							r->u.mapi_CopyFolder.HasDestHandleIndex = false;
+						}
+						break; }
 					default:
 						break;
 					}
@@ -778,6 +814,14 @@ void ndr_print_EcDoRpc_MAPI_REPL(struct ndr_print *ndr, const char *name, const 
 				case op_MAPI_GetIDsFromNames: {
 					/* MAPI_W_ERRORS_RETURNED still enables the final array to be passed */
 					if (r->error_code == MAPI_W_ERRORS_RETURNED) {
+						ndr_print_set_switch_value(ndr, &r->u, r->opnum);
+						ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
+					}
+					break; }
+				case op_MAPI_MoveFolder:
+				case op_MAPI_CopyFolder: {
+					/* ecDstNullObject requires the return of an additional uint32_t for DestHandleIndex */
+					if (r->error_code == ecDstNullObject) {
 						ndr_print_set_switch_value(ndr, &r->u, r->opnum);
 						ndr_print_EcDoRpc_MAPI_REPL_UNION(ndr, "u", &r->u);
 					}
@@ -1743,6 +1787,119 @@ enum ndr_err_code ndr_push_Logon_req(struct ndr_push *ndr, int ndr_flags, const 
 	return NDR_ERR_SUCCESS;
 }
 
+/* MoveFolder */
+enum ndr_err_code ndr_push_MoveFolder_repl(struct ndr_push *ndr, int ndr_flags, const struct MoveFolder_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			if (r->HasDestHandleIndex) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->DestHandleIndex));
+			}
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->PartialCompletion));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_MoveFolder_repl(struct ndr_pull *ndr, int ndr_flags, struct MoveFolder_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			if (r->HasDestHandleIndex) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->DestHandleIndex));
+			}
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->PartialCompletion));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_MoveFolder_repl(struct ndr_print *ndr, const char *name, const struct MoveFolder_repl *r)
+{
+	ndr_print_struct(ndr, name, "MoveFolder_repl");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		if (r->HasDestHandleIndex) {
+			ndr_print_uint32(ndr, "DestHandleIndex", r->DestHandleIndex);
+		}
+		ndr_print_uint8(ndr, "PartialCompletion", r->PartialCompletion);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+/* /MoveFolder */
+
+/* CopyFolder */
+enum ndr_err_code ndr_push_CopyFolder_repl(struct ndr_push *ndr, int ndr_flags, const struct CopyFolder_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_push_align(ndr, 4));
+			if (r->HasDestHandleIndex) {
+				NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->DestHandleIndex));
+			}
+			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->PartialCompletion));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+enum ndr_err_code ndr_pull_CopyFolder_repl(struct ndr_pull *ndr, int ndr_flags, struct CopyFolder_repl *r)
+{
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		if (ndr_flags & NDR_SCALARS) {
+			NDR_CHECK(ndr_pull_align(ndr, 4));
+			if (r->HasDestHandleIndex) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->DestHandleIndex));
+			}
+			NDR_CHECK(ndr_pull_uint8(ndr, NDR_SCALARS, &r->PartialCompletion));
+		}
+		if (ndr_flags & NDR_BUFFERS) {
+		}
+		ndr->flags = _flags_save_STRUCT;
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+_PUBLIC_ void ndr_print_CopyFolder_repl(struct ndr_print *ndr, const char *name, const struct CopyFolder_repl *r)
+{
+	ndr_print_struct(ndr, name, "CopyFolder_repl");
+	if (r == NULL) { ndr_print_null(ndr); return; }
+	{
+		uint32_t _flags_save_STRUCT = ndr->flags;
+		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+		ndr->depth++;
+		if (r->HasDestHandleIndex) {
+			ndr_print_uint32(ndr, "DestHandleIndex", r->DestHandleIndex);
+		}
+		ndr_print_uint8(ndr, "PartialCompletion", r->PartialCompletion);
+		ndr->depth--;
+		ndr->flags = _flags_save_STRUCT;
+	}
+}
+/* /CopyFolder */
 
 _PUBLIC_ void ndr_print_SBinary_short(struct ndr_print *ndr, const char *name, const struct SBinary_short *r)
 {

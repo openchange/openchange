@@ -941,8 +941,18 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							    mapi_response->handles, &size);
 		        break;
 		/* op_MAPI_AbortSubmit: 0x34 */
-		/* op_MAPI_MoveFolder: 0x35 */
-		/* op_MAPI_CopyFolder: 0x36 */
+		case op_MAPI_MoveFolder: /* 0x35 */
+			retval = EcDoRpc_RopMoveFolder(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+		        break;
+		case op_MAPI_CopyFolder: /* 0x36 */
+			retval = EcDoRpc_RopCopyFolder(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+		        break;
 		/* op_MAPI_QueryColumnsAll: 0x37 */
 		/* op_MAPI_Abort: 0x38 */
 		case op_MAPI_CopyTo: /* 0x39 */

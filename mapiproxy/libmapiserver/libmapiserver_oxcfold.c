@@ -245,3 +245,51 @@ _PUBLIC_ uint16_t libmapiserver_RopMoveCopyMessages_size(struct EcDoRpc_MAPI_REP
 	size += SIZE_DFLT_ROPMOVECOPYMESSAGES;
 	return size;
 }
+
+/**
+   \details Calculate MoveFolder rop size
+
+   \param response pointer to the MoveFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of MoveFolder response
+ */
+uint16_t libmapiserver_RopMoveFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || (response->error_code && response->error_code != ecDstNullObject)) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPMOVEFOLDER;
+	if (response->error_code == ecDstNullObject) {
+		size += sizeof(uint32_t); /* DestHandleIndex */
+	}
+
+	return size;
+}
+
+/**
+   \details Calculate CopyFolder rop size
+
+   \param response pointer to the CopyFolder EcDoRpc_MAPI_REPL
+   structure
+
+   \return Size of CopyFolder response
+ */
+uint16_t libmapiserver_RopCopyFolder_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t        size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPCOPYFOLDER;
+	if (response->error_code == ecDstNullObject) {
+		size += sizeof(uint32_t); /* DestHandleIndex */
+	}
+
+	return size;
+}

@@ -1031,3 +1031,82 @@ end:
 
 	return MAPI_E_SUCCESS;
 }
+
+
+/**
+   \details EcDoRpc EmptyFolder (0x58) Rop. This operation removes the sub-folders
+   and messages from a given parent folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the EmptyFolder EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the EmptyFolder EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35) - stub\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+
+	/* TODO effective work here */
+
+	*size += libmapiserver_RopMoveFolder_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc EmptyFolder (0x58) Rop. This operation removes the sub-folders
+   and messages from a given parent folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the EmptyFolder EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the EmptyFolder EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
+{
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x35) - stub\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+
+	/* TODO effective work here */
+
+	*size += libmapiserver_RopCopyFolder_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}

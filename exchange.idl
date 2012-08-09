@@ -2572,7 +2572,9 @@ System Attendant Private Interface
 		[switch_is(UseUnicode)] Folder_name	NewFolderName;
 	} MoveFolder_req;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
+		boolean8				HasDestHandleIndex;
+		uint32					DestHandleIndex;
 		boolean8				PartialCompletion;
 	} MoveFolder_repl;
 
@@ -2587,7 +2589,9 @@ System Attendant Private Interface
 		[switch_is(UseUnicode)] Folder_name	NewFolderName;
 	} CopyFolder_req;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
+		boolean8				HasDestHandleIndex;
+		uint32					DestHandleIndex;
 		boolean8				PartialCompletion;
 	} CopyFolder_repl;
 

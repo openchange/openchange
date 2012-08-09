@@ -1455,7 +1455,8 @@ size_t set_ExtendedException_size(uint32_t WriterVersion2, enum OverrideFlags fl
         return size;
 }
 
-#warning the get_XXX NDR wrapper should be normalized
+/* TODO: the get_XXX NDR wrapper should be normalized */
+
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob
 

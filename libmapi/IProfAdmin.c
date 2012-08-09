@@ -754,14 +754,11 @@ _PUBLIC_ enum MAPISTATUS LoadProfile(struct mapi_context *mapi_ctx,
 				     struct mapi_profile *profile)
 {
 	enum credentials_use_kerberos use_krb = CRED_AUTO_USE_KERBEROS;
-	TALLOC_CTX *mem_ctx;
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapi_ctx->session, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!profile, MAPI_E_INVALID_PARAMETER, NULL);
-
-	mem_ctx = mapi_ctx->mem_ctx;
 
 	profile->credentials = cli_credentials_init(profile);
 	OPENCHANGE_RETVAL_IF(!profile->credentials, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);

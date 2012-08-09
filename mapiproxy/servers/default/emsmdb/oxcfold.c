@@ -1050,6 +1050,17 @@ end:
  */
 enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
+	uint32_t		handle;
+	struct mapi_handles	*handle_object;
+	void			*private_data;
+	struct MoveFolder_req	*request;
+	struct MoveFolder_repl	*response;
+	struct emsmdbp_object	*source_parent;
+	struct emsmdbp_object	*dest_parent;
+	uint32_t		contextID;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35) - stub\n"));
 
 	/* Sanity checks */
@@ -1061,10 +1072,55 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	/* TODO effective work here */
+	request = &mapi_req->u.mapi_MoveFolder;
+	response = &mapi_repl->u.mapi_MoveFolder;
 
+	/* Retrieve the source parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        source_parent = private_data;
+	if (!source_parent || source_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Retrieve the destination parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        dest_parent = private_data;
+	if (!dest_parent || dest_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(source_parent) || !emsmdbp_is_mapistore(dest_parent)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
+	contextID = emsmdbp_get_contextID(dest_parent);
+	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, dest_parent->backend_object, source_parent->backend_object, request->FolderId, request->NewFolderName.lpszW);
+	mapi_repl->error_code = mapistore_error_to_mapi(ret);
+	response->PartialCompletion = false;
+
+end:
 	*size += libmapiserver_RopMoveFolder_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
@@ -1089,6 +1145,17 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
  */
 enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
 {
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
+	uint32_t		handle;
+	struct mapi_handles	*handle_object;
+	void			*private_data;
+	struct CopyFolder_req	*request;
+	struct CopyFolder_repl	*response;
+	struct emsmdbp_object	*source_parent;
+	struct emsmdbp_object	*dest_parent;
+	uint32_t		contextID;
+
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x35) - stub\n"));
 
 	/* Sanity checks */
@@ -1100,10 +1167,55 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
-	mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
 
-	/* TODO effective work here */
+	request = &mapi_req->u.mapi_CopyFolder;
+	response = &mapi_repl->u.mapi_CopyFolder;
 
+	/* Retrieve the source parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        source_parent = private_data;
+	if (!source_parent || source_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Retrieve the destination parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        dest_parent = private_data;
+	if (!dest_parent || dest_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(source_parent) || !emsmdbp_is_mapistore(dest_parent)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
+	contextID = emsmdbp_get_contextID(dest_parent);
+	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, dest_parent->backend_object, source_parent->backend_object, request->FolderId, request->WantRecursive, request->NewFolderName.lpszW);
+	mapi_repl->error_code = mapistore_error_to_mapi(ret);
+	response->PartialCompletion = false;
+
+end:
 	*size += libmapiserver_RopCopyFolder_size(mapi_repl);
 
 	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];

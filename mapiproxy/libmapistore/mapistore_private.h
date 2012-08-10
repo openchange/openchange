@@ -195,6 +195,7 @@ enum mapistore_error mapistore_backend_table_get_row(struct backend_context *, v
 enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *, void *, enum mapistore_query_type, uint32_t *);
 enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_context *, void *, uint32_t);
 
+enum mapistore_error mapistore_backend_properties_get_uri(struct backend_context *, void *, TALLOC_CTX *, char **);
 enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_backend_properties_get_properties(struct backend_context *, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_backend_properties_set_properties(struct backend_context *, void *, struct SRow *);

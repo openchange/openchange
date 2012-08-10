@@ -216,6 +216,7 @@ struct mapistore_backend {
 
         /** oxcprpt operations */
         struct {
+                enum mapistore_error	(*get_uri)(void *, TALLOC_CTX *, char **);
                 enum mapistore_error	(*get_available_properties)(void *, TALLOC_CTX *, struct SPropTagArray **);
                 enum mapistore_error	(*get_properties)(void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 enum mapistore_error	(*set_properties)(void *, struct SRow *);
@@ -341,6 +342,7 @@ enum mapistore_error mapistore_table_get_row(struct mapistore_context *, uint32_
 enum mapistore_error mapistore_table_get_row_count(struct mapistore_context *, uint32_t, void *, enum mapistore_query_type, uint32_t *);
 enum mapistore_error mapistore_table_handle_destructor(struct mapistore_context *, uint32_t, void *, uint32_t);
 
+enum mapistore_error mapistore_properties_get_uri(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, char **);
 enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
@@ -370,6 +372,7 @@ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context 
 enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
+enum mapistore_error mapistore_indexing_record_update_uri(struct mapistore_context *, uint32_t, const char *, uint64_t, const char *, bool);
 
 /* definitions from mapistore_replica_mapping.c */
 enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *, const char *, struct replica_mapping_context_list **);

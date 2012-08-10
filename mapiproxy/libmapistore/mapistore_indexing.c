@@ -265,7 +265,7 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 
 	/* Retrieve the mapistore URI given context_id and fmid */
 	mapistore_backend_get_path(backend_ctx, NULL, fmid, &mapistore_URI);
-	DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI));
+	/* DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI)); */
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
 
 	/* Add the record given its fid and mapistore_uri */
@@ -644,4 +644,94 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore
 								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags);
+}
+
+/**
+   \details Update a record URI (as well as its children), after a move operation
+
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the indexing database to update
+   \param fmid the fmid to update
+   \param update_children indicates whether children records (if the parent is a folder) should be updated too
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static int tdb_update_prefix_traverse(struct tdb_context *tdb_ctx, TDB_DATA key, TDB_DATA value, void *data)
+{
+	char		**prefixes;
+	char		*new_uri, *suffix;
+	TDB_DATA	new_value;
+	size_t		old_len;
+	TALLOC_CTX	*mem_ctx;
+
+	prefixes = data;
+
+	if (strncmp((char *) value.dptr, prefixes[0], value.dsize) == 0) {
+		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		old_len = strlen(prefixes[0]);
+		suffix = talloc_strndup(mem_ctx, ((char *) value.dptr + old_len), value.dsize - old_len);
+		new_uri = talloc_asprintf(mem_ctx, "%s%s", prefixes[1], suffix);
+		new_value.dptr = (unsigned char *) new_uri;
+		new_value.dsize = strlen(new_uri);
+		tdb_store(tdb_ctx, key, new_value, TDB_MODIFY);
+		talloc_free(mem_ctx);
+	}
+
+	return 0;
+}
+
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_update_uri(struct mapistore_context *mstore_ctx, uint32_t context_id, const char *username, uint64_t fmid, const char *new_uri, bool update_children)
+{
+	enum mapistore_error		ret;
+	TALLOC_CTX			*mem_ctx;
+	struct indexing_context_list	*ictx;
+	const char			*prefixes[2]; /* order: old_prefix, new_prefix */
+	size_t				old_len, new_len;
+	TDB_DATA			key;
+	TDB_DATA			dbuf;
+
+	/* SANITY checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	/* setup indexing context vars */
+	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
+
+	/* fetch the old URI */
+	key.dptr = (unsigned char *) talloc_asprintf(mem_ctx, "0x%.16"PRIx64, fmid);
+	key.dsize = strlen((const char *) key.dptr);
+
+	dbuf = tdb_fetch(ictx->index_ctx->tdb, key);
+	prefixes[0] = talloc_strndup(mem_ctx, (const char *) dbuf.dptr, dbuf.dsize);
+
+	/* Update the record given its fid and mapistore_uri */
+	dbuf.dptr = (unsigned char *) talloc_strdup(mem_ctx, new_uri);
+	new_len = strlen(new_uri);
+	dbuf.dsize = new_len;
+	ret = tdb_store(ictx->index_ctx->tdb, key, dbuf, TDB_MODIFY);
+
+	/* update the children entries if requested */
+	if (update_children) {
+		/* ensure prefixes end with a '/' */
+		old_len = strlen(prefixes[0]);
+		if (prefixes[0][old_len-1] != '/') {
+			prefixes[0] = talloc_asprintf(mem_ctx, "%s/", prefixes[0]);
+		}
+
+		prefixes[1] = new_uri;
+		if (prefixes[1][new_len-1] != '/') {
+			prefixes[1] = talloc_asprintf(mem_ctx, "%s/", prefixes[1]);
+		}
+
+		tdb_transaction_start(ictx->index_ctx->tdb);
+		tdb_traverse(ictx->index_ctx->tdb, tdb_update_prefix_traverse, prefixes);
+		tdb_transaction_commit(ictx->index_ctx->tdb);
+	}
+
+end:
+	talloc_free(mem_ctx);
+
+	return ret;
 }

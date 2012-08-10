@@ -1058,7 +1058,8 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct MoveFolder_req	*request;
 	struct MoveFolder_repl	*response;
 	struct emsmdbp_object	*source_parent;
-	struct emsmdbp_object	*dest_parent;
+	struct emsmdbp_object	*move_folder;
+	struct emsmdbp_object	*target_folder;
 	uint32_t		contextID;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35)\n"));
@@ -1093,6 +1094,18 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		goto end;
 	}
 
+	/* Open the folder being moved as it will be the actor object in this process */
+	ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, source_parent, request->FolderId, &move_folder);
+	if (ret != MAPISTORE_SUCCESS) {
+		mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		goto end;
+	}
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(move_folder)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
 	/* Retrieve the destination parent handle in the hierarchy */
 	handle = handles[request->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
@@ -1102,21 +1115,19 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		goto end;
 	}
 	mapi_handles_get_private_data(handle_object, &private_data);
-        dest_parent = private_data;
-	if (!dest_parent || dest_parent->type != EMSMDBP_OBJECT_FOLDER) {
+        target_folder = private_data;
+	if (!target_folder || target_folder->type != EMSMDBP_OBJECT_FOLDER) {
 		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
-	
-	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
-	if (!emsmdbp_is_mapistore(source_parent) || !emsmdbp_is_mapistore(dest_parent)) {
+	if (!emsmdbp_is_mapistore(target_folder)) {
 		mapi_repl->error_code = MAPI_E_NO_ACCESS;
 		goto end;
 	}
 
-	contextID = emsmdbp_get_contextID(dest_parent);
-	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, dest_parent->backend_object, source_parent->backend_object, request->FolderId, request->NewFolderName.lpszW);
+	contextID = emsmdbp_get_contextID(target_folder);
+	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, request->NewFolderName.lpszW);
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 
@@ -1153,7 +1164,8 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct CopyFolder_req	*request;
 	struct CopyFolder_repl	*response;
 	struct emsmdbp_object	*source_parent;
-	struct emsmdbp_object	*dest_parent;
+	struct emsmdbp_object	*copy_folder;
+	struct emsmdbp_object	*target_folder;
 	uint32_t		contextID;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x36)\n"));
@@ -1188,6 +1200,18 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		goto end;
 	}
 
+	/* Open the folder being copied as it will be the actor object in this process */
+	ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, source_parent, request->FolderId, &copy_folder);
+	if (ret != MAPISTORE_SUCCESS) {
+		mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		goto end;
+	}
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(copy_folder)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
 	/* Retrieve the destination parent handle in the hierarchy */
 	handle = handles[request->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
@@ -1197,21 +1221,19 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		goto end;
 	}
 	mapi_handles_get_private_data(handle_object, &private_data);
-        dest_parent = private_data;
-	if (!dest_parent || dest_parent->type != EMSMDBP_OBJECT_FOLDER) {
+        target_folder = private_data;
+	if (!target_folder || target_folder->type != EMSMDBP_OBJECT_FOLDER) {
 		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
-	
-	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
-	if (!emsmdbp_is_mapistore(source_parent) || !emsmdbp_is_mapistore(dest_parent)) {
+	if (!emsmdbp_is_mapistore(target_folder)) {
 		mapi_repl->error_code = MAPI_E_NO_ACCESS;
 		goto end;
 	}
-
-	contextID = emsmdbp_get_contextID(dest_parent);
-	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, dest_parent->backend_object, source_parent->backend_object, request->FolderId, request->WantRecursive, request->NewFolderName.lpszW);
+	
+	contextID = emsmdbp_get_contextID(copy_folder);
+	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, copy_folder->backend_object, target_folder->backend_object, request->WantRecursive, request->NewFolderName.lpszW);
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 

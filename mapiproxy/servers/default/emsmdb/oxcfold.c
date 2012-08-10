@@ -1059,6 +1059,7 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct MoveFolder_repl	*response;
 	struct emsmdbp_object	*source_parent;
 	struct emsmdbp_object	*move_folder;
+	char			*source_uri, *target_uri, *new_uri, *move_folder_name, *slash;
 	struct emsmdbp_object	*target_folder;
 	uint32_t		contextID;
 
@@ -1127,7 +1128,29 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	}
 
 	contextID = emsmdbp_get_contextID(target_folder);
+
+	move_folder_name = request->NewFolderName.lpszW;
+	if (move_folder_name == NULL || *move_folder_name == 0) {
+		ret = mapistore_properties_get_uri(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, mem_ctx, &source_uri);
+		slash = strchr(source_uri, '/');
+		if (slash == (source_uri + strlen(source_uri) - 1)) {
+			*slash = 0;
+			slash = strchr(source_uri, '/');
+		}
+		move_folder_name = talloc_strdup(mem_ctx, slash + 1);
+	}
+
+	ret = mapistore_properties_get_uri(emsmdbp_ctx->mstore_ctx, contextID, target_folder->backend_object, mem_ctx, &target_uri);
+	if (*(target_uri + strlen(target_uri) - 1) != '/') {
+		target_uri = talloc_asprintf(mem_ctx, "%s/", target_uri);
+	}
+	new_uri = talloc_asprintf(mem_ctx, "%s%s", target_uri, move_folder_name);
+
 	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, request->NewFolderName.lpszW);
+	if (ret == MAPISTORE_SUCCESS) {
+		mapistore_indexing_record_update_uri(emsmdbp_ctx->mstore_ctx, contextID, emsmdbp_get_owner(move_folder), request->FolderId, new_uri, true);
+	}
+
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 

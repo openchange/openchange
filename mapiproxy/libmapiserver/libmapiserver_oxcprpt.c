@@ -493,6 +493,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
 		break;
 	case PT_BINARY:
+	case PT_SVREID:
                 /* PropertyRow expect a 16 bit header for BLOB in RopQueryRows and RopGetPropertiesSpecific */
 		bin.cb = ((struct Binary_r *) value)->cb;
 		bin.lpb = ((struct Binary_r *) value)->lpb;

@@ -217,7 +217,7 @@ install -m 644 mapiproxy/services/ocsmanager/ocsmanager-apache.conf $RPM_BUILD_R
 install -d $RPM_BUILD_ROOT/etc/init.d
 install -m 755 %{_sourcedir}/openchange-ocsmanager.init $RPM_BUILD_ROOT/etc/init.d/openchange-ocsmanager
 
-install -d $RPM_BUILD_ROOT/var/log/ocsmanager
+install -d -m 750 $RPM_BUILD_ROOT/var/log/ocsmanager
 
 # used by ocsmanager and rpcproxy
 install -d -m 700 -o apache -g apache $RPM_BUILD_ROOT/var/cache/ntlmauthhandler

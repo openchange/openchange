@@ -216,7 +216,6 @@ struct mapistore_backend {
 
         /** oxcprpt operations */
         struct {
-                enum mapistore_error	(*get_uri)(void *, TALLOC_CTX *, char **);
                 enum mapistore_error	(*get_available_properties)(void *, TALLOC_CTX *, struct SPropTagArray **);
                 enum mapistore_error	(*get_properties)(void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 enum mapistore_error	(*set_properties)(void *, struct SRow *);
@@ -342,7 +341,6 @@ enum mapistore_error mapistore_table_get_row(struct mapistore_context *, uint32_
 enum mapistore_error mapistore_table_get_row_count(struct mapistore_context *, uint32_t, void *, enum mapistore_query_type, uint32_t *);
 enum mapistore_error mapistore_table_handle_destructor(struct mapistore_context *, uint32_t, void *, uint32_t);
 
-enum mapistore_error mapistore_properties_get_uri(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, char **);
 enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);

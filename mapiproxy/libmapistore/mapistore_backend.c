@@ -730,11 +730,6 @@ enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_co
         return bctx->backend->table.handle_destructor(table, handle_id);
 }
 
-enum mapistore_error mapistore_backend_properties_get_uri(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, char **uri_p)
-{
-        return bctx->backend->properties.get_uri(table, mem_ctx, uri_p);
-}
-
 enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
         return bctx->backend->properties.get_available_properties(object, mem_ctx, propertiesp);

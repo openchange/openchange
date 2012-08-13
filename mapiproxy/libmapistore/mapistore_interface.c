@@ -1686,21 +1686,6 @@ _PUBLIC_ enum mapistore_error mapistore_table_handle_destructor(struct mapistore
 	return mapistore_backend_table_handle_destructor(backend_ctx, table, handle_id);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_properties_get_uri(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, char **uri_p)
-{
-	struct backend_context	*backend_ctx;
-
-	/* Sanity checks */
-	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
-
-	/* Step 1. Search the context */
-	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Step 2. Call backend operation */
-	return mapistore_backend_properties_get_uri(backend_ctx, object, mem_ctx, uri_p);
-}
-
 _PUBLIC_ enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
 	struct backend_context	*backend_ctx;

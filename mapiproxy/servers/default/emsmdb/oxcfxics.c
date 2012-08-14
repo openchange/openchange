@@ -1833,6 +1833,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	struct SyncImportHierarchyChange_req	*request;
 	struct SyncImportHierarchyChange_repl	*response;
 	char					*owner;
+	const char				*new_folder_name;
 	uint64_t				parentFolderID;
 	uint64_t				folderID, cn;
 	struct GUID				replica_guid;
@@ -1931,11 +1932,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 
 	if (folder_object->parent_object->object.folder->folderID != parent_folder->object.folder->folderID) {
 		/* a move was requested */
-		if (!emsmdbp_is_mapistore(parent_folder) || !emsmdbp_is_mapistore(folder_object)) {
-			mapi_repl->error_code = MAPI_E_NO_ACCESS;
-			goto end;
-		}
-		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, parent_folder->backend_object, NULL);
+		new_folder_name = find_SPropValue_data(&aRow, PidTagDisplayName);
+		ret = emsmdbp_folder_move_folder(emsmdbp_ctx, folder_object, parent_folder, new_folder_name);
 		if (ret != MAPISTORE_SUCCESS) {
 			mapi_repl->error_code = mapistore_error_to_mapi(ret);
 			goto end;

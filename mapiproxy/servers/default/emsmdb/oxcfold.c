@@ -1060,7 +1060,6 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct emsmdbp_object	*source_parent;
 	struct emsmdbp_object	*move_folder;
 	struct emsmdbp_object	*target_folder;
-	uint32_t		contextID;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35)\n"));
 
@@ -1100,11 +1099,6 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		mapi_repl->error_code = mapistore_error_to_mapi(ret);
 		goto end;
 	}
-	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
-	if (!emsmdbp_is_mapistore(move_folder)) {
-		mapi_repl->error_code = MAPI_E_NO_ACCESS;
-		goto end;
-	}
 
 	/* Retrieve the destination parent handle in the hierarchy */
 	handle = handles[request->handle_idx];
@@ -1121,14 +1115,8 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
-	if (!emsmdbp_is_mapistore(target_folder)) {
-		mapi_repl->error_code = MAPI_E_NO_ACCESS;
-		goto end;
-	}
 
-	contextID = emsmdbp_get_contextID(target_folder);
-
-	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, request->NewFolderName.lpszW);
+	ret = emsmdbp_folder_move_folder(emsmdbp_ctx, move_folder, target_folder, request->NewFolderName.lpszW);
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 

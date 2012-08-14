@@ -1161,6 +1161,23 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	return retval;
 }
 
+_PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, const char *new_name)
+{
+	enum mapistore_error	ret;
+	uint32_t		contextID;
+
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(move_folder) || !emsmdbp_is_mapistore(target_folder)) {
+		return MAPISTORE_ERR_DENIED;
+	}
+
+	contextID = emsmdbp_get_contextID(target_folder);
+
+	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, new_name);
+
+	return ret;
+}
+
 _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
 {
 	enum mapistore_error	ret;

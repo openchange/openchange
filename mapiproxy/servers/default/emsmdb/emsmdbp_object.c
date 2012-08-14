@@ -1164,16 +1164,33 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, const char *new_name)
 {
 	enum mapistore_error	ret;
+	enum MAPISTATUS		retval;
 	uint32_t		contextID;
+	bool			is_special;
 
 	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
 	if (!emsmdbp_is_mapistore(move_folder) || !emsmdbp_is_mapistore(target_folder)) {
 		return MAPISTORE_ERR_DENIED;
 	}
 
+	/* we check whether the folder is a special folder that cannot be moved */
+	if (move_folder->object.folder->mapistore_root) {
+		retval = openchangedb_is_special_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID, &is_special);
+		if (retval != MAPI_E_SUCCESS) {
+			return MAPISTORE_ERROR;
+		}
+		if (is_special) {
+			return MAPISTORE_ERR_DENIED;
+		}
+	}
+
 	contextID = emsmdbp_get_contextID(target_folder);
 
 	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, new_name);
+	if (move_folder->object.folder->mapistore_root) {
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID);
+		DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
+	}
 
 	return ret;
 }

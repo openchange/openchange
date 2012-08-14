@@ -1166,30 +1166,53 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	enum mapistore_error	ret;
 	enum MAPISTATUS		retval;
 	uint32_t		contextID;
-	bool			is_special;
+	int			system_idx;
+	bool			is_top_of_IS, is_special;
 
 	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
-	if (!emsmdbp_is_mapistore(move_folder) || !emsmdbp_is_mapistore(target_folder)) {
+	if (!emsmdbp_is_mapistore(move_folder)) {
 		return MAPISTORE_ERR_DENIED;
+	}
+
+	if (!emsmdbp_is_mapistore(target_folder)) {
+		/* TODO: converting a non-mapistore root object to one is not trivial but should be implemented one day. */
+		return MAPISTORE_ERR_DENIED;
+
+		/* target is the "Top of Information Store" ? */
+		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, target_folder->object.folder->folderID, &system_idx);
+		if (retval != MAPI_E_SUCCESS) {
+			return MAPISTORE_ERROR;
+		}
+		is_top_of_IS = (system_idx == EMSMDBP_TOP_INFORMATION_STORE);
+		if (!is_top_of_IS) {
+			return MAPISTORE_ERR_DENIED;
+		}
+	}
+	else {
+		is_top_of_IS = false;
 	}
 
 	/* we check whether the folder is a special folder that cannot be moved */
 	if (move_folder->object.folder->mapistore_root) {
-		retval = openchangedb_is_special_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID, &is_special);
+		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID, &system_idx);
 		if (retval != MAPI_E_SUCCESS) {
 			return MAPISTORE_ERROR;
 		}
+		is_special = (system_idx != -1);
 		if (is_special) {
 			return MAPISTORE_ERR_DENIED;
 		}
 	}
 
-	contextID = emsmdbp_get_contextID(target_folder);
-
+	contextID = emsmdbp_get_contextID(move_folder);
 	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, new_name);
 	if (move_folder->object.folder->mapistore_root) {
 		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID);
 		DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
+	}
+
+	if (is_top_of_IS) {
+		/* pass */
 	}
 
 	return ret;

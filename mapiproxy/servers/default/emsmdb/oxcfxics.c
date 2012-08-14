@@ -1825,6 +1825,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 							      uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS				retval;
+	enum mapistore_error			ret;
 	struct mapi_handles			*synccontext_object_handle = NULL;
 	struct emsmdbp_object			*synccontext_object = NULL, *folder_object = NULL, *parent_folder = NULL;
 	uint32_t				synccontext_handle_id;
@@ -1908,7 +1909,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		folder_was_open = false;
 	}
 
-	if (emsmdbp_object_open_folder(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
+	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
@@ -1924,6 +1925,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 			mapi_repl->error_code = retval;
 			DEBUG(5, (__location__": folder creation failed\n"));
 			folder_object = NULL;
+			goto end;
+		}
+	}
+
+	if (folder_object->parent_object->object.folder->folderID != parent_folder->object.folder->folderID) {
+		/* a move was requested */
+		if (!emsmdbp_is_mapistore(parent_folder) || !emsmdbp_is_mapistore(folder_object)) {
+			mapi_repl->error_code = MAPI_E_NO_ACCESS;
+			goto end;
+		}
+		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, parent_folder->backend_object, NULL);
+		if (ret != MAPISTORE_SUCCESS) {
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
 			goto end;
 		}
 	}

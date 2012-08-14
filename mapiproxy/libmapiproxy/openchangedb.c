@@ -1918,3 +1918,34 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *ldb_
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Test whether a folder entry is a "special folder"
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the folder identifier to use for the search
+   \param RowCount pointer to the returned number of results
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_is_special_folder(struct ldb_context *ldb_ctx, uint64_t fid, bool *is_special_p)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "SystemIdx", NULL };
+	int			ret;
+	int			system_idx;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	system_idx = ldb_msg_find_attr_as_int(res->msgs[0], "SystemIdx", -1);
+	*is_special_p = (system_idx != -1);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}

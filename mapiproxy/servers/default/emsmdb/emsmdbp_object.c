@@ -1208,7 +1208,9 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, new_name);
 	if (move_folder->object.folder->mapistore_root) {
 		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID);
-		DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
+		if (retval) {
+			DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
+		}
 	}
 
 	if (is_top_of_IS) {

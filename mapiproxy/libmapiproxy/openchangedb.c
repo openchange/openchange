@@ -400,6 +400,56 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 }
 
 /**
+   \details Store the mapistore URI associated to a mailbox system
+   folder.
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the Folder identifier to search for
+   \param mapistoreURL pointer on pointer to the mapistore URI the
+   function returns
+   \param owner pointer on pointer to the owner of the parent mailbox
+   \param mailboxstore boolean value which defines whether the record
+   has to be searched within Public folders hierarchy or not
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct ldb_context *ldb_ctx,
+						       uint64_t fid,
+						       const char *mapistoreURL,
+						       bool mailboxstore)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+
+	if (mailboxstore == true) {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+	} else {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+	}
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_string(msg, "MAPIStoreURI", mapistoreURL);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
    \details Retrieve the parent fid associated to a mailbox system
    folder.
 

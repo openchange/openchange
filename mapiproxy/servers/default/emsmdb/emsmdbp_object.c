@@ -2572,10 +2572,14 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 /* TODO: handling of "property problems" */
 _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SRow *rowp)
 {
+	TALLOC_CTX		*mem_ctx;
 	uint32_t		contextID, new_cvalues;
+	char			*mapistore_uri, *new_uri;
+	size_t			mapistore_uri_len, new_uri_len;
 	bool			mapistore;
 	enum mapistore_error	ret;
 	struct SRow		*postponed_props;
+	bool			soft_deleted;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return MAPI_E_CALL_FAILED;
@@ -2613,9 +2617,38 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	 * dispatcher db, not mapistore */
 	if (object->type == EMSMDBP_OBJECT_FOLDER
 	    && object->object.folder->mapistore_root == true) {
+		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		mapistore_uri = NULL;
+		openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.folder->folderID, &mapistore_uri, true);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);
 		contextID = emsmdbp_get_contextID(object);
 		mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, rowp);
+		/* if the display name of a resource has changed, some backends may have modified the folder uri and we need to update the openchangedb record accordingly */
+		if (mapistore_uri) {
+			new_uri = NULL;
+			mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, object->object.folder->folderID, &new_uri, &soft_deleted);
+			if (new_uri) {
+				mapistore_uri_len = strlen(mapistore_uri);
+				new_uri_len = strlen(new_uri);
+				/* handling of the final '/' */
+				if (mapistore_uri[mapistore_uri_len-1] == '/') {
+					if (new_uri[new_uri_len-1] != '/') {
+						new_uri = talloc_asprintf(mem_ctx, "%s/", new_uri);
+						new_uri_len++;
+					}
+				}
+				else {
+					if (new_uri[new_uri_len-1] == '/') {
+						new_uri[new_uri_len-1] = 0;
+						new_uri_len--;
+					}
+				}
+				if (strcmp(mapistore_uri, new_uri) != 0) {
+					openchangedb_set_mapistoreURI(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, new_uri, true);
+				}
+			}
+		}
+		talloc_free(mem_ctx);
 	}
 	else {
 		contextID = emsmdbp_get_contextID(object);

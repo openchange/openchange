@@ -731,7 +731,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object, struct SPropTagArray *excluded_tags)
 {
 	TALLOC_CTX		*mem_ctx;
-	bool			*properties_exclusion;
+	bool			properties_exclusion[65536];
 	struct SPropTagArray	*properties, *needed_properties;
         void                    **data_pointers;
         enum MAPISTATUS         *retvals = NULL;
@@ -747,7 +747,6 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	}
 
 	/* 1. Exclusions */
-	properties_exclusion = talloc_array(mem_ctx, bool, 65536);
 	memset(properties_exclusion, 0, 65536 * sizeof(bool));
 
 	/* 1a. Explicit exclusions */
@@ -760,6 +759,9 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	properties_exclusion[(uint16_t) (PidTagSourceKey >> 16)] = true;
 	properties_exclusion[(uint16_t) (PidTagParentSourceKey >> 16)] = true;
 	properties_exclusion[(uint16_t) (PidTagParentFolderId >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagChangeNumber >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagChangeKey >> 16)] = true;	
+	properties_exclusion[(uint16_t) (PidTagPredecessorChangeList >> 16)] = true;	
 
 	/* 1b. Request exclusions */
 	if (excluded_tags != NULL) {

@@ -751,15 +751,15 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	memset(properties_exclusion, 0, 65536 * sizeof(bool));
 
 	/* 1a. Explicit exclusions */
-	properties_exclusion[(uint16_t) (PR_ROW_TYPE >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_INSTANCE_KEY >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_INSTANCE_NUM >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_INST_ID >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_FID >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_MID >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_SOURCE_KEY >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_PARENT_SOURCE_KEY >> 16)] = true;
-	properties_exclusion[(uint16_t) (PR_PARENT_FID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagRowType >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstanceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstanceNum >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagInstID >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagFolderId >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagMid >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagSourceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagParentSourceKey >> 16)] = true;
+	properties_exclusion[(uint16_t) (PidTagParentFolderId >> 16)] = true;
 
 	/* 1b. Request exclusions */
 	if (excluded_tags != NULL) {

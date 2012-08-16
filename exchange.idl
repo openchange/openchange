@@ -235,7 +235,7 @@ System Attendant Private Interface
 		MID_CURRENT		= 0x1
 	} NSPI_MID;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef struct {
 		TableSortOrders	SortType;
 		uint32		ContainerID;
 		NSPI_MID	CurrentRec;
@@ -318,7 +318,7 @@ System Attendant Private Interface
 		[size_is(cValues)] Binary_r	*lpbin;
 	} BinaryArray_r;
 
-	typedef [flag(NDR_NOALIGN)] struct {
+	typedef struct {
 		[range(0,100000)]uint32		cValues;
 		[size_is(cValues)] FlatUID_r	**lpguid; 
 	} FlatUIDArray_r;

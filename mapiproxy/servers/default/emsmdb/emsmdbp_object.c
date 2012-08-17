@@ -290,9 +290,14 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PidTagChangeNumber);
 	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parent_fid, fid, value->value.d, mapistore_uri, -1);
 	if (retval != MAPI_E_SUCCESS) {
-		ret = MAPISTORE_ERR_NOT_FOUND;
+		if (retval == MAPI_E_COLLISION) {
+			ret = MAPISTORE_ERR_EXIST;
+		}
+		else {
+			ret = MAPISTORE_ERR_NOT_FOUND;
+		}
 		DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
-		abort();
+		goto end;
 	}
 
 	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);

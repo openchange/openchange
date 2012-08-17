@@ -1859,6 +1859,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	char			*parentDN;
 	struct ldb_dn		*basedn;
 	struct ldb_message	*msg;
+	int			error;
 	NTTIME			now;
 
 	/* Sanity Checks */
@@ -1919,11 +1920,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		retval = MAPI_E_CALL_FAILED;
-	}
-	else {
+	error = ldb_add(ldb_ctx, msg);
+	switch (error) {
+	case 0:
 		retval = MAPI_E_SUCCESS;
+		break;
+	case 68:
+		retval = MAPI_E_COLLISION;
+		break;
+	default:
+		retval = MAPI_E_CALL_FAILED;
 	}
 
 	talloc_free(mem_ctx);

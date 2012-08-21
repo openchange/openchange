@@ -1558,6 +1558,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	else {						/* keyword: folderChange */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagParentFolderId); /* PidTagParentSourceKey */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagFolderId); /* PidTagSourceKey */
+		SPropTagArray_add(synccontext, &synccontext->properties, PidTagRights);
+		SPropTagArray_add(synccontext, &synccontext->properties, PidTagAccessLevel);
 		properties_exclusion[PidTagMessageClass >> 16] = false;
 	}
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagChangeNumber);
@@ -1600,6 +1602,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	}
 
 	/* we instantiate a table object that will help us retrieve the list of available properties */
+	/* FIXME: the table_get_available_properties operations should actually be replaced with per-object requests, since not all message/folder types return the same available properties */
 	if (!include_props) {
 		if (synccontext->request.contents_mode) {
 			if (synccontext->request.normal) {

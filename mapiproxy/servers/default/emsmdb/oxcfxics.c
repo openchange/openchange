@@ -1757,6 +1757,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	/* The type of messages handled in the collector contexts must be specified in order for the transfer state operations to work properly */
+	if (request->ImportFlag & ImportFlag_Associated) {
+		synccontext_object->object.synccontext->request.fai = true;
+	}
+	else {
+		synccontext_object->object.synccontext->request.normal = true;
+	}
+
 	folderID = synccontext_object->parent_object->object.folder->folderID;
 	owner = emsmdbp_get_owner(synccontext_object);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, &repl_id, &replica_guid);

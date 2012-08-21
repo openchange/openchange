@@ -34,6 +34,8 @@
 
 extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
 
+const char *openchangedb_nil_string = "<nil>";
+
 /**
    \details Retrieve the mailbox FolderID for given recipient from
    openchange dispatcher database
@@ -878,11 +880,12 @@ static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *s
 			tmp[i - current] = 0;
 			i++;
 
-			bin_array->lpbin[j].lpb = (uint8_t *) tmp;
-			if (*tmp) {
+			if (tmp[0] != 0 && strcmp(tmp, openchangedb_nil_string) != 0) {
+				bin_array->lpbin[j].lpb = (uint8_t *) tmp;
 				bin_array->lpbin[j].cb = ldb_base64_decode((char *) bin_array->lpbin[j].lpb);
 			}
 			else {
+				bin_array->lpbin[j].lpb = talloc_zero(bin_array, uint8_t);
 				bin_array->lpbin[j].cb = 0;
 			}
 		}
@@ -1017,8 +1020,14 @@ void *openchangedb_get_property_data_message(TALLOC_CTX *mem_ctx,
 	case PT_BINARY:
 		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, 0x0);
 		bin = talloc_zero(mem_ctx, struct Binary_r);
-		bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
-		bin->cb = ldb_base64_decode((char *) bin->lpb);
+		if (strcmp(str, openchangedb_nil_string) == 0) {
+			bin->lpb = (uint8_t *) talloc_zero(mem_ctx, uint8_t);
+			bin->cb = 0;
+		}
+		else {
+			bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
+			bin->cb = ldb_base64_decode((char *) bin->lpb);
+		}
 		data = (void *)bin;
 		break;
 	case PT_MV_BINARY:
@@ -1079,7 +1088,11 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 		data = talloc_asprintf(mem_ctx, "%"PRIu64, nt_time);
 		break;
 	case PT_BINARY:
-		data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
+		/* ldb silently prevents empty strings from being added to the db */
+		if (value->value.bin.cb > 0)
+			data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
+		else
+			data = talloc_strdup(mem_ctx, openchangedb_nil_string);
 		break;
 	case PT_MV_BINARY:
 		bin_array = &value->value.MVbin;

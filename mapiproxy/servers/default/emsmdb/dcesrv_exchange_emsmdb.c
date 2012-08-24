@@ -1589,8 +1589,8 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_ldb_ctx);
 	if (!emsmdbp_ctx) {
-		smb_panic("Unable to initialize emsmdbp context");
-		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
+		goto failure;
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */

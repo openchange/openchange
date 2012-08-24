@@ -593,7 +593,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	if (request->PropertyTag == PidTagSecurityDescriptorAsXml) {
 		/* exception; see oxcperm - 3.1.4.1 Retrieving Folder Permissions */
-		mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT; /* ecNotImplemented = MAPI_E_NO_SUPPORT */
                 goto end;
 	}
 

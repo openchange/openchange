@@ -194,7 +194,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			} else {
 				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}
-			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 
 			prop_type = property & 0xffff;
 			if ((prop_type & MV_FLAG)) {

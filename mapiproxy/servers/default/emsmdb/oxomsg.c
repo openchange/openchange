@@ -493,7 +493,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOptionsData(TALLOC_CTX *mem_ctx,
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 	mapi_repl->error_code = retval;
-	mapi_repl->u.mapi_OptionsData.Reserved = 0x00;
+	mapi_repl->u.mapi_OptionsData.Reserved = 0x01; /* always 1, as specified in the doc */
 	mapi_repl->u.mapi_OptionsData.OptionsInfo.cb = 0x0000;
 	mapi_repl->u.mapi_OptionsData.OptionsInfo.lpb = talloc_array(mem_ctx, uint8_t, mapi_repl->u.mapi_OptionsData.OptionsInfo.cb);
 	mapi_repl->u.mapi_OptionsData.HelpFileSize = 0x0000;

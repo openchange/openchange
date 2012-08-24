@@ -98,6 +98,9 @@ static void oxcfxics_ndr_check(struct ndr_push *ndr, const char *label)
 }
 #endif
 
+static const int message_properties_shift = 7;
+static const int folder_properties_shift = 7;
+
 static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t data_type, const void *value)
 {
 	uint32_t	string_len;
@@ -838,10 +841,12 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncMessage);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-			if (table_object->object.table->prop_count > 9) {
-				query_props.cValues = table_object->object.table->prop_count - 9;
-				query_props.aulPropTag = table_object->object.table->properties + 9;
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 9, (enum MAPISTATUS *) retvals + 9);
+			/* we shift the number of remaining properties to the amount of properties explicitly requested in RopSyncConfigure that were used above */
+
+			if (table_object->object.table->prop_count > message_properties_shift) {
+				query_props.cValues = table_object->object.table->prop_count - message_properties_shift;
+				query_props.aulPropTag = table_object->object.table->properties + message_properties_shift;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + message_properties_shift, (enum MAPISTATUS *) retvals + message_properties_shift);
 			}
 
 			/* messageChildren:
@@ -1176,10 +1181,10 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 
 			/** remaining props */
-			if (table_object->object.table->prop_count > 7) {
-				query_props.cValues = table_object->object.table->prop_count - 7;
-				query_props.aulPropTag = table_object->object.table->properties + 7;
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + 7, (enum MAPISTATUS *) retvals + 7);
+			if (table_object->object.table->prop_count > folder_properties_shift) {
+				query_props.cValues = table_object->object.table->prop_count - folder_properties_shift;
+				query_props.aulPropTag = table_object->object.table->properties + folder_properties_shift;
+				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + folder_properties_shift, (enum MAPISTATUS *) retvals + folder_properties_shift);
 			}
 
 		end_row:

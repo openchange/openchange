@@ -1310,7 +1310,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct emsmdbp_object			*object = NULL;
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
-	uint32_t				buffer_size, mark_ptr, max_cutmark;
+	uint32_t				request_buffer_size, buffer_size, mark_ptr, max_cutmark;
 	char					*owner;
 	void					*data;
 
@@ -1348,34 +1348,34 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	request = &mapi_req->u.mapi_FastTransferSourceGetBuffer;
 	response = &mapi_repl->u.mapi_FastTransferSourceGetBuffer;
 
-	buffer_size = request->BufferSize;
-	if (buffer_size == 0xBABE) {
-		buffer_size = request->MaximumBufferSize.MaximumBufferSize;
+	request_buffer_size = request->BufferSize;
+	if (request_buffer_size == 0xBABE) {
+		request_buffer_size = request->MaximumBufferSize.MaximumBufferSize;
 	}
+	buffer_size = request_buffer_size;
 
 	/* Step 3. Perform the read operation */
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FTCONTEXT:
 		if (object->object.ftcontext->stream.position == 0) {
 			object->object.ftcontext->steps = 0;
-			object->object.ftcontext->total_steps = (object->object.ftcontext->stream.buffer.length / buffer_size) + 1;
+			object->object.ftcontext->total_steps = (object->object.ftcontext->stream.buffer.length / request_buffer_size) + 1;
 			DEBUG(5, ("fast transfer buffer is %d bytes long\n", (uint32_t) object->object.ftcontext->stream.buffer.length));
 		}
 		object->object.ftcontext->steps += 1;
 
-		if (object->object.ftcontext->stream.position + buffer_size < object->object.ftcontext->stream.buffer.length) {
-			max_cutmark = object->object.ftcontext->stream.position + buffer_size;
+		if (object->object.ftcontext->stream.position + request_buffer_size < object->object.ftcontext->stream.buffer.length) {
 			mark_ptr = object->object.ftcontext->next_cutmark_ptr;
-			while (object->object.ftcontext->cutmarks[mark_ptr] < object->object.ftcontext->stream.position) {
-				mark_ptr++;
-			}
-			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
-
+			max_cutmark = object->object.ftcontext->stream.position + request_buffer_size;
+			/* FIXME: cutmark lookups would be faster using a binary search */
 			while (object->object.ftcontext->cutmarks[mark_ptr] != 0xffffffff && object->object.ftcontext->cutmarks[mark_ptr] < max_cutmark) {
 				buffer_size = object->object.ftcontext->cutmarks[mark_ptr] - object->object.ftcontext->stream.position;
 				mark_ptr++;
 			}
-
+			if (buffer_size < (request_buffer_size - 8)) {
+				/* if the next cutmark is further than 16 bytes of the request buffer length, we can safely assume that we are in a varSizeValue and that we have enough room for the size indicator of that value */
+				buffer_size = request_buffer_size;
+			}
 			object->object.ftcontext->next_cutmark_ptr = mark_ptr;
 		}
 
@@ -1406,18 +1406,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 		object->object.synccontext->steps += 1;
 
 		if (object->object.synccontext->stream.position + buffer_size < object->object.synccontext->stream.buffer.length) {
-			max_cutmark = object->object.synccontext->stream.position + buffer_size;
 			mark_ptr = object->object.synccontext->next_cutmark_ptr;
-			while (object->object.synccontext->cutmarks[mark_ptr] < object->object.synccontext->stream.position) {
-				mark_ptr++;
-			}
-			object->object.synccontext->next_cutmark_ptr = mark_ptr;
-
+			max_cutmark = object->object.synccontext->stream.position + request_buffer_size;
+			/* FIXME: cutmark lookups would be faster using a binary search */
 			while (object->object.synccontext->cutmarks[mark_ptr] != 0xffffffff && object->object.synccontext->cutmarks[mark_ptr] < max_cutmark) {
 				buffer_size = object->object.synccontext->cutmarks[mark_ptr] - object->object.synccontext->stream.position;
 				mark_ptr++;
 			}
-
+			if (buffer_size < (request_buffer_size - 8)) {
+				/* if the next cutmark is further than 8 bytes of the request buffer length, we can safely assume that we are in a varSizeValue and that we have enough room for the size indicator of that value */
+				buffer_size = request_buffer_size;
+			}
 			object->object.synccontext->next_cutmark_ptr = mark_ptr;
 		}
 

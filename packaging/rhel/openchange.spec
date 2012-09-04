@@ -85,11 +85,12 @@ application.
 Group: Applications/System
 Summary: OpenChange - RPC-over-HTTP proxy
 Requires: openchange = %{version}-%{release}
-Requires: mod_wsgi
 %if %{python_sys_pyver} < 33947648
 Requires: python26
+Requires: python26-mod_wsgi
 %else
 Requires: python
+Requires: mod_wsgi
 %endif
 
 %description rpcproxy

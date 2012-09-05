@@ -1373,7 +1373,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 				mark_ptr++;
 			}
 			if (buffer_size < (request_buffer_size - 8)) {
-				/* if the next cutmark is further than 16 bytes of the request buffer length, we can safely assume that we are in a varSizeValue and that we have enough room for the size indicator of that value */
+				/* if the next cutmark is further than 8 bytes of the request buffer length, we can safely assume that we are in a varSizeValue and that we have enough room for the size indicator of that value */
 				buffer_size = request_buffer_size;
 			}
 			object->object.ftcontext->next_cutmark_ptr = mark_ptr;

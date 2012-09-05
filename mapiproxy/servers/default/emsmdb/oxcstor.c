@@ -98,7 +98,10 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.Shortcuts);
 
 	/* Step 5. Set ResponseFlags */
-	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
+	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved;
+	if (username && emsmdbp_ctx->username && strcmp(username, emsmdbp_ctx->username) == 0) {
+		response->LogonType.store_mailbox.ResponseFlags |= ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
+	}
 
 	/* Step 6. Retrieve MailboxGuid */
 	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, username, &response->LogonType.store_mailbox.MailboxGuid);

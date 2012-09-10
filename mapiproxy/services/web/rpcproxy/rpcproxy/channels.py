@@ -178,8 +178,8 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             unix_socket.sendall(INBOUND_PROXY_ID)
 
             # send window_size to 256Kib (max size allowed)
-            # and conn_timeout (in seconds, max size allowed)
-            unix_socket.sendall(pack("<ll", (256 * 1024), 14400000))
+            # and conn_timeout (in milliseconds, max size allowed)
+            unix_socket.sendall(pack("<ll", (256 * 1024), 120000))
 
             # recv oc socket
             self.oc_conn = receive_socket(unix_socket)
@@ -385,6 +385,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             # receive the WindowSize + ConnectionTimeout
             (self.in_window_size, self.in_conn_timeout) = \
                 unpack_from("<ll", unix_socket.recv(8, MSG_WAITALL))
+            self.logger.debug("window size = %d; conn_timeout = %d"
+                              % (self.in_window_size, self.in_conn_timeout))
             # send OC socket
             self.logger.debug("sending OC socket to IN")
             send_socket(unix_socket, self.oc_conn)

@@ -196,6 +196,11 @@ class RPCPacket(object):
                   "frag_length", "auth_length", "call_id")
 
         header_data = read_file(16)
+        len_header_data = len(header_data)
+        if len_header_data < 16:
+            raise RTSParsingException("read only %d header bytes from input"
+                                      % len_header_data)
+
         # TODO: value validation
         values = unpack_from("<bbbblhhl", header_data)
         if values[2] == DCERPC_PKT_FAULT:
@@ -209,6 +214,10 @@ class RPCPacket(object):
         else:
             packet_class = RPCPacket
         body_data = read_file(values[5] - 16)
+        len_body_data = len(body_data)
+        if len_body_data < (values[5] - 16):
+            raise RTSParsingException("read only %d body bytes from input"
+                                      % len_body_data)
 
         packet = packet_class(header_data + body_data, logger)
         packet.header = dict(zip(fields, values))

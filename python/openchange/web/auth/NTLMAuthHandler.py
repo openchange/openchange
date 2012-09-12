@@ -243,10 +243,11 @@ class _NTLMDaemon(object):
                 _safe_close(server)
             del self.client_data[client_id]
 
-        [_cleanup_record(client_id) \
-             for client_id in self.client_data 
-         if self.client_data[client_id]["last_used"] \
-             < time_limit]
+        # we make use of "keys()" here because we cannot use a dictionary as
+        # iterator while adding or removing records
+        for client_id in self.client_data.keys():
+            if self.client_data[client_id]["last_used"] < time_limit:
+                _cleanup_record(client_id)
 
     def _process_client_request(self, client_socket, now):
         success = True

@@ -191,7 +191,7 @@ struct emsmdbp_object_synccontext {
 	uint16_t		steps;
 	uint16_t		total_steps;
 	uint32_t		*cutmarks;
-	uint32_t		next_cutmark_ptr;
+	uint32_t		next_cutmark_idx;
 };
 
 struct emsmdbp_object_ftcontext {
@@ -199,7 +199,7 @@ struct emsmdbp_object_ftcontext {
 	uint16_t		steps;
 	uint16_t		total_steps;
 	uint32_t		*cutmarks;
-	uint32_t		next_cutmark_ptr;
+	uint32_t		next_cutmark_idx;
 };
 
 union emsmdbp_objects {

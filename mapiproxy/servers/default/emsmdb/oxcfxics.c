@@ -634,6 +634,14 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 			}
 		}
 		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, available_properties, data_pointers, retvals);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageRecipients);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageAttachments);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndEmbed);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);

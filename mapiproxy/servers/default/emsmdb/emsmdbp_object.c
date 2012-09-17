@@ -1472,6 +1472,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_COMMENT_UNICODE);
 		SPropTagArray_add(properties, properties, PR_ACCESS);
 		SPropTagArray_add(properties, properties, PR_ACCESS_LEVEL);
+		SPropTagArray_add(properties, properties, PidTagRights);
 		SPropTagArray_add(properties, properties, PidTagExtendedFolderFlags);
 		SPropTagArray_add(properties, properties, PidTagDesignInProgress);
 		SPropTagArray_add(properties, properties, PidTagSecureOrigination);
@@ -1524,12 +1525,11 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         enum MAPISTATUS			*retvals;
         struct emsmdbp_object_table	*table;
         struct mapistore_property_data	*properties;
-        uint32_t			contextID, i, num_props, *obj_count;
+        uint32_t			contextID, i, num_props;
 	struct emsmdbp_object		*rowobject;
 	uint64_t			*rowFMId;
 	uint64_t			parentFolderId;
 	bool				mapistore_folder;
-	uint8_t				*has_subobj;
 	void				*odb_ctx;
 	char				*owner;
 	struct Binary_r			*binr;
@@ -1656,41 +1656,30 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				/* a hack to avoid fetching dynamic fields from openchange.ldb */
 				switch (table->properties[i]) {
 				case PR_CONTENT_COUNT:
-					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject->backend_object,
-										  MAPISTORE_MESSAGE_TABLE, obj_count);
-					data_pointers[i] = obj_count;
-					break;
 				case PidTagAssociatedContentCount:
-					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, rowobject->backend_object,
-										  MAPISTORE_FAI_TABLE, obj_count);
-					data_pointers[i] = obj_count;
-					break;
+				case PR_CONTENT_UNREAD:
 				case PidTagFolderChildCount:
-					obj_count = talloc_zero(data_pointers, uint32_t);
-					retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, rowobject, obj_count);
-					data_pointers[i] = obj_count;
+				case PR_SUBFOLDERS:
+				case PidTagDeletedCountTotal:
+				case PidTagAccess:
+				case PidTagAccessLevel:
+				case PidTagRights: {
+					struct SPropTagArray props;
+					void **local_data_pointers;
+					enum MAPISTATUS *local_retvals;
+
+					props.cValues = 1;
+					props.aulPropTag = table->properties + i;
+
+					local_data_pointers = emsmdbp_object_get_properties(data_pointers, emsmdbp_ctx, rowobject, &props, &local_retvals);
+					data_pointers[i] = local_data_pointers[0];
+					retvals[i] = local_retvals[0];
+				}
 					break;
 				case PidTagSourceKey:
 					owner = emsmdbp_get_owner(table_object);
 					emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, rowobject->object.folder->folderID, &binr);
 					data_pointers[i] = binr;
-					retval = MAPI_E_SUCCESS;
-					break;
-				case PR_SUBFOLDERS:
-					obj_count = talloc_zero(NULL, uint32_t);
-					retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, rowobject, obj_count);
-					has_subobj = talloc_zero(data_pointers, uint8_t);
-					*has_subobj = (*obj_count > 0) ? 1 : 0;
-					data_pointers[i] = has_subobj;
-					talloc_free(obj_count);
-					break;
-				case PR_CONTENT_UNREAD:
-				case PidTagDeletedCountTotal:
-					/* TODO: temporary */
-					obj_count = talloc_zero(data_pointers, uint32_t);
-					data_pointers[i] = obj_count;
 					retval = MAPI_E_SUCCESS;
 					break;
 				default:
@@ -2398,7 +2387,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
 		}
-		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_RIGHTS || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL || properties->aulPropTag[i] == PidTagAccessControlListData || properties->aulPropTag[i] == PidTagExtendedACLData) {
+		else if (properties->aulPropTag[i] == PidTagLocalCommitTimeMax || properties->aulPropTag[i] == PR_RIGHTS || properties->aulPropTag[i] == PR_ACCESS || properties->aulPropTag[i] == PR_ACCESS_LEVEL || properties->aulPropTag[i] == PidTagRights || properties->aulPropTag[i] == PidTagAccessControlListData || properties->aulPropTag[i] == PidTagExtendedACLData) {
 			struct mapistore_property_data prop_data;
 
 			mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID,

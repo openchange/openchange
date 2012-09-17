@@ -1692,8 +1692,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	else {						/* keyword: folderChange */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagParentFolderId); /* PidTagParentSourceKey */
 		SPropTagArray_add(synccontext, &synccontext->properties, PidTagFolderId); /* PidTagSourceKey */
-		SPropTagArray_add(synccontext, &synccontext->properties, PidTagRights);
-		SPropTagArray_add(synccontext, &synccontext->properties, PidTagAccessLevel);
 		properties_exclusion[PidTagMessageClass >> 16] = false;
 	}
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagChangeNumber);
@@ -1701,6 +1699,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagPredecessorChangeList);
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagLastModificationTime);
 	SPropTagArray_add(synccontext, &synccontext->properties, PidTagDisplayName);
+
+	if (!synccontext->request.contents_mode) {
+		SPropTagArray_add(synccontext, &synccontext->properties, PidTagRights);
+		SPropTagArray_add(synccontext, &synccontext->properties, PidTagAccessLevel);
+	}
+
 	for (j = 0; j < synccontext->properties.cValues; j++) {
 		i = (synccontext->properties.aulPropTag[j] & 0xffff0000) >> 16;
 		properties_exclusion[i] = true;

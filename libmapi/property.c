@@ -1527,6 +1527,32 @@ end:
         return bin;
 }
 
+_PUBLIC_ struct Binary_r *set_TimeZoneDefinition(TALLOC_CTX *mem_ctx, const struct TimeZoneDefinition *TimeZoneDefinition)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+	
+        /* SANITY CHECKS */
+        if (!TimeZoneDefinition) return NULL;
+
+        ndr = talloc_zero(mem_ctx, struct ndr_push);
+        ndr_err_code = ndr_push_TimeZoneDefinition(ndr, NDR_SCALARS, TimeZoneDefinition);
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+		goto end;
+        }
+
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = ndr->offset;
+        bin->lpb = ndr->data;
+	(void) talloc_reference(bin, bin->lpb);
+
+end:
+        talloc_free(ndr);
+
+        return bin;
+}
+
 
 /**
    \details Retrieve a PtypServerId structure from a binary blob

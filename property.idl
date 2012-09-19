@@ -39,6 +39,14 @@ interface property
 		RecurFrequency_Yearly	= 0x200D
 	} RecurFrequency;
 
+	typedef [v1_enum] enum {
+		rectypeNone	= 0x00000000,
+		rectypeDaily	= 0x00000001,
+		rectypeWeekly	= 0x00000002,
+		rectypeMonthly	= 0x00000003,
+		rectypeYearly	= 0x00000004
+	} RecurrenceType;
+
 	typedef [enum16bit] enum {
 		PatternType_Day		= 0x0,
 		PatternType_Week	= 0x1,
@@ -271,6 +279,38 @@ interface property
 		uint16			wDaylightYear;
 		SYSTEMTIME		stDaylightDate;
 	} TimeZoneStruct;
+
+	typedef [enum16bit] enum {
+		TZRULE_FLAG_RECUR_CURRENT_TZREG	= 0x8000,
+		TZRULE_FLAG_EFFECTIVE_TZREG	= 0x4000
+	} TZRuleFlag;
+
+	/* pidLidAppointmentTimeZoneDefinitionRecur,
+	 * PidLidAppointmentTimeZoneDefinitionStartDisplay,
+	 * PidLidAppointmentTimeZoneDefinitionEndDisplay */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8		major; /* 0x02 */
+		uint8		minor; /* 0x01 */
+		uint16		reserved; /* must be 0x003E */
+		TZRuleFlag	flags;
+		uint16		wYear;
+		uint8		X[14]; /* all zeroes */
+		uint32		lBias;
+		uint32		lStandardBias;
+		uint32		lDaylightBias;
+		SYSTEMTIME	stStandardDate;
+		SYSTEMTIME	stDaylightDate;
+	} TZRule;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8								major; /* 0x02 */
+		uint8								minor; /* 0x01 */
+		uint16								cbHeader;
+		uint16								reserved; /* 0x0002 */
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM)] string	keyName;
+		uint16								cRules;
+		TZRule								TZRules[cRules];
+	} TimeZoneDefinition;
 
 	/* pidLidGlobalObjectId */
 	typedef [public,flag(NDR_NOALIGN)] struct {

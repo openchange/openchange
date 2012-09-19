@@ -594,13 +594,13 @@ static void oxcfxics_push_messageChange_recipients(TALLOC_CTX *mem_ctx, struct e
 }
 
 /* FIXME: attachment_object should be an emsmdbp_object but we lack time to create the struct */
-static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint32_t contextID, struct oxcfxics_sync_data *sync_data, void *attachment)
+static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint32_t contextID, struct emsmdbp_object_synccontext *synccontext, struct oxcfxics_sync_data *sync_data, void *attachment)
 {
 	enum mapistore_error		ret;
         struct mapistore_message	*msg;
 	void				*embedded_message;
 	uint64_t			messageID;
-	struct SPropTagArray		*available_properties;
+	struct SPropTagArray		*properties;
 	struct mapistore_property_data  *prop_data;
 	void				**data_pointers;
 	enum MAPISTATUS			*retvals;
@@ -612,13 +612,19 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-		ret = mapistore_properties_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, embedded_message, mem_ctx, &available_properties);
-		prop_data = talloc_array(mem_ctx, struct mapistore_property_data, available_properties->cValues);
-		memset(prop_data, 0, sizeof(struct mapistore_property_data) * available_properties->cValues);
-		ret = mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID, embedded_message, mem_ctx, available_properties->cValues, available_properties->aulPropTag, prop_data);
-		data_pointers = talloc_array(mem_ctx, void *, available_properties->cValues);
-		retvals = talloc_array(mem_ctx, enum MAPISTATUS, available_properties->cValues);
-		for (i = 0; i < available_properties->cValues; i++) {
+
+		properties = &synccontext->properties;
+
+
+		/* ret = mapistore_properties_get_available_properties(emsmdbp_ctx->mstore_ctx, contextID, embedded_message, mem_ctx, &available_properties); */
+		prop_data = talloc_array(mem_ctx, struct mapistore_property_data, properties->cValues);
+		memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
+
+		ret = mapistore_properties_get_properties(emsmdbp_ctx->mstore_ctx, contextID, embedded_message, mem_ctx, properties->cValues, properties->aulPropTag, prop_data);
+
+		data_pointers = talloc_array(mem_ctx, void *, properties->cValues);
+		retvals = talloc_array(mem_ctx, enum MAPISTATUS, properties->cValues);
+		for (i = 0; i < properties->cValues; i++) {
 			switch (prop_data[i].error) {
 			case MAPISTORE_SUCCESS:
 				if (prop_data[i].data) {
@@ -633,7 +639,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 				retvals[i] = MAPI_E_NOT_FOUND;
 			}
 		}
-		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, available_properties, data_pointers, retvals);
+		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, properties, data_pointers, retvals);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageRecipients);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
@@ -650,7 +656,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(TALLOC_CTX *
 	}
 }
 
-static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *message_object)
+static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *message_object)
 {
 	struct emsmdbp_object	*table_object;
 	TALLOC_CTX		*local_mem_ctx;
@@ -691,7 +697,7 @@ static void oxcfxics_push_messageChange_attachments(TALLOC_CTX *mem_ctx, struct 
 					method = *((uint32_t *) data_pointers[0]);
 					if (method == afEmbeddedMessage) {
 						mapistore_message_open_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, local_mem_ctx, i, &attachment_object);
-						oxcfxics_push_messageChange_attachment_embedded_message(local_mem_ctx, emsmdbp_ctx, contextID, sync_data, attachment_object);
+						oxcfxics_push_messageChange_attachment_embedded_message(local_mem_ctx, emsmdbp_ctx, contextID, synccontext, sync_data, attachment_object);
 					}
 				}
 
@@ -957,7 +963,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			   StartEmbed messageContent EndEmbed */
 
 			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
-			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, sync_data, message_object);
+			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, synccontext, sync_data, message_object);
 
 		end_row:
 			talloc_free(data_pointers);

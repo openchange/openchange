@@ -1356,6 +1356,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	if (!message_object->object.message->read_write) {
+		DEBUG(5, ("  parent message object is not open read/write\n"));
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
 	switch (emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */

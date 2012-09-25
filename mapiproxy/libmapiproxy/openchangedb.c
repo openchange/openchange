@@ -777,6 +777,11 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_c
 }
 
 
+static char *openchangedb_unknown_property(TALLOC_CTX *mem_ctx, uint32_t proptag)
+{
+	return talloc_asprintf(mem_ctx, "Unknown%.8x", proptag);
+}
+
 /**
    \details Check if a property exists within an openchange dispatcher
    database record
@@ -806,7 +811,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
 	/* Step 2. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 3. Search for attribute */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
@@ -1304,7 +1311,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 
 	/* Step 2. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 3. Ensure the element exists */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
@@ -1364,7 +1373,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 			/* Step 2. Convert proptag into PidTag attribute */
 			PidTagAttr = (char *) openchangedb_property_get_attribute(value->ulPropTag);
 			if (!PidTagAttr) {
-				PidTagAttr = talloc_asprintf(mem_ctx, "%.8x", value->ulPropTag);
+				PidTagAttr = openchangedb_unknown_property(mem_ctx, value->ulPropTag);
 			}
 
 			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
@@ -1443,7 +1452,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 
 	/* Step 3. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 4. Ensure the element exists */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);

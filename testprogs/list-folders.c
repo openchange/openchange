@@ -21,8 +21,8 @@
 
 /* gcc list-folders.c -o list-folders -I /usr/local/samba/include -L /usr/local/samba/lib -lmapi -ltalloc -lpopt */
 
+#include <inttypes.h>
 #include <stdbool.h>
-#include <stdint.h>
 #include "gen_ndr/exchange.h"
 
 #include "libmapi/libmapi.h"

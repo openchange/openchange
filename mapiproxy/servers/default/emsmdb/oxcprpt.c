@@ -225,6 +225,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 	void				*private_data = NULL;
 	struct emsmdbp_object		*object;
 	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		tmp_value;
 	void				**data_pointers;
 	int				i;
 
@@ -274,16 +275,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, SPropTagArray, &retvals);
 	if (data_pointers) {		
-		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, SPropTagArray->cValues);
 		response->properties.cValues = 0;
 		for (i = 0; i < SPropTagArray->cValues; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
-				response->properties.lpProps = add_mapi_SPropValue(mem_ctx, 
-										   response->properties.lpProps,
-										   &response->properties.cValues,
-										   SPropTagArray->aulPropTag[i], 
-										   (void *)data_pointers[i]);
-				
+				tmp_value.ulPropTag = SPropTagArray->aulPropTag[i];
+				if (set_SPropValue(&tmp_value, data_pointers[i])) {
+					cast_mapi_SPropValue(mem_ctx, response->properties.lpProps + response->properties.cValues, &tmp_value);
+					response->properties.cValues++;
+				}
 			}
 		}
 	}

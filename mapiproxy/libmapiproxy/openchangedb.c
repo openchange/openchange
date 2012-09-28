@@ -1830,6 +1830,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct ldb_context *ldb_ctx
 	guid = GUID_random();
 	ldb_msg_add_fmt(msg, "MailboxGUID", "%s", GUID_string(mem_ctx, &guid));
 	ldb_msg_add_string(msg, "cn", username);
+	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_fmt(msg, "PidTagDisplayName", "OpenChange Mailbox: %s", username);
@@ -1922,6 +1923,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
+	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");

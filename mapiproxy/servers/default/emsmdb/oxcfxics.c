@@ -754,7 +754,9 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
 {
 	struct emsmdbp_object		*table_object, *message_object;
-	uint32_t			i, j;
+	uint32_t			i, j, max_mids;
+	static enum MAPITAGS		mid_property = PidTagMid;
+	uint64_t			*mids;
 	enum MAPISTATUS			*retvals, *header_retvals;
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
@@ -764,7 +766,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
 	uint64_t			eid, cn;
-	TALLOC_CTX			*local_mem_ctx;
+	TALLOC_CTX			*local_mem_ctx, *msg_ctx;
 	struct mapistore_message	*msg;
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
@@ -792,188 +794,199 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		original_cnset_seen = synccontext->cnset_seen;
 		properties = &synccontext->properties;
 	}
-	table_object->object.table->prop_count = properties->cValues;
-	table_object->object.table->properties = properties->aulPropTag;
+
+	table_object->object.table->prop_count = 1;
+	table_object->object.table->properties = &mid_property;
 
 	oxcfxics_table_set_cn_restriction(emsmdbp_ctx, table_object, owner, original_cnset_seen);
+	max_mids = 0;
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, properties->cValues, properties->aulPropTag);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, table_object->object.table->prop_count, table_object->object.table->properties);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
-	} else {
-		/* FIXME: openchangedb case */
-		/* set columns */
-		/* get row count */
-		table_object->object.table->denominator = 0;
-	}
 
-	for (i = 0; i < table_object->object.table->denominator; i++) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
-		if (data_pointers) {
-			oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
-			oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
-
-			/** fixed header props */
-			header_data_pointers = talloc_array(data_pointers, void *, 9);
-			header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
-			memset(header_retvals, 0, 9 * sizeof(uint32_t));
-			query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
-
-			j = 0;
-
-			/* source key */
-			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
-
-			if (eid == 0x7fffffffffffffffLL) {
-				DEBUG(0, ("message without a valid eid\n"));
-				goto end_row;
-			}
-
-			if (emsmdbp_object_message_open(data_pointers, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
-				DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
-				goto end_row;
-			}
-
-			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
-			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
-
-			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
-			emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
-			query_props.aulPropTag[j] = PidTagSourceKey;
-			header_data_pointers[j] = bin_data;
-			j++;
-
-			/* last modification time */
-			if (retvals[sync_data->prop_index.last_modification_time]) {
-				unix_time = oc_version_time;
-				unix_to_nt_time(&nt_time, unix_time);
-				lm_time = talloc_zero(header_data_pointers, struct FILETIME);
-				lm_time->dwLowDateTime = (nt_time & 0xffffffff);
-				lm_time->dwHighDateTime = nt_time >> 32;
-			}
-			else {
-				lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
-				nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
-				unix_time = nt_time_to_unix(nt_time);
-			}
-			query_props.aulPropTag[j] = PidTagLastModificationTime;
-			header_data_pointers[j] = lm_time;
-			j++;
-
-			if (retvals[sync_data->prop_index.change_number]) {
-				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
-				abort();
-			}
-			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
-			if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
-				DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
-				goto end_row;
-			}
-			/* The "cnset_seen" range is going to be merged later with the one from synccontext since the ids are not sorted */
-			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
-
-			/* change key */
-			/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn); */
-			if (retvals[sync_data->prop_index.change_key]) {
-				DEBUG(5, (__location__": mandatory property PidTagChangeKey not returned for message\n"));
-				abort();
-			}
-			query_props.aulPropTag[j] = PidTagChangeKey;
-			bin_data = data_pointers[sync_data->prop_index.change_key];
-			header_data_pointers[j] = bin_data;
-			j++;
-
-			/* predecessor change list */
-			query_props.aulPropTag[j] = PidTagPredecessorChangeList;
-			if (retvals[sync_data->prop_index.predecessor_change_list]) {
-				DEBUG(5, (__location__": mandatory property PidTagPredecessorChangeList not returned for message\n"));
-				/* abort(); */
-
-				predecessors_data.cb = bin_data->cb + 1;
-				predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
-				*predecessors_data.lpb = bin_data->cb & 0xff;
-				memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
-				header_data_pointers[j] = &predecessors_data;
-			}
-			else {
-				bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
-				header_data_pointers[j] = bin_data;
-			}
-			j++;
-
-			/* associated (could be based on table type ) */
-			query_props.aulPropTag[j] = PidTagAssociated;
-			if (retvals[sync_data->prop_index.associated]) {
-				header_data_pointers[j] = talloc_zero(header_data_pointers, uint8_t);
-			}
-			else {
-				header_data_pointers[j] = data_pointers[sync_data->prop_index.associated];
-			}
-			j++;
-
-			/* message id (conditional) */
-			if (synccontext->request.request_eid) {
-				query_props.aulPropTag[j] = PidTagMid;
-				header_data_pointers[j] = &eid;
-				j++;
-			}
-
-			/* message size (conditional) */
-			if (synccontext->request.request_message_size) {
-				query_props.aulPropTag[j] = PidTagMessageSize;
-				header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
-				if (retvals[sync_data->prop_index.parent_fid]) {
-					header_data_pointers[j] = talloc_zero(header_data_pointers, uint32_t);
+		/* fetch maching mids */
+		mids = talloc_array(local_mem_ctx, uint64_t, table_object->object.table->denominator);
+		for (i = 0; i < table_object->object.table->denominator; i++) {
+			data_pointers = emsmdbp_object_table_get_row_props(local_mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
+			if (data_pointers) {
+				if (retvals[0] == MAPI_E_SUCCESS) {
+					mids[max_mids] = *(uint64_t *) data_pointers[0];
+					max_mids++;
 				}
-				else {
-					header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
-				}
-				j++;
 			}
-
-			/* cn (conditional) */
-			if (synccontext->request.request_cn) {
-				query_props.aulPropTag[j] = PidTagChangeNumber;
-				header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
-				*(uint64_t *) header_data_pointers[j] = (cn << 16) | (eid & 0xffff);
-				j++;
-			}
-
-			query_props.cValues = j;
-
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncChg);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
-			/** remaining props */
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncMessage);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
-			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-
-			/* we shift the number of remaining properties to the amount of properties explicitly requested in RopSyncConfigure that were used above */
-
-			if (table_object->object.table->prop_count > message_properties_shift) {
-				query_props.cValues = table_object->object.table->prop_count - message_properties_shift;
-				query_props.aulPropTag = table_object->object.table->properties + message_properties_shift;
-				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + message_properties_shift, (enum MAPISTATUS *) retvals + message_properties_shift);
-			}
-
-			/* messageChildren:
-			   [ PidTagFXDelProp ] [ *(StartRecip propList EndToRecip) ] [ PidTagFXDelProp ] [ *(NewAttach propList [embeddedMessage] EndAttach) ]
-			   embeddedMessage:
-			   StartEmbed messageContent EndEmbed */
-
-			oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
-			oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, synccontext, sync_data, message_object);
-
-		end_row:
-			talloc_free(data_pointers);
 		}
-		/* else { */
-		/* 	DEBUG(5, ("no data returned for message row %d\n", i)); */
-		/* 	abort(); */
-		/* } */
 	}
 
+	/* open each message and fetch properties */
+	for (i = 0; i < max_mids; i++) {
+		msg_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+		eid = *(mids + i);
+		if (eid == 0x7fffffffffffffffLL) {
+			DEBUG(0, ("message without a valid eid\n"));
+			goto end_row;
+		}
+
+		if (emsmdbp_object_message_open(msg_ctx, emsmdbp_ctx, folder_object, folder_object->object.folder->folderID, eid, false, &message_object, &msg) != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("message '%.16"PRIx64"' could not be open, skipped\n", eid));
+			goto end_row;
+		}
+
+		data_pointers = emsmdbp_object_get_properties(msg_ctx, emsmdbp_ctx, message_object, properties, &retvals);
+		if (!data_pointers) {
+			DEBUG(5, ("message '%.16"PRIx64"' returned no value, skipped\n", eid));
+			goto end_row;
+		}
+
+		oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
+		oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
+
+		/** fixed header props */
+		header_data_pointers = talloc_array(data_pointers, void *, 9);
+		header_retvals = talloc_array(header_data_pointers, enum MAPISTATUS, 9);
+		memset(header_retvals, 0, 9 * sizeof(uint32_t));
+		query_props.aulPropTag = talloc_array(header_data_pointers, enum MAPITAGS, 9);
+
+		j = 0;
+
+		/* source key */
+		emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
+		RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
+
+		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, eid >> 16); */
+		emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, eid, &bin_data);
+		query_props.aulPropTag[j] = PidTagSourceKey;
+		header_data_pointers[j] = bin_data;
+		j++;
+
+		/* last modification time */
+		if (retvals[sync_data->prop_index.last_modification_time]) {
+			unix_time = oc_version_time;
+			unix_to_nt_time(&nt_time, unix_time);
+			lm_time = talloc_zero(header_data_pointers, struct FILETIME);
+			lm_time->dwLowDateTime = (nt_time & 0xffffffff);
+			lm_time->dwHighDateTime = nt_time >> 32;
+		}
+		else {
+			lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
+			nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
+			unix_time = nt_time_to_unix(nt_time);
+		}
+		query_props.aulPropTag[j] = PidTagLastModificationTime;
+		header_data_pointers[j] = lm_time;
+		j++;
+
+		if (retvals[sync_data->prop_index.change_number]) {
+			DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
+			abort();
+		}
+		cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
+		if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
+			DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
+			goto end_row;
+		}
+		/* The "cnset_seen" range is going to be merged later with the one from synccontext since the ids are not sorted */
+		RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
+
+		/* change key */
+		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn); */
+		if (retvals[sync_data->prop_index.change_key]) {
+			DEBUG(5, (__location__": mandatory property PidTagChangeKey not returned for message\n"));
+			abort();
+		}
+		query_props.aulPropTag[j] = PidTagChangeKey;
+		bin_data = data_pointers[sync_data->prop_index.change_key];
+		header_data_pointers[j] = bin_data;
+		j++;
+
+		/* predecessor change list */
+		query_props.aulPropTag[j] = PidTagPredecessorChangeList;
+		if (retvals[sync_data->prop_index.predecessor_change_list]) {
+			DEBUG(5, (__location__": mandatory property PidTagPredecessorChangeList not returned for message\n"));
+			/* abort(); */
+
+			predecessors_data.cb = bin_data->cb + 1;
+			predecessors_data.lpb = talloc_array(header_data_pointers, uint8_t, predecessors_data.cb);
+			*predecessors_data.lpb = bin_data->cb & 0xff;
+			memcpy(predecessors_data.lpb + 1, bin_data->lpb, bin_data->cb);
+			header_data_pointers[j] = &predecessors_data;
+		}
+		else {
+			bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
+			header_data_pointers[j] = bin_data;
+		}
+		j++;
+
+		/* associated (could be based on table type ) */
+		query_props.aulPropTag[j] = PidTagAssociated;
+		if (retvals[sync_data->prop_index.associated]) {
+			header_data_pointers[j] = talloc_zero(header_data_pointers, uint8_t);
+		}
+		else {
+			header_data_pointers[j] = data_pointers[sync_data->prop_index.associated];
+		}
+		j++;
+
+		/* message id (conditional) */
+		if (synccontext->request.request_eid) {
+			query_props.aulPropTag[j] = PidTagMid;
+			header_data_pointers[j] = &eid;
+			j++;
+		}
+
+		/* message size (conditional) */
+		if (synccontext->request.request_message_size) {
+			query_props.aulPropTag[j] = PidTagMessageSize;
+			header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
+			if (retvals[sync_data->prop_index.parent_fid]) {
+				header_data_pointers[j] = talloc_zero(header_data_pointers, uint32_t);
+			}
+			else {
+				header_data_pointers[j] = data_pointers[sync_data->prop_index.message_size];
+			}
+			j++;
+		}
+
+		/* cn (conditional) */
+		if (synccontext->request.request_cn) {
+			query_props.aulPropTag[j] = PidTagChangeNumber;
+			header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
+			*(uint64_t *) header_data_pointers[j] = (cn << 16) | (eid & 0xffff);
+			j++;
+		}
+
+		query_props.cValues = j;
+
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncChg);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
+
+		/** remaining props */
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncMessage);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
+		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
+		/* we shift the number of remaining properties to the amount of properties explicitly requested in RopSyncConfigure that were used above */
+		if (properties->cValues > message_properties_shift) {
+			query_props.cValues = properties->cValues - message_properties_shift;
+			query_props.aulPropTag = properties->aulPropTag + message_properties_shift;
+			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + message_properties_shift, (enum MAPISTATUS *) retvals + message_properties_shift);
+		}
+
+		/* messageChildren:
+		   [ PidTagFXDelProp ] [ *(StartRecip propList EndToRecip) ] [ PidTagFXDelProp ] [ *(NewAttach propList [embeddedMessage] EndAttach) ]
+		   embeddedMessage:
+		   StartEmbed messageContent EndEmbed */
+
+		oxcfxics_push_messageChange_recipients(mem_ctx, emsmdbp_ctx, sync_data, message_object, msg);
+		oxcfxics_push_messageChange_attachments(mem_ctx, emsmdbp_ctx, synccontext, sync_data, message_object);
+
+	end_row:
+		talloc_free(msg_ctx);
+	}
+	
+	/* fetch deleted ids */
 	if (emsmdbp_is_mapistore(folder_object)) {
 		if (original_cnset_seen && original_cnset_seen->range_count > 0) {
 			cn = (original_cnset_seen->ranges[0].high << 16) | 0x0001;

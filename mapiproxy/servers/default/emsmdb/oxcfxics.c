@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Wolfgang Sourdeau 2010
+   Copyright (C) Wolfgang Sourdeau 2010-2012
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -35,14 +35,13 @@
 /** notes:
  * conventions:
  - binary data must be returned as Binary_r
- - PidTagChangeNumber is computed
- - PidTagChangeKey and PidTagPredecessorChangeList *must* be handled by the backend code
+ - PidTagChangeNumber, PidTagChangeKey and PidTagPredecessorChangeList *must* be handled by the backend code
  - PidTagSourceKey, PidTagParentSourceKey are deduced automatically from PidTagMid/PidTagFolderId and PidTagParentFolderId
  * PidTag*Key should be computed in the same manner in oxcprpt and oxctabl
  - all string properties are fetched via their _UNICODE version
  - "PidTagLastModificationTime" is left to the backend, maybe setprops operations could provide an optional one, for reference...
  ? idea: getprops on tables and objects without property array = get all props
- * no deletions yet
+ * no deletions yet for non-mapistore objects
  * no conflict resolution
  * ImportHierarchyChange require the same changes as RopOpenFolder with regards to opening folder and mapistore v2 functionality
 
@@ -81,7 +80,7 @@ struct oxcfxics_sync_data {
 };
 
 /** ndr helpers */
-#if 1
+#if 0
 #define oxcfxics_ndr_check(x,y)
 #else
 static void oxcfxics_ndr_check(struct ndr_push *ndr, const char *label)

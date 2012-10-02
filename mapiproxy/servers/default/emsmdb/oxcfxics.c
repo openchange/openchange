@@ -779,7 +779,7 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 
 	contextID = emsmdbp_get_contextID(folder_object);
 
- 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0); 
+ 	table_object = emsmdbp_folder_open_table(local_mem_ctx, folder_object, sync_data->table_type, 0);
 	if (!table_object) {
 		DEBUG(5, ("could not open folder table\n"));
 		abort();
@@ -1006,18 +1006,14 @@ static void oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	talloc_free(local_mem_ctx);
 }
 
-static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_object *synccontext_object, const char *owner)
+static void oxcfxics_prepare_synccontext_with_messageChange(struct emsmdbp_object_synccontext *synccontext, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *owner, struct emsmdbp_object *parent_object)
 {
 	struct oxcfxics_sync_data		*sync_data;
 	struct idset				*new_idset, *old_idset;
-	struct emsmdbp_object_synccontext	*synccontext;
-	struct emsmdbp_context			*emsmdbp_ctx;
-
+	
 	/* contentsSync = [progressTotal] *( [progressPerMessage] messageChange ) [deletions] [readStateChanges] state IncrSyncEnd */
 
 	/* 1. we setup the mandatory properties indexes */
-	emsmdbp_ctx = synccontext_object->emsmdbp_ctx;
-	synccontext = synccontext_object->object.synccontext;
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
 	SPropTagArray_find(synccontext->properties, PidTagMid, &sync_data->prop_index.eid);
@@ -1041,7 +1037,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	if (synccontext->request.normal) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
 		sync_data->table_type = MAPISTORE_MESSAGE_TABLE;
-		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
+		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen;
 		/* IDSET_dump (synccontext->cnset_seen, "initial cnset_seen"); */
@@ -1056,7 +1052,7 @@ static void oxcfxics_prepare_synccontext_with_messageChange(TALLOC_CTX *mem_ctx,
 	if (synccontext->request.fai) {
 		sync_data->cnset_seen = RAWIDSET_make(NULL, false, true);
 		sync_data->table_type = MAPISTORE_FAI_TABLE;
-		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
+		oxcfxics_push_messageChange(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, parent_object);
 		new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 		old_idset = synccontext->cnset_seen_fai;
 		/* IDSET_dump (synccontext->cnset_seen, "initial cnset_seen_fai"); */
@@ -1338,17 +1334,12 @@ static void oxcfxics_push_folderChange(TALLOC_CTX *mem_ctx, struct emsmdbp_conte
 	talloc_free(local_mem_ctx);
 }
 
-static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object *synccontext_object, const char *owner)
+static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object_synccontext *synccontext, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *owner, struct emsmdbp_object *parent_object)
 {
 	struct oxcfxics_sync_data		*sync_data;
 	struct idset				*new_idset, *old_idset;
-	struct emsmdbp_context			*emsmdbp_ctx;
-	struct emsmdbp_object_synccontext	*synccontext;
 
 	/* 1b. we setup context data */
-	emsmdbp_ctx = synccontext_object->emsmdbp_ctx;
-	synccontext = synccontext_object->object.synccontext;
-
 	sync_data = talloc_zero(NULL, struct oxcfxics_sync_data);
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
 	SPropTagArray_find(synccontext->properties, PidTagParentFolderId, &sync_data->prop_index.parent_fid);
@@ -1367,7 +1358,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	sync_data->cnset_seen = RAWIDSET_make(sync_data, false, true);
 	sync_data->eid_set = RAWIDSET_make(sync_data, false, false);
 
-	oxcfxics_push_folderChange(sync_data, emsmdbp_ctx, synccontext, owner, synccontext_object->parent_object, sync_data, synccontext_object->parent_object);
+	oxcfxics_push_folderChange(sync_data, emsmdbp_ctx, synccontext, owner, parent_object, sync_data, parent_object);
 
 	/* deletions (mapistore v2) */
 
@@ -1425,6 +1416,103 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(sync_data);
 }
 
+static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_ftcontext *ftcontext)
+{
+	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
+
+	buffer_size = request_buffer_size;
+
+	if (ftcontext->stream.position == 0) {
+		ftcontext->steps = 0;
+		ftcontext->total_steps = (ftcontext->stream.buffer.length / request_buffer_size) + 1;
+		ftcontext->next_cutmark_idx = 1;
+		oxcfxics_check_cutmark_buffer(ftcontext->cutmarks, &ftcontext->stream.buffer);
+		DEBUG(5, ("fast transfer buffer is %d bytes long\n", (uint32_t) ftcontext->stream.buffer.length));
+	}
+	ftcontext->steps += 1;
+
+	if (ftcontext->stream.position + request_buffer_size < ftcontext->stream.buffer.length) {
+		mark_idx = ftcontext->next_cutmark_idx;
+		max_cutmark = ftcontext->stream.position + request_buffer_size;
+		/* FIXME: cutmark lookups would be faster using a binary search */
+		while (ftcontext->cutmarks[mark_idx] != 0xffffffff && ftcontext->cutmarks[mark_idx] < max_cutmark) {
+			buffer_size = ftcontext->cutmarks[mark_idx] - ftcontext->stream.position;
+			mark_idx += 2;
+		}
+		if (buffer_size < request_buffer_size && ftcontext->cutmarks[mark_idx] != 0xffffffff) {
+			min_value_size = ftcontext->cutmarks[mark_idx-1];
+			if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
+				buffer_size = request_buffer_size;
+			}
+		}
+		ftcontext->next_cutmark_idx = mark_idx;
+	}
+	
+	response->TransferBuffer = emsmdbp_stream_read_buffer(&ftcontext->stream, buffer_size);
+	response->TotalStepCount = ftcontext->total_steps;
+	if (ftcontext->stream.position == ftcontext->stream.buffer.length) {
+		response->TransferStatus = TransferStatus_Done;
+		response->InProgressCount = response->TotalStepCount;
+	}
+	else {
+		response->TransferStatus = TransferStatus_Partial;
+		response->InProgressCount = ftcontext->steps;
+	}
+}
+
+static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct emsmdbp_object *parent_object)
+{
+	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
+
+	buffer_size = request_buffer_size;
+
+	if (!synccontext->stream.buffer.data) {
+		if (synccontext->request.contents_mode) {
+			oxcfxics_prepare_synccontext_with_messageChange(synccontext, mem_ctx, emsmdbp_ctx, owner, parent_object);
+		}
+		else {
+			oxcfxics_prepare_synccontext_with_folderChange(synccontext, mem_ctx, emsmdbp_ctx, owner, parent_object);
+		}
+		synccontext->steps = 0;
+		synccontext->total_steps = (synccontext->stream.buffer.length / buffer_size) + 1;
+		synccontext->next_cutmark_idx = 1;
+		
+		oxcfxics_check_cutmark_buffer(synccontext->cutmarks, &synccontext->stream.buffer);
+		
+		DEBUG(5, ("synccontext buffer is %d bytes long\n", (uint32_t) synccontext->stream.buffer.length));
+	}
+	synccontext->steps += 1;
+	
+	if (synccontext->stream.position + buffer_size < synccontext->stream.buffer.length) {
+		mark_idx = synccontext->next_cutmark_idx;
+		max_cutmark = synccontext->stream.position + request_buffer_size;
+		/* FIXME: cutmark lookups would be faster using a binary search */
+		while (synccontext->cutmarks[mark_idx] != 0xffffffff && synccontext->cutmarks[mark_idx] < max_cutmark) {
+			buffer_size = synccontext->cutmarks[mark_idx] - synccontext->stream.position;
+			mark_idx += 2;
+		}
+		if (buffer_size < request_buffer_size && synccontext->cutmarks[mark_idx] != 0xffffffff) {
+			min_value_size = synccontext->cutmarks[mark_idx-1];
+			if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
+				buffer_size = request_buffer_size;
+			}
+		}
+		synccontext->next_cutmark_idx = mark_idx;
+	}
+	
+	response->TransferBuffer = emsmdbp_stream_read_buffer(&synccontext->stream, buffer_size);
+	response->TotalStepCount = synccontext->total_steps;
+	if (synccontext->stream.position == synccontext->stream.buffer.length) {
+		response->TransferStatus = TransferStatus_Done;
+		response->InProgressCount = response->TotalStepCount;
+	}
+	else {
+		response->TransferStatus = TransferStatus_Partial;
+		response->InProgressCount = synccontext->steps;
+	}
+}
+
+
 /**
    \details EcDoRpc EcDoRpc_RopFastTransferSourceGetBuffer (0x4e) Rop. This operation downloads the next portion of a FastTransfer stream that is produced by a previously configured download operation.
 
@@ -1449,7 +1537,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct emsmdbp_object			*object = NULL;
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
-	uint32_t				request_buffer_size, buffer_size, min_value_size, mark_idx, max_cutmark;
+	uint32_t				request_buffer_size;
 	char					*owner;
 	void					*data;
 
@@ -1491,94 +1579,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	if (request_buffer_size == 0xBABE) {
 		request_buffer_size = request->MaximumBufferSize.MaximumBufferSize;
 	}
-	buffer_size = request_buffer_size;
 
 	/* Step 3. Perform the read operation */
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FTCONTEXT:
-		if (object->object.ftcontext->stream.position == 0) {
-			object->object.ftcontext->steps = 0;
-			object->object.ftcontext->total_steps = (object->object.ftcontext->stream.buffer.length / request_buffer_size) + 1;
-			object->object.ftcontext->next_cutmark_idx = 1;
-			oxcfxics_check_cutmark_buffer(object->object.ftcontext->cutmarks, &object->object.ftcontext->stream.buffer);
-			DEBUG(5, ("fast transfer buffer is %d bytes long\n", (uint32_t) object->object.ftcontext->stream.buffer.length));
-		}
-		object->object.ftcontext->steps += 1;
-
-		if (object->object.ftcontext->stream.position + request_buffer_size < object->object.ftcontext->stream.buffer.length) {
-			mark_idx = object->object.ftcontext->next_cutmark_idx;
-			max_cutmark = object->object.ftcontext->stream.position + request_buffer_size;
-			/* FIXME: cutmark lookups would be faster using a binary search */
-			while (object->object.ftcontext->cutmarks[mark_idx] != 0xffffffff && object->object.ftcontext->cutmarks[mark_idx] < max_cutmark) {
-				buffer_size = object->object.ftcontext->cutmarks[mark_idx] - object->object.ftcontext->stream.position;
-				mark_idx += 2;
-			}
-			if (buffer_size < request_buffer_size && object->object.ftcontext->cutmarks[mark_idx] != 0xffffffff) {
-				min_value_size = object->object.ftcontext->cutmarks[mark_idx-1];
-				if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
-					buffer_size = request_buffer_size;
-				}
-			}
-			object->object.ftcontext->next_cutmark_idx = mark_idx;
-		}
-
-		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.ftcontext->stream, buffer_size);
-		response->TotalStepCount = object->object.ftcontext->total_steps;
-		if (object->object.ftcontext->stream.position == object->object.ftcontext->stream.buffer.length) {
-			response->TransferStatus = TransferStatus_Done;
-			response->InProgressCount = response->TotalStepCount;
-		}
-		else {
-			response->TransferStatus = TransferStatus_Partial;
-			response->InProgressCount = object->object.ftcontext->steps;
-		}
+		oxcfxics_fill_ftcontext_fasttransfer_response(response, request_buffer_size, mem_ctx, emsmdbp_ctx, object->object.ftcontext);
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
-		if (!object->object.synccontext->stream.buffer.data) {
-			owner = emsmdbp_get_owner(object);
-			if (object->object.synccontext->request.contents_mode) {
-				oxcfxics_prepare_synccontext_with_messageChange(mem_ctx, object, owner);
-			}
-			else {
-				oxcfxics_prepare_synccontext_with_folderChange(object, owner);
-			}
-			object->object.synccontext->steps = 0;
-			object->object.synccontext->total_steps = (object->object.synccontext->stream.buffer.length / buffer_size) + 1;
-			object->object.synccontext->next_cutmark_idx = 1;
-
-			oxcfxics_check_cutmark_buffer(object->object.synccontext->cutmarks, &object->object.synccontext->stream.buffer);
-
-			DEBUG(5, ("synccontext buffer is %d bytes long\n", (uint32_t) object->object.synccontext->stream.buffer.length));
-		}
-		object->object.synccontext->steps += 1;
-
-		if (object->object.synccontext->stream.position + buffer_size < object->object.synccontext->stream.buffer.length) {
-			mark_idx = object->object.synccontext->next_cutmark_idx;
-			max_cutmark = object->object.synccontext->stream.position + request_buffer_size;
-			/* FIXME: cutmark lookups would be faster using a binary search */
-			while (object->object.synccontext->cutmarks[mark_idx] != 0xffffffff && object->object.synccontext->cutmarks[mark_idx] < max_cutmark) {
-				buffer_size = object->object.synccontext->cutmarks[mark_idx] - object->object.synccontext->stream.position;
-				mark_idx += 2;
-			}
-			if (buffer_size < request_buffer_size && object->object.synccontext->cutmarks[mark_idx] != 0xffffffff) {
-				min_value_size = object->object.synccontext->cutmarks[mark_idx-1];
-				if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
-					buffer_size = request_buffer_size;
-				}
-			}
-			object->object.synccontext->next_cutmark_idx = mark_idx;
-		}
-
-		response->TransferBuffer = emsmdbp_stream_read_buffer(&object->object.synccontext->stream, buffer_size);
-		response->TotalStepCount = object->object.synccontext->total_steps;
-		if (object->object.synccontext->stream.position == object->object.synccontext->stream.buffer.length) {
-			response->TransferStatus = TransferStatus_Done;
-			response->InProgressCount = response->TotalStepCount;
-		}
-		else {
-			response->TransferStatus = TransferStatus_Partial;
-			response->InProgressCount = object->object.synccontext->steps;
-		}
+		owner = emsmdbp_get_owner(object);
+		oxcfxics_fill_synccontext_fasttransfer_response(response, request_buffer_size, mem_ctx, emsmdbp_ctx, object->object.synccontext, owner, object->parent_object);
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;	

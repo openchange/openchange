@@ -179,25 +179,31 @@ struct emsmdbp_object_synccontext {
 	struct SPropTagArray	properties;
 	struct SPropTagArray	fai_properties;
 
-	/* idsets */
-	enum StateProperty	state_property;
-	struct emsmdbp_stream	state_stream;
+	/* synchronization state */
 	struct idset		*idset_given;
 	struct idset		*cnset_seen;
 	struct idset		*cnset_seen_fai;
 	struct idset		*cnset_read;
 
-	struct emsmdbp_stream	stream;
+	/* sync state upload */
+	enum StateProperty	state_property;
+	struct emsmdbp_stream	state_stream;
+
+	/* data download */
 	uint16_t		steps;
 	uint16_t		total_steps;
+
+	/* download buffers */
+	struct emsmdbp_stream	stream;
 	uint32_t		*cutmarks;
 	uint32_t		next_cutmark_idx;
 };
 
 struct emsmdbp_object_ftcontext {
-	struct emsmdbp_stream	stream;
 	uint16_t		steps;
 	uint16_t		total_steps;
+
+	struct emsmdbp_stream	stream;
 	uint32_t		*cutmarks;
 	uint32_t		next_cutmark_idx;
 };

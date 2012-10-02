@@ -1416,7 +1416,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(sync_data);
 }
 
-static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_ftcontext *ftcontext)
+static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_object_ftcontext *ftcontext, struct emsmdbp_context *emsmdbp_ctx)
 {
 	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
 
@@ -1460,18 +1460,21 @@ static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTran
 	}
 }
 
-static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct emsmdbp_object *parent_object)
+static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_object_synccontext *synccontext, struct emsmdbp_object *parent_object)
 {
+	char *owner;
 	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
+
+	owner = emsmdbp_get_owner(parent_object);
 
 	buffer_size = request_buffer_size;
 
 	if (!synccontext->stream.buffer.data) {
 		if (synccontext->request.contents_mode) {
-			oxcfxics_prepare_synccontext_with_messageChange(synccontext, mem_ctx, emsmdbp_ctx, owner, parent_object);
+			oxcfxics_prepare_synccontext_with_messageChange(synccontext, mem_ctx, parent_object->emsmdbp_ctx, owner, parent_object);
 		}
 		else {
-			oxcfxics_prepare_synccontext_with_folderChange(synccontext, mem_ctx, emsmdbp_ctx, owner, parent_object);
+			oxcfxics_prepare_synccontext_with_folderChange(synccontext, mem_ctx, parent_object->emsmdbp_ctx, owner, parent_object);
 		}
 		synccontext->steps = 0;
 		synccontext->total_steps = (synccontext->stream.buffer.length / buffer_size) + 1;
@@ -1538,7 +1541,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	struct FastTransferSourceGetBuffer_req	 *request;
 	struct FastTransferSourceGetBuffer_repl	 *response;
 	uint32_t				request_buffer_size;
-	char					*owner;
 	void					*data;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] FastTransferSourceGetBuffer (0x4e)\n"));
@@ -1583,11 +1585,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFastTransferSourceGetBuffer(TALLOC_CTX *mem_
 	/* Step 3. Perform the read operation */
 	switch (object->type) {
 	case EMSMDBP_OBJECT_FTCONTEXT:
-		oxcfxics_fill_ftcontext_fasttransfer_response(response, request_buffer_size, mem_ctx, emsmdbp_ctx, object->object.ftcontext);
+		oxcfxics_fill_ftcontext_fasttransfer_response(response, request_buffer_size, mem_ctx, object->object.ftcontext, emsmdbp_ctx);
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
-		owner = emsmdbp_get_owner(object);
-		oxcfxics_fill_synccontext_fasttransfer_response(response, request_buffer_size, mem_ctx, emsmdbp_ctx, object->object.synccontext, owner, object->parent_object);
+		oxcfxics_fill_synccontext_fasttransfer_response(response, request_buffer_size, mem_ctx, object->object.synccontext, object->parent_object);
 		break;
 	default:
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;	

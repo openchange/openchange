@@ -72,6 +72,7 @@ struct emsmdbp_stream {
 };
 
 struct emsmdbp_syncconfigure_request {
+	bool is_collector;
 	bool contents_mode;
 
 	bool unicode;
@@ -173,23 +174,24 @@ struct emsmdbp_object_subscription {
 };
 
 struct emsmdbp_object_synccontext {
-	bool			is_collector;
-
 	struct emsmdbp_syncconfigure_request	request;
-	struct SPropTagArray	properties;
-	struct SPropTagArray	fai_properties;
 
-	/* synchronization state */
+	/* uploaded synchronization state */
 	struct idset		*idset_given;
 	struct idset		*cnset_seen;
 	struct idset		*cnset_seen_fai;
 	struct idset		*cnset_read;
+
+	struct SPropTagArray	properties;
+	struct SPropTagArray	fai_properties;
 
 	/* sync state upload */
 	enum StateProperty	state_property;
 	struct emsmdbp_stream	state_stream;
 
 	/* data download */
+	uint16_t		sync_stage;
+	void			*sync_data;
 	uint16_t		steps;
 	uint16_t		total_steps;
 

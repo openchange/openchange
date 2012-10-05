@@ -32,8 +32,9 @@
 /* a constant time offset by which the first change number ever can be produced by OpenChange */
 #define oc_version_time 0x4dbb2dbe
 
-/* the maximum buffer that will be populated during msg synchronization operations (note: this is a loose limit) */
+/* the maximum buffer that will be populated during msg synchronization operations (note: this is a soft limit) */
 static const size_t max_message_sync_size = 262144;
+static const uint32_t message_preload_interval = 20;
 
 /** notes:
  * conventions:
@@ -771,6 +772,7 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
 	uint32_t			unix_time, contextID;
+	struct I8Array_r		preload_mids;
 	struct SPropTagArray		query_props;
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
@@ -835,6 +837,19 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		}
 
 		message_sync_data->count = 0;
+	}
+
+	if (emsmdbp_is_mapistore(folder_object) && (message_sync_data->count % message_preload_interval) == 0) {
+		preload_mids.lpi8 = message_sync_data->mids + message_sync_data->count;
+		if ((message_sync_data->count + message_preload_interval) < message_sync_data->max) {
+			preload_mids.cValues = message_preload_interval;
+		}
+		else {
+			preload_mids.cValues = message_sync_data->max - message_sync_data->count;
+		}
+
+		contextID = emsmdbp_get_contextID(folder_object);
+		mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
 	}
 
 	/* open each message and fetch properties */
@@ -1032,6 +1047,8 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 					RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, (cn >> 16) & 0x0000ffffffffffff);
 				}
 			}
+			preload_mids.cValues = 0;
+			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
 		}
 		DEBUG(5, ("end of table reached: count: %"PRId64", max: %"PRId64"\n", message_sync_data->count, message_sync_data->max));
 		talloc_free(message_sync_data);

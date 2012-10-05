@@ -175,6 +175,7 @@ enum mapistore_error mapistore_backend_folder_get_child_count(struct backend_con
 enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backend_context *, void *, const char *, uint64_t *);
 enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_context *, void *, uint8_t, uint16_t, struct PermissionData *);
+enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *, void *, const struct I8Array_r *);
 
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *, void *, TALLOC_CTX *, struct mapistore_message **);
 enum mapistore_error mapistore_backend_message_modify_recipients(struct backend_context *, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);

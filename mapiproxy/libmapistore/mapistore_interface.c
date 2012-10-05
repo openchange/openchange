@@ -952,6 +952,21 @@ _PUBLIC_ enum mapistore_error mapistore_folder_modify_permissions(struct mapisto
 	return mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
 }
 
+_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const struct I8Array_r *mids)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_preload_message_bodies(backend_ctx, folder, mids);
+}
+
 /* freebusy helper */
 static int mapistore_days_in_month(int month, int year)
 {

@@ -643,6 +643,11 @@ enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_
         return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
 }
 
+enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, const struct I8Array_r *mids)
+{
+        return bctx->backend->folder.preload_message_bodies(folder, mids);
+}
+
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
 {
 	return bctx->backend->message.get_message_data(message, mem_ctx, msg);

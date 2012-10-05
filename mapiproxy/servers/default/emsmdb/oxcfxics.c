@@ -241,7 +241,7 @@ static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type, vo
 
 static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *cutmarks_ndr, void *nprops_ctx, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
-	uint32_t		i, j, cutmark_min_buffer;
+	uint32_t		i, j, min_value_buffer;
 	enum MAPITAGS		property;
         struct MAPINAMEID       *nameid;
 	struct BinaryArray_r	*bin_array;
@@ -283,9 +283,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			}
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
-
-			cutmark_min_buffer = oxcfxics_compute_cutmark_min_value_buffer(prop_type, data_pointers[0]);
-			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, cutmark_min_buffer);
 
 			if ((prop_type & MV_FLAG)) {
 				prop_type &= 0x0fff;
@@ -334,6 +331,8 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			else {
 				oxcfxics_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
 			}
+			min_value_buffer = oxcfxics_compute_cutmark_min_value_buffer(prop_type, data_pointers[0]);
+			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, min_value_buffer);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 		}
         }
@@ -1484,10 +1483,8 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
-	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
-	(void) talloc_reference(synccontext, sync_data->ndr->data);
-	(void) talloc_reference(synccontext, sync_data->cutmarks_ndr->data);
+	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0xffffffff);
 
 	synccontext->cutmarks = (uint32_t *) sync_data->cutmarks_ndr->data;
 	synccontext->next_cutmark_idx = 1;
@@ -1495,6 +1492,8 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	synccontext->stream.buffer.data = sync_data->ndr->data;
 	synccontext->stream.buffer.length = sync_data->ndr->offset;
 
+	(void) talloc_reference(synccontext, sync_data->ndr->data);
+	(void) talloc_reference(synccontext, sync_data->cutmarks_ndr->data);
 	talloc_free(sync_data);
 }
 

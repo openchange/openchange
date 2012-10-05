@@ -249,7 +249,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	struct StringArrayW_r	*unicode_array;
 	struct ShortArray_r	*short_array;
 	struct LongArray_r	*long_array;
-	struct I8Array_r	*i8_array;
+	struct UI8Array_r	*ui8_array;
 	uint16_t		prop_type, propID;
         int                     retval;
 
@@ -304,10 +304,10 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					}
 					break;
 				case PT_I8:
-					i8_array = data_pointers[i];
-					ndr_push_uint32(ndr, NDR_SCALARS, i8_array->cValues);
-					for (j = 0; j < i8_array->cValues; j++) {
-						oxcfxics_ndr_push_simple_data(ndr, prop_type, i8_array->lpi8 + j);
+					ui8_array = data_pointers[i];
+					ndr_push_uint32(ndr, NDR_SCALARS, ui8_array->cValues);
+					for (j = 0; j < ui8_array->cValues; j++) {
+						oxcfxics_ndr_push_simple_data(ndr, prop_type, ui8_array->lpui8 + j);
 					}
 					break;
 				case PT_BINARY:
@@ -772,7 +772,7 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
 	uint32_t			unix_time, contextID;
-	struct I8Array_r		preload_mids;
+	struct UI8Array_r		preload_mids;
 	struct SPropTagArray		query_props;
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
@@ -781,7 +781,7 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	struct mapistore_message	*msg;
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
-	struct I8Array_r		*deleted_eids;
+	struct UI8Array_r		*deleted_eids;
 	struct SPropTagArray		*properties;
 	struct oxcfxics_message_sync_data	*message_sync_data;
 
@@ -840,7 +840,7 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	}
 
 	if (emsmdbp_is_mapistore(folder_object) && (message_sync_data->count % message_preload_interval) == 0) {
-		preload_mids.lpi8 = message_sync_data->mids + message_sync_data->count;
+		preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;
 		if ((message_sync_data->count + message_preload_interval) < message_sync_data->max) {
 			preload_mids.cValues = message_preload_interval;
 		}
@@ -1041,7 +1041,7 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 			contextID = emsmdbp_get_contextID(folder_object);
 			if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
 				for (i = 0; i < deleted_eids->cValues; i++) {
-					RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpi8[i] >> 16) & 0x0000ffffffffffff);
+					RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpui8[i] >> 16) & 0x0000ffffffffffff);
 				}
 				if (deleted_eids->cValues > 0) {
 					RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, (cn >> 16) & 0x0000ffffffffffff);

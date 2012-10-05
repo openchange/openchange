@@ -466,8 +466,8 @@ System Attendant Private Interface
 
 	typedef [nopush,nopull,noprint] struct {
 		[range(0,100000)] uint32	cValues;
-		[size_is(cValues)] dlong	*lpi8; 
-	} I8Array_r;
+		[size_is(cValues)] hyper	*lpui8; 
+	} UI8Array_r;
 
 	typedef [switch_type(uint32),nopush,nopull,noprint] union {
 		[case(PT_I2)]			uint16			i;
@@ -484,7 +484,7 @@ System Attendant Private Interface
 		[case(PT_ERROR)]		MAPISTATUS		err;
 		[case(PT_MV_I2)]		ShortArray_r		MVi;
 		[case(PT_MV_LONG)]		LongArray_r		MVl;
-		[case(PT_MV_I8)]		I8Array_r		MVi8;
+		[case(PT_MV_I8)]		UI8Array_r		MVui8;
 		[case(PT_MV_STRING8)]		StringArray_r		MVszA;
 		[case(PT_MV_BINARY)]		BinaryArray_r		MVbin;
 		[case(PT_MV_CLSID)]		FlatUIDArray_r		MVguid;

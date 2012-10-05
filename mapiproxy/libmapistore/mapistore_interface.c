@@ -794,7 +794,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_cont
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)
 {
 	struct backend_context	*backend_ctx;
 
@@ -952,7 +952,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_modify_permissions(struct mapisto
 	return mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const struct I8Array_r *mids)
+_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const struct UI8Array_r *mids)
 {
 	struct backend_context	*backend_ctx;
 

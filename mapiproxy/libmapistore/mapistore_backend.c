@@ -579,7 +579,7 @@ enum mapistore_error mapistore_backend_folder_copy_folder(struct backend_context
         return bctx->backend->folder.copy_folder(move_folder, target_folder, recursive, new_folder_name);
 }
 
-enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)
 {
         return bctx->backend->folder.get_deleted_fmids(folder, mem_ctx, table_type, change_num, fmidsp, cnp);
 }
@@ -643,7 +643,7 @@ enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_
         return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
 }
 
-enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, const struct I8Array_r *mids)
+enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, const struct UI8Array_r *mids)
 {
         return bctx->backend->folder.preload_message_bodies(folder, mids);
 }

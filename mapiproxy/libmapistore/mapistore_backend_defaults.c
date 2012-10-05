@@ -149,7 +149,7 @@ static enum mapistore_error mapistore_op_defaults_get_deleted_fmids(void *folder
 								    TALLOC_CTX *mem_ctx,
 								    enum mapistore_table_type table_type,
 								    uint64_t change_num,
-								    struct I8Array_r **fmidsp,
+								    struct UI8Array_r **fmidsp,
 								    uint64_t *cnp)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));

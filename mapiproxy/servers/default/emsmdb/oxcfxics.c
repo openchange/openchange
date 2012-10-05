@@ -763,7 +763,7 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 
 static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
 {
-	bool				end_of_table;
+	bool				folder_is_mapistore, end_of_table;
 	struct emsmdbp_object		*table_object, *message_object;
 	uint32_t			i;
 	static enum MAPITAGS		mid_property = PidTagMid;
@@ -839,22 +839,25 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 		message_sync_data->count = 0;
 	}
 
-	if (emsmdbp_is_mapistore(folder_object) && (message_sync_data->count % message_preload_interval) == 0) {
-		preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;
-		if ((message_sync_data->count + message_preload_interval) < message_sync_data->max) {
-			preload_mids.cValues = message_preload_interval;
-		}
-		else {
-			preload_mids.cValues = message_sync_data->max - message_sync_data->count;
-		}
-
+	folder_is_mapistore = emsmdbp_is_mapistore(folder_object);
+	if (folder_is_mapistore) {
 		contextID = emsmdbp_get_contextID(folder_object);
-		mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
 	}
 
 	/* open each message and fetch properties */
 	for (; sync_data->ndr->offset < max_message_sync_size && message_sync_data->count < message_sync_data->max; message_sync_data->count++) {
 		msg_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+		if (folder_is_mapistore && (message_sync_data->count % message_preload_interval) == 0) {
+			preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;
+			if ((message_sync_data->count + message_preload_interval) < message_sync_data->max) {
+				preload_mids.cValues = message_preload_interval;
+			}
+			else {
+				preload_mids.cValues = message_sync_data->max - message_sync_data->count;
+			}
+			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
+		}
 
 		eid = *(message_sync_data->mids + message_sync_data->count);
 		if (eid == 0x7fffffffffffffffLL) {
@@ -1031,14 +1034,13 @@ static bool oxcfxics_push_messageChange(TALLOC_CTX *mem_ctx, struct emsmdbp_cont
 	}
 	else {
 		/* fetch deleted ids */
-		if (emsmdbp_is_mapistore(folder_object)) {
+		if (folder_is_mapistore) {
 			if (original_cnset_seen && original_cnset_seen->range_count > 0) {
 				cn = (original_cnset_seen->ranges[0].high << 16) | 0x0001;
 			}
 			else {
 				cn = 0;
 			}
-			contextID = emsmdbp_get_contextID(folder_object);
 			if (!mapistore_folder_get_deleted_fmids(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, local_mem_ctx, sync_data->table_type, cn, &deleted_eids, &cn)) {
 				for (i = 0; i < deleted_eids->cValues; i++) {
 					RAWIDSET_push_guid_glob(sync_data->deleted_eid_set, &sync_data->replica_guid, (deleted_eids->lpui8[i] >> 16) & 0x0000ffffffffffff);

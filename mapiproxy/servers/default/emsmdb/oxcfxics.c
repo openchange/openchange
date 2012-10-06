@@ -619,7 +619,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(struct emsmd
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment, NULL, &embedded_message, &messageID, &msg);
+	ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment, mem_ctx, &embedded_message, &messageID, &msg);
 	if (ret == MAPISTORE_SUCCESS) {
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagStartEmbed);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);

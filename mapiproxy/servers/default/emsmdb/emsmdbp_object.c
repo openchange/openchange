@@ -2754,7 +2754,7 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 	else if (prop_type == PT_BINARY) {
 		stream_data->data.length = ((struct Binary_r *) value)->cb;
 		stream_data->data.data = ((struct Binary_r *) value)->lpb;
-                (void) talloc_reference(stream_data, stream_data->data.data);
+                (void) talloc_reference(stream_data, value);
 	}
 	else {
 		talloc_free(stream_data);

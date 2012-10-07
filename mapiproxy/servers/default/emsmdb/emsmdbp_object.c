@@ -692,6 +692,7 @@ static int emsmdbp_object_destructor(void *data)
 		gettimeofday(&request_end, NULL);
 		request_delta.tv_sec = request_end.tv_sec - object->object.synccontext->request_start.tv_sec;
 		if (request_end.tv_usec < object->object.synccontext->request_start.tv_usec) {
+			request_delta.tv_sec--;
 			request_delta.tv_usec = 1000000 + request_end.tv_usec - object->object.synccontext->request_start.tv_usec;
 		}
 		else {

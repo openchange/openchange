@@ -827,7 +827,9 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			contextID = emsmdbp_get_contextID(folder_object);
 			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, table_object->object.table->prop_count, table_object->object.table->properties);
 			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
-			
+			synccontext->total_objects += table_object->object.table->denominator;
+
+			DEBUG(5, ("push_messageChange: %d objects in table\n", table_object->object.table->denominator));
 			/* fetch maching mids */
 			message_sync_data->mids = talloc_array(message_sync_data, uint64_t, table_object->object.table->denominator);
 			for (i = 0; i < table_object->object.table->denominator; i++) {
@@ -925,6 +927,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		}
 		cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 		if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
+			synccontext->skipped_objects++;
 			DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
 			goto end_row;
 		}
@@ -1025,6 +1028,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		oxcfxics_push_messageChange_recipients(emsmdbp_ctx, sync_data, message_object, msg);
 		oxcfxics_push_messageChange_attachments(emsmdbp_ctx, synccontext, sync_data, message_object);
 
+		synccontext->sent_objects++;
 	end_row:
 		talloc_free(msg_ctx);
 	}
@@ -1278,6 +1282,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID,
 					    table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, MAPISTORE_PREFILTERED_QUERY, &table_object->object.table->denominator);
+		synccontext->total_objects += table_object->object.table->denominator;
 	}
 
 	for (i = 0; i < table_object->object.table->denominator; i++) {
@@ -1343,6 +1348,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			}
 			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
+				synccontext->skipped_objects++;
 				DEBUG(5, (__location__": folder changes: cn %.16"PRIx64" already present\n", cn));
 				goto end_row;
 			}
@@ -1418,6 +1424,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 				oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + folder_properties_shift, (enum MAPISTATUS *) retvals + folder_properties_shift);
 			}
 
+			synccontext->sent_objects++;
 		end_row:
 			talloc_free(header_data_pointers);
 			talloc_free(data_pointers);
@@ -1859,6 +1866,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 
         synccontext_object = emsmdbp_object_synccontext_init(NULL, emsmdbp_ctx, folder_object);
         synccontext = synccontext_object->object.synccontext;
+
+	gettimeofday(&synccontext->request_start, NULL);
 
 	/* SynchronizationType */
 	synccontext->request.is_collector = false;

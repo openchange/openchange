@@ -176,6 +176,12 @@ struct emsmdbp_object_subscription {
 struct emsmdbp_object_synccontext {
 	struct emsmdbp_syncconfigure_request	request;
 
+	/* debugging */
+	unsigned int sent_objects;
+	unsigned int skipped_objects;
+	unsigned int total_objects;
+	struct timeval request_start;
+
 	/* uploaded synchronization state */
 	struct idset		*idset_given;
 	struct idset		*cnset_seen;

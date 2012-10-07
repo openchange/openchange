@@ -652,6 +652,8 @@ static int emsmdbp_object_destructor(void *data)
 	struct emsmdbp_object	*object = (struct emsmdbp_object *) data;
 	int			ret = MAPISTORE_SUCCESS;
 	uint32_t		contextID;
+	unsigned int		missing_objects;
+	struct timeval		request_end, request_delta;
 
 	if (!data) return -1;
 	if (!emsmdbp_is_mapistore(object)) goto nomapistore;
@@ -686,12 +688,24 @@ static int emsmdbp_object_destructor(void *data)
 			talloc_free(object->object.subscription->subscription_list);
                 }
 		break;
+	case EMSMDBP_OBJECT_SYNCCONTEXT:
+		gettimeofday(&request_end, NULL);
+		request_delta.tv_sec = request_end.tv_sec - object->object.synccontext->request_start.tv_sec;
+		if (request_end.tv_usec < object->object.synccontext->request_start.tv_usec) {
+			request_delta.tv_usec = 1000000 + request_end.tv_usec - object->object.synccontext->request_start.tv_usec;
+		}
+		else {
+			request_delta.tv_usec = request_end.tv_usec - object->object.synccontext->request_start.tv_usec;
+		}
+		missing_objects = (object->object.synccontext->total_objects - object->object.synccontext->skipped_objects - object->object.synccontext->sent_objects);
+		DEBUG(5, ("free synccontext: sent: %u, skipped: %u, total: %u -> missing: %u\n", object->object.synccontext->sent_objects, object->object.synccontext->skipped_objects, object->object.synccontext->total_objects, missing_objects));
+		DEBUG(5, ("  time taken for transmitting entire data: %lu.%.6lu\n", request_delta.tv_sec, request_delta.tv_usec));
+		break;
 	case EMSMDBP_OBJECT_UNDEF:
 	case EMSMDBP_OBJECT_MAILBOX:
 	case EMSMDBP_OBJECT_MESSAGE:
 	case EMSMDBP_OBJECT_ATTACHMENT:
 	case EMSMDBP_OBJECT_FTCONTEXT:
-	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		break;
 	}
 	

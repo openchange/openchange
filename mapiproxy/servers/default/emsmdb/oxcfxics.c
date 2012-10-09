@@ -129,7 +129,7 @@ static void oxcfxics_check_cutmark_buffer(void *cutmark_buffer, DATA_BLOB *data_
 		else {
 			min_size = digits_ptr[0];
 			if (min_size > 0) {
-				if (min_size != 4) {
+				if (min_size != 4 && min_size != 8) {
 					DEBUG(0, ("invalid min_size: %d\n", min_size));
 					abort();
 				}
@@ -203,13 +203,13 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 	}
 }
 
-static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type, void *value)
+static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type)
 {
 	uint32_t min_value_buffer;
 
 	if ((prop_type & MV_FLAG)) {
 		/* TODO: minimal cutmarks are difficult to deduce for multi values */
-		min_value_buffer = 4;
+		min_value_buffer = 8;
 	}
 	else {
 		switch (prop_type) {
@@ -229,7 +229,7 @@ static uint32_t oxcfxics_compute_cutmark_min_value_buffer(uint16_t prop_type, vo
 		case PT_UNICODE:
 		case PT_SVREID:
 		case PT_BINARY:
-			min_value_buffer = 4;
+			min_value_buffer = 8;
 			break;
 		default:
 			DEBUG(5, ("%s: unsupported property type: %.4x\n", __FUNCTION__, prop_type));

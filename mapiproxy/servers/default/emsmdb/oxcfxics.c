@@ -264,14 +264,14 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
                         property = properties->aulPropTag[i];
 			prop_type = property & 0xffff;
 
+			ndr_push_uint32(ndr, NDR_SCALARS, property);
 			if (property > 0x80000000) {
-				propID = (property & 0xffff0000) >> 16;
+				propID = property >> 16;
 				retval = mapistore_namedprops_get_nameid(nprops_ctx, propID, NULL, &nameid);
 				if (retval != MAPISTORE_SUCCESS) {
 					DEBUG(0, ("no definition found for named property with id '%.8x'\n", property));
 					continue;
 				}
-				ndr_push_uint32(ndr, NDR_SCALARS, property);
 				ndr_push_GUID(ndr, NDR_SCALARS, &nameid->lpguid);
 				switch (nameid->ulKind) {
 				case MNID_ID:
@@ -287,8 +287,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					break;
 				}
 				talloc_free(nameid);
-			} else {
-				ndr_push_uint32(ndr, NDR_SCALARS, property);
 			}
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
@@ -340,7 +338,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			else {
 				oxcfxics_ndr_push_simple_data(ndr, prop_type, data_pointers[i]);
 			}
-			min_value_buffer = oxcfxics_compute_cutmark_min_value_buffer(prop_type, data_pointers[0]);
+			min_value_buffer = oxcfxics_compute_cutmark_min_value_buffer(prop_type);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, min_value_buffer);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
 		}

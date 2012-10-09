@@ -154,6 +154,7 @@ static const int folder_properties_shift = 7;
 static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_type, const void *value)
 {
 	uint32_t	string_len;
+	uint32_t	saved_flags;
 
 	switch (prop_type) {
 	case PT_I2:
@@ -174,16 +175,20 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 		ndr_push_uint16(ndr, NDR_SCALARS, (*(uint8_t *) value) ? 1 : 0);
 		break;
 	case PT_STRING8:
+		saved_flags = ndr->flags;
 		string_len = strlen(value) + 1;
 		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM|LIBNDR_FLAG_STR_ASCII);
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
+		ndr->flags = saved_flags;
 		break;
 	case PT_UNICODE:
+		saved_flags = ndr->flags;
 		string_len = strlen_m_ext((char *) value, CH_UTF8, CH_UTF16LE) * 2 + 2;
 		ndr_push_uint32(ndr, NDR_SCALARS, string_len);
 		ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 		ndr_push_string(ndr, NDR_SCALARS, (char *) value);
+		ndr->flags = saved_flags;
 		break;
 	case PT_SVREID:
 	case PT_BINARY:
@@ -252,6 +257,7 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 	struct UI8Array_r	*ui8_array;
 	uint16_t		prop_type, propID;
         int                     retval;
+	uint32_t		saved_flags;
 
         for (i = 0; i < properties->cValues; i++) {
                 if (retvals[i] == MAPI_E_SUCCESS) {
@@ -273,9 +279,11 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 					ndr_push_uint32(ndr, NDR_SCALARS, nameid->kind.lid);
 					break;
 				case MNID_STRING:
+					saved_flags = ndr->flags;
 					ndr_push_uint8(ndr, NDR_SCALARS, 1);
 					ndr_set_flags(&ndr->flags, LIBNDR_FLAG_STR_NULLTERM);
 					ndr_push_string(ndr, NDR_SCALARS, nameid->kind.lpwstr.Name);
+					ndr->flags = saved_flags;
 					break;
 				}
 				talloc_free(nameid);

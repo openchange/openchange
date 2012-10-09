@@ -1540,7 +1540,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 
 static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTransferSourceGetBuffer_repl *response, uint32_t request_buffer_size, TALLOC_CTX *mem_ctx, struct emsmdbp_object_ftcontext *ftcontext, struct emsmdbp_context *emsmdbp_ctx)
 {
-	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
+	uint32_t buffer_size, min_value_buffer, mark_idx, max_cutmark;
 
 	buffer_size = request_buffer_size;
 
@@ -1562,8 +1562,8 @@ static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTran
 			mark_idx += 2;
 		}
 		if (buffer_size < request_buffer_size && ftcontext->cutmarks[mark_idx] != 0xffffffff) {
-			min_value_size = ftcontext->cutmarks[mark_idx-1];
-			if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
+			min_value_buffer = ftcontext->cutmarks[mark_idx-1];
+			if (min_value_buffer && (request_buffer_size - buffer_size > min_value_buffer)) {
 				buffer_size = request_buffer_size;
 			}
 		}
@@ -1584,7 +1584,7 @@ static inline void oxcfxics_fill_ftcontext_fasttransfer_response(struct FastTran
 
 static uint32_t oxcfxics_advance_cutmarks(struct emsmdbp_object_synccontext *synccontext, uint32_t request_buffer_size)
 {
-	uint32_t buffer_size, min_value_size, mark_idx, max_cutmark;
+	uint32_t buffer_size, min_value_buffer, mark_idx, max_cutmark;
 
 	buffer_size = request_buffer_size;
 
@@ -1596,8 +1596,8 @@ static uint32_t oxcfxics_advance_cutmarks(struct emsmdbp_object_synccontext *syn
 		mark_idx += 2;
 	}
 	if (buffer_size < request_buffer_size && synccontext->cutmarks[mark_idx] != 0xffffffff) {
-		min_value_size = synccontext->cutmarks[mark_idx-1];
-		if (min_value_size && (request_buffer_size - buffer_size > min_value_size)) {
+		min_value_buffer = synccontext->cutmarks[mark_idx-1];
+		if (min_value_buffer && (request_buffer_size - buffer_size > min_value_buffer)) {
 			buffer_size = request_buffer_size;
 		}
 	}

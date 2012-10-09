@@ -529,13 +529,15 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 	TALLOC_CTX				*local_mem_ctx;
 	enum MAPISTATUS				*retvals;
 	struct mapistore_message_recipient	*recipient;
-	uint32_t				i, j;
+	uint32_t				i, j, min_string_value_buffer;
 	uint32_t				cn_idx = (uint32_t) -1, email_idx = (uint32_t) -1;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageRecipients);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
+
+	min_string_value_buffer = oxcfxics_compute_cutmark_min_value_buffer(PT_UNICODE);
 
 	if (msg) {
 		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
@@ -565,17 +567,17 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 			if (email_idx != (uint32_t) -1 && recipient->data[email_idx]) {
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagAddressType);
 				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, "SMTP");
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 4);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, min_string_value_buffer);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEmailAddress);
 				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, recipient->data[email_idx]);
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 4);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, min_string_value_buffer);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
 			if (cn_idx != (uint32_t) -1 && recipient->data[cn_idx]) {
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagDisplayName);
 				oxcfxics_ndr_push_simple_data(sync_data->ndr, 0x1f, recipient->data[cn_idx]);
-				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 4);
+				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, min_string_value_buffer);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
 

@@ -631,7 +631,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 			if (retvals[0] == MAPI_E_SUCCESS) {
 				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0]);
 				object->object.stream->stream.buffer = stream_data->data;
-				(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
+				(void) talloc_reference(object, stream_data);
 				talloc_free(data_pointers);
 				talloc_free(retvals);
 			}

@@ -92,7 +92,7 @@ struct oxcfxics_message_sync_data {
 };
 
 /** ndr helpers */
-#if 0
+#if 1
 #define oxcfxics_ndr_check(x,y)
 #else
 static void oxcfxics_ndr_check(struct ndr_push *ndr, const char *label)
@@ -109,7 +109,7 @@ static void oxcfxics_ndr_check(struct ndr_push *ndr, const char *label)
 }
 #endif
 
-#if 0
+#if 1
 #define oxcfxics_check_cutmark_buffer(x,y)
 #else
 static void oxcfxics_check_cutmark_buffer(void *cutmark_buffer, DATA_BLOB *data_buffer)

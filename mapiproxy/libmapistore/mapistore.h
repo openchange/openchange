@@ -186,7 +186,7 @@ struct mapistore_backend {
                 enum mapistore_error	(*open_table)(void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 		enum mapistore_error	(*modify_permissions)(void *, uint8_t, uint16_t, struct PermissionData *);
 
-		enum mapistore_error	(*preload_message_bodies)(void *, const struct UI8Array_r *);
+		enum mapistore_error	(*preload_message_bodies)(void *, enum mapistore_table_type, const struct UI8Array_r *);
         } folder;
 
         /** oxcmsg operations */
@@ -322,7 +322,7 @@ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *
 enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 enum mapistore_error mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 enum mapistore_error mapistore_folder_modify_permissions(struct mapistore_context *, uint32_t, void *, uint8_t, uint16_t, struct PermissionData *);
-enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *, uint32_t, void *, const struct UI8Array_r *);
+enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *, uint32_t, void *, enum mapistore_table_type, const struct UI8Array_r *);
 
 enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *, uint32_t, void *, struct tm *, struct tm *, TALLOC_CTX *, struct mapistore_freebusy_properties **);
 

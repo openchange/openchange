@@ -952,7 +952,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_modify_permissions(struct mapisto
 	return mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const struct UI8Array_r *mids)
+_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, const struct UI8Array_r *mids)
 {
 	struct backend_context	*backend_ctx;
 
@@ -964,7 +964,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct map
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	return mapistore_backend_folder_preload_message_bodies(backend_ctx, folder, mids);
+	return mapistore_backend_folder_preload_message_bodies(backend_ctx, folder, table_type, mids);
 }
 
 /* freebusy helper */

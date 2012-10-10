@@ -643,9 +643,9 @@ enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_
         return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
 }
 
-enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, const struct UI8Array_r *mids)
+enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, enum mapistore_table_type table_type, const struct UI8Array_r *mids)
 {
-        return bctx->backend->folder.preload_message_bodies(folder, mids);
+        return bctx->backend->folder.preload_message_bodies(folder, table_type, mids);
 }
 
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)

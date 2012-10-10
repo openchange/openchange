@@ -2783,7 +2783,8 @@ _PUBLIC_ DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *stream, uin
 
 _PUBLIC_ void emsmdbp_stream_write_buffer(TALLOC_CTX *mem_ctx, struct emsmdbp_stream *stream, DATA_BLOB new_buffer)
 {
-	uint32_t new_position, old_length;
+	size_t new_position;
+	uint32_t old_length;
 	uint8_t *old_data;
 
 	new_position = stream->position + new_buffer.length;

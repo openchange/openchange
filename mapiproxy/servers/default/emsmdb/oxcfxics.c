@@ -794,6 +794,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	NTTIME				nt_time;
 	uint32_t			unix_time, contextID;
 	struct UI8Array_r		preload_mids;
+	enum mapistore_table_type	mstore_type;
 	struct SPropTagArray		query_props;
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
@@ -811,10 +812,12 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	if (sync_data->table_type == MAPISTORE_FAI_TABLE) {
 		original_cnset_seen = synccontext->cnset_seen_fai;
 		properties = &synccontext->fai_properties;
+		mstore_type = MAPISTORE_FAI_TABLE;
 	}
 	else {
 		original_cnset_seen = synccontext->cnset_seen;
 		properties = &synccontext->properties;
+		mstore_type = MAPISTORE_MESSAGE_TABLE;
 	}
 
 	if (sync_data->message_sync_data) {
@@ -878,7 +881,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			else {
 				preload_mids.cValues = message_sync_data->max - message_sync_data->count;
 			}
-			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
+			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, mstore_type, &preload_mids);
 		}
 
 		eid = *(message_sync_data->mids + message_sync_data->count);
@@ -1074,7 +1077,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 				}
 			}
 			preload_mids.cValues = 0;
-			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, &preload_mids);
+			mapistore_folder_preload_message_bodies(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object, mstore_type, &preload_mids);
 		}
 		DEBUG(5, ("end of table reached: count: %"PRId64", max: %"PRId64"\n", message_sync_data->count, message_sync_data->max));
 		talloc_free(message_sync_data);

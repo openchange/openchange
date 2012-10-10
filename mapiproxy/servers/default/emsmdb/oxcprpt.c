@@ -1100,9 +1100,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	request = &mapi_req->u.mapi_SetStreamSize;
-	object->object.stream->stream.buffer.length = request->SizeStream;
-
 end:
 	*size += libmapiserver_RopSetStreamSize_size(mapi_repl);
 

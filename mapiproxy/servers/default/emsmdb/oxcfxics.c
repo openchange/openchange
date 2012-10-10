@@ -153,8 +153,9 @@ static const int folder_properties_shift = 7;
 
 static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_type, const void *value)
 {
-	uint32_t	string_len;
-	uint32_t	saved_flags;
+	uint32_t		string_len;
+	uint32_t		saved_flags;
+	const struct Binary_r	*bin_value;
 
 	switch (prop_type) {
 	case PT_I2:
@@ -192,7 +193,13 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 		break;
 	case PT_SVREID:
 	case PT_BINARY:
-		ndr_push_Binary_r(ndr, NDR_BUFFERS, (struct Binary_r *) value);
+		bin_value = value;
+		if (bin_value->cb > 0) {
+			ndr_push_Binary_r(ndr, NDR_BUFFERS, bin_value);
+		}
+		else {
+			ndr_push_uint32(ndr, NDR_SCALARS, 0);
+		}
 		break;
 	case PT_CLSID:
 		ndr_push_GUID(ndr, NDR_SCALARS, (struct GUID *) value);

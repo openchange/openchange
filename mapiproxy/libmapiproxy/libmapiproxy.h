@@ -33,6 +33,8 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#include <gen_ndr/server_id.h>
+
 struct mapiproxy {
 	bool			norelay;
 	bool			ahead;

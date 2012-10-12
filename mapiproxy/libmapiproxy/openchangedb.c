@@ -1206,6 +1206,55 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *l
 }
 
 /**
+   \details Allocates a batch of new change numbers and returns them
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param cn pointer to the cn value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct ldb_context *ldb_ctx, TALLOC_CTX *mem_ctx, uint64_t max, struct UI8Array_r **cns_p)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		cn, count;
+	struct UI8Array_r	*cns;
+
+	/* Get the current GlobalCount */
+	local_mem_ctx = talloc_named(NULL, 0, "get_new_changeNumber");
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	cn = ldb_msg_find_attr_as_uint64(res->msgs[0], "ChangeNumber", 1);
+
+	cns = talloc_zero(local_mem_ctx, struct UI8Array_r);
+	cns->cValues = max;
+	cns->lpui8 = talloc_array(cns, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		cns->lpui8[count] = (exchange_globcnt(cn + count) << 16) | 0x0001;
+	}
+
+	/* Update GlobalCount value */
+	msg = ldb_msg_new(local_mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, local_mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "ChangeNumber", "%"PRIu64, (cn + max));
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, local_mem_ctx);
+
+	*cns_p = cns;
+	(void) talloc_reference(mem_ctx, cns);
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Returns the change number that will be allocated when openchangedb_get_new_changeNumber is next invoked
    
    \param ldb_ctx pointer to the openchange LDB context

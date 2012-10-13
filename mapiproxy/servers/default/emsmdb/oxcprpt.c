@@ -167,7 +167,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				}
 				if (stream_size > 8192) {
 					DEBUG(5, ("%s: attaching stream data for property %.8x\n", __FUNCTION__, properties->aulPropTag[i]));
-					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i]);
+					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i], false);
 					if (stream_data) {
 						DLIST_ADD(object->stream_data, stream_data);
 					}
@@ -629,7 +629,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 				goto end;
 			}
 			if (retvals[0] == MAPI_E_SUCCESS) {
-				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0]);
+				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0], object->object.stream->read_write);
 				object->object.stream->stream.buffer = stream_data->data;
 				(void) talloc_reference(object, stream_data);
 				talloc_free(data_pointers);

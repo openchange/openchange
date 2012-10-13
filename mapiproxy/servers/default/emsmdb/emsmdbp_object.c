@@ -2729,7 +2729,7 @@ _PUBLIC_ void emsmdbp_fill_row_blob(TALLOC_CTX *mem_ctx,
         }
 }
 
-_PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value)
+_PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *mem_ctx, enum MAPITAGS prop_tag, void *value, bool read_write)
 {
 	uint16_t			prop_type;
 	struct emsmdbp_stream_data	*stream_data;
@@ -2754,7 +2754,12 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *
 	}
 	else if (prop_type == PT_BINARY) {
 		stream_data->data.length = ((struct Binary_r *) value)->cb;
-		stream_data->data.data = ((struct Binary_r *) value)->lpb;
+		if (read_write) {
+			stream_data->data.data = talloc_memdup(stream_data, ((struct Binary_r *) value)->lpb, stream_data->data.length);
+		}
+		else {
+			stream_data->data.data = ((struct Binary_r *) value)->lpb;
+		}
                 (void) talloc_reference(stream_data, value);
 	}
 	else {

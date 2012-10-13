@@ -347,7 +347,7 @@ int emsmdbp_object_set_properties(struct emsmdbp_context *, struct emsmdbp_objec
 void **emsmdbp_object_get_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
 struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
-struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value);
+struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value, bool);
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
 void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);

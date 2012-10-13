@@ -1167,6 +1167,55 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(struct ldb_context *ldb_c
 }
 
 /**
+   \details Allocates a batch of new folder ids and returns them
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid pointer to the fid value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderIDs(struct ldb_context *ldb_ctx, TALLOC_CTX *mem_ctx, uint64_t max, struct UI8Array_r **fids_p)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		fid, count;
+	struct UI8Array_r	*fids;
+
+	/* Get the current GlobalCount */
+	local_mem_ctx = talloc_named(NULL, 0, "get_next_folderIDs");
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
+
+	fids = talloc_zero(local_mem_ctx, struct UI8Array_r);
+	fids->cValues = max;
+	fids->lpui8 = talloc_array(fids, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		fids->lpui8[count] = (exchange_globcnt(fid + count) << 16) | 0x0001;
+	}
+
+	/* Update GlobalCount value */
+	msg = ldb_msg_new(local_mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, local_mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRIu64, ((fid) + max));
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, local_mem_ctx);
+
+	*fids_p = fids;
+	(void) talloc_reference(mem_ctx, fids);
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Allocates a new change number and returns it
    
    \param ldb_ctx pointer to the openchange LDB context

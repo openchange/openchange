@@ -57,6 +57,7 @@
 
 /* forward declarations */
 struct mapistore_mgmt_notif;
+struct tm;
 
 typedef	int (*init_backend_fn) (void);
 

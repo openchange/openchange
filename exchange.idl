@@ -1088,7 +1088,7 @@ System Attendant Private Interface
 		[case(ActionType_OP_COPY)]		MoveCopy_Action			CopyAction;
 		[case(ActionType_OP_REPLY)]		ReplyOOF_Action			ReplyAction;
 		[case(ActionType_OP_OOF_REPLY)]		ReplyOOF_Action			ReplyOOFAction;
-		[case(ActionType_OP_DEFER_ACTION)][flag(NDR_REMAINING)] DATA_BLOB	DeferAction;
+		[case(ActionType_OP_DEFER_ACTION)][flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	DeferAction;
 		[case(ActionType_OP_BOUNCE)]		BounceCode			BounceCode;
 		[case(ActionType_OP_TAG)]		mapi_SPropValue_wrap	       	PropValue;
 		[case(ActionType_OP_FORWARD)]		ForwardDelegate_Action		ForwardAction;
@@ -1106,7 +1106,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16					ActionLength;
-		[subcontext(0),subcontext_size(ActionLength),flag(NDR_REMAINING)] ActionBlockData ActionBlockData;
+		[subcontext(0),subcontext_size(ActionLength),flag(NDR_REMAINING|NDR_NOALIGN)] ActionBlockData ActionBlockData;
 	} ActionBlock;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1144,7 +1144,7 @@ System Attendant Private Interface
 
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint16					cValues;
-		[flag(NDR_REMAINING)]mapi_SPropValue	lpProps[cValues];
+		[flag(NDR_REMAINING|NDR_NOALIGN)]mapi_SPropValue	lpProps[cValues];
 	} mapi_SPropValue_array;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1330,7 +1330,7 @@ System Attendant Private Interface
 // TODO: figure out if "layout" can go
 		uint8									layout;
 // TODO: convert this to a proper structure - see if we already have one.
-		[flag(NDR_REMAINING)] DATA_BLOB						prop_values;
+		[flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB						prop_values;
 	} RecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1405,7 +1405,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		layout;
-		[flag(NDR_REMAINING)] DATA_BLOB prop_data;
+		[flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB prop_data;
 	} GetProps_repl;
 
 	/*************************/
@@ -1504,7 +1504,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)]struct {
 		uint32		idx;
 		ulRecipClass	RecipClass;		
-		[subcontext(2),flag(NDR_REMAINING)] RecipientRow RecipientRow;
+		[subcontext(2),flag(NDR_REMAINING|NDR_NOALIGN)] RecipientRow RecipientRow;
 	} ModifyRecipientRow;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1581,7 +1581,7 @@ System Attendant Private Interface
 		uint8				handle_idx;
 		MSGFLAG_READ			flags;
 	        /* TEMP HACK for editing notes without crashing Outlook:
-		   [flag(NDR_REMAINING)] DATA_BLOB	clientdata; */
+		   [flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	clientdata; */
 	} SetMessageReadFlag_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
@@ -1831,7 +1831,7 @@ System Attendant Private Interface
 	typedef [nopush,nopull,flag(NDR_NOALIGN)] struct {
 		uint8		Origin;
 		uint16		RowCount;
-		[flag(NDR_REMAINING)]DATA_BLOB	RowData;
+		[flag(NDR_REMAINING|NDR_NOALIGN)]DATA_BLOB	RowData;
 	} QueryRows_repl;
 
 	/**************************/
@@ -2443,13 +2443,13 @@ System Attendant Private Interface
 	} ReadStream_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB data;
+		[subcontext(2), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB data;
 	} ReadStream_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x2d */
 	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB	data;
+		[subcontext(2), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	data;
 	} WriteStream_req;
 
 
@@ -2949,7 +2949,7 @@ System Attendant Private Interface
 		uint16		TotalStepCount;
 		uint8		Reserved;
 		uint16		TransferBufferSize;
-		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING)] DATA_BLOB TransferBuffer;
+		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB TransferBuffer;
 	} FastTransferSourceGetBuffer_repl;
 
 	/**************************/
@@ -3031,7 +3031,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x54  */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		TransferBufferSize;
-		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING)] DATA_BLOB TransferBuffer;
+		[subcontext(0),subcontext_size(TransferBufferSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB TransferBuffer;
 	} FastTransferDestinationPutBuffer_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3124,7 +3124,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint32		ExpandedRowCount;
 		uint16		RowCount;
-		[flag(NDR_REMAINING)]DATA_BLOB  RowData;
+		[flag(NDR_REMAINING|NDR_NOALIGN)]DATA_BLOB  RowData;
 	} ExpandRow_repl;
 
 	/*************************/
@@ -3233,7 +3233,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		boolean8	HasFinished;
 		uint16		DataSize;
-		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING)] DATA_BLOB Data;
+		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Data;
 	} ReadPerUserInformation_repl;
 
 	/*************************/
@@ -3243,7 +3243,7 @@ System Attendant Private Interface
 		boolean8	HasFinished;
 		uint32		DataOffset;
 		uint16		DataSize;
-		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING)] DATA_BLOB Data;
+		[subcontext(0), subcontext_size(DataSize), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Data;
 		GUID		ReplGuid;	/* Note: ReplGuid gets only included under specific circumstances */
 	} WritePerUserInformation_req;
 
@@ -3413,7 +3413,7 @@ System Attendant Private Interface
 		SendOptions				SendOptions;
 		SynchronizationFlag			SynchronizationFlag;
 		uint16					RestrictionSize;
- 		[subcontext(0),subcontext_size(RestrictionSize),flag(NDR_REMAINING)] DATA_BLOB	RestrictionData;
+ 		[subcontext(0),subcontext_size(RestrictionSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	RestrictionData;
 		SynchronizationExtraFlags		SynchronizationExtraFlags;
 		mapi_SPropTagArray			PropertyTags;
 	} SyncConfigure_req;
@@ -3591,7 +3591,7 @@ System Attendant Private Interface
 	} MessageReadState;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2),flag(NDR_REMAINING)] DATA_BLOB MessageReadStates;
+		[subcontext(2),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB MessageReadStates;
 	} SyncImportReadStateChanges_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3666,7 +3666,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x90 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		[subcontext(2), flag(NDR_REMAINING)] DATA_BLOB	data;
+		[subcontext(2), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	data;
 	} WriteAndCommitStream_req;
 
 
@@ -4511,7 +4511,7 @@ System Attendant Private Interface
 		uint32		MajorVersion;
 		uint32		MinorVersion;
 		uint32		BuildNumber;
-		[subcontext(0), subcontext_size(132), flag(NDR_NOALIGN|NDR_REMAINING)] DATA_BLOB Reserved_1;
+		[subcontext(0), subcontext_size(132), flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Reserved_1;
 		uint16		ServicePackMajor;
 		uint16		ServicePackMinor;
 		uint32		Reserved_2;
@@ -4616,7 +4616,7 @@ System Attendant Private Interface
 		[out]				uint16					rgwServerVersion[3],
 		[out]				uint16					rgwBestVersion[3],
 		[in,out]			uint32					*pulTimeStamp,
-		[in,subcontext(4),flag(NDR_NOALIGN|NDR_REMAINING)] mapi2k7_AuxInfo	*rgbAuxIn,
+		[in,subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi2k7_AuxInfo	*rgbAuxIn,
 		[in]				uint32					cbAuxIn,
 		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] mapi2k7_AuxInfo	*rgbAuxOut,
 		[in,out][range(0,0x1008)]	uint32					*pcbAuxOut
@@ -4637,7 +4637,7 @@ System Attendant Private Interface
 
 	typedef [public,nopull] struct {
 		RPC_HEADER_EXT							header;
-		[subcontext(0),flag(NDR_NOALIGN|NDR_REMAINING)] mapi_response	*mapi_response;
+		[subcontext(0),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_response	*mapi_response;
 	} mapi2k7_response;
 
 	[public,noprint] MAPISTATUS EcDoRpcExt2(

@@ -204,9 +204,9 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 								     {MAPISTORE_JOURNAL_ROLE, PR_IPM_JOURNAL_ENTRYID, "Journal"}};
 	const char				**container_classes;
 	const char				*search_container_classes[] = {"Outlook.Reminder", "IPF.Task", "IPF.Note"};
-	uint32_t				context_id;
-	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, found_fid, current_cn;
-	char					*fallback_url, *entryid_dump;
+	uint32_t				context_id, row_count;
+	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, current_mid, found_fid, current_cn;
+	char					*fallback_url, *entryid_dump, *url;
 	const char				*mapistore_url, *current_name, *base_name;
 	struct emsmdbp_special_folder		*current_folder;
 	struct SRow				property_row;
@@ -215,7 +215,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	struct FolderEntryId			folder_entryid;
 	struct Binary_r				*entryId;
 	bool					exists, reminders_created;
-	void					*backend_object;
+	void					*backend_object, *backend_table, *backend_message;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -574,7 +574,75 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		}
 	}
 
+	/** create root/Freebusy Data folder + "LocalFreebusy" message (OXODLGT) */
+	/* FIXME: the problem here is that only the owner of a mailbox can create the delegation message and its container, meaning that when sharing an object, a delegate must at least login once to OpenChange before any one subscribes to his resources */
+	if (strcmp(emsmdbp_ctx->username, username) == 0) {
+		struct mapi_SRestriction restriction;
+		uint8_t status;
+
+		/* find out whether the "Freebusy Data" folder exists at the mailbox root */
+		ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, mailbox_fid, "Freebusy Data", &current_fid);
+		if (ret == MAPI_E_NOT_FOUND) {
+			/* create the folder */
+			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &current_fid);
+			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
+
+			property_row.cValues = 3;
+			property_row.lpProps[0].ulPropTag = PidTagDisplayName;
+			property_row.lpProps[0].value.lpszW = "Freebusy Data";
+			property_row.lpProps[1].ulPropTag = PidTagParentFolderId;
+			property_row.lpProps[1].value.d = mailbox_fid;
+			property_row.lpProps[2].ulPropTag = PidTagChangeNumber;
+			property_row.lpProps[2].value.d = current_cn;
+			
+			mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, mailbox_fid, current_fid, current_cn, mapistore_url, -1);
+			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, current_fid, &property_row);
+			
+			/* instantiate the new folder in the backend to make sure it is initialized properly */
+			mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
+			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
+			mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, backend_object, &property_row);
+		}
+		else {
+			/* open the existing folder */
+			openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, current_fid, &url, true);
+			mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, url, current_fid, &context_id, &backend_object);
+			/* if (emsmdbp_ctx->mstore_ctx */
+			/* mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, url, &context_id, &backend_object); */
+		}
+
+		/* find out whether "LocalFreebusy" message exists */
+		mapistore_folder_open_table(emsmdbp_ctx->mstore_ctx, context_id, backend_object, mem_ctx, MAPISTORE_MESSAGE_TABLE, 0, &backend_table, &row_count);
+		restriction.rt = RES_PROPERTY;
+		restriction.res.resProperty.relop = RELOP_EQ;
+		restriction.res.resProperty.ulPropTag = restriction.res.resProperty.lpProp.ulPropTag = PidTagSubject;
+		restriction.res.resProperty.lpProp.value.lpszW = "LocalFreebusy";
+		mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, context_id, backend_table, &restriction, &status);
+		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, context_id, backend_table, MAPISTORE_PREFILTERED_QUERY, &row_count);
+		if (row_count == 0) {
+			/* create the message */
+			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &current_mid);
+			if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, context_id, backend_object, mem_ctx, current_mid, false, &backend_message) != MAPISTORE_SUCCESS) {
+				abort();
+			}
+
+			property_row.cValues = 3;
+			property_row.lpProps[0].ulPropTag = PidTagMessageClass;
+			property_row.lpProps[0].value.lpszW = "IPM.Microsoft.ScheduleData.FreeBusy";
+			property_row.lpProps[1].ulPropTag = PidTagSubjectPrefix;
+			property_row.lpProps[1].value.lpszW = "";
+			property_row.lpProps[2].ulPropTag = PidTagNormalizedSubject;
+			property_row.lpProps[2].value.lpszW = "LocalFreebusy";
+			mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, backend_message, &property_row);
+			mapistore_message_save(emsmdbp_ctx->mstore_ctx, context_id, backend_message);
+		}
+	
+		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
+	}
+
 	ldb_transaction_commit(emsmdbp_ctx->oc_ctx);
+
 
 	/* TODO: rename/create/delete folders at IPM level */
 

@@ -43,3 +43,7 @@ stamp-h1
 utils/mapitest/Doxyfile
 utils/mapitest/mapitest_proto.h
 utils/mapitest/proto.h
+_trial_temp
+*.orig
+*.rej
+*.pyc

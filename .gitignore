@@ -47,3 +47,5 @@ _trial_temp
 *.orig
 *.rej
 *.pyc
+samba4
+samba-*.tar.gz

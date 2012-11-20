@@ -315,6 +315,20 @@
 #define SIZE_DFLT_ROPMOVECOPYMESSAGES           1 
 
 /**
+   \details MoveFolder Rop has fixed response size for:
+   -#: PartialCompletion: uint8_t
+
+*/
+#define SIZE_DFLT_ROPMOVEFOLDER                 1 
+
+/**
+   \details CopyFolder Rop has fixed response size for:
+   -#: PartialCompletion: uint8_t
+
+*/
+#define SIZE_DFLT_ROPCOPYFOLDER                 1 
+
+/**
    \details DeleteMessage Rop has fixed response size for:
    -# PartialCompletion: uint8_t
  */
@@ -473,6 +487,8 @@ uint16_t libmapiserver_RopSetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopEmptyFolder_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopMoveCopyMessages_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopMoveFolder_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopCopyFolder_size(struct EcDoRpc_MAPI_REPL *);
 
 
 /* definitions from libmapiserver_oxcmsg.c */

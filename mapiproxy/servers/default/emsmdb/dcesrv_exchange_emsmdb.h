@@ -72,6 +72,7 @@ struct emsmdbp_stream {
 };
 
 struct emsmdbp_syncconfigure_request {
+	bool is_collector;
 	bool contents_mode;
 
 	bool unicode;
@@ -173,33 +174,46 @@ struct emsmdbp_object_subscription {
 };
 
 struct emsmdbp_object_synccontext {
-	bool			is_collector;
-
 	struct emsmdbp_syncconfigure_request	request;
-	struct SPropTagArray	properties;
-	struct SPropTagArray	fai_properties;
 
-	/* idsets */
-	enum StateProperty	state_property;
-	struct emsmdbp_stream	state_stream;
+	/* debugging */
+	unsigned int sent_objects;
+	unsigned int skipped_objects;
+	unsigned int total_objects;
+	struct timeval request_start;
+
+	/* uploaded synchronization state */
 	struct idset		*idset_given;
 	struct idset		*cnset_seen;
 	struct idset		*cnset_seen_fai;
 	struct idset		*cnset_read;
 
-	struct emsmdbp_stream	stream;
+	struct SPropTagArray	properties;
+	struct SPropTagArray	fai_properties;
+
+	/* sync state upload */
+	enum StateProperty	state_property;
+	struct emsmdbp_stream	state_stream;
+
+	/* data download */
+	uint16_t		sync_stage;
+	void			*sync_data;
 	uint16_t		steps;
 	uint16_t		total_steps;
+
+	/* download buffers */
+	struct emsmdbp_stream	stream;
 	uint32_t		*cutmarks;
-	uint32_t		next_cutmark_ptr;
+	uint32_t		next_cutmark_idx;
 };
 
 struct emsmdbp_object_ftcontext {
-	struct emsmdbp_stream	stream;
 	uint16_t		steps;
 	uint16_t		total_steps;
+
+	struct emsmdbp_stream	stream;
 	uint32_t		*cutmarks;
-	uint32_t		next_cutmark_ptr;
+	uint32_t		next_cutmark_idx;
 };
 
 union emsmdbp_objects {
@@ -316,6 +330,7 @@ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
 enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint8_t);
+enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, const char *);
 struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *, struct emsmdbp_object *, uint32_t, uint32_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
@@ -332,7 +347,7 @@ int emsmdbp_object_set_properties(struct emsmdbp_context *, struct emsmdbp_objec
 void **emsmdbp_object_get_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);
 struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
-struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value);
+struct emsmdbp_stream_data *emsmdbp_stream_data_from_value(TALLOC_CTX *, enum MAPITAGS, void *value, bool);
 struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmdbp_object *, enum MAPITAGS);
 DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
 void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);
@@ -350,6 +365,8 @@ enum MAPISTATUS EcDoRpc_RopSetSearchCriteria(TALLOC_CTX *, struct emsmdbp_contex
 enum MAPISTATUS EcDoRpc_RopGetSearchCriteria(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 
 
 /* definitions from oxcmsg.c */

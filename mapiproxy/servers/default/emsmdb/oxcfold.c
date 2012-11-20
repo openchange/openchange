@@ -100,7 +100,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *mem_ctx,
 	response->HasRules = 0;
 	response->IsGhosted = 0;
 
-	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 	ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, request->folder_id, &object);
 	if (ret != MAPISTORE_SUCCESS) {
 		if (ret == MAPISTORE_ERR_DENIED) {
@@ -460,7 +460,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		response->IsExistingFolder = true;
 	}
 
-	mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 	if (response->IsExistingFolder) {
 		ret = emsmdbp_object_open_folder_by_fid(rec, emsmdbp_ctx, parent_object, fid, &object);
 		if (ret != MAPISTORE_SUCCESS) {
@@ -1028,6 +1028,208 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 
 end:
 	*size += libmapiserver_RopMoveCopyMessages_size(mapi_repl);
+
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc EmptyFolder (0x58) Rop. This operation removes the sub-folders
+   and messages from a given parent folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the EmptyFolder EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the EmptyFolder EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
+	uint32_t		handle;
+	struct mapi_handles	*handle_object;
+	void			*private_data;
+	struct MoveFolder_req	*request;
+	struct MoveFolder_repl	*response;
+	struct emsmdbp_object	*source_parent;
+	struct emsmdbp_object	*move_folder;
+	struct emsmdbp_object	*target_folder;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	request = &mapi_req->u.mapi_MoveFolder;
+	response = &mapi_repl->u.mapi_MoveFolder;
+
+	/* Retrieve the source parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        source_parent = private_data;
+	if (!source_parent || source_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Open the folder being moved as it will be the actor object in this process */
+	ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, source_parent, request->FolderId, &move_folder);
+	if (ret != MAPISTORE_SUCCESS) {
+		mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		goto end;
+	}
+
+	/* Retrieve the destination parent handle in the hierarchy */
+	handle = handles[request->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        target_folder = private_data;
+	if (!target_folder || target_folder->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	ret = emsmdbp_folder_move_folder(emsmdbp_ctx, move_folder, target_folder, request->NewFolderName.lpszW);
+	mapi_repl->error_code = mapistore_error_to_mapi(ret);
+	response->PartialCompletion = false;
+
+end:
+	*size += libmapiserver_RopMoveFolder_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc EmptyFolder (0x58) Rop. This operation removes the sub-folders
+   and messages from a given parent folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the EmptyFolder EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the EmptyFolder EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct EcDoRpc_MAPI_REQ *mapi_req, struct EcDoRpc_MAPI_REPL *mapi_repl, uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
+	uint32_t		handle;
+	struct mapi_handles	*handle_object;
+	void			*private_data;
+	struct CopyFolder_req	*request;
+	struct CopyFolder_repl	*response;
+	struct emsmdbp_object	*source_parent;
+	struct emsmdbp_object	*copy_folder;
+	struct emsmdbp_object	*target_folder;
+	uint32_t		contextID;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x36)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+
+	request = &mapi_req->u.mapi_CopyFolder;
+	response = &mapi_repl->u.mapi_CopyFolder;
+
+	/* Retrieve the source parent handle in the hierarchy */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        source_parent = private_data;
+	if (!source_parent || source_parent->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	/* Open the folder being copied as it will be the actor object in this process */
+	ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, source_parent, request->FolderId, &copy_folder);
+	if (ret != MAPISTORE_SUCCESS) {
+		mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		goto end;
+	}
+	/* TODO: we should provide the ability to perform this operation between non-mapistore objects or between mapistore and non-mapistore objects */
+	if (!emsmdbp_is_mapistore(copy_folder)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
+	/* Retrieve the destination parent handle in the hierarchy */
+	handle = handles[request->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &handle_object);
+	if (retval) {
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	mapi_handles_get_private_data(handle_object, &private_data);
+        target_folder = private_data;
+	if (!target_folder || target_folder->type != EMSMDBP_OBJECT_FOLDER) {
+		DEBUG(5, ("  invalid handle (%x): %x\n", handle, mapi_req->handle_idx));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+	if (!emsmdbp_is_mapistore(target_folder)) {
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+	
+	contextID = emsmdbp_get_contextID(copy_folder);
+	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, copy_folder->backend_object, target_folder->backend_object, request->WantRecursive, request->NewFolderName.lpszW);
+	mapi_repl->error_code = mapistore_error_to_mapi(ret);
+	response->PartialCompletion = false;
+
+end:
+	*size += libmapiserver_RopCopyFolder_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
 
 	return MAPI_E_SUCCESS;
 }

@@ -48,6 +48,8 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObje
 	return (PyObject *)folder;
 }
 
+/* FIXME: fix subscription code before reenabling this */
+#if 0
 static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObject *self, PyObject *args)
 {
 	int						ret;
@@ -95,7 +97,9 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 	}
 	
 
+#if 0
 	ret = mapistore_mgmt_interface_register_subscription(self->mstore_ctx->conn_info, &n);
+#endif
 
 	/* Upon success attach subscription to session object using
 	 * existing mapistore_notification.c implementation */
@@ -157,8 +161,9 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 		n.MAPIStoreURI = mapistoreURI;
 	}
 	
-
+#if 0
 	ret = mapistore_mgmt_interface_unregister_subscription(self->mstore_ctx->conn_info, &n);
+#endif
 
 	/* Remove matching notifications from mapistore_notification system */
 	if (ret == MAPISTORE_SUCCESS) {
@@ -193,12 +198,15 @@ static PyObject *py_MAPIStoreContext_get_notifications(PyMAPIStoreContextObject 
 	}
 	return Py_None;
 }
+#endif /* disabled notifications */
 
 static PyMethodDef mapistore_context_methods[] = {
 	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },
+#if 0
 	{ "add_subscription", (PyCFunction)py_MAPIStoreContext_register_subscription, METH_VARARGS },
 	{ "delete_subscription", (PyCFunction)py_MAPIStoreContext_unregister_subscription, METH_VARARGS },
 	{ "get_notifications", (PyCFunction)py_MAPIStoreContext_get_notifications, METH_VARARGS },
+#endif /* disabled notifications */
 	{ NULL },
 };
 

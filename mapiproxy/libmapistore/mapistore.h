@@ -43,10 +43,13 @@
 #include <sys/stat.h>
 
 #include <stdio.h>
+#include <time.h>
 #include <unistd.h>
 #include <stdint.h>
 #include <stdbool.h>
+#if 0
 #include <mqueue.h>
+#endif
 
 #include <tdb.h>
 #include <ldb.h>
@@ -57,7 +60,6 @@
 
 /* forward declarations */
 struct mapistore_mgmt_notif;
-struct tm;
 
 typedef	int (*init_backend_fn) (void);
 
@@ -177,10 +179,14 @@ struct mapistore_backend {
 		enum mapistore_error	(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		enum mapistore_error	(*delete_message)(void *, uint64_t, uint8_t);
 	        enum mapistore_error	(*move_copy_messages)(void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
-		enum mapistore_error	(*get_deleted_fmids)(void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct I8Array_r **, uint64_t *);
+	        enum mapistore_error	(*move_folder)(void *, void *, const char *);
+	        enum mapistore_error	(*copy_folder)(void *, void *, bool, const char *);
+		enum mapistore_error	(*get_deleted_fmids)(void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct UI8Array_r **, uint64_t *);
 		enum mapistore_error	(*get_child_count)(void *, enum mapistore_table_type, uint32_t *);
                 enum mapistore_error	(*open_table)(void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 		enum mapistore_error	(*modify_permissions)(void *, uint8_t, uint16_t, struct PermissionData *);
+
+		enum mapistore_error	(*preload_message_bodies)(void *, enum mapistore_table_type, const struct UI8Array_r *);
         } folder;
 
         /** oxcmsg operations */
@@ -194,9 +200,10 @@ struct mapistore_backend {
                 enum mapistore_error	(*create_attachment)(void *, TALLOC_CTX *, void **, uint32_t *);
                 enum mapistore_error	(*get_attachment_table)(void *, TALLOC_CTX *, void **, uint32_t *);
 
-		/* attachments */
+		/* attachment operations */
                 enum mapistore_error	(*open_embedded_message)(void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **);
-        } message;
+                enum mapistore_error	(*create_embedded_message)(void *, TALLOC_CTX *, void **, struct mapistore_message **);
+	} message;
 
         /** oxctabl operations */
         struct {
@@ -252,6 +259,9 @@ struct mapistore_context {
 	struct ldb_context			*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 	mqd_t					mq_ipc;
+#if 0
+	mqd_t					mq_ipc;
+#endif
 };
 
 struct mapistore_freebusy_properties {
@@ -305,12 +315,15 @@ enum mapistore_error mapistore_folder_open_message(struct mapistore_context *, u
 enum mapistore_error mapistore_folder_create_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 enum mapistore_error mapistore_folder_delete_message(struct mapistore_context *, uint32_t, void *, uint64_t, uint8_t);
 enum mapistore_error mapistore_folder_move_copy_messages(struct mapistore_context *, uint32_t, void *, void *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);
-enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct I8Array_r **, uint64_t *);
+enum mapistore_error mapistore_folder_move_folder(struct mapistore_context *, uint32_t, void *, void *, const char *);
+enum mapistore_error mapistore_folder_copy_folder(struct mapistore_context *, uint32_t, void *, void *, bool, const char *);
+enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct UI8Array_r **, uint64_t *);
 enum mapistore_error mapistore_folder_get_child_count(struct mapistore_context *, uint32_t, void *, enum mapistore_table_type, uint32_t *);
 enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *, uint32_t, void *, enum mapistore_table_type, TALLOC_CTX *, uint64_t **, uint32_t *);
 enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapistore_context *, uint32_t, void *, const char *, uint64_t *);
 enum mapistore_error mapistore_folder_open_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 enum mapistore_error mapistore_folder_modify_permissions(struct mapistore_context *, uint32_t, void *, uint8_t, uint16_t, struct PermissionData *);
+enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *, uint32_t, void *, enum mapistore_table_type, const struct UI8Array_r *);
 enum mapistore_error mapistore_folder_fetch_freebusy_properties(struct mapistore_context *, uint32_t, void *, struct tm *, struct tm *, TALLOC_CTX *, struct mapistore_freebusy_properties **);
 
 enum mapistore_error mapistore_message_get_message_data(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct mapistore_message **);
@@ -322,6 +335,7 @@ enum mapistore_error mapistore_message_open_attachment(struct mapistore_context 
 enum mapistore_error mapistore_message_create_attachment(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
 enum mapistore_error mapistore_message_get_attachment_table(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint32_t *);
 enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **msg);
+enum mapistore_error mapistore_message_attachment_create_embedded_message(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, void **, struct mapistore_message **msg);
 
 enum mapistore_error mapistore_table_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_table_set_columns(struct mapistore_context *, uint32_t, void *, uint16_t, enum MAPITAGS *);
@@ -334,6 +348,8 @@ enum mapistore_error mapistore_table_handle_destructor(struct mapistore_context 
 enum mapistore_error mapistore_properties_get_available_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, struct SPropTagArray **);
 enum mapistore_error mapistore_properties_get_properties(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
+
+enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error);
 
 
 /* definitions from mapistore_processing.c */
@@ -368,15 +384,17 @@ enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_c
 enum mapistore_error mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID, uint16_t *);
 uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
 enum mapistore_error mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
-enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, struct MAPINAMEID **);
+enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
 enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */
+#if 0
 enum mapistore_error mapistore_mgmt_backend_register_user(struct mapistore_connection_info *, const char *, const char *);
 enum mapistore_error mapistore_mgmt_backend_unregister_user(struct mapistore_connection_info *, const char *, const char *);
 enum mapistore_error mapistore_mgmt_interface_register_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 enum mapistore_error mapistore_mgmt_interface_unregister_subscription(struct mapistore_connection_info *, struct mapistore_mgmt_notif *);
 enum mapistore_error mapistore_mgmt_interface_register_bind(struct mapistore_connection_info *, uint16_t, uint8_t *, uint16_t, uint8_t *);
+#endif
 
 /* definitions from mapistore_notifications.c (proof-of-concept) */
 
@@ -405,8 +423,10 @@ struct mapistore_subscription {
 		struct mapistore_table_subscription_parameters table_parameters;
 		struct mapistore_object_subscription_parameters object_parameters;
 	} parameters;
+#if 0
 	char		*mqueue_name;
 	mqd_t		mqueue;
+#endif
 };
 
 struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *, struct mapistore_context *, const char *, uint32_t, uint16_t, void *);

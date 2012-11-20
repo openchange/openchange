@@ -20,7 +20,7 @@
 import os
 from select import poll, POLLIN, POLLHUP
 from socket import socket, AF_INET, AF_UNIX, SOCK_STREAM, MSG_WAITALL, \
-    error as socket_error
+    SHUT_RDWR, error as socket_error
 from struct import pack, unpack_from
 import sys
 from time import time, sleep
@@ -78,6 +78,15 @@ from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
 # those id must have the same length
 INBOUND_PROXY_ID = "IP"
 OUTBOUND_PROXY_ID = "OP"
+
+
+def _safe_close(socket_obj):
+    try:
+        socket_obj.shutdown(SHUT_RDWR)
+        socket_obj.close()
+    except:
+        pass
+
 
 class RPCProxyChannelHandler(object):
     def __init__(self, sockets_dir, logger):
@@ -169,8 +178,8 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             unix_socket.sendall(INBOUND_PROXY_ID)
 
             # send window_size to 256Kib (max size allowed)
-            # and conn_timeout (in seconds, max size allowed)
-            unix_socket.sendall(pack("<ll", (256 * 1024), 14400000))
+            # and conn_timeout (in milliseconds, max size allowed)
+            unix_socket.sendall(pack("<ll", (256 * 1024), 120000))
 
             # recv oc socket
             self.oc_conn = receive_socket(unix_socket)
@@ -242,14 +251,14 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("notifying OUT channel of shutdown")
                 try:
                     self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
-                    self.unix_socket.close()
+                    _safe_close(self.unix_socket)
                     self.logger.debug("OUT channel successfully notified")
                 except socket_error:
                     self.logger.debug("(OUT channel already shutdown the unix socket)")
                     # OUT channel already closed the connection
                     pass
 
-                self.oc_conn.close()
+                _safe_close(self.oc_conn)
 
             self.log_connection_stats()
             self.logger.debug("exiting from main sequence")
@@ -376,6 +385,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             # receive the WindowSize + ConnectionTimeout
             (self.in_window_size, self.in_conn_timeout) = \
                 unpack_from("<ll", unix_socket.recv(8, MSG_WAITALL))
+            self.logger.debug("window size = %d; conn_timeout = %d"
+                              % (self.in_window_size, self.in_conn_timeout))
             # send OC socket
             self.logger.debug("sending OC socket to IN")
             send_socket(unix_socket, self.oc_conn)
@@ -443,6 +454,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             chunks = fd_pool.poll(2000.0)
 
             if len(chunks) == 0:
+                # send ping packets?
                 pass
             else:
                 for data in chunks:
@@ -462,9 +474,9 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
         if self.unix_socket is not None:
-            self.unix_socket.close()
-        self.server_socket.close()
-        self.oc_conn.close()
+            _safe_close(self.unix_socket)
+        _safe_close(self.server_socket)
+        _safe_close(self.oc_conn)
 
     def sequence(self, environ, start_response):
         self.logger.debug("processing request")

@@ -34,6 +34,8 @@
 
 extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
 
+const char *openchangedb_nil_string = "<nil>";
+
 /**
    \details Retrieve the mailbox FolderID for given recipient from
    openchange dispatcher database
@@ -400,6 +402,56 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 }
 
 /**
+   \details Store the mapistore URI associated to a mailbox system
+   folder.
+
+   \param parent_ctx pointer to the memory context
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the Folder identifier to search for
+   \param mapistoreURL pointer on pointer to the mapistore URI the
+   function returns
+   \param owner pointer on pointer to the owner of the parent mailbox
+   \param mailboxstore boolean value which defines whether the record
+   has to be searched within Public folders hierarchy or not
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct ldb_context *ldb_ctx,
+						       uint64_t fid,
+						       const char *mapistoreURL,
+						       bool mailboxstore)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+
+	if (mailboxstore == true) {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+	} else {
+		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+	}
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	msg = ldb_msg_new(mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_string(msg, "MAPIStoreURI", mapistoreURL);
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+/**
    \details Retrieve the parent fid associated to a mailbox system
    folder.
 
@@ -725,6 +777,11 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct ldb_context *ldb_c
 }
 
 
+static char *openchangedb_unknown_property(TALLOC_CTX *mem_ctx, uint32_t proptag)
+{
+	return talloc_asprintf(mem_ctx, "Unknown%.8x", proptag);
+}
+
 /**
    \details Check if a property exists within an openchange dispatcher
    database record
@@ -754,7 +811,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_lookup_folder_property(struct ldb_context 
 
 	/* Step 2. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 3. Search for attribute */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
@@ -828,11 +887,12 @@ static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *s
 			tmp[i - current] = 0;
 			i++;
 
-			bin_array->lpbin[j].lpb = (uint8_t *) tmp;
-			if (*tmp) {
+			if (tmp[0] != 0 && strcmp(tmp, openchangedb_nil_string) != 0) {
+				bin_array->lpbin[j].lpb = (uint8_t *) tmp;
 				bin_array->lpbin[j].cb = ldb_base64_decode((char *) bin_array->lpbin[j].lpb);
 			}
 			else {
+				bin_array->lpbin[j].lpb = talloc_zero(bin_array, uint8_t);
 				bin_array->lpbin[j].cb = 0;
 			}
 		}
@@ -967,8 +1027,14 @@ void *openchangedb_get_property_data_message(TALLOC_CTX *mem_ctx,
 	case PT_BINARY:
 		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, 0x0);
 		bin = talloc_zero(mem_ctx, struct Binary_r);
-		bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
-		bin->cb = ldb_base64_decode((char *) bin->lpb);
+		if (strcmp(str, openchangedb_nil_string) == 0) {
+			bin->lpb = (uint8_t *) talloc_zero(mem_ctx, uint8_t);
+			bin->cb = 0;
+		}
+		else {
+			bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, str);
+			bin->cb = ldb_base64_decode((char *) bin->lpb);
+		}
 		data = (void *)bin;
 		break;
 	case PT_MV_BINARY:
@@ -1029,7 +1095,11 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 		data = talloc_asprintf(mem_ctx, "%"PRIu64, nt_time);
 		break;
 	case PT_BINARY:
-		data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
+		/* ldb silently prevents empty strings from being added to the db */
+		if (value->value.bin.cb > 0)
+			data = ldb_base64_encode(mem_ctx, (char *) value->value.bin.lpb, value->value.bin.cb);
+		else
+			data = talloc_strdup(mem_ctx, openchangedb_nil_string);
 		break;
 	case PT_MV_BINARY:
 		bin_array = &value->value.MVbin;
@@ -1097,6 +1167,55 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(struct ldb_context *ldb_c
 }
 
 /**
+   \details Allocates a batch of new folder ids and returns them
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid pointer to the fid value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderIDs(struct ldb_context *ldb_ctx, TALLOC_CTX *mem_ctx, uint64_t max, struct UI8Array_r **fids_p)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		fid, count;
+	struct UI8Array_r	*fids;
+
+	/* Get the current GlobalCount */
+	local_mem_ctx = talloc_named(NULL, 0, "get_next_folderIDs");
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
+
+	fids = talloc_zero(local_mem_ctx, struct UI8Array_r);
+	fids->cValues = max;
+	fids->lpui8 = talloc_array(fids, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		fids->lpui8[count] = (exchange_globcnt(fid + count) << 16) | 0x0001;
+	}
+
+	/* Update GlobalCount value */
+	msg = ldb_msg_new(local_mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, local_mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRIu64, ((fid) + max));
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, local_mem_ctx);
+
+	*fids_p = fids;
+	(void) talloc_reference(mem_ctx, fids);
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details Allocates a new change number and returns it
    
    \param ldb_ctx pointer to the openchange LDB context
@@ -1127,6 +1246,85 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct ldb_context *l
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 	ret = ldb_modify(ldb_ctx, msg);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	*cn = (exchange_globcnt(*cn) << 16) | 0x0001;
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Allocates a batch of new change numbers and returns them
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param cn pointer to the cn value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct ldb_context *ldb_ctx, TALLOC_CTX *mem_ctx, uint64_t max, struct UI8Array_r **cns_p)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_message	*msg;
+	const char * const	attrs[] = { "*", NULL };
+	uint64_t		cn, count;
+	struct UI8Array_r	*cns;
+
+	/* Get the current GlobalCount */
+	local_mem_ctx = talloc_named(NULL, 0, "get_new_changeNumber");
+	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	cn = ldb_msg_find_attr_as_uint64(res->msgs[0], "ChangeNumber", 1);
+
+	cns = talloc_zero(local_mem_ctx, struct UI8Array_r);
+	cns->cValues = max;
+	cns->lpui8 = talloc_array(cns, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		cns->lpui8[count] = (exchange_globcnt(cn + count) << 16) | 0x0001;
+	}
+
+	/* Update GlobalCount value */
+	msg = ldb_msg_new(local_mem_ctx);
+	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, local_mem_ctx, res->msgs[0], "distinguishedName"));
+	ldb_msg_add_fmt(msg, "ChangeNumber", "%"PRIu64, (cn + max));
+	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+	ret = ldb_modify(ldb_ctx, msg);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, local_mem_ctx);
+
+	*cns_p = cns;
+	(void) talloc_reference(mem_ctx, cns);
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Returns the change number that will be allocated when openchangedb_get_new_changeNumber is next invoked
+   
+   \param ldb_ctx pointer to the openchange LDB context
+   \param cn pointer to the cn value the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct ldb_context *ldb_ctx, uint64_t *cn)
+{
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	struct ldb_result	*res;
+	const char * const	attrs[] = { "ChangeNumber", NULL };
+
+	/* Get the current GlobalCount */
+	mem_ctx = talloc_named(NULL, 0, "get_next_changeNumber");
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*cn = ldb_msg_find_attr_as_uint64(res->msgs[0], "ChangeNumber", 1);
 
 	talloc_free(mem_ctx);
 
@@ -1211,7 +1409,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 
 	/* Step 2. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 3. Ensure the element exists */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
@@ -1271,7 +1471,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct ldb_context *
 			/* Step 2. Convert proptag into PidTag attribute */
 			PidTagAttr = (char *) openchangedb_property_get_attribute(value->ulPropTag);
 			if (!PidTagAttr) {
-				PidTagAttr = talloc_asprintf(mem_ctx, "%.8x", value->ulPropTag);
+				PidTagAttr = openchangedb_unknown_property(mem_ctx, value->ulPropTag);
 			}
 
 			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
@@ -1350,7 +1550,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 
 	/* Step 3. Convert proptag into PidTag attribute */
 	PidTagAttr = openchangedb_property_get_attribute(proptag);
-	OPENCHANGE_RETVAL_IF(!PidTagAttr, MAPI_E_NOT_FOUND, mem_ctx);
+	if (!PidTagAttr) {
+		PidTagAttr = openchangedb_unknown_property(mem_ctx, proptag);
+	}
 
 	/* Step 4. Ensure the element exists */
 	OPENCHANGE_RETVAL_IF(!ldb_msg_find_element(res->msgs[0], PidTagAttr), MAPI_E_NOT_FOUND, mem_ctx);
@@ -1650,33 +1852,27 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", partialURI);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
-	printf("count: %d\n", res->count);
 	*count = res->count;
-	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count + 1);
+	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count);
 	*users = talloc_array(parent_ctx, char *, *count);
 
 	for (i = 0; i != *count; i++) {
 		tmp = ldb_msg_find_attr_as_string(res->msgs[i], "MAPIStoreURI", NULL);
-		printf("(MAPIStoreURI[%d]: tmp = %s\n", i, tmp);
 		*MAPIStoreURI[i] = talloc_strdup((TALLOC_CTX *)*MAPIStoreURI, tmp);
 
 		/* Retrieve the system user name */
 		mailboxDN = ldb_msg_find_attr_as_string(res->msgs[i], "mailboxDN", NULL);
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, mailboxDN);
-		printf("mailboxDN: %s\n", mailboxDN);
 		ret = ldb_search(ldb_ctx, mem_ctx, &mres, dn, LDB_SCOPE_SUBTREE, attrs, "(distinguishedName=%s)", mailboxDN);
-		printf("ret = %d\n", ret);
 		/* This should NEVER happen */
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 		tmp = ldb_msg_find_attr_as_string(mres->msgs[0], "cn", NULL);
-		printf("tmp = %s\n", tmp);
 		*users[i] = talloc_strdup((TALLOC_CTX *)*users, tmp);
 		talloc_free(mres);
 	}
 
 	talloc_free(mem_ctx);
 
-	printf("here\n");
 	return MAPI_E_SUCCESS;
 }
 
@@ -1732,6 +1928,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct ldb_context *ldb_ctx
 	guid = GUID_random();
 	ldb_msg_add_fmt(msg, "MailboxGUID", "%s", GUID_string(mem_ctx, &guid));
 	ldb_msg_add_string(msg, "cn", username);
+	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_fmt(msg, "PidTagDisplayName", "OpenChange Mailbox: %s", username);
@@ -1785,6 +1982,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	char			*parentDN;
 	struct ldb_dn		*basedn;
 	struct ldb_message	*msg;
+	int			error;
 	NTTIME			now;
 
 	/* Sanity Checks */
@@ -1823,14 +2021,13 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 	ldb_msg_add_string(msg, "PidTagAttributeHidden", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeSystem", "0");
 	ldb_msg_add_string(msg, "PidTagAttributeReadOnly", "0");
+	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
 	ldb_msg_add_fmt(msg, "PidTagFolderType", "1");
 	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRIu64, now);
 	if (mailboxDN) {
 		ldb_msg_add_string(msg, "mailboxDN", mailboxDN);
-	} else {
-		ldb_msg_add_string(msg, "mailboxDN", parentDN);
 	}
 	if (parentFolderID) {
 		ldb_msg_add_fmt(msg, "PidTagParentFolderId", "%"PRIu64, parentFolderID);
@@ -1847,11 +2044,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct ldb_context *ldb_ctx,
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		retval = MAPI_E_CALL_FAILED;
-	}
-	else {
+	error = ldb_add(ldb_ctx, msg);
+	switch (error) {
+	case 0:
 		retval = MAPI_E_SUCCESS;
+		break;
+	case 68:
+		retval = MAPI_E_COLLISION;
+		break;
+	default:
+		retval = MAPI_E_CALL_FAILED;
 	}
 
 	talloc_free(mem_ctx);
@@ -1891,6 +2093,35 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct ldb_context *ldb_
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
 	
 	*RowCount = res->count;
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Retrieve the system idx associated with a folder record
+
+   \param ldb_ctx pointer to the openchange LDB context
+   \param fid the folder identifier to use for the search
+   \param system_idx_p pointer to the returned value
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_system_idx(struct ldb_context *ldb_ctx, uint64_t fid, int *system_idx_p)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "SystemIdx", NULL };
+	int			ret;
+
+	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+	*system_idx_p = ldb_msg_find_attr_as_int(res->msgs[0], "SystemIdx", -1);
 
 	talloc_free(mem_ctx);
 

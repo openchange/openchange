@@ -1,0 +1,167 @@
+openchange (1:1.0.r3960.sogo-1) unstable; urgency=low
+
+  * New upstream release.
+
+ -- Wolfgang Sourdeau <wsourdeau@inverse.ca>  Tue, 10 Apr 2012 10:05:06 -0400
+
+openchange (1:1.0-1) unstable; urgency=low
+
+  * Bump standards version to 3.9.3 (no changes).
+  * New upstream release.
+   + Sets table position in nspi_SeekEntries. LP: #926536
+   + No longer crashes on illegal multibyte sequence error in NDR.
+     LP: #684205
+  * Fixes dependencies on libraries required for symbols. Closes: #664937
+  * Leave creating symlinks to the openchange buildsystem rather than
+    doing it manually in debian/rules.
+  * Add dependency on autoconf and automake, for from-SVN builds.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Thu, 22 Mar 2012 12:52:26 +0100
+
+openchange (1:0.11.dfsg1-1) unstable; urgency=low
+
+  * Repack orig tarball to exclude waf. Closes: #654494
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Tue, 07 Feb 2012 16:21:04 +0100
+
+openchange (1:0.11-2) unstable; urgency=low
+
+  * Upload to unstable.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Wed, 28 Sep 2011 14:40:47 +0200
+
+openchange (1:0.11-1) experimental; urgency=low
+
+  * New upstream release.
+   + Supports newer versions of Samba4. Closes: #634549
+   + Fixes several bugs handling non-ascii characters. LP: #615444
+  * Switch to dh_python2. Closes: #616925.
+  * Add support for multi-arch.
+  * Bump standards version to 3.9.2 (no changes).
+  * Switch to new style debhelper.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Sun, 31 Jul 2011 21:01:51 +0200
+
+openchange (1:0.11~bzr1932-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Mon, 24 Jan 2011 14:01:32 -0800
+
+openchange (1:0.11~bzr1901-1) unstable; urgency=low
+
+  * New upstream snapshot.
+   + Fixes missing linking of -ldl. Closes: #558943
+  * Add dependency on libsubunit-dev for subunit support in mapitest.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Mon, 04 Oct 2010 20:42:11 +0200
+
+openchange (1:0.10~bzr1804-1) unstable; urgency=low
+
+  * New upstream snapshot.
+  * Change section of libmapi0, libmapipp0, libocpf0 to libs.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Mon, 23 Aug 2010 15:49:09 +0200
+
+openchange (1:0.9+svn2132-1) experimental; urgency=low
+
+  * New upstream snapshot.
+  * Bump standards version to 3.9.1 (no changes).
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Mon, 23 Aug 2010 14:14:19 +0200
+
+openchange (1:0.9+svn1970-1) experimental; urgency=low
+
+  [ Mathieu Parent ]
+  * Add Vcs-Browser
+  * libmapi-dev depends on libndr-standard-dev.
+    Fix "Missing dependency on samba4-dev" (Closes: #549012)
+
+  [ Jelmer Vernooij ]
+  * Use source format version 3.
+  * Bump standards version to 3.8.4.
+  * New upstream snapshot.
+  * Add build dependency on zlib1g-dev. Closes: #577330
+  * Migrate packaging to Bazaar.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Sat, 19 Jun 2010 00:14:54 +0200
+
+openchange (1:0.8.2+svn1524-1) unstable; urgency=low
+
+  * New upstream snapshot.
+  * Upload to unstable.
+  * Bump standards version to 3.8.3.
+  * Add missing build dependency on libsqlite3-dev. Thanks Fabrice
+    Coutadeur <fabricesp@ubuntu.com>. (Closes: #541134)
+  * Remove optional build-dep on samba4-specific ldb.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Sat, 12 Sep 2009 14:14:05 +0200
+
+openchange (1:0.8.2+svn1423-1) experimental; urgency=low
+
+  * New upstream snapshot.
+  * Build exchange2ical.
+  * Add missing dependency on libtevent-dev. (Closes: #524000)
+  * Fix missing dependencies of libmapi-dev. (Closes: #525884, Closes: #525890)
+  * Add libmapi++ package.
+  * Add libmapistore{0,-dev} packages for MAPI storage library.
+  * Add openchangeserver-dev package.
+  * Include howto in openchangeserver package. (Closes: #524694)
+  * Bump standards version to 3.8.2.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Sat, 18 Jul 2009 18:03:29 +0200
+
+openchange (1:0.8-2) experimental; urgency=low
+
+  * Depend on python and install server provision scripts.  (Closes: #511941)
+  * Filter code name out of version in debian/watch.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Sat, 24 Jan 2009 21:43:19 +0100
+
+openchange (1:0.8-1) experimental; urgency=low
+
+  * New upstream release.
+
+ -- Jelmer Vernooij <jelmer@debian.org>  Wed, 21 Jan 2009 00:56:36 +0100
+
+openchange (1.0~svn991-1) experimental; urgency=low
+
+  * New upstream snapshot. (Closes: #504968, #507061)
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Sun, 11 Jan 2009 15:07:53 +0100
+
+openchange (1.0~svn894-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Wed, 26 Nov 2008 19:37:55 +0100
+
+openchange (1.0~svn842-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Sat, 01 Nov 2008 00:59:53 +0100
+
+openchange (1.0~svn794-2) experimental; urgency=low
+
+  * Require a newer version of LDB because of API changes. (Closes: #500790)
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Wed, 01 Oct 2008 15:12:19 +0200
+
+openchange (1.0~svn794-1) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Tue, 30 Sep 2008 18:01:25 +0200
+
+openchange (1.0~svn694-2) experimental; urgency=low
+
+  * New upstream snapshot.
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Mon, 25 Aug 2008 17:40:17 +0200
+
+openchange (1.0~svn679-1) experimental; urgency=low
+
+  * Initial release. (Closes: #420291)
+
+ -- Jelmer Vernooij <jelmer@samba.org>  Wed, 06 Aug 2008 18:32:45 +0200

@@ -218,7 +218,7 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "CN=%s", username);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s", username);
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {

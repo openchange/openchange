@@ -98,7 +98,10 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_SHORTCUTS, &response->LogonType.store_mailbox.Shortcuts);
 
 	/* Step 5. Set ResponseFlags */
-	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved | ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
+	response->LogonType.store_mailbox.ResponseFlags = ResponseFlags_Reserved;
+	if (username && emsmdbp_ctx->username && strcmp(username, emsmdbp_ctx->username) == 0) {
+		response->LogonType.store_mailbox.ResponseFlags |= ResponseFlags_OwnerRight | ResponseFlags_SendAsRight;
+	}
 
 	/* Step 6. Retrieve MailboxGuid */
 	openchangedb_get_MailboxGuid(emsmdbp_ctx->oc_ctx, username, &response->LogonType.store_mailbox.MailboxGuid);
@@ -260,13 +263,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 					    uint32_t *handles,
 					    uint16_t *size)
 {
-        /* struct mapistore_subscription_list *subscription_list, *subscription_holder; */
-        /* struct mapistore_subscription *subscription; */
-	struct mapistore_subscription_list	*el;
+        /* struct mapistore_subscription_list *subscription_list, *subscription_holder;
+	   struct mapistore_subscription *subscription;
+	   struct mapistore_subscription_list	*el;*/
 	enum MAPISTATUS				retval;
 	uint32_t				handle;
 
 	handle = handles[request->handle_idx];
+#if 0
 next:
 	for (el = emsmdbp_ctx->mstore_ctx->subscriptions; el; el = el->next) {
 		if (handle == el->subscription->handle) {
@@ -279,6 +283,7 @@ next:
 			goto next;
 		}
 	}
+#endif
 
 	/* If we have notification's subscriptions attached to this handle, we
 	   obviously remove them in order to avoid invoking them once all ROPs

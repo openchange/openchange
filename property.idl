@@ -10,6 +10,15 @@ import "exchange.idl";
 interface property
 {
 	typedef [v1_enum] enum {
+		afNone			= 0x00000000,
+		afByValue		= 0x00000001,
+		afByReference		= 0x00000002,
+		afByReferenceOnly	= 0x00000004,
+		afEmbeddedMessage	= 0x00000005,
+		afStorage		= 0x00000006
+	} AttachmentMethod;
+
+	typedef [v1_enum] enum {
 		seOpenToDelete		= 0x00000001,
 		seNoFrame		= 0x00000008,
 		seCoerceToInbox		= 0x00000010,
@@ -29,6 +38,14 @@ interface property
 		RecurFrequency_Monthly	= 0x200C,
 		RecurFrequency_Yearly	= 0x200D
 	} RecurFrequency;
+
+	typedef [v1_enum] enum {
+		rectypeNone	= 0x00000000,
+		rectypeDaily	= 0x00000001,
+		rectypeWeekly	= 0x00000002,
+		rectypeMonthly	= 0x00000003,
+		rectypeYearly	= 0x00000004
+	} RecurrenceType;
 
 	typedef [enum16bit] enum {
 		PatternType_Day		= 0x0,
@@ -197,16 +214,39 @@ interface property
 	} ChangeHighlight;
 
 	typedef [nopull,nopush,flag(NDR_NOALIGN)] struct {	
+		/* Those are fantom fields: even if they are mentionned in the documentation, they must not be read/written to. */
+		// uint32								ReservedBlock1Size;
+		// uint8								ReservedBlock1[ReservedBlock1Size];
+	} ExceptionInfo;
+
+	typedef [v1_enum] enum {
+		BIT_CH_START	= 0x00000001,
+		BIT_CH_END	= 0x00000002,
+		BIT_CH_RECUR	= 0x00000004,
+		BIT_CH_LOCATION = 0x00000008,
+		BIT_CH_SUBJECT	= 0x00000010,
+		BIT_CH_REQATT	= 0x00000020,
+		BIT_CH_OPTATT	= 0x00000040,
+		BIT_CH_BODY	= 0x00000080,
+		BIT_CH_RESPONSE	= 0x00000200,
+		BIT_CH_PROPOSE	= 0x00000400
+	} ChangeHighlightFlags;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32						Size;
+		ChangeHighlightFlags				Value;
+		uint8						Reserved[Size-4];
+	} ChangeHighlight;
+
+	typedef [nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
 		ChangeHighlight					ChangeHighlight;
 		uint32						ReservedBlockEE1Size;
 		uint8						ReservedBlockEE1[ReservedBlockEE1Size];
 		uint32						StartDateTime;			
 		uint32						EndDateTime;
 		uint32						OriginalStartDate;
-		uint16						WideCharSubjectLength;
-		uint16						WideCharSubject[WideCharSubjectLength];
-		uint16						WideCharLocationLength;
-		uint16						WideCharLocation[WideCharLocationLength];
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_CHARLEN)] string		Subject;
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM|LIBNDR_FLAG_STR_CHARLEN)] string		Location;
 		uint32						ReservedBlockEE2Size;
 		uint8						ReservedBlockEE2[ReservedBlockEE2Size];
 	} ExtendedException;
@@ -248,6 +288,38 @@ interface property
 		uint16			wDaylightYear;
 		SYSTEMTIME		stDaylightDate;
 	} TimeZoneStruct;
+
+	typedef [enum16bit] enum {
+		TZRULE_FLAG_RECUR_CURRENT_TZREG	= 0x8000,
+		TZRULE_FLAG_EFFECTIVE_TZREG	= 0x4000
+	} TZRuleFlag;
+
+	/* pidLidAppointmentTimeZoneDefinitionRecur,
+	 * PidLidAppointmentTimeZoneDefinitionStartDisplay,
+	 * PidLidAppointmentTimeZoneDefinitionEndDisplay */
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8		major; /* 0x02 */
+		uint8		minor; /* 0x01 */
+		uint16		reserved; /* must be 0x003E */
+		TZRuleFlag	flags;
+		uint16		wYear;
+		uint8		X[14]; /* all zeroes */
+		uint32		lBias;
+		uint32		lStandardBias;
+		uint32		lDaylightBias;
+		SYSTEMTIME	stStandardDate;
+		SYSTEMTIME	stDaylightDate;
+	} TZRule;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint8								major; /* 0x02 */
+		uint8								minor; /* 0x01 */
+		uint16								cbHeader;
+		uint16								reserved; /* 0x0002 */
+		[flag(LIBNDR_FLAG_STR_SIZE2|LIBNDR_FLAG_STR_NOTERM)] string	keyName;
+		uint16								cRules;
+		TZRule								TZRules[cRules];
+	} TimeZoneDefinition;
 
 	/* pidLidGlobalObjectId */
 	typedef [public,flag(NDR_NOALIGN)] struct {

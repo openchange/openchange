@@ -322,13 +322,11 @@ libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
 libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
 
-libmapi/mapi_nameid.h libmapi/mapitags.c libmapi/mapicode.c libmapi/codepage_lcid.c mapitags_enum.h mapicodes_enum.h mapiproxy/libmapistore/mapistore_nameid.h: \
-	libmapi/conf/mapi-properties								\
-	libmapi/conf/mapi-codes									\
-	libmapi/conf/mapi-named-properties							\
-	libmapi/conf/codepage-lcid								\
-	libmapi/conf/mparse.pl
-	@./libmapi/conf/build.sh
+libmapi/mapicode.c mapicodes_enum.h: libmapi/conf/mparse.pl libmapi/conf/mapi-codes
+	libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi/ libmapi/conf/mapi-codes
+
+libmapi/codepage_lcid.c: libmapi/conf/mparse.pl libmapi/conf/codepage-lcid
+	libmapi/conf/mparse.pl --parser=codepage_lcid --outputdir=libmapi/ libmapi/conf/codepage-lcid
 
 #################################################################
 # libmapi++ compilation rules
@@ -853,6 +851,13 @@ libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
+mapiproxy/libmapistore/mapistore_nameid.h: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	libmapi/conf/mparse.pl --parser=mapistore_nameid --outputdir=mapiproxy/libmapistore/ libmapi/conf/mapi-named-properties
+
+setup/mapistore/mapistore_namedprops.ldif: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
+	-mkdir --parent "setup/mapistore"
+	libmapi/conf/mparse.pl --parser=mapistore_namedprops --outputdir=setup/mapistore/ libmapi/conf/mapi-named-properties
+
 libmapistore-installpc:
 	@echo "[*] install: libmapistore pc files"
 	$(INSTALL) -d $(DESTDIR)$(libdir)/pkgconfig
@@ -911,13 +916,10 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 
+mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
+
 mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
-
-setup/mapistore/mapistore_namedprops.ldif: 	\
-	libmapi/conf/mapi-named-properties	\
-	libmapi/conf/mparse.pl			
-	@./libmapi/conf/build.sh
 
 #####################
 # mapistore backends
@@ -991,6 +993,8 @@ mapiproxy/modules/mpm_dummy.$(SHLIBEXT): mapiproxy/modules/mpm_dummy.po
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) $^ -L. $(LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 
+samba_setupdir = $(shell $(PYTHON) -c 'import samba; print samba.param.setup_dir();')
+
 ####################
 # mapiproxy servers
 ####################
@@ -998,19 +1002,20 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 0755 setup/openchange_provision $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
-	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/AD
-	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(datadir)/setup/AD/
-	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(datadir)/setup/AD/
-	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(datadir)/setup/AD/
+	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)/AD
+	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_configuration.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_modify.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/oc_provision_schema_ADSC.ldif
-	rm -f $(DESTDIR)$(datadir)/setup/AD/prefixMap.txt
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_modify.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_ADSC.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/prefixMap.txt
 	rm -rf $(DESTDIR)$(datadir)/setup/AD
 	rm -rf $(DESTDIR)$(datadir)/setup/openchangedb
 

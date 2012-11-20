@@ -100,12 +100,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
+#if 0
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {
 		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
+#endif
 
 	return mstore_ctx;
 }
@@ -164,6 +166,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 	return MAPISTORE_SUCCESS;
 }
 
+/* TODO: the "owner" parameter should be deduced from the uri */
 /**
    \details Add a new connection context to mapistore
 
@@ -737,6 +740,45 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 	return mapistore_backend_folder_move_copy_messages(backend_ctx, target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 }
 
+/**
+
+ */
+_PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
+							   void *move_folder, void *target_folder, const char *new_folder_name)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_move_folder(backend_ctx, move_folder, target_folder, new_folder_name);
+}
+
+
+/**
+
+ */
+_PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
+							   void *move_folder, void *target_folder, bool recursive, const char *new_folder_name)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_copy_folder(backend_ctx, move_folder, target_folder, recursive, new_folder_name);
+}
+
 
 /**
    \details Get the array of deleted items following a specific change number
@@ -752,7 +794,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)
 {
 	struct backend_context	*backend_ctx;
 
@@ -908,6 +950,21 @@ _PUBLIC_ enum mapistore_error mapistore_folder_modify_permissions(struct mapisto
 
 	/* Step 2. Call backend operation */
 	return mapistore_backend_folder_modify_permissions(backend_ctx, folder, flags, pcount, permissions);
+}
+
+_PUBLIC_ enum mapistore_error mapistore_folder_preload_message_bodies(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, const struct UI8Array_r *mids)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_folder_preload_message_bodies(backend_ctx, folder, table_type, mids);
 }
 
 /* freebusy helper */
@@ -1508,7 +1565,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_create_attachment(struct mapisto
 	return mapistore_backend_message_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1520,7 +1577,22 @@ _PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	return mapistore_backend_message_attachment_open_embedded_message(backend_ctx, message, mem_ctx, embedded_message, mid, msg);
+	return mapistore_backend_message_attachment_open_embedded_message(backend_ctx, attachment, mem_ctx, embedded_message, mid, msg);
+}
+
+_PUBLIC_ enum mapistore_error mapistore_message_attachment_create_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, struct mapistore_message **msg)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_message_attachment_create_embedded_message(backend_ctx, attachment, mem_ctx, embedded_message, msg);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_table_get_available_properties(struct mapistore_context *mstore_ctx, uint32_t context_id, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
@@ -1679,4 +1751,65 @@ _PUBLIC_ enum mapistore_error mapistore_properties_set_properties(struct mapisto
 
 	/* Step 2. Call backend operation */
 	return mapistore_backend_properties_set_properties(backend_ctx, object, aRow);
+}
+
+_PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_err)
+{
+	enum MAPISTATUS mapi_err;
+
+	switch(mapistore_err) {
+	case MAPISTORE_SUCCESS:
+		mapi_err = MAPI_E_SUCCESS;
+		break;
+	case MAPISTORE_ERROR:
+		mapi_err = MAPI_E_NO_SUPPORT;
+		break;
+	case MAPISTORE_ERR_NO_MEMORY:
+		mapi_err = MAPI_E_NOT_ENOUGH_MEMORY;
+		break;
+	case MAPISTORE_ERR_ALREADY_INITIALIZED:
+	case MAPISTORE_ERR_NOT_INITIALIZED:
+		mapi_err = MAPI_E_NOT_INITIALIZED;
+		break;
+	case MAPISTORE_ERR_CORRUPTED:
+		mapi_err = MAPI_E_CORRUPT_STORE;
+		break;
+	case MAPISTORE_ERR_INVALID_PARAMETER:
+		mapi_err = MAPI_E_INVALID_PARAMETER;
+		break;
+	case MAPISTORE_ERR_NO_DIRECTORY:
+	case MAPISTORE_ERR_DATABASE_INIT:
+	case MAPISTORE_ERR_DATABASE_OPS:
+	case MAPISTORE_ERR_BACKEND_REGISTER:
+	case MAPISTORE_ERR_BACKEND_INIT:
+	case MAPISTORE_ERR_CONTEXT_FAILED:
+	case MAPISTORE_ERR_INVALID_NAMESPACE:
+		mapi_err = MAPI_E_DISK_ERROR;
+		break;
+	case MAPISTORE_ERR_NOT_FOUND:
+		mapi_err = MAPI_E_NOT_FOUND;
+		break;
+	case MAPISTORE_ERR_REF_COUNT:
+		mapi_err = MAPI_E_COLLISION;
+		break;
+	case MAPISTORE_ERR_EXIST:
+		mapi_err = MAPI_E_COLLISION;
+		break;
+	case MAPISTORE_ERR_INVALID_DATA:
+	case MAPISTORE_ERR_MSG_SEND:
+	case MAPISTORE_ERR_MSG_RCV:
+		mapi_err = MAPI_E_DISK_ERROR;
+		break;
+	case MAPISTORE_ERR_DENIED:
+		mapi_err = MAPI_E_NO_ACCESS;
+		break;
+	case MAPISTORE_ERR_NOT_IMPLEMENTED:
+		mapi_err = MAPI_E_NOT_IMPLEMENTED;
+		break;
+	default:
+		DEBUG (4, ("[%s] unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, mapistore_err));
+		mapi_err = MAPI_E_INVALID_PARAMETER;
+	}
+
+	return mapi_err;
 }

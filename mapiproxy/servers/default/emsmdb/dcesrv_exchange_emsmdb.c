@@ -83,7 +83,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	struct policy_handle		wire_handle;
 	struct exchange_emsmdb_session	*session;
 	struct ldb_message		*msg;
-	const char			*cn;
+	const char			*mailNickname;
 	const char			*userDN;
 	char				*dnprefix;
 
@@ -149,9 +149,9 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the dinstinguished name of the server */
-	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
+	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = strstr(userDN, mailNickname);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;
@@ -648,9 +648,11 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS				retval;
 	struct mapi_response			*mapi_response;
         struct mapistore_notification_list	*notification_holder;
+/*
 	struct mapistore_notification_list	*nlist;
 	struct mapistore_notification_list	*el;
 	struct mapistore_subscription_list	*sel;
+*/
         struct mapistore_subscription_list	*subscription_list;
 	struct mapistore_subscription_list	*subscription_holder;
 	uint32_t		handles_length;
@@ -941,8 +943,18 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							    mapi_response->handles, &size);
 		        break;
 		/* op_MAPI_AbortSubmit: 0x34 */
-		/* op_MAPI_MoveFolder: 0x35 */
-		/* op_MAPI_CopyFolder: 0x36 */
+		case op_MAPI_MoveFolder: /* 0x35 */
+			retval = EcDoRpc_RopMoveFolder(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+		        break;
+		case op_MAPI_CopyFolder: /* 0x36 */
+			retval = EcDoRpc_RopCopyFolder(mem_ctx, emsmdbp_ctx,
+						       &(mapi_request->mapi_req[i]),
+						       &(mapi_response->mapi_repl[idx]),
+						       mapi_response->handles, &size);
+		        break;
 		/* op_MAPI_QueryColumnsAll: 0x37 */
 		/* op_MAPI_Abort: 0x38 */
 		case op_MAPI_CopyTo: /* 0x39 */
@@ -1250,6 +1262,7 @@ notif:
 		talloc_free(notification_holder);
 	}
 	
+#if 0
 	DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
 	/* Process notifications available on subscriptions queues */
 	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
@@ -1275,6 +1288,7 @@ notif:
 			talloc_free(nlist);
 		}
 	}
+#endif
 
 	if (mapi_response->mapi_repl) {
 		mapi_response->mapi_repl[idx].opnum = 0;
@@ -1380,7 +1394,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 {
 	int				retval;
 	struct exchange_emsmdb_session	*session;
-	struct emsmdbp_context		*emsmdbp_ctx = NULL;
+	/* struct emsmdbp_context		*emsmdbp_ctx = NULL; */
 
 	DEBUG(3, ("exchange_emsmdb: EcRRegisterPushNotification (0x4)\n"));
 
@@ -1395,7 +1409,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 	/* Retrieve the emsmdbp_context from the session management system */
 	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
 	if (session) {
-		emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
+		/* emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data; */
 	} else {
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
@@ -1403,10 +1417,13 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 		return MAPI_E_LOGON_FAILED;
 	}
 
-	retval = mapistore_mgmt_interface_register_bind(emsmdbp_ctx->mstore_ctx->conn_info,
+	/* retval = mapistore_mgmt_interface_register_bind(emsmdbp_ctx->mstore_ctx->conn_info,
 							r->in.cbContext, r->in.rgbContext,
 							r->in.cbCallbackAddress, r->in.rgbCallbackAddress);
-	DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
+	*/
+	retval = MAPI_E_SUCCESS;
+
+	/* DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval)); */
 	if (retval == MAPI_E_SUCCESS) {
 		r->out.handle = r->in.handle;
 		/* FIXME: Create a notification object and return associated handle */
@@ -1535,7 +1552,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	struct policy_handle		wire_handle;
 	struct exchange_emsmdb_session	*session;
 	struct ldb_message		*msg;
-	const char			*cn;
+	const char			*mailNickname;
 	const char			*userDN;
 	char				*dnprefix;
 
@@ -1572,8 +1589,8 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_ldb_ctx);
 	if (!emsmdbp_ctx) {
-		smb_panic("Unable to initialize emsmdbp context");
-		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_FAILONEPROVIDER, NULL);
+		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
+		goto failure;
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
@@ -1596,9 +1613,9 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	emsmdbp_ctx->szDisplayName = talloc_strdup(emsmdbp_ctx, *r->out.szDisplayName);
 
 	/* Step 5. Retrieve the distinguished name of the server */
-	cn = ldb_msg_find_attr_as_string(msg, "cn", NULL);
+	mailNickname = ldb_msg_find_attr_as_string(msg, "mailNickname", NULL);
 	userDN = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
-	dnprefix = strstr(userDN, cn);
+	dnprefix = strstr(userDN, mailNickname);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
 		goto failure;

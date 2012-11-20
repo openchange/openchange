@@ -1343,11 +1343,10 @@ _PUBLIC_ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRe
         size += set_RecurrencePattern_size(&arp->RecurrencePattern);
         for (i = 0; i < arp->ExceptionCount; i++) {
                 size += set_ExceptionInfo_size(arp->ExceptionInfo + i);
-                /* size += set_ExtendedException_size(arp->ExtendedException +
-                   i); */
+                size += set_ExtendedException_size(arp->WriterVersion2, (arp->ExceptionInfo + i)->OverrideFlags, arp->ExtendedException + i);
         }
         size += arp->ReservedBlock1Size * sizeof(uint32_t);
-        /* size += arp->ReservedBlock2Size * sizeof(uint32_t); */
+	size += arp->ReservedBlock2Size * sizeof(uint32_t);
 
         return size;
 }
@@ -1357,29 +1356,29 @@ _PUBLIC_ struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, 
         struct Binary_r                 *bin = NULL;
         struct ndr_push			*ndr;
         enum ndr_err_code		ndr_err_code;
-        size_t                          bin_size;
+	TALLOC_CTX			*local_mem_ctx;
 	
         /* SANITY CHECKS */
         if (!arp) return NULL;
 
-	ndr = ndr_push_init_ctx(mem_ctx);
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+
+	ndr = ndr_push_init_ctx(local_mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	ndr->offset = 0;
-        bin_size = set_AppointmentRecurrencePattern_size(arp);
-        talloc_free(ndr->data);
-        ndr->data = talloc_array(ndr, uint8_t, bin_size);
 
         ndr_err_code = ndr_push_AppointmentRecurrencePattern(ndr, NDR_SCALARS, arp);
         if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(local_mem_ctx);
                 return NULL;
         }
 
         bin = talloc_zero(mem_ctx, struct Binary_r);
-        bin->cb = bin_size;
+        bin->cb = ndr->offset;
         bin->lpb = ndr->data;
-        talloc_steal(bin, bin->lpb);
+        (void) talloc_reference(bin, bin->lpb);
 
-        talloc_free(ndr);
+        talloc_free(local_mem_ctx);
 
         return bin;
 }
@@ -1390,6 +1389,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
 
         if ((exc_info->OverrideFlags & ARO_SUBJECT)) {
                 size += 3 * sizeof(uint16_t); /* SubjectLength + SubjectLength2 + Subject */
+		size += exc_info->Subject.subjectMsg.msgLength2;
         }
         if ((exc_info->OverrideFlags & ARO_MEETINGTYPE)) {
                 size += sizeof(uint32_t);
@@ -1402,7 +1402,7 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         }
         if ((exc_info->OverrideFlags & ARO_LOCATION)) {
                 size += 2 * sizeof(uint16_t); /* LocationLength + LocationLength2 */
-                size += sizeof(uint32_t); /* Location */
+		size += exc_info->Location.locationMsg.msgLength2;
         }
         if ((exc_info->OverrideFlags & ARO_BUSYSTATUS)) {
                 size += sizeof(uint32_t);
@@ -1413,12 +1413,41 @@ _PUBLIC_ size_t set_ExceptionInfo_size(const struct ExceptionInfo *exc_info)
         if ((exc_info->OverrideFlags & ARO_SUBTYPE)) {
                 size += sizeof(uint32_t);
         }
-        if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) {
-                size += sizeof(uint32_t);
+	/* size += exc_info->ReservedBlock1Size; */
+        /* if ((exc_info->OverrideFlags & ARO_APPTCOLOR)) { */
+        /*         size += sizeof(uint32_t); */
+        /* } */
+
+        return size;
+}
+
+size_t set_ExtendedException_size(uint32_t WriterVersion2, enum OverrideFlags flags, const struct ExtendedException *ext_exc)
+{
+        size_t size = SIZE_DFLT_EXTENDEDEXCEPTION;
+	bool subject_or_location;
+
+	subject_or_location = (flags & (ARO_SUBJECT | ARO_LOCATION));
+
+	if (WriterVersion2 > 0x00003008) {
+		size += ext_exc->ChangeHighlight.Size;
+	}
+
+        if (subject_or_location) {
+		size += 3 * sizeof(uint32_t); // StartDateTime + EndDateTime + OriginalStartDate */
+		size += sizeof(uint32_t) + ext_exc->ReservedBlockEE2Size;
+        }
+
+        if ((flags & ARO_SUBJECT)) {
+                size += sizeof(uint16_t) + strlen_m_ext(ext_exc->Subject, CH_UTF8, CH_UTF16LE) * 2;
+        }
+        if ((flags & ARO_LOCATION)) {
+                size += sizeof(uint16_t) + strlen_m_ext(ext_exc->Location, CH_UTF8, CH_UTF16LE) * 2;
         }
 
         return size;
 }
+
+/* TODO: the get_XXX NDR wrapper should be normalized */
 
 /**
    \details Retrieve a TimeZoneStruct structure from a binary blob
@@ -1464,6 +1493,100 @@ _PUBLIC_ struct TimeZoneStruct *get_TimeZoneStruct(TALLOC_CTX *mem_ctx,
 	return TimeZoneStruct;
 }
 
+_PUBLIC_ struct Binary_r *set_TimeZoneStruct(TALLOC_CTX *mem_ctx, const struct TimeZoneStruct *TimeZoneStruct)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+	
+        /* SANITY CHECKS */
+        if (!TimeZoneStruct) return NULL;
+
+        ndr = talloc_zero(mem_ctx, struct ndr_push);
+        ndr_err_code = ndr_push_TimeZoneStruct(ndr, NDR_SCALARS, TimeZoneStruct);
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+		goto end;
+        }
+
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = ndr->offset;
+        bin->lpb = ndr->data;
+	(void) talloc_reference(bin, bin->lpb);
+
+end:
+        talloc_free(ndr);
+
+        return bin;
+}
+
+_PUBLIC_ struct Binary_r *set_TimeZoneDefinition(TALLOC_CTX *mem_ctx, const struct TimeZoneDefinition *TimeZoneDefinition)
+{
+        struct Binary_r                 *bin = NULL;
+        struct ndr_push			*ndr;
+        enum ndr_err_code		ndr_err_code;
+	
+        /* SANITY CHECKS */
+        if (!TimeZoneDefinition) return NULL;
+
+        ndr = talloc_zero(mem_ctx, struct ndr_push);
+        ndr_err_code = ndr_push_TimeZoneDefinition(ndr, NDR_SCALARS, TimeZoneDefinition);
+        if (ndr_err_code != NDR_ERR_SUCCESS) {
+		goto end;
+        }
+
+        bin = talloc_zero(mem_ctx, struct Binary_r);
+        bin->cb = ndr->offset;
+        bin->lpb = ndr->data;
+	(void) talloc_reference(bin, bin->lpb);
+
+end:
+        talloc_free(ndr);
+
+        return bin;
+}
+
+
+/**
+   \details Retrieve a PtypServerId structure from a binary blob
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw PtypServerId data
+
+   \return Allocated PtypServerId structure on success, otherwise
+   NULL
+
+   \note Developers must free the allocated PtypServerId when
+   finished.
+ */
+_PUBLIC_ struct PtypServerId *get_PtypServerId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct PtypServerId	*PtypServerId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	PtypServerId = talloc_zero(mem_ctx, struct PtypServerId);
+	ndr_err_code = ndr_pull_PtypServerId(ndr, NDR_SCALARS, PtypServerId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(PtypServerId);
+		return NULL;
+	}
+
+	return PtypServerId;
+}
 
 /**
    \details Retrieve a PtypServerId structure from a binary blob

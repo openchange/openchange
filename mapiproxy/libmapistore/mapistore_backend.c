@@ -569,7 +569,17 @@ enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_
         return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 }
 
-enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct I8Array_r **fmidsp, uint64_t *cnp)
+enum mapistore_error mapistore_backend_folder_move_folder(struct backend_context *bctx, void *move_folder, void *target_folder, const char *new_folder_name)
+{
+        return bctx->backend->folder.move_folder(move_folder, target_folder, new_folder_name);
+}
+
+enum mapistore_error mapistore_backend_folder_copy_folder(struct backend_context *bctx, void *move_folder, void *target_folder, bool recursive, const char *new_folder_name)
+{
+        return bctx->backend->folder.copy_folder(move_folder, target_folder, recursive, new_folder_name);
+}
+
+enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)
 {
         return bctx->backend->folder.get_deleted_fmids(folder, mem_ctx, table_type, change_num, fmidsp, cnp);
 }
@@ -633,6 +643,11 @@ enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_
         return bctx->backend->folder.modify_permissions(folder, flags, pcount, permissions);
 }
 
+enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct backend_context *bctx, void *folder, enum mapistore_table_type table_type, const struct UI8Array_r *mids)
+{
+        return bctx->backend->folder.preload_message_bodies(folder, table_type, mids);
+}
+
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, struct mapistore_message **msg)
 {
 	return bctx->backend->message.get_message_data(message, mem_ctx, msg);
@@ -673,9 +688,14 @@ enum mapistore_error mapistore_backend_message_get_attachment_table(struct backe
         return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
 }
 
-enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
-        return bctx->backend->message.open_embedded_message(message, mem_ctx, embedded_message, mid, msg);
+        return bctx->backend->message.open_embedded_message(attachment, mem_ctx, embedded_message, mid, msg);
+}
+
+enum mapistore_error mapistore_backend_message_attachment_create_embedded_message(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, struct mapistore_message **msg)
+{
+        return bctx->backend->message.create_embedded_message(attachment, mem_ctx, embedded_message, msg);
 }
 
 enum mapistore_error mapistore_backend_table_get_available_properties(struct backend_context *bctx, void *table, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)

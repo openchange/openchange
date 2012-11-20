@@ -167,7 +167,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				}
 				if (stream_size > 8192) {
 					DEBUG(5, ("%s: attaching stream data for property %.8x\n", __FUNCTION__, properties->aulPropTag[i]));
-					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i]);
+					stream_data = emsmdbp_stream_data_from_value(object, properties->aulPropTag[i], data_pointers[i], false);
 					if (stream_data) {
 						DLIST_ADD(object->stream_data, stream_data);
 					}
@@ -225,6 +225,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 	void				*private_data = NULL;
 	struct emsmdbp_object		*object;
 	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		tmp_value;
 	void				**data_pointers;
 	int				i;
 
@@ -274,16 +275,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesAll(TALLOC_CTX *mem_ctx,
 
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, SPropTagArray, &retvals);
 	if (data_pointers) {		
-		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, 2);
+		response->properties.lpProps = talloc_array(mem_ctx, struct mapi_SPropValue, SPropTagArray->cValues);
 		response->properties.cValues = 0;
 		for (i = 0; i < SPropTagArray->cValues; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
-				response->properties.lpProps = add_mapi_SPropValue(mem_ctx, 
-										   response->properties.lpProps,
-										   &response->properties.cValues,
-										   SPropTagArray->aulPropTag[i], 
-										   (void *)data_pointers[i]);
-				
+				tmp_value.ulPropTag = SPropTagArray->aulPropTag[i];
+				if (set_SPropValue(&tmp_value, data_pointers[i])) {
+					cast_mapi_SPropValue(mem_ctx, response->properties.lpProps + response->properties.cValues, &tmp_value);
+					response->properties.cValues++;
+				}
 			}
 		}
 	}
@@ -593,7 +593,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 
 	if (request->PropertyTag == PidTagSecurityDescriptorAsXml) {
 		/* exception; see oxcperm - 3.1.4.1 Retrieving Folder Permissions */
-		mapi_repl->error_code = MAPI_E_NOT_IMPLEMENTED;
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT; /* ecNotImplemented = MAPI_E_NO_SUPPORT */
                 goto end;
 	}
 
@@ -629,9 +629,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 				goto end;
 			}
 			if (retvals[0] == MAPI_E_SUCCESS) {
-				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0]);
+				stream_data = emsmdbp_stream_data_from_value(data_pointers, request->PropertyTag, data_pointers[0], object->object.stream->read_write);
 				object->object.stream->stream.buffer = stream_data->data;
-				(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
+				(void) talloc_reference(object, stream_data);
 				talloc_free(data_pointers);
 				talloc_free(retvals);
 			}
@@ -1100,9 +1100,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	request = &mapi_req->u.mapi_SetStreamSize;
-	object->object.stream->stream.buffer.length = request->SizeStream;
-
 end:
 	*size += libmapiserver_RopSetStreamSize_size(mapi_repl);
 
@@ -1254,7 +1251,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetNamesFromIDs(TALLOC_CTX *mem_ctx,
 			GUID_from_string(PS_MAPI, &response->nameid[i].lpguid);
 			response->nameid[i].kind.lid = (uint32_t) request->PropertyIds[i] << 16 | get_property_type(request->PropertyIds[i]);
 		}
-		else if (mapistore_namedprops_get_nameid(emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], &nameid) == MAPISTORE_SUCCESS) {
+		else if (mapistore_namedprops_get_nameid(emsmdbp_ctx->mstore_ctx->nprops_ctx, request->PropertyIds[i], mem_ctx, &nameid) == MAPISTORE_SUCCESS) {
 			response->nameid[i] = *nameid;
 		}
 		else {

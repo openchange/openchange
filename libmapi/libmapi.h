@@ -280,6 +280,8 @@ struct AppointmentRecurrencePattern *get_AppointmentRecurrencePattern(TALLOC_CTX
 struct Binary_r *set_RecurrencePattern(TALLOC_CTX *, const struct RecurrencePattern *);
 struct Binary_r *set_AppointmentRecurrencePattern(TALLOC_CTX *mem_ctx, const struct AppointmentRecurrencePattern *);
 struct TimeZoneStruct	*get_TimeZoneStruct(TALLOC_CTX *, struct Binary_r *);
+struct Binary_r		*set_TimeZoneStruct(TALLOC_CTX *, const struct TimeZoneStruct *);
+struct Binary_r		*set_TimeZoneDefinition(TALLOC_CTX *, const struct TimeZoneDefinition *);
 struct PtypServerId	*get_PtypServerId(TALLOC_CTX *, struct Binary_r *);
 struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);
@@ -592,9 +594,18 @@ size_t set_AppointmentRecurrencePattern_size(const struct AppointmentRecurrenceP
    -# EndDateTime: uint32_t
    -# OriginalStartDate: uint32_t
    -# OverrideFlags: uint16_t
+   -# AppointmentColor uint32_t
+   -# ReservedBlock1Size uint32_t
  */
-#define	SIZE_DFLT_EXCEPTIONINFO 14
+#define	SIZE_DFLT_EXCEPTIONINFO 22
 size_t set_ExceptionInfo_size(const struct ExceptionInfo *);
+
+/**
+   \details struct ExceptionInfo has not fixed response size
+ */
+#define	SIZE_DFLT_EXTENDEDEXCEPTION 0
+
+size_t set_ExtendedException_size(uint32_t, enum OverrideFlags, const struct ExtendedException *);
 
 /**
    \details struct ExtendedException has fixed response size for:

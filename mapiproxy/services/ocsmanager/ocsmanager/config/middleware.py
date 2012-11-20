@@ -65,10 +65,14 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     # authenticator = OCSAuthenticator(config)
     # app = AuthBasicHandler(app, "OCSManager", authenticator)
     fqdn = "%(hostname)s.%(dnsdomain)s" % config["samba"]
-    app = NTLMAuthHandler(app, samba_host=fqdn)
+    auth_handler = NTLMAuthHandler(app)
+
+    def ntlm_env_setter(environ, start_response):
+        environ["NTLMAUTHHANDLER_WORKDIR"] = app_conf["NTLMAUTHHANDLER_WORKDIR"]
+        return auth_handler(environ, start_response)
 
     # Establish the Registry for this application
-    app = RegistryManager(app)
+    app = RegistryManager(ntlm_env_setter)
 
     if asbool(static_files):
         # Serve static files

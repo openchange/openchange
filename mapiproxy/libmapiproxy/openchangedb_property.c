@@ -648,6 +648,7 @@ static struct pidtags pidtags[] = {
 	{ 0,                                                                   NULL         }
 };
 
+/* TODO: this method would be faster with a lookup table */
 _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t propTag)
 {
 	uint32_t i, uniPropTag;

@@ -239,7 +239,7 @@ _PUBLIC_ uint16_t libmapiserver_mapi_SPropValue_size(uint16_t cValues, struct ma
 		case PT_MV_STRING8:
 			size += sizeof (uint32_t);
 			for (j = 0; j < lpProps[i].value.MVszA.cValues; j++) {
-				size += strlen(lpProps[i].value.MVszA.strings[j].lppszA);
+				size += strlen(lpProps[i].value.MVszA.strings[j].lppszA) + 1;
 			}
 			break;
 		case PT_MV_UNICODE:
@@ -255,9 +255,12 @@ _PUBLIC_ uint16_t libmapiserver_mapi_SPropValue_size(uint16_t cValues, struct ma
 		case PT_MV_BINARY:
 			size += sizeof (uint32_t);
 			for (j = 0; j < lpProps[i].value.MVbin.cValues; j++) {
+				size += 2;
 				size += lpProps[i].value.MVbin.bin[j].cb;
 			}
 			break;
+		default:
+			abort();
 		}
 	}
 	

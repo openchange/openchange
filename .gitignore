@@ -12,6 +12,7 @@ config.h.in
 config.log
 config.mk
 config.status
+apidocs/
 gen_ndr/
 libmapi++.pc
 libmapi++/Doxyfile

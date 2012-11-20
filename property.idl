@@ -205,15 +205,6 @@ interface property
 		[switch_is(OverrideFlags & 0x0040)]	Exception_Value		Attachment;
 		[switch_is(OverrideFlags & 0x0080)]	Exception_Value		SubType;
 		[switch_is(OverrideFlags & 0x0100)]	Exception_Value		AppointmentColor;
-	} ExceptionInfo;
-
-	typedef [public,flag(NDR_NOALIGN)] struct {
-		uint32						ChangeHighlightSize;
-		uint32						ChangeHighlightValue;
-		uint8						Reserved[ChangeHighlightSize-4];
-	} ChangeHighlight;
-
-	typedef [nopull,nopush,flag(NDR_NOALIGN)] struct {	
 		/* Those are fantom fields: even if they are mentionned in the documentation, they must not be read/written to. */
 		// uint32								ReservedBlock1Size;
 		// uint8								ReservedBlock1[ReservedBlock1Size];

@@ -258,7 +258,6 @@ struct mapistore_context {
 	struct mapistore_notification_list	*notifications;
 	struct ldb_context			*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
-	mqd_t					mq_ipc;
 #if 0
 	mqd_t					mq_ipc;
 #endif

@@ -27,8 +27,6 @@
 
 #include <sys/stat.h>
 
-static struct MAPINAMEID	**nameids_cache = NULL;
-
 static const char *mapistore_namedprops_get_ldif_path(void)
 {
 	return MAPISTORE_LDIF;
@@ -405,44 +403,6 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_co
 		DEBUG(0, ("%d is not a valid type for a named property (%.4x)\n", type, propID));
 		abort();
 	}
-
-	*propTypeP = type;
-
-	talloc_free(mem_ctx);
-
-	return rc;
-}
-
-/**
-   \details return the type matching the mapped property ID passed in parameter.
-
-   \param ldb_ctx pointer to the namedprops ldb context
-   \param propID the property ID to lookup
-   \param propTypeP pointer to the uint16_t that will receive the property type
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
- */
-_PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *ldb_ctx, uint16_t propID, uint16_t *propTypeP)
-{
-	TALLOC_CTX			*mem_ctx;
-	struct ldb_result		*res = NULL;
-	const char * const		attrs[] = { "propType", NULL };
-	int				ret, type;
-	int				rc = MAPISTORE_SUCCESS;
-					     
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!propTypeP, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(propID < 0x8000, MAPISTORE_ERROR, NULL);
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(mappedId=%d)", propID);
-	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
-
-	type = ldb_msg_find_attr_as_int(res->msgs[0], "propType", 0);
-	MAPISTORE_RETVAL_IF(!type, MAPISTORE_ERROR, mem_ctx);
 
 	*propTypeP = type;
 

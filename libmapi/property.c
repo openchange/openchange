@@ -1589,48 +1589,6 @@ _PUBLIC_ struct PtypServerId *get_PtypServerId(TALLOC_CTX *mem_ctx, struct Binar
 }
 
 /**
-   \details Retrieve a PtypServerId structure from a binary blob
-
-   \param mem_ctx pointer to the memory context
-   \param bin pointer to the Binary_r structure with raw PtypServerId data
-
-   \return Allocated PtypServerId structure on success, otherwise
-   NULL
-
-   \note Developers must free the allocated PtypServerId when
-   finished.
- */
-_PUBLIC_ struct PtypServerId *get_PtypServerId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
-{
-	struct PtypServerId	*PtypServerId = NULL;
-	struct ndr_pull		*ndr;
-	enum ndr_err_code	ndr_err_code;
-
-	/* Sanity checks */
-	if (!bin) return NULL;
-	if (!bin->cb) return NULL;
-	if (!bin->lpb) return NULL;
-
-	ndr = talloc_zero(mem_ctx, struct ndr_pull);
-	ndr->offset = 0;
-	ndr->data = bin->lpb;
-	ndr->data_size = bin->cb;
-
-	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
-	PtypServerId = talloc_zero(mem_ctx, struct PtypServerId);
-	ndr_err_code = ndr_pull_PtypServerId(ndr, NDR_SCALARS, PtypServerId);
-
-	talloc_free(ndr);
-
-	if (ndr_err_code != NDR_ERR_SUCCESS) {
-		talloc_free(PtypServerId);
-		return NULL;
-	}
-
-	return PtypServerId;
-}
-
-/**
    \details Retrieve a GlobalObjectId structure from a binary blob
 
    \param mem_ctx pointer to the memory context

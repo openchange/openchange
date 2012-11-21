@@ -661,7 +661,7 @@ dnl ##########################################################################
 dnl mapiproxy server
 dnl ##########################################################################
 if test x$PYTHON != x; then
-	if test "x$SAMDB_LIBS" != x -a "x$SAMBASERVER_LIBS" != x ; then
+	if test "x$SAMBASERVER_LIBS" != x ; then
 		mapiproxy=1
 	fi
 fi

@@ -315,7 +315,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     try:
         schemadn = str(names.schemadn)
         current = samdb.search(expression="objectClass=classSchema", base=schemadn,
-                               scope=SCOPE_SUBTREE)
+                               scope=SCOPE_BASE)
 
         schema_ldif = ""
         prefixmap_data = ""

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2011.
+   Copyright (C) Julien Kerihuel 2007-2012.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -1272,7 +1272,7 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(struct mapi_context *mapi_ctx,
 					   const char *profname)
 {
 	TALLOC_CTX		*mem_ctx;
-	struct mapi_profile	profile;
+	struct mapi_profile	*profile;
 	enum MAPISTATUS		retval;
 
 	/* Sanity checks */
@@ -1283,7 +1283,8 @@ _PUBLIC_ enum MAPISTATUS SetDefaultProfile(struct mapi_context *mapi_ctx,
 	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "SetDefaultProfile");
 
 	/* open profile */
-	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, &profile, profname, NULL);
+	profile = talloc_zero(mem_ctx, struct mapi_profile);
+	retval = ldb_load_profile(mem_ctx, mapi_ctx->ldb_ctx, profile, profname, NULL);
 	OPENCHANGE_RETVAL_IF(retval && retval != MAPI_E_INVALID_PARAMETER, retval, mem_ctx);
 
 	/* search any previous default profile and unset it */

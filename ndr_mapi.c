@@ -546,7 +546,7 @@ enum ndr_err_code ndr_push_mapi_response(struct ndr_push *ndr, int ndr_flags, co
 	uint32_t	cntr_mapi_repl_0;
 	uint32_t	count;
 
-	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_REMAINING);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->length));
 
 	if (r->length > sizeof (uint16_t)) {

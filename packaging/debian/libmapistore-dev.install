@@ -1,5 +1,0 @@
-usr/include/mapistore/mapistore.h
-usr/include/mapistore/mapistore_errors.h
-usr/include/mapistore/mapistore_nameid.h
-usr/lib/libmapistore.so
-usr/lib/pkgconfig/libmapistore.pc

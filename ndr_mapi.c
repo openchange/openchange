@@ -1065,7 +1065,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.picxr));
-		if (r->out.szDNPrefix == NULL) {
+		if (r->out.szDNPrefix == NULL || *r->out.szDNPrefix == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDNPrefix));

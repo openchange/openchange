@@ -2973,7 +2973,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		RowNoLongerVisible;
 	  	uint8		HasRowData;
-		[flag(NDR_NOALIGN)] DATA_BLOB row;
+		[flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	row;
 	} FindRow_repl;
 
 	/**************************/

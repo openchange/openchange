@@ -2880,7 +2880,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	change_key->lpb = request->ChangeNumber;
 	if (mapistore) {
 		/* We invoke the backend method */
-		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, 1, &sourceMID, &destMID, &change_key, false);
+		mapistore_folder_move_copy_messages(emsmdbp_ctx->mstore_ctx, contextID, synccontext_object->parent_object->backend_object, source_folder_object->backend_object, mem_ctx, 1, &sourceMID, &destMID, &change_key, false);
 	}
 	else {
 		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));

@@ -511,6 +511,7 @@ enum MAPISTATUS		compress_rtf(TALLOC_CTX *, const char*, const size_t, uint8_t *
 char			*guid_delete_dash(TALLOC_CTX *, const char *);
 struct Binary_r		*generate_recipient_entryid(TALLOC_CTX *, const char *);
 enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
+enum MAPISTATUS		EntryIDFromSourceIDForMessage(TALLOC_CTX *, mapi_object_t *, mapi_object_t *, mapi_object_t *, struct SBinary_short *);
 
 /* The following public definitions come from libmapi/notif.c */
 enum MAPISTATUS		SyncOpenAdvisor(mapi_object_t *, mapi_object_t *);

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2005 - 2011.
+   Copyright (C) Julien Kerihuel 2005 - 2012.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -133,6 +133,82 @@ _PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb,
 	   However this byte sounds the same than the parent folder
 	   one */
 	*fid += (parent_fid & 0xFFFF);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Build an EntryID for message from folder and message source ID
+
+ */
+_PUBLIC_ enum MAPISTATUS EntryIDFromSourceIDForMessage(TALLOC_CTX *mem_ctx,
+						       mapi_object_t *obj_store,
+						       mapi_object_t *obj_folder,
+						       mapi_object_t *obj_message,
+						       struct SBinary_short *entryID)
+{
+	enum MAPISTATUS			retval;
+	struct ndr_push			*ndr;
+	mapi_object_store_t		*store;
+	const struct SBinary_short	*FolderSourceKey;
+	const struct SBinary_short	*MessageSourceKey;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		*lpPropsf;
+	struct SPropValue		*lpPropsm;
+	uint32_t			count;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!obj_message, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!entryID, MAPI_E_INVALID_PARAMETER, NULL);
+
+	store = (mapi_object_store_t *)obj_store->private_data;
+
+	/* Step 1. Retrieve folder Source Key */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PidTagSourceKey);
+	retval = GetProps(obj_folder, 0, SPropTagArray, &lpPropsf, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return MAPI_E_NOT_FOUND;
+	FolderSourceKey = (const struct SBinary_short *)get_SPropValue(lpPropsf, PidTagSourceKey);
+	if (FolderSourceKey == NULL) return MAPI_E_NOT_FOUND;
+
+	/* Step 2. Retrieve message Source Key */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PidTagSourceKey);
+	retval = GetProps(obj_message, 0, SPropTagArray, &lpPropsm, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return MAPI_E_NOT_FOUND;
+	MessageSourceKey = (const struct SBinary_short *)get_SPropValue(lpPropsm, PidTagSourceKey);
+	if (MessageSourceKey == NULL) return MAPI_E_NOT_FOUND;
+
+	/* Step 3. Fill PidTagEntryID */
+	/* PidTagEntryId size for message is 70 bytes */
+	/* Flags (4 bytes) + store guid (16 bytes) + object type (2
+	 * bytes) + Folder SourceKey (22 bytes) + Pad (2 bytes) +
+	 * Message Source (22 bytes) + Pad (2 bytes) == 70 bytes */
+	ndr = ndr_push_init_ctx(NULL);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	ndr->offset = 0;
+
+	ndr_push_uint32(ndr, NDR_SCALARS, 0x0);
+	if (store->store_type == PublicFolder) {
+		const uint8_t	ProviderUID[16] = { 0x1A, 0x44, 0x73, 0x90, 0xAA, 0x66, 0x11, 0xCD, 0x9B, 0xC8, 0x00, 0xAA, 0x00, 0x2F, 0xC4, 0x5A };
+
+		ndr_push_array_uint8(ndr, NDR_SCALARS, ProviderUID, 16);
+		ndr_push_uint16(ndr, NDR_SCALARS, 0x0009);
+	} else {
+		ndr_push_GUID(ndr, NDR_SCALARS, &store->guid);
+		ndr_push_uint16(ndr, NDR_SCALARS, 0x0007);
+	}
+	ndr_push_array_uint8(ndr, NDR_SCALARS, FolderSourceKey->lpb, FolderSourceKey->cb);
+	ndr_push_uint16(ndr, NDR_SCALARS, 0x0);
+	ndr_push_array_uint8(ndr, NDR_SCALARS, MessageSourceKey->lpb, MessageSourceKey->cb);
+	ndr_push_uint16(ndr, NDR_SCALARS, 0x0);
+
+	entryID->cb = ndr->offset;
+	entryID->lpb = talloc_steal(mem_ctx, ndr->data);
+
+	talloc_free(ndr);
 
 	return MAPI_E_SUCCESS;
 }

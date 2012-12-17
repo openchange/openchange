@@ -235,6 +235,8 @@ retry:
 	store->fid_pf_NNTPArticle = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.NNTPIndex;
 	store->store_type = PublicFolder;
 
+	store->guid = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_pf.Guid;
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
@@ -409,6 +411,8 @@ retry:
 	store->fid_views = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Views;
 	store->fid_shortcuts = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.Shortcuts;
 	store->store_type = PrivateFolderWithoutCachedFids;
+
+	store->guid = mapi_response->mapi_repl->u.mapi_Logon.LogonType.store_mailbox.MailboxGuid;
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

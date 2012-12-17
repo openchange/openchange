@@ -271,6 +271,10 @@ int emsmdb_disconnect_dtor(void *data)
 	struct emsmdb_context	*emsmdb_ctx;
 
 	emsmdb_ctx = (struct emsmdb_context *)provider->ctx;
+	if (!emsmdb_ctx) {
+		return MAPI_E_SUCCESS;
+	}
+
 	emsmdb_disconnect(emsmdb_ctx);	
 
 	talloc_free(emsmdb_ctx->cache_requests);
@@ -283,7 +287,7 @@ int emsmdb_disconnect_dtor(void *data)
 		talloc_free(emsmdb_ctx->info.szDNPrefix);
 	}
 
-	return 0;
+	return MAPI_E_SUCCESS;
 }
 
 

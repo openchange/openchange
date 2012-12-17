@@ -569,14 +569,14 @@ enum mapistore_error mapistore_backend_folder_move_copy_messages(struct backend_
 	return bctx->backend->folder.move_copy_messages(target_folder, source_folder, mem_ctx, mid_count, source_mids, target_mids, target_change_keys, want_copy);
 }
 
-enum mapistore_error mapistore_backend_folder_move_folder(struct backend_context *bctx, void *move_folder, void *target_folder, const char *new_folder_name)
+enum mapistore_error mapistore_backend_folder_move_folder(struct backend_context *bctx, void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, const char *new_folder_name)
 {
-        return bctx->backend->folder.move_folder(move_folder, target_folder, new_folder_name);
+        return bctx->backend->folder.move_folder(move_folder, target_folder, mem_ctx, new_folder_name);
 }
 
-enum mapistore_error mapistore_backend_folder_copy_folder(struct backend_context *bctx, void *move_folder, void *target_folder, bool recursive, const char *new_folder_name)
+enum mapistore_error mapistore_backend_folder_copy_folder(struct backend_context *bctx, void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, bool recursive, const char *new_folder_name)
 {
-        return bctx->backend->folder.copy_folder(move_folder, target_folder, recursive, new_folder_name);
+        return bctx->backend->folder.copy_folder(move_folder, target_folder, mem_ctx, recursive, new_folder_name);
 }
 
 enum mapistore_error mapistore_backend_folder_get_deleted_fmids(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)

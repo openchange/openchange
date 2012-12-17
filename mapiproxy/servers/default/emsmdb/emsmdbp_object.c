@@ -1183,7 +1183,7 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	return retval;
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, const char *new_name)
+_PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, TALLOC_CTX *mem_ctx, const char *new_name)
 {
 	enum mapistore_error	ret;
 	enum MAPISTATUS		retval;
@@ -1227,7 +1227,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	}
 
 	contextID = emsmdbp_get_contextID(move_folder);
-	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, new_name);
+	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
 	if (move_folder->object.folder->mapistore_root) {
 		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID);
 		if (retval) {

@@ -1116,7 +1116,7 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 		goto end;
 	}
 
-	ret = emsmdbp_folder_move_folder(emsmdbp_ctx, move_folder, target_folder, request->NewFolderName.lpszW);
+	ret = emsmdbp_folder_move_folder(emsmdbp_ctx, move_folder, target_folder, mem_ctx, request->NewFolderName.lpszW);
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 
@@ -1222,7 +1222,7 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	}
 	
 	contextID = emsmdbp_get_contextID(copy_folder);
-	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, copy_folder->backend_object, target_folder->backend_object, request->WantRecursive, request->NewFolderName.lpszW);
+	ret = mapistore_folder_copy_folder(emsmdbp_ctx->mstore_ctx, contextID, copy_folder->backend_object, target_folder->backend_object, mem_ctx, request->WantRecursive, request->NewFolderName.lpszW);
 	mapi_repl->error_code = mapistore_error_to_mapi(ret);
 	response->PartialCompletion = false;
 

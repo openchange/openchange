@@ -744,7 +744,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							   void *move_folder, void *target_folder, const char *new_folder_name)
+							   void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, const char *new_folder_name)
 {
 	struct backend_context	*backend_ctx;
 
@@ -756,7 +756,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_cont
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	return mapistore_backend_folder_move_folder(backend_ctx, move_folder, target_folder, new_folder_name);
+	return mapistore_backend_folder_move_folder(backend_ctx, move_folder, target_folder, mem_ctx, new_folder_name);
 }
 
 
@@ -764,7 +764,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_cont
 
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							   void *move_folder, void *target_folder, bool recursive, const char *new_folder_name)
+							   void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, bool recursive, const char *new_folder_name)
 {
 	struct backend_context	*backend_ctx;
 
@@ -776,7 +776,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_cont
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend operation */
-	return mapistore_backend_folder_copy_folder(backend_ctx, move_folder, target_folder, recursive, new_folder_name);
+	return mapistore_backend_folder_copy_folder(backend_ctx, move_folder, target_folder, mem_ctx, recursive, new_folder_name);
 }
 
 

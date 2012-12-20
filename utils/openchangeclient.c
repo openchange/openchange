@@ -806,7 +806,7 @@ static enum MAPISTATUS openchangeclient_sendmail(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return retval;
 
 	SRowSet = talloc_zero(mem_ctx, struct SRowSet);
-	if (!RowSet) {
+	if (RowSet) {
 		cast_PropertyRowSet_to_SRowSet(mem_ctx, RowSet, SRowSet);
 	}
 

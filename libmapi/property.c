@@ -2235,7 +2235,10 @@ _PUBLIC_ void cast_PropertyRow_to_SRow(TALLOC_CTX *mem_ctx, struct PropertyRow_r
  */
 _PUBLIC_ void cast_PropertyRowSet_to_SRowSet(TALLOC_CTX *mem_ctx, struct PropertyRowSet_r *prowset, struct SRowSet *srowset)
 {
-	uint32_t i;
+	uint32_t	i;
+
+	/* Sanity checks */
+	if (!srowset || !prowset) return;
 
 	srowset->cRows = prowset->cRows;
 	srowset->aRow = talloc_array(mem_ctx, struct SRow, srowset->cRows);

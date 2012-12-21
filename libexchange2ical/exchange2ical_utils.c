@@ -283,6 +283,9 @@ struct tm *get_tm_from_FILETIME(const struct FILETIME *ft)
 	NTTIME		time;
 	struct timeval	t;
 	struct tm	*tm;
+
+	/* Sanity checks */
+	if (ft == NULL) return NULL;
 	
 	time = FILETIME_to_NTTIME(*ft);
 	nttime_to_timeval(&t, time);
@@ -427,6 +430,8 @@ bool compareGlobalObjectIds(struct GlobalObjectId *glb1, struct GlobalObjectId *
 	time_t creationTime1;
 	time_t creationTime2;
 	
+	/* Sanity checks */
+	if (!&glb1->CreationTime || !&glb2->CreationTime) return false;
 	
 	creationTime1=mktime(get_tm_from_FILETIME(&glb1->CreationTime));
 	creationTime2=mktime(get_tm_from_FILETIME(&glb2->CreationTime));

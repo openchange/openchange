@@ -1156,7 +1156,7 @@ void ical_property_UID(struct exchange2ical *exchange2ical)
 }
 
 
-static icalproperty * ical_property_add_x_property_value(icalcomponent *parent, const char* propname, const char* value)
+static icalproperty * ical_property_add_x_property_value(icalcomponent *parent, const char *propname, const char *value)
 {
 	icalproperty *prop;
 	icalvalue *icalText;
@@ -1195,8 +1195,10 @@ void ical_property_X_MICROSOFT_CDO_ATTENDEE_CRITICAL_CHANGE(struct exchange2ical
 	if (!exchange2ical->AttendeeCriticalChange) return;
 
 	tm = get_tm_from_FILETIME(exchange2ical->AttendeeCriticalChange);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE", outstr);
+	if (tm) {
+		strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-ATTENDEE-CRITICAL-CHANGE", outstr);
+	}
 }
 
 
@@ -1279,10 +1281,10 @@ void ical_property_X_MICROSOFT_CDO_OWNER_CRITICAL_CHANGE(struct exchange2ical *e
 
 
 	tm = get_tm_from_FILETIME(exchange2ical->OwnerCriticalChange);
-	
-
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE", outstr);
+	if (tm) {
+		strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-OWNER-CRITICAL-CHANGE", outstr);
+	}
 }
 
 
@@ -1295,8 +1297,10 @@ void ical_property_X_MICROSOFT_CDO_REPLYTIME(struct exchange2ical *exchange2ical
 	if (!exchange2ical->apptReplyTime) return;
 
 	tm = get_tm_from_FILETIME(exchange2ical->apptReplyTime);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-REPLYTIME", outstr);
+	if (tm) {
+		strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MICROSOFT-CDO-REPLYTIME", outstr);
+	}
 }
 
 
@@ -1346,8 +1350,10 @@ void ical_property_X_MS_OLK_APPTSEQTIME(struct exchange2ical *exchange2ical)
 	if (!exchange2ical->apptSeqTime) return;
 
 	tm = get_tm_from_FILETIME(exchange2ical->apptSeqTime);
-	strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
-	ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-APPTSEQTIME", outstr);
+	if (tm) {
+		strftime(outstr, sizeof(outstr), "%Y%m%dT%H%M%SZ", tm);
+		ical_property_add_x_property_value(exchange2ical->vevent, "X-MS-OLK-APPTSEQTIME", outstr);
+	}
 }
 
 

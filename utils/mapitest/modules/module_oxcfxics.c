@@ -128,13 +128,15 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 
 	/* start top folder, followed by end folder */
 	put_buffer_data = data_blob_named("\x03\x00\x09\x40\x03\x00\x0b\x40", 8, "putbuffer");
-	/* printf("data_blob: %s\n", data_blob_hex_string_lower(mt->mem_ctx, &put_buffer_data)); */
 	retval = FXPutBuffer(&obj_context, &put_buffer_data, &usedSize);
 	mapitest_print_retval_clean(mt, "FXPutBuffer", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
 		goto cleanup;
 	}
+
+	data_blob_free(&put_buffer_data);
+
 	if (usedSize != 8) {
 		mapitest_print(mt, "unexpected used count 0x%04x\n", usedSize);
 		ret = false;
@@ -142,7 +144,6 @@ _PUBLIC_ bool mapitest_oxcfxics_DestConfigure(struct mapitest *mt)
 	}
 cleanup:
 	/* Cleanup and release */
-	data_blob_free(&put_buffer_data);
 	mapi_object_release(&obj_context);
 	mapi_object_release(&destfolder);
 	mapi_object_release(&obj_htable);

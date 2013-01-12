@@ -634,7 +634,7 @@ static bool mapitest_no_server_props_string8(struct mapitest *mt)
 
 	set_SPropValue_proptag(&propvalue, PT_STRING8, &string);
 	stringget = (const char**)get_SPropValue_data(&propvalue);
-	if (!stringget || (strncmp(*stringget, string, sizeof(*stringget)) != 0)) {
+	if (!stringget || (strncmp(*stringget, string, strlen(*stringget)) != 0)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue get/set with PT_STRING8");
 		return false;
@@ -652,7 +652,7 @@ static bool mapitest_no_server_props_unicode(struct mapitest *mt)
 
 	set_SPropValue_proptag(&propvalue, PT_UNICODE, &string);
 	stringget = (const char**)get_SPropValue_data(&propvalue);
-	if (!stringget || (strncmp(*stringget, string, sizeof(*stringget)) != 0)) {
+	if (!stringget || (strncmp(*stringget, string, strlen(*stringget)) != 0)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue get/set with PT_UNICODE");
 		return false;

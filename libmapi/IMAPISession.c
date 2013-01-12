@@ -56,7 +56,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 	if (server == false) {
 		/* Step 1. Retrieve a MID for our legacyDN */
 		pNames.Count = 0x1;
-		pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+		pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 		pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, legacyDN);
 
 		MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
@@ -82,7 +82,7 @@ static enum MAPISTATUS FindGoodServer(struct mapi_session *session,
 
 	/* Step 3. Retrieve the MId for this server DN */
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 	pNames.Strings[0] = (const char *) talloc_strdup(pNames.Strings, server_dn);
 	MId_array = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi, mem_ctx, &pNames, &MId_array);

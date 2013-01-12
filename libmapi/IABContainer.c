@@ -328,7 +328,7 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 
 	/* Step 2. Map recipient DN to MId */
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 	pNames.Strings[0] = email;
 	pMId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_DNToMId(nspi_ctx, mem_ctx, &pNames, &pMId);

@@ -1789,7 +1789,7 @@ _PUBLIC_ enum MAPISTATUS ProcessNetworkProfile(struct mapi_session *session,
 	set_profile_mvstr_attribute(mapi_ctx, profname, *PropertyRowSet, 0, PR_EMS_AB_PROXY_ADDRESSES, "ProxyAddress");
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 	pNames.Strings[0] = (const char *) talloc_asprintf(mem_ctx, SERVER_DN, 
 							   nspi->org, nspi->org_unit, 
 							   nspi->servername);

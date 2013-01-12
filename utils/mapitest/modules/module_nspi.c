@@ -344,7 +344,7 @@ _PUBLIC_ bool mapitest_nspi_DNToMId(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct PropertyTagArray_r);
@@ -454,7 +454,7 @@ _PUBLIC_ bool mapitest_nspi_GetProps(struct mapitest *mt)
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
 
 	pNames.Count = 0x1;
-	pNames.Strings = (const char **) talloc_array(mem_ctx, char **, 1);
+	pNames.Strings = (const char **) talloc_array(mem_ctx, char *, 1);
 	pNames.Strings[0] = mt->mapi_ctx->session->profile->homemdb;
 
 	MId = talloc_zero(mem_ctx, struct PropertyTagArray_r);

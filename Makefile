@@ -1527,11 +1527,6 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h
 		pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
 
-pyopenchange/pymapi_properties.c:		\
-	libmapi/conf/mapi-properties		\
-	libmapi/conf/mparse.pl		
-	@./libmapi/conf/build.sh
-
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc

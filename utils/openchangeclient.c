@@ -2245,12 +2245,16 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 		break;
 	case fnevMbit|fnevObjectDeleted:
 		DEBUG(0, ("[+] Message deleted\n"));
+		break;
 	case fnevMbit|fnevObjectModified:
 		DEBUG(0, ("[+] Message modified\n"));
+		break;
 	case fnevMbit|fnevObjectMoved:
 		DEBUG(0, ("[+] Message moved\n"));
+		break;
 	case fnevMbit|fnevObjectCopied:
 		DEBUG(0, ("[+] Message copied\n"));
+		break;
 	case fnevMbit|fnevTableModified:
 		ctable = (struct ContentsTableChange *) NotificationData;
 		DEBUG(0, ("[+] Contents Table: "));
@@ -2280,6 +2284,7 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 		break;
 	case fnevMbit|fnevSbit|fnevObjectModified:
 		DEBUG(0, ("[+] A property on a message in a search folder has changed\n"));
+		break;
 	case fnevMbit|fnevSbit|fnevTableModified:
 		stable = (struct ContentsTableChange *) NotificationData;
 		DEBUG(0, ("[+] Search Table: "));

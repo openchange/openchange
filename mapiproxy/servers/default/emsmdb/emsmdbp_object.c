@@ -154,6 +154,7 @@ _PUBLIC_ uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 		if (object->object.folder->mapistore_root) {
 			return object->object.folder->contextID;
 		}
+		break;
 	default:
 		if (object->parent_object) {
 			return emsmdbp_get_contextID(object->parent_object);

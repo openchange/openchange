@@ -1240,12 +1240,14 @@ _PUBLIC_ size_t set_RecurrencePattern_size(const struct RecurrencePattern *rp)
         case PatternType_MonthNth:
         case PatternType_HjMonthNth:
                 size += sizeof(uint32_t);
+		break;
         case PatternType_Week:
         case PatternType_Month:
         case PatternType_MonthEnd:
         case PatternType_HjMonth:
         case PatternType_HjMonthEnd:
                 size += sizeof(uint32_t);
+		break;
         case PatternType_Day:
                 break;
         default:

@@ -57,9 +57,11 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 /* Folders */
         case 0x3010: /* different forms of folder modifications */
                 size += sizeof (uint32_t);
+		break;
         case 0x1010:
         case 0x2010:
                 size += sizeof (uint32_t);
+		break;
         case 0x0010: /* folder modified */
                 size += sizeof(uint64_t) + sizeof(uint16_t);
                 if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
@@ -84,6 +86,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
                         size += sizeof(enum MAPITAGS) * NotificationData->MessageCreatedNotification.TagCount;
                 }
+		break;
         case 0x8008: /* message deleted */
         case 0x0008: /* folder deleted */
                 size += 2 * sizeof(uint64_t);

@@ -322,7 +322,6 @@ _PUBLIC_ enum MAPISTATUS GetABRecipientInfo(struct mapi_session *session,
 
 	OPENCHANGE_RETVAL_IF((flaglist->aulPropTag[0] != MAPI_RESOLVED), MAPI_E_NOT_FOUND, mem_ctx);
 
-	username = (const char *) get_PropertyValue_PropertyRowSet_data(RowSet, PR_7BIT_DISPLAY_NAME_UNICODE);
 	email = talloc_strdup(mem_ctx, (const char *) get_PropertyValue_PropertyRowSet_data(RowSet, PR_EMAIL_ADDRESS_UNICODE));
 	MAPIFreeBuffer(RowSet);
 

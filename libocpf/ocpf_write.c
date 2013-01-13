@@ -423,8 +423,6 @@ static int ocpf_write_recipients(struct ocpf_context *ctx,
 	enum MAPITAGS		ulPropTag;
 	struct SPropValue	*lpProps;
 
-	line = talloc_zero(ctx, char);
-
 	for (i = 0; i < ctx->recipients->cRows; i++) {
 		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTagRecipientType);
 		if (lpProps) {

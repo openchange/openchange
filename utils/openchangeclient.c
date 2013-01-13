@@ -516,8 +516,8 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 										status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
 										if (status == false) {
 											printf("A Problem was encountered while storing attachments on the filesystem\n");
-											MAPI_RETVAL_IF(status == false, MAPI_E_UNABLE_TO_COMPLETE, mem_ctx);
-											
+											talloc_free(mem_ctx);
+											return MAPI_E_UNABLE_TO_COMPLETE;
 										}
 									}
 									MAPIFreeBuffer(lpProps2);

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2007
+   Copyright (C) Julien Kerihuel 2007-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -234,7 +234,7 @@ _PUBLIC_ enum MAPISTATUS octool_message(TALLOC_CTX *mem_ctx,
 
 	if (retval != MAPI_E_SUCCESS) {
 		printf("Invalid Message: %s\n", msgid ? msgid : "");
-		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
+		return GetLastError();
 	}
 	
 	from = (const char *) octool_get_propval(&aRow, PR_SENT_REPRESENTING_NAME);

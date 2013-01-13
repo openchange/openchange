@@ -370,7 +370,6 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 error:	
 	close(fd);
 error_close:
-	closedir(dir);
 	mapi_object_release(&obj_stream);
 	talloc_free(mem_ctx);
 	return ret;

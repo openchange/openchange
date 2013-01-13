@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI implementation.
 
-   Copyright (C) Julien Kerihuel 2007-2012.
+   Copyright (C) Julien Kerihuel 2007-2013.
    Copyright (C) Fabien Le Mentec 2007.
 
    This program is free software; you can redistribute it and/or modify
@@ -1110,12 +1110,6 @@ _PUBLIC_ enum MAPISTATUS DuplicateProfile(struct mapi_context *mapi_ctx,
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x1,
 						PR_EMAIL_ADDRESS
 						);
-
-		/* Retrieve the username to match */
-		if (!username) {
-			username = cli_credentials_get_username(nspi->cred);
-			OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, mem_ctx);
-		}
 
 		/* Build the restriction we want for NspiGetMatches */
 		lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);

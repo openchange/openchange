@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2007-2010
+   Copyright (C) Julien Kerihuel 2007-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -319,6 +319,7 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 static bool store_attachment(mapi_object_t obj_attach, const char *filename, uint32_t size, struct oclient *oclient)
 {
 	TALLOC_CTX	*mem_ctx;
+	bool		ret = true;
 	enum MAPISTATUS	retval;
 	char		*path;
 	mapi_object_t	obj_stream;
@@ -334,37 +335,45 @@ static bool store_attachment(mapi_object_t obj_attach, const char *filename, uin
 	mem_ctx = talloc_named(NULL, 0, "store_attachment");
 
 	if (!(dir = opendir(oclient->store_folder))) {
-		if (mkdir(oclient->store_folder, 0700) == -1) return false;
+		if (mkdir(oclient->store_folder, 0700) == -1) {
+			ret = false;
+			goto error_close;
+		}
 	} else {
 		closedir(dir);
 	}
 
 	path = talloc_asprintf(mem_ctx, "%s/%s", oclient->store_folder, filename);
 	if ((fd = open(path, O_CREAT|O_WRONLY, S_IWUSR|S_IRUSR)) == -1) {
-		goto error;
+		ret = false;
+		talloc_free(path);
+		goto error_close;
 	}
 	talloc_free(path);
 
 	retval = OpenStream(&obj_attach, PR_ATTACH_DATA_BIN, 0, &obj_stream);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) {
+		ret = false;
+		goto error;
+	}
 
 	read_size = 0;
 	do {
 		retval = ReadStream(&obj_stream, buf, MAX_READ_SIZE, &read_size);
-		if (retval != MAPI_E_SUCCESS) goto error;
+		if (retval != MAPI_E_SUCCESS) {
+			ret = false;
+			goto error;
+		}
 		write(fd, buf, read_size);
 	} while (read_size);
-	
-	close(fd);
-	mapi_object_release(&obj_stream);
-	talloc_free(mem_ctx);
-	return true;
 
-error:
-	mapi_object_release(&obj_stream);
+error:	
 	close(fd);
+error_close:
+	closedir(dir);
+	mapi_object_release(&obj_stream);
 	talloc_free(mem_ctx);
-	return false;
+	return ret;
 }
 
 static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store, 

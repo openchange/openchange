@@ -289,7 +289,7 @@ static bool mapistore_mgmt_message_notification_message(struct mapistore_mgmt_us
 							struct mapistore_mgmt_notification_cmd notif)
 {
 	struct mapistore_mgmt_notif	*el;
-	bool				found = true;
+	bool				found = false;
 
 	if (!notif.MessageID) return false;
 
@@ -334,7 +334,7 @@ static bool mapistore_mgmt_message_notification_folder(struct mapistore_mgmt_use
 						       struct mapistore_mgmt_notification_cmd notif)
 {
 	struct mapistore_mgmt_notif	*el;
-	bool				found = true;
+	bool				found = false;
 
 	if (!notif.FolderID) return false;
 

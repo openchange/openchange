@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1472,7 +1472,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 	struct SPropTagArray		*properties;
 	uint32_t			contextID;
 
-	if (!table_object->type == EMSMDBP_OBJECT_TABLE) {
+	if (table_object->type != EMSMDBP_OBJECT_TABLE) {
 		return MAPISTORE_ERROR;
 	}
 

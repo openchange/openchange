@@ -982,10 +982,6 @@ _PUBLIC_ bool mapitest_nspi_ResolveNames(struct mapitest *mt)
 	}
 	talloc_free(flaglist);
 	talloc_free(RowSet);
-	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(SPropTagArray);
-		return false;
-	}
 
 	/* NspiResolveNamesW (0x14) */
 	retval = ResolveNames(mt->session, (const char **)username, SPropTagArray, &RowSet, &flaglist, MAPI_UNICODE);

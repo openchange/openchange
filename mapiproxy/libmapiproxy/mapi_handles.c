@@ -296,7 +296,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 		el = talloc_zero((TALLOC_CTX *)handles_ctx, struct mapi_handles);
 		if (!el) {
 			mapi_handles_tdb_free(handles_ctx, handle);
-			OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+			talloc_free(mem_ctx);
+			return MAPI_E_NOT_ENOUGH_RESOURCES;
 		}
 
 		el->handle = handle;
@@ -334,7 +335,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	el = talloc_zero((TALLOC_CTX *)handles_ctx, struct mapi_handles);
 	if (!el) {
 		mapi_handles_tdb_free(handles_ctx, handles_ctx->last_handle);
-		OPENCHANGE_RETVAL_IF(!el, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+		talloc_free(mem_ctx);
+		return MAPI_E_NOT_ENOUGH_RESOURCES;
 	}
 
 	el->handle = handles_ctx->last_handle;

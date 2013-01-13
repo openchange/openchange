@@ -478,7 +478,7 @@ _PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const
 
 	ret = openchangedb_get_fid(emsmdbp_ctx->oc_ctx, uri, fidp);
 	if (ret != MAPI_E_SUCCESS) {
-		ret = mapistore_indexing_record_get_fmid(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, uri, false, fidp, &soft_deleted);
+		ret = (int) mapistore_indexing_record_get_fmid(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, uri, false, fidp, &soft_deleted);
 	}
 
 	return ret;
@@ -1163,8 +1163,10 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 	uint64_t	folderID;
 
 	if (emsmdbp_is_mapistore(folder)) {
-		retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder),
-							  folder->backend_object, MAPISTORE_FOLDER_TABLE, row_countp);
+		retval = (int) mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, 
+								emsmdbp_get_contextID(folder),
+								folder->backend_object, 
+								MAPISTORE_FOLDER_TABLE, row_countp);
 	}
 	else {
 		if (folder->type == EMSMDBP_OBJECT_FOLDER) {
@@ -1178,7 +1180,7 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 			return MAPISTORE_ERROR;
 		}
 		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
-		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, row_countp);
+		retval = (int) openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, row_countp);
 	}
 
 	return retval;

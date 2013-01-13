@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2010
+   Copyright (C) Julien Kerihuel 2010-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -97,7 +97,10 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 			ldb_msg_add_string(msg, "@IDXATTR", "mappedId");
 			msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 			ret = ldb_add(ldb_ctx, msg);
-			MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+			if (ret != LDB_SUCCESS) {
+				fclose(f);
+				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+			}
 			talloc_free(mem_ctx);
 		}
 

@@ -1,7 +1,7 @@
 /*
    OpenChange OCPF (OpenChange Property File) implementation.
 
-   Copyright (C) Julien Kerihuel 2008-2011.
+   Copyright (C) Julien Kerihuel 2008-2013.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -791,11 +791,18 @@ int ocpf_variable_add(struct ocpf_context *ctx,
 int ocpf_binary_add(struct ocpf_context *ctx, const char *filename, struct Binary_r *bin)
 {
 	int		fd;
+	int		ret;
 	struct stat	sb;
 
 	fd = open(filename, O_RDONLY);
 	OCPF_RETVAL_IF(fd == -1, ctx, OCPF_WARN_FILENAME_INVALID, NULL);
-	OCPF_RETVAL_IF(fstat(fd, &sb), ctx, OCPF_WARN_FILENAME_STAT, NULL);
+
+	ret = fstat(fd, &sb);
+	if (ret == -1) {
+		ocpf_do_debug(ctx, "%s", OCPF_WARN_FILENAME_STAT);
+		close(fd);
+		return OCPF_ERROR;
+	}
 	
 	bin->lpb = talloc_size(ctx, sb.st_size);
 	bin->cb = read(fd, bin->lpb, sb.st_size);

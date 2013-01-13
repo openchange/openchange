@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2011.
+   Copyright (C) Julien Kerihuel 2006-2013.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -952,7 +952,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 
 	if (ret != LDB_SUCCESS) {
 		talloc_free(res);
-		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CORRUPT_STORE, aRow);
+		talloc_free(aRow);
+		return MAPI_E_CORRUPT_STORE;
 	}
 
 	ret = ldb_request(emsabp_ctx->samdb_ctx, req);
@@ -963,7 +964,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	
 	if (ret != LDB_SUCCESS || !res->count) {
 		talloc_free(res);
-		OPENCHANGE_RETVAL_IF(1, MAPI_E_CORRUPT_STORE, aRow);
+		talloc_free(aRow);
+		return MAPI_E_CORRUPT_STORE;
 	}
 
 	aRow = talloc_realloc(mem_ctx, aRow, struct PropertyRow_r, aRow_idx + res->count + 1);

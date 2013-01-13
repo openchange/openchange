@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -339,6 +339,7 @@ _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 
 	retstr = talloc_array(mem_ctx, char, len + 1);
 	if ((ret = read(fd, retstr, len)) == -1) {
+		close(fd);
 		talloc_free(retstr);
 		return NULL;
 	}
@@ -351,6 +352,7 @@ _PUBLIC_ char *mapitest_common_genblob(TALLOC_CTX *mem_ctx, size_t len)
 	}
 	retstr[i] = '\0';
 
+	close(fd);
 	return retstr;
 }
 

@@ -86,11 +86,11 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 */
 
 		{
-			TALLOC_CTX *mem_ctx;
+			TALLOC_CTX *_mem_ctx;
 			struct ldb_message *msg;
 
-			mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-			msg = ldb_msg_new(mem_ctx);
+			_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+			msg = ldb_msg_new(_mem_ctx);
 			msg->dn = ldb_dn_new(msg, ldb_ctx, "@INDEXLIST");
 			ldb_msg_add_string(msg, "@IDXATTR", "cn");
 			ldb_msg_add_string(msg, "@IDXATTR", "oleguid");
@@ -99,9 +99,10 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 			ret = ldb_add(ldb_ctx, msg);
 			if (ret != LDB_SUCCESS) {
 				fclose(f);
-				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+				talloc_free(_mem_ctx);
+				return MAPISTORE_ERR_DATABASE_INIT;
 			}
-			talloc_free(mem_ctx);
+			talloc_free(_mem_ctx);
 		}
 
 		while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
@@ -112,7 +113,7 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 			talloc_free(normalized_msg);
 			if (ret != LDB_SUCCESS) {
 				fclose(f);
-				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+				return MAPISTORE_ERR_DATABASE_INIT;
 			}
 			ldb_ldif_read_free(ldb_ctx, ldif);
 		}
@@ -180,13 +181,16 @@ _PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *ldb_ct
  */
 _PUBLIC_ enum mapistore_error mapistore_namedprops_create_id(struct ldb_context *ldb_ctx, struct MAPINAMEID nameid, uint16_t mapped_id)
 {
-	int ret;
-	TALLOC_CTX *mem_ctx;
-	char *ldif_record;
-	struct ldb_ldif *ldif;
-	char *hex_id, *dec_id, *dec_mappedid, *guid;
-	struct ldb_message *normalized_msg;
-	const char *ldif_records[] = { NULL, NULL };
+	int			ret;
+	TALLOC_CTX		*mem_ctx;
+	char			*ldif_record;
+	struct ldb_ldif		*ldif;
+	char			*hex_id;
+	char			*dec_id;
+	char			*dec_mappedid;
+	char			*guid;
+	struct ldb_message	*normalized_msg;
+	const char		*ldif_records[] = { NULL, NULL };
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -196,28 +200,45 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_create_id(struct ldb_context 
 	case MNID_ID:
 		hex_id = talloc_asprintf(mem_ctx, "%.4x", nameid.kind.lid);
 		dec_id = talloc_asprintf(mem_ctx, "%u", nameid.kind.lid);
-		ldif_record = talloc_asprintf(mem_ctx, "dn: CN=0x%s,CN=%s,CN=default\nobjectClass: MNID_ID\ncn: 0x%s\npropType: PT_NULL\noleguid: %s\nmappedId: %s\npropId: %s\n",
+		ldif_record = talloc_asprintf(mem_ctx, 
+					      "dn: CN=0x%s,CN=%s,CN=default\n"	\
+					      "objectClass: MNID_ID\n"		\
+					      "cn: 0x%s\n"			\
+					      "propType: PT_NULL\n"		\
+					      "oleguid: %s\n"			\
+					      "mappedId: %s\n"			\
+					      "propId: %s\n",
 					      hex_id, guid, hex_id, guid, dec_mappedid, dec_id);
 		break;
 	case MNID_STRING:
-		ldif_record = talloc_asprintf(mem_ctx, "dn: CN=%s,CN=%s,CN=default\nobjectClass: MNID_STRING\ncn: %s\npropType: PT_NULL\noleguid: %s\nmappedId: %s\npropName: %s\n",
-					      nameid.kind.lpwstr.Name, guid, nameid.kind.lpwstr.Name, guid, dec_mappedid, nameid.kind.lpwstr.Name);
+		ldif_record = talloc_asprintf(mem_ctx, 
+					      "dn: CN=%s,CN=%s,CN=default\n"	\
+					      "objectClass: MNID_STRING\n"	\
+					      "cn: %s\n"			\
+					      "propType: PT_NULL\n"		\
+					      "oleguid: %s\n"			\
+					      "mappedId: %s\n"			\
+					      "propName: %s\n",
+					      nameid.kind.lpwstr.Name, guid, nameid.kind.lpwstr.Name, 
+					      guid, dec_mappedid, nameid.kind.lpwstr.Name);
 		break;
 	default:
 		abort();
 	}
 
 	DEBUG(5, ("inserting record:\n%s\n", ldif_record));
+
 	ldif_records[0] = ldif_record;
 	ldif = ldb_ldif_read_string(ldb_ctx, ldif_records);
+
 	ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+
 	ret = ldb_add(ldb_ctx, normalized_msg);
 	talloc_free(normalized_msg);
-	if (ret != LDB_SUCCESS) {
-		MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
-	}
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 
+	talloc_free(mem_ctx);
 	return ret;
 }
 

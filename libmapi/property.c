@@ -2177,7 +2177,7 @@ _PUBLIC_ void cast_PropertyValue_to_SPropValue(struct PropertyValue_r *propvalue
 		spropvalue->value.lpszW = propvalue->value.lpszW;
 		break;
 	case PT_SYSTIME:
-		propvalue->value.ft = propvalue->value.ft;
+		spropvalue->value.ft = propvalue->value.ft;
 		break;
 	case PT_CLSID:
 		spropvalue->value.lpguid = propvalue->value.lpguid;

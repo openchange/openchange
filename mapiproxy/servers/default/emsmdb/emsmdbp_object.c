@@ -2021,7 +2021,7 @@ end:
 
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *message_object)
 {
-	struct emsmdbp_object	*table_object;
+	struct emsmdbp_object	*table_object = NULL;
 	uint32_t		contextID;
 
 	/* Sanity checks */
@@ -2522,7 +2522,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
         void		**data_pointers;
         enum MAPISTATUS	*retvals;
 	bool		mapistore;
-	int		retval;
+	int		retval = MAPISTORE_SUCCESS;
 
         data_pointers = talloc_array(mem_ctx, void *, properties->cValues);
         memset(data_pointers, 0, sizeof(void *) * properties->cValues);

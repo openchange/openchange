@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -706,7 +706,7 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 	char			*uni_value;
 	struct Binary_r		*bin_value;
 	struct FILETIME		*ft_value;
-	size_t			value_size;
+	size_t			value_size = 0;
 	const uint16_t		*unicode_char;
 	size_t			dest_size, dest_len;
 

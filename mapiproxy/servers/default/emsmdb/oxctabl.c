@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -376,7 +376,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	void				**data_pointers;
 	uint32_t			count, max;
 	uint32_t			handle;
-	uint32_t			i;
+	uint32_t			i = 0;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] QueryRows (0x15)\n"));
 

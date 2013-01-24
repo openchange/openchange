@@ -1067,7 +1067,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetStreamSize(TALLOC_CTX *mem_ctx,
 	void				*private_data;
 	struct emsmdbp_object		*object;
 	uint32_t			handle;
-	struct SetStreamSize_req	*request;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] SetStreamSize (0x2f)\n"));
 

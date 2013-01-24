@@ -17,7 +17,7 @@
 # e.g. OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes          #
 #  ->  "0.7-SVN-build-199"                             #
 ########################################################
-OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes
+OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=no
 
 
 #############################################################
@@ -26,7 +26,7 @@ OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes
 # e.g. OPENCHANGE_VERSION_RELEASE_NICKNAME=Nicky Nickname   #
 #  ->  "0.7 (Nicky Nickname)"                               #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NICKNAME=Borg
+OPENCHANGE_VERSION_RELEASE_NICKNAME=Quadrant
 
 
 #############################################################
@@ -35,4 +35,4 @@ OPENCHANGE_VERSION_RELEASE_NICKNAME=Borg
 # e.g. OPENCHANGE_VERSION_RELEASE_VERSION=0.8.2             #
 #  ->  "0.8.2 (Nicky Nickname)"                             #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NUMBER=1.0
+OPENCHANGE_VERSION_RELEASE_NUMBER=2.0

@@ -9,7 +9,7 @@ int main(int argc, char *argv[])
 	TALLOC_CTX			*mem_ctx;
 	struct mapi_session             *session = NULL;
 	struct SPropTagArray		*SPropTagArray;
-	struct SRowSet			*srowset;
+	struct PropertyRowSet_r		*srowset;
 	mapi_id_t                       id_inbox;
 	mapi_id_t                       *fid, *mid;
 	char 				*profname;
@@ -17,8 +17,8 @@ int main(int argc, char *argv[])
 	uint32_t                        i;
 	uint32_t			count = 1000;
 	struct nspi_context		*nspi_ctx = NULL;
-	struct SPropTagArray		*MIds = NULL;
-	struct SPropValue		*lpProp = NULL;
+	struct PropertyTagArray_r	*MIds = NULL;
+	struct PropertyValue_r		*lpProp = NULL;
 	struct Restriction_r		Filter;
 
 	mem_ctx = talloc_named(NULL, 0, "fetch_addressbook");
@@ -46,10 +46,10 @@ int main(int argc, char *argv[])
 	nspi_ctx->pStat->NumPos = 0;
 	nspi_ctx->pStat->TotalRecs = 0xffffffff;
 
-	srowset = talloc_zero(mem_ctx, struct SRowSet);
+	srowset = talloc_zero(mem_ctx, struct PropertyRowSet_r);
 
 	/* build the filter - in this case, display names that start with the command line argument, or a default of "te". case insensitive match) */
-	lpProp = talloc_zero(mem_ctx, struct SPropValue);
+	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_DISPLAY_NAME_UNICODE;
 	lpProp->dwAlignPad = 0;
 	if (argc > 1) {
@@ -64,7 +64,7 @@ int main(int argc, char *argv[])
 	Filter.res.resContent.lpProp = lpProp;
 
 	/* construct an explicit table */
-	MIds = talloc_zero(mem_ctx, struct SPropTagArray);
+	MIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	retval = nspi_GetMatches(nspi_ctx, mem_ctx, NULL, &Filter, 5000, &srowset, &MIds);
 	MAPI_RETVAL_IF(retval, retval, NULL);
 

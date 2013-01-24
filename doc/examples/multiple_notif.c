@@ -162,13 +162,13 @@ int main(int ac, const char *av[])
 	}
 
 	/* Step 4. Register for notifications */
-	retval = RegisterNotification(sessionA, 0);
+	retval = RegisterNotification(sessionA);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("RegisterNotification profileA", GetLastError());
 		exit (1);
 	}
 
-	retval = RegisterNotification(sessionB, 0);
+	retval = RegisterNotification(sessionB);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("RegisterNotification profileB", GetLastError());
 		exit (1);

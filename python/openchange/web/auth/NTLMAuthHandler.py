@@ -29,7 +29,7 @@ is untested.
 
 from fcntl import flock, LOCK_EX, LOCK_UN
 import httplib
-from os import _exit, getpid, getuid, fork, setsid, stat, umask, unlink, \
+from os import _exit, chown, getpid, getuid, fork, setsid, stat, umask, unlink, \
     waitpid, close as close_fd
 from os.path import join, exists
 from select import poll, POLLIN, POLLHUP

@@ -144,7 +144,13 @@ class _NTLMDaemon(object):
         # lockf.close()
 
         # we are the daemon
-        self._run_as_daemon()
+        # Catch all exceptions here and print them to stderr before exiting
+        # to avoid problems when running under paster
+        try:
+          self._run_as_daemon()
+        except Exception as e:
+          print >> sys.stderr, ("Uncaught exception in NTLMAuthHandler: %s" % e)
+          _exit(1)
 
     def _run_as_daemon(self):
         client_sockets = {}

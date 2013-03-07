@@ -68,8 +68,12 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
     auth_handler = NTLMAuthHandler(app)
 
     def ntlm_env_setter(environ, start_response):
-        environ["SAMBA_HOST"] = app_conf["SAMBA_HOST"]
-        environ["NTLMAUTHHANDLER_WORKDIR"] = app_conf["NTLMAUTHHANDLER_WORKDIR"]
+        for var in  ["SAMBA_HOST", "NTLMAUTHHANDLER_WORKDIR"]:
+            try:
+                 environ[var] = app_conf[var]
+            except KeyError:
+              # FIXME: logging?
+              pass
         return auth_handler(environ, start_response)
 
     # Establish the Registry for this application

@@ -96,7 +96,7 @@ class _NTLMDaemon(object):
             self.log.debug("waiting for ntlm daemon to create socket (%d)",
                            getpid())
             while not exists(self.socket_filename):
-                # FIXME we should do some sleeping here to avoid hogging the CPU
+                sleep(0.5)
                 pass
             self.log.debug("socket of ntlm daemon now exists (%d)", getpid())
         else:

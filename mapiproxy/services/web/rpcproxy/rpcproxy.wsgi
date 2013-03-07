@@ -31,5 +31,8 @@ from rpcproxy.RPCProxyApplication import *
 SAMBA_HOST = "127.0.0.1"
 LOG_LEVEL = logging.INFO
 
+# set a basic logger here for NTLMAuthHandler
+logging.basicConfig(level=LOG_LEVEL)
+
 application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
                                                   log_level=LOG_LEVEL))

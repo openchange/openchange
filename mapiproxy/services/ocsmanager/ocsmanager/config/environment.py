@@ -112,7 +112,7 @@ def load_environment(global_conf, app_conf):
 
     # CONFIGURATION OPTIONS HERE (note: all config options will override
     # any Pylons config options)
-    ocsconfig = OCSConfig.OCSConfig(os.path.join(config.get('here'), 'ocsmanager.ini'))
+    ocsconfig = OCSConfig.OCSConfig(global_conf['__file__'])
     config['ocsmanager'] = ocsconfig.load()
 
     config['samba'] = _load_samba_environment()

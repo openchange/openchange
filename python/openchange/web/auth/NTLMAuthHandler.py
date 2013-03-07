@@ -295,11 +295,11 @@ class _NTLMDaemon(object):
             if response == 0:
                 # directly cleanup the client record, in order to reduce the
                 # amount of sockets in use
-                # FIXME: make sure client_id is in there before accessing
-                if "server" in self.client_data[client_id]:
-                    server = self.client_data[client_id]["server"]
-                    _safe_close(server)
-                del self.client_data[client_id]
+                if client_id in self.client_data:
+                  if "server" in self.client_data[client_id]:
+                      server = self.client_data[client_id]["server"]
+                      _safe_close(server)
+                  del self.client_data[client_id]
 
             len_ntlm_payload = len(ntlm_payload)
             client_socket.sendall(pack("<Bl", response, len_ntlm_payload)
@@ -617,6 +617,7 @@ class NTLMAuthHandler(object):
 
     @staticmethod
     def _read_environment(env):
+        log = logging.getLogger(__name__)
         if "NTLMAUTHHANDLER_WORKDIR" in env:
             work_dir = env["NTLMAUTHHANDLER_WORKDIR"]
             if not exists(work_dir):
@@ -630,8 +631,8 @@ class NTLMAuthHandler(object):
         if "SAMBA_HOST" in env:
             samba_host = env["SAMBA_HOST"]
         else:
-            self.log.warning("'SAMBA_HOST' not configured, "
-                             "'localhost' will be used")
+            log.warning("'SAMBA_HOST' not configured, "
+                "'localhost' will be used")
             samba_host = "localhost"
 
         if "NTLMAUTHHANDLER_COOKIENAME" in env:

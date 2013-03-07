@@ -4,9 +4,9 @@
 
     easy_install ocsmanager
 
- 1. Tweak the configuration file (ocsmanager.ini) or use development.ini for testing purposes
+ 2. Tweak the configuration file (ocsmanager.ini) or use development.ini for testing purposes
 
- 1. paster server inifile
+ 3. paster server inifile
 
 = Testing with curl =
 
@@ -19,12 +19,11 @@ Since NTLMAuthHandler uses a cookie to store the client_id of the client,
 the HTTP client used to test the service should be able to handle those.
 
 To test the service with curl, the following command line can be used:
-```
-curl -u 'user:pass' -d @postdata.xml --ntlm -b ''  http://127.0.0.1:5000/autodiscover/autodiscover.xml
-```
+
+  curl -u 'user:pass' -d @postdata.xml --ntlm -b ''  http://127.0.0.1:5000/autodiscover/autodiscover.xml
 
 postdata.xml should contain a XML payload similar to this:
-```
+
 <?xml version="1.0" encoding="utf-8"?>
 <Autodiscover xmlns="http://schemas.microsoft.com/exchange/autodiscover/outlook/requestschema/2006">
   <Request>
@@ -32,6 +31,5 @@ postdata.xml should contain a XML payload similar to this:
     <AcceptableResponseSchema>http://schemas.microsoft.com/exchange/autodiscover/outlook/responseschema/2006a</AcceptableResponseSchema>
   </Request>
 </Autodiscover>
-```
 
 Replace the EMailAddress field with valid data

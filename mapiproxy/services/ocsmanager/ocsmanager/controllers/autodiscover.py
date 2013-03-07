@@ -5,6 +5,7 @@
 from cStringIO import StringIO
 from time import time, strftime, localtime
 import traceback
+import urllib
 import uuid
 from xml.etree.ElementTree import Element, ElementTree, tostring
 
@@ -53,6 +54,7 @@ class AutodiscoverHandler(object):
 
     def _parse_request(self, body):
         if body is not None and len(body) > 0:
+            body = urllib.unquote_plus(body)
             tree = ElementTree(file=StringIO(body))
             xrq = tree.find("{%s}Request" % REQUEST_XMLNS)
             if xrq is not None:

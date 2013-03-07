@@ -34,18 +34,14 @@ def _load_samba_environment():
     dnsdomain = params.get("realm")
     dnsdomain = dnsdomain.lower()
 
-    serverrole = params.get("server role")
-    if serverrole == "domain controller":
-        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
-    else:
-        domaindn = "CN=" + netbiosname
+    samdb_ldb = SamDB(url=params.samdb_url(), lp=params)
+    domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn
     configdn = "CN=Configuration," + rootdn
     firstorg = FIRST_ORGANIZATION
     firstou = FIRST_ORGANIZATION_UNIT
 
-    samdb_ldb = SamDB(url=params.samdb_url(), lp=params)
     sam_environ = {"samdb_ldb": samdb_ldb,
                    "private_dir": params.get("private dir"),
                    "domaindn": domaindn,

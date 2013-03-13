@@ -1474,7 +1474,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_set_read_flag(struct mapistore_c
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_message_save(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message)
+_PUBLIC_ enum mapistore_error mapistore_message_save(struct mapistore_context *mstore_ctx, uint32_t context_id, void *message, TALLOC_CTX *mem_ctx)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1486,7 +1486,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_save(struct mapistore_context *m
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 2. Call backend savechangesmessage */
-	return mapistore_backend_message_save(backend_ctx, message);
+	return mapistore_backend_message_save(backend_ctx, message, mem_ctx);
 }
 
 

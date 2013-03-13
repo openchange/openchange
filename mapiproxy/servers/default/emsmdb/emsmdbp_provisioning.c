@@ -635,7 +635,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.lpProps[2].ulPropTag = PidTagNormalizedSubject;
 			property_row.lpProps[2].value.lpszW = "LocalFreebusy";
 			mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, backend_message, &property_row);
-			mapistore_message_save(emsmdbp_ctx->mstore_ctx, context_id, backend_message);
+			mapistore_message_save(emsmdbp_ctx->mstore_ctx, context_id, backend_message, mem_ctx);
 		}
 	
 		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);

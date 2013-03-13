@@ -121,7 +121,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 		/* FIXME: (from oxomsg 3.2.5.1) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
 		emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
-		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object);
+		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx);
 		mapistore_indexing_record_add_mid(emsmdbp_ctx->mstore_ctx, contextID, owner, messageID);
 	}
 

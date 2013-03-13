@@ -180,7 +180,7 @@ enum mapistore_error mapistore_backend_folder_preload_message_bodies(struct back
 enum mapistore_error mapistore_backend_message_get_message_data(struct backend_context *, void *, TALLOC_CTX *, struct mapistore_message **);
 enum mapistore_error mapistore_backend_message_modify_recipients(struct backend_context *, void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
 enum mapistore_error mapistore_backend_message_set_read_flag(struct backend_context *, void *, uint8_t);
-enum mapistore_error mapistore_backend_message_save(struct backend_context *, void *);
+enum mapistore_error mapistore_backend_message_save(struct backend_context *, void *, TALLOC_CTX *);
 enum mapistore_error mapistore_backend_message_submit(struct backend_context *, void *, enum SubmitFlags);
 enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
 enum mapistore_error mapistore_backend_message_open_attachment(struct backend_context *, void *, TALLOC_CTX *, uint32_t, void **);

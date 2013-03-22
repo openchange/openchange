@@ -22,17 +22,30 @@
 # this is the WSGI starting point for rpcproxy
 
 import logging
-import os
+import traceback
 
 from openchange.web.auth.NTLMAuthHandler import *
 from rpcproxy.RPCProxyApplication import *
 
+def application(environ, start_response):
 
-SAMBA_HOST = "127.0.0.1"
-LOG_LEVEL = logging.INFO
+  SAMBA_HOST = environ.get('SAMBA_HOST', "127.0.0.1")
+  RPCPROXY_LOGLEVEL = environ.get('RPCPROXY_LOGLEVEL', logging.INFO)
+  log_level = logging.getLevelName(RPCPROXY_LOGLEVEL)
 
-# set a basic logger here for NTLMAuthHandler
-logging.basicConfig(level=LOG_LEVEL)
+  # set a basic logger here for NTLMAuthHandler
+  logging.basicConfig(level=log_level)
+  log = logging.getLogger(__name__)
 
-application = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
-                                                  log_level=LOG_LEVEL))
+  app = NTLMAuthHandler(RPCProxyApplication(samba_host=SAMBA_HOST,
+                                            log_level=log_level))
+  try:
+    return app(environ, start_response)
+  except Exception as e:
+    trace = traceback.format_exc()
+    log.critical("Uncaught exception: %s\n%s", e,trace)
+    status = "500 Internal Error"
+    response_headers = [("content-type", "text/plain"),
+                        ("content-length", str(len(status)))]
+    start_response(status, response_headers)
+    return status

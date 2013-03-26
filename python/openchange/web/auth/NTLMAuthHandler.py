@@ -52,6 +52,7 @@ SAMBA_PORT = 1024
 # those are left unconfigurable, at least for now
 CLIENT_TIMEOUT = 60 * 5 # 5 minutes since last use
 ACTIVITY_TIMEOUT = CLIENT_TIMEOUT # 5 minutes since any socket has been used
+SAMBA_CONNECT_MAX_TRIES = 10 # ~10 seconds
 
 
 ## client-daemon protocol:
@@ -377,7 +378,7 @@ class _NTLMDaemon(object):
 
         connected = False
         attempt = 0
-        while not connected:
+        while not connected and attempt < SAMBA_CONNECT_MAX_TRIES :
             try:
                 attempt = attempt + 1
                 # TODO: we should query port 135 for the right service
@@ -389,6 +390,10 @@ class _NTLMDaemon(object):
                                " connecting to samba host: attempt %d",
                                attempt)
                 sleep(1)
+
+        if not connected:
+            raise Exception("NTLMAuthHandler: unable to connect to samba host"
+                            " aborting after %d attempts" % attempt)
 
         self.log.debug("server.sockname: %s", str(server.getsockname()))
 

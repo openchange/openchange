@@ -650,7 +650,7 @@ class NTLMAuthHandler(object):
         if "HTTP_COOKIE" in env:
             cookie_str = env["HTTP_COOKIE"]
             for pair in cookie_str.split(";"):
-                (key, value) = pair.strip().split("=")
+                (key, value) = pair.strip().split("=", 1)
                 cookies[key] = value
 
         return cookies

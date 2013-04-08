@@ -134,7 +134,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
 	TALLOC_CTX		*mem_ctx;
-	struct mapi_profile	profile;
+	struct mapi_profile	*profile;
 	const char		*locale;
 	uint32_t		cpid = 0;
 	uint32_t		lcid = 0;
@@ -143,6 +143,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	char			*lcid_str;
 
 	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_create");
+	profile = talloc(mem_ctx, struct mapi_profile);
 
 	/* catch CTRL-C */
 	g_profname = profname;
@@ -164,7 +165,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	}
 
 	/* Sanity check */
-	retval = OpenProfile(mapi_ctx, &profile, profname, NULL);
+	retval = OpenProfile(mapi_ctx, profile, profname, NULL);
 	if (retval == MAPI_E_SUCCESS) {
 		fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname);
 		talloc_free(mem_ctx);

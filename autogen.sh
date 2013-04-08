@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Run this script to build openchange from SVN
+# Run this script to build openchange from Git
 
 ## insert all possible names (only works with
 ## autoconf 2.x
@@ -55,7 +55,7 @@ done
 ## do we have it?
 ##
 if test "$AUTOCONFFOUND" = "0" -o "$AUTOHEADERFOUND" = "0"; then
-        echo "$0: need autoconf 2.53 or later to build openchange from SVN" >&2
+        echo "$0: need autoconf 2.53 or later to build openchange from Git" >&2
         exit 1
 fi
 

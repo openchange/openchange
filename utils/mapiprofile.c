@@ -307,7 +307,7 @@ static void mapiprofile_set_default(struct mapi_context *mapi_ctx, const char *p
 		exit (1);
 	}
 
-	printf("Profile %s is now set the default one\n", profname);
+	printf("Profile \"%s\" is now the default profile\n", profname);
 }
 
 static void mapiprofile_get_default(struct mapi_context *mapi_ctx, const char *profdb)

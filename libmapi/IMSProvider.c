@@ -96,7 +96,11 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 	if (!server) return NULL;
 	if (!mapi_ctx) return NULL;
 
-	binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", server);
+	if (profile->roh) {
+		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[", server);
+	} else {
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", server);
+	}
 
 	/* If dump-data option is enabled */
 	if (mapi_ctx->dumpdata == true) {

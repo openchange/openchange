@@ -129,7 +129,8 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel,
-			       uint8_t exchange_version, const char *kerberos)
+			       uint8_t exchange_version, const char *kerberos,
+			       bool roh)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -183,6 +184,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
+	mapi_profile_add_string_attr(mapi_ctx, profname, "https", (roh == true) ? "true" : "false");
 
 	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
@@ -453,6 +455,7 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 	printf("\tworkstation     == %s\n", profile->workstation);
 	printf("\tdomain          == %s\n", profile->domain);
 	printf("\tserver          == %s\n", profile->server);
+	printf("\thttps           == %s\n", (profile->roh == true) ? "yes" : "no");
 
 end:
 	talloc_free(mem_ctx);
@@ -533,6 +536,7 @@ int main(int argc, const char *argv[])
 	bool		getfqdn = false;
 	bool		opt_dumpdata = false;
 	bool		opt_seal = false;
+	bool		opt_roh = false;
 	const char	*opt_debuglevel = NULL;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
@@ -560,7 +564,7 @@ int main(int argc, const char *argv[])
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
-	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB};
+	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB, OPT_ROH};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -592,6 +596,7 @@ int main(int argc, const char *argv[])
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
 		{"kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KRB, "specify kerberos behavior (guess by default)", "{yes|no}"},
+		{"https", 'H', POPT_ARG_NONE, NULL, OPT_ROH, "connect to Exchange server over HTTPS", NULL },
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
@@ -701,6 +706,9 @@ int main(int argc, const char *argv[])
 		case OPT_KRB:
 			opt_krb = poptGetOptArg(pc);
 			break;
+		case OPT_ROH:
+			opt_roh = true;
+			break;
 		}
 	}
 
@@ -795,7 +803,7 @@ int main(int argc, const char *argv[])
 					 language, workstation, domain, realm, nopass, opt_seal, 
 					 opt_dumpdata, opt_debuglevel,
 					 exchange_version[i].version,
-					 opt_krb)) {
+					 opt_krb, opt_roh)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

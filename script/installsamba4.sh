@@ -255,11 +255,6 @@ packages() {
 	pushd samba4/$lib
 	error_check $? "$lib setup"
 
-	extra=""
-	if [ "$lib" == "lib/ldb" ]; then
-	    extra="--builtin-libraries=ccan"
-	fi
-
 	echo ./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	./configure -C --prefix=$SAMBA_PREFIX --enable-developer --bundled-libraries=NONE $extra
 	error_check $? "$lib configure"
@@ -294,7 +289,7 @@ compile() {
 
     cd $RUNDIR/../samba4
     export PKG_CONFIG_PATH=$PKG_CONFIG_PATH:$SAMBA_PREFIX/lib/pkgconfig
-    ./configure.developer -C --prefix=$SAMBA_PREFIX --builtin-libraries=ccan,replace
+    ./configure.developer -C --prefix=$SAMBA_PREFIX --builtin-libraries=replace
     error_check $? "samba4 configure"
 
     echo "Step2: Compile Samba4 (Source)"

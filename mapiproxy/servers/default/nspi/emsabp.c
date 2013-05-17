@@ -107,6 +107,11 @@ _PUBLIC_ bool emsabp_destructor(void *data)
 	return false;
 }
 
+_PUBLIC_ void emsabp_enable_debug(struct emsabp_context *emsabp_ctx)
+{
+	ldb_set_flags(emsabp_ctx->samdb_ctx, LDB_FLG_ENABLE_TRACING);
+}
+
 /**
    \details Get AD record for Mail-enabled account
 

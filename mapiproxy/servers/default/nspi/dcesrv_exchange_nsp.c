@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Julien Kerihuel 2009-2013
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -101,6 +101,12 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	if (!emsabp_ctx) {
 		smb_panic("unable to initialize emsabp context");
 		DCESRV_NSP_RETURN(r, MAPI_E_FAILONEPROVIDER, NULL);
+	}
+
+	
+	if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, 
+			    "exchange_nsp", "debug", false)) {
+		emsabp_enable_debug(emsabp_ctx);
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
@@ -390,7 +396,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		if (!MAPI_STATUS_IS_OK(retval))  {
 			goto failure;
 		}
-
+	
 		count = ldb_res->count - r->in.pStat->NumPos;
 		if (r->in.Count < count) {
 			count = r->in.Count;

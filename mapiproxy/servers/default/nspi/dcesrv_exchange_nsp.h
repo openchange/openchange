@@ -117,6 +117,7 @@ const struct GUID *samdb_ntds_objectGUID(struct ldb_context *);
 /* definitions from emsabp.c */
 struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);
 bool			emsabp_destructor(void *);
+void			emsabp_enable_debug(struct emsabp_context *);
 enum MAPISTATUS		emsabp_get_account_info(TALLOC_CTX *, struct emsabp_context *, const char *, struct ldb_message **);
 bool			emsabp_verify_user(struct dcesrv_call_state *, struct emsabp_context *);
 bool			emsabp_verify_codepage(struct emsabp_context *, uint32_t);

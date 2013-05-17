@@ -20,6 +20,7 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include "gen_ndr/ndr_exchange_c.h"
+#include "gen_ndr/ndr_exchange.h"
 #include <param.h>
 
 
@@ -29,6 +30,21 @@
    \brief Name Service Provider (NSPI) stack functions
  */
 
+/**
+   \details Dump the STAT structure
+   
+   \param name the name of STAT structure member
+   \param pStat pointer on the STAT structure to dump
+ */
+_PUBLIC_ void nspi_dump_STAT(const char *name, struct STAT *pStat)
+{
+	struct ndr_print	ndr_print;
+	
+	ndr_print.depth = 1;
+	ndr_print.print = ndr_print_debug_helper;
+	ndr_print.no_newline = false;
+	ndr_print_STAT(&ndr_print, name, pStat);
+}
 
 /**
    \details Initialize the STAT structure and set common STAT parameters

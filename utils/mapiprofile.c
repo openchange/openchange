@@ -130,7 +130,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel,
 			       uint8_t exchange_version, const char *kerberos,
-			       bool roh)
+			       bool roh, bool roh_tls, uint32_t roh_proxy_port)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -142,6 +142,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	char			*exchange_version_str;
 	char			*cpid_str;
 	char			*lcid_str;
+	char			*roh_proxy_port_str;
 
 	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_create");
 	profile = talloc(mem_ctx, struct mapi_profile);
@@ -184,7 +185,12 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
-	mapi_profile_add_string_attr(mapi_ctx, profname, "https", (roh == true) ? "true" : "false");
+	mapi_profile_add_string_attr(mapi_ctx, profname, "roh", (roh == true) ? "true" : "false");
+	mapi_profile_add_string_attr(mapi_ctx, profname, "roh_tls", (roh_tls == true) ? "true" : "false");
+
+	roh_proxy_port_str = talloc_asprintf(mem_ctx, "%d", roh_proxy_port);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "roh_proxy_port", roh_proxy_port_str);
+	talloc_free(roh_proxy_port_str);
 
 	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
@@ -455,7 +461,10 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 	printf("\tworkstation     == %s\n", profile->workstation);
 	printf("\tdomain          == %s\n", profile->domain);
 	printf("\tserver          == %s\n", profile->server);
-	printf("\thttps           == %s\n", (profile->roh == true) ? "yes" : "no");
+	printf("\n");
+	printf("\tRPC over HTTP            == %s\n", (profile->roh == true) ? "yes" : "no");
+	printf("\tRPC over HTTP use TLS    == %s\n", (profile->roh_tls == true) ? "yes" : "no");
+	printf("\tRPC over HTTP proxy port == %d\n", profile->roh_proxy_port);
 
 end:
 	talloc_free(mem_ctx);
@@ -537,6 +546,8 @@ int main(int argc, const char *argv[])
 	bool		opt_dumpdata = false;
 	bool		opt_seal = false;
 	bool		opt_roh = false;
+	bool		opt_roh_tls = true;
+	const char	*opt_roh_proxy_port = NULL;
 	const char	*opt_debuglevel = NULL;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
@@ -555,6 +566,7 @@ int main(int argc, const char *argv[])
 	const char	*opt_krb = NULL;
 	const char	*version = NULL;
 	uint32_t	nopass = 0;
+	uint32_t	roh_proxy_port = 443;
 	char		hostname[256];
 	int		retcode = EXIT_SUCCESS;
 
@@ -564,7 +576,8 @@ int main(int argc, const char *argv[])
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
-	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB, OPT_ROH};
+	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB,
+	      OPT_ROH, OPT_ROH_NO_TLS, OPT_ROH_PROXY_PORT};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -596,7 +609,9 @@ int main(int argc, const char *argv[])
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
 		{"kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KRB, "specify kerberos behavior (guess by default)", "{yes|no}"},
-		{"https", 'H', POPT_ARG_NONE, NULL, OPT_ROH, "connect to Exchange server over HTTPS", NULL },
+		{"roh", 'H', POPT_ARG_NONE, NULL, OPT_ROH, "connect to Exchange server over HTTP (RPC over HTTP)", NULL },
+		{"roh-no-tls", 0, POPT_ARG_NONE, NULL, OPT_ROH_NO_TLS, "Do not use TLS to connect to Exchange server over HTTP", NULL },
+		{"roh-proxy-port", 0, POPT_ARG_STRING, NULL, OPT_ROH_PROXY_PORT, "RPC over HTTP proxy port", "443" },
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
@@ -709,6 +724,24 @@ int main(int argc, const char *argv[])
 		case OPT_ROH:
 			opt_roh = true;
 			break;
+		case OPT_ROH_NO_TLS:
+			opt_roh_tls = false;
+			if (roh_proxy_port == 443) {
+				roh_proxy_port = 80;
+			}
+			break;
+		case OPT_ROH_PROXY_PORT:
+			opt_tmp = poptGetOptArg(pc);
+			opt_roh_proxy_port = talloc_strdup(mem_ctx, opt_tmp);
+			roh_proxy_port = strtol(opt_roh_proxy_port, NULL, 10);
+			if (!roh_proxy_port) {
+				printf("Cannot parse RPC proxy port number\n");
+				retcode = EXIT_FAILURE;
+				goto cleanup;
+			}
+			free((void *)opt_tmp);
+			opt_tmp = NULL;
+			break;
 		}
 	}
 
@@ -803,7 +836,8 @@ int main(int argc, const char *argv[])
 					 language, workstation, domain, realm, nopass, opt_seal, 
 					 opt_dumpdata, opt_debuglevel,
 					 exchange_version[i].version,
-					 opt_krb, opt_roh)) {
+					 opt_krb, opt_roh, opt_roh_tls,
+					 roh_proxy_port)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

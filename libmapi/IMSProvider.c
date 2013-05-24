@@ -86,21 +86,28 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
  */
 static char *build_binding_string(struct mapi_context *mapi_ctx,
 				  TALLOC_CTX *mem_ctx,
-				  const char *server,
+				  const char *rpcserver,
 				  struct mapi_profile *profile)
 {
 	char	*binding;
 
 	/* Sanity Checks */
 	if (!profile) return NULL;
-	if (!server) return NULL;
+	if (!rpcserver) return NULL;
 	if (!mapi_ctx) return NULL;
 
-	if (profile->roh) {
-		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,", server,
-				profile->server, 80);
+	if (profile->roh == true) {
+		/* When using RPC over HTTP, the server is the address of the RPC
+		 * proxy */
+		const char *proxy = profile->server;
+		uint32_t proxy_port = profile->roh_proxy_port;
+		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,",
+				rpcserver, proxy, proxy_port);
+		if (profile->roh_tls == true) {
+			binding = talloc_strdup_append(binding, "tls,");
+		}
 	} else {
-		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", server);
+		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", rpcserver);
 	}
 
 	/* If dump-data option is enabled */

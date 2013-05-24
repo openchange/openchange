@@ -88,7 +88,9 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->method = ldb_msg_find_attr_as_int(msg, "method", 0);
 	profile->exchange_version = ldb_msg_find_attr_as_int(msg, "exchange_version", 0);
 	profile->kerberos = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "kerberos", NULL));
-	profile->roh = ldb_msg_find_attr_as_bool(msg, "https", false);
+	profile->roh = ldb_msg_find_attr_as_bool(msg, "roh", false);
+	profile->roh_tls = ldb_msg_find_attr_as_bool(msg, "roh_tls", true);
+	profile->roh_proxy_port = ldb_msg_find_attr_as_int(msg, "roh_proxy_port", 443);
 
 	talloc_free(res);
 

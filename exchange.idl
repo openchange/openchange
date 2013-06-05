@@ -3742,7 +3742,8 @@ System Attendant Private Interface
 		ALTERNATE_SERVER		= 0x100,
 		IGNORE_HOME_MDB			= 0x200,
 		NO_MAIL				= 0x400,
-		USE_PER_MDB_REPLID_MAPPING	= 0x010000000
+		USE_PER_MDB_REPLID_MAPPING	= 0x01000000,
+		SUPPORT_PROGRESS		= 0x20000000 
 	} OpenFlags;
 
 	typedef [enum8bit] enum {

@@ -348,7 +348,7 @@ retry:
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;
 	size += sizeof (uint8_t);
-	request.OpenFlags = HOME_LOGON | TAKE_OWNERSHIP | NO_MAIL;
+	request.OpenFlags = USE_PER_MDB_REPLID_MAPPING | HOME_LOGON | TAKE_OWNERSHIP | NO_MAIL;
 	size += sizeof (uint32_t);
 	request.StoreState = 0;
 	size += sizeof (uint32_t);

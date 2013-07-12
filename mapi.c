@@ -54,5 +54,5 @@ PHP_FUNCTION(hello_mapi)
           RETURN_STRING("JELLO MAPI", 1);
         }
 
-    RETURN_STRING("Mapi World", 1);
+    RETURN_STRING("HELLO MPAI", 1);
 }

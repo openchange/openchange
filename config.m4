@@ -1,10 +1,10 @@
-PHP_ARG_ENABLE(hello, whether to enable Hello
-World support,
-[ --enable-hello   Enable Hello World support])
+PHP_ARG_ENABLE(mapi, whether to enable LibMapi
+support,
+[ --enable-mapi   Enable LibMapi Wo support])
 
-if test "$PHP_HELLO" = "yes"; then
-  AC_DEFINE(HAVE_HELLO, 1, [Whether you have Hello World])
-  PHP_NEW_EXTENSION(hello, hello.c, $ext_shared)
+if test "$PHP_MAPI" = "yes"; then
+  AC_DEFINE(HAVE_MAPI, 1, [Whether you have LibMapi ])
+  PHP_NEW_EXTENSION(mapi, mapi.c, $ext_shared)
 fi
 
 LIBMAPI_INCLINE=`pkg-config --cflags  /usr/local/samba/lib/pkgconfig/libmapi.pc`

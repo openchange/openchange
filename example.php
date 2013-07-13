@@ -1,4 +1,6 @@
 <?php
+hello_mapi();
 print_profiles();
-dump_profile();
+$profile = dump_profile();
+var_dump($profile);
 ?>

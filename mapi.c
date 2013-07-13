@@ -55,9 +55,11 @@ struct mapi_context* initialize_mapi()
   char *profdb = "/home/jag/.openchange/profiles.ldb";
   struct mapi_context   *mapi_ctx;
   enum MAPISTATUS        retval;
+  retval = MAPIInitialize(&mapi_ctx, profdb);
   if (retval != MAPI_E_SUCCESS) {
     char *err_str = mapi_get_errstr(retval);
     php_error(E_ERROR, err_str);
+    php_printf("ERROR MAPI: %s\n", err_str); // TMP
     // TODO BAIL OUT
 
   }
@@ -97,6 +99,8 @@ PHP_FUNCTION(print_profiles)
 
 PHP_FUNCTION(dump_profile)
 {
+
+
     struct mapi_context *mapi_ctx = initialize_mapi();
 
     char * opt_profname = NULL; //DEFAULT FOR NOW
@@ -143,20 +147,31 @@ PHP_FUNCTION(dump_profile)
       goto end;
     }
 
-    php_printf("Profile: %s\n", profile->profname);
-    php_printf("\texchange server == %s\n", exchange_version);
-    php_printf("\tencryption      == %s\n", (profile->seal == true) ? "yes" : "no");
-    php_printf("\tusername        == %s\n", profile->username);
-    php_printf("\tpassword        == %s\n", profile->password);
-    php_printf("\tmailbox         == %s\n", profile->mailbox);
-    php_printf("\tworkstation     == %s\n", profile->workstation);
-    php_printf("\tdomain          == %s\n", profile->domain);
-    php_printf("\tserver          == %s\n", profile->server);
+    array_init(return_value);
+    add_assoc_string(return_value, "profile", profile->profname, 1);
+    add_assoc_string(return_value, "exchange_server", exchange_version, 1);
+    add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1);
+    add_assoc_string(return_value, "username", profile->username, 1);
+    add_assoc_string(return_value, "password", profile->password, 1);
+    add_assoc_string(return_value, "mailbox", profile->mailbox, 1);
+    add_assoc_string(return_value, "workstation", profile->workstation, 1);
+    add_assoc_string(return_value, "domain", profile->domain, 1);
+    add_assoc_string(return_value, "server", profile->server, 1);
+
+    /* php_printf("Profile: %s\n", profile->profname); */
+
+    /* php_printf("\texchange server == %s\n", exchange_version); */
+    /* php_printf("\tencryption      == %s\n", (profile->seal == true) ? "yes" : "no"); */
+    /* php_printf("\tusername        == %s\n", profile->username); */
+    /* php_printf("\tpassword        == %s\n", profile->password); */
+    /* php_printf("\tmailbox         == %s\n", profile->mailbox); */
+    /* php_printf("\tworkstation     == %s\n", profile->workstation); */
+    /* php_printf("\tdomain          == %s\n", profile->domain); */
+    /* php_printf("\tserver          == %s\n", profile->server); */
 
  end:
     talloc_free(mem_ctx);
-
-
+    //    talloc_free(profile); ??? XXX sems not freed
 }
 
 

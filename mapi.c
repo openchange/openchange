@@ -99,9 +99,15 @@ PHP_FUNCTION(profiles)
 
 PHP_FUNCTION(dump_profile)
 {
+    char* opt_profname = NULL;
+    int   opt_profname_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
+        RETURN_NULL();
+    }
+
     struct mapi_context *mapi_ctx = initialize_mapi();
 
-    char * opt_profname = NULL; //DEFAULT FOR NOW
+
     TALLOC_CTX              *mem_ctx;
     enum MAPISTATUS         retval;
     struct mapi_profile     *profile;

@@ -11,7 +11,7 @@
 
 static zend_function_entry mapi_functions[] = {
     PHP_FE(hello_mapi, NULL)
-    PHP_FE(print_profiles, NULL)
+    PHP_FE(profiles, NULL)
     PHP_FE(dump_profile, NULL)
     {NULL, NULL, NULL}
 };
@@ -66,7 +66,7 @@ struct mapi_context* initialize_mapi()
   return mapi_ctx;
 }
 
-PHP_FUNCTION(print_profiles)
+PHP_FUNCTION(profiles)
 {
   struct mapi_context *mapi_ctx = initialize_mapi();
 
@@ -78,29 +78,27 @@ PHP_FUNCTION(print_profiles)
     exit (1);
   }
 
-  php_printf("We have %u profiles in the database:\n", proftable.cRows);
+  array_init(return_value);
 
   uint32_t count;
   for (count = 0; count != proftable.cRows; count++) {
-    const char      *name = NULL;
-    uint32_t        dflt = 0;
+    char* name = NULL;
+    uint32_t dflt = 0;
+    zval* profile;
 
     name = proftable.aRow[count].lpProps[0].value.lpszA;
     dflt = proftable.aRow[count].lpProps[1].value.l;
 
-    if (dflt) {
-      php_printf("\tProfile = %s [default]\n", name);
-    } else {
-      php_printf("\tProfile = %s\n", name);
-    }
-
+    MAKE_STD_ZVAL(profile);
+    array_init(profile);
+    add_assoc_string(profile, "name", name, 1);
+    add_assoc_bool(profile, "default", dflt);
+    add_next_index_zval(return_value, profile);
   }
 }
 
 PHP_FUNCTION(dump_profile)
 {
-
-
     struct mapi_context *mapi_ctx = initialize_mapi();
 
     char * opt_profname = NULL; //DEFAULT FOR NOW
@@ -157,17 +155,6 @@ PHP_FUNCTION(dump_profile)
     add_assoc_string(return_value, "workstation", profile->workstation, 1);
     add_assoc_string(return_value, "domain", profile->domain, 1);
     add_assoc_string(return_value, "server", profile->server, 1);
-
-    /* php_printf("Profile: %s\n", profile->profname); */
-
-    /* php_printf("\texchange server == %s\n", exchange_version); */
-    /* php_printf("\tencryption      == %s\n", (profile->seal == true) ? "yes" : "no"); */
-    /* php_printf("\tusername        == %s\n", profile->username); */
-    /* php_printf("\tpassword        == %s\n", profile->password); */
-    /* php_printf("\tmailbox         == %s\n", profile->mailbox); */
-    /* php_printf("\tworkstation     == %s\n", profile->workstation); */
-    /* php_printf("\tdomain          == %s\n", profile->domain); */
-    /* php_printf("\tserver          == %s\n", profile->server); */
 
  end:
     talloc_free(mem_ctx);

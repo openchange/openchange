@@ -1,6 +1,7 @@
 <?php
 hello_mapi();
-print_profiles();
+$allProfiles = profiles();
+var_dump($allProfiles);
 $profile = dump_profile();
 var_dump($profile);
 ?>

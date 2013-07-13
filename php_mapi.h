@@ -6,6 +6,7 @@
 
 PHP_FUNCTION(hello_mapi);
 PHP_FUNCTION(print_profiles);
+PHP_FUNCTION(dump_profile);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

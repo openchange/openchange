@@ -1,7 +1,6 @@
 <?php
-hello_mapi();
 $allProfiles = profiles();
 var_dump($allProfiles);
-$profile = dump_profile();
+$profile = dump_profile('test');
 var_dump($profile);
 ?>

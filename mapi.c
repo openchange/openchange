@@ -10,7 +10,6 @@
 #include "utils/openchange-tools.h"
 
 static zend_function_entry mapi_functions[] = {
-    PHP_FE(hello_mapi, NULL)
     PHP_FE(profiles, NULL)
     PHP_FE(dump_profile, NULL)
     {NULL, NULL, NULL}
@@ -166,32 +165,4 @@ PHP_FUNCTION(dump_profile)
     talloc_free(mem_ctx);
     //    talloc_free(profile); ??? XXX sems not freed
 }
-
-
-
-PHP_FUNCTION(hello_mapi)
-{
-        enum MAPISTATUS         retval;
-  TALLOC_CTX            *mem_ctx;
-  struct mapitest               mt;
-   const char           *opt_profdb = NULL;
-   // Initialize MAPI subsystem *\/ */
-   if (!opt_profdb) {
-     opt_profdb = talloc_asprintf(mem_ctx, DEFAULT_PROFDB, getenv("HOME"));
-   }
-
-
-
-        retval = MAPIInitialize(&(mt.mapi_ctx), opt_profdb);
-        if (retval != MAPI_E_SUCCESS) {
-          mapi_errstr("MAPIInitialize", retval);
-          RETURN_STRING("MAPI FAILED", 1);
-        } else {
-          RETURN_STRING("HELLO MaPI OK", 1);
-        }
-
-    RETURN_STRING("HELLO MPAI", 1);
-}
-
-
 

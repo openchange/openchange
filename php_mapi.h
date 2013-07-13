@@ -4,7 +4,6 @@
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
 
-PHP_FUNCTION(hello_mapi);
 PHP_FUNCTION(profiles);
 PHP_FUNCTION(dump_profile);
 

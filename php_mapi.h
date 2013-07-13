@@ -5,6 +5,7 @@
 #define PHP_MAPI_EXTNAME "mapi"
 
 PHP_FUNCTION(hello_mapi);
+PHP_FUNCTION(print_profiles);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

@@ -1,26 +1,19 @@
-PHP_ARG_ENABLE(mapi, whether to enable LibMapi
-support,
-[ --enable-mapi   Enable LibMapi Wo support])
+PHP_ARG_ENABLE(mapi, whether to enable LibMapi extension,
+l [ --enable-mapi   Enable LibMapi Wo support])
 
 if test "$PHP_MAPI" = "yes"; then
   AC_DEFINE(HAVE_MAPI, 1, [Whether you have LibMapi ])
   PHP_NEW_EXTENSION(mapi, mapi.c, $ext_shared)
 fi
 
-OPENCHANGE_SRC="/home/jag/work/openchange"
-LIBMAPI_INCLINE=`pkg-config --cflags  /usr/local/samba/lib/pkgconfig/libmapi.pc`
-echo "XXX INCS $LIBMAPI_INCLINE"
-LIBMAPI_LIBLINE=`pkg-config --libs /usr/local/samba/lib/pkgconfig/libmapi.pc`
-echo "XXX LIBS $LIBMAPI_LIBLINE"
+PHP_ARG_WITH(openchange-path, path to openchange source,
+[ --with-openchange_path Path to openchange source], /usr/scr/openchange)
 
+PHP_ARG_WITH(pkgconfig-path, path to libmapi pkgconfig directory,
+[ --with-pkgconfig-path Path to libmapi pkgconfig directory], /usr/local/samba/lib/pkgconfig)
 
-dnl PHP_EVAL_INCLINE($LIBMAPI_INCLINE)
-dnl PHP_EVAL_LIBLINE($LIBMAPI_LIBLINE, LIBMAPI_SHARED_LIBADD)
-
-dnl PHP_ADD_INCLUDE(..)
+LIBMAPI_INCLINE=`pkg-config --cflags  $PHP_PKGCONFIG_PATH/libmapi.pc`
+LIBMAPI_LIBLINE=`pkg-config --libs $PHP_PKGCONFIG_PATH/libmapi.pc`
 
 LDFLAGS="$LDFLAGS $LIBMAPI_LIBLINE"
-INCLUDES="$INCLUDES $LIBMAPI_INCLINE -I$OPENCHANGE_SRC"
-
-echo "XXX $INCLUDES | $LDFLAGS"
-dnl echo "XXX LIBMAPI_SHARD $LIBMAPI_SHARED_LIBADD"
+INCLUDES="$INCLUDES $LIBMAPI_INCLINE -I$PHP_OPENCHANGE_PATH"

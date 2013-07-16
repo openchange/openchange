@@ -1,5 +1,5 @@
-PHP_ARG_ENABLE(mapi, whether to enable LibMapi extension,
-l [ --enable-mapi   Enable LibMapi Wo support])
+PHP_ARG_ENABLE(mapi, whether to enable mapi extension,
+l [ --enable-mapi enable mapi extension])
 
 if test "$PHP_MAPI" = "yes"; then
   AC_DEFINE(HAVE_MAPI, 1, [Whether you have LibMapi ])

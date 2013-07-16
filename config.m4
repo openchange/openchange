@@ -7,6 +7,7 @@ if test "$PHP_MAPI" = "yes"; then
   PHP_NEW_EXTENSION(mapi, mapi.c, $ext_shared)
 fi
 
+OPENCHANGE_SRC="/home/jag/work/openchange"
 LIBMAPI_INCLINE=`pkg-config --cflags  /usr/local/samba/lib/pkgconfig/libmapi.pc`
 echo "XXX INCS $LIBMAPI_INCLINE"
 LIBMAPI_LIBLINE=`pkg-config --libs /usr/local/samba/lib/pkgconfig/libmapi.pc`
@@ -19,7 +20,7 @@ dnl PHP_EVAL_LIBLINE($LIBMAPI_LIBLINE, LIBMAPI_SHARED_LIBADD)
 dnl PHP_ADD_INCLUDE(..)
 
 LDFLAGS="$LDFLAGS $LIBMAPI_LIBLINE"
-INCLUDES="$INCLUDES $LIBMAPI_INCLINE -I/home/jag/work/openchange"
+INCLUDES="$INCLUDES $LIBMAPI_INCLINE -I$OPENCHANGE_SRC"
 
 echo "XXX $INCLUDES | $LDFLAGS"
 dnl echo "XXX LIBMAPI_SHARD $LIBMAPI_SHARED_LIBADD"

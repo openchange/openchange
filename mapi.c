@@ -13,13 +13,13 @@
 zend_class_entry *mapi_class;
 
 static zend_function_entry mapi_class_functions[] = {
-     PHP_ME(MAPI, hello, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPI, profiles, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPI, dump_profile, NULL, ZEND_ACC_PUBLIC)
+
     { NULL, NULL, NULL }
 };
 
 static zend_function_entry mapi_functions[] = {
-    PHP_FE(profiles, NULL)
-    PHP_FE(dump_profile, NULL)
     {NULL, NULL, NULL}
 };
 
@@ -78,7 +78,7 @@ struct mapi_context* initialize_mapi()
   return mapi_ctx;
 }
 
-PHP_FUNCTION(profiles)
+PHP_METHOD(MAPI, profiles)
 {
   struct mapi_context *mapi_ctx = initialize_mapi();
 
@@ -109,7 +109,7 @@ PHP_FUNCTION(profiles)
   }
 }
 
-PHP_FUNCTION(dump_profile)
+PHP_METHOD(MAPI, dump_profile)
 {
     char* opt_profname = NULL;
     int   opt_profname_len;
@@ -176,10 +176,4 @@ PHP_FUNCTION(dump_profile)
 
  end:
     talloc_free(mem_ctx);
-    //    talloc_free(profile); ??? XXX sems not freed
-}
-
-PHP_METHOD(MAPI, hello)
-{
-    php_printf("Hello World from class\n");
-}
+ }

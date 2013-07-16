@@ -1,6 +1,12 @@
 <?php
-$allProfiles = profiles();
+
+$mapi = new MAPI();
+
+$allProfiles = $mapi->profiles();
 var_dump($allProfiles);
-$profile = dump_profile('test');
+$profile = $mapi->dump_profile('test');
+var_dump($profile);
+
+$profile = $mapi->dump_profile();
 var_dump($profile);
 ?>

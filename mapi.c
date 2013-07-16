@@ -9,6 +9,14 @@
 #include "utils/mapitest/mapitest.h"
 #include "utils/openchange-tools.h"
 
+
+zend_class_entry *mapi_class;
+
+static zend_function_entry mapi_class_functions[] = {
+     PHP_ME(MAPI, hello, NULL, ZEND_ACC_PUBLIC)
+    { NULL, NULL, NULL }
+};
+
 static zend_function_entry mapi_functions[] = {
     PHP_FE(profiles, NULL)
     PHP_FE(dump_profile, NULL)
@@ -21,7 +29,7 @@ zend_module_entry mapi_module_entry = {
 #endif
     PHP_MAPI_EXTNAME,
     mapi_functions,
-    NULL,//    PHP_MINIT(mapi),
+    PHP_MINIT(mapi),
     NULL, //PHP_MSHUTDOWN(mapi),
     NULL,
     NULL,
@@ -35,13 +43,18 @@ zend_module_entry mapi_module_entry = {
 #ifdef COMPILE_DL_MAPI
 ZEND_GET_MODULE(mapi)
 #endif
-/*
-PHP_MINIT(mapi)
+
+PHP_MINIT_FUNCTION(mapi)
 {
-  int i = 0;
+    zend_class_entry ce;
+    INIT_CLASS_ENTRY(ce, MAPI_CLASS_NAME, mapi_class_functions);
+    mapi_class =
+                zend_register_internal_class(&ce TSRMLS_CC);
+    return SUCCESS;
 
 }
 
+/*
 PHP_MSHUTDOWN(mapi)
 {
   int i = 0;
@@ -56,7 +69,7 @@ struct mapi_context* initialize_mapi()
   enum MAPISTATUS        retval;
   retval = MAPIInitialize(&mapi_ctx, profdb);
   if (retval != MAPI_E_SUCCESS) {
-    char *err_str = mapi_get_errstr(retval);
+    const char *err_str = mapi_get_errstr(retval);
     php_error(E_ERROR, err_str);
     php_printf("ERROR MAPI: %s\n", err_str); // TMP
     // TODO BAIL OUT
@@ -151,18 +164,22 @@ PHP_FUNCTION(dump_profile)
     }
 
     array_init(return_value);
-    add_assoc_string(return_value, "profile", profile->profname, 1);
+    add_assoc_string(return_value, "profile", (char *) profile->profname, 1);
     add_assoc_string(return_value, "exchange_server", exchange_version, 1);
     add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1);
-    add_assoc_string(return_value, "username", profile->username, 1);
-    add_assoc_string(return_value, "password", profile->password, 1);
-    add_assoc_string(return_value, "mailbox", profile->mailbox, 1);
-    add_assoc_string(return_value, "workstation", profile->workstation, 1);
-    add_assoc_string(return_value, "domain", profile->domain, 1);
-    add_assoc_string(return_value, "server", profile->server, 1);
+    add_assoc_string(return_value, "username", (char*) profile->username, 1);
+    add_assoc_string(return_value, "password", (char*) profile->password, 1);
+    add_assoc_string(return_value, "mailbox", (char*) profile->mailbox, 1);
+    add_assoc_string(return_value, "workstation", (char*) profile->workstation, 1);
+    add_assoc_string(return_value, "domain", (char*) profile->domain, 1);
+    add_assoc_string(return_value, "server", (char*) profile->server, 1);
 
  end:
     talloc_free(mem_ctx);
     //    talloc_free(profile); ??? XXX sems not freed
 }
 
+PHP_METHOD(MAPI, hello)
+{
+    php_printf("Hello World from class\n");
+}

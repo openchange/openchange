@@ -74,24 +74,11 @@ struct mapi_context* mapi_context_init(char *profdb)
 {
   struct mapi_context   *mapi_ctx;
   enum MAPISTATUS        retval;
-  php_printf("MAPI ctx init:%s\n", profdb);
   retval = MAPIInitialize(&mapi_ctx, profdb);
   if (retval != MAPI_E_SUCCESS) {
     const char *err_str = mapi_get_errstr(retval);
     php_error(E_ERROR, "Intialize MAPI: %s", err_str);
   }
-
-  char *str = "macaco";
-  php_printf("Adding macaco\n");
-  zend_hash_index_update(mapi_context_by_object, 11,
-                         str, sizeof(char *), NULL);
-  php_printf("Getting macaco\n");
-  zend_hash_index_find(mapi_context_by_object, 11, (void**) &str);
-
-  php_printf("Rerieved macaco: %s\n", str);
-
-
-
 
   return mapi_ctx;
 }
@@ -100,8 +87,8 @@ void mapi_context_dtor(void *ptr)
 {
   php_printf("MAPI ctx to be destroyd\n" );
 
-  //  struct mapi_context* ctx =  (struct mapi_context**)  *ptr;
-  MAPIUninitialize(ptr);
+  struct mapi_context** ctx =  ptr;
+  MAPIUninitialize(*ctx);
 }
 
 PHP_METHOD(MAPI, __construct)
@@ -120,7 +107,7 @@ PHP_METHOD(MAPI, __construct)
 
 struct mapi_context* get_mapi_context(zval* object)
 {
-  struct mapi_context* ct;
+  struct mapi_context** ct;
   int res;
 
   if (object == NULL) {
@@ -128,18 +115,10 @@ struct mapi_context* get_mapi_context(zval* object)
   }
 
   ulong key = (ulong) object; // XXX check this is true in all cases
-  php_printf("KEy %u\n", key);
-
-
-  // mapi context retrieval
-  php_printf("before FIMD\n");
-
 
   res= zend_hash_index_find(mapi_context_by_object, key, (void**) &ct);
   if (res == SUCCESS) {
-    php_printf("FOUND CT\n");
-    php_printf("POinter restored %p %p\n", ct->mem_ctx, ct->session);
-    return ct;
+    return *ct;
   }
 
   // new mapi context
@@ -149,19 +128,16 @@ struct mapi_context* get_mapi_context(zval* object)
     php_error(E_ERROR, "__profdb attribute not found");
   }
 
-  php_printf("NOT FOUND CT -> before UPDATE\n");
-  ct  =  mapi_context_init(Z_STRVAL_P(*profdb));
-  php_printf("POinter %p %p\n", ct->mem_ctx, ct->session);
+  struct mapi_context* new_ct  =  mapi_context_init(Z_STRVAL_P(*profdb));
+  ct = &new_ct;
 
   res = zend_hash_index_update(mapi_context_by_object, key,
-                                ct, sizeof(struct mapi_context*), NULL);
+                                ct, sizeof(struct mapi_context**), NULL);
   if (res == FAILURE) {
     php_error(E_ERROR, "Adding to MAPI contexts hash");
   }
 
-  return ct;
-
-
+  return *ct;
 }
 
 PHP_METHOD(MAPI, profiles)

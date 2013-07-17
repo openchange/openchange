@@ -16,6 +16,7 @@ PHP_METHOD(MAPI, __construct);
 PHP_METHOD(MAPI, __destruct);
 PHP_METHOD(MAPI, profiles);
 PHP_METHOD(MAPI, dump_profile);
+PHP_METHOD(MAPI, folders);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

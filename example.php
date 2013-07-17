@@ -13,6 +13,9 @@ echo "Dump default profile\n";
 $profile = $mapi->dump_profile();
 var_dump($profile);
 
+echo "Folders\n";
+$mapi->folders();
+
 echo "Destroy object\n";
 $mapi->__destruct();
 

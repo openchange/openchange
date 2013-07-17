@@ -8,6 +8,9 @@
 // from openchange
 #include "utils/mapitest/mapitest.h"
 #include "utils/openchange-tools.h"
+#include "libmapi/mapidefs.h"
+//#include "libmapi/libmapi_private.h"
+//#include "libmapi/mapi_nameid.h"
 
 
 zend_class_entry *mapi_class;
@@ -17,6 +20,7 @@ static zend_function_entry mapi_class_functions[] = {
      PHP_ME(MAPI, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
      PHP_ME(MAPI, profiles, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPI, dump_profile, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPI, folders, NULL, ZEND_ACC_PUBLIC)
 
     { NULL, NULL, NULL }
 };
@@ -153,8 +157,8 @@ PHP_METHOD(MAPI, profiles)
   memset(&proftable, 0, sizeof (struct SRowSet));
   enum MAPISTATUS               retval;
   if ((retval = GetProfileTable(mapi_ctx, &proftable)) != MAPI_E_SUCCESS) {
-    mapi_errstr("GetProfileTable", retval);
-    exit (1);
+    const char *err_str = mapi_get_errstr(retval);
+    php_error(E_ERROR, "GetProfileTable: %s", err_str);
   }
 
   array_init(return_value);
@@ -199,7 +203,6 @@ PHP_METHOD(MAPI, dump_profile)
 
     if (!opt_profname) {
       if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
-        mapi_errstr("GetDefaultProfile", retval);
         talloc_free(mem_ctx);
         const char *err_str = mapi_get_errstr(retval);
         php_error(E_ERROR, "Get default profile: %s", err_str);
@@ -248,3 +251,164 @@ PHP_METHOD(MAPI, dump_profile)
     talloc_free(mem_ctx);
 }
 
+static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
+static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
+
+
+//openchangeclient_mailbox(mem_ctx, &obj_store);
+PHP_METHOD(MAPI, folders)
+{
+  zval* thisObject = getThis();
+  enum MAPISTATUS retval;
+
+  // hardcoded by now...
+  char* profname = "test";
+  char* username = "jkerihuel";
+  char* password = "openchange1!";
+
+  struct mapi_session* session = NULL;
+  struct mapi_context* mapi_ctx = get_mapi_context(thisObject);
+  mapi_object_t obj_store;
+  mapi_object_init(&obj_store);
+
+  // login
+  retval = MapiLogonEx(mapi_ctx, &session, profname, password);
+  if (retval != MAPI_E_SUCCESS) {
+    const char *err_str = mapi_get_errstr(retval);
+    php_error(E_ERROR, "MapiLogonEx: %s", err_str);
+  }
+
+  // open user mailbox
+  retval = OpenUserMailbox(session, username, &obj_store);
+  if (retval != MAPI_E_SUCCESS) {
+    const char *err_str = mapi_get_errstr(retval);
+    php_error(E_ERROR, "OpenUserMailbox: %s", err_str);
+  }
+
+
+  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
+
+
+
+
+	mapi_id_t			id_mailbox;
+	struct SPropTagArray		*SPropTagArray;
+	struct SPropValue		*lpProps;
+	uint32_t			cValues;
+	const char			*mailbox_name;
+
+        // Setup mapi object
+
+
+
+	/* Retrieve the mailbox folder name */
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
+	retval = GetProps(&obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	if (lpProps[0].value.lpszW) {
+		mailbox_name = lpProps[0].value.lpszW;
+	} else {
+		return false;
+	}
+
+	/* Prepare the directory listing */
+	retval = GetDefaultFolder(&obj_store, &id_mailbox, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	php_printf("+ %s\n", mailbox_name);
+	return get_child_folders(mem_ctx, &obj_store, id_mailbox, 0);
+        // TODO	talloc_free(mem_ctx);
+
+}
+
+
+
+static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+{
+	enum MAPISTATUS		retval;
+	bool			ret;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		rowset;
+	const char	       	*name;
+	const char		*comment;
+	const uint32_t		*total;
+	const uint32_t		*unread;
+	const uint32_t		*child;
+	uint32_t		index;
+	const uint64_t		*fid;
+	int			i;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	mapi_object_init(&obj_htable);
+	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+					  PR_DISPLAY_NAME_UNICODE,
+					  PR_FID,
+					  PR_COMMENT_UNICODE,
+					  PR_CONTENT_UNREAD,
+					  PR_CONTENT_COUNT,
+					  PR_FOLDER_CHILD_COUNT);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		for (index = 0; index < rowset.cRows; index++) {
+			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
+			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT_UNICODE);
+			total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
+			unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
+			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+
+			for (i = 0; i < count; i++) {
+				php_printf("|   ");
+			}
+			php_printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%016\"PRIx64\"]\n",
+			       name, comment?comment:"", total?*total:0, unread?*unread:0,
+			       get_container_class(mem_ctx, parent, *fid), *fid);
+			if (child && *child) {
+				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
+				if (ret == false) return ret;
+			}
+
+		}
+	}
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&obj_folder);
+
+	return true;
+}
+
+
+static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
+{
+	enum MAPISTATUS		retval;
+	mapi_object_t		obj_folder;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		count;
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
+	retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	mapi_object_release(&obj_folder);
+	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
+		errno = 0;
+		return IPF_NOTE;
+	}
+	return lpProps[0].value.lpszA;
+}

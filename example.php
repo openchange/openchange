@@ -12,4 +12,11 @@ var_dump($profile);
 echo "Dump default profile\n";
 $profile = $mapi->dump_profile();
 var_dump($profile);
+
+echo "Destroy object\n";
+$mapi->__destruct();
+
+echo "Create and destroy idle MAPI\n";
+$mapi = new MAPI("/dfdf");
+$mapi->__destruct();
 ?>

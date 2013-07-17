@@ -14,6 +14,7 @@ zend_class_entry *mapi_class;
 
 static zend_function_entry mapi_class_functions[] = {
      PHP_ME(MAPI, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+     PHP_ME(MAPI, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
      PHP_ME(MAPI, profiles, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPI, dump_profile, NULL, ZEND_ACC_PUBLIC)
 
@@ -66,7 +67,6 @@ PHP_MINIT_FUNCTION(mapi)
 
 PHP_MSHUTDOWN_FUNCTION(mapi)
 {
-  php_printf("SHUTDOWN\n" );
   zend_hash_destroy(mapi_context_by_object);
 }
 
@@ -85,8 +85,6 @@ struct mapi_context* mapi_context_init(char *profdb)
 
 void mapi_context_dtor(void *ptr)
 {
-  php_printf("MAPI ctx to be destroyd\n" );
-
   struct mapi_context** ctx =  ptr;
   MAPIUninitialize(*ctx);
 }
@@ -104,6 +102,13 @@ PHP_METHOD(MAPI, __construct)
   add_property_string(object, "__profdb", profdb_path, 0);
 }
 
+PHP_METHOD(MAPI, __destruct)
+{
+  ulong key = (ulong) getThis();
+  if (zend_hash_index_exists(mapi_context_by_object, key)) {
+    zend_hash_index_del(mapi_context_by_object, key);
+  }
+}
 
 struct mapi_context* get_mapi_context(zval* object)
 {

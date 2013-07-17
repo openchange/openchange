@@ -31,7 +31,7 @@ zend_module_entry mapi_module_entry = {
     PHP_MAPI_EXTNAME,
     mapi_functions,
     PHP_MINIT(mapi),
-    NULL, //PHP_MSHUTDOWN(mapi),
+    PHP_MSHUTDOWN(mapi),
     NULL,
     NULL,
     NULL,
@@ -45,6 +45,7 @@ zend_module_entry mapi_module_entry = {
 ZEND_GET_MODULE(mapi)
 #endif
 
+static HashTable *mapi_context_by_object;
 
 
 PHP_MINIT_FUNCTION(mapi)
@@ -55,29 +56,52 @@ PHP_MINIT_FUNCTION(mapi)
   mapi_class =
     zend_register_internal_class(&ce TSRMLS_CC);
 
+  // initialize mpai contexts hash
+  ALLOC_HASHTABLE(mapi_context_by_object);
+  zend_hash_init(mapi_context_by_object, EXPECTED_MAPI_OBJECTS,
+                 NULL,
+                 mapi_context_dtor, 1);
   return SUCCESS;
 }
 
-/*
-PHP_MSHUTDOWN(mapi)
+PHP_MSHUTDOWN_FUNCTION(mapi)
 {
-  int i = 0;
+  php_printf("SHUTDOWN\n" );
+  zend_hash_destroy(mapi_context_by_object);
 }
-*/
 
-
-struct mapi_context* initialize_mapi(char *profdb)
+struct mapi_context* mapi_context_init(char *profdb)
 {
   struct mapi_context   *mapi_ctx;
   enum MAPISTATUS        retval;
+  php_printf("MAPI ctx init:%s\n", profdb);
   retval = MAPIInitialize(&mapi_ctx, profdb);
   if (retval != MAPI_E_SUCCESS) {
     const char *err_str = mapi_get_errstr(retval);
-    php_error(E_ERROR, "ERROR INTILIZE MAPI: %s\n", err_str);
-    // TODO BAIL OUT
-
+    php_error(E_ERROR, "Intialize MAPI: %s", err_str);
   }
+
+  char *str = "macaco";
+  php_printf("Adding macaco\n");
+  zend_hash_index_update(mapi_context_by_object, 11,
+                         str, sizeof(char *), NULL);
+  php_printf("Getting macaco\n");
+  zend_hash_index_find(mapi_context_by_object, 11, (void**) &str);
+
+  php_printf("Rerieved macaco: %s\n", str);
+
+
+
+
   return mapi_ctx;
+}
+
+void mapi_context_dtor(void *ptr)
+{
+  php_printf("MAPI ctx to be destroyd\n" );
+
+  //  struct mapi_context* ctx =  (struct mapi_context**)  *ptr;
+  MAPIUninitialize(ptr);
 }
 
 PHP_METHOD(MAPI, __construct)
@@ -96,17 +120,48 @@ PHP_METHOD(MAPI, __construct)
 
 struct mapi_context* get_mapi_context(zval* object)
 {
+  struct mapi_context* ct;
+  int res;
+
   if (object == NULL) {
     php_error(E_ERROR, "Must be called inside of a method");
   }
 
+  ulong key = (ulong) object; // XXX check this is true in all cases
+  php_printf("KEy %u\n", key);
+
+
+  // mapi context retrieval
+  php_printf("before FIMD\n");
+
+
+  res= zend_hash_index_find(mapi_context_by_object, key, (void**) &ct);
+  if (res == SUCCESS) {
+    php_printf("FOUND CT\n");
+    php_printf("POinter restored %p %p\n", ct->mem_ctx, ct->session);
+    return ct;
+  }
+
+  // new mapi context
   zval **profdb;
   if (zend_hash_find(Z_OBJPROP_P(object),
                      "__profdb", sizeof("__profdb"), (void**)&profdb) == FAILURE) {
     php_error(E_ERROR, "__profdb attribute not found");
   }
 
-  return initialize_mapi(Z_STRVAL_P(*profdb));
+  php_printf("NOT FOUND CT -> before UPDATE\n");
+  ct  =  mapi_context_init(Z_STRVAL_P(*profdb));
+  php_printf("POinter %p %p\n", ct->mem_ctx, ct->session);
+
+  res = zend_hash_index_update(mapi_context_by_object, key,
+                                ct, sizeof(struct mapi_context*), NULL);
+  if (res == FAILURE) {
+    php_error(E_ERROR, "Adding to MAPI contexts hash");
+  }
+
+  return ct;
+
+
 }
 
 PHP_METHOD(MAPI, profiles)
@@ -139,7 +194,7 @@ PHP_METHOD(MAPI, profiles)
     add_next_index_zval(return_value, profile);
   }
 
-  MAPIUninitialize(mapi_ctx);
+  //  MAPIUninitialize(mapi_ctx);
 }
 
 PHP_METHOD(MAPI, dump_profile)
@@ -165,6 +220,8 @@ PHP_METHOD(MAPI, dump_profile)
       if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
         mapi_errstr("GetDefaultProfile", retval);
         talloc_free(mem_ctx);
+        const char *err_str = mapi_get_errstr(retval);
+        php_error(E_ERROR, "Get default profile: %s", err_str);
         exit (1);
       }
     } else {
@@ -176,8 +233,8 @@ PHP_METHOD(MAPI, dump_profile)
 
     if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
       talloc_free(mem_ctx);
-      mapi_errstr("OpenProfile", retval);
-      exit (1);
+      const char *err_str = mapi_get_errstr(retval);
+      php_error(E_ERROR, "Get %s profile: %s", opt_profname, err_str);
     }
 
     switch (profile->exchange_version) {
@@ -208,5 +265,5 @@ PHP_METHOD(MAPI, dump_profile)
 
  end:
     talloc_free(mem_ctx);
-    MAPIUninitialize(mapi_ctx);
+    //    MAPIUninitialize(mapi_ctx);
 }

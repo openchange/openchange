@@ -8,6 +8,7 @@
 
 PHP_MINIT_FUNCTION(mapi);
 
+PHP_METHOD(MAPI, __construct);
 PHP_METHOD(MAPI, profiles);
 PHP_METHOD(MAPI, dump_profile);
 

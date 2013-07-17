@@ -1,6 +1,6 @@
 <?php
 
-$mapi = new MAPI();
+$mapi = new MAPI("/home/jag/.openchange/profiles.ldb");
 
 $allProfiles = $mapi->profiles();
 var_dump($allProfiles);

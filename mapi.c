@@ -13,6 +13,7 @@
 zend_class_entry *mapi_class;
 
 static zend_function_entry mapi_class_functions[] = {
+     PHP_ME(MAPI, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
      PHP_ME(MAPI, profiles, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPI, dump_profile, NULL, ZEND_ACC_PUBLIC)
 
@@ -44,14 +45,17 @@ zend_module_entry mapi_module_entry = {
 ZEND_GET_MODULE(mapi)
 #endif
 
+
+
 PHP_MINIT_FUNCTION(mapi)
 {
-    zend_class_entry ce;
-    INIT_CLASS_ENTRY(ce, MAPI_CLASS_NAME, mapi_class_functions);
-    mapi_class =
-                zend_register_internal_class(&ce TSRMLS_CC);
-    return SUCCESS;
+  // register class
+  zend_class_entry ce;
+  INIT_CLASS_ENTRY(ce, MAPI_CLASS_NAME, mapi_class_functions);
+  mapi_class =
+    zend_register_internal_class(&ce TSRMLS_CC);
 
+  return SUCCESS;
 }
 
 /*
@@ -62,25 +66,52 @@ PHP_MSHUTDOWN(mapi)
 */
 
 
-struct mapi_context* initialize_mapi()
+struct mapi_context* initialize_mapi(char *profdb)
 {
-  char *profdb = "/home/jag/.openchange/profiles.ldb";
   struct mapi_context   *mapi_ctx;
   enum MAPISTATUS        retval;
   retval = MAPIInitialize(&mapi_ctx, profdb);
   if (retval != MAPI_E_SUCCESS) {
     const char *err_str = mapi_get_errstr(retval);
-    php_error(E_ERROR, err_str);
-    php_printf("ERROR MAPI: %s\n", err_str); // TMP
+    php_error(E_ERROR, "ERROR INTILIZE MAPI: %s\n", err_str);
     // TODO BAIL OUT
 
   }
   return mapi_ctx;
 }
 
+PHP_METHOD(MAPI, __construct)
+{
+  char* profdb_path;
+  int   profdb_path_len;
+
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", &profdb_path, &profdb_path_len) == FAILURE) {
+    RETURN_NULL();
+  }
+
+  zval *object = getThis();
+  add_property_string(object, "__profdb", profdb_path, 0);
+}
+
+
+struct mapi_context* get_mapi_context(zval* object)
+{
+  if (object == NULL) {
+    php_error(E_ERROR, "Must be called inside of a method");
+  }
+
+  zval **profdb;
+  if (zend_hash_find(Z_OBJPROP_P(object),
+                     "__profdb", sizeof("__profdb"), (void**)&profdb) == FAILURE) {
+    php_error(E_ERROR, "__profdb attribute not found");
+  }
+return initialize_mapi(Z_STRVAL_P(*profdb));
+}
+
 PHP_METHOD(MAPI, profiles)
 {
-  struct mapi_context *mapi_ctx = initialize_mapi();
+
+  struct mapi_context *mapi_ctx = get_mapi_context(getThis());
 
   struct SRowSet proftable;
   memset(&proftable, 0, sizeof (struct SRowSet));
@@ -98,7 +129,7 @@ PHP_METHOD(MAPI, profiles)
     uint32_t dflt = 0;
     zval* profile;
 
-    name = proftable.aRow[count].lpProps[0].value.lpszA;
+    name = (char*) proftable.aRow[count].lpProps[0].value.lpszA;
     dflt = proftable.aRow[count].lpProps[1].value.l;
 
     MAKE_STD_ZVAL(profile);
@@ -117,8 +148,7 @@ PHP_METHOD(MAPI, dump_profile)
         RETURN_NULL();
     }
 
-    struct mapi_context *mapi_ctx = initialize_mapi();
-
+    struct mapi_context *mapi_ctx = get_mapi_context(getThis());
 
     TALLOC_CTX              *mem_ctx;
     enum MAPISTATUS         retval;

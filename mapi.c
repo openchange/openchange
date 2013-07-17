@@ -246,5 +246,5 @@ PHP_METHOD(MAPI, dump_profile)
 
  end:
     talloc_free(mem_ctx);
-    //    MAPIUninitialize(mapi_ctx);
 }
+

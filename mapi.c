@@ -105,12 +105,12 @@ struct mapi_context* get_mapi_context(zval* object)
                      "__profdb", sizeof("__profdb"), (void**)&profdb) == FAILURE) {
     php_error(E_ERROR, "__profdb attribute not found");
   }
-return initialize_mapi(Z_STRVAL_P(*profdb));
+
+  return initialize_mapi(Z_STRVAL_P(*profdb));
 }
 
 PHP_METHOD(MAPI, profiles)
 {
-
   struct mapi_context *mapi_ctx = get_mapi_context(getThis());
 
   struct SRowSet proftable;

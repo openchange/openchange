@@ -138,6 +138,8 @@ PHP_METHOD(MAPI, profiles)
     add_assoc_bool(profile, "default", dflt);
     add_next_index_zval(return_value, profile);
   }
+
+  MAPIUninitialize(mapi_ctx);
 }
 
 PHP_METHOD(MAPI, dump_profile)
@@ -206,4 +208,5 @@ PHP_METHOD(MAPI, dump_profile)
 
  end:
     talloc_free(mem_ctx);
- }
+    MAPIUninitialize(mapi_ctx);
+}

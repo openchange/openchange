@@ -17,10 +17,10 @@ echo "Folders\n";
 $folders = $mapi->folders();
 var_dump($folders);
 
-echo "Destroy object\n";
-$mapi->__destruct();
+#echo "Destroy object\n";
+#$mapi->__destruct();
 
-echo "Create and destroy idle MAPI\n";
-$mapi = new MAPI("/dfdf");
-$mapi->__destruct();
+# echo "Create and destroy idle MAPI\n";
+# $mapi = new MAPI("/dfdf");
+# $mapi->__destruct();
 ?>

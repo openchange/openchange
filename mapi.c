@@ -304,7 +304,7 @@ PHP_METHOD(MAPI, folders)
 
   if (lpProps[0].value.lpszW) {
     mailbox_name = lpProps[0].value.lpszW;
-	} else {
+  } else {
     php_error(E_ERROR, "Get mailbox name");
   }
 
@@ -361,13 +361,14 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
   MAPIFreeBuffer(SPropTagArray);
   if (retval != MAPI_E_SUCCESS) return folders;
 
+
   while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
-    zval* current_folder;
-    MAKE_STD_ZVAL(current_folder);
-    array_init(current_folder);
-
-
     for (index = 0; index < rowset.cRows; index++) {
+      zval* current_folder;
+      MAKE_STD_ZVAL(current_folder);
+      array_init(current_folder);
+
+
       long n_total, n_unread;
 
       fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
@@ -406,9 +407,11 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
         zval *child_folders  = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
         add_assoc_zval(current_folder, "childs", child_folders);
       }
+
       add_next_index_zval(folders, current_folder);
     }
   }
+
   mapi_object_release(&obj_htable);
   mapi_object_release(&obj_folder);
 

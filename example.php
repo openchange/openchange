@@ -14,7 +14,8 @@ $profile = $mapi->dump_profile();
 var_dump($profile);
 
 echo "Folders\n";
-$mapi->folders();
+$folders = $mapi->folders();
+var_dump($folders);
 
 echo "Destroy object\n";
 $mapi->__destruct();

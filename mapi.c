@@ -251,7 +251,8 @@ PHP_METHOD(MAPI, dump_profile)
     talloc_free(mem_ctx);
 }
 
-static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
+// XXX move declarations
+static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
 
 
@@ -318,14 +319,21 @@ PHP_METHOD(MAPI, folders)
 	if (retval != MAPI_E_SUCCESS) return false;
 
 	php_printf("+ %s\n", mailbox_name);
-	return get_child_folders(mem_ctx, &obj_store, id_mailbox, 0);
-        // TODO	talloc_free(mem_ctx);
+
+        array_init(return_value);
+        add_assoc_string(return_value, "name", mailbox_name, 1);
+        add_assoc_zval(return_value, "childs", get_child_folders(mem_ctx, &obj_store, id_mailbox, 0));
+
+        talloc_free(mem_ctx);
+
+        //	return get_child_folders(mem_ctx, &obj_store, id_mailbox, 0);
+        // TODO
 
 }
 
 
 
-static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
+static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
 	bool			ret;
@@ -342,13 +350,17 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	const uint64_t		*fid;
 	int			i;
 
+        zval* folders;
+        MAKE_STD_ZVAL(folders);
+        array_init(folders);
+
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(parent, folder_id, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return folders;
 
 	mapi_object_init(&obj_htable);
 	retval = GetHierarchyTable(&obj_folder, &obj_htable, 0, NULL);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return folders;
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 					  PR_DISPLAY_NAME_UNICODE,
@@ -359,34 +371,67 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 					  PR_FOLDER_CHILD_COUNT);
 	retval = SetColumns(&obj_htable, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
+	if (retval != MAPI_E_SUCCESS) return folders;
+
+
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+          zval* current_folder;
+          MAKE_STD_ZVAL(current_folder);
+          array_init(current_folder);
+
+
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
-			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
-			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT_UNICODE);
-			total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
-			unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
+                  long n_total, n_unread;
+
+                  fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+                  name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
+                  comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT_UNICODE);
+                  if (comment == NULL) {
+                    comment = "";
+                  }
+                  total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
+                  if (!total) {
+                    n_total = 0;
+                  } else {
+                    n_total = (long) *total;
+                  }
+
+                  unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
+                  if (!unread) {
+                    n_unread =0;
+                  } else {
+                    n_unread =  (long) *unread;
+                  }
+
+
 			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
-			for (i = 0; i < count; i++) {
-				php_printf("|   ");
-			}
-			php_printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%016\"PRIx64\"]\n",
-			       name, comment?comment:"", total?*total:0, unread?*unread:0,
-			       get_container_class(mem_ctx, parent, *fid), *fid);
-			if (child && *child) {
-				ret = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
-				if (ret == false) return ret;
-			}
+                        char* container = get_container_class(mem_ctx, parent, *fid);
 
+                        add_assoc_string(current_folder, "name", name, 1);
+                        add_assoc_string(current_folder, "comment", comment, 1);
+                        add_assoc_string(current_folder, "container", container, 1);
+
+                        add_assoc_long(current_folder, "total", n_total);
+                        add_assoc_long(current_folder, "uread", n_unread);
+
+			/* for (i = 0; i < count; i++) { */
+			/* 	php_printf("|   "); */
+			/* } */
+			/* php_printf("|---+ %-15s : %-20s (Total: %u / Unread: %u - Container class: %s) [FID: 0x%016\"PRIx64\"]\n", */
+                        /*            name, comment?comment:"", total?*total:0, unread?*unread:0, container, *fid); */
+			if (child && *child) {
+                          zval *child_folders  = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
+                          add_assoc_zval(current_folder, "childs", child_folders);
+			}
+                        add_next_index_zval(folders, current_folder);
 		}
 	}
 	mapi_object_release(&obj_htable);
 	mapi_object_release(&obj_folder);
 
-	return true;
+	return folders;
 }
 
 

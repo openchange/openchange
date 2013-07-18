@@ -178,8 +178,6 @@ PHP_METHOD(MAPI, profiles)
     add_assoc_bool(profile, "default", dflt);
     add_next_index_zval(return_value, profile);
   }
-
-  //  MAPIUninitialize(mapi_ctx);
 }
 
 PHP_METHOD(MAPI, dump_profile)
@@ -222,16 +220,16 @@ PHP_METHOD(MAPI, dump_profile)
 
     switch (profile->exchange_version) {
     case 0x0:
-      exchange_version = talloc_strdup(mem_ctx, "exchange 2000");
+      exchange_version = "exchange 2000";
       break;
     case 0x1:
-      exchange_version = talloc_strdup(mem_ctx, "exchange 2003/2007");
+      exchange_version = "exchange 2003/2007";
       break;
     case 0x2:
-      exchange_version = talloc_strdup(mem_ctx, "exchange 2010");
+      exchange_version = "exchange 2010";
       break;
     default:
-      php_printf("Error: unknown Exchange server\n");
+      php_printf("Error: unknown Exchange server: %h\n", profile->exchange_version);
       goto end;
     }
 
@@ -249,6 +247,8 @@ PHP_METHOD(MAPI, dump_profile)
  end:
     talloc_free(mem_ctx);
 }
+
+
 
 // XXX move declarations
 static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
@@ -397,6 +397,7 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
       char* container = get_container_class(mem_ctx, parent, *fid);
 
       add_assoc_string(current_folder, "name", name, 1);
+      add_assoc_long(current_folder, "fid", (long)(*fid)); // this must be cast to unsigned long in reading
       add_assoc_string(current_folder, "comment", comment, 1);
       add_assoc_string(current_folder, "container", container, 1);
 

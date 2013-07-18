@@ -420,23 +420,23 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
 
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {
-	enum MAPISTATUS		retval;
-	mapi_object_t		obj_folder;
-	struct SPropTagArray	*SPropTagArray;
-	struct SPropValue	*lpProps;
-	uint32_t		count;
+  enum MAPISTATUS       retval;
+  mapi_object_t         obj_folder;
+  struct SPropTagArray  *SPropTagArray;
+  struct SPropValue     *lpProps;
+  uint32_t              count;
 
-	mapi_object_init(&obj_folder);
-	retval = OpenFolder(parent, folder_id, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return false;
+  mapi_object_init(&obj_folder);
+  retval = OpenFolder(parent, folder_id, &obj_folder);
+  if (retval != MAPI_E_SUCCESS) return false;
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
-	retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
-	MAPIFreeBuffer(SPropTagArray);
-	mapi_object_release(&obj_folder);
-	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
-		errno = 0;
-		return IPF_NOTE;
-	}
-	return lpProps[0].value.lpszA;
+  SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
+  retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
+  MAPIFreeBuffer(SPropTagArray);
+  mapi_object_release(&obj_folder);
+  if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
+    errno = 0;
+    return IPF_NOTE;
+  }
+  return lpProps[0].value.lpszA;
 }

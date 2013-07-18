@@ -180,23 +180,12 @@ PHP_METHOD(MAPI, profiles)
   }
 }
 
-PHP_METHOD(MAPI, dump_profile)
+static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname)
 {
-    char* opt_profname = NULL;
-    int   opt_profname_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
-        RETURN_NULL();
-    }
+    enum MAPISTATUS      retval;
+    char*                profname;
+    struct mapi_profile* profile;
 
-    struct mapi_context *mapi_ctx = get_mapi_context(getThis());
-
-    TALLOC_CTX              *mem_ctx;
-    enum MAPISTATUS         retval;
-    struct mapi_profile     *profile;
-    char                    *profname;
-    char                    *exchange_version = NULL;
-
-    mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_dump");
     profile = talloc(mem_ctx, struct mapi_profile);
 
     if (!opt_profname) {
@@ -217,6 +206,26 @@ PHP_METHOD(MAPI, dump_profile)
       const char *err_str = mapi_get_errstr(retval);
       php_error(E_ERROR, "Get %s profile: %s", opt_profname, err_str);
     }
+
+    return profile;
+}
+
+PHP_METHOD(MAPI, dump_profile)
+{
+    struct mapi_profile     *profile;
+    TALLOC_CTX              *mem_ctx;
+    struct mapi_context *mapi_ctx = get_mapi_context(getThis());
+    char                    *exchange_version = NULL;
+
+    char* opt_profname = NULL;
+    int   opt_profname_len;
+    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
+        RETURN_NULL();
+    }
+
+    mapi_ctx = get_mapi_context(getThis());
+    mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_dump_profile");
+    profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
 
     switch (profile->exchange_version) {
     case 0x0:
@@ -258,35 +267,45 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 //openchangeclient_mailbox(mem_ctx, &obj_store);
 PHP_METHOD(MAPI, folders)
 {
-  zval* thisObject = getThis();
   enum MAPISTATUS retval;
-
-  // hardcoded by now...
-  char* profname = "test";
-  char* username = "jkerihuel";
-  char* password = "openchange1!";
+  zval* thisObject;
+  TALLOC_CTX *mem_ctx;
 
   struct mapi_session* session = NULL;
-  struct mapi_context* mapi_ctx = get_mapi_context(thisObject);
+  struct mapi_context* mapi_ctx;
+  static struct mapi_profile* profile;
   mapi_object_t obj_store;
+
+  // hardcoded by now...
+  /* char* profname = "test"; */
+  /* char* username = "jkerihuel"; */
+  /* char* password = "openchange1!"; */
+  char* opt_profname = NULL;
+  int   opt_profname_len;
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
+    RETURN_NULL();
+  }
+
+  thisObject = getThis();
+  mapi_ctx = get_mapi_context(thisObject);
+  mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_folders"); // we hang mem_ctx from MAPI bz is free in object destruction
+  //  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
+  profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
   mapi_object_init(&obj_store);
 
   // login
-  retval = MapiLogonEx(mapi_ctx, &session, profname, password);
+  retval = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
   if (retval != MAPI_E_SUCCESS) {
     const char *err_str = mapi_get_errstr(retval);
     php_error(E_ERROR, "MapiLogonEx: %s", err_str);
   }
 
   // open user mailbox
-  retval = OpenUserMailbox(session, username, &obj_store);
+  retval = OpenUserMailbox(session, profile->username, &obj_store);
   if (retval != MAPI_E_SUCCESS) {
     const char *err_str = mapi_get_errstr(retval);
     php_error(E_ERROR, "OpenUserMailbox: %s", err_str);
   }
-
-
-  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
 
   mapi_id_t                     id_mailbox;
   struct SPropTagArray          *SPropTagArray;

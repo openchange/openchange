@@ -13,14 +13,19 @@ echo "Dump default profile\n";
 $profile = $mapi->dump_profile();
 var_dump($profile);
 
-echo "Folders\n";
+echo "Folders default profile\n";
 $folders = $mapi->folders();
 var_dump($folders);
 
-#echo "Destroy object\n";
-#$mapi->__destruct();
+echo "Folders by profile name\n";
+$folders = $mapi->folders('test');
+var_dump($folders);
 
-# echo "Create and destroy idle MAPI\n";
-# $mapi = new MAPI("/dfdf");
-# $mapi->__destruct();
+
+echo "Destroy object\n";
+$mapi->__destruct();
+
+echo "Create and destroy idle MAPI\n";
+$mapi = new MAPI("/dfdf");
+$mapi->__destruct();
 ?>

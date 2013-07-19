@@ -13,6 +13,7 @@ static zend_function_entry mapi_class_functions[] = {
      PHP_ME(MAPI, profiles, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPI, dump_profile, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPI, folders, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPI, fetchmail, NULL, ZEND_ACC_PUBLIC)
 
     { NULL, NULL, NULL }
 };
@@ -248,6 +249,31 @@ PHP_METHOD(MAPI, dump_profile)
     talloc_free(mem_ctx);
 }
 
+void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
+{
+  enum MAPISTATUS retval;
+
+  mapi_object_init(store);
+  if (public_folder == true) {
+    retval = OpenPublicFolder(session, store);
+    if (retval != MAPI_E_SUCCESS) {
+      php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval));
+    }
+  } else if (username) {
+    retval = OpenUserMailbox(session, username, store);
+    if (retval != MAPI_E_SUCCESS) {
+      php_error(E_ERROR, "Open user mailbox: %s", mapi_get_errstr(retval));
+    }
+  } else {
+    retval = OpenMsgStore(session, store);
+    if (retval != MAPI_E_SUCCESS) {
+      php_error(E_ERROR, "Open message store: %s",  mapi_get_errstr(retval));
+    }
+  }
+}
+
+
+
 //openchangeclient_mailbox(mem_ctx, &obj_store);
 PHP_METHOD(MAPI, folders)
 {
@@ -271,7 +297,7 @@ PHP_METHOD(MAPI, folders)
   mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_folders"); // we hang mem_ctx from MAPI bz is free in object destruction
   //  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
   profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
-  mapi_object_init(&obj_store);
+
 
   // login
   retval = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
@@ -281,11 +307,7 @@ PHP_METHOD(MAPI, folders)
   }
 
   // open user mailbox
-  retval = OpenUserMailbox(session, profile->username, &obj_store);
-  if (retval != MAPI_E_SUCCESS) {
-    const char *err_str = mapi_get_errstr(retval);
-    php_error(E_ERROR, "OpenUserMailbox: %s", err_str);
-  }
+  init_message_store(&obj_store, session, false, profile->username);
 
   mapi_id_t                     id_mailbox;
   struct SPropTagArray          *SPropTagArray;
@@ -418,6 +440,8 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
   return folders;
 }
 
+
+
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {
   enum MAPISTATUS       retval;
@@ -440,3 +464,190 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
   }
   return lpProps[0].value.lpszA;
 }
+
+
+static enum MAPISTATUS openchangeclient_fetchmail(
+						  bool public_folder,
+                                                  const char* folder);
+
+PHP_METHOD(MAPI, fetchmail)
+{
+
+
+  //  openchangeclient_fetchmail(&obj_store, 0, NULL);
+  //  openchangeclient_fetchmail(false, NULL);
+
+}
+
+
+
+/* static enum MAPISTATUS openchangeclient_fetchmail( */
+/* 						  bool public_folder, */
+/*                                                   const char* folder) */
+/* { */
+/*   mapi_object_t obj_store; */
+/* 	enum MAPISTATUS			retval; */
+/* 	bool				status; */
+/* 	TALLOC_CTX			*mem_ctx; */
+/* 	mapi_object_t			obj_tis; */
+/* 	mapi_object_t			obj_inbox; */
+/* 	mapi_object_t			obj_message; */
+/* 	mapi_object_t			obj_table; */
+/* 	mapi_object_t			obj_tb_attach; */
+/* 	mapi_object_t			obj_attach; */
+/* 	uint64_t			id_inbox; */
+/* 	struct SPropTagArray		*SPropTagArray; */
+/* 	struct SRowSet			rowset; */
+/* 	struct SRowSet			rowset_attach; */
+/* 	uint32_t			i, j; */
+/* 	uint32_t			count; */
+/* 	const uint8_t			*has_attach; */
+/* 	const uint32_t			*attach_num; */
+/* 	const char			*attach_filename; */
+/* 	const uint32_t			*attach_size; */
+
+/* 	mem_ctx = talloc_named(NULL, 0, "openchangeclient_fetchmail"); */
+
+/* 	mapi_object_init(&obj_tis); */
+/* 	mapi_object_init(&obj_inbox); */
+/* 	mapi_object_init(&obj_table); */
+/*         mapi_object_init(&obj_store); */
+
+/* 	if (public_folder == true) { */
+/* 		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder); */
+/* 		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx); */
+/* 	} else { */
+/* 		if (folder == NULL) { */
+/* 			retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+
+/* 			retval = OpenFolder(obj_store, id_inbox, &obj_tis); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+
+/* 			retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_inbox, oclient->folder); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+/* 		} else { */
+/* 			retval = GetReceiveFolder(obj_store, &id_inbox, NULL); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+
+/* 			retval = OpenFolder(obj_store, id_inbox, &obj_inbox); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+/* 		} */
+/* 	} */
+
+/* 	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count); */
+/* 	MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+
+/* 	printf("MAILBOX (%u messages)\n", count); */
+/* 	if (!count) goto end; */
+
+/* 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5, */
+/* 					  PR_FID, */
+/* 					  PR_MID, */
+/* 					  PR_INST_ID, */
+/* 					  PR_INSTANCE_NUM, */
+/* 					  PR_SUBJECT_UNICODE); */
+/* 	retval = SetColumns(&obj_table, SPropTagArray); */
+/* 	MAPIFreeBuffer(SPropTagArray); */
+/* 	MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+
+/* 	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) { */
+/* 		count -= rowset.cRows; */
+/* 		for (i = 0; i < rowset.cRows; i++) { */
+/* 			mapi_object_init(&obj_message); */
+/* 			retval = OpenMessage(obj_store, */
+/* 					     rowset.aRow[i].lpProps[0].value.d, */
+/* 					     rowset.aRow[i].lpProps[1].value.d, */
+/* 					     &obj_message, 0); */
+/* 			if (GetLastError() == MAPI_E_SUCCESS) { */
+/* 				if (oclient->summary) { */
+/* 					mapidump_message_summary(&obj_message); */
+/* 				} else { */
+/* 					struct SPropValue	*lpProps; */
+/* 					struct SRow		aRow; */
+
+/* 					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH); */
+/* 					lpProps = NULL; */
+/* 					retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count); */
+/* 					MAPIFreeBuffer(SPropTagArray); */
+/* 					if (retval != MAPI_E_SUCCESS) return retval; */
+
+/* 					aRow.ulAdrEntryPad = 0; */
+/* 					aRow.cValues = count; */
+/* 					aRow.lpProps = lpProps; */
+
+/* 					retval = octool_message(mem_ctx, &obj_message); */
+
+/* 					has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH); */
+
+/* 					/\* If we have attachments, retrieve them *\/ */
+/* 					if (has_attach && *has_attach) { */
+/* 						mapi_object_init(&obj_tb_attach); */
+/* 						retval = GetAttachmentTable(&obj_message, &obj_tb_attach); */
+/* 						if (retval == MAPI_E_SUCCESS) { */
+/* 							SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM); */
+/* 							retval = SetColumns(&obj_tb_attach, SPropTagArray); */
+/* 							if (retval != MAPI_E_SUCCESS) return retval; */
+/* 							MAPIFreeBuffer(SPropTagArray); */
+
+/* 							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach); */
+/* 							if (retval != MAPI_E_SUCCESS) return retval; */
+
+/* 							for (j = 0; j < rowset_attach.cRows; j++) { */
+/* 								attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM); */
+/* 								retval = OpenAttach(&obj_message, *attach_num, &obj_attach); */
+/* 								if (retval == MAPI_E_SUCCESS) { */
+/* 									struct SPropValue	*lpProps2; */
+/* 									uint32_t		count2; */
+
+/* 									SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, */
+/* 													  PR_ATTACH_FILENAME, */
+/* 													  PR_ATTACH_LONG_FILENAME, */
+/* 													  PR_ATTACH_SIZE, */
+/* 													  PR_ATTACH_CONTENT_ID); */
+/* 									lpProps2 = NULL; */
+/* 									retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2); */
+/* 									MAPIFreeBuffer(SPropTagArray); */
+/* 									if (retval != MAPI_E_SUCCESS) return retval; */
+
+/* 									aRow.ulAdrEntryPad = 0; */
+/* 									aRow.cValues = count2; */
+/* 									aRow.lpProps = lpProps2; */
+
+/* 									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME)); */
+/* 									if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) { */
+/* 										attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME)); */
+/* 									} */
+/* 									attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE); */
+/* 									printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0); */
+/* 									fflush(0); */
+/* 									if (oclient->store_folder) { */
+/* 										status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient); */
+/* 										if (status == false) { */
+/* 											printf("A Problem was encountered while storing attachments on the filesystem\n"); */
+/* 											talloc_free(mem_ctx); */
+/* 											return MAPI_E_UNABLE_TO_COMPLETE; */
+/* 										} */
+/* 									} */
+/* 									MAPIFreeBuffer(lpProps2); */
+/* 								} */
+/* 							} */
+/* 							errno = 0; */
+/* 						} */
+/* 						MAPIFreeBuffer(lpProps); */
+/* 					} */
+/* 				} */
+/* 			} */
+/* 			mapi_object_release(&obj_message); */
+/* 		} */
+/* 	} */
+/*  end: */
+/* 	mapi_object_release(&obj_table); */
+/* 	mapi_object_release(&obj_inbox); */
+/* 	mapi_object_release(&obj_tis); */
+
+/* 	talloc_free(mem_ctx); */
+
+/* 	errno = 0; */
+/* 	return MAPI_E_SUCCESS; */
+/* } */

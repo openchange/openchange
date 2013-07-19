@@ -249,7 +249,7 @@ PHP_METHOD(MAPI, dump_profile)
     talloc_free(mem_ctx);
 }
 
-void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
+static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
 {
   enum MAPISTATUS retval;
 
@@ -272,7 +272,14 @@ void init_message_store(mapi_object_t *store, struct mapi_session* session, bool
   }
 }
 
-
+static void logon_with_profile(struct mapi_context* mapi_ctx, struct mapi_session** session,  struct mapi_profile* profile)
+{
+  enum MAPISTATUS retval;
+  retval = MapiLogonEx(mapi_ctx, session, profile->profname, profile->password);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "MapiLogonEx: %s",  mapi_get_errstr(retval));
+  }
+}
 
 //openchangeclient_mailbox(mem_ctx, &obj_store);
 PHP_METHOD(MAPI, folders)
@@ -283,7 +290,7 @@ PHP_METHOD(MAPI, folders)
 
   struct mapi_session* session = NULL;
   struct mapi_context* mapi_ctx;
-  static struct mapi_profile* profile;
+  struct mapi_profile* profile;
   mapi_object_t obj_store;
 
   char* opt_profname = NULL;
@@ -298,13 +305,7 @@ PHP_METHOD(MAPI, folders)
   //  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
   profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
 
-
-  // login
-  retval = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
-  if (retval != MAPI_E_SUCCESS) {
-    const char *err_str = mapi_get_errstr(retval);
-    php_error(E_ERROR, "MapiLogonEx: %s", err_str);
-  }
+  logon_with_profile(mapi_ctx, &session, profile);
 
   // open user mailbox
   init_message_store(&obj_store, session, false, profile->username);

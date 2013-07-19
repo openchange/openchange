@@ -29,7 +29,8 @@ struct mapi_context* get_mapi_context(zval* object);
 static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
 static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
-void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username);
+static void logon_with_profile(struct mapi_context* mapi_ctx, struct mapi_session** session,  struct mapi_profile* profile);
+static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

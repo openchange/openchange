@@ -13,9 +13,9 @@ echo "Dump default profile\n";
 $profile = $mapi->dump_profile();
 var_dump($profile);
 
-#echo "Folders default profile\n";
-#$folders = $mapi->folders();
-#var_dump($folders);
+echo "Folders default profile\n";
+$folders = $mapi->folders();
+var_dump($folders);
 
 echo "Folders by profile name\n";
 $folders = $mapi->folders('test');

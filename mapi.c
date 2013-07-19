@@ -204,10 +204,10 @@ static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_contex
 
 PHP_METHOD(MAPI, dump_profile)
 {
-    struct mapi_profile     *profile;
-    TALLOC_CTX              *mem_ctx;
-    struct mapi_context *mapi_ctx = get_mapi_context(getThis());
-    char                    *exchange_version = NULL;
+    struct mapi_profile* profile;
+    TALLOC_CTX*          mem_ctx;
+    struct mapi_context* mapi_ctx = get_mapi_context(getThis());
+    char*                exchange_version = NULL;
 
     char* opt_profname = NULL;
     int   opt_profname_len;

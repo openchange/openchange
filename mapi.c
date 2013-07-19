@@ -5,14 +5,6 @@
 #include "php.h"
 #include "php_mapi.h"
 
-// from openchange
-#include "utils/mapitest/mapitest.h"
-#include "utils/openchange-tools.h"
-#include "libmapi/mapidefs.h"
-//#include "libmapi/libmapi_private.h"
-//#include "libmapi/mapi_nameid.h"
-
-
 zend_class_entry *mapi_class;
 
 static zend_function_entry mapi_class_functions[] = {
@@ -238,8 +230,8 @@ PHP_METHOD(MAPI, dump_profile)
       exchange_version = "exchange 2010";
       break;
     default:
-      php_printf("Error: unknown Exchange server: %h\n", profile->exchange_version);
-      goto end;
+      talloc_free(mem_ctx);
+      php_error(E_ERROR, "Error: unknown Exchange server: %i\n", profile->exchange_version);
     }
 
     array_init(return_value);
@@ -253,16 +245,8 @@ PHP_METHOD(MAPI, dump_profile)
     add_assoc_string(return_value, "domain", (char*) profile->domain, 1);
     add_assoc_string(return_value, "server", (char*) profile->server, 1);
 
- end:
     talloc_free(mem_ctx);
 }
-
-
-
-// XXX move declarations
-static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
-static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
-
 
 //openchangeclient_mailbox(mem_ctx, &obj_store);
 PHP_METHOD(MAPI, folders)
@@ -276,10 +260,6 @@ PHP_METHOD(MAPI, folders)
   static struct mapi_profile* profile;
   mapi_object_t obj_store;
 
-  // hardcoded by now...
-  /* char* profname = "test"; */
-  /* char* username = "jkerihuel"; */
-  /* char* password = "openchange1!"; */
   char* opt_profname = NULL;
   int   opt_profname_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
@@ -413,7 +393,7 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
 
       child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
-      char* container = get_container_class(mem_ctx, parent, *fid);
+      const char* container = get_container_class(mem_ctx, parent, *fid);
 
       add_assoc_string(current_folder, "name", name, 1);
       add_assoc_long(current_folder, "fid", (long)(*fid)); // this must be cast to unsigned long in reading

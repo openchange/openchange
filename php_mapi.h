@@ -11,17 +11,22 @@
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
-#define MAPI_CLASS_NAME "MAPI"
+
 
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
 
-PHP_METHOD(MAPI, __construct);
-PHP_METHOD(MAPI, __destruct);
-PHP_METHOD(MAPI, profiles);
-PHP_METHOD(MAPI, dump_profile);
-PHP_METHOD(MAPI, folders);
-PHP_METHOD(MAPI, fetchmail);
+PHP_METHOD(MAPIProfileDB, __construct);
+PHP_METHOD(MAPIProfileDB, __destruct);
+PHP_METHOD(MAPIProfileDB, profiles);
+PHP_METHOD(MAPIProfileDB, dump_profile);
+PHP_METHOD(MAPIProfileDB, folders);
+PHP_METHOD(MAPIProfileDB, fetchmail);
+
+PHP_METHOD(MAPI_SESSION, __construct);
+PHP_METHOD(MAPI_SESSION, __destruct);
+PHP_METHOD(MAPI_SESSION, folders);
+PHP_METHOD(MAPI_SESSION, fetchmail);
 
 struct mapi_context* mapi_context_init(char *profdb);
 void mapi_context_dtor(void *mapi_ctx);

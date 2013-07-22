@@ -23,7 +23,6 @@ PHP_METHOD(MAPIProfileDB, __destruct);
 PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
 PHP_METHOD(MAPIProfileDB, folders);
-PHP_METHOD(MAPIProfileDB, fetchmail);
 
 PHP_METHOD(MAPIProfile, __construct);
 PHP_METHOD(MAPIProfile, __destruct);

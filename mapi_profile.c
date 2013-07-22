@@ -7,7 +7,6 @@
 
 extern int profile_resource_id;
 
-
 PHP_METHOD(MAPIProfile, __construct)
 {
   zval* thisObject;

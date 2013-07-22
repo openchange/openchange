@@ -11,10 +11,8 @@ PHP_METHOD(MAPIProfile, __construct)
 {
   zval* thisObject;
   zval *profile_resource;
-  char *data;
-  int data_len;
   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r",
-                            &profile_resource, &data, &data_len) == FAILURE ) {
+                            &profile_resource) == FAILURE ) {
     RETURN_NULL();
   }
 

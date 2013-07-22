@@ -15,7 +15,6 @@
 #define PROFILE_RESOURCE_NAME "Profile"
 #define SESSION_RESOURCE_NAME "Session"
 
-
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
 
@@ -29,6 +28,9 @@ PHP_METHOD(MAPIProfileDB, fetchmail);
 PHP_METHOD(MAPIProfile, __construct);
 PHP_METHOD(MAPIProfile, __destruct);
 PHP_METHOD(MAPIProfile, dump);
+
+PHP_METHOD(MAPISession, __construct);
+PHP_METHOD(MAPISession, folders);
 
 
 

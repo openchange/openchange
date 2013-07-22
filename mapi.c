@@ -71,7 +71,7 @@ static void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
   php_printf("end dtor\n");
 }
 
-static int profile_list_destructor;
+int profile_resource_id;
 
 PHP_MINIT_FUNCTION(mapi)
 {
@@ -91,7 +91,7 @@ PHP_MINIT_FUNCTION(mapi)
                  NULL,
                  mapi_context_dtor, 1);
 
-  profile_list_destructor = zend_register_list_destructors_ex(
+  profile_resource_id = zend_register_list_destructors_ex(
                 entry_w_mem_ctx_res_dtor, NULL, PROFILE_RESOURCE_NAME,
                 module_number);
 
@@ -265,8 +265,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   php_printf("profile %p mem_ctx %p name %s\n", profile, mem_ctx, talloc_get_name(mem_ctx));
 
 
-  //  ZEND_REGISTER_RESOURCE(profile_resource, profile_w_mem_ctx, profile_list_destructor);
-  ZEND_REGISTER_RESOURCE(return_value, profile_w_mem_ctx, profile_list_destructor);
+  //  ZEND_REGISTER_RESOURCE(profile_resource, profile_w_mem_ctx, profile_resource_id);
+  ZEND_REGISTER_RESOURCE(return_value, profile_w_mem_ctx, profile_resource_id);
 
 }
 
@@ -530,88 +530,88 @@ PHP_METHOD(MAPIProfileDB, fetchmail)
 }
 
 
-PHP_METHOD(MAPIProfile, __construct)
-{
-  zval* thisObject;
-  zval *profile_resource;
-  char *data;
-  int data_len;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r",
-                            &profile_resource, &data, &data_len) == FAILURE ) {
-    RETURN_NULL();
-  }
+/* PHP_METHOD(MAPIProfile, __construct) */
+/* { */
+/*   zval* thisObject; */
+/*   zval *profile_resource; */
+/*   char *data; */
+/*   int data_len; */
+/*   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r", */
+/*                             &profile_resource, &data, &data_len) == FAILURE ) { */
+/*     RETURN_NULL(); */
+/*   } */
 
-  thisObject = getThis();
-  add_property_zval(thisObject, "profile", profile_resource);
+/*   thisObject = getThis(); */
+/*   add_property_zval(thisObject, "profile", profile_resource); */
 
 
-  /* char* propname; */
-  /* int propname_len; */
-  /* zend_mangle_property_name(&propname, &propname_len, */
-  /*                           "MAPIProfile",sizeof("MAPIProfile")-1, */
-  /*                           "profile", sizeof("profile")-1, 0); */
-  /* add_property_zval_ex(thisObject, propname, propname_len, */
-  /*                      profile_resource); */
-  /* efree(propname); */
+/*   /\* char* propname; *\/ */
+/*   /\* int propname_len; *\/ */
+/*   /\* zend_mangle_property_name(&propname, &propname_len, *\/ */
+/*   /\*                           "MAPIProfile",sizeof("MAPIProfile")-1, *\/ */
+/*   /\*                           "profile", sizeof("profile")-1, 0); *\/ */
+/*   /\* add_property_zval_ex(thisObject, propname, propname_len, *\/ */
+/*   /\*                      profile_resource); *\/ */
+/*   /\* efree(propname); *\/ */
 
-}
+/* } */
 
-PHP_METHOD(MAPIProfile, __destruct)
-{
-  php_printf("MAPIPROFILE destruct\n"
-             );
+/* PHP_METHOD(MAPIProfile, __destruct) */
+/* { */
+/*   php_printf("MAPIPROFILE destruct\n" */
+/*              ); */
 
-}
+/* } */
 
-PHP_METHOD(MAPIProfile, dump)
-{
-  zval** profile_resource;
-  struct entry_w_mem_ctx* profile_w_mem_ctx;
-  struct mapi_profile* profile;
-  /* TALLOC_CTX*          mem_ctx; */
-  /* struct mapi_context* mapi_ctx = get_mapi_context(getThis()); */
-  char* exchange_version = NULL;
+/* PHP_METHOD(MAPIProfile, dump) */
+/* { */
+/*   zval** profile_resource; */
+/*   struct entry_w_mem_ctx* profile_w_mem_ctx; */
+/*   struct mapi_profile* profile; */
+/*   /\* TALLOC_CTX*          mem_ctx; *\/ */
+/*   /\* struct mapi_context* mapi_ctx = get_mapi_context(getThis()); *\/ */
+/*   char* exchange_version = NULL; */
 
-  if (zend_hash_find(Z_OBJPROP_P(getThis()),
-                     "profile", sizeof("profile"), (void**)&profile_resource) == FAILURE) {
-    php_error(E_ERROR, "profile attribute not found");
-  }
+/*   if (zend_hash_find(Z_OBJPROP_P(getThis()), */
+/*                      "profile", sizeof("profile"), (void**)&profile_resource) == FAILURE) { */
+/*     php_error(E_ERROR, "profile attribute not found"); */
+/*   } */
 
-  ZEND_FETCH_RESOURCE(profile_w_mem_ctx, struct entry_w_mem_ctx*, profile_resource, -1, PROFILE_RESOURCE_NAME, profile_list_destructor);
-  profile = (struct mapi_profile*) profile_w_mem_ctx->entry;
+/*   ZEND_FETCH_RESOURCE(profile_w_mem_ctx, struct entry_w_mem_ctx*, profile_resource, -1, PROFILE_RESOURCE_NAME, profile_resource_id); */
+/*   profile = (struct mapi_profile*) profile_w_mem_ctx->entry; */
 
-  //  mapi_ctx = get_mapi_context(getThis());
-  //  mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_dump_profile");
-  //  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
+/*   //  mapi_ctx = get_mapi_context(getThis()); */
+/*   //  mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_dump_profile"); */
+/*   //  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname); */
 
-  switch (profile->exchange_version) {
-  case 0x0:
-    exchange_version = "exchange 2000";
-    break;
-  case 0x1:
-    exchange_version = "exchange 2003/2007";
-    break;
-  case 0x2:
-    exchange_version = "exchange 2010";
-    break;
-  default:
-    //    talloc_free(mem_ctx);
-    php_error(E_ERROR, "Error: unknown Exchange server: %i\n", profile->exchange_version);
-  }
+/*   switch (profile->exchange_version) { */
+/*   case 0x0: */
+/*     exchange_version = "exchange 2000"; */
+/*     break; */
+/*   case 0x1: */
+/*     exchange_version = "exchange 2003/2007"; */
+/*     break; */
+/*   case 0x2: */
+/*     exchange_version = "exchange 2010"; */
+/*     break; */
+/*   default: */
+/*     //    talloc_free(mem_ctx); */
+/*     php_error(E_ERROR, "Error: unknown Exchange server: %i\n", profile->exchange_version); */
+/*   } */
 
-  array_init(return_value);
-  add_assoc_string(return_value, "profile", (char *) profile->profname, 1);
-  add_assoc_string(return_value, "exchange_server", exchange_version, 1);
-  add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1);
-  add_assoc_string(return_value, "username", (char*) profile->username, 1);
-  add_assoc_string(return_value, "password", (char*) profile->password, 1);
-  add_assoc_string(return_value, "mailbox", (char*) profile->mailbox, 1);
-  add_assoc_string(return_value, "workstation", (char*) profile->workstation, 1);
-  add_assoc_string(return_value, "domain", (char*) profile->domain, 1);
-  add_assoc_string(return_value, "server", (char*) profile->server, 1);
+/*   array_init(return_value); */
+/*   add_assoc_string(return_value, "profile", (char *) profile->profname, 1); */
+/*   add_assoc_string(return_value, "exchange_server", exchange_version, 1); */
+/*   add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1); */
+/*   add_assoc_string(return_value, "username", (char*) profile->username, 1); */
+/*   add_assoc_string(return_value, "password", (char*) profile->password, 1); */
+/*   add_assoc_string(return_value, "mailbox", (char*) profile->mailbox, 1); */
+/*   add_assoc_string(return_value, "workstation", (char*) profile->workstation, 1); */
+/*   add_assoc_string(return_value, "domain", (char*) profile->domain, 1); */
+/*   add_assoc_string(return_value, "server", (char*) profile->server, 1); */
 
-  //  talloc_free(mem_ctx);
-}
+/*   //  talloc_free(mem_ctx); */
+/* } */
 
 
 

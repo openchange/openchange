@@ -3,7 +3,7 @@ PHP_ARG_ENABLE(mapi, whether to enable mapi extension,
 
 if test "$PHP_MAPI" = "yes"; then
   AC_DEFINE(HAVE_MAPI, 1, [Whether you have LibMapi ])
-  PHP_NEW_EXTENSION(mapi, mapi.c, $ext_shared)
+  PHP_NEW_EXTENSION(mapi, mapi.c mapi_profile.c, $ext_shared)
 fi
 
 PHP_ARG_WITH(openchange-path, path to openchange source,

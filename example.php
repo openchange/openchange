@@ -5,30 +5,43 @@ $mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
 $allProfiles = $mapi->profiles();
 var_dump($allProfiles);
 
-echo "Dump profile test\n";
-$profile = $mapi->dump_profile('test');
+echo "Profile test\n";
+$profile = $mapi->getProfile('test');
 var_dump($profile);
+$mapiProfile = new MAPIProfile($profile);
+var_dump($mapiProfile);
+$profileDump = $mapiProfile->dump();
+var_dump($profileDump);
 
-echo "Dump default profile\n";
-$profile = $mapi->dump_profile();
+echo "Default profile\n";
+$profile = $mapi->getProfile();
 var_dump($profile);
+$mapiProfile = new MAPIProfile($profile);
+var_dump($mapiProfile);
+$profileDump = $mapiProfile->dump();
+var_dump($profileDump);
 
-# echo "Folders default profile\n";
-# $folders = $mapi->folders();
-# var_dump($folders);
 
-echo "Folders by profile name\n";
-$folders = $mapi->folders('test');
+echo "Folders default profile\n";
+$folders = $mapi->folders();
 var_dump($folders);
 
-echo "Fetchmail\n";
-$mapi->fetchmail();
+# echo "Folders by profile name\n";
+# $folders = $mapi->folders('test');
+# var_dump($folders);
+
+# echo "Fetchmail\n";
+# $mapi->fetchmail();
 
 
-echo "Destroy object\n";
+ echo "Destroy objecs\n";
+ unset($mapiProfile);
+# $mapiProfile->__destruct();
 $mapi->__destruct();
+echo "After destroy\n";
 
-echo "Create and destroy idle MAPI\n";
-$mapi = new MAPIProfileDB("/dfdf");
-$mapi->__destruct();
+
+# echo "Create and destroy idle MAPI\n";
+# $mapi = new MAPIProfileDB("/dfdf");
+# $mapi->__destruct();
 ?>

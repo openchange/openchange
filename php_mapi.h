@@ -12,6 +12,9 @@
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
 
+#define PROFILE_RESOURCE_NAME "Profile"
+#define SESSION_RESOURCE_NAME "Session"
+
 
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
@@ -19,19 +22,25 @@ PHP_MSHUTDOWN_FUNCTION(mapi);
 PHP_METHOD(MAPIProfileDB, __construct);
 PHP_METHOD(MAPIProfileDB, __destruct);
 PHP_METHOD(MAPIProfileDB, profiles);
-PHP_METHOD(MAPIProfileDB, dump_profile);
+PHP_METHOD(MAPIProfileDB, getProfile);
 PHP_METHOD(MAPIProfileDB, folders);
 PHP_METHOD(MAPIProfileDB, fetchmail);
 
-PHP_METHOD(MAPI_SESSION, __construct);
-PHP_METHOD(MAPI_SESSION, __destruct);
-PHP_METHOD(MAPI_SESSION, folders);
-PHP_METHOD(MAPI_SESSION, fetchmail);
+PHP_METHOD(MAPIProfile, __construct);
+PHP_METHOD(MAPIProfile, __destruct);
+PHP_METHOD(MAPIProfile, dump);
+
+
+
+struct entry_w_mem_ctx {
+  void* entry;
+  TALLOC_CTX* mem_ctx;
+};
 
 struct mapi_context* mapi_context_init(char *profdb);
 void mapi_context_dtor(void *mapi_ctx);
 struct mapi_context* get_mapi_context(zval* object);
-static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
+static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
 static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
 static void logon_with_profile(struct mapi_context* mapi_ctx, struct mapi_session** session,  struct mapi_profile* profile);
@@ -40,7 +49,7 @@ static void init_message_store(mapi_object_t *store, struct mapi_session* sessio
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
 
-#define OBJ_CTMEM_CTZ(ZVAL) get_mapi_context(ZVAL)->mem_ctx
+//#define OBJ_CTMEM_CTZ(ZVAL) get_mapi_context(ZVAL)->mem_ctx
 
 #define EXPECTED_MAPI_OBJECTS 32
 

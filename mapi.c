@@ -6,17 +6,26 @@
 #include "php_mapi.h"
 
 zend_class_entry *mapi_profile_db_class;
-
 static zend_function_entry mapi_profile_db_class_functions[] = {
      PHP_ME(MAPIProfileDB, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
      PHP_ME(MAPIProfileDB, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
      PHP_ME(MAPIProfileDB, profiles, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(MAPIProfileDB, dump_profile, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPIProfileDB, getProfile, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPIProfileDB, folders, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPIProfileDB, fetchmail, NULL, ZEND_ACC_PUBLIC)
 
     { NULL, NULL, NULL }
 };
+
+zend_class_entry *mapi_profile_class;
+static zend_function_entry mapi_profile_class_functions[] = {
+  PHP_ME(MAPIProfile, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+  PHP_ME(MAPIProfile, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+  PHP_ME(MAPIProfile, dump, NULL, ZEND_ACC_PUBLIC)
+  { NULL, NULL, NULL }
+};
+
+
 
 static zend_function_entry mapi_functions[] = {
     {NULL, NULL, NULL}
@@ -45,12 +54,34 @@ ZEND_GET_MODULE(mapi)
 
 static HashTable *mapi_context_by_object;
 
+static void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+{
+  struct entry_w_mem_ctx* ptr = (struct entry_w_mem_ctx*) rsrc->ptr;
+  php_printf("profile %p mem_ctx %p \n", ptr->entry, ptr->mem_ctx);
+
+  if (ptr->mem_ctx != NULL) {
+    php_printf("bfore talloc_free\n");
+    talloc_free(ptr->mem_ctx);
+  }
+
+  php_printf("bfore efree\n");
+
+
+  efree(ptr);
+  php_printf("end dtor\n");
+}
+
+static int profile_list_destructor;
 
 PHP_MINIT_FUNCTION(mapi)
 {
-  // register class
+  // register classes
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPIProfileDB", mapi_profile_db_class_functions);
+  mapi_profile_db_class =
+    zend_register_internal_class(&ce TSRMLS_CC);
+
+  INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
   mapi_profile_db_class =
     zend_register_internal_class(&ce TSRMLS_CC);
 
@@ -59,6 +90,11 @@ PHP_MINIT_FUNCTION(mapi)
   zend_hash_init(mapi_context_by_object, EXPECTED_MAPI_OBJECTS,
                  NULL,
                  mapi_context_dtor, 1);
+
+  profile_list_destructor = zend_register_list_destructors_ex(
+                entry_w_mem_ctx_res_dtor, NULL, PROFILE_RESOURCE_NAME,
+                module_number);
+
   return SUCCESS;
 }
 
@@ -83,6 +119,8 @@ struct mapi_context* mapi_context_init(char *profdb)
 void mapi_context_dtor(void *ptr)
 {
   struct mapi_context** ctx =  ptr;
+  php_printf("MAPI ctx dtor\n");
+
   MAPIUninitialize(*ctx);
 }
 
@@ -173,7 +211,7 @@ PHP_METHOD(MAPIProfileDB, profiles)
   }
 }
 
-static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname)
+static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname)
 {
     enum MAPISTATUS      retval;
     char*                profname;
@@ -203,50 +241,33 @@ static struct mapi_profile* get_profile(TALLOC_CTX* mem_ctx,  struct mapi_contex
     return profile;
 }
 
-PHP_METHOD(MAPIProfileDB, dump_profile)
+PHP_METHOD(MAPIProfileDB, getProfile)
 {
-    struct mapi_profile* profile;
-    TALLOC_CTX*          mem_ctx;
-    struct mapi_context* mapi_ctx = get_mapi_context(getThis());
-    char*                exchange_version = NULL;
+  zval *profile_resource;
+  struct mapi_profile* profile;
+  TALLOC_CTX*          mem_ctx;
+  struct mapi_context* mapi_ctx = get_mapi_context(getThis());
 
-    char* opt_profname = NULL;
-    int   opt_profname_len;
-    if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
-        RETURN_NULL();
-    }
+  char* opt_profname = NULL;
+  int   opt_profname_len;
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", &opt_profname, &opt_profname_len) == FAILURE) {
+    RETURN_NULL();
+  }
 
-    mapi_ctx = get_mapi_context(getThis());
-    mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_dump_profile");
-    profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
+  mapi_ctx = get_mapi_context(getThis());
+  mem_ctx = talloc_named(NULL, 0, "getProfile");
+  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
-    switch (profile->exchange_version) {
-    case 0x0:
-      exchange_version = "exchange 2000";
-      break;
-    case 0x1:
-      exchange_version = "exchange 2003/2007";
-      break;
-    case 0x2:
-      exchange_version = "exchange 2010";
-      break;
-    default:
-      talloc_free(mem_ctx);
-      php_error(E_ERROR, "Error: unknown Exchange server: %i\n", profile->exchange_version);
-    }
+  struct entry_w_mem_ctx* profile_w_mem_ctx;
+  profile_w_mem_ctx = emalloc(sizeof(struct entry_w_mem_ctx));
+  profile_w_mem_ctx->entry = profile;
+  profile_w_mem_ctx->mem_ctx = mem_ctx;
+  php_printf("profile %p mem_ctx %p name %s\n", profile, mem_ctx, talloc_get_name(mem_ctx));
 
-    array_init(return_value);
-    add_assoc_string(return_value, "profile", (char *) profile->profname, 1);
-    add_assoc_string(return_value, "exchange_server", exchange_version, 1);
-    add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1);
-    add_assoc_string(return_value, "username", (char*) profile->username, 1);
-    add_assoc_string(return_value, "password", (char*) profile->password, 1);
-    add_assoc_string(return_value, "mailbox", (char*) profile->mailbox, 1);
-    add_assoc_string(return_value, "workstation", (char*) profile->workstation, 1);
-    add_assoc_string(return_value, "domain", (char*) profile->domain, 1);
-    add_assoc_string(return_value, "server", (char*) profile->server, 1);
 
-    talloc_free(mem_ctx);
+  //  ZEND_REGISTER_RESOURCE(profile_resource, profile_w_mem_ctx, profile_list_destructor);
+  ZEND_REGISTER_RESOURCE(return_value, profile_w_mem_ctx, profile_list_destructor);
+
 }
 
 static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
@@ -303,7 +324,7 @@ PHP_METHOD(MAPIProfileDB, folders)
   mapi_ctx = get_mapi_context(thisObject);
   mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_folders"); // we hang mem_ctx from MAPI bz is free in object destruction
   //  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
-  profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
+  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
   logon_with_profile(mapi_ctx, &session, profile);
 
@@ -337,7 +358,7 @@ PHP_METHOD(MAPIProfileDB, folders)
   }
 
   array_init(return_value);
-  add_assoc_string(return_value, "name", mailbox_name, 1);
+  add_assoc_string(return_value, "name", (char*) mailbox_name, 1);
   add_assoc_zval(return_value, "childs", get_child_folders(mem_ctx, &obj_store, id_mailbox, 0));
 
   talloc_free(mem_ctx);
@@ -418,10 +439,10 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
 
       const char* container = get_container_class(mem_ctx, parent, *fid);
 
-      add_assoc_string(current_folder, "name", name, 1);
+      add_assoc_string(current_folder, "name",(char*)  name, 1);
       add_assoc_long(current_folder, "fid", (long)(*fid)); // this must be cast to unsigned long in reading
-      add_assoc_string(current_folder, "comment", comment, 1);
-      add_assoc_string(current_folder, "container", container, 1);
+      add_assoc_string(current_folder, "comment", (char*) comment, 1);
+      add_assoc_string(current_folder, "container", (char*) container, 1);
 
       add_assoc_long(current_folder, "total", n_total);
       add_assoc_long(current_folder, "uread", n_unread);
@@ -467,11 +488,11 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 }
 
 
-static enum MAPISTATUS openchangeclient_fetchmail(
-                                                  TALLOC_CTX *mem_ctx,
-                                                  mapi_object_t* obj_store,
-						  bool public_folder,
-                                                  const char* folder);
+/* static enum MAPISTATUS openchangeclient_fetchmail( */
+/*                                                   TALLOC_CTX *mem_ctx, */
+/*                                                   mapi_object_t* obj_store, */
+/* 						  bool public_folder, */
+/*                                                   const char* folder); */
 
 PHP_METHOD(MAPIProfileDB, fetchmail)
 {
@@ -494,7 +515,7 @@ PHP_METHOD(MAPIProfileDB, fetchmail)
   thisObject = getThis();
   mapi_ctx = get_mapi_context(thisObject);
   mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_fetchmail"); // we hang mem_ctx from MAPI bz is free in object destruction
-  profile = get_profile(mem_ctx, mapi_ctx, opt_profname);
+  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
   logon_with_profile(mapi_ctx, &session, profile);
 
@@ -508,235 +529,321 @@ PHP_METHOD(MAPIProfileDB, fetchmail)
 
 }
 
-static const char *get_filename(const char *filename)
+
+PHP_METHOD(MAPIProfile, __construct)
 {
-	const char *substr;
+  zval* thisObject;
+  zval *profile_resource;
+  char *data;
+  int data_len;
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r",
+                            &profile_resource, &data, &data_len) == FAILURE ) {
+    RETURN_NULL();
+  }
 
-	if (!filename) return NULL;
+  thisObject = getThis();
+  add_property_zval(thisObject, "profile", profile_resource);
 
-	substr = rindex(filename, '/');
-	if (substr) return substr + 1;
 
-	return filename;
+  /* char* propname; */
+  /* int propname_len; */
+  /* zend_mangle_property_name(&propname, &propname_len, */
+  /*                           "MAPIProfile",sizeof("MAPIProfile")-1, */
+  /*                           "profile", sizeof("profile")-1, 0); */
+  /* add_property_zval_ex(thisObject, propname, propname_len, */
+  /*                      profile_resource); */
+  /* efree(propname); */
+
+}
+
+PHP_METHOD(MAPIProfile, __destruct)
+{
+  php_printf("MAPIPROFILE destruct\n"
+             );
+
+}
+
+PHP_METHOD(MAPIProfile, dump)
+{
+  zval** profile_resource;
+  struct entry_w_mem_ctx* profile_w_mem_ctx;
+  struct mapi_profile* profile;
+  /* TALLOC_CTX*          mem_ctx; */
+  /* struct mapi_context* mapi_ctx = get_mapi_context(getThis()); */
+  char* exchange_version = NULL;
+
+  if (zend_hash_find(Z_OBJPROP_P(getThis()),
+                     "profile", sizeof("profile"), (void**)&profile_resource) == FAILURE) {
+    php_error(E_ERROR, "profile attribute not found");
+  }
+
+  ZEND_FETCH_RESOURCE(profile_w_mem_ctx, struct entry_w_mem_ctx*, profile_resource, -1, PROFILE_RESOURCE_NAME, profile_list_destructor);
+  profile = (struct mapi_profile*) profile_w_mem_ctx->entry;
+
+  //  mapi_ctx = get_mapi_context(getThis());
+  //  mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapi_dump_profile");
+  //  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
+
+  switch (profile->exchange_version) {
+  case 0x0:
+    exchange_version = "exchange 2000";
+    break;
+  case 0x1:
+    exchange_version = "exchange 2003/2007";
+    break;
+  case 0x2:
+    exchange_version = "exchange 2010";
+    break;
+  default:
+    //    talloc_free(mem_ctx);
+    php_error(E_ERROR, "Error: unknown Exchange server: %i\n", profile->exchange_version);
+  }
+
+  array_init(return_value);
+  add_assoc_string(return_value, "profile", (char *) profile->profname, 1);
+  add_assoc_string(return_value, "exchange_server", exchange_version, 1);
+  add_assoc_string(return_value, "encription", (profile->seal == true) ? "yes" : "no", 1);
+  add_assoc_string(return_value, "username", (char*) profile->username, 1);
+  add_assoc_string(return_value, "password", (char*) profile->password, 1);
+  add_assoc_string(return_value, "mailbox", (char*) profile->mailbox, 1);
+  add_assoc_string(return_value, "workstation", (char*) profile->workstation, 1);
+  add_assoc_string(return_value, "domain", (char*) profile->domain, 1);
+  add_assoc_string(return_value, "server", (char*) profile->server, 1);
+
+  //  talloc_free(mem_ctx);
 }
 
 
-static enum MAPISTATUS openchangeclient_fetchmail(
-                                                  TALLOC_CTX *mem_ctx,
-                                                  mapi_object_t* obj_store,
-						  bool public_folder,
-                                                  const char* folder)
-{
+
+/* static const char *get_filename(const char *filename) */
+/* { */
+/* 	const char *substr; */
+
+/* 	if (!filename) return NULL; */
+
+/* 	substr = rindex(filename, '/'); */
+/* 	if (substr) return substr + 1; */
+
+/* 	return filename; */
+/* } */
 
 
-struct oclient {
-	struct mapi_context	*mapi_ctx;
-	struct oc_property	*props;
-	const char     		*update;
-	const char		*delete;
-	const char		*subject;
-	const char		*pr_body;
-	const char		*pr_html_inline;
-	char			**usernames;
-	char			**mapi_to;
-	char			**mapi_cc;
-	char			**mapi_bcc;
-	struct Binary_r		pr_html;
-	struct attach		*attach;
-	uint32_t		attach_num;
-	const char		*store_folder;
-	const char		*location;
-	const char		*dtstart;
-	const char		*dtend;
-	int			busystatus;
-	int			taskstatus;
-	int			label;
-	bool			private;
-	int			importance;
-	int			color;
-	int			width;
-	int			height;
-	const char		*email;
-	const char		*full_name;
-	const char		*card_name;
-	const char		*folder_name;
-	const char		*folder_comment;
-	const char		*freebusy;
-	bool			force;
-	bool			summary;
-	/* PF related options */
-	bool			pf;
-	const char		*folder;
-	/* OCPF related options */
-	struct ocpf_file	*ocpf_files;
-	const char		*ocpf_dump;
-};
-
- struct oclient *oclient;
+/* static enum MAPISTATUS openchangeclient_fetchmail( */
+/*                                                   TALLOC_CTX *mem_ctx, */
+/*                                                   mapi_object_t* obj_store, */
+/* 						  bool public_folder, */
+/*                                                   const char* folder) */
+/* { */
 
 
-	enum MAPISTATUS			retval;
-	bool				status;
-        //	TALLOC_CTX			*mem_ctx;
-	mapi_object_t			obj_tis;
-	mapi_object_t			obj_inbox;
-	mapi_object_t			obj_message;
-	mapi_object_t			obj_table;
-	mapi_object_t			obj_tb_attach;
-	mapi_object_t			obj_attach;
-	uint64_t			id_inbox;
-	struct SPropTagArray		*SPropTagArray;
-	struct SRowSet			rowset;
-	struct SRowSet			rowset_attach;
-	uint32_t			i, j;
-	uint32_t			count;
-	const uint8_t			*has_attach;
-	const uint32_t			*attach_num;
-	const char			*attach_filename;
-	const uint32_t			*attach_size;
+/* struct oclient { */
+/* 	struct mapi_context	*mapi_ctx; */
+/* 	struct oc_property	*props; */
+/* 	const char     		*update; */
+/* 	const char		*delete; */
+/* 	const char		*subject; */
+/* 	const char		*pr_body; */
+/* 	const char		*pr_html_inline; */
+/* 	char			**usernames; */
+/* 	char			**mapi_to; */
+/* 	char			**mapi_cc; */
+/* 	char			**mapi_bcc; */
+/* 	struct Binary_r		pr_html; */
+/* 	struct attach		*attach; */
+/* 	uint32_t		attach_num; */
+/* 	const char		*store_folder; */
+/* 	const char		*location; */
+/* 	const char		*dtstart; */
+/* 	const char		*dtend; */
+/* 	int			busystatus; */
+/* 	int			taskstatus; */
+/* 	int			label; */
+/* 	bool			private; */
+/* 	int			importance; */
+/* 	int			color; */
+/* 	int			width; */
+/* 	int			height; */
+/* 	const char		*email; */
+/* 	const char		*full_name; */
+/* 	const char		*card_name; */
+/* 	const char		*folder_name; */
+/* 	const char		*folder_comment; */
+/* 	const char		*freebusy; */
+/* 	bool			force; */
+/* 	bool			summary; */
+/* 	/\* PF related options *\/ */
+/* 	bool			pf; */
+/* 	const char		*folder; */
+/* 	/\* OCPF related options *\/ */
+/* 	struct ocpf_file	*ocpf_files; */
+/* 	const char		*ocpf_dump; */
+/* }; */
 
-        //	mem_ctx = talloc_named(NULL, 0, "openchangeclient_fetchmail");
+/*  struct oclient *oclient; */
 
-	mapi_object_init(&obj_tis);
-	mapi_object_init(&obj_inbox);
-	mapi_object_init(&obj_table);
 
-	if (public_folder == true) {
+/* 	enum MAPISTATUS			retval; */
+/* 	bool				status; */
+/*         //	TALLOC_CTX			*mem_ctx; */
+/* 	mapi_object_t			obj_tis; */
+/* 	mapi_object_t			obj_inbox; */
+/* 	mapi_object_t			obj_message; */
+/* 	mapi_object_t			obj_table; */
+/* 	mapi_object_t			obj_tb_attach; */
+/* 	mapi_object_t			obj_attach; */
+/* 	uint64_t			id_inbox; */
+/* 	struct SPropTagArray		*SPropTagArray; */
+/* 	struct SRowSet			rowset; */
+/* 	struct SRowSet			rowset_attach; */
+/* 	uint32_t			i, j; */
+/* 	uint32_t			count; */
+/* 	const uint8_t			*has_attach; */
+/* 	const uint32_t			*attach_num; */
+/* 	const char			*attach_filename; */
+/* 	const uint32_t			*attach_size; */
 
-          		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder);
-		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
-	} else {
-		if (folder == NULL) {
-			retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore);
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+/*         //	mem_ctx = talloc_named(NULL, 0, "openchangeclient_fetchmail"); */
 
-			retval = OpenFolder(obj_store, id_inbox, &obj_tis);
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+/* 	mapi_object_init(&obj_tis); */
+/* 	mapi_object_init(&obj_inbox); */
+/* 	mapi_object_init(&obj_table); */
 
-                        			retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_inbox, oclient->folder);
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
-		} else {
-			retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
+/* 	if (public_folder == true) { */
 
-			retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-			MAPI_RETVAL_IF(retval, retval, mem_ctx);
-		}
-	}
+/*           		retval = openchangeclient_getpfdir(mem_ctx, obj_store, &obj_inbox, oclient->folder); */
+/* 		MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx); */
+/* 	} else { */
+/* 		if (folder == NULL) { */
+/* 			retval = GetDefaultFolder(obj_store, &id_inbox, olFolderTopInformationStore); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+/* 			retval = OpenFolder(obj_store, id_inbox, &obj_tis); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-	printf("MAILBOX (%u messages)\n", count);
-	if (!count) goto end;
+/*                         			retval = openchangeclient_getdir(mem_ctx, &obj_tis, &obj_inbox, oclient->folder); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+/* 		} else { */
+/* 			retval = GetReceiveFolder(obj_store, &id_inbox, NULL); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
-					  PR_FID,
-					  PR_MID,
-					  PR_INST_ID,
-					  PR_INSTANCE_NUM,
-					  PR_SUBJECT_UNICODE);
-	retval = SetColumns(&obj_table, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	MAPI_RETVAL_IF(retval, retval, mem_ctx);
+/* 			retval = OpenFolder(obj_store, id_inbox, &obj_inbox); */
+/* 			MAPI_RETVAL_IF(retval, retval, mem_ctx); */
+/* 		} */
+/* 	} */
 
-	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
-		count -= rowset.cRows;
-		for (i = 0; i < rowset.cRows; i++) {
-			mapi_object_init(&obj_message);
-			retval = OpenMessage(obj_store,
-					     rowset.aRow[i].lpProps[0].value.d,
-					     rowset.aRow[i].lpProps[1].value.d,
-					     &obj_message, 0);
-			if (GetLastError() == MAPI_E_SUCCESS) {
-				if (oclient->summary) {
-					mapidump_message_summary(&obj_message);
-				} else {
-					struct SPropValue	*lpProps;
-					struct SRow		aRow;
+/* 	retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count); */
+/* 	MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH);
-					lpProps = NULL;
-					retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
-					MAPIFreeBuffer(SPropTagArray);
-					if (retval != MAPI_E_SUCCESS) return retval;
+/* 	printf("MAILBOX (%u messages)\n", count); */
+/* 	if (!count) goto end; */
 
-					aRow.ulAdrEntryPad = 0;
-					aRow.cValues = count;
-					aRow.lpProps = lpProps;
+/* 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x5, */
+/* 					  PR_FID, */
+/* 					  PR_MID, */
+/* 					  PR_INST_ID, */
+/* 					  PR_INSTANCE_NUM, */
+/* 					  PR_SUBJECT_UNICODE); */
+/* 	retval = SetColumns(&obj_table, SPropTagArray); */
+/* 	MAPIFreeBuffer(SPropTagArray); */
+/* 	MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-					retval = octool_message(mem_ctx, &obj_message);
+/* 	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) { */
+/* 		count -= rowset.cRows; */
+/* 		for (i = 0; i < rowset.cRows; i++) { */
+/* 			mapi_object_init(&obj_message); */
+/* 			retval = OpenMessage(obj_store, */
+/* 					     rowset.aRow[i].lpProps[0].value.d, */
+/* 					     rowset.aRow[i].lpProps[1].value.d, */
+/* 					     &obj_message, 0); */
+/* 			if (GetLastError() == MAPI_E_SUCCESS) { */
+/* 				if (oclient->summary) { */
+/* 					mapidump_message_summary(&obj_message); */
+/* 				} else { */
+/* 					struct SPropValue	*lpProps; */
+/* 					struct SRow		aRow; */
 
-					has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
+/* 					SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_HASATTACH); */
+/* 					lpProps = NULL; */
+/* 					retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count); */
+/* 					MAPIFreeBuffer(SPropTagArray); */
+/* 					if (retval != MAPI_E_SUCCESS) return retval; */
 
-					/* If we have attachments, retrieve them */
-					if (has_attach && *has_attach) {
-						mapi_object_init(&obj_tb_attach);
-						retval = GetAttachmentTable(&obj_message, &obj_tb_attach);
-						if (retval == MAPI_E_SUCCESS) {
-							SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
-							retval = SetColumns(&obj_tb_attach, SPropTagArray);
-							if (retval != MAPI_E_SUCCESS) return retval;
-							MAPIFreeBuffer(SPropTagArray);
+/* 					aRow.ulAdrEntryPad = 0; */
+/* 					aRow.cValues = count; */
+/* 					aRow.lpProps = lpProps; */
 
-							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
-							if (retval != MAPI_E_SUCCESS) return retval;
+/* 					retval = octool_message(mem_ctx, &obj_message); */
 
-							for (j = 0; j < rowset_attach.cRows; j++) {
-								attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM);
-								retval = OpenAttach(&obj_message, *attach_num, &obj_attach);
-								if (retval == MAPI_E_SUCCESS) {
-									struct SPropValue	*lpProps2;
-									uint32_t		count2;
+/* 					has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH); */
 
-									SPropTagArray = set_SPropTagArray(mem_ctx, 0x4,
-													  PR_ATTACH_FILENAME,
-													  PR_ATTACH_LONG_FILENAME,
-													  PR_ATTACH_SIZE,
-													  PR_ATTACH_CONTENT_ID);
-									lpProps2 = NULL;
-									retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2);
-									MAPIFreeBuffer(SPropTagArray);
-									if (retval != MAPI_E_SUCCESS) return retval;
+/* 					/\* If we have attachments, retrieve them *\/ */
+/* 					if (has_attach && *has_attach) { */
+/* 						mapi_object_init(&obj_tb_attach); */
+/* 						retval = GetAttachmentTable(&obj_message, &obj_tb_attach); */
+/* 						if (retval == MAPI_E_SUCCESS) { */
+/* 							SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM); */
+/* 							retval = SetColumns(&obj_tb_attach, SPropTagArray); */
+/* 							if (retval != MAPI_E_SUCCESS) return retval; */
+/* 							MAPIFreeBuffer(SPropTagArray); */
 
-									aRow.ulAdrEntryPad = 0;
-									aRow.cValues = count2;
-									aRow.lpProps = lpProps2;
+/* 							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach); */
+/* 							if (retval != MAPI_E_SUCCESS) return retval; */
 
-									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME));
-									if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) {
-										attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME));
-									}
-									attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE);
-									printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0);
-									fflush(0);
-									if (oclient->store_folder) {
-										status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
-										if (status == false) {
-											printf("A Problem was encountered while storing attachments on the filesystem\n");
-											talloc_free(mem_ctx);
-											return MAPI_E_UNABLE_TO_COMPLETE;
-										}
-									}
-									MAPIFreeBuffer(lpProps2);
-								}
-							}
-							errno = 0;
-						}
-						MAPIFreeBuffer(lpProps);
-					}
-				}
-			}
-			mapi_object_release(&obj_message);
-		}
-	}
- end:
-	mapi_object_release(&obj_table);
-	mapi_object_release(&obj_inbox);
-	mapi_object_release(&obj_tis);
+/* 							for (j = 0; j < rowset_attach.cRows; j++) { */
+/* 								attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[j]), PR_ATTACH_NUM); */
+/* 								retval = OpenAttach(&obj_message, *attach_num, &obj_attach); */
+/* 								if (retval == MAPI_E_SUCCESS) { */
+/* 									struct SPropValue	*lpProps2; */
+/* 									uint32_t		count2; */
 
-	talloc_free(mem_ctx);
+/* 									SPropTagArray = set_SPropTagArray(mem_ctx, 0x4, */
+/* 													  PR_ATTACH_FILENAME, */
+/* 													  PR_ATTACH_LONG_FILENAME, */
+/* 													  PR_ATTACH_SIZE, */
+/* 													  PR_ATTACH_CONTENT_ID); */
+/* 									lpProps2 = NULL; */
+/* 									retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2); */
+/* 									MAPIFreeBuffer(SPropTagArray); */
+/* 									if (retval != MAPI_E_SUCCESS) return retval; */
 
-	errno = 0;
-	return MAPI_E_SUCCESS;
-}
+/* 									aRow.ulAdrEntryPad = 0; */
+/* 									aRow.cValues = count2; */
+/* 									aRow.lpProps = lpProps2; */
+
+/* 									attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_LONG_FILENAME)); */
+/* 									if (!attach_filename || (attach_filename && !strcmp(attach_filename, ""))) { */
+/* 										attach_filename = get_filename(octool_get_propval(&aRow, PR_ATTACH_FILENAME)); */
+/* 									} */
+/* 									attach_size = (const uint32_t *) octool_get_propval(&aRow, PR_ATTACH_SIZE); */
+/* 									printf("[%u] %s (%u Bytes)\n", j, attach_filename, attach_size ? *attach_size : 0); */
+/* 									fflush(0); */
+/* 									if (oclient->store_folder) { */
+/* 										status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient); */
+/* 										if (status == false) { */
+/* 											printf("A Problem was encountered while storing attachments on the filesystem\n"); */
+/* 											talloc_free(mem_ctx); */
+/* 											return MAPI_E_UNABLE_TO_COMPLETE; */
+/* 										} */
+/* 									} */
+/* 									MAPIFreeBuffer(lpProps2); */
+/* 								} */
+/* 							} */
+/* 							errno = 0; */
+/* 						} */
+/* 						MAPIFreeBuffer(lpProps); */
+/* 					} */
+/* 				} */
+/* 			} */
+/* 			mapi_object_release(&obj_message); */
+/* 		} */
+/* 	} */
+/*  end: */
+/* 	mapi_object_release(&obj_table); */
+/* 	mapi_object_release(&obj_inbox); */
+/* 	mapi_object_release(&obj_tis); */
+
+/* 	talloc_free(mem_ctx); */
+
+/* 	errno = 0; */
+/* 	return MAPI_E_SUCCESS; */
+/* } */

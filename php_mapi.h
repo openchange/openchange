@@ -28,8 +28,6 @@ PHP_METHOD(MAPIProfile, __construct);
 PHP_METHOD(MAPIProfile, __destruct);
 PHP_METHOD(MAPIProfile, dump);
 
-PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, folders);
 
 
 

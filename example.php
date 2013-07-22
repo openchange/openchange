@@ -6,17 +6,13 @@ $allProfiles = $mapi->profiles();
 var_dump($allProfiles);
 
 echo "Profile test\n";
-$profile = $mapi->getProfile('test');
-var_dump($profile);
-$mapiProfile = new MAPIProfile($profile);
+$mapiProfile = $mapi->getProfile('test');
 var_dump($mapiProfile);
 $profileDump = $mapiProfile->dump();
 var_dump($profileDump);
 
 echo "Default profile\n";
-$profile = $mapi->getProfile();
-var_dump($profile);
-$mapiProfile = new MAPIProfile($profile);
+$mapiProfile = $mapi->getProfile();
 var_dump($mapiProfile);
 $profileDump = $mapiProfile->dump();
 var_dump($profileDump);

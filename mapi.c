@@ -24,7 +24,13 @@ static zend_function_entry mapi_profile_class_functions[] = {
   { NULL, NULL, NULL }
 };
 
-
+/* zend_class_entry *mapi_session_class; */
+/* static zend_function_entry mapi_session_class_functions[] = { */
+/*   PHP_ME(MAPISession, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR) */
+/*   PHP_ME(MAPISession, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR) */
+/*   PHP_ME(MAPISession, folders, NULL, ZEND_ACC_PUBLIC) */
+/*   { NULL, NULL, NULL } */
+/* }; */
 
 static zend_function_entry mapi_functions[] = {
     {NULL, NULL, NULL}
@@ -83,6 +89,11 @@ PHP_MINIT_FUNCTION(mapi)
   INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
   mapi_profile_db_class =
     zend_register_internal_class(&ce TSRMLS_CC);
+
+  /* INIT_CLASS_ENTRY(ce, "MAPISession", mapi_session_class_functions); */
+  /* mapi_session_db_class = */
+  /*   zend_register_internal_class(&ce TSRMLS_CC); */
+
 
   // initialize mpai contexts hash
   ALLOC_HASHTABLE(mapi_context_by_object);

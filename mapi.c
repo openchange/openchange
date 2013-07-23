@@ -38,18 +38,11 @@ HashTable *mapi_context_by_object; // no static sine profile_Db needs access
 static void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
   struct entry_w_mem_ctx* ptr = (struct entry_w_mem_ctx*) rsrc->ptr;
-  php_printf("profile %p mem_ctx %p \n", ptr->entry, ptr->mem_ctx);
-
   if (ptr->mem_ctx != NULL) {
-    php_printf("bfore talloc_free\n");
     talloc_free(ptr->mem_ctx);
   }
 
-  php_printf("bfore efree\n");
-
-
   efree(ptr);
-  php_printf("end dtor\n");
 }
 
 int profile_resource_id;

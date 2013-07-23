@@ -35,7 +35,7 @@ ZEND_GET_MODULE(mapi)
 
 HashTable *mapi_context_by_object; // no static sine profile_Db needs access
 
-static void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
   struct entry_w_mem_ctx* ptr = (struct entry_w_mem_ctx*) rsrc->ptr;
   if (ptr->mem_ctx != NULL) {
@@ -45,7 +45,12 @@ static void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
   efree(ptr);
 }
 
+void do_nothing_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+{
+}
+
 int profile_resource_id;
+int session_resource_id;
 
 PHP_MINIT_FUNCTION(mapi)
 {
@@ -62,6 +67,9 @@ PHP_MINIT_FUNCTION(mapi)
 
   profile_resource_id = zend_register_list_destructors_ex(
                 entry_w_mem_ctx_res_dtor, NULL, PROFILE_RESOURCE_NAME,
+                module_number);
+  session_resource_id = zend_register_list_destructors_ex(
+                do_nothing_dtor, NULL, SESSION_RESOURCE_NAME,
                 module_number);
 
   return SUCCESS;

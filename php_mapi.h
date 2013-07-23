@@ -26,17 +26,11 @@ struct entry_w_mem_ctx {
 
 struct mapi_context* mapi_context_init(char *profdb);
 void mapi_context_dtor(void *mapi_ctx);
-struct mapi_context* get_mapi_context(zval* object);
 static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
-static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count);
-static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id);
-static void logon_with_profile(struct mapi_context* mapi_ctx, struct mapi_session** session,  struct mapi_profile* profile);
-static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username);
+void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
-
-//#define OBJ_CTMEM_CTZ(ZVAL) get_mapi_context(ZVAL)->mem_ctx
 
 #define EXPECTED_MAPI_OBJECTS 32
 

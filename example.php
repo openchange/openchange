@@ -16,9 +16,13 @@ var_dump($mapiProfile);
 $profileDump = $mapiProfile->dump();
 var_dump($profileDump);
 
+echo "Logon default profile\n";
+$session = $mapiProfile->logon();
+var_dump($session);
 
 echo "Folders default profile\n";
-$folders = $mapi->folders();
+#$folders = $mapi->folders();
+$folders = $session->folders();
 var_dump($folders);
 
 # echo "Folders by profile name\n";

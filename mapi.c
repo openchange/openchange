@@ -4,27 +4,9 @@
 
 #include "php.h"
 #include "php_mapi.h"
+#include "mapi_profile_db.h"
+#include "mapi_profile.h"
 #include "mapi_session.h"
-
-zend_class_entry *mapi_profile_db_class;
-static zend_function_entry mapi_profile_db_class_functions[] = {
-     PHP_ME(MAPIProfileDB, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-     PHP_ME(MAPIProfileDB, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-     PHP_ME(MAPIProfileDB, profiles, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(MAPIProfileDB, getProfile, NULL, ZEND_ACC_PUBLIC)
-     PHP_ME(MAPIProfileDB, folders, NULL, ZEND_ACC_PUBLIC)
-
-    { NULL, NULL, NULL }
-};
-
-zend_class_entry *mapi_profile_class;
-static zend_function_entry mapi_profile_class_functions[] = {
-  PHP_ME(MAPIProfile, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-  PHP_ME(MAPIProfile, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-  PHP_ME(MAPIProfile, dump, NULL, ZEND_ACC_PUBLIC)
-  { NULL, NULL, NULL }
-};
-
 
 static zend_function_entry mapi_functions[] = {
     {NULL, NULL, NULL}
@@ -75,15 +57,8 @@ int profile_resource_id;
 PHP_MINIT_FUNCTION(mapi)
 {
   // register classes
-  zend_class_entry ce;
-  INIT_CLASS_ENTRY(ce, "MAPIProfileDB", mapi_profile_db_class_functions);
-  mapi_profile_db_class =
-    zend_register_internal_class(&ce TSRMLS_CC);
-
-  INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
-  mapi_profile_db_class =
-    zend_register_internal_class(&ce TSRMLS_CC);
-
+  MAPIProfileDBRegisterClass();
+  MAPIProfileRegisterClass();
   MAPISessionRegisterClass();
 
   // initialize mpai contexts hash

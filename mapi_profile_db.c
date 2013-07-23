@@ -4,9 +4,28 @@
 
 #include "php.h"
 #include "php_mapi.h"
+#include "mapi_profile_db.h";
 
 extern int profile_resource_id;
 extern HashTable *mapi_context_by_object;
+
+static zend_function_entry mapi_profile_db_class_functions[] = {
+     PHP_ME(MAPIProfileDB, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+     PHP_ME(MAPIProfileDB, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+     PHP_ME(MAPIProfileDB, profiles, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPIProfileDB, getProfile, NULL, ZEND_ACC_PUBLIC)
+     PHP_ME(MAPIProfileDB, folders, NULL, ZEND_ACC_PUBLIC)
+
+    { NULL, NULL, NULL }
+};
+
+void MAPIProfileDBRegisterClass()
+{
+  zend_class_entry ce;
+  INIT_CLASS_ENTRY(ce, "MAPIProfileDB", mapi_profile_db_class_functions);
+  zend_register_internal_class(&ce TSRMLS_CC);
+}
+
 
 static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname)
 {
@@ -133,7 +152,10 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   zval *profile_resource;
   struct mapi_profile* profile;
   TALLOC_CTX*          mem_ctx;
-  struct mapi_context* mapi_ctx = get_mapi_context(getThis());
+  struct mapi_context* mapi_ctx;
+
+  zval* thisObject    = getThis();
+  mapi_ctx = get_mapi_context(thisObject);
 
   char* opt_profname = NULL;
   int   opt_profname_len;
@@ -163,11 +185,12 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   object_init_ex(return_value, *ce);
 
   // call contructor with the profile rwsource
-  zval* args[1];
+  zval* args[2];
   zval retval, str, funcname;
-  args[0]  = profile_resource;
+  args[0]  = thisObject;
+  args[1]  = profile_resource;
   ZVAL_STRING(&funcname, "__construct", 0);
-  call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 1, args TSRMLS_CC);
+  call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 2, args TSRMLS_CC);
 }
 
 static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)

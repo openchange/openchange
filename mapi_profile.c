@@ -4,20 +4,42 @@
 
 #include "php.h"
 #include "php_mapi.h"
+#include "mapi_profile.h"
 
 extern int profile_resource_id;
+
+static zend_function_entry mapi_profile_class_functions[] = {
+  PHP_ME(MAPIProfile, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+  PHP_ME(MAPIProfile, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+  PHP_ME(MAPIProfile, dump, NULL, ZEND_ACC_PUBLIC)
+  { NULL, NULL, NULL }
+};
+
+
+void MAPIProfileRegisterClass()
+{
+  zend_class_entry ce;
+  INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
+  zend_register_internal_class(&ce TSRMLS_CC);
+}
+
 
 PHP_METHOD(MAPIProfile, __construct)
 {
   zval* thisObject;
-  zval *profile_resource;
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "r",
-                            &profile_resource) == FAILURE ) {
+  zval* profile_resource;
+  zval* db_object;
+
+  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "or", &db_object, &profile_resource) == FAILURE ) {
     RETURN_NULL();
+  }
+  if (strncmp(Z_OBJCE_P(db_object)->name, "MAPIProfileDB", sizeof("MAPIProfileDB")+1) != 0) {
+    php_error('E_ERROR', "The object must be of the class MAPIProfileDB instead of %s", Z_OBJCE_P(db_object)->name);
   }
 
   thisObject = getThis();
   add_property_zval(thisObject, "profile", profile_resource);
+  add_property_zval(thisObject, "profiles_db", db_object);
 
 
   /* char* propname; */

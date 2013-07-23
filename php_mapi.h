@@ -18,18 +18,6 @@
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
 
-PHP_METHOD(MAPIProfileDB, __construct);
-PHP_METHOD(MAPIProfileDB, __destruct);
-PHP_METHOD(MAPIProfileDB, profiles);
-PHP_METHOD(MAPIProfileDB, getProfile);
-PHP_METHOD(MAPIProfileDB, folders);
-
-PHP_METHOD(MAPIProfile, __construct);
-PHP_METHOD(MAPIProfile, __destruct);
-PHP_METHOD(MAPIProfile, dump);
-
-
-
 
 struct entry_w_mem_ctx {
   void* entry;

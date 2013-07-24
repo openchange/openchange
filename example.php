@@ -21,13 +21,10 @@ $session = $mapiProfile->logon();
 var_dump($session);
 
 echo "Folders default profile\n";
-#$folders = $mapi->folders();
 $folders = $session->folders();
 var_dump($folders);
 
-# echo "Folders by profile name\n";
-# $folders = $mapi->folders('test');
-# var_dump($folders);
+
 
 # echo "Fetchmail\n";
 # $mapi->fetchmail();
@@ -40,7 +37,7 @@ $mapi->__destruct();
 echo "After destroy\n";
 
 
-# echo "Create and destroy idle MAPI\n";
-# $mapi = new MAPIProfileDB("/dfdf");
-# $mapi->__destruct();
+echo "Create and destroy idle MAPIDb\n";
+$mapi = new MAPIProfileDB("/dfdf");
+$mapi->__destruct();
 ?>

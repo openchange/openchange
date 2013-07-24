@@ -5,7 +5,6 @@ PHP_METHOD(MAPIProfileDB, __construct);
 PHP_METHOD(MAPIProfileDB, __destruct);
 PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
-PHP_METHOD(MAPIProfileDB, folders);
 
 void MAPIProfileDBRegisterClass();
 struct mapi_context* get_mapi_context(zval* mapiProfileDB);

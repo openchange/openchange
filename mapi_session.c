@@ -32,12 +32,12 @@ struct mapi_session* get_session(zval* session_obj)
     php_error(E_ERROR, "session attribute not found");
   }
 
-  ZEND_FETCH_RESOURCE_NO_RETURN(session_resource, struct mapi_session*, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id);
+  ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session**, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id);
   if (session  == NULL) {
     php_error(E_ERROR, "session resource not correctly fetched");
   }
 
-  return session_resource;
+  return session;
 }
 
 

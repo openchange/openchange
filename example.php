@@ -26,8 +26,8 @@ var_dump($folders);
 
 
 
-# echo "Fetchmail\n";
-# $mapi->fetchmail();
+ echo "Fetchmail\n";
+ $session->fetchmail();
 
 
  echo "Destroy objecs\n";

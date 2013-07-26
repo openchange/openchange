@@ -213,7 +213,37 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
       if (comment == NULL) {
         comment = "";
       }
-      total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
+
+      /*** XXX tmeporal workaround for child folders problem ***/
+      {
+        mapi_object_t obj_child;
+        mapi_object_t obj_ctable;
+        uint32_t      count = 0;
+        uint32_t      count2 = 0;
+
+        mapi_object_init(&obj_child);
+        mapi_object_init(&obj_ctable);
+
+        retval = OpenFolder(&obj_folder, *fid, &obj_child);
+
+        if (retval != MAPI_E_SUCCESS) return false;
+        retval = GetContentsTable(&obj_child, &obj_ctable, 0, &count);
+        total = &count;
+
+        mapi_object_release(&obj_ctable);
+        mapi_object_init(&obj_ctable);
+
+        retval = GetHierarchyTable(&obj_child, &obj_ctable, 0, &count2);
+        child = &count2;
+
+
+        mapi_object_release(&obj_ctable);
+        mapi_object_release(&obj_child);
+      }
+      /*** ***/
+
+      // XXX commetned by workaround of child problem
+      /* total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT); */
       if (!total) {
         n_total = 0;
       } else {
@@ -227,8 +257,8 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
         n_unread =  (long) *unread;
       }
 
-
-      child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
+      // XXX commented by workaround of child problems
+      //      child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
       const char* container = get_container_class(mem_ctx, parent, *fid);
 

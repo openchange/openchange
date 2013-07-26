@@ -456,16 +456,10 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         add_assoc_string(message, "bcc", bcc ? (char*) bcc : "", 1);
         // attachments added later
         add_assoc_string(message, "codepage", (char*) codepage ? codepage : "", 1);
-        add_assoc_string(message, "Body", "TODO", 1);
+        add_assoc_string(message, "body", body.data, 1);
 
-        // TODO: body
-        /* fflush(0); */
-        /* if (body.length) { */
-        /*      write(1, body.data, body.length); */
-        /*      write(1, "\n", 1); */
-        /*      fflush(0); */
-        /*      talloc_free(body.data); */
-        /* } */
+        talloc_free(body.data);
+
         return message;
 }
 

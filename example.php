@@ -20,14 +20,15 @@ echo "Logon default profile\n";
 $session = $mapiProfile->logon();
 var_dump($session);
 
-echo "Folders default profile\n";
-$folders = $session->folders();
-var_dump($folders);
+# echo "Folders default profile\n";
+# $folders = $session->folders();
+# var_dump($folders);
 
 
 
- echo "Fetchmail\n";
- $session->fetchmail();
+echo "Fetchmail\n";
+$messages = $session->fetchmail();
+var_dump($messages);
 
 
  echo "Destroy objecs\n";

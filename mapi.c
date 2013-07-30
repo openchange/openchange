@@ -49,8 +49,16 @@ void do_nothing_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
 }
 
+void talloc_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+{
+  TALLOC_CTX* ctx = (TALLOC_CTX*) rsrc->ptr;
+  talloc_free(ctx);
+}
+
+
 int profile_resource_id;
 int session_resource_id;
+int talloc_resource_id;
 
 PHP_MINIT_FUNCTION(mapi)
 {
@@ -71,6 +79,10 @@ PHP_MINIT_FUNCTION(mapi)
   session_resource_id = zend_register_list_destructors_ex(
                 do_nothing_dtor, NULL, SESSION_RESOURCE_NAME,
                 module_number);
+  talloc_resource_id = zend_register_list_destructors_ex(
+                talloc_ctx_res_dtor, NULL, TALLOC_RESOURCE_NAME,
+                module_number);
+
 
   return SUCCESS;
 }
@@ -96,8 +108,31 @@ struct mapi_context* mapi_context_init(char *profdb)
 void mapi_context_dtor(void *ptr)
 {
   struct mapi_context** ctx =  ptr;
-  php_printf("MAPI ctx dtor\n");
-
   MAPIUninitialize(*ctx);
+}
+
+
+TALLOC_CTX* object_talloc_ctx(zval* obj)
+{
+  TALLOC_CTX* ctx;
+
+  zval** stored_ctx;
+  if (zend_hash_find(Z_OBJPROP_P(obj), "_talloc_ctx", sizeof("_talloc_ctx"), (void**)&stored_ctx) == SUCCESS) {
+    ZEND_FETCH_RESOURCE_NO_RETURN(ctx, struct TALLOC_CTX**, stored_ctx, -1, TALLOC_RESOURCE_NAME, talloc_resource_id);
+    if (ctx  == NULL) {
+      php_error(E_ERROR, "Talloc context not correctly fetched");
+    }
+    return ctx;
+  }
+
+  zval* ctx_res;
+  char *name = "temp_name";
+  ctx = talloc_named(NULL, 0, name);
+
+  MAKE_STD_ZVAL(ctx_res);
+  ZEND_REGISTER_RESOURCE(ctx_res, ctx, talloc_resource_id);
+  add_property_zval(obj, "__talloc_cxt", ctx_res);
+
+  return ctx;
 }
 

@@ -105,19 +105,8 @@ PHP_METHOD(MAPISession, folders)
   mapi_object_t obj_store;
 
   this_obj = getThis();
-  //  mapi_ctx = get_mapi_context(this_obj);
-
-  //  TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "openchangeclient");
-  /* zval** profile_obj; */
-  /* if (zend_hash_find(Z_OBJPROP_P(this_obj), */
-  /*                    "profile", sizeof("profile"), (void**)&profile_obj) == FAILURE) { */
-  /*   php_error(E_ERROR, "profile attribute not found"); */
-  /* } */
-  /* profile = get_profile(*profile_obj); */
   profile = session_obj_get_profile(this_obj);
   session = get_session(this_obj);
-
-
 
   // open user mailbox
   init_message_store(&obj_store, session, false, (char*) profile->username);
@@ -128,7 +117,7 @@ PHP_METHOD(MAPISession, folders)
   uint32_t                      cValues;
   const char                    *mailbox_name;
 
-  mem_ctx = talloc_named(NULL, 0, "MAPISession::folders"); // TODO XXX destroy somehow in php_error
+  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "MAPISession::folders"); // TODO XXX destroy somehow in php_error
 
   /* Retrieve the mailbox folder name */
   SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);

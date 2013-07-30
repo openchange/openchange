@@ -14,6 +14,7 @@
 
 #define PROFILE_RESOURCE_NAME "Profile"
 #define SESSION_RESOURCE_NAME "Session"
+#define TALLOC_RESOURCE_NAME "TALLOC_CTX"
 
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
@@ -28,6 +29,8 @@ struct mapi_context* mapi_context_init(char *profdb);
 void mapi_context_dtor(void *mapi_ctx);
 static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
 void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC);
+
+TALLOC_CTX* object_talloc_ctx(zval* obj);
 
 extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry

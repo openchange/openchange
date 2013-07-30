@@ -90,9 +90,7 @@ PHP_METHOD(MAPIProfile, __construct)
 
 PHP_METHOD(MAPIProfile, __destruct)
 {
-  php_printf("MAPIPROFILE destruct\n"
-             );
-
+  // nothing for now
 }
 
 PHP_METHOD(MAPIProfile, dump)

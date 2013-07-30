@@ -33,6 +33,7 @@ var_dump($messages);
  unset($mapiProfile);
 # $mapiProfile->__destruct();
 $mapi->__destruct();
+$session = "destruido";
 echo "After destroy\n";
 
 

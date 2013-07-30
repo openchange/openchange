@@ -117,7 +117,7 @@ PHP_METHOD(MAPISession, folders)
   uint32_t                      cValues;
   const char                    *mailbox_name;
 
-  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "MAPISession::folders"); // TODO XXX destroy somehow in php_error
+  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "MAPISession::folders");
 
   /* Retrieve the mailbox folder name */
   SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
@@ -474,7 +474,7 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         add_assoc_string(message, "cc", cc ? (char*) cc : "", 1);
         add_assoc_string(message, "bcc", bcc ? (char*) bcc : "", 1);
         // attachments added later
-        add_assoc_string(message, "codepage", (char*) codepage ? codepage : "", 1);
+        add_assoc_string(message, "codepage",  codepage ? (char*) codepage : "", 1);
         add_assoc_string(message, "body", body.data, 1);
 
         talloc_free(body.data);
@@ -498,7 +498,7 @@ static const char *get_filename(const char *filename)
 
 
 
-static zval* do_fetchmail(mapi_object_t *obj_store)
+static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
 {
   zval* messages = NULL;
 
@@ -525,7 +525,7 @@ static zval* do_fetchmail(mapi_object_t *obj_store)
   const char* store_folder = NULL; // TODO: support store_folder
 
 
-  mem_ctx = talloc_named(NULL, 0, "do_fetchmail");
+  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "do_fetchmail");
 
   mapi_object_init(&obj_tis);
   mapi_object_init(&obj_inbox);
@@ -709,7 +709,7 @@ PHP_METHOD(MAPISession, fetchmail)
   // open user mailbox
   init_message_store(&obj_store, session, false, (char*) profile->username);
 
-  zval* messages = do_fetchmail(&obj_store);
+  zval* messages = do_fetchmail(this_obj, &obj_store);
   RETURN_ZVAL(messages, 0, 0);
 
 }

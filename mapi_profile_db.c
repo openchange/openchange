@@ -149,8 +149,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   TALLOC_CTX*          mem_ctx;
   struct mapi_context* mapi_ctx;
 
-  zval* thisObject    = getThis();
-  mapi_ctx = get_mapi_context(thisObject);
+  zval* this_obj= getThis();
+  mapi_ctx = get_mapi_context(this_obj);
 
   char* opt_profname = NULL;
   int   opt_profname_len;
@@ -158,8 +158,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
     RETURN_NULL();
   }
 
-  mapi_ctx = get_mapi_context(getThis());
-  mem_ctx = talloc_named(NULL, 0, "getProfile");
+  mapi_ctx = get_mapi_context(this_obj);
+  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "getProfile");
   profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
   struct entry_w_mem_ctx* profile_w_mem_ctx;
@@ -181,7 +181,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   // call contructor with the profile resource
   zval* args[2];
   zval retval, str, funcname;
-  args[0]  = thisObject;
+  args[0]  = this_obj;
   args[1]  = profile_resource;
   ZVAL_STRING(&funcname, "__construct", 0);
   call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 2, args TSRMLS_CC);

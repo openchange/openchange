@@ -28,6 +28,8 @@ echo "Fetchmail\n";
 $messages = $session->fetchmail();
 var_dump($messages);
 
+echo "Appointments\n";
+$session->appointments();
 
  echo "Destroy objecs\n";
  unset($mapiProfile);

@@ -5,6 +5,7 @@
 #include "php.h"
 #include "php_mapi.h"
 #include "mapi_session.h"
+#include "mapi_profile.h"
 
 extern int session_resource_id;
 
@@ -33,7 +34,8 @@ struct mapi_session* get_session(zval* session_obj)
     php_error(E_ERROR, "session attribute not found");
   }
 
-  ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session**, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id);
+  // XX removed double pointer which was likely an error
+  ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session*, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id);
   if (session  == NULL) {
     php_error(E_ERROR, "session resource not correctly fetched");
   }
@@ -368,7 +370,7 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 /*
  * Optimized dump message routine (use GetProps rather than GetPropsAll)
  */
-_PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
+_PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
                                         mapi_object_t *obj_message)
 {
   zval* message = NULL;
@@ -426,7 +428,7 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         if (retval != MAPI_E_SUCCESS) {
           MAKE_STD_ZVAL(message);
           array_init(message);
-          add_assoc_string(message, "msgid", msgid ? msgid : "", 1);
+          add_assoc_string(message, "msgid", msgid ? (char*) msgid : "", 1);
           add_assoc_long(message, "Error", (long) retval);
           char* err_str=  (char*) mapi_get_errstr(retval);
           add_assoc_string(message, "ErrorString",  err_str ? err_str : "Unknown" , 1);
@@ -495,7 +497,29 @@ static const char *get_filename(const char *filename)
         return filename;
 }
 
+uint32_t open_default_folder(mapi_object_t* obj_store, mapi_object_t* obj_inbox, mapi_object_t* obj_table)
+{
+  enum MAPISTATUS  retval;
+  uint64_t   id_inbox;
+  uint32_t count;
 
+  retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Get receive default folder: %s", mapi_get_errstr(retval));
+  }
+
+  retval = OpenFolder(obj_store, id_inbox, obj_inbox);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Open receive default folder: %s", mapi_get_errstr(retval));
+  }
+
+  retval = GetContentsTable(obj_inbox, obj_table, 0, &count);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));
+  }
+
+  return count;
+}
 
 
 static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
@@ -531,17 +555,21 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
   mapi_object_init(&obj_inbox);
   mapi_object_init(&obj_table);
 
-  // XXX Only supported get all mails fro msession
+  // XXX Only supported get all mails from session
   // TODO: public folder; get mails from a folder
-  retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
+  count = open_default_folder(obj_store, &obj_inbox, &obj_table);
+  /* retval = GetReceiveFolder(obj_store, &id_inbox, NULL); */
+  /* MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-  retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
+  /* retval = OpenFolder(obj_store, id_inbox, &obj_inbox); */
+  /* MAPI_RETVAL_IF(retval, retval, mem_ctx); */
 
-  retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
+  /* retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count); */
+
+
+
   if (retval != MAPI_E_SUCCESS) {
-    php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval));
+    php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));
   }
 
   if (!count) goto end;
@@ -581,14 +609,14 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
           retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
           MAPIFreeBuffer(SPropTagArray);
           if (retval != MAPI_E_SUCCESS) {
-            php_error(E_ERROR, mapi_get_errstr(retval));
+            php_error(E_ERROR, "%s", mapi_get_errstr(retval));
           }
 
           aRow.ulAdrEntryPad = 0;
           aRow.cValues = count;
           aRow.lpProps = lpProps;
 
-          message = octool_message2(mem_ctx, &obj_message);
+          message = dump_message_to_zval(mem_ctx, &obj_message);
           has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
 
           /* If we have attachments, retrieve them */
@@ -599,13 +627,13 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
               SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
               retval = SetColumns(&obj_tb_attach, SPropTagArray);
               if (retval != MAPI_E_SUCCESS) {
-                php_error(E_ERROR, mapi_get_errstr(retval));
+                php_error(E_ERROR, "%s", mapi_get_errstr(retval));
               }
               MAPIFreeBuffer(SPropTagArray);
 
               retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
               if (retval != MAPI_E_SUCCESS) {
-                php_error(E_ERROR, mapi_get_errstr(retval));
+                php_error(E_ERROR, "%s", mapi_get_errstr(retval));
               }
 
               zval *attachments;
@@ -634,7 +662,7 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
                   retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2);
                   MAPIFreeBuffer(SPropTagArray);
                   if (retval != MAPI_E_SUCCESS) {
-                    php_error(E_ERROR, mapi_get_errstr(retval));
+                    php_error(E_ERROR, "%s", mapi_get_errstr(retval));
                   }
 
                   aRow.ulAdrEntryPad = 0;
@@ -701,10 +729,9 @@ PHP_METHOD(MAPISession, fetchmail)
   struct mapi_profile* profile = session_obj_get_profile(this_obj);
 
   enum MAPISTATUS retval = OpenUserMailbox(session, (char*) profile->username, &obj_store);
-                if (retval != MAPI_E_SUCCESS) {
-                        mapi_errstr("OpenUserMailbox", GetLastError());
-                        exit (1);
-                }
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "OpenUserMailbox %s", mapi_get_errstr(retval));
+  }
 
   // open user mailbox
   init_message_store(&obj_store, session, false, (char*) profile->username);

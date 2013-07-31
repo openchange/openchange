@@ -558,15 +558,6 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
   // XXX Only supported get all mails from session
   // TODO: public folder; get mails from a folder
   count = open_default_folder(obj_store, &obj_inbox, &obj_table);
-  /* retval = GetReceiveFolder(obj_store, &id_inbox, NULL); */
-  /* MAPI_RETVAL_IF(retval, retval, mem_ctx); */
-
-  /* retval = OpenFolder(obj_store, id_inbox, &obj_inbox); */
-  /* MAPI_RETVAL_IF(retval, retval, mem_ctx); */
-
-  /* retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count); */
-
-
 
   if (retval != MAPI_E_SUCCESS) {
     php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));

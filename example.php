@@ -21,15 +21,16 @@ $session = $mapiProfile->logon();
 var_dump($session);
 
 echo "Folders default profile\n";
-$folders = $session->folders();
-var_dump($folders);
+ $folders = $session->folders();
+ var_dump($folders);
 
 echo "Fetchmail\n";
 $messages = $session->fetchmail();
 var_dump($messages);
 
 echo "Appointments\n";
-$session->appointments();
+$appointments = $session->appointments();
+var_dump($appointments);
 
  echo "Destroy objecs\n";
  unset($mapiProfile);

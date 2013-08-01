@@ -257,7 +257,7 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
       const char* container = get_container_class(mem_ctx, parent, *fid);
 
       add_assoc_string(current_folder, "name",(char*)  name, 1);
-      add_assoc_long(current_folder, "fid", (long)(*fid)); // this must be cast to unsigned long in reading
+      add_assoc_mapi_id_t(current_folder, "fid", *fid);
       add_assoc_string(current_folder, "comment", (char*) comment, 1);
       add_assoc_string(current_folder, "container", (char*) container, 1);
 
@@ -740,8 +740,90 @@ PHP_METHOD(MAPISession, fetchmail)
 }
 
 
-static bool openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+const char* mapi_date(TALLOC_CTX *parent_ctx, struct mapi_SPropValue_array *properties, uint32_t mapitag)
 {
+  const char* date = NULL;
+  TALLOC_CTX *mem_ctx;
+  NTTIME time;
+  const struct FILETIME *filetime;
+
+  filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
+  if (filetime) {
+    const char* nt_date_str;
+    time = filetime->dwHighDateTime;
+    time = time << 32;
+    time |= filetime->dwLowDateTime;
+    mem_ctx = talloc_named(parent_ctx, 0, "mapi_date_string");
+    nt_date_str = nt_time_string(mem_ctx, time);
+    date = estrdup(nt_date_str);
+    talloc_free(mem_ctx);
+  }
+
+  return date;
+}
+
+
+/**
+   \details This function dumps the properties relating to an appointment to standard output
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   appointment object, then to use GetPropsAll() to obtain all the properties.
+
+   \param properties array of appointment properties
+   \param id identification to display for the appointment (can be NULL)
+
+   \sa mapidump_message, mapidump_contact, mapidump_task, mapidump_note
+*/
+static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array *properties, const char *id)
+{
+  zval* appointment;
+
+  const struct mapi_SLPSTRArray *contacts = NULL;
+  const char* subject = NULL;
+  const char* location= NULL;
+  const char* timezone = NULL;
+  const uint32_t *status;
+  const uint8_t  *priv = NULL;
+  uint32_t        i;
+
+  contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
+  subject = find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+  timezone = find_mapi_SPropValue_data(properties, PidLidTimeZoneDescription);
+  location = find_mapi_SPropValue_data(properties, PidLidLocation);
+  status = (const uint32_t *)find_mapi_SPropValue_data(properties, PidLidBusyStatus);
+  priv = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
+
+  MAKE_STD_ZVAL(appointment);
+  array_init(appointment);
+  add_assoc_string(appointment, "id", id ? (char*) id : "", 1);
+  add_assoc_string(appointment, "subject", subject ? (char*) subject : "", 1);
+  add_assoc_string(appointment, "location", location ? (char*) location : "", 1);
+  add_assoc_string(appointment, "startDate", (char*) mapi_date(mem_ctx, properties, PR_START_DATE), 0);
+  add_assoc_string(appointment, "endDate", (char*) mapi_date(mem_ctx, properties, PR_END_DATE), 0);
+  add_assoc_string(appointment, "timezone",  timezone ? (char*) timezone : "", 1);
+  add_assoc_bool(appointment, "private",  (priv && (*priv == true)) ? true : false);
+  //maybe return strign directly? get_task_status(*status));
+  //  add_assoc_double(appointment, "status", *status);
+  add_assoc_mapi_id_t(appointment, "status", *status);
+
+  zval* contacts_list;
+  MAKE_STD_ZVAL(contacts_list);
+  array_init(contacts_list);
+  if (contacts) {
+    for (i = 0; i < contacts->cValues; i++) {
+      add_next_index_string(contacts_list,  contacts->strings[i].lppszA, 1);
+    }
+  }
+  add_assoc_zval(appointment, "contacts", contacts_list);
+  return appointment;
+}
+
+
+
+static zval* openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+{
+  zval *items;
+
 	enum MAPISTATUS			retval;
 	mapi_object_t			obj_tis;
 	mapi_object_t			obj_folder;
@@ -788,8 +870,12 @@ static bool openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 		mapi_object_release(&obj_folder);
 		mapi_object_release(&obj_tis);
 
-		return true;
+		return NULL;
 	}
+
+        MAKE_STD_ZVAL(items);
+        array_init(items);
+
 
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PR_FID,
@@ -830,6 +916,8 @@ static bool openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 							break;
 						case olFolderCalendar:
 							mapidump_appointment(&properties_array, id);
+                                                        zval* app = appointment_zval(mem_ctx, &properties_array, id);
+                                                        add_next_index_zval(items, app);
 							break;
 						case olFolderContacts:
 							mapidump_contact(&properties_array, id);
@@ -853,7 +941,8 @@ static bool openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_tis);
 
-	return true;
+
+	return items;
 }
 
 
@@ -868,6 +957,7 @@ PHP_METHOD(MAPISession, appointments)
   open_user_mailbox(profile, session, &user_mbox);
 
   TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "appointments");
-  openchangeclient_fetchitems2(mem_ctx, &user_mbox,  "Appointment");
 
+  zval* appointments = openchangeclient_fetchitems2(mem_ctx, &user_mbox,  "Appointment");
+  RETURN_ZVAL(appointments, 0, 0);
 }

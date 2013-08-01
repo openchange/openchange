@@ -37,4 +37,6 @@ extern zend_module_entry mapi_module_entry;
 
 #define EXPECTED_MAPI_OBJECTS 32
 
+#define add_assoc_mapi_id_t(zv, name, value) add_assoc_long(zv, name, (long) value)
+
 #endif

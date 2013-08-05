@@ -38,5 +38,7 @@ extern zend_module_entry mapi_module_entry;
 #define EXPECTED_MAPI_OBJECTS 32
 
 #define add_assoc_mapi_id_t(zv, name, value) add_assoc_long(zv, name, (long) value)
+#define CHECK_MAPI_RETVAL(rv, desc) if (rv != MAPI_E_SUCCESS) php_error(E_ERROR, "%s: %s", desc, mapi_get_errstr(rv))
+
 
 #endif

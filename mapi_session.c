@@ -416,7 +416,7 @@ _PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
         lpProps = NULL;
         retval = GetProps(obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
         MAPIFreeBuffer(SPropTagArray);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        CHECK_MAPI_RETVAL(retval, "Get message props");
 
         /* Build a SRow structure */
         aRow.ulAdrEntryPad = 0;
@@ -575,7 +575,7 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
                                     PR_SUBJECT_UNICODE);
   retval = SetColumns(&obj_table, SPropTagArray);
   MAPIFreeBuffer(SPropTagArray);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
+  CHECK_MAPI_RETVAL(retval, "SetColumns");
 
   MAKE_STD_ZVAL(messages);
   array_init(messages);
@@ -673,9 +673,10 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
                     // TODO: store_folder
                     //                    status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
                     if (status == false) {
-                      php_printf("A Problem was encountered while storing attachments on the filesystem\n");
+
                       talloc_free(mem_ctx);
-                      return MAPI_E_UNABLE_TO_COMPLETE;
+                      //                      return MAPI_E_UNABLE_TO_COMPLETE;
+                      php_error(E_ERROR, "A Problem was encountered while storing attachments on the filesystem\n");
                     }
                   }
                   MAPIFreeBuffer(lpProps2);
@@ -824,125 +825,129 @@ static zval* openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *ob
 {
   zval *items;
 
-	enum MAPISTATUS			retval;
-	mapi_object_t			obj_tis;
-	mapi_object_t			obj_folder;
-	mapi_object_t			obj_table;
-	mapi_object_t			obj_message;
-	mapi_id_t			fid;
-	uint32_t			olFolder = 0;
-	struct SRowSet			SRowSet;
-	struct SPropTagArray		*SPropTagArray;
-	struct mapi_SPropValue_array	properties_array;
-	uint32_t			count;
-	uint32_t       			i;
-	char				*id;
+  enum MAPISTATUS                 retval;
+  mapi_object_t                   obj_tis;
+  mapi_object_t                   obj_folder;
+  mapi_object_t                   obj_table;
+  mapi_object_t                   obj_message;
+  mapi_id_t                       fid;
+  uint32_t                        olFolder = 0;
+  struct SRowSet                  SRowSet;
+  struct SPropTagArray            *SPropTagArray;
+  struct mapi_SPropValue_array    properties_array;
+  uint32_t                        count;
+  uint32_t                        i;
+  char                            *id;
 
-	if (!item) return false;
+  if (!item) {
+    php_error(E_ERROR, "Missing item parameter");
+  }
 
-	mapi_object_init(&obj_tis);
-	mapi_object_init(&obj_folder);
+  mapi_object_init(&obj_tis);
+  mapi_object_init(&obj_folder);
 
-	for (i = 0; defaultFolders[i].olFolder; i++) {
-		if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
-			olFolder = defaultFolders[i].olFolder;
-		}
-	}
+  for (i = 0; defaultFolders[i].olFolder; i++) {
+    if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
+      olFolder = defaultFolders[i].olFolder;
+    }
+  }
+  if (!olFolder) {
+    php_error(E_ERROR, "Cannot found defualt folder for items of type %s", item);
 
-	if (!olFolder) return false;
+  }
 
-        // XXX open default folder for the type
-			retval = GetDefaultFolder(obj_store, &fid, olFolder);
-			if (retval != MAPI_E_SUCCESS) return false;
+  // XXX open default folder for the type
+  // MACRO form api erros
+  retval = GetDefaultFolder(obj_store, &fid, olFolder);
+  CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for item type");
 
-			/* We now open the folder */
-			retval = OpenFolder(obj_store, fid, &obj_folder);
-			if (retval != MAPI_E_SUCCESS) return false;
+  /* We now open the folder */
+  retval = OpenFolder(obj_store, fid, &obj_folder);
+  CHECK_MAPI_RETVAL(retval, "OpenFolder");
 
-	/* Operations on the  folder */
-	mapi_object_init(&obj_table);
-	retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
-	if (retval != MAPI_E_SUCCESS) return false;
+  /* Operations on the  folder */
+  mapi_object_init(&obj_table);
+  retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
+  CHECK_MAPI_RETVAL(retval, "GetContentsTable");
 
-	printf("MAILBOX (%u messages)\n", count);
-	if (!count) {
-		mapi_object_release(&obj_table);
-		mapi_object_release(&obj_folder);
-		mapi_object_release(&obj_tis);
+        printf("MAILBOX (%u messages)\n", count);
+        if (!count) {
+                mapi_object_release(&obj_table);
+                mapi_object_release(&obj_folder);
+                mapi_object_release(&obj_tis);
 
-		return NULL;
-	}
-
-        MAKE_STD_ZVAL(items);
-        array_init(items);
+                return NULL;
+        }
 
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
-					  PR_FID,
-					  PR_MID,
-					  PR_INST_ID,
-					  PR_INSTANCE_NUM,
-					  PR_SUBJECT_UNICODE,
-					  PR_MESSAGE_CLASS_UNICODE,
-					  PR_RULE_MSG_PROVIDER,
-					  PR_RULE_MSG_NAME);
-	retval = SetColumns(&obj_table, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) return false;
 
-	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
-		count -= SRowSet.cRows;
-		for (i = 0; i < SRowSet.cRows; i++) {
-			mapi_object_init(&obj_message);
-			retval = OpenMessage(&obj_folder,
-					     SRowSet.aRow[i].lpProps[0].value.d,
-					     SRowSet.aRow[i].lpProps[1].value.d,
-					     &obj_message, 0);
-			if (retval != MAPI_E_NOT_FOUND) {
+
+        SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
+                                          PR_FID,
+                                          PR_MID,
+                                          PR_INST_ID,
+                                          PR_INSTANCE_NUM,
+                                          PR_SUBJECT_UNICODE,
+                                          PR_MESSAGE_CLASS_UNICODE,
+                                          PR_RULE_MSG_PROVIDER,
+                                          PR_RULE_MSG_NAME);
+        retval = SetColumns(&obj_table, SPropTagArray);
+        MAPIFreeBuffer(SPropTagArray);
+        CHECK_MAPI_RETVAL(retval, "SetColumns");
+
+        while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+                count -= SRowSet.cRows;
+                for (i = 0; i < SRowSet.cRows; i++) {
+                        mapi_object_init(&obj_message);
+                        retval = OpenMessage(&obj_folder,
+                                             SRowSet.aRow[i].lpProps[0].value.d,
+                                             SRowSet.aRow[i].lpProps[1].value.d,
+                                             &obj_message, 0);
+                        if (retval != MAPI_E_NOT_FOUND) {
                           // XXX not summary for now
-                          if (0) {//				if (oclient->summary) {
-					mapidump_message_summary(&obj_message);
-				} else {
-					retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
-					if (retval == MAPI_E_SUCCESS) {
+                          if (0) {//                            if (oclient->summary) {
+                                        mapidump_message_summary(&obj_message);
+                                } else {
+                                        retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
+                                        if (retval == MAPI_E_SUCCESS) {
                                           id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
-								     SRowSet.aRow[i].lpProps[0].value.d,
-								     SRowSet.aRow[i].lpProps[1].value.d);
-						mapi_SPropValue_array_named(&obj_message,
-									    &properties_array);
-						switch (olFolder) {
-						case olFolderInbox:
-						  mapidump_message(&properties_array, id, NULL);
-							break;
-						case olFolderCalendar:
-							mapidump_appointment(&properties_array, id);
+                                                                     SRowSet.aRow[i].lpProps[0].value.d,
+                                                                     SRowSet.aRow[i].lpProps[1].value.d);
+                                                mapi_SPropValue_array_named(&obj_message,
+                                                                            &properties_array);
+                                                switch (olFolder) {
+                                                case olFolderInbox:
+                                                  mapidump_message(&properties_array, id, NULL);
+                                                        break;
+                                                case olFolderCalendar:
+                                                        mapidump_appointment(&properties_array, id);
                                                         zval* app = appointment_zval(mem_ctx, &properties_array, id);
                                                         add_next_index_zval(items, app);
-							break;
-						case olFolderContacts:
-							mapidump_contact(&properties_array, id);
-							break;
-						case olFolderTasks:
-							mapidump_task(&properties_array, id);
-							break;
-						case olFolderNotes:
-							mapidump_note(&properties_array, id);
-							break;
-						}
-						talloc_free(id);
-					}
-				}
-				mapi_object_release(&obj_message);
-			}
-		}
-	}
+                                                        break;
+                                                case olFolderContacts:
+                                                        mapidump_contact(&properties_array, id);
+                                                        break;
+                                                case olFolderTasks:
+                                                        mapidump_task(&properties_array, id);
+                                                        break;
+                                                case olFolderNotes:
+                                                        mapidump_note(&properties_array, id);
+                                                        break;
+                                                }
+                                                talloc_free(id);
+                                        }
+                                }
+                                mapi_object_release(&obj_message);
+                        }
+                }
+        }
 
-	mapi_object_release(&obj_table);
-	mapi_object_release(&obj_folder);
-	mapi_object_release(&obj_tis);
+        mapi_object_release(&obj_table);
+        mapi_object_release(&obj_folder);
+        mapi_object_release(&obj_tis);
 
 
-	return items;
+        return items;
 }
 
 

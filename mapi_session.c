@@ -821,7 +821,7 @@ static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array
 
 
 
-static zval* openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
 {
   zval *items;
 
@@ -870,84 +870,82 @@ static zval* openchangeclient_fetchitems2(TALLOC_CTX *mem_ctx, mapi_object_t *ob
   retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
   CHECK_MAPI_RETVAL(retval, "GetContentsTable");
 
-        printf("MAILBOX (%u messages)\n", count);
-        if (!count) {
-                mapi_object_release(&obj_table);
-                mapi_object_release(&obj_folder);
-                mapi_object_release(&obj_tis);
+  MAKE_STD_ZVAL(items);
+  array_init(items);
 
-                return NULL;
+  if (!count) {
+    mapi_object_release(&obj_table);
+    mapi_object_release(&obj_folder);
+    mapi_object_release(&obj_tis);
+
+    return items;
+  }
+
+  SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
+                                    PR_FID,
+                                    PR_MID,
+                                    PR_INST_ID,
+                                    PR_INSTANCE_NUM,
+                                    PR_SUBJECT_UNICODE,
+                                    PR_MESSAGE_CLASS_UNICODE,
+                                    PR_RULE_MSG_PROVIDER,
+                                    PR_RULE_MSG_NAME);
+  retval = SetColumns(&obj_table, SPropTagArray);
+  MAPIFreeBuffer(SPropTagArray);
+  CHECK_MAPI_RETVAL(retval, "SetColumns");
+
+  while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+    count -= SRowSet.cRows;
+    for (i = 0; i < SRowSet.cRows; i++) {
+      mapi_object_init(&obj_message);
+      retval = OpenMessage(&obj_folder,
+                           SRowSet.aRow[i].lpProps[0].value.d,
+                           SRowSet.aRow[i].lpProps[1].value.d,
+                           &obj_message, 0);
+      if (retval != MAPI_E_NOT_FOUND) {
+        // XXX not summary for now
+        if (0) {//                            if (oclient->summary) {
+          mapidump_message_summary(&obj_message);
+        } else {
+          retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
+          if (retval == MAPI_E_SUCCESS) {
+            id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
+                                 SRowSet.aRow[i].lpProps[0].value.d,
+                                 SRowSet.aRow[i].lpProps[1].value.d);
+            mapi_SPropValue_array_named(&obj_message,
+                                        &properties_array);
+            switch (olFolder) {
+            case olFolderCalendar:
+              1+0; // workaround compiler error?
+              zval* app = appointment_zval(mem_ctx, &properties_array, id);
+              add_next_index_zval(items, app);
+              break;
+            case olFolderInbox:
+              mapidump_message(&properties_array, id, NULL);
+              break;
+            case olFolderContacts:
+              mapidump_contact(&properties_array, id);
+              break;
+            case olFolderTasks:
+              mapidump_task(&properties_array, id);
+              break;
+            case olFolderNotes:
+              mapidump_note(&properties_array, id);
+              break;
+            }
+            talloc_free(id);
+          }
         }
+        mapi_object_release(&obj_message);
+      }
+    }
+  }
 
+  mapi_object_release(&obj_table);
+  mapi_object_release(&obj_folder);
+  mapi_object_release(&obj_tis);
 
-
-
-        SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
-                                          PR_FID,
-                                          PR_MID,
-                                          PR_INST_ID,
-                                          PR_INSTANCE_NUM,
-                                          PR_SUBJECT_UNICODE,
-                                          PR_MESSAGE_CLASS_UNICODE,
-                                          PR_RULE_MSG_PROVIDER,
-                                          PR_RULE_MSG_NAME);
-        retval = SetColumns(&obj_table, SPropTagArray);
-        MAPIFreeBuffer(SPropTagArray);
-        CHECK_MAPI_RETVAL(retval, "SetColumns");
-
-        while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
-                count -= SRowSet.cRows;
-                for (i = 0; i < SRowSet.cRows; i++) {
-                        mapi_object_init(&obj_message);
-                        retval = OpenMessage(&obj_folder,
-                                             SRowSet.aRow[i].lpProps[0].value.d,
-                                             SRowSet.aRow[i].lpProps[1].value.d,
-                                             &obj_message, 0);
-                        if (retval != MAPI_E_NOT_FOUND) {
-                          // XXX not summary for now
-                          if (0) {//                            if (oclient->summary) {
-                                        mapidump_message_summary(&obj_message);
-                                } else {
-                                        retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
-                                        if (retval == MAPI_E_SUCCESS) {
-                                          id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
-                                                                     SRowSet.aRow[i].lpProps[0].value.d,
-                                                                     SRowSet.aRow[i].lpProps[1].value.d);
-                                                mapi_SPropValue_array_named(&obj_message,
-                                                                            &properties_array);
-                                                switch (olFolder) {
-                                                case olFolderInbox:
-                                                  mapidump_message(&properties_array, id, NULL);
-                                                        break;
-                                                case olFolderCalendar:
-                                                        mapidump_appointment(&properties_array, id);
-                                                        zval* app = appointment_zval(mem_ctx, &properties_array, id);
-                                                        add_next_index_zval(items, app);
-                                                        break;
-                                                case olFolderContacts:
-                                                        mapidump_contact(&properties_array, id);
-                                                        break;
-                                                case olFolderTasks:
-                                                        mapidump_task(&properties_array, id);
-                                                        break;
-                                                case olFolderNotes:
-                                                        mapidump_note(&properties_array, id);
-                                                        break;
-                                                }
-                                                talloc_free(id);
-                                        }
-                                }
-                                mapi_object_release(&obj_message);
-                        }
-                }
-        }
-
-        mapi_object_release(&obj_table);
-        mapi_object_release(&obj_folder);
-        mapi_object_release(&obj_tis);
-
-
-        return items;
+  return items;
 }
 
 
@@ -963,6 +961,8 @@ PHP_METHOD(MAPISession, appointments)
 
   TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "appointments");
 
-  zval* appointments = openchangeclient_fetchitems2(mem_ctx, &user_mbox,  "Appointment");
+  zval* appointments = fetch_items(mem_ctx, &user_mbox,  "Appointment");
+
+  talloc_free(mem_ctx);
   RETURN_ZVAL(appointments, 0, 0);
 }

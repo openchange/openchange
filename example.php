@@ -31,6 +31,7 @@ var_dump($messages);
 echo "Appointments\n";
 $appointments = $session->appointments();
 var_dump($appointments);
+echo "Appoinments END\n";
 
  echo "Destroy objecs\n";
  unset($mapiProfile);

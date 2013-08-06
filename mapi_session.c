@@ -487,7 +487,6 @@ _PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
         return message;
 }
 
-
 static const char *get_filename(const char *filename)
 {
         const char *substr;
@@ -524,7 +523,6 @@ static uint32_t open_default_folder(mapi_object_t* obj_store, mapi_object_t* obj
   return count;
 }
 
-
 static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
 {
   zval* messages = NULL;
@@ -549,9 +547,6 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
   const uint32_t                  *attach_size;
   bool summary = false;// TODO: support summary
   const char* store_folder = NULL; // TODO: support store_folder
-
-
-
 
   mapi_object_init(&obj_tis);
   mapi_object_init(&obj_inbox);
@@ -765,11 +760,12 @@ const char* mapi_date(TALLOC_CTX *parent_ctx, struct mapi_SPropValue_array *prop
 
 
 /**
-   \details This function dumps the properties relating to an appointment to standard output
+   \details This function dumps the properties relating to an appointment to a zval array
 
    The expected way to obtain the properties array is to use OpenMessage() to obtain the
    appointment object, then to use GetPropsAll() to obtain all the properties.
 
+   \param talloc memory context to be used
    \param properties array of appointment properties
    \param id identification to display for the appointment (can be NULL)
 
@@ -804,7 +800,6 @@ static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array
   add_assoc_string(appointment, "timezone",  timezone ? (char*) timezone : "", 1);
   add_assoc_bool(appointment, "private",  (priv && (*priv == true)) ? true : false);
   //maybe return strign directly? get_task_status(*status));
-  //  add_assoc_double(appointment, "status", *status);
   add_assoc_mapi_id_t(appointment, "status", *status);
 
   zval* contacts_list;
@@ -818,8 +813,6 @@ static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array
   add_assoc_zval(appointment, "contacts", contacts_list);
   return appointment;
 }
-
-
 
 static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
 {
@@ -904,9 +897,9 @@ static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const ch
                            &obj_message, 0);
       if (retval != MAPI_E_NOT_FOUND) {
         // XXX not summary for now
-        if (0) {//                            if (oclient->summary) {
-          mapidump_message_summary(&obj_message);
-        } else {
+        //                            if (oclient->summary) {
+        /*   mapidump_message_summary(&obj_message); */
+        /* } else { */
           retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
           if (retval == MAPI_E_SUCCESS) {
             id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
@@ -921,21 +914,21 @@ static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const ch
               add_next_index_zval(items, app);
               break;
             case olFolderInbox:
-              mapidump_message(&properties_array, id, NULL);
+              php_error(E_ERROR, "Inbox folder case not implemented";
               break;
             case olFolderContacts:
-              mapidump_contact(&properties_array, id);
+              php_error(E_ERROR, "Contacts folder case not implemented";
               break;
             case olFolderTasks:
-              mapidump_task(&properties_array, id);
+              php_error(E_ERROR, "Tasks folder case not implemented";
               break;
             case olFolderNotes:
-              mapidump_note(&properties_array, id);
+              php_error(E_ERROR, "Notes folder case not implemented";
               break;
             }
             talloc_free(id);
           }
-        }
+          //         } // from (oclient->summary)
         mapi_object_release(&obj_message);
       }
     }

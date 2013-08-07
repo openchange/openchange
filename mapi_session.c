@@ -5,12 +5,16 @@
 #include "php.h"
 #include "php_mapi.h"
 #include "mapi_session.h"
+#include "mapi_profile.h"
+#include "utils/openchangeclient.h" // for defaultFolders
+#include <inttypes.h>
 
 static zend_function_entry mapi_session_class_functions[] = {
   PHP_ME(MAPISession, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
   // PHP_ME(MAPISession, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
   PHP_ME(MAPISession, folders, NULL, ZEND_ACC_PUBLIC)
   PHP_ME(MAPISession, fetchmail, NULL, ZEND_ACC_PUBLIC)
+  PHP_ME(MAPISession, appointments, NULL, ZEND_ACC_PUBLIC)
   { NULL, NULL, NULL }
 };
 
@@ -75,6 +79,7 @@ zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_
   if (zend_hash_find(EG(class_table),"mapisession", sizeof("mapisession"),(void**)&ce) == FAILURE) {
     php_error(E_ERROR,"Class MAPISession does not exist.");
   }
+
 
   object_init_ex(php_obj, *ce);
 
@@ -285,7 +290,7 @@ static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_
       const char* container = get_container_class(mem_ctx, parent, *fid);
 
       add_assoc_string(current_folder, "name",(char*)  name, 1);
-      add_assoc_long(current_folder, "fid", (long)(*fid)); // this must be cast to unsigned long in reading
+      add_assoc_mapi_id_t(current_folder, "fid", *fid);
       add_assoc_string(current_folder, "comment", (char*) comment, 1);
       add_assoc_string(current_folder, "container", (char*) container, 1);
 
@@ -401,7 +406,7 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 /*
  * Optimized dump message routine (use GetProps rather than GetPropsAll)
  */
-_PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
+_PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
                                         mapi_object_t *obj_message)
 {
   zval* message = NULL;
@@ -444,7 +449,7 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         lpProps = NULL;
         retval = GetProps(obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
         MAPIFreeBuffer(SPropTagArray);
-        MAPI_RETVAL_IF(retval, retval, NULL);
+        CHECK_MAPI_RETVAL(retval, "Get message props");
 
         /* Build a SRow structure */
         aRow.ulAdrEntryPad = 0;
@@ -459,7 +464,7 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         if (retval != MAPI_E_SUCCESS) {
           MAKE_STD_ZVAL(message);
           array_init(message);
-          add_assoc_string(message, "msgid", msgid ? msgid : "", 1);
+          add_assoc_string(message, "msgid", msgid ? (char*) msgid : "", 1);
           add_assoc_long(message, "Error", (long) retval);
           char* err_str=  (char*) mapi_get_errstr(retval);
           add_assoc_string(message, "ErrorString",  err_str ? err_str : "Unknown" , 1);
@@ -515,7 +520,6 @@ _PUBLIC_ zval* octool_message2(TALLOC_CTX *mem_ctx,
         return message;
 }
 
-
 static const char *get_filename(const char *filename)
 {
         const char *substr;
@@ -528,16 +532,36 @@ static const char *get_filename(const char *filename)
         return filename;
 }
 
+static uint32_t open_default_folder(mapi_object_t* obj_store, mapi_object_t* obj_inbox, mapi_object_t* obj_table)
+{
+  enum MAPISTATUS  retval;
+  uint64_t   id_inbox;
+  uint32_t count;
 
+  retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Get receive default folder: %s", mapi_get_errstr(retval));
+  }
 
+  retval = OpenFolder(obj_store, id_inbox, obj_inbox);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Open receive default folder: %s", mapi_get_errstr(retval));
+  }
 
-static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
+  retval = GetContentsTable(obj_inbox, obj_table, 0, &count);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));
+  }
+
+  return count;
+}
+
+static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
 {
   zval* messages = NULL;
 
   enum MAPISTATUS                 retval;
   bool                            status;
-  TALLOC_CTX                      *mem_ctx;
   mapi_object_t                   obj_tis;
   mapi_object_t                   obj_inbox;
   mapi_object_t                   obj_message;
@@ -557,24 +581,16 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
   bool summary = false;// TODO: support summary
   const char* store_folder = NULL; // TODO: support store_folder
 
-
-  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "do_fetchmail");
-
   mapi_object_init(&obj_tis);
   mapi_object_init(&obj_inbox);
   mapi_object_init(&obj_table);
 
-  // XXX Only supported get all mails fro msession
+  // XXX Only supported get all mails from session
   // TODO: public folder; get mails from a folder
-  retval = GetReceiveFolder(obj_store, &id_inbox, NULL);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
+  count = open_default_folder(obj_store, &obj_inbox, &obj_table);
 
-  retval = OpenFolder(obj_store, id_inbox, &obj_inbox);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
-
-  retval = GetContentsTable(&obj_inbox, &obj_table, 0, &count);
   if (retval != MAPI_E_SUCCESS) {
-    php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval));
+    php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));
   }
 
   if (!count) goto end;
@@ -587,7 +603,7 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
                                     PR_SUBJECT_UNICODE);
   retval = SetColumns(&obj_table, SPropTagArray);
   MAPIFreeBuffer(SPropTagArray);
-  MAPI_RETVAL_IF(retval, retval, mem_ctx);
+  CHECK_MAPI_RETVAL(retval, "SetColumns");
 
   MAKE_STD_ZVAL(messages);
   array_init(messages);
@@ -614,14 +630,14 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
           retval = GetProps(&obj_message, 0, SPropTagArray, &lpProps, &count);
           MAPIFreeBuffer(SPropTagArray);
           if (retval != MAPI_E_SUCCESS) {
-            php_error(E_ERROR, mapi_get_errstr(retval));
+            php_error(E_ERROR, "%s", mapi_get_errstr(retval));
           }
 
           aRow.ulAdrEntryPad = 0;
           aRow.cValues = count;
           aRow.lpProps = lpProps;
 
-          message = octool_message2(mem_ctx, &obj_message);
+          message = dump_message_to_zval(mem_ctx, &obj_message);
           has_attach = (const uint8_t *) get_SPropValue_SRow_data(&aRow, PR_HASATTACH);
 
           /* If we have attachments, retrieve them */
@@ -632,13 +648,13 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
               SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_ATTACH_NUM);
               retval = SetColumns(&obj_tb_attach, SPropTagArray);
               if (retval != MAPI_E_SUCCESS) {
-                php_error(E_ERROR, mapi_get_errstr(retval));
+                php_error(E_ERROR, "%s", mapi_get_errstr(retval));
               }
               MAPIFreeBuffer(SPropTagArray);
 
               retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
               if (retval != MAPI_E_SUCCESS) {
-                php_error(E_ERROR, mapi_get_errstr(retval));
+                php_error(E_ERROR, "%s", mapi_get_errstr(retval));
               }
 
               zval *attachments;
@@ -667,7 +683,7 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
                   retval = GetProps(&obj_attach, MAPI_UNICODE, SPropTagArray, &lpProps2, &count2);
                   MAPIFreeBuffer(SPropTagArray);
                   if (retval != MAPI_E_SUCCESS) {
-                    php_error(E_ERROR, mapi_get_errstr(retval));
+                    php_error(E_ERROR, "%s", mapi_get_errstr(retval));
                   }
 
                   aRow.ulAdrEntryPad = 0;
@@ -685,9 +701,10 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
                     // TODO: store_folder
                     //                    status = store_attachment(obj_attach, attach_filename, attach_size ? *attach_size : 0, oclient);
                     if (status == false) {
-                      php_printf("A Problem was encountered while storing attachments on the filesystem\n");
+
                       talloc_free(mem_ctx);
-                      return MAPI_E_UNABLE_TO_COMPLETE;
+                      //                      return MAPI_E_UNABLE_TO_COMPLETE;
+                      php_error(E_ERROR, "A Problem was encountered while storing attachments on the filesystem\n");
                     }
                   }
                   MAPIFreeBuffer(lpProps2);
@@ -723,27 +740,255 @@ static zval* do_fetchmail(zval* this_obj, mapi_object_t *obj_store)
   return messages;
 }
 
+static void open_user_mailbox(struct mapi_profile* profile, struct mapi_session* session, mapi_object_t* obj_store)
+{
+  enum MAPISTATUS retval = OpenUserMailbox(session, (char*) profile->username, obj_store);
+  if (retval != MAPI_E_SUCCESS) {
+    php_error(E_ERROR, "OpenUserMailbox %s", mapi_get_errstr(retval));
+  }
+
+  init_message_store(obj_store, session, false, (char*) profile->username);
+}
+
 
 
 PHP_METHOD(MAPISession, fetchmail)
 {
   zval* this_obj = getThis();
-  mapi_object_t obj_store;
-  mapi_object_init(&obj_store);
+  mapi_object_t user_mbox;
+  mapi_object_init(&user_mbox);
   struct mapi_session* session = get_session(this_obj);
   struct mapi_profile* profile = session_get_profile(this_obj);
 
-  enum MAPISTATUS retval = OpenUserMailbox(session, (char*) profile->username, &obj_store);
-                if (retval != MAPI_E_SUCCESS) {
-                        mapi_errstr("OpenUserMailbox", GetLastError());
-                        exit (1);
-                }
+  open_user_mailbox(profile, session, &user_mbox);
 
-  // open user mailbox
-  init_message_store(&obj_store, session, false, (char*) profile->username);
-
-  zval* messages = do_fetchmail(this_obj, &obj_store);
+  TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "do_fetchmail");
+  zval* messages = do_fetchmail(mem_ctx, &user_mbox);
   RETURN_ZVAL(messages, 0, 0);
 
 }
 
+
+const char* mapi_date(TALLOC_CTX *parent_ctx, struct mapi_SPropValue_array *properties, uint32_t mapitag)
+{
+  const char* date = NULL;
+  TALLOC_CTX *mem_ctx;
+  NTTIME time;
+  const struct FILETIME *filetime;
+
+  filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
+  if (filetime) {
+    const char* nt_date_str;
+    time = filetime->dwHighDateTime;
+    time = time << 32;
+    time |= filetime->dwLowDateTime;
+    mem_ctx = talloc_named(parent_ctx, 0, "mapi_date_string");
+    nt_date_str = nt_time_string(mem_ctx, time);
+    date = estrdup(nt_date_str);
+    talloc_free(mem_ctx);
+  }
+
+  return date;
+}
+
+
+/**
+   \details This function dumps the properties relating to an appointment to a zval array
+
+   The expected way to obtain the properties array is to use OpenMessage() to obtain the
+   appointment object, then to use GetPropsAll() to obtain all the properties.
+
+   \param talloc memory context to be used
+   \param properties array of appointment properties
+   \param id identification to display for the appointment (can be NULL)
+
+   \sa mapidump_message, mapidump_contact, mapidump_task, mapidump_note
+*/
+static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array *properties, const char *id)
+{
+  zval* appointment;
+
+  const struct mapi_SLPSTRArray *contacts = NULL;
+  const char* subject = NULL;
+  const char* location= NULL;
+  const char* timezone = NULL;
+  const uint32_t *status;
+  const uint8_t  *priv = NULL;
+  uint32_t        i;
+
+  contacts = (const struct mapi_SLPSTRArray *)find_mapi_SPropValue_data(properties, PidLidContacts);
+  subject = find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+  timezone = find_mapi_SPropValue_data(properties, PidLidTimeZoneDescription);
+  location = find_mapi_SPropValue_data(properties, PidLidLocation);
+  status = (const uint32_t *)find_mapi_SPropValue_data(properties, PidLidBusyStatus);
+  priv = (const uint8_t *)find_mapi_SPropValue_data(properties, PidLidPrivate);
+
+  MAKE_STD_ZVAL(appointment);
+  array_init(appointment);
+  add_assoc_string(appointment, "id", id ? (char*) id : "", 1);
+  add_assoc_string(appointment, "subject", subject ? (char*) subject : "", 1);
+  add_assoc_string(appointment, "location", location ? (char*) location : "", 1);
+  add_assoc_string(appointment, "startDate", (char*) mapi_date(mem_ctx, properties, PR_START_DATE), 0);
+  add_assoc_string(appointment, "endDate", (char*) mapi_date(mem_ctx, properties, PR_END_DATE), 0);
+  add_assoc_string(appointment, "timezone",  timezone ? (char*) timezone : "", 1);
+  add_assoc_bool(appointment, "private",  (priv && (*priv == true)) ? true : false);
+  //maybe return strign directly? get_task_status(*status));
+  add_assoc_mapi_id_t(appointment, "status", *status);
+
+  zval* contacts_list;
+  MAKE_STD_ZVAL(contacts_list);
+  array_init(contacts_list);
+  if (contacts) {
+    for (i = 0; i < contacts->cValues; i++) {
+      add_next_index_string(contacts_list,  contacts->strings[i].lppszA, 1);
+    }
+  }
+  add_assoc_zval(appointment, "contacts", contacts_list);
+  return appointment;
+}
+
+static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
+{
+  zval *items;
+
+  enum MAPISTATUS                 retval;
+  mapi_object_t                   obj_tis;
+  mapi_object_t                   obj_folder;
+  mapi_object_t                   obj_table;
+  mapi_object_t                   obj_message;
+  mapi_id_t                       fid;
+  uint32_t                        olFolder = 0;
+  struct SRowSet                  SRowSet;
+  struct SPropTagArray            *SPropTagArray;
+  struct mapi_SPropValue_array    properties_array;
+  uint32_t                        count;
+  uint32_t                        i;
+  char                            *id;
+
+  if (!item) {
+    php_error(E_ERROR, "Missing item parameter");
+  }
+
+  mapi_object_init(&obj_tis);
+  mapi_object_init(&obj_folder);
+
+  for (i = 0; defaultFolders[i].olFolder; i++) {
+    if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
+      olFolder = defaultFolders[i].olFolder;
+    }
+  }
+  if (!olFolder) {
+    php_error(E_ERROR, "Cannot found defualt folder for items of type %s", item);
+
+  }
+
+  // XXX open default folder for the type
+  // MACRO form api erros
+  retval = GetDefaultFolder(obj_store, &fid, olFolder);
+  CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for item type");
+
+  /* We now open the folder */
+  retval = OpenFolder(obj_store, fid, &obj_folder);
+  CHECK_MAPI_RETVAL(retval, "OpenFolder");
+
+  /* Operations on the  folder */
+  mapi_object_init(&obj_table);
+  retval = GetContentsTable(&obj_folder, &obj_table, 0, &count);
+  CHECK_MAPI_RETVAL(retval, "GetContentsTable");
+
+  MAKE_STD_ZVAL(items);
+  array_init(items);
+
+  if (!count) {
+    mapi_object_release(&obj_table);
+    mapi_object_release(&obj_folder);
+    mapi_object_release(&obj_tis);
+
+    return items;
+  }
+
+  SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
+                                    PR_FID,
+                                    PR_MID,
+                                    PR_INST_ID,
+                                    PR_INSTANCE_NUM,
+                                    PR_SUBJECT_UNICODE,
+                                    PR_MESSAGE_CLASS_UNICODE,
+                                    PR_RULE_MSG_PROVIDER,
+                                    PR_RULE_MSG_NAME);
+  retval = SetColumns(&obj_table, SPropTagArray);
+  MAPIFreeBuffer(SPropTagArray);
+  CHECK_MAPI_RETVAL(retval, "SetColumns");
+
+  while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+    count -= SRowSet.cRows;
+    for (i = 0; i < SRowSet.cRows; i++) {
+      mapi_object_init(&obj_message);
+      retval = OpenMessage(&obj_folder,
+                           SRowSet.aRow[i].lpProps[0].value.d,
+                           SRowSet.aRow[i].lpProps[1].value.d,
+                           &obj_message, 0);
+      if (retval != MAPI_E_NOT_FOUND) {
+        // XXX not summary for now
+        //                            if (oclient->summary) {
+        /*   mapidump_message_summary(&obj_message); */
+        /* } else { */
+          retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
+          if (retval == MAPI_E_SUCCESS) {
+            id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
+                                 SRowSet.aRow[i].lpProps[0].value.d,
+                                 SRowSet.aRow[i].lpProps[1].value.d);
+            mapi_SPropValue_array_named(&obj_message,
+                                        &properties_array);
+            switch (olFolder) {
+            case olFolderCalendar:
+              1+0; // workaround compiler error?
+              zval* app = appointment_zval(mem_ctx, &properties_array, id);
+              add_next_index_zval(items, app);
+              break;
+            case olFolderInbox:
+              php_error(E_ERROR, "Inbox folder case not implemented");
+              break;
+            case olFolderContacts:
+              php_error(E_ERROR, "Contacts folder case not implemented");
+              break;
+            case olFolderTasks:
+              php_error(E_ERROR, "Tasks folder case not implemented");
+              break;
+            case olFolderNotes:
+              php_error(E_ERROR, "Notes folder case not implemented");
+              break;
+            }
+            talloc_free(id);
+          }
+          //         } // from (oclient->summary)
+        mapi_object_release(&obj_message);
+      }
+    }
+  }
+
+  mapi_object_release(&obj_table);
+  mapi_object_release(&obj_folder);
+  mapi_object_release(&obj_tis);
+
+  return items;
+}
+
+
+PHP_METHOD(MAPISession, appointments)
+{
+  zval* this_obj = getThis();
+  mapi_object_t user_mbox;
+  mapi_object_init(&user_mbox);
+  struct mapi_session* session = get_session(this_obj);
+  struct mapi_profile* profile = session_get_profile(this_obj);
+
+  open_user_mailbox(profile, session, &user_mbox);
+
+  TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "appointments");
+
+  zval* appointments = fetch_items(mem_ctx, &user_mbox,  "Appointment");
+
+  talloc_free(mem_ctx);
+  RETURN_ZVAL(appointments, 0, 0);
+}

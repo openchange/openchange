@@ -22,7 +22,9 @@ var_dump($profileDump);
  $session = $mapiProfile->logon();
  var_dump($session);
 
- echo "Folders default profile\n";
+
+echo "Folders default profile\n";
+
  $folders = $session->folders();
  var_dump($folders);
 
@@ -30,6 +32,10 @@ var_dump($profileDump);
  $messages = $session->fetchmail();
  var_dump($messages);
 
+echo "Appointments\n";
+$appointments = $session->appointments();
+var_dump($appointments);
+echo "Appoinments END\n";
 
   echo "Destroy objecs\n";
   unset($mapiProfile);

@@ -9,6 +9,7 @@ static void init_message_store(mapi_object_t *store, struct mapi_session* sessio
 PHP_METHOD(MAPISession, __construct);
 PHP_METHOD(MAPISession, folders);
 PHP_METHOD(MAPISession, fetchmail);
+PHP_METHOD(MAPISession, appointments);
 
 void MAPISessionRegisterClass();
 zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_CTX* talloc_ctx);

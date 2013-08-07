@@ -6,6 +6,7 @@
 #include "php_mapi.h"
 #include "mapi_profile.h"
 #include "mapi_profile_db.h"
+#include "mapi_session.h"
 
 extern int profile_resource_id;
 extern int session_resource_id;

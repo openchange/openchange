@@ -5,6 +5,7 @@
 #include "php.h"
 #include "php_mapi.h"
 #include "mapi_profile_db.h"
+#include "mapi_profile.h"
 
 extern int profile_resource_id;
 extern HashTable *mapi_context_by_object;

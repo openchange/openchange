@@ -12,19 +12,64 @@ extern HashTable *mapi_context_by_object;
 static zend_function_entry mapi_profile_db_class_functions[] = {
      PHP_ME(MAPIProfileDB, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
      PHP_ME(MAPIProfileDB, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+     PHP_ME(MAPIProfileDB, path, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPIProfileDB, profiles, NULL, ZEND_ACC_PUBLIC)
      PHP_ME(MAPIProfileDB, getProfile, NULL, ZEND_ACC_PUBLIC)
 
     { NULL, NULL, NULL }
 };
 
+
+static zend_class_entry* mapi_profile_db_ce;
+static zend_object_handlers mapi_profile_db_object_handlers;
+
+static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
+{
+    mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) object;
+    if (obj->mapi_ctx)
+      MAPIUninitialize(obj->mapi_ctx);
+    if (obj->path)
+      efree(obj->path);
+    if (obj->talloc_ctx)
+      talloc_free(obj->talloc_ctx);
+
+    zend_hash_destroy(obj->std.properties);
+    FREE_HASHTABLE(obj->std.properties);
+
+    efree(obj);
+}
+
+static zend_object_value mapi_profile_db_create_handler(zend_class_entry *type TSRMLS_DC)
+{
+    zval *tmp;
+    zend_object_value retval;
+
+    mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) emalloc(sizeof(mapi_profile_db_object_t));
+    memset(obj, 0, sizeof(mapi_profile_db_object_t));
+
+    obj->std.ce = type;
+
+    ALLOC_HASHTABLE(obj->std.properties);
+    zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+    zend_hash_copy(obj->std.properties, &type->default_properties,
+        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+
+    retval.handle = zend_objects_store_put(obj, NULL,
+        mapi_profile_db_free_storage, NULL TSRMLS_CC);
+    retval.handlers = &mapi_profile_db_object_handlers;
+
+    return retval;
+}
+
 void MAPIProfileDBRegisterClass()
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPIProfileDB", mapi_profile_db_class_functions);
-  zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_profile_db_ce = zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_profile_db_ce->create_object = mapi_profile_db_create_handler;
+  memcpy(&mapi_profile_db_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+  mapi_profile_db_object_handlers.clone_obj = NULL;
 }
-
 
 static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname)
 {
@@ -66,47 +111,47 @@ PHP_METHOD(MAPIProfileDB, __construct)
     RETURN_NULL();
   }
 
-  zval *object = getThis();
-  add_property_string(object, "__profdb", profdb_path, 0);
+  zval* php_obj = getThis();
+  mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  obj->path = estrdup(profdb_path);
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)
 {
-  ulong key = (ulong) getThis();
-  if (zend_hash_index_exists(mapi_context_by_object, key)) {
-    zend_hash_index_del(mapi_context_by_object, key);
-  }
 }
 
-struct mapi_context* get_mapi_context(zval* mapiProfileDB)
+PHP_METHOD(MAPIProfileDB, path)
 {
-  struct mapi_context** ct;
-  int res;
+  zval* php_obj = getThis();
+  mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  RETURN_STRING(obj->path, 1);
+}
 
-  ulong key = (ulong) mapiProfileDB; // XXX check this is true in all cases
 
-  res= zend_hash_index_find(mapi_context_by_object, key, (void**) &ct);
-  if (res == SUCCESS) {
-    return *ct;
+struct mapi_context* mapi_context_init(char *profdb)
+{
+  struct mapi_context   *mapi_ctx;
+  enum MAPISTATUS        retval;
+  retval = MAPIInitialize(&mapi_ctx, profdb);
+  if (retval != MAPI_E_SUCCESS) {
+    const char *err_str = mapi_get_errstr(retval);
+    php_error(E_ERROR, "Intialize MAPI: %s", err_str);
   }
 
-  // new mapi context
-  zval **profdb;
-  if (zend_hash_find(Z_OBJPROP_P(mapiProfileDB),
-                     "__profdb", sizeof("__profdb"), (void**)&profdb) == FAILURE) {
-    php_error(E_ERROR, "__profdb attribute not found");
-  }
+  return mapi_ctx;
+}
 
-  struct mapi_context* new_ct  =  mapi_context_init(Z_STRVAL_P(*profdb));
-  ct = &new_ct;
 
-  res = zend_hash_index_update(mapi_context_by_object, key,
-                                ct, sizeof(struct mapi_context**), NULL);
-  if (res == FAILURE) {
-    php_error(E_ERROR, "Adding to MAPI contexts hash");
-  }
+struct mapi_context* get_mapi_context(zval* mapi_profile_db)
+{
+  mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
+  if (obj->mapi_ctx != NULL)
+    return obj->mapi_ctx;
 
-  return *ct;
+  // create new mapi context
+  struct mapi_context* new_ct  =  mapi_context_init(obj->path);
+  obj->mapi_ctx = new_ct;
+  return new_ct;
 }
 
 PHP_METHOD(MAPIProfileDB, profiles)
@@ -139,8 +184,6 @@ PHP_METHOD(MAPIProfileDB, profiles)
     add_next_index_zval(return_value, profile);
   }
 }
-
-
 
 PHP_METHOD(MAPIProfileDB, getProfile)
 {

@@ -142,7 +142,7 @@ struct mapi_context* mapi_context_init(char *profdb)
 }
 
 
-struct mapi_context* get_mapi_context(zval* mapi_profile_db)
+struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapi_profile_db)
 {
   mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
   if (obj->mapi_ctx != NULL)
@@ -156,7 +156,7 @@ struct mapi_context* get_mapi_context(zval* mapi_profile_db)
 
 PHP_METHOD(MAPIProfileDB, profiles)
 {
-  struct mapi_context *mapi_ctx = get_mapi_context(getThis());
+  struct mapi_context *mapi_ctx = mapi_profile_db_get_mapi_context(getThis());
 
   struct SRowSet proftable;
   memset(&proftable, 0, sizeof (struct SRowSet));
@@ -193,7 +193,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   struct mapi_context* mapi_ctx;
 
   zval* this_obj= getThis();
-  mapi_ctx = get_mapi_context(this_obj);
+  mapi_ctx = mapi_profile_db_get_mapi_context(this_obj);
 
   char* opt_profname = NULL;
   int   opt_profname_len;
@@ -201,7 +201,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
     RETURN_NULL();
   }
 
-  mapi_ctx = get_mapi_context(this_obj);
+  mapi_ctx = mapi_profile_db_get_mapi_context(this_obj);
   mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "getProfile");
   profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 

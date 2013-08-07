@@ -38,7 +38,7 @@ struct mapi_context* get_profile_mapi_context(zval* profile_obj)
     php_error(E_ERROR, "profiles_db attribute not found");
   }
 
-  return get_mapi_context(*parent_db);
+  return mapi_profile_db_get_mapi_context(*parent_db);
 }
 
 struct mapi_profile* get_profile(zval* profileObject)

@@ -8,7 +8,7 @@ PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
 
 void MAPIProfileDBRegisterClass();
-struct mapi_context* get_mapi_context(zval* mapiProfileDB);
+struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapiProfileDB);
 
 struct mapi_profile_db_object
 {

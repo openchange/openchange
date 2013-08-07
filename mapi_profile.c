@@ -18,75 +18,118 @@ static zend_function_entry mapi_profile_class_functions[] = {
   { NULL, NULL, NULL }
 };
 
+static zend_class_entry* mapi_profile_ce;
+static zend_object_handlers mapi_profile_object_handlers;
+
+static void mapi_profile_free_storage(void *object TSRMLS_DC)
+{
+    mapi_profile_object_t* obj = (mapi_profile_object_t*) object;
+    if (obj->talloc_ctx)
+      talloc_free(obj->talloc_ctx);
+
+    zend_hash_destroy(obj->std.properties);
+    FREE_HASHTABLE(obj->std.properties);
+
+    efree(obj);
+}
+
+static zend_object_value mapi_profile_create_handler(zend_class_entry *type TSRMLS_DC)
+{
+    zval *tmp;
+    zend_object_value retval;
+
+    mapi_profile_object_t* obj = (mapi_profile_object_t*) emalloc(sizeof(mapi_profile_object_t));
+    memset(obj, 0, sizeof(mapi_profile_object_t));
+
+    obj->std.ce = type;
+
+    ALLOC_HASHTABLE(obj->std.properties);
+    zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+    zend_hash_copy(obj->std.properties, &type->default_properties,
+        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+
+    retval.handle = zend_objects_store_put(obj, NULL,
+        mapi_profile_free_storage, NULL TSRMLS_CC);
+    retval.handlers = &mapi_profile_object_handlers;
+
+    return retval;
+}
 
 void MAPIProfileRegisterClass()
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
-  zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_profile_ce = zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_profile_ce->create_object = mapi_profile_create_handler;
+  memcpy(&mapi_profile_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+  mapi_profile_object_handlers.clone_obj = NULL;
 }
 
-struct mapi_context* get_profile_mapi_context(zval* profile_obj)
+zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALLOC_CTX* talloc_ctx)
 {
-  zval** parent_db;
-  struct mapi_context* ctx;
+  zval* php_obj;
+  MAKE_STD_ZVAL(php_obj);
 
-  char* exchange_version = NULL;
-
-  if (zend_hash_find(Z_OBJPROP_P(profile_obj),
-                     "profiles_db", sizeof("profiles_db"), (void**)&parent_db) == FAILURE) {
-    php_error(E_ERROR, "profiles_db attribute not found");
+  /* create the MapiProfile instance in return_value zval */
+  zend_class_entry **ce;
+  if (zend_hash_find(EG(class_table),"mapiprofile", sizeof("mapiprofile"),(void**)&ce) == FAILURE) {
+    php_error(E_ERROR,"Class MAPIProfile does not exist.");
   }
 
-  return mapi_profile_db_get_mapi_context(*parent_db);
+  object_init_ex(php_obj, *ce);
+
+  mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  obj->profile = profile;
+  obj->parent = profile_db;
+  obj->talloc_ctx = talloc_ctx;
+  return php_obj;
 }
 
-struct mapi_profile* get_profile(zval* profileObject)
+struct mapi_context* profile_get_mapi_context(zval* profile_obj)
 {
-  zval** profile_resource;
-  struct entry_w_mem_ctx* profile_w_mem_ctx;
+  mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(profile_obj TSRMLS_CC);
+  return mapi_profile_db_get_mapi_context(obj->parent);
+}
 
-  if (zend_hash_find(Z_OBJPROP_P(profileObject),
-                     "profile", sizeof("profile"), (void**)&profile_resource) == FAILURE) {
-    php_error(E_ERROR, "profile attribute not found");
-  }
-
-  ZEND_FETCH_RESOURCE_NO_RETURN(profile_w_mem_ctx, struct entry_w_mem_ctx*, profile_resource, -1, PROFILE_RESOURCE_NAME, profile_resource_id);
-  if (profile_w_mem_ctx == NULL) {
-    php_error(E_ERROR, "profile resource not correctly fetched");
-  }
-
-  return (struct mapi_profile*) profile_w_mem_ctx->entry;
+struct mapi_profile* get_profile(zval* php_profile_obj)
+{
+  mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(php_profile_obj TSRMLS_CC);
+  return obj->profile;
 }
 
 PHP_METHOD(MAPIProfile, __construct)
 {
-  zval* thisObject;
-  zval* profile_resource;
-  zval* db_object;
-
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "or", &db_object, &profile_resource) == FAILURE ) {
-    RETURN_NULL();
-  }
-  if (strncmp(Z_OBJCE_P(db_object)->name, "MAPIProfileDB", sizeof("MAPIProfileDB")+1) != 0) {
-    php_error(E_ERROR, "The object must be of the class MAPIProfileDB instead of %s", Z_OBJCE_P(db_object)->name);
-  }
-
-  thisObject = getThis();
-  add_property_zval(thisObject, "profile", profile_resource);
-  add_property_zval(thisObject, "profiles_db", db_object);
-
-
-  /* char* propname; */
-  /* int propname_len; */
-  /* zend_mangle_property_name(&propname, &propname_len, */
-  /*                           "MAPIProfile",sizeof("MAPIProfile")-1, */
-  /*                           "profile", sizeof("profile")-1, 0); */
-  /* add_property_zval_ex(thisObject, propname, propname_len, */
-  /*                      profile_resource); */
-  /* efree(propname); */
-
+  php_error(E_ERROR, "This class cannot be instatiated. Use the getProfile class from MapiProfileDB");
 }
+
+/* PHP_METHOD(MAPIProfile, __construct) */
+/* { */
+/*   zval* thisObject; */
+/*   zval* profile_resource; */
+/*   zval* db_object; */
+
+/*   if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "or", &db_object, &profile_resource) == FAILURE ) { */
+/*     RETURN_NULL(); */
+/*   } */
+/*   if (strncmp(Z_OBJCE_P(db_object)->name, "MAPIProfileDB", sizeof("MAPIProfileDB")+1) != 0) { */
+/*     php_error(E_ERROR, "The object must be of the class MAPIProfileDB instead of %s", Z_OBJCE_P(db_object)->name); */
+/*   } */
+
+/*   thisObject = getThis(); */
+/*   add_property_zval(thisObject, "profile", profile_resource); */
+/*   add_property_zval(thisObject, "profiles_db", db_object); */
+
+
+/*   /\* char* propname; *\/ */
+/*   /\* int propname_len; *\/ */
+/*   /\* zend_mangle_property_name(&propname, &propname_len, *\/ */
+/*   /\*                           "MAPIProfile",sizeof("MAPIProfile")-1, *\/ */
+/*   /\*                           "profile", sizeof("profile")-1, 0); *\/ */
+/*   /\* add_property_zval_ex(thisObject, propname, propname_len, *\/ */
+/*   /\*                      profile_resource); *\/ */
+/*   /\* efree(propname); *\/ */
+
+/* } */
 
 PHP_METHOD(MAPIProfile, __destruct)
 {
@@ -95,8 +138,6 @@ PHP_METHOD(MAPIProfile, __destruct)
 
 PHP_METHOD(MAPIProfile, dump)
 {
-  zval** profile_resource;
-  struct entry_w_mem_ctx* profile_w_mem_ctx;
   struct mapi_profile* profile;
   char* exchange_version = NULL;
 
@@ -131,14 +172,13 @@ PHP_METHOD(MAPIProfile, dump)
 PHP_METHOD(MAPIProfile, logon)
 {
   struct mapi_context* mapi_ctx;
-  struct entry_w_mem_ctx* profile_w_mem_ctx;
   struct mapi_profile* profile;
   struct mapi_session* session = NULL;
   zval** profile_resource;
   zval*  session_resource;
 
   zval* this_obj = getThis();
-  mapi_ctx = get_profile_mapi_context(this_obj);
+  mapi_ctx = profile_get_mapi_context(this_obj);
   profile = get_profile(this_obj);
 
   enum MAPISTATUS logon_status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
@@ -165,5 +205,45 @@ PHP_METHOD(MAPIProfile, logon)
   ZVAL_STRING(&funcname, "__construct", 0);
   call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 2, args TSRMLS_CC);
 }
+
+
+
+/* PHP_METHOD(MAPIProfile, logon) */
+/* { */
+/*   struct mapi_context* mapi_ctx; */
+/*   struct entry_w_mem_ctx* profile_w_mem_ctx; */
+/*   struct mapi_profile* profile; */
+/*   struct mapi_session* session = NULL; */
+/*   zval** profile_resource; */
+/*   zval*  session_resource; */
+
+/*   zval* this_obj = getThis(); */
+/*   mapi_ctx = profile_get_mapi_context(this_obj); */
+/*   profile = get_profile(this_obj); */
+
+/*   enum MAPISTATUS logon_status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password); */
+/*   if (logon_status != MAPI_E_SUCCESS) { */
+/*     php_error(E_ERROR, "MapiLogonEx: %s",  mapi_get_errstr(logon_status)); */
+/*   } */
+
+/*   MAKE_STD_ZVAL(session_resource); */
+/*   ZEND_REGISTER_RESOURCE(session_resource, session, session_resource_id); */
+
+/*   /\* now create the MapiSession instance *\/ */
+/*   zend_class_entry **ce; */
+/*   if (zend_hash_find(EG(class_table),"mapisession", sizeof("mapisession"),(void**)&ce) == FAILURE) { */
+/*     php_error(E_ERROR,"Class MAPISession does not exist."); */
+/*   } */
+
+/*   object_init_ex(return_value, *ce); */
+
+/*   // call contructor with the session resource */
+/*   zval* args[2]; */
+/*   zval retval, str, funcname; */
+/*   args[0]  = this_obj; */
+/*   args[1]  = session_resource; */
+/*   ZVAL_STRING(&funcname, "__construct", 0); */
+/*   call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 2, args TSRMLS_CC); */
+/* } */
 
 

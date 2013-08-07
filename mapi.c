@@ -33,28 +33,17 @@ zend_module_entry mapi_module_entry = {
 ZEND_GET_MODULE(mapi)
 #endif
 
-void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
-{
-  struct entry_w_mem_ctx* ptr = (struct entry_w_mem_ctx*) rsrc->ptr;
-  if (ptr->mem_ctx != NULL) {
-    talloc_free(ptr->mem_ctx);
-  }
-
-  efree(ptr);
-}
-
-void do_nothing_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
-{
-}
-
 void talloc_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
 {
   TALLOC_CTX* ctx = (TALLOC_CTX*) rsrc->ptr;
   talloc_free(ctx);
 }
 
+void do_nothing_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
+{
+}
 
-int profile_resource_id;
+//int profile_resource_id;
 int session_resource_id;
 int talloc_resource_id;
 
@@ -65,9 +54,6 @@ PHP_MINIT_FUNCTION(mapi)
   MAPIProfileRegisterClass();
   MAPISessionRegisterClass();
 
-  profile_resource_id = zend_register_list_destructors_ex(
-                entry_w_mem_ctx_res_dtor, NULL, PROFILE_RESOURCE_NAME,
-                module_number);
   session_resource_id = zend_register_list_destructors_ex(
                 do_nothing_dtor, NULL, SESSION_RESOURCE_NAME,
                 module_number);

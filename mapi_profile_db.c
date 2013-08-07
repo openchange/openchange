@@ -205,27 +205,6 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "getProfile");
   profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
-  struct entry_w_mem_ctx* profile_w_mem_ctx;
-  profile_w_mem_ctx = emalloc(sizeof(struct entry_w_mem_ctx));
-  profile_w_mem_ctx->entry = profile;
-  profile_w_mem_ctx->mem_ctx = mem_ctx;
-
-  MAKE_STD_ZVAL(profile_resource);
-  ZEND_REGISTER_RESOURCE(profile_resource, profile_w_mem_ctx, profile_resource_id);
-
-  /* now create the MapiProfile instance */
-  zend_class_entry **ce;
-  if (zend_hash_find(EG(class_table),"mapiprofile", sizeof("mapiprofile"),(void**)&ce) == FAILURE) {
-    php_error(E_ERROR,"Class MAPIProfile does not exist.");
-  }
-
-  object_init_ex(return_value, *ce);
-
-  // call contructor with the profile resource
-  zval* args[2];
-  zval retval, str, funcname;
-  args[0]  = this_obj;
-  args[1]  = profile_resource;
-  ZVAL_STRING(&funcname, "__construct", 0);
-  call_user_function(&((*ce)->function_table), &return_value, &funcname, &retval, 2, args TSRMLS_CC);
+  zval* php_obj = create_profile_object(profile, this_obj, mem_ctx);
+  RETURN_ZVAL(php_obj, 0, 0);
 }

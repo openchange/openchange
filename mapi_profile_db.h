@@ -15,7 +15,6 @@ struct mapi_profile_db_object
   zend_object std;
   char* path;
   TALLOC_CTX* talloc_ctx;
-  zval* parent;
   int nChildren;
   zval* childrens;
   struct mapi_context* mapi_ctx;

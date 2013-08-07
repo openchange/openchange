@@ -6,8 +6,6 @@
 #include "php_mapi.h"
 #include "mapi_session.h"
 
-extern int session_resource_id;
-
 static zend_function_entry mapi_session_class_functions[] = {
   PHP_ME(MAPISession, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
   // PHP_ME(MAPISession, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
@@ -25,21 +23,29 @@ void MAPISessionRegisterClass()
 
 struct mapi_session* get_session(zval* session_obj)
 {
-  zval** session_resource;
-  struct mapi_session* session;
+  return NULL;
 
-  if (zend_hash_find(Z_OBJPROP_P(session_obj),
-                     "session", sizeof("session"), (void**)&session_resource) == FAILURE) {
-    php_error(E_ERROR, "session attribute not found");
-  }
-
-  ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session**, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id);
-  if (session  == NULL) {
-    php_error(E_ERROR, "session resource not correctly fetched");
-  }
-
-  return session;
 }
+
+/* struct mapi_session* get_session(zval* session_obj) */
+/* { */
+
+/*   zval** session_resource; */
+/*   struct mapi_session* session; */
+
+/*   if (zend_hash_find(Z_OBJPROP_P(session_obj), */
+/*                      "session", sizeof("session"), (void**)&session_resource) == FAILURE) { */
+/*     php_error(E_ERROR, "session attribute not found"); */
+/*   } */
+
+/*   ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session**, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id); */
+/*   if (session  == NULL) { */
+/*     php_error(E_ERROR, "session resource not correctly fetched"); */
+/*   } */
+
+/*   return session; */
+/* } */
+
 
 struct mapi_profile* session_obj_get_profile(zval* session_obj)
 {

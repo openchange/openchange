@@ -19,13 +19,6 @@
 PHP_MINIT_FUNCTION(mapi);
 PHP_MSHUTDOWN_FUNCTION(mapi);
 
-
-struct entry_w_mem_ctx {
-  void* entry;
-  TALLOC_CTX* mem_ctx;
-};
-
-
 static struct mapi_profile* get_profile_ptr(TALLOC_CTX* mem_ctx,  struct mapi_context* mapi_ctx, char* opt_profname);
 void entry_w_mem_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC);
 

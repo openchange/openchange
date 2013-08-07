@@ -28,5 +28,6 @@ extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
 
 #define EXPECTED_MAPI_OBJECTS 32
+#define OBJ_GET_TALLOC_CTX(objType, obj) ((objType) zend_object_store_get_object(obj TSRMLS_CC))->talloc_ctx;
 
 #endif

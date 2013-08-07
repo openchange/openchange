@@ -39,12 +39,6 @@ void talloc_ctx_res_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
   talloc_free(ctx);
 }
 
-void do_nothing_dtor(zend_rsrc_list_entry *rsrc TSRMLS_DC)
-{
-}
-
-//int profile_resource_id;
-int session_resource_id;
 int talloc_resource_id;
 
 PHP_MINIT_FUNCTION(mapi)
@@ -54,9 +48,6 @@ PHP_MINIT_FUNCTION(mapi)
   MAPIProfileRegisterClass();
   MAPISessionRegisterClass();
 
-  session_resource_id = zend_register_list_destructors_ex(
-                do_nothing_dtor, NULL, SESSION_RESOURCE_NAME,
-                module_number);
   talloc_resource_id = zend_register_list_destructors_ex(
                 talloc_ctx_res_dtor, NULL, TALLOC_RESOURCE_NAME,
                 module_number);

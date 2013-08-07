@@ -202,7 +202,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   }
 
   mapi_ctx = mapi_profile_db_get_mapi_context(this_obj);
-  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "getProfile");
+  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "profile");
   profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
 
   zval* php_obj = create_profile_object(profile, this_obj, mem_ctx);

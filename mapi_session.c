@@ -14,49 +14,90 @@ static zend_function_entry mapi_session_class_functions[] = {
   { NULL, NULL, NULL }
 };
 
+static zend_class_entry* mapi_session_ce;
+static zend_object_handlers mapi_session_object_handlers;
+
+static void mapi_session_free_storage(void *object TSRMLS_DC)
+{
+    mapi_session_object_t* obj = (mapi_session_object_t*) object;
+    if (obj->talloc_ctx)
+      talloc_free(obj->talloc_ctx);
+
+    zend_hash_destroy(obj->std.properties);
+    FREE_HASHTABLE(obj->std.properties);
+
+    efree(obj);
+}
+
+static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRMLS_DC)
+{
+    zval *tmp;
+    zend_object_value retval;
+
+    mapi_session_object_t* obj = (mapi_session_object_t*) emalloc(sizeof(mapi_session_object_t));
+    memset(obj, 0, sizeof(mapi_session_object_t));
+
+    obj->std.ce = type;
+
+    ALLOC_HASHTABLE(obj->std.properties);
+    zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+    zend_hash_copy(obj->std.properties, &type->default_properties,
+        (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+
+    retval.handle = zend_objects_store_put(obj, NULL,
+        mapi_session_free_storage, NULL TSRMLS_CC);
+    retval.handlers = &mapi_session_object_handlers;
+
+    return retval;
+}
+
+
 void MAPISessionRegisterClass()
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPISession", mapi_session_class_functions);
-  zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_session_ce = zend_register_internal_class(&ce TSRMLS_CC);
+  mapi_session_ce->create_object = mapi_session_create_handler;
+  memcpy(&mapi_session_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+  mapi_session_object_handlers.clone_obj = NULL;
 }
 
-struct mapi_session* get_session(zval* session_obj)
+struct mapi_profile* session_get_profile(zval* php_obj);
+
+
+zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_CTX* talloc_ctx)
 {
-  return NULL;
+  zval* php_obj;
+  MAKE_STD_ZVAL(php_obj);
 
-}
-
-/* struct mapi_session* get_session(zval* session_obj) */
-/* { */
-
-/*   zval** session_resource; */
-/*   struct mapi_session* session; */
-
-/*   if (zend_hash_find(Z_OBJPROP_P(session_obj), */
-/*                      "session", sizeof("session"), (void**)&session_resource) == FAILURE) { */
-/*     php_error(E_ERROR, "session attribute not found"); */
-/*   } */
-
-/*   ZEND_FETCH_RESOURCE_NO_RETURN(session, struct mapi_session**, session_resource, -1, SESSION_RESOURCE_NAME, session_resource_id); */
-/*   if (session  == NULL) { */
-/*     php_error(E_ERROR, "session resource not correctly fetched"); */
-/*   } */
-
-/*   return session; */
-/* } */
-
-
-struct mapi_profile* session_obj_get_profile(zval* session_obj)
-{
-  zval** profile_obj;
-  if (zend_hash_find(Z_OBJPROP_P(session_obj),
-                     "profile", sizeof("profile"), (void**)&profile_obj) == FAILURE) {
-    php_error(E_ERROR, "profile attribute not found");
+  /* create the MapiProfile instance in return_value zval */
+  zend_class_entry **ce;
+  if (zend_hash_find(EG(class_table),"mapisession", sizeof("mapisession"),(void**)&ce) == FAILURE) {
+    php_error(E_ERROR,"Class MAPISession does not exist.");
   }
-  return get_profile(*profile_obj);
+
+  object_init_ex(php_obj, *ce);
+
+  mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  obj->session = session;
+  obj->parent_profile = profile;
+  obj->talloc_ctx = talloc_ctx;
+
+  return php_obj;
 }
 
+
+struct mapi_session* get_session(zval* php_obj)
+{
+  mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  return obj->session;
+}
+
+struct mapi_profile* session_get_profile(zval* php_obj)
+{
+  mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  return get_profile(obj->parent_profile);
+}
 
 static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
 {
@@ -84,21 +125,7 @@ static void init_message_store(mapi_object_t *store, struct mapi_session* sessio
 
 PHP_METHOD(MAPISession, __construct)
 {
-  zval* this_obj;
-  zval* profile_object;
-  zval* session_resource;
-
-  if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "or", &profile_object, &session_resource) == FAILURE ) {
-    RETURN_NULL();
-  }
-
-  if (strncmp(Z_OBJCE_P(profile_object)->name, "MAPIProfile", sizeof("MAPIProfile")+1) != 0) {
-    php_error(E_ERROR, "The object must be of the class MAPIProfile");
-  }
-
-  this_obj = getThis();
-  add_property_zval(this_obj, "profile", profile_object);
-  add_property_zval(this_obj, "session", session_resource);
+  php_error(E_ERROR, "The session object should not created directyle. Use the 'logon' method in the profile object");
 }
 
 PHP_METHOD(MAPISession, folders)
@@ -111,7 +138,7 @@ PHP_METHOD(MAPISession, folders)
   mapi_object_t obj_store;
 
   this_obj = getThis();
-  profile = session_obj_get_profile(this_obj);
+  profile = session_get_profile(this_obj);
   session = get_session(this_obj);
 
   // open user mailbox
@@ -704,7 +731,7 @@ PHP_METHOD(MAPISession, fetchmail)
   mapi_object_t obj_store;
   mapi_object_init(&obj_store);
   struct mapi_session* session = get_session(this_obj);
-  struct mapi_profile* profile = session_obj_get_profile(this_obj);
+  struct mapi_profile* profile = session_get_profile(this_obj);
 
   enum MAPISTATUS retval = OpenUserMailbox(session, (char*) profile->username, &obj_store);
                 if (retval != MAPI_E_SUCCESS) {

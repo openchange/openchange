@@ -137,7 +137,8 @@ PHP_METHOD(MAPISession, folders)
 {
    enum MAPISTATUS retval;
   zval* this_obj;
-  TALLOC_CTX *mem_ctx;
+  TALLOC_CTX *this_talloc_ctx;
+  TALLOC_CTX *talloc_ctx;
   struct mapi_session* session = NULL;
   struct mapi_profile* profile;
   mapi_object_t obj_store;
@@ -155,10 +156,11 @@ PHP_METHOD(MAPISession, folders)
   uint32_t                      cValues;
   const char                    *mailbox_name;
 
-  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "MAPISession::folders");
+  this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t*, this_obj);
+  talloc_ctx = talloc_named(this_talloc_ctx, 0, "MAPISession::folders");
 
   /* Retrieve the mailbox folder name */
-  SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
+  SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
   retval = GetProps(&obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
   MAPIFreeBuffer(SPropTagArray);
   if (retval != MAPI_E_SUCCESS) {
@@ -179,9 +181,9 @@ PHP_METHOD(MAPISession, folders)
 
   array_init(return_value);
   add_assoc_string(return_value, "name", (char*) mailbox_name, 1);
-  add_assoc_zval(return_value, "childs", get_child_folders(mem_ctx, &obj_store, id_mailbox, 0));
+  add_assoc_zval(return_value, "childs", get_child_folders(talloc_ctx, &obj_store, id_mailbox, 0));
 
-  talloc_free(mem_ctx);
+  talloc_free(talloc_ctx);
 }
 
 static zval* get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id, int count)
@@ -755,15 +757,34 @@ static void open_user_mailbox(struct mapi_profile* profile, struct mapi_session*
 PHP_METHOD(MAPISession, fetchmail)
 {
   zval* this_obj = getThis();
+  TALLOC_CTX* this_talloc_ctx;
+  TALLOC_CTX *talloc_ctx;
+  mapi_object_t obj_store;
   mapi_object_t user_mbox;
   mapi_object_init(&user_mbox);
+
   struct mapi_session* session = get_session(this_obj);
   struct mapi_profile* profile = session_get_profile(this_obj);
 
   open_user_mailbox(profile, session, &user_mbox);
 
-  TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "do_fetchmail");
-  zval* messages = do_fetchmail(mem_ctx, &user_mbox);
+  this_obj = getThis();
+  profile = session_get_profile(this_obj);
+  session = get_session(this_obj);
+
+  // open user mailbox
+  init_message_store(&obj_store, session, false, (char*) profile->username);
+
+  mapi_id_t                     id_mailbox;
+  struct SPropTagArray          *SPropTagArray;
+  struct SPropValue             *lpProps;
+  uint32_t                      cValues;
+  const char                    *mailbox_name;
+
+  this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t*, this_obj);
+  talloc_ctx = talloc_named(this_talloc_ctx, 0, "do_fetchmail");
+
+  zval* messages = do_fetchmail(talloc_ctx, &user_mbox);
   RETURN_ZVAL(messages, 0, 0);
 
 }
@@ -985,10 +1006,11 @@ PHP_METHOD(MAPISession, appointments)
 
   open_user_mailbox(profile, session, &user_mbox);
 
-  TALLOC_CTX* mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "appointments");
+  TALLOC_CTX* this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t*, this_obj);
+  TALLOC_CTX* talloc_ctx = talloc_named(this_talloc_ctx, 0, "appointments");
 
-  zval* appointments = fetch_items(mem_ctx, &user_mbox,  "Appointment");
+  zval* appointments = fetch_items(talloc_ctx, &user_mbox,  "Appointment");
 
-  talloc_free(mem_ctx);
+  talloc_free(talloc_ctx);
   RETURN_ZVAL(appointments, 0, 0);
 }

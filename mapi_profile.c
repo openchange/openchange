@@ -144,12 +144,14 @@ PHP_METHOD(MAPIProfile, dump)
 PHP_METHOD(MAPIProfile, logon)
 {
   TALLOC_CTX* talloc_ctx;
+  TALLOC_CTX* this_talloc_ctx;
   struct mapi_context* mapi_ctx;
   struct mapi_profile* profile;
   struct mapi_session* session = NULL;
 
   zval* this_obj = getThis();
-  talloc_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "session");
+  this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_profile_object_t*, this_obj);
+  talloc_ctx = talloc_named(this_talloc_ctx, 0, "session");
   mapi_ctx = profile_get_mapi_context(this_obj);
   profile = get_profile(this_obj);
 

@@ -115,6 +115,7 @@ PHP_METHOD(MAPIProfileDB, __construct)
   zval* php_obj = getThis();
   mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
   obj->path = estrdup(profdb_path);
+  obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)
@@ -190,7 +191,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 {
   zval *profile_resource;
   struct mapi_profile* profile;
-  TALLOC_CTX*          mem_ctx;
+  TALLOC_CTX*          talloc_ctx;
+  TALLOC_CTX*          this_talloc_ctx;
   struct mapi_context* mapi_ctx;
 
   zval* this_obj= getThis();
@@ -203,9 +205,10 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   }
 
   mapi_ctx = mapi_profile_db_get_mapi_context(this_obj);
-  mem_ctx = talloc_named(object_talloc_ctx(this_obj), 0, "profile");
-  profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
+  this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_profile_db_object_t*, this_obj);
+  talloc_ctx = talloc_named(this_talloc_ctx, 0, "profile");
+  profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
-  zval* php_obj = create_profile_object(profile, this_obj, mem_ctx);
+  zval* php_obj = create_profile_object(profile, this_obj, talloc_ctx);
   RETURN_ZVAL(php_obj, 0, 0);
 }

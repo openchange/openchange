@@ -39,13 +39,11 @@ echo "Appoinments END\n";
 
   echo "Destroy objecs\n";
   unset($mapiProfile);
- # $mapiProfile->__destruct();
- $mapi->__destruct();
  $session = "destruido";
  echo "After destroy\n";
 
 
  echo "Create and destroy idle MAPIDb\n";
  $mapi = new MAPIProfileDB("/dfdf");
- $mapi->__destruct();
+
 ?>

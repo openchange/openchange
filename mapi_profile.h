@@ -12,6 +12,7 @@ zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALL
 
 struct mapi_profile* get_profile(zval* profileObject);
 struct mapi_context* profile_get_mapi_context(zval* object);
+void mapi_profile_remove_children_session(zval* mapi_profile, zend_object_handle session_handle);
 
 struct mapi_profile_object
 {
@@ -19,8 +20,7 @@ struct mapi_profile_object
   char* path;
   TALLOC_CTX* talloc_ctx;
   zval* parent;
-  int n_sessions;
-  zval** nSessions;
+  zval* children_sessions;
   struct mapi_profile* profile;
 };
 typedef struct mapi_profile_object mapi_profile_object_t;

@@ -11,7 +11,7 @@
 
 static zend_function_entry mapi_session_class_functions[] = {
   PHP_ME(MAPISession, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-  // PHP_ME(MAPISession, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+  PHP_ME(MAPISession, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
   PHP_ME(MAPISession, folders, NULL, ZEND_ACC_PUBLIC)
   PHP_ME(MAPISession, fetchmail, NULL, ZEND_ACC_PUBLIC)
   PHP_ME(MAPISession, appointments, NULL, ZEND_ACC_PUBLIC)
@@ -80,12 +80,11 @@ zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_
     php_error(E_ERROR,"Class MAPISession does not exist.");
   }
 
-
   object_init_ex(php_obj, *ce);
 
   mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
   obj->session = session;
-  obj->parent_profile = profile;
+  obj->parent = profile;
   obj->talloc_ctx = talloc_ctx;
 
   return php_obj;
@@ -101,7 +100,7 @@ struct mapi_session* get_session(zval* php_obj)
 struct mapi_profile* session_get_profile(zval* php_obj)
 {
   mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
-  return get_profile(obj->parent_profile);
+  return get_profile(obj->parent);
 }
 
 static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
@@ -131,6 +130,14 @@ static void init_message_store(mapi_object_t *store, struct mapi_session* sessio
 PHP_METHOD(MAPISession, __construct)
 {
   php_error(E_ERROR, "The session object should not created directyle. Use the 'logon' method in the profile object");
+}
+
+PHP_METHOD(MAPISession, __destruct)
+{
+  zval* php_this = getThis();
+  mapi_session_object_t* this = (mapi_session_object_t*) zend_object_store_get_object(php_this TSRMLS_CC);
+
+  mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this));
 }
 
 PHP_METHOD(MAPISession, folders)

@@ -214,15 +214,12 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
   zval* php_obj = create_profile_object(profile, this_php_obj, talloc_ctx);
-  zend_object_handle profile_handle = php_obj->value.obj.handle;
-
 
   mapi_profile_db_object_t* this_obj = (mapi_profile_db_object_t*) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-  add_index_zval(this_obj->children_profiles, (long) profile_handle, php_obj);
+  add_index_zval(this_obj->children_profiles, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
 
   RETURN_ZVAL(php_obj, 0, 0);
 }
-
 
 void  mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle)
 {

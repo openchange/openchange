@@ -106,7 +106,12 @@ PHP_METHOD(MAPIProfile, __construct)
 
 PHP_METHOD(MAPIProfile, __destruct)
 {
-  // nothing for now
+  zval* php_this = getThis();
+  zend_object_handle profile_handle = php_this->value.obj.handle;
+  mapi_profile_object_t* this = (mapi_profile_object_t*) zend_object_store_get_object(php_this TSRMLS_CC);
+
+  zval* parent = this->parent;
+  mapi_profile_db_remove_children_profile(parent, profile_handle);
 }
 
 PHP_METHOD(MAPIProfile, dump)

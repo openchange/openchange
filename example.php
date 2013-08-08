@@ -37,16 +37,10 @@ $appointments = $session->appointments();
 var_dump($appointments);
 echo "Appoinments END\n";
 
-#  echo "Destroy objecs\n";
-#  unset($mapiProfile);
-# $session = "destruido";
-# echo "After destroy\n";
+echo "Destroy mapiProfile\n";
+$mapiProfile = 'XXX';
 
-unset($session);
-unset($profile);
-
-
- echo "Create and destroy idle MAPIDb\n";
- $mapi = new MAPIProfileDB("/dfdf");
+echo "Create and destroy idle MAPIDb\n";
+$mapi = new MAPIProfileDB("/dfdf");
 
 ?>

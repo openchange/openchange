@@ -19,8 +19,8 @@ struct mapi_profile_object
   char* path;
   TALLOC_CTX* talloc_ctx;
   zval* parent;
-  int nChildren;
-  zval* childrens;
+  int n_sessions;
+  zval** nSessions;
   struct mapi_profile* profile;
 };
 typedef struct mapi_profile_object mapi_profile_object_t;

@@ -116,10 +116,17 @@ PHP_METHOD(MAPIProfileDB, __construct)
   mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
   obj->path = estrdup(profdb_path);
   obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
+  MAKE_STD_ZVAL(obj->children_profiles);
+  array_init(obj->children_profiles);
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)
 {
+  zval* php_obj = getThis();
+  mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
+  if (zend_hash_num_elements(obj->children_profiles->value.ht) > 0) {
+    php_error(E_ERROR, "The MapiProfileDB object has active profile objects");
+  }
 }
 
 PHP_METHOD(MAPIProfileDB, path)
@@ -194,8 +201,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   TALLOC_CTX*          talloc_ctx;
   struct mapi_context* mapi_ctx;
 
-  zval* this_obj= getThis();
-  mapi_ctx = mapi_profile_db_get_mapi_context(this_obj);
+  zval* this_php_obj= getThis();
+  mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj);
 
   char* opt_profname = NULL;
   int   opt_profname_len;
@@ -206,6 +213,20 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   talloc_ctx = talloc_named(NULL, 0, "profile");
   profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
-  zval* php_obj = create_profile_object(profile, this_obj, talloc_ctx);
+  zval* php_obj = create_profile_object(profile, this_php_obj, talloc_ctx);
+  zend_object_handle profile_handle = php_obj->value.obj.handle;
+
+
+  mapi_profile_db_object_t* this_obj = (mapi_profile_db_object_t*) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+  add_index_zval(this_obj->children_profiles, (long) profile_handle, php_obj);
+
   RETURN_ZVAL(php_obj, 0, 0);
 }
+
+
+void  mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle)
+{
+    mapi_profile_db_object_t* this_obj = (mapi_profile_db_object_t*) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
+    zend_hash_index_del(this_obj->children_profiles->value.ht, (long) profile_handle);
+}
+

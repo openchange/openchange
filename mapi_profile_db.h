@@ -9,14 +9,14 @@ PHP_METHOD(MAPIProfileDB, getProfile);
 
 void MAPIProfileDBRegisterClass();
 struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapiProfileDB);
+void mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle);
 
 struct mapi_profile_db_object
 {
   zend_object std;
   char* path;
   TALLOC_CTX* talloc_ctx;
-  int nChildren;
-  zval* childrens;
+  zval* children_profiles;
   struct mapi_context* mapi_ctx;
 };
 typedef struct mapi_profile_db_object mapi_profile_db_object_t;

@@ -82,7 +82,8 @@ zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALL
   mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
   obj->profile = profile;
   obj->parent = profile_db;
-  obj->talloc_ctx = talloc_ctx;
+  obj->talloc_ctx =  talloc_ctx;
+
   return php_obj;
 }
 
@@ -143,15 +144,12 @@ PHP_METHOD(MAPIProfile, dump)
 
 PHP_METHOD(MAPIProfile, logon)
 {
-  TALLOC_CTX* talloc_ctx;
-  TALLOC_CTX* this_talloc_ctx;
   struct mapi_context* mapi_ctx;
   struct mapi_profile* profile;
   struct mapi_session* session = NULL;
+  TALLOC_CTX*          talloc_ctx;
 
   zval* this_obj = getThis();
-  this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_profile_object_t*, this_obj);
-  talloc_ctx = talloc_named(this_talloc_ctx, 0, "session");
   mapi_ctx = profile_get_mapi_context(this_obj);
   profile = get_profile(this_obj);
 
@@ -160,6 +158,7 @@ PHP_METHOD(MAPIProfile, logon)
     php_error(E_ERROR, "MapiLogonEx: %s",  mapi_get_errstr(logon_status));
   }
 
+  talloc_ctx = talloc_named(NULL, 0, "session");
   zval* php_obj = create_session_object(session, this_obj, talloc_ctx);
   RETURN_ZVAL(php_obj, 0, 0);
 }

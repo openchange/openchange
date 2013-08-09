@@ -7,9 +7,6 @@
 #include "mapi_profile_db.h"
 #include "mapi_profile.h"
 
-extern int profile_resource_id;
-extern HashTable *mapi_context_by_object;
-
 static zend_function_entry mapi_profile_db_class_functions[] = {
      PHP_ME(MAPIProfileDB, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
      PHP_ME(MAPIProfileDB, __destruct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)

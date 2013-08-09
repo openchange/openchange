@@ -59,7 +59,7 @@ static zend_object_value mapi_profile_db_create_handler(zend_class_entry *type T
     return retval;
 }
 
-void MAPIProfileDBRegisterClass()
+void MAPIProfileDBRegisterClass(TSRMLS_D)
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPIProfileDB", mapi_profile_db_class_functions);
@@ -148,7 +148,7 @@ struct mapi_context* mapi_context_init(char *profdb)
 }
 
 
-struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapi_profile_db)
+struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapi_profile_db TSRMLS_DC)
 {
   mapi_profile_db_object_t* obj = (mapi_profile_db_object_t*) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
   if (obj->mapi_ctx != NULL)
@@ -162,7 +162,7 @@ struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapi_profile_db)
 
 PHP_METHOD(MAPIProfileDB, profiles)
 {
-  struct mapi_context *mapi_ctx = mapi_profile_db_get_mapi_context(getThis());
+  struct mapi_context *mapi_ctx = mapi_profile_db_get_mapi_context(getThis() TSRMLS_CC);
 
   struct SRowSet proftable;
   memset(&proftable, 0, sizeof (struct SRowSet));
@@ -199,7 +199,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   struct mapi_context* mapi_ctx;
 
   zval* this_php_obj= getThis();
-  mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj);
+  mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj TSRMLS_CC);
 
   char* opt_profname = NULL;
   int   opt_profname_len;
@@ -210,7 +210,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   talloc_ctx = talloc_named(NULL, 0, "profile");
   profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
-  zval* php_obj = create_profile_object(profile, this_php_obj, talloc_ctx);
+  zval* php_obj = create_profile_object(profile, this_php_obj, talloc_ctx TSRMLS_CC);
 
   mapi_profile_db_object_t* this_obj = (mapi_profile_db_object_t*) zend_object_store_get_object(this_php_obj TSRMLS_CC);
   add_index_zval(this_obj->children_profiles, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
@@ -218,7 +218,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
   RETURN_ZVAL(php_obj, 0, 0);
 }
 
-void  mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle)
+void  mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle TSRMLS_DC)
 {
     mapi_profile_db_object_t* this_obj = (mapi_profile_db_object_t*) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
     zend_hash_index_del(this_obj->children_profiles->value.ht, (long) profile_handle);

@@ -36,9 +36,9 @@ ZEND_GET_MODULE(mapi)
 PHP_MINIT_FUNCTION(mapi)
 {
   // register classes
-  MAPIProfileDBRegisterClass();
-  MAPIProfileRegisterClass();
-  MAPISessionRegisterClass();
+  MAPIProfileDBRegisterClass(TSRMLS_C);
+  MAPIProfileRegisterClass(TSRMLS_C);
+  MAPISessionRegisterClass(TSRMLS_C);
 
   return SUCCESS;
 }

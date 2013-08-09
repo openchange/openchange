@@ -56,7 +56,7 @@ static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRM
 }
 
 
-void MAPISessionRegisterClass()
+void MAPISessionRegisterClass(TSRMLS_D)
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPISession", mapi_session_class_functions);
@@ -66,10 +66,10 @@ void MAPISessionRegisterClass()
   mapi_session_object_handlers.clone_obj = NULL;
 }
 
-struct mapi_profile* session_get_profile(zval* php_obj);
+struct mapi_profile* session_get_profile(zval* php_obj TSRMLS_DC);
 
 
-zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_CTX* talloc_ctx)
+zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_CTX* talloc_ctx TSRMLS_DC)
 {
   zval* php_obj;
   MAKE_STD_ZVAL(php_obj);
@@ -91,16 +91,16 @@ zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_
 }
 
 
-struct mapi_session* get_session(zval* php_obj)
+struct mapi_session* get_session(zval* php_obj TSRMLS_DC)
 {
   mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
   return obj->session;
 }
 
-struct mapi_profile* session_get_profile(zval* php_obj)
+struct mapi_profile* session_get_profile(zval* php_obj TSRMLS_DC)
 {
   mapi_session_object_t* obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
-  return get_profile(obj->parent);
+  return get_profile(obj->parent TSRMLS_CC);
 }
 
 static void init_message_store(mapi_object_t *store, struct mapi_session* session, bool public_folder, char* username)
@@ -137,7 +137,7 @@ PHP_METHOD(MAPISession, __destruct)
   zval* php_this = getThis();
   mapi_session_object_t* this = (mapi_session_object_t*) zend_object_store_get_object(php_this TSRMLS_CC);
 
-  mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this));
+  mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
 
 PHP_METHOD(MAPISession, folders)
@@ -151,8 +151,8 @@ PHP_METHOD(MAPISession, folders)
   mapi_object_t obj_store;
 
   this_obj = getThis();
-  profile = session_get_profile(this_obj);
-  session = get_session(this_obj);
+  profile = session_get_profile(this_obj TSRMLS_CC);
+  session = get_session(this_obj TSRMLS_CC);
 
   // open user mailbox
   init_message_store(&obj_store, session, false, (char*) profile->username);
@@ -770,14 +770,14 @@ PHP_METHOD(MAPISession, fetchmail)
   mapi_object_t user_mbox;
   mapi_object_init(&user_mbox);
 
-  struct mapi_session* session = get_session(this_obj);
-  struct mapi_profile* profile = session_get_profile(this_obj);
+  struct mapi_session* session = get_session(this_obj TSRMLS_CC);
+  struct mapi_profile* profile = session_get_profile(this_obj TSRMLS_CC);
 
   open_user_mailbox(profile, session, &user_mbox);
 
   this_obj = getThis();
-  profile = session_get_profile(this_obj);
-  session = get_session(this_obj);
+  profile = session_get_profile(this_obj TSRMLS_CC);
+  session = get_session(this_obj TSRMLS_CC);
 
   // open user mailbox
   init_message_store(&obj_store, session, false, (char*) profile->username);
@@ -1008,8 +1008,8 @@ PHP_METHOD(MAPISession, appointments)
   zval* this_obj = getThis();
   mapi_object_t user_mbox;
   mapi_object_init(&user_mbox);
-  struct mapi_session* session = get_session(this_obj);
-  struct mapi_profile* profile = session_get_profile(this_obj);
+  struct mapi_session* session = get_session(this_obj TSRMLS_CC);
+  struct mapi_profile* profile = session_get_profile(this_obj TSRMLS_CC);
 
   open_user_mailbox(profile, session, &user_mbox);
 

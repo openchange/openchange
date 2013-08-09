@@ -53,7 +53,7 @@ static zend_object_value mapi_profile_create_handler(zend_class_entry *type TSRM
     return retval;
 }
 
-void MAPIProfileRegisterClass()
+void MAPIProfileRegisterClass(TSRMLS_D)
 {
   zend_class_entry ce;
   INIT_CLASS_ENTRY(ce, "MAPIProfile", mapi_profile_class_functions);
@@ -63,7 +63,7 @@ void MAPIProfileRegisterClass()
   mapi_profile_object_handlers.clone_obj = NULL;
 }
 
-zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALLOC_CTX* talloc_ctx)
+zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALLOC_CTX* talloc_ctx TSRMLS_DC)
 {
   zval* php_obj;
   MAKE_STD_ZVAL(php_obj);
@@ -86,13 +86,13 @@ zval* create_profile_object(struct mapi_profile* profile, zval* profile_db, TALL
   return php_obj;
 }
 
-struct mapi_context* profile_get_mapi_context(zval* profile_obj)
+struct mapi_context* profile_get_mapi_context(zval* profile_obj TSRMLS_DC)
 {
   mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(profile_obj TSRMLS_CC);
-  return mapi_profile_db_get_mapi_context(obj->parent);
+  return mapi_profile_db_get_mapi_context(obj->parent  TSRMLS_CC);
 }
 
-struct mapi_profile* get_profile(zval* php_profile_obj)
+struct mapi_profile* get_profile(zval* php_profile_obj TSRMLS_DC)
 {
   mapi_profile_object_t* obj = (mapi_profile_object_t*) zend_object_store_get_object(php_profile_obj TSRMLS_CC);
   return obj->profile;
@@ -114,7 +114,7 @@ PHP_METHOD(MAPIProfile, __destruct)
 
   // remove this instance form parent
   zval* parent = this->parent;
-  mapi_profile_db_remove_children_profile(parent, Z_OBJ_HANDLE_P(php_this));
+  mapi_profile_db_remove_children_profile(parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIProfile, dump)
@@ -122,7 +122,7 @@ PHP_METHOD(MAPIProfile, dump)
   struct mapi_profile* profile;
   char* exchange_version = NULL;
 
-  profile = get_profile(getThis());
+  profile = get_profile(getThis() TSRMLS_CC);
 
   switch (profile->exchange_version) {
   case 0x0:
@@ -158,8 +158,8 @@ PHP_METHOD(MAPIProfile, logon)
   TALLOC_CTX*          talloc_ctx;
 
   zval* this_php_obj = getThis();
-  mapi_ctx = profile_get_mapi_context(this_php_obj);
-  profile = get_profile(this_php_obj);
+  mapi_ctx = profile_get_mapi_context(this_php_obj TSRMLS_CC);
+  profile = get_profile(this_php_obj TSRMLS_CC);
 
   enum MAPISTATUS logon_status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
   if (logon_status != MAPI_E_SUCCESS) {
@@ -167,7 +167,7 @@ PHP_METHOD(MAPIProfile, logon)
   }
 
   talloc_ctx = talloc_named(NULL, 0, "session");
-  zval* php_obj = create_session_object(session, this_php_obj, talloc_ctx);
+  zval* php_obj = create_session_object(session, this_php_obj, talloc_ctx TSRMLS_CC);
 
   mapi_profile_object_t* this_obj = (mapi_profile_object_t*) zend_object_store_get_object(this_php_obj TSRMLS_CC);
   add_index_zval(this_obj->children_sessions, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
@@ -175,7 +175,7 @@ PHP_METHOD(MAPIProfile, logon)
   RETURN_ZVAL(php_obj, 0, 0);
 }
 
-void mapi_profile_remove_children_session(zval* mapi_profile, zend_object_handle session_handle)
+void mapi_profile_remove_children_session(zval* mapi_profile, zend_object_handle session_handle TSRMLS_DC)
 {
     mapi_profile_object_t* this_obj = (mapi_profile_object_t*) zend_object_store_get_object(mapi_profile TSRMLS_CC);
     zend_hash_index_del(this_obj->children_sessions->value.ht, (long) session_handle);

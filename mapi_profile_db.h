@@ -7,9 +7,9 @@ PHP_METHOD(MAPIProfileDB, path);
 PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
 
-void MAPIProfileDBRegisterClass();
-struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapiProfileDB);
-void mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle);
+void MAPIProfileDBRegisterClass(TSRMLS_D);
+struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapiProfileDB TSRMLS_DC);
+void mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle TSRMLS_DC);
 
 struct mapi_profile_db_object
 {

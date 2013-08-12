@@ -24,9 +24,13 @@ static void mapi_profile_free_storage(void *object TSRMLS_DC)
     mapi_profile_object_t* obj = (mapi_profile_object_t*) object;
     if (obj->talloc_ctx)
       talloc_free(obj->talloc_ctx);
-
     zend_hash_destroy(obj->std.properties);
     FREE_HASHTABLE(obj->std.properties);
+
+    if (obj->children_sessions) {
+      zval_dtor(obj->children_sessions);
+      FREE_ZVAL(obj->children_sessions);
+    }
 
     efree(obj);
 }

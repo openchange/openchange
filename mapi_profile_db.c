@@ -30,6 +30,11 @@ static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
       efree(obj->path);
     if (obj->talloc_ctx)
       talloc_free(obj->talloc_ctx);
+    if (obj->children_profiles) {
+      zval_dtor(obj->children_profiles);
+      FREE_ZVAL(obj->children_profiles);
+    }
+
 
     zend_hash_destroy(obj->std.properties);
     FREE_HASHTABLE(obj->std.properties);

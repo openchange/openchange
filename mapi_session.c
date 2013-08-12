@@ -1046,7 +1046,7 @@ static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const ch
         /* } else { */
           retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
           if (retval == MAPI_E_SUCCESS) {
-            id = talloc_asprintf(mem_ctx, ": %" PRIx64 "/%" PRIx64,
+            id = talloc_asprintf(mem_ctx, "%" PRIx64 "/%" PRIx64,
                                  SRowSet.aRow[i].lpProps[0].value.d,
                                  SRowSet.aRow[i].lpProps[1].value.d);
             mapi_SPropValue_array_named(&obj_message,

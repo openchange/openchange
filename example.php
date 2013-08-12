@@ -35,6 +35,11 @@ $appointments = $session->appointments();
 var_dump($appointments);
 echo "Appoinments END\n";
 
+echo "Contacts\n";
+$contacts = $session->contacts();
+var_dump($contacts);
+echo "Contacts END\n";
+
 echo "Destroy session\n";
 $session = 'DESTROY';
 

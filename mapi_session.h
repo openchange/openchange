@@ -10,6 +10,7 @@ PHP_METHOD(MAPISession, __destruct);
 PHP_METHOD(MAPISession, folders);
 PHP_METHOD(MAPISession, fetchmail);
 PHP_METHOD(MAPISession, appointments);
+PHP_METHOD(MAPISession, contacts);
 
 void MAPISessionRegisterClass(TSRMLS_D);
 zval* create_session_object(struct mapi_session* session, zval* profile, TALLOC_CTX* talloc_ctx TSRMLS_DC);

@@ -15,6 +15,7 @@ static zend_function_entry mapi_session_class_functions[] = {
   PHP_ME(MAPISession, folders, NULL, ZEND_ACC_PUBLIC)
   PHP_ME(MAPISession, fetchmail, NULL, ZEND_ACC_PUBLIC)
   PHP_ME(MAPISession, appointments, NULL, ZEND_ACC_PUBLIC)
+  PHP_ME(MAPISession, contacts, NULL, ZEND_ACC_PUBLIC)
   { NULL, NULL, NULL }
 };
 
@@ -869,6 +870,94 @@ static zval* appointment_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array
   return appointment;
 }
 
+static zval* contact_zval (TALLOC_CTX *mem_ctx, struct mapi_SPropValue_array *properties, const char *id)
+{
+  zval* contact;
+
+  const char* card_name = (const char *)find_mapi_SPropValue_data(properties, PidLidFileUnder);
+  const char* topic = (const char *)find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+  const char* company = (const char *)find_mapi_SPropValue_data(properties, PR_COMPANY_NAME);
+  const char* title = (const char *)find_mapi_SPropValue_data(properties, PR_TITLE);
+  const char* full_name = (const char *)find_mapi_SPropValue_data(properties, PR_DISPLAY_NAME);
+  const char* given_name = (const char *)find_mapi_SPropValue_data(properties, PR_GIVEN_NAME);
+  const char* surname = (const char *)find_mapi_SPropValue_data(properties, PR_SURNAME);
+  const char* department = (const char *)find_mapi_SPropValue_data(properties, PR_DEPARTMENT_NAME);
+  const char* email = (const char *)find_mapi_SPropValue_data(properties, PidLidEmail1OriginalDisplayName);
+  const char* office_phone = (const char *)find_mapi_SPropValue_data(properties, PR_OFFICE_TELEPHONE_NUMBER);
+  const char* home_phone = (const char *)find_mapi_SPropValue_data(properties, PR_HOME_TELEPHONE_NUMBER);
+  const char* mobile_phone = (const char *)find_mapi_SPropValue_data(properties, PR_MOBILE_TELEPHONE_NUMBER);
+  const char* business_fax = (const char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_FAX_NUMBER);
+  const char* business_home_page = (const char *)find_mapi_SPropValue_data(properties, PR_BUSINESS_HOME_PAGE);
+  const char* postal_address = (const char*)find_mapi_SPropValue_data(properties, PR_POSTAL_ADDRESS);
+  const char* street_address = (const char*)find_mapi_SPropValue_data(properties, PR_STREET_ADDRESS);
+  const char* locality = (const char*)find_mapi_SPropValue_data(properties, PR_LOCALITY);
+  const char* state = (const char*)find_mapi_SPropValue_data(properties, PR_STATE_OR_PROVINCE);
+  const char* country = (const char*)find_mapi_SPropValue_data(properties, PR_COUNTRY);
+
+  MAKE_STD_ZVAL(contact);
+  array_init(contact);
+
+  add_assoc_string(contact, "id", id ? (char*) id : "", 1);
+  if (card_name) {
+    add_assoc_string(contact, "cardName", card_name ? (char*) card_name : "", 1);
+  }
+  if (topic) {
+    add_assoc_string(contact, "topic", topic ? (char*) topic : "", 1);
+  }
+  if (full_name) {
+    add_assoc_string(contact, "fullName", full_name ? (char*) full_name : "", 1);
+  } else if (given_name && surname) {
+    size_t full_name_len = strlen(given_name) + strlen(surname) + 1;
+    full_name = (const char*) emalloc(full_name_len);
+    snprintf((char*) full_name, full_name_len, "%s %s", given_name, surname);
+    add_assoc_string(contact, "fullName", (char*) full_name, 0);
+  }
+  if (title) {
+    add_assoc_string(contact, "title", title ? (char*) title : "", 1);
+  }
+  if (department) {
+    add_assoc_string(contact, "department", department ? (char*) department : "", 1);
+  }
+  if (company) {
+    add_assoc_string(contact, "company", company ? (char*) company : "", 1);
+  }
+  if (email) {
+    add_assoc_string(contact, "email", email ? (char*) email : "", 1);
+  }
+  if (office_phone) {
+    add_assoc_string(contact, "officePhone", office_phone ? (char*) office_phone : "", 1);
+  }
+  if (home_phone) {
+    add_assoc_string(contact, "homePhone", home_phone ? (char*) home_phone : "", 1);
+  }
+  if (mobile_phone) {
+    add_assoc_string(contact, "mobilePhone", mobile_phone ? (char*) mobile_phone : "", 1);
+  }
+  if (business_fax) {
+    add_assoc_string(contact, "businessFax", business_fax ? (char*) business_fax : "", 1);
+  }
+  if (business_home_page) {
+    add_assoc_string(contact, "businessHomePage", business_home_page ? (char*) business_home_page : "", 1);
+  }
+  if (postal_address) {
+    add_assoc_string(contact, "postalAddress", postal_address ? (char*) postal_address : "", 1);
+  }
+  if (street_address) {
+    add_assoc_string(contact, "homePhone", street_address ? (char*) street_address : "", 1);
+  }
+  if (locality) {
+    add_assoc_string(contact, "locality", locality ? (char*) locality : "", 1);
+  }
+  if (state) {
+    add_assoc_string(contact, "state", state ? (char*) state : "", 1);
+  }
+  if (country) {
+    add_assoc_string(contact, "country", country ? (char*) country : "", 1);
+  }
+
+  return contact;
+}
+
 static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const char *item)
 {
   zval *items;
@@ -962,17 +1051,16 @@ static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const ch
                                  SRowSet.aRow[i].lpProps[1].value.d);
             mapi_SPropValue_array_named(&obj_message,
                                         &properties_array);
+            zval* item = NULL;
             switch (olFolder) {
             case olFolderCalendar:
-              1+0; // workaround compiler error?
-              zval* app = appointment_zval(mem_ctx, &properties_array, id);
-              add_next_index_zval(items, app);
+              item = appointment_zval(mem_ctx, &properties_array, id);
               break;
             case olFolderInbox:
               php_error(E_ERROR, "Inbox folder case not implemented");
               break;
             case olFolderContacts:
-              php_error(E_ERROR, "Contacts folder case not implemented");
+              item = contact_zval(mem_ctx, &properties_array, id);
               break;
             case olFolderTasks:
               php_error(E_ERROR, "Tasks folder case not implemented");
@@ -982,6 +1070,9 @@ static zval* fetch_items(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store, const ch
               break;
             }
             talloc_free(id);
+            if (item) {
+              add_next_index_zval(items, item);
+            }
           }
           //         } // from (oclient->summary)
         mapi_object_release(&obj_message);
@@ -1014,4 +1105,23 @@ PHP_METHOD(MAPISession, appointments)
 
   talloc_free(talloc_ctx);
   RETURN_ZVAL(appointments, 1, 1);
+}
+
+PHP_METHOD(MAPISession, contacts)
+{
+  zval* this_obj = getThis();
+  mapi_object_t user_mbox;
+  mapi_object_init(&user_mbox);
+  struct mapi_session* session = get_session(this_obj TSRMLS_CC);
+  struct mapi_profile* profile = session_get_profile(this_obj TSRMLS_CC);
+
+  open_user_mailbox(profile, session, &user_mbox);
+
+  TALLOC_CTX* this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t*, this_obj);
+  TALLOC_CTX* talloc_ctx = talloc_named(this_talloc_ctx, 0, "contacts");
+
+  zval* contacts = fetch_items(talloc_ctx, &user_mbox,  "Contact");
+
+  talloc_free(talloc_ctx);
+  RETURN_ZVAL(contacts, 1, 1);
 }

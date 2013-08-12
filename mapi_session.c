@@ -542,7 +542,7 @@ static const char *get_filename(const char *filename)
         return filename;
 }
 
-static uint32_t open_default_folder(mapi_object_t* obj_store, mapi_object_t* obj_inbox, mapi_object_t* obj_table)
+static uint32_t open_default_inbox_folder(mapi_object_t* obj_store, mapi_object_t* obj_inbox, mapi_object_t* obj_table)
 {
   enum MAPISTATUS  retval;
   uint64_t   id_inbox;
@@ -600,7 +600,7 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
 
   // XXX Only supported get all mails from session
   // TODO: public folder; get mails from a folder
-  count = open_default_folder(obj_store, &obj_inbox, &obj_table);
+  count = open_default_inbox_folder(obj_store, &obj_inbox, &obj_table);
   if (!count) goto end;
 
   SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,

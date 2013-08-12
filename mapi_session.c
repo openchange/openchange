@@ -594,14 +594,12 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
   mapi_object_init(&obj_inbox);
   mapi_object_init(&obj_table);
 
+  MAKE_STD_ZVAL(messages);
+  array_init(messages);
+
   // XXX Only supported get all mails from session
   // TODO: public folder; get mails from a folder
   count = open_default_folder(obj_store, &obj_inbox, &obj_table);
-
-  if (retval != MAPI_E_SUCCESS) {
-    php_error(E_ERROR, "Get contents of folder: %s", mapi_get_errstr(retval));
-  }
-
   if (!count) goto end;
 
   SPropTagArray = set_SPropTagArray(mem_ctx, 0x5,
@@ -613,9 +611,6 @@ static zval* do_fetchmail(TALLOC_CTX* mem_ctx, mapi_object_t *obj_store)
   retval = SetColumns(&obj_table, SPropTagArray);
   MAPIFreeBuffer(SPropTagArray);
   CHECK_MAPI_RETVAL(retval, "SetColumns");
-
-  MAKE_STD_ZVAL(messages);
-  array_init(messages);
 
   while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
     count -= rowset.cRows;

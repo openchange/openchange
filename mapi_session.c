@@ -787,8 +787,7 @@ PHP_METHOD(MAPISession, fetchmail)
   talloc_ctx = talloc_named(this_talloc_ctx, 0, "do_fetchmail");
 
   zval* messages = do_fetchmail(talloc_ctx, &user_mbox);
-  RETURN_ZVAL(messages, 0, 0);
-
+  RETURN_ZVAL(messages, 1, 1);
 }
 
 
@@ -1014,5 +1013,5 @@ PHP_METHOD(MAPISession, appointments)
   zval* appointments = fetch_items(talloc_ctx, &user_mbox,  "Appointment");
 
   talloc_free(talloc_ctx);
-  RETURN_ZVAL(appointments, 0, 0);
+  RETURN_ZVAL(appointments, 1, 1);
 }

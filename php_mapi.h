@@ -1,13 +1,7 @@
 #ifndef PHP_MAPI_H
 #define PHP_MAPI_H 1
 
-// from openchange
-#include "utils/mapitest/mapitest.h"
-#include "utils/openchange-tools.h"
-#include "libmapi/mapidefs.h"
-//#include "libmapi/libmapi_private.h"
-//#include "libmapi/mapi_nameid.h"
-#include "talloc.h"
+#include <libmapi/libmapi.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"

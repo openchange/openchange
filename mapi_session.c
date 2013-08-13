@@ -6,8 +6,23 @@
 #include "php_mapi.h"
 #include "mapi_session.h"
 #include "mapi_profile.h"
-#include "utils/openchangeclient.h" // for defaultFolders
+#include <libmapi/libmapi.h>
+#include <libmapi/mapi_nameid.h>
 #include <inttypes.h>
+
+struct itemfolder {
+	const uint32_t		olFolder;
+	const char		*container_class;
+};
+
+struct itemfolder	defaultFolders[] = {
+	{olFolderInbox,		"Mail"},
+	{olFolderCalendar,	"Appointment"},
+	{olFolderContacts,	"Contact"},
+	{olFolderTasks,		"Task"},
+	{olFolderNotes,		"Note"},
+	{0 , NULL}
+};
 
 static zend_function_entry mapi_session_class_functions[] = {
   PHP_ME(MAPISession, __construct, NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
@@ -46,9 +61,12 @@ static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRM
 
     ALLOC_HASHTABLE(obj->std.properties);
     zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+#if PHP_VERSION_ID < 50399
     zend_hash_copy(obj->std.properties, &type->default_properties,
         (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
-
+#else
+    object_properties_init((zend_object *) &(obj->std), type);
+#endif
     retval.handle = zend_objects_store_put(obj, NULL,
         mapi_session_free_storage, NULL TSRMLS_CC);
     retval.handlers = &mapi_session_object_handlers;
@@ -436,7 +454,7 @@ _PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
         const char                      *codepage;
 
         /* Build the array of properties we want to fetch */
-        SPropTagArray = set_SPropTagArray(mem_ctx, 0x13,
+        SPropTagArray = set_SPropTagArray(mem_ctx, 19,
                                           PR_INTERNET_MESSAGE_ID,
                                           PR_INTERNET_MESSAGE_ID_UNICODE,
                                           PR_CONVERSATION_TOPIC,

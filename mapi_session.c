@@ -21,13 +21,8 @@
 #include "config.h"
 #endif
 
-#include "php.h"
-#include "php_mapi.h"
-#include "mapi_session.h"
-#include "mapi_profile.h"
-#include <libmapi/libmapi.h>
-#include <libmapi/mapi_nameid.h>
 #include <inttypes.h>
+#include "php_mapi.h"
 
 struct itemfolder {
 	const uint32_t		olFolder;

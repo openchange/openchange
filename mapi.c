@@ -21,11 +21,7 @@
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_mapi.h"
-#include "mapi_profile_db.h"
-#include "mapi_profile.h"
-#include "mapi_session.h"
 
 static zend_function_entry mapi_functions[] = {
 	{NULL, NULL, NULL}

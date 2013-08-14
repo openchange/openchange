@@ -17,7 +17,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifndef MAPI_PROFILE_DB_H
 #define MAPI_PROFILE_DB_H
 

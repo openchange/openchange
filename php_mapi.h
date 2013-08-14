@@ -20,7 +20,14 @@
 #ifndef PHP_MAPI_H
 #define PHP_MAPI_H 1
 
+#include <php.h>
+
 #include <libmapi/libmapi.h>
+#include <libmapi/mapi_nameid.h>
+
+#include <mapi_profile.h>
+#include <mapi_profile_db.h>
+#include <mapi_session.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"

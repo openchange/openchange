@@ -17,16 +17,11 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #ifdef HAVE_CONFIG_H
 #include "config.h"
 #endif
 
-#include "php.h"
 #include "php_mapi.h"
-#include "mapi_profile.h"
-#include "mapi_profile_db.h"
-#include "mapi_session.h"
 
 static zend_function_entry mapi_profile_class_functions[] = {
 	PHP_ME(MAPIProfile,	__construct,	NULL,	ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)

@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI PHP bindings
 
-   Copyright (C) Zentyal SL, <jamor@zentyal.com> 2013.
+   Copyright (C) Zentyal SL. 2013.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -43,8 +43,8 @@ static void mapi_profile_free_storage(void *object TSRMLS_DC)
 {
 	mapi_profile_object_t *obj = (mapi_profile_object_t *) object;
 
-	if (obj->talloc_ctx)
-		talloc_free(obj->talloc_ctx);
+	if (obj->mem_ctx)
+		talloc_free(obj->mem_ctx);
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
@@ -115,7 +115,7 @@ zval *create_profile_object(struct mapi_profile *profile,
 	obj = (mapi_profile_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->profile = profile;
 	obj->parent = profile_db;
-	obj->talloc_ctx =  mem_ctx;
+	obj->mem_ctx =  mem_ctx;
 	MAKE_STD_ZVAL(obj->children_sessions);
 	array_init(obj->children_sessions);
 

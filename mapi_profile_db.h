@@ -1,5 +1,46 @@
+/*
+   OpenChange MAPI PHP bindings
+
+   Copyright (C) 2013 Zentyal S.L.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+
 #ifndef MAPI_PROFILE_DB_H
 #define MAPI_PROFILE_DB_H
+
+typedef struct mapi_profile_db_object
+{
+	zend_object		std;
+	char			*path;
+	TALLOC_CTX		*mem_ctx;
+	zval			*children_profiles;
+	struct mapi_context	*mapi_ctx;
+} mapi_profile_db_object_t;
+
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+__BEGIN_DECLS
 
 PHP_METHOD(MAPIProfileDB, __construct);
 PHP_METHOD(MAPIProfileDB, __destruct);
@@ -8,18 +49,9 @@ PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
 
 void MAPIProfileDBRegisterClass(TSRMLS_D);
-struct mapi_context* mapi_profile_db_get_mapi_context(zval* mapiProfileDB TSRMLS_DC);
-void mapi_profile_db_remove_children_profile(zval* mapi_profile_db, zend_object_handle profile_handle TSRMLS_DC);
+struct mapi_context *mapi_profile_db_get_mapi_context(zval * TSRMLS_DC);
+void mapi_profile_db_remove_children_profile(zval *, zend_object_handle TSRMLS_DC);
 
-struct mapi_profile_db_object
-{
-  zend_object std;
-  char* path;
-  TALLOC_CTX* talloc_ctx;
-  zval* children_profiles;
-  struct mapi_context* mapi_ctx;
-};
-typedef struct mapi_profile_db_object mapi_profile_db_object_t;
+__END_DECLS
 
-
-#endif
+#endif /* !MAPI_PROFILE_DB_H */

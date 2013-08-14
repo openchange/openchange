@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI PHP bindings
 
-   Copyright (C) Zentyal SL, <jamor@zentyal.com> 2013.
+   Copyright (C) 2013 Zentyal S.L.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,19 +56,21 @@ static zend_function_entry mapi_session_class_functions[] = {
 static zend_class_entry		*mapi_session_ce;
 static zend_object_handlers	mapi_session_object_handlers;
 
+
 static void mapi_session_free_storage(void *object TSRMLS_DC)
 {
 	mapi_session_object_t	*obj;
 
 	obj = (mapi_session_object_t *) object;
-	if (obj->talloc_ctx)
-		talloc_free(obj->talloc_ctx);
+	if (obj->mem_ctx)
+		talloc_free(obj->mem_ctx);
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
 
 	efree(obj);
 }
+
 
 static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRMLS_DC)
 {
@@ -108,8 +110,6 @@ void MAPISessionRegisterClass(TSRMLS_D)
 	mapi_session_object_handlers.clone_obj = NULL;
 }
 
-/* struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC); */
-
 
 zval *create_session_object(struct mapi_session *session, 
 			    zval *profile, TALLOC_CTX *mem_ctx TSRMLS_DC)
@@ -130,7 +130,7 @@ zval *create_session_object(struct mapi_session *session,
 	obj = (mapi_session_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->session = session;
 	obj->parent = profile;
-	obj->talloc_ctx = mem_ctx;
+	obj->mem_ctx = mem_ctx;
 
 	return php_obj;
 }
@@ -144,6 +144,7 @@ struct mapi_session *get_session(zval *php_obj TSRMLS_DC)
 	return obj->session;
 }
 
+
 struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC)
 {
 	mapi_session_object_t	*obj ;
@@ -151,6 +152,7 @@ struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC)
 	obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
 	return get_profile(obj->parent TSRMLS_CC);
 }
+
 
 static void init_message_store(mapi_object_t *store, 
 			       struct mapi_session *session, 
@@ -184,6 +186,7 @@ PHP_METHOD(MAPISession, __construct)
 		  "Use the 'logon' method in the profile object");
 }
 
+
 PHP_METHOD(MAPISession, __destruct)
 {
 	zval			*php_this;
@@ -194,58 +197,32 @@ PHP_METHOD(MAPISession, __destruct)
 	mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
 
-PHP_METHOD(MAPISession, folders)
+
+static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {
-	enum MAPISTATUS		retval;
-	zval			*this_obj;
-	TALLOC_CTX		*this_talloc_ctx;
-	TALLOC_CTX		*talloc_ctx;
-	struct mapi_session	*session = NULL;
-	struct mapi_profile	*profile;
-	mapi_object_t		obj_store;
-	mapi_id_t		id_mailbox;
-	struct SPropTagArray	*SPropTagArray;
-	struct SPropValue	*lpProps;
-	uint32_t		cValues;
-	const char		*mailbox_name;
+	enum MAPISTATUS       retval;
+	mapi_object_t         obj_folder;
+	struct SPropTagArray  *SPropTagArray;
+	struct SPropValue     *lpProps;
+	uint32_t              count;
 
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(parent, folder_id, &obj_folder);
+	if (retval != MAPI_E_SUCCESS) return false;
 
-	this_obj = getThis();
-	profile = session_get_profile(this_obj TSRMLS_CC);
-	session = get_session(this_obj TSRMLS_CC);
-
-	// open user mailbox
-	init_message_store(&obj_store, session, false, (char *) profile->username);
-	this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t *, this_obj);
-	talloc_ctx = talloc_named(this_talloc_ctx, 0, "MAPISession::folders");
-
-	/* Retrieve the mailbox folder name */
-	SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
-	retval = GetProps(&obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
+	retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
-	if (retval != MAPI_E_SUCCESS) {
-		php_error(E_ERROR, "Get mailbox properties: %s", mapi_get_errstr(retval));
+	mapi_object_release(&obj_folder);
+	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
+		errno = 0;
+		return IPF_NOTE;
 	}
 
 	/* FIXME: Use accessor instead of direct access */
-	if (lpProps[0].value.lpszW) {
-		mailbox_name = lpProps[0].value.lpszW;
-	} else {
-		php_error(E_ERROR, "Get mailbox name");
-	}
-
-	/* Prepare the directory listing */
-	retval = GetDefaultFolder(&obj_store, &id_mailbox, olFolderTopInformationStore);
-	if (retval != MAPI_E_SUCCESS) {
-		php_error(E_ERROR, "Get default folder: %s", mapi_get_errstr(retval));
-	}
-
-	array_init(return_value);
-	add_assoc_string(return_value, "name", (char*) mailbox_name, 1);
-	add_assoc_zval(return_value, "childs", get_child_folders(talloc_ctx, &obj_store, id_mailbox, 0));
-
-	talloc_free(talloc_ctx);
+	return lpProps[0].value.lpszA;
 }
+
 
 static zval *get_child_folders(TALLOC_CTX *mem_ctx, 
 			       mapi_object_t *parent, 
@@ -378,30 +355,58 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 }
 
 
-
-static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
+PHP_METHOD(MAPISession, folders)
 {
-	enum MAPISTATUS       retval;
-	mapi_object_t         obj_folder;
-	struct SPropTagArray  *SPropTagArray;
-	struct SPropValue     *lpProps;
-	uint32_t              count;
+	enum MAPISTATUS		retval;
+	zval			*this_obj;
+	TALLOC_CTX		*this_talloc_ctx;
+	TALLOC_CTX		*talloc_ctx;
+	struct mapi_session	*session = NULL;
+	struct mapi_profile	*profile;
+	mapi_object_t		obj_store;
+	mapi_id_t		id_mailbox;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+	const char		*mailbox_name;
 
-	mapi_object_init(&obj_folder);
-	retval = OpenFolder(parent, folder_id, &obj_folder);
-	if (retval != MAPI_E_SUCCESS) return false;
 
-	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_CONTAINER_CLASS);
-	retval = GetProps(&obj_folder, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
+	this_obj = getThis();
+	profile = session_get_profile(this_obj TSRMLS_CC);
+	session = get_session(this_obj TSRMLS_CC);
+
+	// open user mailbox
+	init_message_store(&obj_store, session, false, (char *) profile->username);
+	this_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t *, this_obj);
+	talloc_ctx = talloc_named(this_talloc_ctx, 0, "MAPISession::folders");
+
+	/* Retrieve the mailbox folder name */
+	SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
+	retval = GetProps(&obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
-	mapi_object_release(&obj_folder);
-	if ((lpProps[0].ulPropTag != PR_CONTAINER_CLASS) || (retval != MAPI_E_SUCCESS)) {
-		errno = 0;
-		return IPF_NOTE;
+	if (retval != MAPI_E_SUCCESS) {
+		php_error(E_ERROR, "Get mailbox properties: %s", mapi_get_errstr(retval));
 	}
-	return lpProps[0].value.lpszA;
-}
 
+	/* FIXME: Use accessor instead of direct access */
+	if (lpProps[0].value.lpszW) {
+		mailbox_name = lpProps[0].value.lpszW;
+	} else {
+		php_error(E_ERROR, "Get mailbox name");
+	}
+
+	/* Prepare the directory listing */
+	retval = GetDefaultFolder(&obj_store, &id_mailbox, olFolderTopInformationStore);
+	if (retval != MAPI_E_SUCCESS) {
+		php_error(E_ERROR, "Get default folder: %s", mapi_get_errstr(retval));
+	}
+
+	array_init(return_value);
+	add_assoc_string(return_value, "name", (char*) mailbox_name, 1);
+	add_assoc_zval(return_value, "childs", get_child_folders(talloc_ctx, &obj_store, id_mailbox, 0));
+
+	talloc_free(talloc_ctx);
+}
 
 /**
  * fetch the user INBOX

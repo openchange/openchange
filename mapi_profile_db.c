@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -81,7 +81,7 @@ static zend_object_value mapi_profile_db_create_handler(zend_class_entry *type T
 #else
 	object_properties_init((zend_object *)&(obj->std), type);
 #endif
-	retval.handle = zend_objects_store_put(obj, NULL, mapi_profile_db_free_storage, 
+	retval.handle = zend_objects_store_put(obj, NULL, mapi_profile_db_free_storage,
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_profile_db_object_handlers;
 
@@ -99,8 +99,8 @@ void MAPIProfileDBRegisterClass(TSRMLS_D)
 	mapi_profile_db_object_handlers.clone_obj = NULL;
 }
 
-static struct mapi_profile *get_profile_ptr(TALLOC_CTX *mem_ctx,  
-					    struct mapi_context *mapi_ctx, 
+static struct mapi_profile *get_profile_ptr(TALLOC_CTX *mem_ctx,
+					    struct mapi_context *mapi_ctx,
 					    char *opt_profname)
 {
 	enum MAPISTATUS		retval;
@@ -140,11 +140,11 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	zval				*php_obj;
 	mapi_profile_db_object_t	*obj;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s", 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
 				  &profdb_path, &profdb_path_len) == FAILURE) {
 		RETURN_NULL();
 	}
-	
+
 	php_obj = getThis();
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
@@ -244,7 +244,6 @@ PHP_METHOD(MAPIProfileDB, profiles)
 
 PHP_METHOD(MAPIProfileDB, getProfile)
 {
-	zval				*profile_resource;
 	zval				*this_php_obj;
 	zval				*php_obj;
 	mapi_profile_db_object_t	*this_obj;
@@ -253,11 +252,11 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	struct mapi_context		*mapi_ctx;
 	char				*opt_profname = NULL;
 	int				opt_profname_len;
-	
+
 	this_php_obj= getThis();
 	mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj TSRMLS_CC);
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s", 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &opt_profname, &opt_profname_len) == FAILURE) {
 		RETURN_NULL();
 	}
@@ -272,7 +271,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	RETURN_ZVAL(php_obj, 0, 0);
 }
 
-void  mapi_profile_db_remove_children_profile(zval *mapi_profile_db, 
+void  mapi_profile_db_remove_children_profile(zval *mapi_profile_db,
 					      zend_object_handle profile_handle TSRMLS_DC)
 {
 	mapi_profile_db_object_t	*this_obj;

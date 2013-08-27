@@ -4,6 +4,11 @@ static zend_function_entry mapi_mailbox_class_functions[] = {
 	PHP_ME(MAPIMailbox,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIMailbox,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIMailbox,	getName,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	setName,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	inbox,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	calendar, 	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	contacts,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	tasks,		NULL, ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -168,5 +173,30 @@ PHP_METHOD(MAPIMailbox, getName)
 	talloc_free(talloc_ctx);
 
 	return;
+}
 
+PHP_METHOD(MAPIMailbox, setName)
+{
+	php_error(E_ERROR, "Not implemented");
+}
+
+PHP_METHOD(MAPIMailbox, inbox)
+{
+	php_error(E_ERROR, "Not implemented");
+
+}
+
+PHP_METHOD(MAPIMailbox, calendar)
+{
+	php_error(E_ERROR, "Not implemented");
+}
+
+PHP_METHOD(MAPIMailbox, contacts)
+{
+	php_error(E_ERROR, "Not implemented");
+}
+
+PHP_METHOD(MAPIMailbox, tasks)
+{
+	php_error(E_ERROR, "Not implemented");
 }

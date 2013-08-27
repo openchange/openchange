@@ -44,7 +44,11 @@ __BEGIN_DECLS
 PHP_METHOD(MAPIMailbox, __construct);
 PHP_METHOD(MAPIMailbox, __destruct);
 PHP_METHOD(MAPIMailbox, getName);
-
+PHP_METHOD(MAPIMailbox, setName);
+PHP_METHOD(MAPIMailbox, inbox);
+PHP_METHOD(MAPIMailbox, calendar);
+PHP_METHOD(MAPIMailbox, contacts);
+PHP_METHOD(MAPIMailbox, tasks);
 
 void MAPIMailboxRegisterClass(TSRMLS_D);
 zval *create_mailbox_object(zval *session, char *username TSRMLS_DC);

@@ -30,4 +30,13 @@ echo "Mailbox name "  . $mailbox->getName() . "\n";
 $inbox = $mailbox->inbox();
 echo "Inbox item type " . $inbox->getItemType() . "\n";
 
+$calendar = $mailbox->calendar();
+echo "Calendar item type " . $calendar->getItemType() . "\n";
+
+$contacts = $mailbox->contacts();
+echo "Contacts item type " . $contacts->getItemType() . "\n";
+
+$tasks = $mailbox->tasks();
+echo "Tasks item type " . $tasks->getItemType() . "\n";
+
 ?>

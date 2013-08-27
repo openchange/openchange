@@ -24,19 +24,19 @@
 #include <inttypes.h>
 #include "php_mapi.h"
 
-struct itemfolder {
-	const uint32_t		olFolder;
-	const char		*container_class;
-};
+/* struct itemfolder { */
+/* 	const uint32_t		olFolder; */
+/* 	const char		*container_class; */
+/* }; */
 
-struct itemfolder	defaultFolders[] = {
-	{olFolderInbox,		"Mail"},
-	{olFolderCalendar,	"Appointment"},
-	{olFolderContacts,	"Contact"},
-	{olFolderTasks,		"Task"},
-	{olFolderNotes,		"Note"},
-	{0 , NULL}
-};
+/* struct itemfolder	defaultFolders[] = { */
+/* 	{olFolderInbox,		"Mail"}, */
+/* 	{olFolderCalendar,	"Appointment"}, */
+/* 	{olFolderContacts,	"Contact"}, */
+/* 	{olFolderTasks,		"Task"}, */
+/* 	{olFolderNotes,		"Note"}, */
+/* 	{0 , NULL} */
+/* }; */
 
 static zend_function_entry mapi_session_class_functions[] = {
 	PHP_ME(MAPISession,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
@@ -1004,6 +1004,7 @@ static zval *contact_zval (TALLOC_CTX *mem_ctx,
 	return contact;
 }
 
+// not works longer
 static zval *fetch_items(TALLOC_CTX *mem_ctx,
 			 mapi_object_t *obj_store,
 			 const char *item)
@@ -1030,11 +1031,11 @@ static zval *fetch_items(TALLOC_CTX *mem_ctx,
 	mapi_object_init(&obj_tis);
 	mapi_object_init(&obj_folder);
 
-	for (i = 0; defaultFolders[i].olFolder; i++) {
-		if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
-			olFolder = defaultFolders[i].olFolder;
-		}
-	}
+	/* for (i = 0; defaultFolders[i].olFolder; i++) { */
+	/* 	if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) { */
+	/* 		olFolder = defaultFolders[i].olFolder; */
+	/* 	} */
+	/* } */
 	if (!olFolder) {
 		php_error(E_ERROR, "Cannot found defualt folder for items of type %s", item);
 	}

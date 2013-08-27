@@ -13,6 +13,20 @@ static zend_function_entry mapi_mailbox_class_functions[] = {
 	{ NULL, NULL, NULL }
 };
 
+struct itemfolder {
+	const uint32_t		olFolder;
+	const char		*container_class;
+};
+
+struct itemfolder	defaultFolders[] = {
+	{olFolderInbox,		"Mail"},
+	{olFolderCalendar,	"Appointment"},
+	{olFolderContacts,	"Contact"},
+	{olFolderTasks,		"Task"},
+	{olFolderNotes,		"Note"},
+	{0 , NULL}
+};
+
 static zend_class_entry		*mapi_mailbox_ce;
 static zend_object_handlers	mapi_mailbox_object_handlers;
 
@@ -213,19 +227,51 @@ PHP_METHOD(MAPIMailbox, inbox)
 	return;
 }
 
+static zval *default_folder_for_item(zval *php_mailbox, char *item TSRMLS_DC)
+{
+	enum MAPISTATUS 		 retval;
+	uint32_t			i;
+	uint32_t			olFolder = 0;
+	mapi_mailbox_object_t 		*mailbox;
+	mapi_id_t			fid;
+	zval				*folder;
+
+	for (i = 0; defaultFolders[i].olFolder; i++) {
+		if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
+			olFolder = defaultFolders[i].olFolder;
+		}
+	}
+	if (!olFolder) {
+		php_error(E_ERROR, "Cannot found defualt folder for items of type %s", item);
+	}
+
+	mailbox = (mapi_mailbox_object_t *) zend_object_store_get_object(php_mailbox TSRMLS_CC);
+	retval = GetDefaultFolder(&(mailbox->store), &fid, olFolder);
+	CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for item type");
+
+	folder = create_folder_object(php_mailbox, fid, item TSRMLS_CC);
+
+	add_index_zval(mailbox->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
+	return folder;
+}
+
+
 PHP_METHOD(MAPIMailbox, calendar)
 {
-	php_error(E_ERROR, "Not implemented");
+	zval *folder = default_folder_for_item(getThis(), "Appointment"  TSRMLS_CC);
+	RETURN_ZVAL(folder, 0, 0);
 }
 
 PHP_METHOD(MAPIMailbox, contacts)
 {
-	php_error(E_ERROR, "Not implemented");
+	zval *folder = default_folder_for_item(getThis(), "Contact"  TSRMLS_CC);
+	RETURN_ZVAL(folder, 0, 0);
 }
 
 PHP_METHOD(MAPIMailbox, tasks)
 {
-	php_error(E_ERROR, "Not implemented");
+	zval *folder = default_folder_for_item(getThis(), "Task"  TSRMLS_CC);
+	RETURN_ZVAL(folder, 0, 0);
 }
 
 void mapi_mailbox_remove_children_folder(zval *mapi_mailbox, zend_object_handle folder_handle TSRMLS_DC)

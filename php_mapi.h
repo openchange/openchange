@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -28,6 +28,7 @@
 #include <mapi_profile.h>
 #include <mapi_profile_db.h>
 #include <mapi_session.h>
+#include <mapi_mailbox.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
@@ -59,6 +60,7 @@ extern zend_module_entry mapi_module_entry;
 #define phpext_mapi_ptr &mapi_module_entry
 #define EXPECTED_MAPI_OBJECTS 32
 #define OBJ_GET_TALLOC_CTX(objType, obj) ((objType) zend_object_store_get_object(obj TSRMLS_CC))->mem_ctx;
+#define OBJ_GET_TALLOC_CTX_TMP(objType, obj) ((objType) zend_object_store_get_object(obj TSRMLS_CC))->talloc_ctx;
 #define add_assoc_mapi_id_t(zv, name, value) add_assoc_long(zv, name, (long) value)
 #define CHECK_MAPI_RETVAL(rv, desc)		\
   if (rv != MAPI_E_SUCCESS)			\

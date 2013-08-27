@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -45,6 +45,7 @@ static zend_function_entry mapi_session_class_functions[] = {
 	PHP_ME(MAPISession,	fetchmail,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	appointments,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	contacts,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPISession,	mailbox,	NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 
@@ -62,6 +63,11 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
+
+	if (obj->children_mailboxes) {
+		zval_dtor(obj->children_mailboxes);
+		FREE_ZVAL(obj->children_mailboxes);
+	}
 
 	efree(obj);
 }
@@ -86,7 +92,7 @@ static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRM
 #else
 	object_properties_init((zend_object *) &(obj->std), type);
 #endif
-	retval.handle = zend_objects_store_put(obj, NULL, mapi_session_free_storage, 
+	retval.handle = zend_objects_store_put(obj, NULL, mapi_session_free_storage,
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_session_object_handlers;
 
@@ -106,7 +112,7 @@ void MAPISessionRegisterClass(TSRMLS_D)
 }
 
 
-zval *create_session_object(struct mapi_session *session, 
+zval *create_session_object(struct mapi_session *session,
 			    zval *profile, TALLOC_CTX *mem_ctx TSRMLS_DC)
 {
 	zval			*php_obj;
@@ -126,19 +132,20 @@ zval *create_session_object(struct mapi_session *session,
 	obj->session = session;
 	obj->parent = profile;
 	obj->mem_ctx = mem_ctx;
+	MAKE_STD_ZVAL(obj->children_mailboxes);
+	array_init(obj->children_mailboxes);
 
 	return php_obj;
 }
 
 
-struct mapi_session *get_session(zval *php_obj TSRMLS_DC)
+struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC)
 {
 	mapi_session_object_t *obj;
 
 	obj = (mapi_session_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	return obj->session;
 }
-
 
 struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC)
 {
@@ -149,30 +156,30 @@ struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC)
 }
 
 
-static void init_message_store(mapi_object_t *store, 
-			       struct mapi_session *session, 
-			       bool public_folder, char *username)
-{
-	enum MAPISTATUS retval;
+/* static void init_message_store(mapi_object_t *store, */
+/* 			       struct mapi_session *session, */
+/* 			       bool public_folder, char *username) */
+/* { */
+/* 	enum MAPISTATUS retval; */
 
-	mapi_object_init(store);
-	if (public_folder == true) {
-		retval = OpenPublicFolder(session, store);
-		if (retval != MAPI_E_SUCCESS) {
-			php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval));
-		}
-	} else if (username) {
-		retval = OpenUserMailbox(session, username, store);
-		if (retval != MAPI_E_SUCCESS) {
-			php_error(E_ERROR, "Open user mailbox: %s", mapi_get_errstr(retval));
-		}
-	} else {
-		retval = OpenMsgStore(session, store);
-		if (retval != MAPI_E_SUCCESS) {
-			php_error(E_ERROR, "Open message store: %s",  mapi_get_errstr(retval));
-		}
-	}
-}
+/* 	mapi_object_init(store); */
+/* 	if (public_folder == true) { */
+/* 		retval = OpenPublicFolder(session, store); */
+/* 		if (retval != MAPI_E_SUCCESS) { */
+/* 			php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval)); */
+/* 		} */
+/* 	} else if (username) { */
+/* 		retval = OpenUserMailbox(session, username, store); */
+/* 		if (retval != MAPI_E_SUCCESS) { */
+/* 			php_error(E_ERROR, "Open user mailbox: %s", mapi_get_errstr(retval)); */
+/* 		} */
+/* 	} else { */
+/* 		retval = OpenMsgStore(session, store); */
+/* 		if (retval != MAPI_E_SUCCESS) { */
+/* 			php_error(E_ERROR, "Open message store: %s",  mapi_get_errstr(retval)); */
+/* 		} */
+/* 	} */
+/* } */
 
 
 PHP_METHOD(MAPISession, __construct)
@@ -189,9 +196,13 @@ PHP_METHOD(MAPISession, __destruct)
 
 	php_this = getThis();
 	this = (mapi_session_object_t *) zend_object_store_get_object(php_this TSRMLS_CC);
+
+	if (zend_hash_num_elements(this->children_mailboxes->value.ht) > 0) {
+		php_error(E_ERROR, "This MapiSession object has active mailboxes");
+	}
+
 	mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
-
 
 static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {
@@ -219,8 +230,8 @@ static const char *get_container_class(TALLOC_CTX *mem_ctx, mapi_object_t *paren
 }
 
 
-static zval *get_child_folders(TALLOC_CTX *mem_ctx, 
-			       mapi_object_t *parent, 
+static zval *get_child_folders(TALLOC_CTX *mem_ctx,
+			       mapi_object_t *parent,
 			       mapi_id_t folder_id, int count)
 {
 	enum MAPISTATUS		retval;
@@ -262,7 +273,7 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 	if (retval != MAPI_E_SUCCESS) return folders;
 
 
-	while (((retval = QueryRows(&obj_htable, 0x32, 
+	while (((retval = QueryRows(&obj_htable, 0x32,
 				    TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			zval	*current_folder;
@@ -274,9 +285,9 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 			long n_total, n_unread;
 
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
-			name = (const char *)find_SPropValue_data(&rowset.aRow[index], 
+			name = (const char *)find_SPropValue_data(&rowset.aRow[index],
 								  PR_DISPLAY_NAME_UNICODE);
-			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], 
+			comment = (const char *)find_SPropValue_data(&rowset.aRow[index],
 								     PR_COMMENT_UNICODE);
 			if (comment == NULL) comment = "";
 
@@ -286,22 +297,22 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 				mapi_object_t obj_ctable;
 				uint32_t      count = 0;
 				uint32_t      count2 = 0;
-				
+
 				mapi_object_init(&obj_child);
 				mapi_object_init(&obj_ctable);
-				
+
 				retval = OpenFolder(&obj_folder, *fid, &obj_child);
-				
+
 				if (retval != MAPI_E_SUCCESS) return false;
 				retval = GetContentsTable(&obj_child, &obj_ctable, 0, &count);
 				total = &count;
-				
+
 				mapi_object_release(&obj_ctable);
 				mapi_object_init(&obj_ctable);
 
 				retval = GetHierarchyTable(&obj_child, &obj_ctable, 0, &count2);
 				child = &count2;
-				
+
 				mapi_object_release(&obj_ctable);
 				mapi_object_release(&obj_child);
 			}
@@ -313,7 +324,7 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 			} else {
 				n_total = (long) *total;
 			}
-      
+
 			unread = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_UNREAD);
 			if (!unread) {
 				n_unread =0;
@@ -338,7 +349,7 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 				zval *child_folders  = get_child_folders(mem_ctx, &obj_folder, *fid, count + 1);
 				add_assoc_zval(current_folder, "childs", child_folders);
 			}
-      
+
 			add_next_index_zval(folders, current_folder);
 		}
 	}
@@ -349,6 +360,37 @@ static zval *get_child_folders(TALLOC_CTX *mem_ctx,
 	return folders;
 }
 
+
+
+PHP_METHOD(MAPISession, mailbox)
+{
+	char			*username = NULL;
+	int			username_len;
+	zval                    *mailbox_obj;
+        struct mapi_profile	*profile;
+	TALLOC_CTX		*talloc_ctx;
+	mapi_session_object_t   *this_obj;
+	zval			*this_php_obj;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
+				  &username, &username_len) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	this_php_obj = getThis();
+
+        if (username == NULL) {
+		struct mapi_profile *profile = session_get_profile(this_php_obj TSRMLS_CC);
+                username  = (char *) profile->username;
+        }
+
+	mailbox_obj = create_mailbox_object(this_php_obj, username TSRMLS_CC);
+
+	this_obj = (mapi_session_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+	add_index_zval(this_obj->children_mailboxes, (long) Z_OBJ_HANDLE_P(mailbox_obj), mailbox_obj);
+
+	RETURN_ZVAL(mailbox_obj, 0, 0);
+}
 
 PHP_METHOD(MAPISession, folders)
 {
@@ -368,7 +410,7 @@ PHP_METHOD(MAPISession, folders)
 
 	this_obj = getThis();
 	profile = session_get_profile(this_obj TSRMLS_CC);
-	session = get_session(this_obj TSRMLS_CC);
+	session = mapi_session_get_session(this_obj TSRMLS_CC);
 
 	// open user mailbox
 	init_message_store(&obj_store, session, false, (char *) profile->username);
@@ -428,7 +470,7 @@ _PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
         const uint8_t			*has_attach;
         const uint32_t			*cp;
         const char			*codepage;
-	
+
         /* Build the array of properties we want to fetch */
         SPropTagArray = set_SPropTagArray(mem_ctx, 19,
                                           PR_INTERNET_MESSAGE_ID,
@@ -517,9 +559,9 @@ _PUBLIC_ zval* dump_message_to_zval(TALLOC_CTX *mem_ctx,
         // attachments added later
         add_assoc_string(message, "codepage",  codepage ? (char*) codepage : "", 1);
         add_assoc_string(message, "body", body.data, 1);
-	
+
         talloc_free(body.data);
-	
+
         return message;
 }
 
@@ -535,8 +577,8 @@ static const char *get_filename(const char *filename)
         return filename;
 }
 
-static uint32_t open_default_inbox_folder(mapi_object_t *obj_store, 
-					  mapi_object_t *obj_inbox, 
+static uint32_t open_default_inbox_folder(mapi_object_t *obj_store,
+					  mapi_object_t *obj_inbox,
 					  mapi_object_t *obj_table)
 {
 	enum MAPISTATUS  retval;
@@ -584,7 +626,7 @@ static zval *do_fetchmail(TALLOC_CTX *mem_ctx, mapi_object_t *obj_store)
 	const uint32_t		*attach_size;
 	bool			summary = false;// TODO: support summary
 	const char		*store_folder = NULL; // TODO: support store_folder
-	
+
 	mapi_object_init(&obj_tis);
 	mapi_object_init(&obj_inbox);
 	mapi_object_init(&obj_table);
@@ -736,8 +778,8 @@ end:
 	return messages;
 }
 
-static void open_user_mailbox(struct mapi_profile *profile, 
-			      struct mapi_session *session, 
+static void open_user_mailbox(struct mapi_profile *profile,
+			      struct mapi_session *session,
 			      mapi_object_t *obj_store)
 {
 	enum MAPISTATUS	retval;
@@ -770,14 +812,14 @@ PHP_METHOD(MAPISession, fetchmail)
 
 	this_obj = getThis();
 	mapi_object_init(&user_mbox);
-	session = get_session(this_obj TSRMLS_CC);
+	session = mapi_session_get_session(this_obj TSRMLS_CC);
 	profile = session_get_profile(this_obj TSRMLS_CC);
 
 	open_user_mailbox(profile, session, &user_mbox);
 
 	this_obj = getThis();
 	profile = session_get_profile(this_obj TSRMLS_CC);
-	session = get_session(this_obj TSRMLS_CC);
+	session = mapi_session_get_session(this_obj TSRMLS_CC);
 
 	// open user mailbox
 	init_message_store(&obj_store, session, false, (char *) profile->username);
@@ -790,8 +832,8 @@ PHP_METHOD(MAPISession, fetchmail)
 }
 
 
-const char *mapi_date(TALLOC_CTX *parent_ctx, 
-		      struct mapi_SPropValue_array *properties, 
+const char *mapi_date(TALLOC_CTX *parent_ctx,
+		      struct mapi_SPropValue_array *properties,
 		      uint32_t mapitag)
 {
 	const char		*date = NULL;
@@ -828,8 +870,8 @@ const char *mapi_date(TALLOC_CTX *parent_ctx,
 
    \sa mapidump_message, mapidump_contact, mapidump_task, mapidump_note
 */
-static zval *appointment_zval (TALLOC_CTX *mem_ctx, 
-			       struct mapi_SPropValue_array *properties, 
+static zval *appointment_zval (TALLOC_CTX *mem_ctx,
+			       struct mapi_SPropValue_array *properties,
 			       const char *id)
 {
 	zval				*appointment;
@@ -872,8 +914,8 @@ static zval *appointment_zval (TALLOC_CTX *mem_ctx,
 	return appointment;
 }
 
-static zval *contact_zval (TALLOC_CTX *mem_ctx, 
-			   struct mapi_SPropValue_array *properties, 
+static zval *contact_zval (TALLOC_CTX *mem_ctx,
+			   struct mapi_SPropValue_array *properties,
 			   const char *id)
 {
 	zval		*contact;
@@ -961,8 +1003,8 @@ static zval *contact_zval (TALLOC_CTX *mem_ctx,
 	return contact;
 }
 
-static zval *fetch_items(TALLOC_CTX *mem_ctx, 
-			 mapi_object_t *obj_store, 
+static zval *fetch_items(TALLOC_CTX *mem_ctx,
+			 mapi_object_t *obj_store,
 			 const char *item)
 {
 	zval				*items;
@@ -1050,7 +1092,7 @@ static zval *fetch_items(TALLOC_CTX *mem_ctx,
 				retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
 					zval	*item = NULL;
-					
+
 					id = talloc_asprintf(mem_ctx, "%" PRIx64 "/%" PRIx64,
 							     SRowSet.aRow[i].lpProps[0].value.d,
 							     SRowSet.aRow[i].lpProps[1].value.d);
@@ -1104,7 +1146,7 @@ PHP_METHOD(MAPISession, appointments)
 	mapi_object_init(&user_mbox);
 
 	this_obj =  getThis();
-	session = get_session(this_obj TSRMLS_CC);
+	session = mapi_session_get_session(this_obj TSRMLS_CC);
 	profile = session_get_profile(this_obj TSRMLS_CC);
 
 	open_user_mailbox(profile, session, &user_mbox);
@@ -1130,15 +1172,24 @@ PHP_METHOD(MAPISession, contacts)
 	mapi_object_init(&user_mbox);
 
 	this_obj = getThis();
-	session = get_session(this_obj TSRMLS_CC);
+	session = mapi_session_get_session(this_obj TSRMLS_CC);
 	profile = session_get_profile(this_obj TSRMLS_CC);
 
 	open_user_mailbox(profile, session, &user_mbox);
-	
+
 	this_mem_ctx = OBJ_GET_TALLOC_CTX(mapi_session_object_t*, this_obj);
 	mem_ctx = talloc_named(this_mem_ctx, 0, "contacts");
 
 	contacts = fetch_items(mem_ctx, &user_mbox,  "Contact");
 	talloc_free(mem_ctx);
 	RETURN_ZVAL(contacts, 1, 1);
+}
+
+
+void mapi_session_remove_children_mailbox(zval *mapi_session, zend_object_handle mailbox_handle TSRMLS_DC)
+{
+	mapi_session_object_t	*this_obj;
+
+	this_obj = (mapi_session_object_t*) zend_object_store_get_object(mapi_session TSRMLS_CC);
+	zend_hash_index_del(this_obj->children_mailboxes->value.ht, (long) mailbox_handle);
 }

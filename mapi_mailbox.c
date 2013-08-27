@@ -1,0 +1,172 @@
+#include <php_mapi.h>
+
+static zend_function_entry mapi_mailbox_class_functions[] = {
+	PHP_ME(MAPIMailbox,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIMailbox,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMailbox,	getName,	NULL, ZEND_ACC_PUBLIC)
+
+	{ NULL, NULL, NULL }
+};
+
+static zend_class_entry		*mapi_mailbox_ce;
+static zend_object_handlers	mapi_mailbox_object_handlers;
+
+static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
+{
+	mapi_mailbox_object_t	*obj;
+
+	obj = (mapi_mailbox_object_t *) object;
+	if (obj->talloc_ctx) {
+		talloc_free(obj->talloc_ctx);
+	}
+
+	zend_hash_destroy(obj->std.properties);
+	FREE_HASHTABLE(obj->std.properties);
+
+	efree(obj);
+}
+
+
+static zend_object_value mapi_mailbox_create_handler(zend_class_entry *type TSRMLS_DC)
+{
+	zval			*tmp;
+	zend_object_value	retval;
+	mapi_mailbox_object_t	*obj;
+
+	obj = (mapi_mailbox_object_t *) emalloc(sizeof(mapi_mailbox_object_t));
+	memset(obj, 0, sizeof(mapi_mailbox_object_t));
+
+	obj->std.ce = type;
+
+	ALLOC_HASHTABLE(obj->std.properties);
+	zend_hash_init(obj->std.properties, 0, NULL, ZVAL_PTR_DTOR, 0);
+#if PHP_VERSION_ID < 50399
+	zend_hash_copy(obj->std.properties, &type->default_properties,
+		       (copy_ctor_func_t)zval_add_ref, (void *)&tmp, sizeof(zval *));
+#else
+	object_properties_init((zend_object *) &(obj->std), type);
+#endif
+	retval.handle = zend_objects_store_put(obj, NULL, mapi_mailbox_free_storage,
+					       NULL TSRMLS_CC);
+	retval.handlers = &mapi_mailbox_object_handlers;
+
+	return retval;
+}
+
+
+
+void MAPIMailboxRegisterClass(TSRMLS_D)
+{
+	zend_class_entry	ce;
+
+	INIT_CLASS_ENTRY(ce, "MAPIMailbox", mapi_mailbox_class_functions);
+	mapi_mailbox_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	mapi_mailbox_ce->create_object = mapi_mailbox_create_handler;
+	memcpy(&mapi_mailbox_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+	mapi_mailbox_object_handlers.clone_obj = NULL;
+}
+
+static void init_message_store(mapi_object_t *store,
+			       struct mapi_session *session,
+			       bool public_folder, char *username)
+{
+	enum MAPISTATUS retval;
+
+	mapi_object_init(store);
+	if (public_folder == true) {
+		retval = OpenPublicFolder(session, store);
+		if (retval != MAPI_E_SUCCESS) {
+			php_error(E_ERROR, "Open public folder: %s", mapi_get_errstr(retval));
+		}
+	} else if (username) {
+		retval = OpenUserMailbox(session, username, store);
+		if (retval != MAPI_E_SUCCESS) {
+			php_error(E_ERROR, "Open user mailbox: %s", mapi_get_errstr(retval));
+		}
+	} else {
+		retval = OpenMsgStore(session, store);
+		if (retval != MAPI_E_SUCCESS) {
+			php_error(E_ERROR, "Open message store: %s",  mapi_get_errstr(retval));
+		}
+	}
+}
+
+zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
+{
+	zval *new_php_obj;
+	mapi_mailbox_object_t *new_obj;
+	zend_class_entry	**ce;
+	struct mapi_session *session;
+
+	MAKE_STD_ZVAL(new_php_obj);
+	/* create the MapiMailbox instance in return_value zval */
+	if (zend_hash_find(EG(class_table),"mapimailbox", sizeof("mapimailbox"),(void**)&ce) == FAILURE) {
+		php_error(E_ERROR, "Class MAPIMailbox does not exist.");
+	}
+	object_init_ex(new_php_obj, *ce);
+
+	new_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
+	new_obj->parent_session = php_session;
+	new_obj->talloc_ctx = talloc_named(NULL, 0, "mailbox");
+	new_obj->username = username;
+
+	// open user mailbox
+	session = mapi_session_get_session(php_session TSRMLS_CC);
+	init_message_store(&new_obj->obj_store, session, false, username);
+
+	return new_php_obj;
+}
+
+PHP_METHOD(MAPIMailbox, __construct)
+{
+	php_error(E_ERROR, "The mailbox object should not created directly.\n" \
+		  "Use the 'mailbox' method in the session object");
+}
+
+
+PHP_METHOD(MAPIMailbox, __destruct)
+{
+	zval			*php_this;
+	mapi_mailbox_object_t	*this;
+	php_this = getThis();
+	this = (mapi_mailbox_object_t *) zend_object_store_get_object(php_this TSRMLS_CC);
+
+	mapi_session_remove_children_mailbox(this->parent_session, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
+}
+
+PHP_METHOD(MAPIMailbox, getName)
+{
+	enum MAPISTATUS		retval;
+	const char		*mailbox_name;
+	TALLOC_CTX		*this_obj_talloc_ctx;
+	TALLOC_CTX		*talloc_ctx;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+	zval                    *this_php_obj;
+	mapi_mailbox_object_t	*this_obj;
+
+	this_php_obj = getThis();
+	this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+	this_obj_talloc_ctx = OBJ_GET_TALLOC_CTX_TMP(mapi_mailbox_object_t *, this_php_obj);
+	talloc_ctx = talloc_named(this_obj_talloc_ctx, 0, "MAPIMailbox::getName");
+
+	/* Retrieve the mailbox folder name */
+	SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
+	retval = GetProps(&this_obj->obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	CHECK_MAPI_RETVAL(retval, "Get mailbox properties");
+
+	/* FIXME: Use accessor instead of direct access */
+	if (lpProps[0].value.lpszW) {
+		mailbox_name = lpProps[0].value.lpszW;
+	} else {
+		php_error(E_ERROR, "Get mailbox name");
+	}
+
+        RETVAL_STRING(mailbox_name, 1);
+	talloc_free(talloc_ctx);
+
+	return;
+
+}

@@ -27,4 +27,7 @@ $mailbox = $session->mailbox();
 var_dump($mailbox);
 echo "Mailbox name "  . $mailbox->getName() . "\n";
 
+$inbox = $mailbox->inbox();
+echo "Inbox item type " . $inbox->getItemType() . "\n";
+
 ?>

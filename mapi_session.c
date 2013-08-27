@@ -58,8 +58,9 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 	mapi_session_object_t	*obj;
 
 	obj = (mapi_session_object_t *) object;
-	if (obj->mem_ctx)
+	if (obj->mem_ctx) {
 		talloc_free(obj->mem_ctx);
+	}
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);

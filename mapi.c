@@ -55,6 +55,7 @@ PHP_MINIT_FUNCTION(mapi)
 	MAPIProfileRegisterClass(TSRMLS_C);
 	MAPISessionRegisterClass(TSRMLS_C);
 	MAPIMailboxRegisterClass(TSRMLS_C);
+	MAPIFolderRegisterClass(TSRMLS_C);
 
 	return SUCCESS;
 }

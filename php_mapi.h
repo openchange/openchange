@@ -29,6 +29,7 @@
 #include <mapi_profile_db.h>
 #include <mapi_session.h>
 #include <mapi_mailbox.h>
+#include <mapi_folder.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"

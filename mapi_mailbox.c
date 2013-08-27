@@ -28,6 +28,11 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
 
+	if (obj->children_folders) {
+		zval_dtor(obj->children_folders);
+		FREE_ZVAL(obj->children_folders);
+	}
+
 	efree(obj);
 }
 
@@ -54,6 +59,9 @@ static zend_object_value mapi_mailbox_create_handler(zend_class_entry *type TSRM
 	retval.handle = zend_objects_store_put(obj, NULL, mapi_mailbox_free_storage,
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_mailbox_object_handlers;
+
+	MAKE_STD_ZVAL(obj->children_folders);
+	array_init(obj->children_folders);
 
 	return retval;
 }
@@ -117,7 +125,7 @@ zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
 
 	// open user mailbox
 	session = mapi_session_get_session(php_session TSRMLS_CC);
-	init_message_store(&new_obj->obj_store, session, false, username);
+	init_message_store(&(new_obj->store), session, false, username);
 
 	return new_php_obj;
 }
@@ -131,12 +139,16 @@ PHP_METHOD(MAPIMailbox, __construct)
 
 PHP_METHOD(MAPIMailbox, __destruct)
 {
-	zval			*php_this;
-	mapi_mailbox_object_t	*this;
-	php_this = getThis();
-	this = (mapi_mailbox_object_t *) zend_object_store_get_object(php_this TSRMLS_CC);
+	zval			*php_this_obj;
+	mapi_mailbox_object_t	*this_obj;
+	php_this_obj = getThis();
+	this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
 
-	mapi_session_remove_children_mailbox(this->parent_session, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
+	if (zend_hash_num_elements(this_obj->children_folders->value.ht) > 0) {
+		php_error(E_ERROR, "This MapiMailbox object has active folders");
+	}
+
+	mapi_session_remove_children_mailbox(this_obj->parent_session, Z_OBJ_HANDLE_P(php_this_obj) TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIMailbox, getName)
@@ -158,7 +170,7 @@ PHP_METHOD(MAPIMailbox, getName)
 
 	/* Retrieve the mailbox folder name */
 	SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
-	retval = GetProps(&this_obj->obj_store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
+	retval = GetProps(&this_obj->store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
 	MAPIFreeBuffer(SPropTagArray);
 	CHECK_MAPI_RETVAL(retval, "Get mailbox properties");
 
@@ -182,8 +194,23 @@ PHP_METHOD(MAPIMailbox, setName)
 
 PHP_METHOD(MAPIMailbox, inbox)
 {
-	php_error(E_ERROR, "Not implemented");
+	enum MAPISTATUS  retval;
+	uint64_t	id_inbox;
+	uint32_t	count;
+	zval            *folder;
 
+	zval  *this_php_obj = getThis();
+	mapi_mailbox_object_t *this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+
+	retval = GetReceiveFolder(&this_obj->store, &id_inbox, NULL);
+	CHECK_MAPI_RETVAL(retval, "Get receive folder");
+
+	folder = create_folder_object(this_php_obj, id_inbox, "Mail" TSRMLS_CC);
+
+	add_index_zval(this_obj->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
+
+	RETURN_ZVAL(folder, 0, 0);
+	return;
 }
 
 PHP_METHOD(MAPIMailbox, calendar)
@@ -199,4 +226,12 @@ PHP_METHOD(MAPIMailbox, contacts)
 PHP_METHOD(MAPIMailbox, tasks)
 {
 	php_error(E_ERROR, "Not implemented");
+}
+
+void mapi_mailbox_remove_children_folder(zval *mapi_mailbox, zend_object_handle folder_handle TSRMLS_DC)
+{
+	mapi_mailbox_object_t	*this_obj;
+
+	this_obj = (mapi_mailbox_object_t*) zend_object_store_get_object(mapi_mailbox TSRMLS_CC);
+	zend_hash_index_del(this_obj->children_folders->value.ht, (long) folder_handle);
 }

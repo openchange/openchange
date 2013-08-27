@@ -17,18 +17,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_MAILBOX_H
-#define MAPI_MAILBOX_H
+#ifndef MAPI_FOLDER_H
+#define MAPI_FOLDER_H
 
-typedef struct mapi_mailbox_object
+typedef struct mapi_folder_object
 {
 	zend_object	std;
-	mapi_object_t	store;
 	TALLOC_CTX	*talloc_ctx;
-	const char      *username;
-	zval		*parent_session;
-	zval            *children_folders;
-} mapi_mailbox_object_t;
+	zval		*parent_mailbox;
+	uint64_t        id;
+	mapi_object_t	store;
+	char		*item_type;
+} mapi_folder_object_t;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,17 +42,12 @@ typedef struct mapi_mailbox_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPIMailbox, __construct);
-PHP_METHOD(MAPIMailbox, __destruct);
-PHP_METHOD(MAPIMailbox, getName);
-PHP_METHOD(MAPIMailbox, setName);
-PHP_METHOD(MAPIMailbox, inbox);
-PHP_METHOD(MAPIMailbox, calendar);
-PHP_METHOD(MAPIMailbox, contacts);
-PHP_METHOD(MAPIMailbox, tasks);
+PHP_METHOD(MAPIFolder, __construct);
+PHP_METHOD(MAPIFolder, __destruct);
+PHP_METHOD(MAPIFolder, getItemType);
 
-void MAPIMailboxRegisterClass(TSRMLS_D);
-zval *create_mailbox_object(zval *session, char *username TSRMLS_DC);
+void MAPIFolderRegisterClass(TSRMLS_D);
+zval *create_folder_object(zval *php_mailbox, uint64_t id, char *item_type TSRMLS_DC);
 
 __END_DECLS
 

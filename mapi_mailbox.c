@@ -19,11 +19,11 @@ struct itemfolder {
 };
 
 struct itemfolder	defaultFolders[] = {
-	{olFolderInbox,		"IPM.Mail"},
-	{olFolderCalendar,	"IPM.Appointment"},
-	{olFolderContacts,	"IPM.Contact"},
-	{olFolderTasks,		"IPM.Task"},
-	{olFolderNotes,		"IPM.Note"},
+	{olFolderInbox,		"IPF.Mail"},
+	{olFolderCalendar,	"IPF.Appointment"},
+	{olFolderContacts,	"IPF.Contact"},
+	{olFolderTasks,		"IPF.Task"},
+	{olFolderNotes,		"IPF.Note"},
 	{0 , NULL}
 };
 
@@ -219,7 +219,7 @@ PHP_METHOD(MAPIMailbox, inbox)
 	retval = GetReceiveFolder(&this_obj->store, &id_inbox, NULL);
 	CHECK_MAPI_RETVAL(retval, "Get receive folder");
 
-	folder = create_folder_object(this_php_obj, id_inbox, "IPM.Mail" TSRMLS_CC);
+	folder = create_folder_object(this_php_obj, id_inbox, "IPF.Note" TSRMLS_CC);
 
 	add_index_zval(this_obj->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
 
@@ -258,19 +258,19 @@ static zval *default_folder_for_item(zval *php_mailbox, char *item TSRMLS_DC)
 
 PHP_METHOD(MAPIMailbox, calendar)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPM.Appointment"  TSRMLS_CC);
+	zval *folder = default_folder_for_item(getThis(), "IPF.Appointment"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 0);
 }
 
 PHP_METHOD(MAPIMailbox, contacts)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPM.Contact"  TSRMLS_CC);
+	zval *folder = default_folder_for_item(getThis(), "IPF.Contact"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 0);
 }
 
 PHP_METHOD(MAPIMailbox, tasks)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPM.Task"  TSRMLS_CC);
+	zval *folder = default_folder_for_item(getThis(), "IPF.Task"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 0);
 }
 

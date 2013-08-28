@@ -17,18 +17,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_FOLDER_H
-#define MAPI_FOLDER_H
+#ifndef MAPI_CONTACT_H
+#define MAPI_CONTACT_H
 
-typedef struct mapi_folder_object
+typedef struct mapi_contact_object
 {
 	zend_object	std;
+	mapi_object_t	*message;
 	TALLOC_CTX	*talloc_ctx;
-	zval		*parent_mailbox;
-	uint64_t        id;
-	mapi_object_t	store;
-	char		*folder_type;
-} mapi_folder_object_t;
+	struct mapi_SPropValue_array	properties;
+} mapi_contact_object_t;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,16 +40,12 @@ typedef struct mapi_folder_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPIFolder, __construct);
-PHP_METHOD(MAPIFolder, __destruct);
-PHP_METHOD(MAPIFolder, getFolderType);
-PHP_METHOD(MAPIFolder, getFolderTable);
-PHP_METHOD(MAPIFolder, getContentTable);
-PHP_METHOD(MAPIFolder, openMessage);
-PHP_METHOD(MAPIFolder, createMessage);
+PHP_METHOD(MAPIContact, __construct);
+PHP_METHOD(MAPIContact, __destruct);
+PHP_METHOD(MAPIContact, __get);
 
-void MAPIFolderRegisterClass(TSRMLS_D);
-zval *create_folder_object(zval *php_mailbox, uint64_t id, char *item_type TSRMLS_DC);
+void MAPIContactRegisterClass(TSRMLS_D);
+zval *create_contact_object(mapi_object_t *message TSRMLS_DC);
 
 __END_DECLS
 

@@ -1,9 +1,13 @@
 #include <php_mapi.h>
 
 static zend_function_entry mapi_folder_class_functions[] = {
-	PHP_ME(MAPIFolder,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIFolder,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(MAPIFolder,	getItemType,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	__construct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIFolder,	__destruct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIFolder,	getFolderType,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	getFolderTable,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	getContentTable,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	openMessage,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	createMessage,		NULL, ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -19,9 +23,11 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-	if (obj->item_type) {
-		efree(obj->item_type);
+	if (obj->folder_type) {
+		efree(obj->folder_type);
 	}
+
+	mapi_object_release(&(obj->store));
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
@@ -70,7 +76,7 @@ void MAPIFolderRegisterClass(TSRMLS_D)
 	mapi_folder_object_handlers.clone_obj = NULL;
 }
 
-zval *create_folder_object(zval *php_mailbox, uint64_t id, char *item_type TSRMLS_DC)
+zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval			*new_php_obj;
@@ -88,7 +94,7 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *item_type TSRML
 	new_obj->id = id;
 	new_obj->parent_mailbox = php_mailbox;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
-	new_obj->item_type = estrdup(item_type);
+	new_obj->folder_type = estrdup(folder_type);
 
 	mapi_object_init(&(new_obj->store));
 	mailbox = (mapi_mailbox_object_t *) zend_object_store_get_object(php_mailbox TSRMLS_CC);
@@ -115,16 +121,61 @@ PHP_METHOD(MAPIFolder, __destruct)
 	mapi_mailbox_remove_children_folder(this_obj->parent_mailbox, Z_OBJ_HANDLE_P(php_this_obj) TSRMLS_CC);
 }
 
-PHP_METHOD(MAPIFolder, getItemType)
+PHP_METHOD(MAPIFolder, getFolderType)
 {
 	zval                    *this_php_obj;
 	mapi_folder_object_t	*this_obj;
 
 	this_php_obj = getThis();
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	RETURN_STRING(this_obj->item_type, 1);
+	RETURN_STRING(this_obj->folder_type, 1);
 }
 
+PHP_METHOD(MAPIFolder, getFolderTable)
+{
+	php_error(E_ERROR, "Not implemented");
+}
 
+PHP_METHOD(MAPIFolder, getContentTable)
+{
+	php_error(E_ERROR, "Not implemented");
+}
+
+PHP_METHOD(MAPIFolder, openMessage)
+{
+	enum MAPISTATUS		retval;
+	mapi_folder_object_t	*this_obj;
+	mapi_id_t		message_id;
+	char			*id_str;
+	size_t			id_str_len;
+	mapi_object_t		*message;
+	zval                    *php_message;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
+				  &id_str, &id_str_len) == FAILURE) {
+		php_error(E_ERROR, "Missing message ID");
+	}
+	message_id = str_to_mapi_id(id_str);
+
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
+	mapi_object_init(message);
+
+	retval = OpenMessage(&(this_obj->store), this_obj->id, message_id, message, 0x0);
+	CHECK_MAPI_RETVAL(retval, "Open message");
+
+	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
+		php_message = create_contact_object(message TSRMLS_CC);
+	} else {
+		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
+	}
+
+	RETURN_ZVAL(php_message, 0, 0);
+}
+
+PHP_METHOD(MAPIFolder, createMessage)
+{
+	php_error(E_ERROR, "Not implemented");
+}
 
 

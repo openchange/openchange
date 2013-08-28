@@ -39,6 +39,8 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 
+	mapi_object_release(&(obj->store));
+
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
 
@@ -224,13 +226,12 @@ PHP_METHOD(MAPIMailbox, inbox)
 	add_index_zval(this_obj->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
 
 	RETURN_ZVAL(folder, 0, 0);
-	return;
 }
 
 static zval *default_folder_for_item(zval *php_mailbox, char *item TSRMLS_DC)
 {
-	enum MAPISTATUS 		 retval;
-	uint32_t			i;
+	enum MAPISTATUS 		retval;
+	uint32_t	 		i;
 	uint32_t			olFolder = 0;
 	mapi_mailbox_object_t 		*mailbox;
 	mapi_id_t			fid;

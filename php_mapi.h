@@ -20,6 +20,10 @@
 #ifndef PHP_MAPI_H
 #define PHP_MAPI_H 1
 
+
+#define __STDC_FORMAT_MACROS
+#include <inttypes.h>
+
 #include <php.h>
 
 #include <libmapi/libmapi.h>
@@ -30,13 +34,10 @@
 #include <mapi_session.h>
 #include <mapi_mailbox.h>
 #include <mapi_folder.h>
+#include <mapi_contact.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
-
-#define PROFILE_RESOURCE_NAME "Profile"
-#define SESSION_RESOURCE_NAME "Session"
-#define TALLOC_RESOURCE_NAME "TALLOC_CTX"
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -66,6 +67,15 @@ extern zend_module_entry mapi_module_entry;
 #define CHECK_MAPI_RETVAL(rv, desc)		\
   if (rv != MAPI_E_SUCCESS)			\
 	  php_error(E_ERROR, "%s: %s", desc, mapi_get_errstr(rv))
+#define THIS_STORE_OBJECT(type) (type) zend_object_store_get_object(getThis() TSRMLS_CC)
+#define STORE_OBJECT(type, php_obj) (type) zend_object_store_get_object( TSRMLS_CC)
 
+#define MAPI_ID_STR_SIZE  19*sizeof(char) // 0x + 64/4 + NUL char
+
+char *mapi_id_to_str(mapi_id_t id);
+mapi_id_t str_to_mapi_id(const char *str);
+
+ZEND_BEGIN_ARG_INFO_EX(php_method_one_arg, 0, 0, 1)
+ZEND_END_ARG_INFO()
 
 #endif /*! PHP_MAPI_H */

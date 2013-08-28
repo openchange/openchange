@@ -56,10 +56,32 @@ PHP_MINIT_FUNCTION(mapi)
 	MAPISessionRegisterClass(TSRMLS_C);
 	MAPIMailboxRegisterClass(TSRMLS_C);
 	MAPIFolderRegisterClass(TSRMLS_C);
+	MAPIContactRegisterClass(TSRMLS_C);
 
 	return SUCCESS;
 }
 
 PHP_MSHUTDOWN_FUNCTION(mapi)
 {
+}
+
+char *mapi_id_to_str(mapi_id_t id)
+{
+	char *str = (char*) emalloc(MAPI_ID_STR_SIZE);
+	snprintf(str, MAPI_ID_STR_SIZE, "0x%" PRIX64, id);
+	return str;
+}
+
+mapi_id_t str_to_mapi_id(const char *str)
+{
+	char *end;
+	mapi_id_t res = strtoull(str, &end, 16);
+	if ((errno == ERANGE) && (res == ULLONG_MAX)) {
+		php_error(E_ERROR, "ID string '%40s' has overflowed", str);
+	}
+	if (*end != '\0') {
+		php_error(E_ERROR, "Error parsing ID string '%40s'", str);
+	}
+
+	return res;
 }

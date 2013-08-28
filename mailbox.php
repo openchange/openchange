@@ -28,15 +28,19 @@ var_dump($mailbox);
 echo "Mailbox name "  . $mailbox->getName() . "\n";
 
 $inbox = $mailbox->inbox();
-echo "Inbox item type " . $inbox->getItemType() . "\n";
+echo "Inbox item type " . $inbox->getFolderType() . "\n";
 
 $calendar = $mailbox->calendar();
-echo "Calendar item type " . $calendar->getItemType() . "\n";
+echo "Calendar item type " . $calendar->getFolderType() . "\n";
 
 $contacts = $mailbox->contacts();
-echo "Contacts item type " . $contacts->getItemType() . "\n";
+echo "Contacts item type " . $contacts->getFolderType() . "\n";
+$messageId = '0xA4010E0000000001';
+$message = $contacts->openMessage($messageId);
+echo var_dump($message->FileUnder);
+echo var_dump($message->Email1OriginalDisplayName);
 
 $tasks = $mailbox->tasks();
-echo "Tasks item type " . $tasks->getItemType() . "\n";
+echo "Tasks item type " . $tasks->getFolderType() . "\n";
 
 ?>

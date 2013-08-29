@@ -24,7 +24,7 @@ typedef struct mapi_session_object
 {
 	zend_object		std;
 	char			*path;
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
 	struct mapi_session	*session;
 	zval			*children_mailboxes;

@@ -24,7 +24,7 @@ typedef struct mapi_profile_object
 {
 	zend_object		std;
 	char			*path;
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
 	zval			*children_sessions;
 	struct mapi_profile	*profile;

@@ -177,7 +177,7 @@ PHP_METHOD(MAPIMailbox, getName)
 
 	this_php_obj = getThis();
 	this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	this_obj_talloc_ctx = OBJ_GET_TALLOC_CTX_TMP(mapi_mailbox_object_t *, this_php_obj);
+	this_obj_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_mailbox_object_t *, this_php_obj);
 	talloc_ctx = talloc_named(this_obj_talloc_ctx, 0, "MAPIMailbox::getName");
 
 	/* Retrieve the mailbox folder name */

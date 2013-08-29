@@ -51,8 +51,8 @@ static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
 	if (obj->path) {
 		efree(obj->path);
 	}
-	if (obj->mem_ctx) {
-		talloc_free(obj->mem_ctx);
+	if (obj->talloc_ctx) {
+		talloc_free(obj->talloc_ctx);
 	}
 	if (obj->children_profiles) {
 		zval_dtor(obj->children_profiles);
@@ -101,7 +101,7 @@ void MAPIProfileDBRegisterClass(TSRMLS_D)
 	mapi_profile_db_object_handlers.clone_obj = NULL;
 }
 
-static struct mapi_profile *get_profile_ptr(TALLOC_CTX *mem_ctx,
+static struct mapi_profile *get_profile_ptr(TALLOC_CTX *talloc_ctx,
 					    struct mapi_context *mapi_ctx,
 					    char *opt_profname)
 {
@@ -110,23 +110,23 @@ static struct mapi_profile *get_profile_ptr(TALLOC_CTX *mem_ctx,
 	char			*profname;
 	struct mapi_profile	*profile;
 
-	profile = talloc(mem_ctx, struct mapi_profile);
+	profile = talloc(talloc_ctx, struct mapi_profile);
 
 	if (!opt_profname) {
 		if ((retval = GetDefaultProfile(mapi_ctx, &profname)) != MAPI_E_SUCCESS) {
-			talloc_free(mem_ctx);
+			talloc_free(talloc_ctx);
 			err_str = mapi_get_errstr(retval);
 			php_error(E_ERROR, "Get default profile: %s", err_str);
 		}
 	} else {
-		profname = talloc_strdup(mem_ctx, (const char *)opt_profname);
+		profname = talloc_strdup(talloc_ctx, (const char *)opt_profname);
 	}
 
 	retval = OpenProfile(mapi_ctx, profile, profname, NULL);
 	talloc_free(profname);
 
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
-		talloc_free(mem_ctx);
+		talloc_free(talloc_ctx);
 		err_str = mapi_get_errstr(retval);
 		php_error(E_ERROR, "Get %s profile: %s", opt_profname, err_str);
 	}
@@ -150,7 +150,7 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	php_obj = getThis();
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
-	obj->mem_ctx = talloc_named(NULL, 0, "profile_db");
+	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
 	MAKE_STD_ZVAL(obj->children_profiles);
 	array_init(obj->children_profiles);
 }
@@ -250,7 +250,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	zval				*php_obj;
 	mapi_profile_db_object_t	*this_obj;
 	struct mapi_profile		*profile;
-	TALLOC_CTX			*mem_ctx;
+	TALLOC_CTX			*talloc_ctx;
 	struct mapi_context		*mapi_ctx;
 	char				*opt_profname = NULL;
 	int				opt_profname_len;
@@ -263,10 +263,10 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 		RETURN_NULL();
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "profile");
-	profile = get_profile_ptr(mem_ctx, mapi_ctx, opt_profname);
+	talloc_ctx = talloc_named(NULL, 0, "profile");
+	profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
-	php_obj = create_profile_object(profile, this_php_obj, mem_ctx TSRMLS_CC);
+	php_obj = create_profile_object(profile, this_php_obj, talloc_ctx TSRMLS_CC);
 	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
 	add_index_zval(this_obj->children_profiles, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
 

@@ -32,7 +32,6 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
 
-
 	efree(obj);
 }
 
@@ -170,7 +169,7 @@ PHP_METHOD(MAPIFolder, openMessage)
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}
 
-	RETURN_ZVAL(php_message, 0, 0);
+	RETURN_ZVAL(php_message, 0, 1);
 }
 
 PHP_METHOD(MAPIFolder, createMessage)

@@ -17,16 +17,16 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_CONTACT_H
-#define MAPI_CONTACT_H
+#ifndef MAPI_MESSAGE_H
+#define MAPI_MESSAGE_H
 
-/* typedef struct mapi_contact_object */
-/* { */
-/* 	zend_object	std; */
-/* 	mapi_object_t	*message; */
-/* 	TALLOC_CTX	*talloc_ctx; */
-/* 	struct mapi_SPropValue_array	properties; */
-/* } mapi_contact_object_t; */
+typedef struct mapi_message_object
+{
+	zend_object	std;
+	mapi_object_t	*message;
+	TALLOC_CTX	*talloc_ctx;
+	struct mapi_SPropValue_array	properties;
+} mapi_message_object_t;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -40,12 +40,17 @@
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPIContact, __construct);
-PHP_METHOD(MAPIContact, __destruct);
+PHP_METHOD(MAPIMessage, __construct);
+PHP_METHOD(MAPIMessage, __destruct);
+PHP_METHOD(MAPIMessage, __get);
+PHP_METHOD(MAPIMessage, __set);
 
 
-void MAPIContactRegisterClass(TSRMLS_D);
-zval *create_contact_object(mapi_object_t *message TSRMLS_DC);
+void MAPIMessageRegisterClass(TSRMLS_D);
+
+zval *initialize_message_object(zval* new_php_obj, mapi_object_t *message TSRMLS_DC);
+zend_object_value mapi_message_create_handler(zend_class_entry *type TSRMLS_DC);
+
 
 __END_DECLS
 

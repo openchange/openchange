@@ -35,6 +35,7 @@
 #include <mapi_mailbox.h>
 #include <mapi_folder.h>
 #include <mapi_contact.h>
+#include <mapi_table.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"

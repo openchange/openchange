@@ -43,6 +43,8 @@ __BEGIN_DECLS
 PHP_METHOD(MAPIContact, __construct);
 PHP_METHOD(MAPIContact, __destruct);
 PHP_METHOD(MAPIContact, __get);
+PHP_METHOD(MAPIContact, __set);
+
 
 void MAPIContactRegisterClass(TSRMLS_D);
 zval *create_contact_object(mapi_object_t *message TSRMLS_DC);

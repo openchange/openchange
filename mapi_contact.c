@@ -3,7 +3,8 @@
 static zend_function_entry mapi_contact_class_functions[] = {
 	PHP_ME(MAPIContact,	__construct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIContact,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(MAPIContact,	__get,	        php_method_one_arg, 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIContact,	__get,	        php_method_one_args, 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIContact,	__set,	        php_method_two_args, 	ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -19,7 +20,6 @@ static void mapi_contact_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-
 	if (obj->message) {
 		mapi_object_release(obj->message);
 		efree(obj->message);
@@ -56,8 +56,6 @@ static zend_object_value mapi_contact_create_handler(zend_class_entry *type TSRM
 	return retval;
 }
 
-
-
 void MAPIContactRegisterClass(TSRMLS_D)
 {
 	zend_class_entry	ce;
@@ -68,8 +66,6 @@ void MAPIContactRegisterClass(TSRMLS_D)
 	memcpy(&mapi_contact_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	mapi_contact_object_handlers.clone_obj = NULL;
 }
-
-
 
 zval *create_contact_object(mapi_object_t  *message TSRMLS_DC)
 {
@@ -113,28 +109,47 @@ PHP_METHOD(MAPIContact, __destruct)
 
 }
 
+char *prop_name_with_prefix(char *prop_name)
+{
+	size_t 			full_prop_name_len;
+	char 			*full_prop_name;
+	full_prop_name_len = strlen("PidLid") + strlen(prop_name) + 1;
+	full_prop_name = emalloc(full_prop_name_len);
+	strlcpy(full_prop_name, "PidLid", full_prop_name_len);
+	strlcat(full_prop_name, prop_name, full_prop_name_len);
+	return full_prop_name;
+}
+
 // 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
 // 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
 PHP_METHOD(MAPIContact, __get)
 {
 	char 			*prop_name;
 	size_t 			prop_len;
-	size_t 			full_prop_name_len;
 	char 			*full_prop_name;
+	zval			*this_php_obj;
 	mapi_contact_object_t 	*this_obj;
         uint32_t 		prop_id;
 	uint32_t 		prop_type;
+	zval			**temp_prop_value;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
 				  &prop_name, &prop_len) == FAILURE) {
 		php_error(E_ERROR, "Missing property name");
 	}
 
-	full_prop_name_len = strlen("PidLid") + strlen(prop_name) + 1;
-	full_prop_name = emalloc(full_prop_name_len);
-	strlcpy(full_prop_name, "PidLid", full_prop_name_len);
-	strlcat(full_prop_name, prop_name, full_prop_name_len);
+	php_printf("__get %s\n", prop_name);
 
+	this_php_obj = getThis();
+	if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  prop_name, sizeof(prop_name), (void**)&temp_prop_value) == SUCCESS) {
+		php_printf("Found in properties table\n");
+		RETURN_ZVAL(*temp_prop_value, 1, 1);
+		return;
+	}
+
+		php_printf("NOT Found in properties table\n");
+
+	full_prop_name = prop_name_with_prefix(prop_name);
 	prop_id = get_namedid_value(full_prop_name);
 	/* prop_id = get_proptag_value(full_prop_name); */
 	if (prop_id == 0) {
@@ -146,7 +161,7 @@ PHP_METHOD(MAPIContact, __get)
 	prop_type =  get_namedid_type(prop_id >> 16); // do it with a bit rotatinon
 		//get_property_type(prop_id);
 
-	this_obj = THIS_STORE_OBJECT(mapi_contact_object_t*);
+	this_obj = STORE_OBJECT(mapi_contact_object_t*, this_php_obj);
 	if (prop_type == PT_UNICODE) {
 		char *str_val = (char *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
 		RETURN_STRING(str_val, 1);
@@ -159,5 +174,35 @@ PHP_METHOD(MAPIContact, __get)
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property type %i is unknow or unsupported", prop_type);
+	}
+}
+
+// TODO: for other typ
+PHP_METHOD(MAPIContact, __set)
+{
+	char 			*prop_name;
+	size_t 		 	prop_name_len;
+	char 			*prop_value;
+	size_t 			prop_value_len;
+	size_t 			full_prop_name_len;
+	char 			*full_prop_name;
+	zval			*this_php_obj;
+        uint32_t 		prop_id;
+	uint32_t 		prop_type;
+	HashTable		*properties;
+	zval 			*strval;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+				  &prop_name, &prop_name_len, &prop_value, &prop_value_len) == FAILURE) {
+		php_error(E_ERROR, "Missing property name");
+	}
+
+	php_printf("__set %s -> %s\n", prop_name, prop_value);
+
+	MAKE_STD_ZVAL(strval);
+	ZVAL_STRING(strval, prop_value, 1);
+	if(zend_hash_update(Z_OBJPROP_P(getThis()), prop_name, sizeof(prop_name),
+					&strval, sizeof(strval), NULL) == FAILURE) {
+		php_error(E_ERROR, "Cannot update object properties table");
 	}
 }

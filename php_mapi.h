@@ -66,15 +66,17 @@ extern zend_module_entry mapi_module_entry;
 #define CHECK_MAPI_RETVAL(rv, desc)		\
   if (rv != MAPI_E_SUCCESS)			\
 	  php_error(E_ERROR, "%s: %s", desc, mapi_get_errstr(rv))
-#define THIS_STORE_OBJECT(type) (type) zend_object_store_get_object(getThis() TSRMLS_CC)
-#define STORE_OBJECT(type, php_obj) (type) zend_object_store_get_object( TSRMLS_CC)
+#define STORE_OBJECT(type, zv) (type) zend_object_store_get_object(zv TSRMLS_CC)
+#define THIS_STORE_OBJECT(type) STORE_OBJECT(type, getThis())
 
 #define MAPI_ID_STR_SIZE  19*sizeof(char) // 0x + 64/4 + NUL char
 
 char *mapi_id_to_str(mapi_id_t id);
 mapi_id_t str_to_mapi_id(const char *str);
 
-ZEND_BEGIN_ARG_INFO_EX(php_method_one_arg, 0, 0, 1)
+ZEND_BEGIN_ARG_INFO_EX(php_method_one_args, 0, 0, 1)
+ZEND_END_ARG_INFO()
+ZEND_BEGIN_ARG_INFO_EX(php_method_two_args, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
 #endif /*! PHP_MAPI_H */

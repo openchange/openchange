@@ -38,7 +38,16 @@ echo "Contacts item type " . $contacts->getFolderType() . "\n";
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
 echo var_dump($message->FileUnder);
-#echo var_dump($message->Email1OriginalDisplayName);
+echo var_dump($message->Email1OriginalDisplayName);
+
+echo "Change Email1OriginalDisplayName \n";
+$message->Email1OriginalDisplayName = "changed@a.org";
+echo "Value:\n ";
+echo var_dump($message->Email1OriginalDisplayName) . "\n";
+echo "Rever Email1OriginalDisplayName \n";
+$message->Email1OriginalDisplayName = "jkerihuel@zentyal.com";
+echo "Value : \n";
+echo  var_dump($message->Email1OriginalDisplayName) . "\n";
 
 $tasks = $mailbox->tasks();
 echo "Tasks item type " . $tasks->getFolderType() . "\n";

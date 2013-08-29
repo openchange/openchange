@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -38,17 +38,15 @@ static void mapi_profile_free_storage(void *object TSRMLS_DC)
 {
 	mapi_profile_object_t *obj = (mapi_profile_object_t *) object;
 
-	if (obj->mem_ctx)
+	if (obj->mem_ctx) {
 		talloc_free(obj->mem_ctx);
-
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
-
+	}
 	if (obj->children_sessions) {
 		zval_dtor(obj->children_sessions);
 		FREE_ZVAL(obj->children_sessions);
 	}
 
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 
@@ -71,7 +69,7 @@ static zend_object_value mapi_profile_create_handler(zend_class_entry *type TSRM
 #else
 	object_properties_init((zend_object *) &(obj->std), type);
 #endif
-	retval.handle = zend_objects_store_put(obj, NULL, mapi_profile_free_storage, 
+	retval.handle = zend_objects_store_put(obj, NULL, mapi_profile_free_storage,
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_profile_object_handlers;
 
@@ -89,8 +87,8 @@ void MAPIProfileRegisterClass(TSRMLS_D)
 	mapi_profile_object_handlers.clone_obj = NULL;
 }
 
-zval *create_profile_object(struct mapi_profile *profile, 
-			    zval *profile_db, 
+zval *create_profile_object(struct mapi_profile *profile,
+			    zval *profile_db,
 			    TALLOC_CTX *mem_ctx TSRMLS_DC)
 {
 	zval			*php_obj;
@@ -100,7 +98,7 @@ zval *create_profile_object(struct mapi_profile *profile,
 	MAKE_STD_ZVAL(php_obj);
 
 	/* create the MapiProfile instance in return_value zval */
-	if (zend_hash_find(EG(class_table),"mapiprofile", 
+	if (zend_hash_find(EG(class_table),"mapiprofile",
 			   sizeof("mapiprofile"),(void**)&ce) == FAILURE) {
 		php_error(E_ERROR,"Class MAPIProfile does not exist.");
 	}

@@ -33,22 +33,18 @@ static zend_object_handlers	mapi_mailbox_object_handlers;
 static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 {
 	mapi_mailbox_object_t	*obj;
-
 	obj = (mapi_mailbox_object_t *) object;
+
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-
 	mapi_object_release(&(obj->store));
-
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
-
 	if (obj->children_folders) {
 		zval_dtor(obj->children_folders);
 		FREE_ZVAL(obj->children_folders);
 	}
 
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 

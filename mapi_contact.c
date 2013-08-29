@@ -20,15 +20,12 @@ static void mapi_contact_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
-
 	if (obj->message) {
 		mapi_object_release(obj->message);
 		efree(obj->message);
 	}
 
-	// XX destroy propierties ??
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 
@@ -132,14 +129,11 @@ PHP_METHOD(MAPIContact, __get)
 				  &prop_name, &prop_len) == FAILURE) {
 		php_error(E_ERROR, "Missing property name");
 	}
-	php_printf("Prop name %s\n", prop_name);
 
 	full_prop_name_len = strlen("PidLid") + strlen(prop_name) + 1;
 	full_prop_name = emalloc(full_prop_name_len);
 	strlcpy(full_prop_name, "PidLid", full_prop_name_len);
 	strlcat(full_prop_name, prop_name, full_prop_name_len);
-
-	php_printf("Full Prop name %s\n", full_prop_name);
 
 	prop_id = get_namedid_value(full_prop_name);
 	/* prop_id = get_proptag_value(full_prop_name); */
@@ -161,7 +155,7 @@ PHP_METHOD(MAPIContact, __get)
 		RETVAL_LONG(*long_val);
 	} else if (prop_type == PT_BOOLEAN) {
 		bool *bool_val = (bool *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
-		RETVAL_BOOL(bool_val);
+		RETVAL_BOOL(*bool_val);
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property type %i is unknow or unsupported", prop_type);

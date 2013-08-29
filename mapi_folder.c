@@ -29,9 +29,7 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 
 	mapi_object_release(&(obj->store));
 
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
-
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 

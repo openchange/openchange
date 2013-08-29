@@ -38,7 +38,7 @@ echo "Contacts item type " . $contacts->getFolderType() . "\n";
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
 echo var_dump($message->FileUnder);
-echo var_dump($message->Email1OriginalDisplayName);
+#echo var_dump($message->Email1OriginalDisplayName);
 
 $tasks = $mailbox->tasks();
 echo "Tasks item type " . $tasks->getFolderType() . "\n";

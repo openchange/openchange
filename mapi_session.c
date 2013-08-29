@@ -61,15 +61,12 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 	if (obj->mem_ctx) {
 		talloc_free(obj->mem_ctx);
 	}
-
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
-
 	if (obj->children_mailboxes) {
 		zval_dtor(obj->children_mailboxes);
 		FREE_ZVAL(obj->children_mailboxes);
 	}
 
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 

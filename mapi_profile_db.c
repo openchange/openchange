@@ -45,20 +45,22 @@ static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
 	mapi_profile_db_object_t	*obj;
 
 	obj = (mapi_profile_db_object_t *) object;
-	if (obj->mapi_ctx)
+	if (obj->mapi_ctx) {
 		MAPIUninitialize(obj->mapi_ctx);
-	if (obj->path)
+	}
+	if (obj->path) {
 		efree(obj->path);
-	if (obj->mem_ctx)
+	}
+	if (obj->mem_ctx) {
 		talloc_free(obj->mem_ctx);
+	}
 	if (obj->children_profiles) {
 		zval_dtor(obj->children_profiles);
 		FREE_ZVAL(obj->children_profiles);
 	}
 
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
 
+	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
 

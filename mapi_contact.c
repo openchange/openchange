@@ -184,12 +184,6 @@ PHP_METHOD(MAPIContact, __set)
 	size_t 		 	prop_name_len;
 	char 			*prop_value;
 	size_t 			prop_value_len;
-	size_t 			full_prop_name_len;
-	char 			*full_prop_name;
-	zval			*this_php_obj;
-        uint32_t 		prop_id;
-	uint32_t 		prop_type;
-	HashTable		*properties;
 	zval 			*strval;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",

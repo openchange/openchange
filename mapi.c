@@ -56,8 +56,10 @@ PHP_MINIT_FUNCTION(mapi)
 	MAPISessionRegisterClass(TSRMLS_C);
 	MAPIMailboxRegisterClass(TSRMLS_C);
 	MAPIFolderRegisterClass(TSRMLS_C);
+
 	MAPIMessageRegisterClass(TSRMLS_C);
 	MAPIContactRegisterClass(TSRMLS_C);
+	MAPITaskRegisterClass(TSRMLS_C);
 
 	return SUCCESS;
 }

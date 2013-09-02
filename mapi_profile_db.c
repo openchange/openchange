@@ -200,8 +200,9 @@ struct mapi_context *mapi_profile_db_get_mapi_context(zval *mapi_profile_db TSRM
 	struct mapi_context		*new_ct;
 
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
-	if (obj->mapi_ctx != NULL)
+	if (obj->mapi_ctx != NULL) {
 		return obj->mapi_ctx;
+	}
 
 	// create new mapi context
 	new_ct  =  mapi_context_init(obj->path);

@@ -36,6 +36,7 @@
 #include <mapi_folder.h>
 #include <mapi_message.h>
 #include <mapi_contact.h>
+#include <mapi_task.h>
 #include <mapi_table.h>
 
 #define PHP_MAPI_VERSION "1.0"

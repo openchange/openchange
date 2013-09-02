@@ -83,7 +83,7 @@ zval *create_message_object(char *class, mapi_object_t  *message TSRMLS_DC)
 
 	new_obj = (mapi_message_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->message = message;
-	new_obj->talloc_ctx = talloc_named(NULL, 0, class);
+	new_obj->talloc_ctx = talloc_named(NULL, 0, "%s", class);
 
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");
@@ -151,10 +151,11 @@ PHP_METHOD(MAPIMessage, __get)
 	full_prop_name = prop_name_with_prefix(prop_name);
 	prop_id = get_namedid_value(full_prop_name);
 	/* prop_id = get_proptag_value(full_prop_name); */
-	if (prop_id == 0) {
-		php_error(E_ERROR, "Invalid message property: %s", prop_name);
-	}
 	efree(full_prop_name);
+	if (prop_id == 0) {
+		RETURN_NULL();
+		return;
+	}
 
 //	prop_type =  get_namedid_type(prop_id);
 	prop_type =  get_namedid_type(prop_id >> 16); // do it with a bit rotatinon
@@ -170,6 +171,23 @@ PHP_METHOD(MAPIMessage, __get)
 	} else if (prop_type == PT_BOOLEAN) {
 		bool *bool_val = (bool *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
 		RETVAL_BOOL(*bool_val);
+	} else if (prop_type == PT_SYSTIME) {
+		const struct FILETIME *filetime_value = (const struct FILETIME *) find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
+		const char		*date;
+		if (filetime_value) {
+			NTTIME			time;
+			time = filetime_value->dwHighDateTime;
+			time = time << 32;
+			time |= filetime_value->dwLowDateTime;
+			date = nt_time_string(this_obj->talloc_ctx, time);
+		}
+		if (date) {
+			RETURN_STRING(date, 1);
+			talloc_free((char*) date);
+		} else {
+			RETURN_NULL();
+		}
+
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property type %i is unknow or unsupported", prop_type);

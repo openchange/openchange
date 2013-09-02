@@ -163,6 +163,8 @@ PHP_METHOD(MAPIFolder, openMessage)
 
 	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
 		php_message = create_contact_object(message TSRMLS_CC);
+	} else if (strncmp(this_obj->folder_type, "IPF.Task", 20) == 0) {
+		php_message = create_task_object(message TSRMLS_CC);
 	} else {
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}

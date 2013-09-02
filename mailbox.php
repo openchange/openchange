@@ -37,22 +37,22 @@ echo "Calendar item type " . $calendar->getFolderType() . "\n";
 $tasks = $mailbox->tasks();
 echo "Tasks item type " . $tasks->getFolderType() . "\n";
 $taskId = '0x2506130000000001';
-$task = $tasks->openMessage($taskId);
+#$task = $tasks->openMessage($taskId);
 echo "Task status: "  . var_dump($task->TaskStartDate);
 
 $contacts = $mailbox->contacts();
 echo "Contacts item type " . $contacts->getFolderType() . "\n";
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
-echo var_dump($message->FileUnder);
-echo var_dump($message->Email1OriginalDisplayName);
+#echo var_dump($message->FileUnder);
+#echo var_dump($message->Email1OriginalDisplayName);
 
 
 echo "Change Email1OriginalDisplayName \n";
 $message->Email1OriginalDisplayName = "changed@a.org";
 echo "Value:\n ";
 echo var_dump($message->Email1OriginalDisplayName) . "\n";
-echo "Rever Email1OriginalDisplayName \n";
+echo "Revert Email1OriginalDisplayName \n";
 $message->Email1OriginalDisplayName = "jkerihuel@zentyal.com";
 echo "Value : \n";
 echo  var_dump($message->Email1OriginalDisplayName) . "\n";

@@ -101,6 +101,7 @@ PHP_METHOD(MAPIMessage, __construct)
 
 PHP_METHOD(MAPIMessage, __destruct)
 {
+
 	/* zval			*php_this_obj; */
 	/* mapi_message_object_t	*this_obj; */
 	/* php_this_obj = getThis(); */
@@ -110,12 +111,14 @@ PHP_METHOD(MAPIMessage, __destruct)
 
 char *prop_name_with_prefix(char *prop_name)
 {
+
 	size_t 			full_prop_name_len;
 	char 			*full_prop_name;
 	full_prop_name_len = strlen("PidLid") + strlen(prop_name) + 1;
 	full_prop_name = emalloc(full_prop_name_len);
 	strlcpy(full_prop_name, "PidLid", full_prop_name_len);
 	strlcat(full_prop_name, prop_name, full_prop_name_len);
+
 	return full_prop_name;
 }
 
@@ -140,21 +143,20 @@ PHP_METHOD(MAPIMessage, __get)
 	php_printf("__get %s\n", prop_name);
 
 	this_php_obj = getThis();
-	if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  prop_name, sizeof(prop_name), (void**)&temp_prop_value) == SUCCESS) {
-		php_printf("Found in properties table\n");
+	full_prop_name = prop_name_with_prefix(prop_name);
+	if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  full_prop_name, strlen(full_prop_name)+1, (void**)&temp_prop_value) == SUCCESS) {
+		efree(full_prop_name);
 		RETURN_ZVAL(*temp_prop_value, 1, 1);
-		return;
 	}
 
 		php_printf("NOT Found in properties table\n");
 
-	full_prop_name = prop_name_with_prefix(prop_name);
+
 	prop_id = get_namedid_value(full_prop_name);
 	/* prop_id = get_proptag_value(full_prop_name); */
 	efree(full_prop_name);
 	if (prop_id == 0) {
 		RETURN_NULL();
-		return;
 	}
 
 //	prop_type =  get_namedid_type(prop_id);
@@ -182,8 +184,9 @@ PHP_METHOD(MAPIMessage, __get)
 			date = nt_time_string(this_obj->talloc_ctx, time);
 		}
 		if (date) {
-			RETURN_STRING(date, 1);
+			RETVAL_STRING(date, 1);
 			talloc_free((char*) date);
+			return;
 		} else {
 			RETURN_NULL();
 		}
@@ -201,6 +204,7 @@ PHP_METHOD(MAPIMessage, __set)
 	size_t 		 	prop_name_len;
 	char 			*prop_value;
 	size_t 			prop_value_len;
+	char			*full_prop_name;
 	zval 			*strval;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
@@ -210,10 +214,17 @@ PHP_METHOD(MAPIMessage, __set)
 
 	php_printf("__set %s -> %s\n", prop_name, prop_value);
 
+
+	full_prop_name = prop_name_with_prefix(prop_name);
+	php_printf("__set  full %s\n", full_prop_name);
 	MAKE_STD_ZVAL(strval);
 	ZVAL_STRING(strval, prop_value, 1);
-	if(zend_hash_update(Z_OBJPROP_P(getThis()), prop_name, sizeof(prop_name),
+
+
+	if(zend_hash_update(Z_OBJPROP_P(getThis()), full_prop_name, strlen(full_prop_name) + 1,
 					&strval, sizeof(strval), NULL) == FAILURE) {
 		php_error(E_ERROR, "Cannot update object properties table");
 	}
+
+	efree(full_prop_name);
 }

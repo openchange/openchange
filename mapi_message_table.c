@@ -27,7 +27,15 @@ zval *create_message_table_object(char *type, mapi_object_t* folder, mapi_object
 	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table, count TSRMLS_CC);
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
-	new_obj->type = CONTACTS;
+	if (strcmp(type, "IPF.Contact") == 0) {
+		new_obj->type = CONTACTS;
+	} else if (strcmp(type, "IPF.Appointment") == 0) {
+		new_obj->type = APPOINTMENTS;
+	} else if (strcmp(type, "IPF.Task") == 0) {
+		new_obj->type = TASKS;
+	} else {
+		php_error(E_ERROR, "Message table of unknown type: %s", type);
+	}
 
 	return new_php_obj;
 }
@@ -85,6 +93,25 @@ static zval *contact_summary_zval (struct mapi_SPropValue_array *properties, con
 	return contact;
 }
 
+static zval *appointment_summary_zval (TALLOC_CTX *talloc_ctx, struct mapi_SPropValue_array *properties, const char *id)
+{
+	zval		*appointment;
+
+	MAKE_STD_ZVAL(appointment);
+	array_init(appointment);
+	const char 	*subject = find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	add_assoc_string(appointment, "subject", subject ? (char*) subject : "", 1);
+	add_assoc_string(appointment, "startDate", (char*) mapi_date(talloc_ctx, properties, PR_START_DATE), 0);
+	add_assoc_string(appointment, "endDate", (char*) mapi_date(talloc_ctx, properties, PR_END_DATE), 0);
+
+	return appointment;
+}
+
+static zval *task_summary_zval (struct mapi_SPropValue_array *properties, const char *id)
+{
+	php_error(E_ERROR, "Task summary not implemented yet");
+}
+
 PHP_METHOD(MAPIMessageTable, summary)
 {
 	struct SRowSet		row;
@@ -118,13 +145,15 @@ PHP_METHOD(MAPIMessageTable, summary)
 						     row.aRow[i].lpProps[1].value.d);
 					mapi_SPropValue_array_named(&obj_message,
 								    &properties_array);
-					// XXX for differente types
 					if (this_obj->type == CONTACTS) {
 						summary = contact_summary_zval(&properties_array, id);
+					} else if (this_obj->type == APPOINTMENTS) {
+						summary = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
+					} else if (this_obj->type == TASKS) {
+						summary = task_summary_zval(&properties_array, id);
 					} else {
 						php_printf("Unknown folder type %i\n", this_obj->type);
 					}
-
 
 					if (summary) {
 						add_next_index_zval(res, summary);

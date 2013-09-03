@@ -30,16 +30,25 @@ echo "Mailbox name "  . $mailbox->getName() . "\n";
 #$inbox = $mailbox->inbox();
 #echo "Inbox item type " . $inbox->getFolderType() . "\n";
 #
-#$calendar = $mailbox->calendar();
-#echo "Calendar item type " . $calendar->getFolderType() . "\n";
+
+echo "CALENDAR\n\n";
+$calendar = $mailbox->calendar();
+echo "Calendar item type " . $calendar->getFolderType() . "\n";
+$calendarTable = $calendar->getMessageTable();
+echo "Calendar summary:\n" . var_dump($calendarTable->summary()) . "\n";
+echo "END CALENDAR\n\n";
 
 
+#echo "TASKS\n\n";
 #$tasks = $mailbox->tasks();
 #echo "Tasks item type " . $tasks->getFolderType() . "\n";
 #$taskId = '0x2506130000000001';
 #$task = $tasks->openMessage($taskId);
 #echo "Task status: "  . var_dump($task->TaskStartDate);
 #
+#echo "END TASKS\n\n";
+
+echo "CONTACTS\n\n";
 $contacts = $mailbox->contacts();
 echo "Contacts item type " . $contacts->getFolderType() . "\n";
 $messageId = '0xA4010E0000000001';
@@ -52,6 +61,7 @@ echo "Contacts getMessageTable: ";
 $table =  $contacts->getMessageTable();
 echo var_dump($table) . "\n";
 echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
+
 
 
 #echo "Change Email1OriginalDisplayName \n";
@@ -68,6 +78,8 @@ echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
 #$message->save($mailbox);
 #
 #echo "Check after save: " . $message->Email1OriginalDisplayName . "\n";
+
+echo "END CONTACTS\n\n";
 
 #$tasks = $mailbox->tasks();
 #echo "Tasks item type " . $tasks->getFolderType() . "\n";

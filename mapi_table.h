@@ -20,7 +20,7 @@
 #ifndef MAPI_TABLE_H
 #define MAPI_TABLE_H
 
-enum table_type {CONTACTS,  FOLDERS};
+enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS};
 
 typedef struct mapi_table_object
 {

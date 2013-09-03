@@ -44,6 +44,7 @@ PHP_METHOD(MAPIMessage, __construct);
 PHP_METHOD(MAPIMessage, __destruct);
 PHP_METHOD(MAPIMessage, __get);
 PHP_METHOD(MAPIMessage, __set);
+PHP_METHOD(MAPIMessage, save);
 
 
 void MAPIMessageRegisterClass(TSRMLS_D);

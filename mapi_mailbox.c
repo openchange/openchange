@@ -27,7 +27,7 @@ struct itemfolder	defaultFolders[] = {
 	{0 , NULL}
 };
 
-static zend_class_entry		*mapi_mailbox_ce;
+zend_class_entry		*mapi_mailbox_ce; // before static
 static zend_object_handlers	mapi_mailbox_object_handlers;
 
 static void mapi_mailbox_free_storage(void *object TSRMLS_DC)

@@ -46,7 +46,7 @@ PHP_METHOD(MAPIFolder, __construct);
 PHP_METHOD(MAPIFolder, __destruct);
 PHP_METHOD(MAPIFolder, getFolderType);
 PHP_METHOD(MAPIFolder, getFolderTable);
-PHP_METHOD(MAPIFolder, getContentTable);
+PHP_METHOD(MAPIFolder, getMessageTable);
 PHP_METHOD(MAPIFolder, openMessage);
 PHP_METHOD(MAPIFolder, createMessage);
 

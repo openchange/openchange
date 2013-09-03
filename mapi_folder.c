@@ -5,7 +5,7 @@ static zend_function_entry mapi_folder_class_functions[] = {
 	PHP_ME(MAPIFolder,	__destruct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIFolder,	getFolderType,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	getFolderTable,		NULL, ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIFolder,	getContentTable,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	getMessageTable,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	openMessage,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	createMessage,		NULL, ZEND_ACC_PUBLIC)
 
@@ -133,9 +133,25 @@ PHP_METHOD(MAPIFolder, getFolderTable)
 	php_error(E_ERROR, "Not implemented");
 }
 
-PHP_METHOD(MAPIFolder, getContentTable)
+PHP_METHOD(MAPIFolder, getMessageTable)
 {
-	php_error(E_ERROR, "Not implemented");
+	enum MAPISTATUS		retval;
+	mapi_object_t		*obj_table;
+	zval                    *this_php_obj;
+	mapi_folder_object_t	*this_obj;
+	uint32_t		count;
+	zval			*res;
+
+	this_php_obj = getThis();
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+
+	obj_table = emalloc(sizeof(mapi_object_t));
+	mapi_object_init(obj_table);
+	retval = GetContentsTable(&(this_obj->store), obj_table, 0, &count);
+	CHECK_MAPI_RETVAL(retval, "getMessageTable");
+
+	res = create_message_table_object(this_obj->folder_type, &(this_obj->store), obj_table, count TSRMLS_CC);
+	RETURN_ZVAL(res, 0, 0);
 }
 
 PHP_METHOD(MAPIFolder, openMessage)

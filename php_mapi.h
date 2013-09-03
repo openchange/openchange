@@ -38,6 +38,7 @@
 #include <mapi_contact.h>
 #include <mapi_task.h>
 #include <mapi_table.h>
+#include <mapi_message_table.h>
 
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"

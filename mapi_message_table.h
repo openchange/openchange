@@ -17,20 +17,15 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_TABLE_H
-#define MAPI_TABLE_H
+#ifndef MAPI_MESSAGE_TABLE_H
+#define MAPI_MESSAGE_TABLE_H
 
-enum table_type {CONTACTS,  FOLDERS};
-
-typedef struct mapi_table_object
-{
-	zend_object	std;
-	mapi_object_t	*table;
-	mapi_object_t	*folder;
-	uint32_t count;
-	enum table_type	type;
-	TALLOC_CTX	*talloc_ctx;
-} mapi_table_object_t;
+/* typedef struct mapi_message_table_object */
+/* { */
+/* 	zend_object	std; */
+/* 	mapi_object_t	*message_table; */
+/* 	TALLOC_CTX	*talloc_ctx; */
+/* } mapi_message_table_object_t; */
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -44,16 +39,15 @@ typedef struct mapi_table_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPITable, __construct);
-/* PHP_METHOD(MAPITable, __destruct); */
-/* PHP_METHOD(MAPITable, get); */
+PHP_METHOD(MAPIMessageTable, __construct);
+/* PHP_METHOD(MAPIMessage_Table, __destruct); */
+ PHP_METHOD(MAPIMessageTable, summary);
 
-void MAPITableRegisterClass(TSRMLS_D);
-void mapi_table_free_storage(void *object TSRMLS_DC);
-zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC);
+void MAPIMessageTableRegisterClass(TSRMLS_D);
 
-zval *create_table_object(char *class, mapi_object_t *folder, mapi_object_t	*table, uint32_t count TSRMLS_DC);
-struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set TSRMLS_DC);
+zval *create_message_table_object(char *type, mapi_object_t* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC);
+
+//struct SRowSet* next_row_set(zval *obj  TSRMLS_DC);
 
 
 __END_DECLS

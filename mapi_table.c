@@ -1,6 +1,7 @@
 #include <php_mapi.h>
 
 static zend_function_entry mapi_table_class_functions[] = {
+ 	PHP_ME(MAPITable,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	{ NULL, NULL, NULL }
 };
 
@@ -13,12 +14,13 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 
 	obj = (mapi_table_object_t *) object;
 	if (obj->table) {
-		mapi_release(obj->table);
+		mapi_object_release(obj->table);
 		efree(obj->table);
 	}
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
+	// DO soemthing with obj->folder
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);
@@ -64,7 +66,7 @@ void MAPITableRegisterClass(TSRMLS_D)
 	mapi_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_table_object(mapi_object_t	*table TSRMLS_DC)
+zval *create_table_object(char *class, mapi_object_t* folder, mapi_object_t *table, uint32_t count TSRMLS_DC)
 {
 	zval *new_php_obj;
 	mapi_table_object_t *new_obj;
@@ -74,19 +76,24 @@ zval *create_table_object(mapi_object_t	*table TSRMLS_DC)
 
 	MAKE_STD_ZVAL(new_php_obj);
 	/* create the MapiTable instance in return_value zval */
-	if (zend_hash_find(EG(class_table),"mapitable", sizeof("mapitable"),(void**)&ce) == FAILURE) {
-		php_error(E_ERROR, "Class MAPITable does not exist.");
+	if (zend_hash_find(EG(class_table), class, strlen(class)+1, (void**)&ce) == FAILURE) {
+		php_error(E_ERROR, "create_table_object: class '%s' does not exist.", class);
 	}
 	object_init_ex(new_php_obj, *ce);
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
+	new_obj->folder = folder;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "table");
+
 	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 0x5,
 					  PR_FID,
 					  PR_MID,
 					  PR_INST_ID,
 					  PR_INSTANCE_NUM,
 					  PR_SUBJECT_UNICODE);
+	new_obj->count = count;
+	new_obj->table = table;
+
 	retval = SetColumns(new_obj->table, SPropTagArray);
 	MAPIFreeBuffer(SPropTagArray);
 	CHECK_MAPI_RETVAL(retval, "Create table objects");
@@ -94,17 +101,13 @@ zval *create_table_object(mapi_object_t	*table TSRMLS_DC)
 	return new_php_obj;
 }
 
-struct SRowSet* next_row_set(zval *obj TSRMLS_DC)
+struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set TSRMLS_DC)
 {
 	mapi_table_object_t	*store_obj;
 	enum MAPISTATUS		retval;
-	struct SRowSet 		*row_set;
-	row_set = emalloc(sizeof(struct SRowSet));
 
-	store_obj = STORE_OBJECT(mapi_table_object_t*, obj);
-
-	retval = QueryRows(store_obj->table, 0x32, TBL_ADVANCE, row_set);
-	if ((retval !=  MAPI_E_NOT_FOUND) || (!row_set->cRows)) {
+	retval = QueryRows(table, 0x32, TBL_ADVANCE, row_set);
+	if ((retval !=  MAPI_E_NOT_FOUND) && (row_set->cRows == 0)) {
 		return NULL;
 	}
 	CHECK_MAPI_RETVAL(retval, "Next row set");
@@ -113,10 +116,10 @@ struct SRowSet* next_row_set(zval *obj TSRMLS_DC)
 }
 
 
-/* PHP_METHOD(MAPITable, __construct) */
-/* { */
-/* 	php_error(E_ERROR, "The table object should not be created directly."); */
-/* } */
+PHP_METHOD(MAPITable, __construct)
+{
+	php_error(E_ERROR, "The base table object should not be created directly.");
+}
 
 
 /* PHP_METHOD(MAPITable, __destruct) */

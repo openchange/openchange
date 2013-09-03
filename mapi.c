@@ -61,6 +61,9 @@ PHP_MINIT_FUNCTION(mapi)
 	MAPIContactRegisterClass(TSRMLS_C);
 	MAPITaskRegisterClass(TSRMLS_C);
 
+	MAPITableRegisterClass(TSRMLS_C);
+	MAPIMessageTableRegisterClass(TSRMLS_C);
+
 	return SUCCESS;
 }
 

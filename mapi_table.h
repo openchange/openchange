@@ -46,7 +46,7 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPITable, __construct);
 /* PHP_METHOD(MAPITable, __destruct); */
-/* PHP_METHOD(MAPITable, get); */
+PHP_METHOD(MAPITable, count);
 
 void MAPITableRegisterClass(TSRMLS_D);
 void mapi_table_free_storage(void *object TSRMLS_DC);

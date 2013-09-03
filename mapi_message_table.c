@@ -15,7 +15,7 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	zend_class_entry	ce;
 
 	INIT_CLASS_ENTRY(ce, "MAPIMessageTable", mapi_message_table_class_functions);
-	mapi_message_table_ce = zend_register_internal_class(&ce TSRMLS_CC);
+	mapi_message_table_ce = zend_register_internal_class_ex(&ce, NULL, "mapitable" TSRMLS_CC);
 	mapi_message_table_ce->create_object = mapi_table_create_handler;
 	memcpy(&mapi_message_table_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	mapi_message_table_object_handlers.clone_obj = NULL;

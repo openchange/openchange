@@ -2,6 +2,7 @@
 
 static zend_function_entry mapi_table_class_functions[] = {
  	PHP_ME(MAPITable,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+ 	PHP_ME(MAPITable,	count,		NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 
@@ -132,7 +133,8 @@ PHP_METHOD(MAPITable, __construct)
 /* } */
 
 
-/* PHP_METHOD(MAPITable, get) */
-/* { */
-/* 	php_error(E_ERROR, "Not implemented"); */
-/* } */
+PHP_METHOD(MAPITable, count)
+{
+	mapi_table_object_t *this_obj = THIS_STORE_OBJECT(mapi_table_object_t*);
+	RETURN_LONG(this_obj->count);
+}

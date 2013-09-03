@@ -150,7 +150,7 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	retval = GetContentsTable(&(this_obj->store), obj_table, 0, &count);
 	CHECK_MAPI_RETVAL(retval, "getMessageTable");
 
-	res = create_message_table_object(this_obj->folder_type, &(this_obj->store), obj_table, count TSRMLS_CC);
+	res = create_message_table_object(this_obj->folder_type, this_php_obj, obj_table, count TSRMLS_CC);
 	RETURN_ZVAL(res, 0, 0);
 }
 

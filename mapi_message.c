@@ -19,9 +19,6 @@ static void mapi_message_free_storage(void *object TSRMLS_DC)
 {
 	mapi_message_object_t	*obj;
 
-	php_printf("FREE mapi_message_free_storage\n");
-
-
 	obj = (mapi_message_object_t *) object;
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);

@@ -27,6 +27,7 @@ typedef struct mapi_table_object
 	zend_object	std;
 	mapi_object_t	*table;
 	mapi_object_t	*folder;
+	zval		*parent;
 	uint32_t count;
 	enum table_type	type;
 	TALLOC_CTX	*talloc_ctx;
@@ -52,8 +53,8 @@ void MAPITableRegisterClass(TSRMLS_D);
 void mapi_table_free_storage(void *object TSRMLS_DC);
 zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC);
 
-zval *create_table_object(char *class, mapi_object_t *folder, mapi_object_t	*table, uint32_t count TSRMLS_DC);
-struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set TSRMLS_DC);
+zval *create_table_object(char *class, zval *folder_php_obj, mapi_object_t *table, uint32_t count TSRMLS_DC);
+struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC);
 
 
 __END_DECLS

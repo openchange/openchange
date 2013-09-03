@@ -21,6 +21,8 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
+
+	Z_DELREF_P(obj->parent);
 	// DO soemthing with obj->folder
 
 	zend_hash_destroy(obj->std.properties);
@@ -67,7 +69,7 @@ void MAPITableRegisterClass(TSRMLS_D)
 	mapi_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_table_object(char *class, mapi_object_t* folder, mapi_object_t *table, uint32_t count TSRMLS_DC)
+zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, uint32_t count TSRMLS_DC)
 {
 	zval *new_php_obj;
 	mapi_table_object_t *new_obj;
@@ -83,6 +85,11 @@ zval *create_table_object(char *class, mapi_object_t* folder, mapi_object_t *tab
 	object_init_ex(new_php_obj, *ce);
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
+	new_obj->parent = folder_php_obj;
+	Z_ADDREF_P(new_obj->parent);
+
+	mapi_folder_object_t *folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder_php_obj);
+	mapi_object_t* folder =  &(folder_obj->store);
 	new_obj->folder = folder;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "table");
 
@@ -102,12 +109,16 @@ zval *create_table_object(char *class, mapi_object_t* folder, mapi_object_t *tab
 	return new_php_obj;
 }
 
-struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set TSRMLS_DC)
+struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC)
 {
 	mapi_table_object_t	*store_obj;
 	enum MAPISTATUS		retval;
 
-	retval = QueryRows(table, 0x32, TBL_ADVANCE, row_set);
+	if (count == 0) {
+		php_error(E_ERROR, "Bad count parameter, msut be greater than zero");
+	}
+
+	retval = QueryRows(table, count, TBL_ADVANCE, row_set);
 	if ((retval !=  MAPI_E_NOT_FOUND) && (row_set->cRows == 0)) {
 		return NULL;
 	}

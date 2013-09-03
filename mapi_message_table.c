@@ -21,7 +21,7 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_table_object(char *type, mapi_object_t* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
+zval *create_message_table_object(char *type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
 {
 	mapi_table_object_t *new_obj;
 	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table, count TSRMLS_CC);
@@ -39,25 +39,6 @@ zval *create_message_table_object(char *type, mapi_object_t* folder, mapi_object
 
 	return new_php_obj;
 }
-
-/* struct SRowSet* next_row_set(zval *obj TSRMLS_DC) */
-/* { */
-/* 	mapi_message_table_object_t	*store_obj; */
-/* 	enum MAPISTATUS		retval; */
-/* 	struct SRowSet 		*row_set; */
-/* 	row_set = emalloc(sizeof(struct SRowSet)); */
-
-/* 	store_obj = STORE_OBJECT(mapi_message_table_object_t*, obj); */
-
-/* 	retval = QueryRows(store_obj->message_table, 0x32, TBL_ADVANCE, row_set); */
-/* 	if ((retval !=  MAPI_E_NOT_FOUND) || (!row_set->cRows)) { */
-/* 		return NULL; */
-/* 	} */
-/* 	CHECK_MAPI_RETVAL(retval, "Next row set"); */
-
-/* 	return row_set; */
-/* } */
-
 
 PHP_METHOD(MAPIMessageTable, __construct)
 {
@@ -124,13 +105,19 @@ PHP_METHOD(MAPIMessageTable, summary)
 	uint32_t		i;
 	char			*id;
 	struct mapi_SPropValue_array	properties_array;
+	long countParam = 0;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+			       "|l", &countParam) == FAILURE) {
+		RETURN_NULL();
+	}
 
+	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
 	php_this_obj = getThis();
 	this_obj = STORE_OBJECT(mapi_table_object_t*, php_this_obj);
 
 	MAKE_STD_ZVAL(res);
 	array_init(res);
-	while (next_row_set(this_obj->table,  &row TSRMLS_CC)) {
+	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
 		for (i = 0; i < row.cRows; i++) {
 			mapi_object_init(&obj_message);
 			retval = OpenMessage(this_obj->folder,
@@ -159,13 +146,13 @@ PHP_METHOD(MAPIMessageTable, summary)
 						add_next_index_zval(res, summary);
 					}
 					talloc_free(id);
-
 				}
 			}
-
 		}
 
-		// end while
+		if (countParam != 0) {
+			break;	// no unlimited
+		}
 	}
 
 	RETURN_ZVAL(res, 0, 0);

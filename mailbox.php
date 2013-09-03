@@ -36,7 +36,7 @@ $calendar = $mailbox->calendar();
 echo "Calendar item type " . $calendar->getFolderType() . "\n";
 $calendarTable = $calendar->getMessageTable();
 echo "Calendar eelements count:" . $calendarTable->count() . "\n";
-echo "Calendar summary:\n" . var_dump($calendarTable->summary()) . "\n";
+echo "Calendar summary:\n" . var_dump($calendarTable->summary(3)) . "\n";
 echo "END CALENDAR\n\n";
 
 

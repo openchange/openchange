@@ -1,3 +1,5 @@
+# There are more commented out entries in the
+# oc_provision_configuration_as_main-disabled.ldif file.
 #
 # Finalize First Administrative Group
 #
@@ -15,6 +17,3 @@ add: msExchAddressListServiceLink
 msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 add: msExchServer1HighestUSNVector
 msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500
-
-# There are more commented out entries in the
-# oc_provision_configuration_as_main-disabled.ldif file.

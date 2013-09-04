@@ -17,4 +17,4 @@ add: msExchServer1HighestUSNVector
 msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500
 
 # There are more commented out entries in the
-# oc_provision_configuration_as_main.ldif.disabled file.
+# oc_provision_configuration_as_main-disabled.ldif file.

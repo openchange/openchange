@@ -23,7 +23,6 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 	}
 
 	Z_DELREF_P(obj->parent);
-	// DO soemthing with obj->folder
 
 	zend_hash_destroy(obj->std.properties);
 	FREE_HASHTABLE(obj->std.properties);

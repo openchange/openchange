@@ -1012,6 +1012,8 @@ provision-install: python-install
 
 provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_new_server.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_as_main.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_modify.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_ADSC.ldif

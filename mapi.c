@@ -91,3 +91,16 @@ mapi_id_t str_to_mapi_id(const char *str)
 
 	return res;
 }
+
+void print_stacktrace()
+{
+  void *buffer[100];
+  int nptrs = backtrace(buffer, 100);
+  char **strings = backtrace_symbols(buffer, nptrs);
+  int i;
+  for (i = 0; i < nptrs; i++) {
+        php_printf("%s\n", strings[i]);
+  }
+
+  free(strings);
+}

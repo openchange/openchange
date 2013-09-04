@@ -27,7 +27,6 @@ typedef struct mapi_session_object
 	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
 	struct mapi_session	*session;
-	zval			*children_mailboxes;
 } mapi_session_object_t;
 
 #ifndef __BEGIN_DECLS
@@ -43,7 +42,6 @@ typedef struct mapi_session_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, __destruct);
 PHP_METHOD(MAPISession, folders);
 PHP_METHOD(MAPISession, fetchmail);
 PHP_METHOD(MAPISession, appointments);

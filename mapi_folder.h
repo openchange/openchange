@@ -43,7 +43,6 @@ typedef struct mapi_folder_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPIFolder, __construct);
-PHP_METHOD(MAPIFolder, __destruct);
 PHP_METHOD(MAPIFolder, getFolderType);
 PHP_METHOD(MAPIFolder, getFolderTable);
 PHP_METHOD(MAPIFolder, getMessageTable);

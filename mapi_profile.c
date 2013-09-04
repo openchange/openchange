@@ -25,7 +25,6 @@
 
 static zend_function_entry mapi_profile_class_functions[] = {
 	PHP_ME(MAPIProfile,	__construct,	NULL,	ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIProfile,	__destruct,	NULL,	ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIProfile,	dump,		NULL,	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfile,	logon,		NULL,	ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
@@ -41,10 +40,7 @@ static void mapi_profile_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-	if (obj->children_sessions) {
-		zval_dtor(obj->children_sessions);
-		FREE_ZVAL(obj->children_sessions);
-	}
+	Z_DELREF_P( obj->parent);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -108,9 +104,9 @@ zval *create_profile_object(struct mapi_profile *profile,
 	obj = (mapi_profile_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->profile = profile;
 	obj->parent = profile_db;
+	Z_ADDREF_P(obj->parent);
+
 	obj->talloc_ctx =  talloc_ctx;
-	MAKE_STD_ZVAL(obj->children_sessions);
-	array_init(obj->children_sessions);
 
 	return php_obj;
 }
@@ -134,23 +130,6 @@ struct mapi_profile *get_profile(zval *php_profile_obj TSRMLS_DC)
 PHP_METHOD(MAPIProfile, __construct)
 {
 	php_error(E_ERROR, "This class cannot be instatiated. Use the getProfile class from MapiProfileDB");
-}
-
-PHP_METHOD(MAPIProfile, __destruct)
-{
-	zval			*php_this;
-	zval			*parent;
-	mapi_profile_object_t	*this;
-
-	php_this = getThis();
-	this = (mapi_profile_object_t *) zend_object_store_get_object(php_this TSRMLS_CC);
-	if (zend_hash_num_elements(this->children_sessions->value.ht) > 0) {
-		php_error(E_ERROR, "This MapiProfile object has active sessions");
-	}
-
-	// remove this instance form parent
-	parent = this->parent;
-	mapi_profile_db_remove_children_profile(parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIProfile, dump)
@@ -209,16 +188,5 @@ PHP_METHOD(MAPIProfile, logon)
 	talloc_ctx = talloc_named(NULL, 0, "session");
 	php_obj = create_session_object(session, this_php_obj, talloc_ctx TSRMLS_CC);
 
-	this_obj = (mapi_profile_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	add_index_zval(this_obj->children_sessions, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
-
-	RETURN_ZVAL(php_obj, 0, 0);
-}
-
-void mapi_profile_remove_children_session(zval *mapi_profile, zend_object_handle session_handle TSRMLS_DC)
-{
-	mapi_profile_object_t	*this_obj;
-
-	this_obj = (mapi_profile_object_t*) zend_object_store_get_object(mapi_profile TSRMLS_CC);
-	zend_hash_index_del(this_obj->children_sessions->value.ht, (long) session_handle);
+	RETURN_ZVAL(php_obj, 0, 1);
 }

@@ -83,4 +83,7 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(php_method_two_args, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
+void print_stacktrace();
+
+
 #endif /*! PHP_MAPI_H */

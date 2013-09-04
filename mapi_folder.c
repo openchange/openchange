@@ -2,7 +2,6 @@
 
 static zend_function_entry mapi_folder_class_functions[] = {
 	PHP_ME(MAPIFolder,	__construct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIFolder,	__destruct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIFolder,	getFolderType,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	getFolderTable,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	getMessageTable,	NULL, ZEND_ACC_PUBLIC)
@@ -27,7 +26,10 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 		efree(obj->folder_type);
 	}
 
+	Z_DELREF_P(obj->parent_mailbox);
+
 	mapi_object_release(&(obj->store));
+
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -90,6 +92,8 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSR
 	new_obj = (mapi_folder_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->id = id;
 	new_obj->parent_mailbox = php_mailbox;
+	Z_ADDREF_P(new_obj->parent_mailbox);
+
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
 	new_obj->folder_type = estrdup(folder_type);
 
@@ -105,17 +109,6 @@ PHP_METHOD(MAPIFolder, __construct)
 {
 	php_error(E_ERROR, "The folder object should not created directly.\n" \
 		  "Use the  methods in the mailbox object");
-}
-
-
-PHP_METHOD(MAPIFolder, __destruct)
-{
-	zval			*php_this_obj;
-	mapi_folder_object_t	*this_obj;
-	php_this_obj = getThis();
-	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
-
-	mapi_mailbox_remove_children_folder(this_obj->parent_mailbox, Z_OBJ_HANDLE_P(php_this_obj) TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIFolder, getFolderType)
@@ -151,7 +144,7 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	CHECK_MAPI_RETVAL(retval, "getMessageTable");
 
 	res = create_message_table_object(this_obj->folder_type, this_php_obj, obj_table, count TSRMLS_CC);
-	RETURN_ZVAL(res, 0, 0);
+	RETURN_ZVAL(res, 0, 1);
 }
 
 PHP_METHOD(MAPIFolder, openMessage)

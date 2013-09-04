@@ -28,7 +28,6 @@
 
 static zend_function_entry mapi_profile_db_class_functions[] = {
 	PHP_ME(MAPIProfileDB,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIProfileDB,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIProfileDB,	path,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	profiles,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	getProfile,	NULL, ZEND_ACC_PUBLIC)
@@ -54,11 +53,6 @@ static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-	if (obj->children_profiles) {
-		zval_dtor(obj->children_profiles);
-		FREE_ZVAL(obj->children_profiles);
-	}
-
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -151,20 +145,6 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
 	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
-	MAKE_STD_ZVAL(obj->children_profiles);
-	array_init(obj->children_profiles);
-}
-
-PHP_METHOD(MAPIProfileDB, __destruct)
-{
-	zval				*php_obj;
-	mapi_profile_db_object_t	*obj;
-
-	php_obj = getThis();
-	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
-	if (zend_hash_num_elements(obj->children_profiles->value.ht) > 0) {
-		php_error(E_ERROR, "The MapiProfileDB object has active profile objects");
-	}
 }
 
 PHP_METHOD(MAPIProfileDB, path)
@@ -269,17 +249,7 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 
 	php_obj = create_profile_object(profile, this_php_obj, talloc_ctx TSRMLS_CC);
 	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	add_index_zval(this_obj->children_profiles, (long) Z_OBJ_HANDLE_P(php_obj), php_obj);
-
-	RETURN_ZVAL(php_obj, 0, 0);
+	RETURN_ZVAL(php_obj, 0, 1);
 }
 
-void  mapi_profile_db_remove_children_profile(zval *mapi_profile_db,
-					      zend_object_handle profile_handle TSRMLS_DC)
-{
-	mapi_profile_db_object_t	*this_obj;
-
-	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(mapi_profile_db TSRMLS_CC);
-	zend_hash_index_del(this_obj->children_profiles->value.ht, (long) profile_handle);
-}
 

@@ -40,7 +40,6 @@
 
 static zend_function_entry mapi_session_class_functions[] = {
 	PHP_ME(MAPISession,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPISession,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPISession,	folders,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	fetchmail,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	appointments,	NULL, ZEND_ACC_PUBLIC)
@@ -61,10 +60,7 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-	if (obj->children_mailboxes) {
-		zval_dtor(obj->children_mailboxes);
-		FREE_ZVAL(obj->children_mailboxes);
-	}
+	Z_DELREF_P(obj->parent);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -129,9 +125,8 @@ zval *create_session_object(struct mapi_session *session,
 	obj = (mapi_session_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->session = session;
 	obj->parent = profile;
+	Z_ADDREF_P(obj->parent);
 	obj->talloc_ctx = talloc_ctx;
-	MAKE_STD_ZVAL(obj->children_mailboxes);
-	array_init(obj->children_mailboxes);
 
 	return php_obj;
 }
@@ -184,22 +179,6 @@ PHP_METHOD(MAPISession, __construct)
 {
 	php_error(E_ERROR, "The session object should not created directly.\n" \
 		  "Use the 'logon' method in the profile object");
-}
-
-
-PHP_METHOD(MAPISession, __destruct)
-{
-	zval			*php_this;
-	mapi_session_object_t	*this;
-
-	php_this = getThis();
-	this = (mapi_session_object_t *) zend_object_store_get_object(php_this TSRMLS_CC);
-
-	if (zend_hash_num_elements(this->children_mailboxes->value.ht) > 0) {
-		php_error(E_ERROR, "This MapiSession object has active mailboxes");
-	}
-
-	mapi_profile_remove_children_session(this->parent, Z_OBJ_HANDLE_P(php_this) TSRMLS_CC);
 }
 
 static const char *get_container_class(TALLOC_CTX *talloc_ctx, mapi_object_t *parent, mapi_id_t folder_id)
@@ -384,10 +363,7 @@ PHP_METHOD(MAPISession, mailbox)
 
 	mailbox_obj = create_mailbox_object(this_php_obj, username TSRMLS_CC);
 
-	this_obj = (mapi_session_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	add_index_zval(this_obj->children_mailboxes, (long) Z_OBJ_HANDLE_P(mailbox_obj), mailbox_obj);
-
-	RETURN_ZVAL(mailbox_obj, 0, 0);
+	RETURN_ZVAL(mailbox_obj, 0, 1);
 }
 
 PHP_METHOD(MAPISession, folders)
@@ -1184,11 +1160,3 @@ PHP_METHOD(MAPISession, contacts)
 	RETURN_ZVAL(contacts, 1, 1);
 }
 
-
-void mapi_session_remove_children_mailbox(zval *mapi_session, zend_object_handle mailbox_handle TSRMLS_DC)
-{
-	mapi_session_object_t	*this_obj;
-
-	this_obj = (mapi_session_object_t*) zend_object_store_get_object(mapi_session TSRMLS_CC);
-	zend_hash_index_del(this_obj->children_mailboxes->value.ht, (long) mailbox_handle);
-}

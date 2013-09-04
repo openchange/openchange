@@ -18,8 +18,8 @@ var_dump($mapiProfile);
 $profileDump = $mapiProfile->dump();
 var_dump($profileDump);
 
-#echo "Destroying mapi db object\n";
-#unset($mapi);
+echo "Destroying mapi db object\n";
+unset($mapi);
 
 echo "Logon default profile\n";
 $session = $mapiProfile->logon();
@@ -95,7 +95,10 @@ echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
 
 echo "END CONTACTS\n\n";
 
-#$tasks = $mailbox->tasks();
-#echo "Tasks item type " . $tasks->getFolderType() . "\n";
+$tasks = $mailbox->tasks();
+echo "Tasks item type " . $tasks->getFolderType() . "\n";
+$taskTable = $tasks->getMessageTable();
+$taskObjects = $taskTable->getMessages();
+echo "Messages get from table: " . var_dump($taskObjects) . "\n";
 
 ?>

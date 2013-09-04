@@ -76,7 +76,6 @@ zval *create_message_object(char *class, mapi_object_t  *message TSRMLS_DC)
 	zval 			*new_php_obj;
 	mapi_message_object_t 	*new_obj;
 	zend_class_entry	**ce;
-	struct mapi_session 	*session;
 
 	MAKE_STD_ZVAL(new_php_obj);
 	if (zend_hash_find(EG(class_table), class, strlen(class)+1,(void**)&ce) == FAILURE) {

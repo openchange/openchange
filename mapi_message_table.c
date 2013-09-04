@@ -3,6 +3,7 @@
 static zend_function_entry mapi_message_table_class_functions[] = {
  	PHP_ME(MAPIMessageTable,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIMessageTable,	summary,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessageTable,	getMessages,	NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 
@@ -94,26 +95,19 @@ static zval *task_summary_zval (struct mapi_SPropValue_array *properties, const 
 	php_error(E_ERROR, "Task summary not implemented yet");
 }
 
-PHP_METHOD(MAPIMessageTable, summary)
+zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 {
 	struct SRowSet		row;
 	enum MAPISTATUS		retval;
-	zval 			*php_this_obj;
 	zval 			*res;
-	zval			*summary;
+	zval			*message;
 	mapi_table_object_t	*this_obj;
 	mapi_object_t		obj_message;
 	uint32_t		i;
-	char			*id;
+	char			*id = NULL;
 	struct mapi_SPropValue_array	properties_array;
-	long countParam = -1;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-			       "|l", &countParam) == FAILURE) {
-		RETURN_NULL();
-	}
 
 	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
-	php_this_obj = getThis();
 	this_obj = STORE_OBJECT(mapi_table_object_t*, php_this_obj);
 
 	MAKE_STD_ZVAL(res);
@@ -128,25 +122,45 @@ PHP_METHOD(MAPIMessageTable, summary)
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
-					id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64,
+					if (summary) {
+						id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64,
 						     row.aRow[i].lpProps[0].value.d,
 						     row.aRow[i].lpProps[1].value.d);
-					mapi_SPropValue_array_named(&obj_message,
+						mapi_SPropValue_array_named(&obj_message,
 								    &properties_array);
+					}
+
 					if (this_obj->type == CONTACTS) {
-						summary = contact_summary_zval(&properties_array, id);
+						if (summary) {
+							message = contact_summary_zval(&properties_array, id);
+						} else {
+							message = create_contact_object(&obj_message TSRMLS_CC);
+						}
 					} else if (this_obj->type == APPOINTMENTS) {
-						summary = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
+						if (summary) {
+							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
+						} else {
+							php_error(E_ERROR, "not implemented yet");
+						}
+
 					} else if (this_obj->type == TASKS) {
-						summary = task_summary_zval(&properties_array, id);
+						if (summary) {
+							message = task_summary_zval(&properties_array, id);
+						} else {
+							message = create_task_object(&obj_message TSRMLS_CC);
+						}
+
 					} else {
 						php_printf("Unknown folder type %i\n", this_obj->type);
 					}
 
-					if (summary) {
-						add_next_index_zval(res, summary);
+					if (message) {
+						add_next_index_zval(res, message);
 					}
-					talloc_free(id);
+					if (id) {
+						talloc_free(id);
+						id = NULL;
+					}
 				}
 			}
 		}
@@ -156,6 +170,30 @@ PHP_METHOD(MAPIMessageTable, summary)
 		}
 	}
 
-	RETURN_ZVAL(res, 0, 1);
+	return res;
+
 }
 
+PHP_METHOD(MAPIMessageTable, summary)
+{
+	long countParam = -1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+			       "|l", &countParam) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	zval *summary = fetch_items(getThis(), countParam, true TSRMLS_CC);
+	RETURN_ZVAL(summary, 0, 1);
+}
+
+PHP_METHOD(MAPIMessageTable, getMessages)
+{
+	long countParam = -1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+			       "|l", &countParam) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	zval *messages = fetch_items(getThis(), countParam, false TSRMLS_CC);
+	RETURN_ZVAL(messages, 0, 1);
+}

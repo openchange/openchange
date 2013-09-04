@@ -40,8 +40,8 @@
 __BEGIN_DECLS
 
 PHP_METHOD(MAPIMessageTable, __construct);
-/* PHP_METHOD(MAPIMessage_Table, __destruct); */
- PHP_METHOD(MAPIMessageTable, summary);
+PHP_METHOD(MAPIMessageTable, summary);
+PHP_METHOD(MAPIMessageTable, getMessages);
 
 void MAPIMessageTableRegisterClass(TSRMLS_D);
 

@@ -6,8 +6,7 @@ changetype: modify
 add: addressBookRoots
 addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
 add: globalAddressList
-globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,
+ CN=Address Lists Container,${FIRSTORGDN}
 add: templateRoots
 templateRoots: CN=Addressing,${FIRSTORGDN}
-
-

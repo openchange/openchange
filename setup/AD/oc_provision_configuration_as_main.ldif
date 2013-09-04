@@ -5,7 +5,7 @@
 #
 dn: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 changetype: modify
-add: siteFolderServer
+replace: siteFolderServer
 siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 
 #
@@ -13,7 +13,7 @@ siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group
 #
 dn: CN=Recipient Update Service (${DOMAIN}),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
 changetype: modify
-add: msExchAddressListServiceLink
+replace: msExchAddressListServiceLink
 msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-add: msExchServer1HighestUSNVector
+replace: msExchServer1HighestUSNVector
 msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500

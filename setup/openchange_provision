@@ -64,13 +64,16 @@ def setup_path(*args):
 if not opts.openchangedb:
     if opts.deprovision:
         openchange.deprovision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
-    elif opts.primary_server:
+    elif opts.additional and opts.primary_server:
+        openchange.register(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
         openchange.registerasmain(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
     elif opts.additional:
         openchange.register(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
     elif opts.standalone:
         openchange.provision(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
         openchange.register(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+        openchange.registerasmain(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
+    elif opts.primary_server:
         openchange.registerasmain(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
     else:
         parser.print_help()

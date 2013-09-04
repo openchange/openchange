@@ -29,7 +29,7 @@ static void mapi_message_free_storage(void *object TSRMLS_DC)
 		mapi_object_release(obj->message);
 		efree(obj->message);
 	}
-	Z_DELREF_P(obj->folder);
+	Z_DELREF_P(obj->parent);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -75,7 +75,7 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 	mapi_message_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_object(char *class, zval *folder, mapi_object_t  *message TSRMLS_DC)
+zval *create_message_object(char *class, zval *parent, mapi_object_t  *message TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval 			*new_php_obj;
@@ -91,8 +91,8 @@ zval *create_message_object(char *class, zval *folder, mapi_object_t  *message T
 	new_obj = (mapi_message_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->message = message;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "%s", class);
-	new_obj->folder = folder;
-	Z_ADDREF_P(new_obj->folder);
+	new_obj->parent = parent;
+	Z_ADDREF_P(new_obj->parent);
 
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");

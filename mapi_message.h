@@ -25,7 +25,7 @@ typedef struct mapi_message_object
 	zend_object	std;
 	mapi_object_t	*message;
 	TALLOC_CTX	*talloc_ctx;
-	zval		*folder;
+	zval		*parent;
 	struct mapi_SPropValue_array	properties;
 } mapi_message_object_t;
 

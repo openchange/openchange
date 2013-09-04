@@ -2,7 +2,6 @@
 
 static zend_function_entry mapi_mailbox_class_functions[] = {
 	PHP_ME(MAPIMailbox,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIMailbox,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIMailbox,	getName,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	setName,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	inbox,		NULL, ZEND_ACC_PUBLIC)
@@ -39,11 +38,6 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 	mapi_object_release(&(obj->store));
-	if (obj->children_folders) {
-//		zval_dtor(obj->children_folders);
-
-		FREE_ZVAL(obj->children_folders);
-	}
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -134,8 +128,8 @@ zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
 	object_init_ex(new_php_obj, *ce);
 
 	new_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
-	new_obj->parent_session = php_session;
-	Z_ADDREF_P(new_obj->parent_session);
+	new_obj->parent = php_session;
+	Z_ADDREF_P(new_obj->parent);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "mailbox");
 	new_obj->username = username;
 
@@ -150,25 +144,6 @@ PHP_METHOD(MAPIMailbox, __construct)
 {
 	php_error(E_ERROR, "The mailbox object should not created directly.\n" \
 		  "Use the 'mailbox' method in the session object");
-}
-
-
-PHP_METHOD(MAPIMailbox, __destruct)
-{
-	zval			*php_this_obj;
-	mapi_mailbox_object_t	*this_obj;
-	php_this_obj = getThis();
-	this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
-	Z_DELREF_P(this_obj->parent_session);
-
-
-	/* int nFolders = zend_hash_num_elements(this_obj->children_folders->value.ht); */
-        /* if (nFolders> 0) { */
-
-	/* 	php_error(E_ERROR, "This MapiMailbox object has %i active folders", nFolders); */
-	/* } */
-
-	/* mapi_session_remove_children_mailbox(this_obj->parent_session, Z_OBJ_HANDLE_P(php_this_obj) TSRMLS_CC); */
 }
 
 PHP_METHOD(MAPIMailbox, getName)
@@ -227,9 +202,6 @@ PHP_METHOD(MAPIMailbox, inbox)
 
 	folder = create_folder_object(this_php_obj, id_inbox, "IPF.Note" TSRMLS_CC);
 
-
-//	add_index_zval(this_obj->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
-
 	RETURN_ZVAL(folder, 0, 1);
 }
 
@@ -257,8 +229,6 @@ static zval *default_folder_for_item(zval *php_mailbox, char *item TSRMLS_DC)
 
 	folder = create_folder_object(php_mailbox, fid, item TSRMLS_CC);
 
-//	add_index_zval(mailbox->children_folders, (long) Z_OBJ_HANDLE_P(folder), folder);
-
 	return folder;
 }
 
@@ -281,12 +251,3 @@ PHP_METHOD(MAPIMailbox, tasks)
 	RETURN_ZVAL(folder, 0, 1);
 }
 
-void mapi_mailbox_remove_children_folder(zval *mapi_mailbox, zend_object_handle folder_handle TSRMLS_DC)
-{
-	return;
-
-	mapi_mailbox_object_t	*this_obj;
-
-	this_obj = (mapi_mailbox_object_t*) zend_object_store_get_object(mapi_mailbox TSRMLS_CC);
-	zend_hash_index_del(this_obj->children_folders->value.ht, (long) folder_handle);
-}

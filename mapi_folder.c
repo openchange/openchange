@@ -26,7 +26,7 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 		efree(obj->folder_type);
 	}
 
-	Z_DELREF_P(obj->parent_mailbox);
+	Z_DELREF_P(obj->parent);
 
 	mapi_object_release(&(obj->store));
 
@@ -91,8 +91,8 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSR
 
 	new_obj = (mapi_folder_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->id = id;
-	new_obj->parent_mailbox = php_mailbox;
-	Z_ADDREF_P(new_obj->parent_mailbox);
+	new_obj->parent = php_mailbox;
+	Z_ADDREF_P(new_obj->parent);
 
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
 	new_obj->folder_type = estrdup(folder_type);

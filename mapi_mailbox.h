@@ -26,8 +26,7 @@ typedef struct mapi_mailbox_object
 	mapi_object_t	store;
 	TALLOC_CTX	*talloc_ctx;
 	const char      *username;
-	zval		*parent_session;
-	zval            *children_folders;
+	zval		*parent;
 } mapi_mailbox_object_t;
 
 #ifndef __BEGIN_DECLS
@@ -43,7 +42,6 @@ typedef struct mapi_mailbox_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPIMailbox, __construct);
-PHP_METHOD(MAPIMailbox, __destruct);
 PHP_METHOD(MAPIMailbox, getName);
 PHP_METHOD(MAPIMailbox, setName);
 PHP_METHOD(MAPIMailbox, inbox);

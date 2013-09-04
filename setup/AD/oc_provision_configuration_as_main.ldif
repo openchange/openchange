@@ -11,7 +11,6 @@ siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group
 #
 #  Finalize root Exchange service
 #
-
 dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
 changetype: modify
 add: addressBookRoots
@@ -22,12 +21,32 @@ add: templateRoots
 templateRoots: CN=Addressing,${FIRSTORGDN}
 
 #
-# Finalize Mailbox Store (${NETBIOSNAME})
+#  Finalize Default Offline Address List
 #
-dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+# DISABLED!
+#dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+#changetype: modify
+#add: siteFolderServer
+#siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
+#add: offLineABServer
+#offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+
+#
+#  Finalize Recipient Update Service (${DOMAIN})
+#
+dn: CN=Recipient Update Service (${DOMAIN}),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
 changetype: modify
-# (disabled, see previous ldif) msExchUseOAB: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-add: msExchOwningServer
-msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-add: msExchHomePublicMDB
-msExchHomePublicMDB: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+add: msExchAddressListServiceLink
+msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+add: msExchServer1HighestUSNVector
+msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500
+
+#
+#  Finalize Recipient Update Service (Enterprise Configuration)
+#
+# DISABLED!
+#dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#changetype: modify
+#add: msExchAddressListServiceLink
+#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+

@@ -134,7 +134,7 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = contact_summary_zval(&properties_array, id);
 						} else {
-							message = create_contact_object(&obj_message TSRMLS_CC);
+							message = create_contact_object(php_this_obj, &obj_message TSRMLS_CC);
 						}
 					} else if (this_obj->type == APPOINTMENTS) {
 						if (summary) {
@@ -147,7 +147,7 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = task_summary_zval(&properties_array, id);
 						} else {
-							message = create_task_object(&obj_message TSRMLS_CC);
+							message = create_task_object(php_this_obj, &obj_message TSRMLS_CC);
 						}
 
 					} else {

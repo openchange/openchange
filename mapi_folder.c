@@ -150,6 +150,7 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 PHP_METHOD(MAPIFolder, openMessage)
 {
 	enum MAPISTATUS		retval;
+	zval			*php_this_obj;
 	mapi_folder_object_t	*this_obj;
 	mapi_id_t		message_id;
 	char			*id_str;
@@ -163,7 +164,8 @@ PHP_METHOD(MAPIFolder, openMessage)
 	}
 	message_id = str_to_mapi_id(id_str);
 
-	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	php_this_obj = getThis();
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
 	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
 	mapi_object_init(message);
 
@@ -171,9 +173,9 @@ PHP_METHOD(MAPIFolder, openMessage)
 	CHECK_MAPI_RETVAL(retval, "Open message");
 
 	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
-		php_message = create_contact_object(message TSRMLS_CC);
+		php_message = create_contact_object(php_this_obj, message TSRMLS_CC);
 	} else if (strncmp(this_obj->folder_type, "IPF.Task", 20) == 0) {
-		php_message = create_task_object(message TSRMLS_CC);
+		php_message = create_task_object(php_this_obj, message TSRMLS_CC);
 	} else {
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}

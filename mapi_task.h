@@ -37,7 +37,7 @@ PHP_METHOD(MAPITask, __destruct);
 
 
 void MAPITaskRegisterClass(TSRMLS_D);
-zval *create_task_object(mapi_object_t *message TSRMLS_DC);
+zval *create_task_object(zval *folder, mapi_object_t *message TSRMLS_DC);
 
 __END_DECLS
 

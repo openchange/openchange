@@ -1,5 +1,3 @@
-
-
 #
 # Finalize First Administrative Group
 #
@@ -7,29 +5,6 @@ dn: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 changetype: modify
 add: siteFolderServer
 siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-
-#
-#  Finalize root Exchange service
-#
-dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
-changetype: modify
-add: addressBookRoots
-addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-add: globalAddressList
-globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-add: templateRoots
-templateRoots: CN=Addressing,${FIRSTORGDN}
-
-#
-#  Finalize Default Offline Address List
-#
-# DISABLED!
-#dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-#changetype: modify
-#add: siteFolderServer
-#siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
-#add: offLineABServer
-#offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
 
 #
 #  Finalize Recipient Update Service (${DOMAIN})
@@ -41,12 +16,5 @@ msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrati
 add: msExchServer1HighestUSNVector
 msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500
 
-#
-#  Finalize Recipient Update Service (Enterprise Configuration)
-#
-# DISABLED!
-#dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
-#changetype: modify
-#add: msExchAddressListServiceLink
-#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-
+# There are more commented out entries in the
+# oc_provision_configuration_as_main.ldif.disabled file.

@@ -81,6 +81,7 @@ static zval *appointment_summary_zval (TALLOC_CTX *talloc_ctx, struct mapi_SProp
 	MAKE_STD_ZVAL(appointment);
 	array_init(appointment);
 	const char 	*subject = find_mapi_SPropValue_data(properties, PR_CONVERSATION_TOPIC);
+	add_assoc_string(appointment, "id", id ? (char*) id : "", 1);
 	add_assoc_string(appointment, "subject", subject ? (char*) subject : "", 1);
 	add_assoc_string(appointment, "startDate", (char*) mapi_date(talloc_ctx, properties, PR_START_DATE), 0);
 	add_assoc_string(appointment, "endDate", (char*) mapi_date(talloc_ctx, properties, PR_END_DATE), 0);
@@ -105,7 +106,7 @@ PHP_METHOD(MAPIMessageTable, summary)
 	uint32_t		i;
 	char			*id;
 	struct mapi_SPropValue_array	properties_array;
-	long countParam = 0;
+	long countParam = -1;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
 			       "|l", &countParam) == FAILURE) {
 		RETURN_NULL();
@@ -150,11 +151,11 @@ PHP_METHOD(MAPIMessageTable, summary)
 			}
 		}
 
-		if (countParam != 0) {
+		if (countParam > 0) {
 			break;	// no unlimited
 		}
 	}
 
-	RETURN_ZVAL(res, 0, 0);
+	RETURN_ZVAL(res, 0, 1);
 }
 

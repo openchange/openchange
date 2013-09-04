@@ -12,7 +12,6 @@ static zend_object_handlers	mapi_table_object_handlers;
 void mapi_table_free_storage(void *object TSRMLS_DC)
 {
 	mapi_table_object_t	*obj;
-
 	obj = (mapi_table_object_t *) object;
 	if (obj->table) {
 		mapi_object_release(obj->table);
@@ -23,9 +22,6 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 	}
 
 	Z_DELREF_P(obj->parent);
-
-	zend_hash_destroy(obj->std.properties);
-	FREE_HASHTABLE(obj->std.properties);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -90,7 +86,7 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 	mapi_folder_object_t *folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder_php_obj);
 	mapi_object_t* folder =  &(folder_obj->store);
 	new_obj->folder = folder;
-	new_obj->talloc_ctx = talloc_named(NULL, 0, "table");
+	new_obj->talloc_ctx = talloc_named(NULL, 0, "table=%p", new_obj);
 
 	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 0x5,
 					  PR_FID,

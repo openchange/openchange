@@ -47,7 +47,7 @@ parser.add_option("--openchangedb", action="store_true", help="Initialize OpenCh
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 opts,args = parser.parse_args()
 if len(args) != 0:
-    parser.print_usage()
+    parser.print_help()
     sys.exit(1)
 
 lp = sambaopts.get_loadparm()
@@ -73,7 +73,7 @@ if not opts.openchangedb:
         openchange.register(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
         openchange.registerasmain(setup_path, lp, creds, firstorg=opts.firstorg, firstou=opts.firstou)
     else:
-        parser.print_usage()
+        parser.print_help()
         sys.exit(1)
 else:
     openchange.openchangedb_provision(lp, firstorg=opts.firstorg, firstou=opts.firstou)

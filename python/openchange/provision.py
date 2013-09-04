@@ -559,7 +559,6 @@ def register(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
     if reporter is None:
         reporter = TextProgressReporter()
 
-    reporter.reportNextStep("Register new Exchange Samba server")
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Exchange Samba registration")
         print "[SUCCESS] Done!"
@@ -585,7 +584,6 @@ def registerasmain(setup_path, lp, creds, firstorg=None, firstou=None, reporter=
     if reporter is None:
         reporter = TextProgressReporter()
 
-    reporter.reportNextStep("Register the Exchange Samba server as the main one")
     try:
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_as_main.ldif", "Register Exchange Samba as the main server")
         print "[SUCCESS] Done!"

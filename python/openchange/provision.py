@@ -353,6 +353,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize generic Exchange configuration objects")
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"

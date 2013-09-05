@@ -10,7 +10,6 @@ static zend_function_entry mapi_message_table_class_functions[] = {
 static zend_class_entry		*mapi_message_table_ce;
 static zend_object_handlers	mapi_message_table_object_handlers;
 
-
 void MAPIMessageTableRegisterClass(TSRMLS_D)
 {
 	zend_class_entry	ce;
@@ -19,7 +18,8 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_ce = zend_register_internal_class_ex(&ce, NULL, "mapitable" TSRMLS_CC);
 	mapi_message_table_ce->create_object = mapi_table_create_handler;
 	memcpy(&mapi_message_table_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
-	mapi_message_table_object_handlers.clone_obj = NULL;
+
+	MAPITableClassSetObjectHandlers(&mapi_message_table_object_handlers);
 }
 
 zval *create_message_table_object(char *type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
@@ -102,7 +102,7 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 	zval 			*res;
 	zval			*message;
 	mapi_table_object_t	*this_obj;
-	mapi_object_t		obj_message;
+	mapi_object_t		*obj_message;
 	uint32_t		i;
 	char			*id = NULL;
 	struct mapi_SPropValue_array	properties_array;
@@ -114,27 +114,28 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 	array_init(res);
 	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
 		for (i = 0; i < row.cRows; i++) {
-			mapi_object_init(&obj_message);
+			obj_message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
+			mapi_object_init(obj_message);
+
 			retval = OpenMessage(this_obj->folder,
 					     row.aRow[i].lpProps[0].value.d,
 					     row.aRow[i].lpProps[1].value.d,
-					     &obj_message, 0);
+					     obj_message, 0);
 			if (retval != MAPI_E_NOT_FOUND) {
-				retval = GetPropsAll(&obj_message, MAPI_UNICODE, &properties_array);
+				retval = GetPropsAll(obj_message, MAPI_UNICODE, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
 					if (summary) {
 						id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64,
 						     row.aRow[i].lpProps[0].value.d,
 						     row.aRow[i].lpProps[1].value.d);
-						mapi_SPropValue_array_named(&obj_message,
-								    &properties_array);
+						mapi_SPropValue_array_named(obj_message, &properties_array);
 					}
 
 					if (this_obj->type == CONTACTS) {
 						if (summary) {
 							message = contact_summary_zval(&properties_array, id);
 						} else {
-							message = create_contact_object(php_this_obj, &obj_message TSRMLS_CC);
+							message = create_contact_object(php_this_obj, obj_message TSRMLS_CC);
 						}
 					} else if (this_obj->type == APPOINTMENTS) {
 						if (summary) {
@@ -147,7 +148,7 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = task_summary_zval(&properties_array, id);
 						} else {
-							message = create_task_object(php_this_obj, &obj_message TSRMLS_CC);
+							message = create_task_object(php_this_obj, obj_message TSRMLS_CC);
 						}
 
 					} else {
@@ -161,6 +162,12 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						talloc_free(id);
 						id = NULL;
 					}
+					if (summary) {
+						mapi_object_release(obj_message);
+						efree(obj_message);
+						obj_message = NULL;
+					}
+
 				}
 			}
 		}

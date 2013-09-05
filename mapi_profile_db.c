@@ -39,8 +39,26 @@ static zend_function_entry mapi_profile_db_class_functions[] = {
 static zend_class_entry		*mapi_profile_db_ce;
 static zend_object_handlers	mapi_profile_db_object_handlers;
 
+static void  mapi_profile_db_add_ref(zval *object TSRMLS_DC)
+{
+
+
+	php_printf("profile_db add ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object) + 1);
+	Z_ADDREF_P(object);
+}
+
+static void mapi_profile_db_del_ref(zval *object TSRMLS_DC)
+{
+	if (Z_REFCOUNT_P(object) == 0) return;
+	php_printf("profile_db del ref count: %i => %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object) - 1);
+
+	Z_DELREF_P(object);
+}
+
 static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
 {
+	php_printf("profile_db free\n");
+
 	mapi_profile_db_object_t	*obj;
 
 	obj = (mapi_profile_db_object_t *) object;
@@ -92,6 +110,9 @@ void MAPIProfileDBRegisterClass(TSRMLS_D)
 	mapi_profile_db_ce = zend_register_internal_class(&ce TSRMLS_CC);
 	mapi_profile_db_ce->create_object = mapi_profile_db_create_handler;
 	memcpy(&mapi_profile_db_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+
+	mapi_profile_db_object_handlers.add_ref = mapi_profile_db_add_ref;
+	mapi_profile_db_object_handlers.del_ref = mapi_profile_db_del_ref;
 	mapi_profile_db_object_handlers.clone_obj = NULL;
 }
 

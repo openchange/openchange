@@ -73,6 +73,9 @@ extern zend_module_entry mapi_module_entry;
 #define STORE_OBJECT(type, zv) (type) zend_object_store_get_object(zv TSRMLS_CC)
 #define THIS_STORE_OBJECT(type) STORE_OBJECT(type, getThis())
 
+#define S_PARENT_ADDREF_P(obj) Z_OBJ_HT_P(obj->parent)->add_ref(obj->parent TSRMLS_CC)
+#define S_PARENT_DELREF_P(obj) Z_OBJ_HT_P(obj->parent)->del_ref(obj->parent TSRMLS_CC)
+
 #define MAPI_ID_STR_SIZE  19*sizeof(char) // 0x + 64/4 + NUL char
 
 char *mapi_id_to_str(mapi_id_t id);

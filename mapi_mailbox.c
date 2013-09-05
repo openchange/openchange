@@ -29,8 +29,27 @@ struct itemfolder	defaultFolders[] = {
 zend_class_entry		*mapi_mailbox_ce; // before static
 static zend_object_handlers	mapi_mailbox_object_handlers;
 
+static void  mapi_mailbox_add_ref(zval *object TSRMLS_DC)
+{
+	php_printf("mailbox add ref count: %i\n", Z_REFCOUNT_P(object));
+
+	Z_ADDREF_P(object);
+	mapi_mailbox_object_t *store_obj = STORE_OBJECT(mapi_mailbox_object_t*, object);
+	S_PARENT_ADDREF_P(store_obj);
+}
+
+static void mapi_mailbox_del_ref(zval *object TSRMLS_DC)
+{
+	php_printf("mailbox del ref count: %i\n", Z_REFCOUNT_P(object));
+
+	Z_DELREF_P(object);
+	mapi_mailbox_object_t *store_obj = STORE_OBJECT(mapi_mailbox_object_t*, object);
+	S_PARENT_DELREF_P(store_obj);
+}
+
 static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 {
+	php_printf("Mailbox free\n");
 	mapi_mailbox_object_t	*obj;
 	obj = (mapi_mailbox_object_t *) object;
 
@@ -38,6 +57,8 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 	mapi_object_release(&(obj->store));
+
+	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -83,6 +104,9 @@ void MAPIMailboxRegisterClass(TSRMLS_D)
 	mapi_mailbox_ce = zend_register_internal_class(&ce TSRMLS_CC);
 	mapi_mailbox_ce->create_object = mapi_mailbox_create_handler;
 	memcpy(&mapi_mailbox_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
+
+	mapi_mailbox_object_handlers.add_ref   =  mapi_mailbox_add_ref;
+	mapi_mailbox_object_handlers.del_ref   =  mapi_mailbox_del_ref;
 	mapi_mailbox_object_handlers.clone_obj = NULL;
 }
 
@@ -129,7 +153,8 @@ zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
 
 	new_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = php_session;
-	Z_ADDREF_P(new_obj->parent);
+//	Z_ADDREF_P(new_obj->parent);
+	S_PARENT_ADDREF_P(new_obj);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "mailbox");
 	new_obj->username = username;
 

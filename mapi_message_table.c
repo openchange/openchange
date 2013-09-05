@@ -19,7 +19,8 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_ce->create_object = mapi_table_create_handler;
 	memcpy(&mapi_message_table_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	MAPITableClassSetObjectHandlers(&mapi_message_table_object_handlers);
+//	MAPITableClassSetObjectHandlers(&mapi_message_table_object_handlers);
+	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
 zval *create_message_table_object(char *type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)

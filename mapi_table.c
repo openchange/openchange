@@ -11,7 +11,7 @@ static zend_object_handlers	mapi_table_object_handlers;
 
 void  mapi_table_add_ref(zval *object TSRMLS_DC)
 {
-	php_printf("table add ref count: %i \n", Z_REFCOUNT_P(object));
+	php_printf("table add ref count: %i -> %i\n", Z_REFCOUNT_P(object), Z_REFCOUNT_P(object)+1);
 	Z_ADDREF_P(object);
 	mapi_table_object_t *store_obj = STORE_OBJECT(mapi_table_object_t*, object);
 	S_PARENT_ADDREF_P(store_obj);
@@ -20,7 +20,7 @@ void  mapi_table_add_ref(zval *object TSRMLS_DC)
 void mapi_table_del_ref(zval *object TSRMLS_DC)
 {
 	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("table del ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object));
+	php_printf("table del ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)-1);
 	Z_DELREF_P(object);
 	mapi_table_object_t *store_obj = STORE_OBJECT(mapi_table_object_t*, object);
 	S_PARENT_DELREF_P(store_obj);
@@ -41,8 +41,8 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 
-//	Z_DELREF_P(obj->parent);
-	S_PARENT_DELREF_P(obj);
+	Z_DELREF_P(obj->parent);
+//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);

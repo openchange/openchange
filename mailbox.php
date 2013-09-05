@@ -69,11 +69,14 @@ $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
 echo var_dump($message->FileUnder);
 echo var_dump($message->Email1OriginalDisplayName);
+echo "contacts->getID -> " . $contacts->getID() . "\n";
+echo "contacts->getName -> " . $contacts->getName() . "\n";
 
 
 echo "Contacts getMessageTable: ";
 $table =  $contacts->getMessageTable();
 $table2 = $contacts->getMessageTable();
+
 echo var_dump($table) . "\n";
 echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
 $contactMessages = $table->getMessages();

@@ -174,7 +174,7 @@ PHP_METHOD(MAPIMailbox, __construct)
 PHP_METHOD(MAPIMailbox, getName)
 {
 	enum MAPISTATUS		retval;
-	const char		*mailbox_name;
+	const char		*mailbox_name = NULL;
 	TALLOC_CTX		*this_obj_talloc_ctx;
 	TALLOC_CTX		*talloc_ctx;
 	struct SPropTagArray	*SPropTagArray;
@@ -198,13 +198,12 @@ PHP_METHOD(MAPIMailbox, getName)
 	if (lpProps[0].value.lpszW) {
 		mailbox_name = lpProps[0].value.lpszW;
 	} else {
-		php_error(E_ERROR, "Get mailbox name");
+		talloc_free(talloc_ctx);
+		RETURN_NULL();
 	}
 
         RETVAL_STRING(mailbox_name, 1);
 	talloc_free(talloc_ctx);
-
-	return;
 }
 
 PHP_METHOD(MAPIMailbox, setName)

@@ -2,7 +2,10 @@
 
 static zend_function_entry mapi_folder_class_functions[] = {
 	PHP_ME(MAPIFolder,	__construct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIFolder,	__destruct,		NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIFolder,	getFolderType,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	getName,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	getID,			NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	getFolderTable,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	getMessageTable,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	openMessage,		NULL, ZEND_ACC_PUBLIC)
@@ -26,7 +29,7 @@ static void  mapi_folder_add_ref(zval *object TSRMLS_DC)
 static void mapi_folder_del_ref(zval *object TSRMLS_DC)
 {
 	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("folder del ref count: %i\n", Z_REFCOUNT_P(object));
+	php_printf("folder del ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)-1);
 
 	Z_DELREF_P(object);
 	mapi_folder_object_t *store_obj = STORE_OBJECT(mapi_folder_object_t*, object);
@@ -138,6 +141,57 @@ PHP_METHOD(MAPIFolder, __construct)
 	php_error(E_ERROR, "The folder object should not created directly.\n" \
 		  "Use the  methods in the mailbox object");
 }
+
+PHP_METHOD(MAPIFolder, __destruct)
+{
+	Z_DTOR_GUARD_P(getThis(), "MAPIFolder object");
+}
+
+PHP_METHOD(MAPIFolder, getName)
+{
+	enum MAPISTATUS		retval;
+	const char		*folder_name;
+	TALLOC_CTX		*this_obj_talloc_ctx;
+	TALLOC_CTX		*talloc_ctx;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
+	zval                    *this_php_obj;
+	mapi_folder_object_t	*this_obj;
+
+	this_php_obj = getThis();
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+	this_obj_talloc_ctx = OBJ_GET_TALLOC_CTX(mapi_folder_object_t *, this_php_obj);
+	talloc_ctx = talloc_named(this_obj_talloc_ctx, 0, "MAPIFolder::getName");
+
+	/* Retrieve the folder folder name */
+	SPropTagArray = set_SPropTagArray(talloc_ctx, 0x1, PR_DISPLAY_NAME_UNICODE);
+	retval = GetProps(&this_obj->store, MAPI_UNICODE, SPropTagArray, &lpProps, &cValues);
+	MAPIFreeBuffer(SPropTagArray);
+	CHECK_MAPI_RETVAL(retval, "Get folder properties");
+
+	/* FIXME: Use accessor instead of direct access */
+	if (lpProps[0].value.lpszW) {
+		folder_name = lpProps[0].value.lpszW;
+	} else {
+		talloc_free(talloc_ctx);
+		RETURN_NULL();
+	}
+
+        RETVAL_STRING(folder_name, 1);
+	talloc_free(talloc_ctx);
+
+	return;
+}
+
+PHP_METHOD(MAPIFolder, getID)
+{
+	char *str_id;
+	mapi_folder_object_t *obj = THIS_STORE_OBJECT(mapi_folder_object_t*);
+	str_id = mapi_id_to_str(obj->id);
+	RETURN_STRING(str_id, 0);
+}
+
 
 PHP_METHOD(MAPIFolder, getFolderType)
 {

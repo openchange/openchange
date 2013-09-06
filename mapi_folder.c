@@ -252,10 +252,10 @@ PHP_METHOD(MAPIFolder, openMessage)
 	mapi_object_init(message);
 
 	retval = OpenMessage(&(this_obj->store), this_obj->id, message_id, message, 0x0);
-	CHECK_MAPI_RETVAL(retval, "Open message");
 	if (retval == MAPI_E_NOT_FOUND) {
 		RETURN_NULL();
 	}
+	CHECK_MAPI_RETVAL(retval, "Open message");
 
 	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
 		php_message = create_contact_object(php_this_obj, message TSRMLS_CC);

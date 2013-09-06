@@ -49,6 +49,7 @@ PHP_METHOD(MAPIMailbox, inbox);
 PHP_METHOD(MAPIMailbox, calendar);
 PHP_METHOD(MAPIMailbox, contacts);
 PHP_METHOD(MAPIMailbox, tasks);
+PHP_METHOD(MAPIMailbox, openFolder);
 
 void MAPIMailboxRegisterClass(TSRMLS_D);
 zval *create_mailbox_object(zval *session, char *username TSRMLS_DC);

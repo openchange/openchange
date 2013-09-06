@@ -43,8 +43,8 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPIMessage, __construct);
 PHP_METHOD(MAPIMessage, __destruct);
-PHP_METHOD(MAPIMessage, __get);
-PHP_METHOD(MAPIMessage, __set);
+PHP_METHOD(MAPIMessage, get);
+PHP_METHOD(MAPIMessage, set);
 PHP_METHOD(MAPIMessage, save);
 
 

@@ -26,11 +26,18 @@ print "Get inexistent message: " .  var_dump($contacts->openMessage($incorrectMe
 
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
-echo $message->PidLidFileUnder . "\n";
-echo $message->PidLidEmail1OriginalDisplayName . "\n";
-echo $message-> PidTagDisplayName . "\n";
-echo "contacts->getID -> " . $contacts->getID() . "\n";
-echo "contacts->getName -> " . $contacts->getName() . "\n";
+echo "Getting message PidLidFileUnder\n";
+echo $message->get(PidLidFileUnder) . "\n";
+echo "Getting at the same time PidLidFileUnder and PidLidEmail1OriginalDisplayNamen";
+$propValues = $message->get(PidLidFileUnder, PidLidEmail1OriginalDisplayName);
+var_dump($propValues);
+
+
+echo "Getting inexistent property\n";
+echo $message->get(11) . "\n";
+echo "Getting list of inexistent properties at the same time\n";
+$propValues = $message->get(30, 456, 0, -1);
+var_dump($propValues);
 
 return;
 

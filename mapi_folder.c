@@ -262,6 +262,8 @@ PHP_METHOD(MAPIFolder, openMessage)
 
 	retval = OpenMessage(&(this_obj->store), this_obj->id, message_id, message, 0x0);
 	if (retval == MAPI_E_NOT_FOUND) {
+		mapi_object_release(message);
+		efree(message);
 		RETURN_NULL();
 	}
 	CHECK_MAPI_RETVAL(retval, "Open message");

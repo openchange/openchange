@@ -3,8 +3,8 @@
 static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	__construct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIMessage,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(MAPIMessage,	__get,	        php_method_one_args, 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	__set,	        php_method_two_args, 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
@@ -27,7 +27,6 @@ static void mapi_message_free_storage(void *object TSRMLS_DC)
 	}
 	if (obj->message) {
 		php_printf("messag release %p\n", obj->message);
-
 		mapi_object_release(obj->message);
 		efree(obj->message);
 	}
@@ -138,84 +137,110 @@ char *prop_name_with_prefix(char *prop_name)
 	return full_prop_name;
 }
 
-// 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
-// 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
-PHP_METHOD(MAPIMessage, __get)
+zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 {
-	char 			*prop_name;
-	size_t 			prop_len;
-	char 			*full_prop_name;
-	zval			*this_php_obj;
-	mapi_message_object_t 	*this_obj;
-        uint32_t 		prop_id;
-	uint32_t 		prop_type;
-	zval			**temp_prop_value;
+	zval *zprop;
+	void *prop_value;
+	uint32_t prop_type;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
-				  &prop_name, &prop_len) == FAILURE) {
-		php_error(E_ERROR, "Missing property name");
+	prop_value  = (void*) find_mapi_SPropValue_data(&(msg->properties), prop_id);
+	if (prop_value == NULL) {
+		return NULL;
 	}
 
-	php_printf("__get %s\n", prop_name);
-
-	this_php_obj = getThis();
-	full_prop_name = prop_name_with_prefix(prop_name);
-	if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  full_prop_name, strlen(full_prop_name)+1, (void**)&temp_prop_value) == SUCCESS) {
-		efree(full_prop_name);
-		php_printf("FOUND in properties table\n");
-		RETURN_ZVAL(*temp_prop_value, 1, 0);
-	}
-
-	php_printf("NOT Found in properties table\n");
-
-
-	prop_id = get_namedid_value(full_prop_name);
-	/* prop_id = get_proptag_value(full_prop_name); */
-	efree(full_prop_name);
-	if (prop_id == 0) {
-		RETURN_NULL();
-	}
-
-//	prop_type =  get_namedid_type(prop_id);
+	MAKE_STD_ZVAL(zprop);
 	prop_type =  get_namedid_type(prop_id >> 16); // do it with a bit rotatinon
-		//get_property_type(prop_id);
-
-	this_obj = STORE_OBJECT(mapi_message_object_t*, this_php_obj);
 	if (prop_type == PT_UNICODE) {
-		char *str_val = (char *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
-		RETURN_STRING(str_val, 1);
+		char *str_val = (char *) prop_value;
+		ZVAL_STRING(zprop, str_val, 1);
 	} else if (prop_type == PT_LONG) {
-		long *long_val = (long *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
-		RETVAL_LONG(*long_val);
+		long *long_val = (long *) prop_value;
+		ZVAL_LONG(zprop, *long_val);
 	} else if (prop_type == PT_BOOLEAN) {
-		bool *bool_val = (bool *)find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
-		RETVAL_BOOL(*bool_val);
+		bool *bool_val = (bool *) prop_value;
+		ZVAL_BOOL(zprop, *bool_val);
 	} else if (prop_type == PT_SYSTIME) {
-		const struct FILETIME *filetime_value = (const struct FILETIME *) find_mapi_SPropValue_data(&(this_obj->properties), prop_id);
+		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
 		const char		*date;
 		if (filetime_value) {
 			NTTIME			time;
 			time = filetime_value->dwHighDateTime;
 			time = time << 32;
 			time |= filetime_value->dwLowDateTime;
-			date = nt_time_string(this_obj->talloc_ctx, time);
+			date = nt_time_string(msg->talloc_ctx, time);
 		}
 		if (date) {
-			RETVAL_STRING(date, 1);
+			ZVAL_STRING(zprop, date, 1);
 			talloc_free((char*) date);
-			return;
 		} else {
-			RETURN_NULL();
+			return NULL;
 		}
 
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property type %i is unknow or unsupported", prop_type);
 	}
+
+	return zprop;
+}
+
+
+// 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
+// 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
+PHP_METHOD(MAPIMessage, get)
+{
+	int 			i, argc = ZEND_NUM_ARGS();
+	zval 			***args;
+	zval			*this_php_obj;
+	mapi_message_object_t 	*this_obj;
+	zval *result;
+
+	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+
+	if (ZEND_NUM_ARGS() == 0 ||
+	    zend_get_parameters_array_ex(argc, args) == FAILURE) {
+		efree(args);
+		WRONG_PARAM_COUNT;
+	}
+
+	this_php_obj = getThis();
+	this_obj = STORE_OBJECT(mapi_message_object_t*, this_php_obj);
+
+	if (argc > 1) {
+		MAKE_STD_ZVAL(result);
+		array_init(result);
+	}
+
+	for (i=0; i<argc; i++) {
+		zval *prop;
+		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
+
+		// XXX Do again hash for temporal proeprties
+		/* if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  prop_name, strlen(prop_name)+1, (void**)&temp_prop_value) == SUCCESS) { */
+		/* 	php_printf("FOUND in properties table\n"); */
+		/* 	RETURN_ZVAL(*temp_prop_value, 1, 0); */
+		/* } */
+		prop  = mapi_message_get_property(this_obj, prop_id);
+		if (argc == 1) {
+			result = prop;
+		} else {
+			if (prop == NULL) {
+				MAKE_STD_ZVAL(prop);
+				ZVAL_NULL(prop);
+			}
+			add_next_index_zval(result, prop);			}
+	}
+
+	efree(args);
+	if (result) {
+		RETURN_ZVAL(result, 0, 1);
+	} else {
+		RETURN_NULL();
+	}
 }
 
 // TODO: for other typ
-PHP_METHOD(MAPIMessage, __set)
+PHP_METHOD(MAPIMessage, set)
 {
 	char 			*prop_name;
 	size_t 		 	prop_name_len;

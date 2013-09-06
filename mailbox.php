@@ -2,40 +2,41 @@
 $mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
 echo "MAPI DB path: '", $mapi->path(), "'\n";
 
-$allProfiles = $mapi->profiles();
-var_dump($allProfiles);
+#$allProfiles = $mapi->profiles();
+#var_dump($allProfiles);
 
-echo "Profile test\n";
-$mapiProfile = $mapi->getProfile('test');
-var_dump($mapiProfile);
+#echo "Profile test\n";
+#$mapiProfile = $mapi->getProfile('test');
+#var_dump($mapiProfile);
 
-$profileDump = $mapiProfile->dump();
-var_dump($profileDump);
+
+#$profileDump = $mapiProfile->dump();
+#var_dump($profileDump);
 
 echo "Default profile\n";
 $mapiProfile = $mapi->getProfile();
-var_dump($mapiProfile);
+#var_dump($mapiProfile);
 $profileDump = $mapiProfile->dump();
-var_dump($profileDump);
+#var_dump($profileDump);
 
 #echo "Destroying mapi db object\n";
 #unset($mapi);
 
 echo "Logon default profile\n";
 $session = $mapiProfile->logon();
-var_dump($session);
+#var_dump($session);
 
 
 
 echo "Get mailbox\n";
 
 $mailbox = $session->mailbox();
-var_dump($mailbox);
+#var_dump($mailbox);
 echo "Mailbox name "  . $mailbox->getName() . "\n";
 
 
-#$inbox = $mailbox->inbox();
-#echo "Inbox item type " . $inbox->getFolderType() . "\n";
+$inbox = $mailbox->inbox();
+echo "Inbox item type " . $inbox->getFolderType() . "\n";
 
 #echo "CALENDAR\n\n";
 #
@@ -73,14 +74,14 @@ echo "contacts->getID -> " . $contacts->getID() . "\n";
 echo "contacts->getName -> " . $contacts->getName() . "\n";
 
 
-echo "Contacts getMessageTable: ";
-$table =  $contacts->getMessageTable();
-$table2 = $contacts->getMessageTable();
-
-echo var_dump($table) . "\n";
-echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
-$contactMessages = $table->getMessages();
-echo "Table2 cotnact messages " . var_dump($contactMessages) . "\n";
+#echo "Contacts getMessageTable: ";
+#$table =  $contacts->getMessageTable();
+#$table2 = $contacts->getMessageTable();
+#
+#echo var_dump($table) . "\n";
+#echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
+#$contactMessages = $table->getMessages();
+#echo "Table2 cotnact messages " . var_dump($contactMessages) . "\n";
 
 
 
@@ -101,12 +102,12 @@ echo "Table2 cotnact messages " . var_dump($contactMessages) . "\n";
 
 echo "END CONTACTS\n\n";
 
-echo "\n\nTASKS";
-$tasks = $mailbox->tasks();
-echo "Tasks item type " . $tasks->getFolderType() . "\n";
-$taskTable = $tasks->getMessageTable();
-$taskObjects = $taskTable->getMessages();
-echo "Messages get from table: " . var_dump($taskObjects) . "\n";
-echo "END TASKS\n\n";
+#echo "\n\nTASKS";
+#$tasks = $mailbox->tasks();
+#echo "Tasks item type " . $tasks->getFolderType() . "\n";
+#$taskTable = $tasks->getMessageTable();
+#$taskObjects = $taskTable->getMessages();
+#echo "Messages get from table: " . var_dump($taskObjects) . "\n";
+#echo "END TASKS\n\n";
 
 ?>

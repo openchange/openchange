@@ -42,6 +42,7 @@ typedef struct mapi_mailbox_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPIMailbox, __construct);
+PHP_METHOD(MAPIMailbox, __destruct);
 PHP_METHOD(MAPIMailbox, getName);
 PHP_METHOD(MAPIMailbox, setName);
 PHP_METHOD(MAPIMailbox, inbox);

@@ -77,6 +77,7 @@ extern zend_module_entry mapi_module_entry;
 #define S_PARENT_DELREF_P(obj) Z_OBJ_HT_P(obj->parent)->del_ref(obj->parent TSRMLS_CC)
 #define Z_DTOR_GUARD_P(zv, name) if (Z_REFCOUNT_P(zv) > 1) php_error(E_ERROR, "Cannot destroy %s because it has active children", name)
 
+
 #define MAPI_ID_STR_SIZE  19*sizeof(char) // 0x + 64/4 + NUL char
 
 char *mapi_id_to_str(mapi_id_t id);

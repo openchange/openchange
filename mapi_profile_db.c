@@ -28,6 +28,7 @@
 
 static zend_function_entry mapi_profile_db_class_functions[] = {
 	PHP_ME(MAPIProfileDB,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIProfileDB,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIProfileDB,	path,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	profiles,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	getProfile,	NULL, ZEND_ACC_PUBLIC)
@@ -41,10 +42,8 @@ static zend_object_handlers	mapi_profile_db_object_handlers;
 
 static void  mapi_profile_db_add_ref(zval *object TSRMLS_DC)
 {
-
-
 	php_printf("profile_db add ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object) + 1);
-	Z_ADDREF_P(object);
+//	Z_ADDREF_P(object);
 }
 
 static void mapi_profile_db_del_ref(zval *object TSRMLS_DC)
@@ -167,6 +166,18 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	obj->path = estrdup(profdb_path);
 	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
 }
+
+PHP_METHOD(MAPIProfileDB, __destruct)
+{
+	php_printf("ProfileDB Destruct\n\n");
+        php_printf("Referecne count: %u\n", Z_REFCOUNT_P(getThis()));
+
+//	mapi_profileDB_object_t *obj = THIS_STORE_OBJECT(mapi_profile_db_object_t*);
+//	S_PARENT_DELREF_P(obj);
+	php_printf("END ProfileDB Destruct\n\n");
+//	Z_DTOR_GUARD_P(getThis(), "MAPIProfileDB object");
+}
+
 
 PHP_METHOD(MAPIProfileDB, path)
 {

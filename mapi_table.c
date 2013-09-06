@@ -2,6 +2,7 @@
 
 static zend_function_entry mapi_table_class_functions[] = {
  	PHP_ME(MAPITable,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+ 	PHP_ME(MAPITable,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
  	PHP_ME(MAPITable,	count,		NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
@@ -41,7 +42,7 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 
-	Z_DELREF_P(obj->parent);
+//	Z_DELREF_P(obj->parent);
 //	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
@@ -96,12 +97,11 @@ void MAPITableRegisterClass(TSRMLS_D)
 
 
 
-zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, uint32_t count TSRMLS_DC)
+zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, struct SPropTagArray	*SPropTagArray, uint32_t count TSRMLS_DC)
 {
 	zval *new_php_obj;
 	mapi_table_object_t *new_obj;
 	zend_class_entry	**ce;
-	struct SPropTagArray	*SPropTagArray;
 	enum MAPISTATUS		retval;
 
 	MAKE_STD_ZVAL(new_php_obj);
@@ -162,14 +162,14 @@ PHP_METHOD(MAPITable, __construct)
 }
 
 
-/* PHP_METHOD(MAPITable, __destruct) */
-/* { */
-/* 	/\* zval			*php_this_obj; *\/ */
-/* 	/\* mapi_table_object_t	*this_obj; *\/ */
-/* 	/\* php_this_obj = getThis(); *\/ */
-/* 	/\* this_obj = (mapi_table_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); *\/ */
+PHP_METHOD(MAPITable, __destruct)
+{
+	php_printf("Table Destruct\n\n");
+	mapi_table_object_t *obj = THIS_STORE_OBJECT(mapi_table_object_t*);
+	S_PARENT_DELREF_P(obj);
+	php_printf("END Table Destruct\n\n");
 
-/* } */
+}
 
 
 PHP_METHOD(MAPITable, count)

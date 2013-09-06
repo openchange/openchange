@@ -25,6 +25,7 @@
 
 static zend_function_entry mapi_profile_class_functions[] = {
 	PHP_ME(MAPIProfile,	__construct,	NULL,	ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIProfile,	__destruct,	NULL,	ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIProfile,	dump,		NULL,	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfile,	logon,		NULL,	ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
@@ -35,10 +36,10 @@ static zend_object_handlers	mapi_profile_object_handlers;
 
 static void  mapi_profile_add_ref(zval *object TSRMLS_DC)
 {
-	php_printf("profile add ref count: %i\n", Z_REFCOUNT_P(object));
+	php_printf("profile add ref count: %i -> %i \n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)+1);
 
 	mapi_profile_object_t *store_obj = STORE_OBJECT(mapi_profile_object_t*, object);
-	Z_ADDREF_P(object);
+//	Z_ADDREF_P(object);
 	S_PARENT_ADDREF_P(store_obj);
 
 }
@@ -63,7 +64,7 @@ static void mapi_profile_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 //	Z_DELREF_P( obj->parent);
-	S_PARENT_DELREF_P(obj);
+//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -131,7 +132,11 @@ zval *create_profile_object(struct mapi_profile *profile,
 	obj->profile = profile;
 	obj->parent = profile_db;
 //	Z_ADDREF_P(obj->parent);
+	php_printf("Create profile obj add ref\n");
+
 	S_PARENT_ADDREF_P(obj);
+
+	php_printf("Create profile obj END del ref\n");
 
 	obj->talloc_ctx =  talloc_ctx;
 
@@ -158,6 +163,16 @@ PHP_METHOD(MAPIProfile, __construct)
 {
 	php_error(E_ERROR, "This class cannot be instatiated. Use the getProfile class from MapiProfileDB");
 }
+
+PHP_METHOD(MAPIProfile, __destruct)
+{
+	php_printf("Profile Destruct. Refreces: %i\n\n", Z_REFCOUNT_P(getThis()));
+	mapi_profile_object_t *obj = THIS_STORE_OBJECT(mapi_profile_object_t*);
+	S_PARENT_DELREF_P(obj);
+	php_printf("END Profile Destruct\n\n");
+//	Z_DTOR_GUARD_P(getThis(), "MAPIProfile object");
+}
+
 
 PHP_METHOD(MAPIProfile, dump)
 {

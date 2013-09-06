@@ -42,6 +42,7 @@ typedef struct mapi_session_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPISession, __construct);
+PHP_METHOD(MAPISession, __destruct);
 PHP_METHOD(MAPISession, folders);
 PHP_METHOD(MAPISession, fetchmail);
 PHP_METHOD(MAPISession, appointments);

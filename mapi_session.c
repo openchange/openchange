@@ -40,6 +40,7 @@
 
 static zend_function_entry mapi_session_class_functions[] = {
 	PHP_ME(MAPISession,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPISession,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPISession,	folders,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	fetchmail,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPISession,	appointments,	NULL, ZEND_ACC_PUBLIC)
@@ -81,7 +82,7 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 //	Z_DELREF_P(obj->parent);
-	S_PARENT_DELREF_P(obj);
+//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -205,6 +206,16 @@ PHP_METHOD(MAPISession, __construct)
 	php_error(E_ERROR, "The session object should not created directly.\n" \
 		  "Use the 'logon' method in the profile object");
 }
+
+PHP_METHOD(MAPISession, __destruct)
+{
+	php_printf("Session Destruct\n\n");
+	mapi_session_object_t *obj = THIS_STORE_OBJECT(mapi_session_object_t*);
+	S_PARENT_DELREF_P(obj);
+	php_printf("END Session Destruct\n\n");
+//	Z_DTOR_GUARD_P(getThis(), "MAPISession object");
+}
+
 
 static const char *get_container_class(TALLOC_CTX *talloc_ctx, mapi_object_t *parent, mapi_id_t folder_id)
 {

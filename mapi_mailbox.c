@@ -2,6 +2,7 @@
 
 static zend_function_entry mapi_mailbox_class_functions[] = {
 	PHP_ME(MAPIMailbox,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIMailbox,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIMailbox,	getName,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	setName,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	inbox,		NULL, ZEND_ACC_PUBLIC)
@@ -58,7 +59,7 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 	}
 	mapi_object_release(&(obj->store));
 
-	S_PARENT_DELREF_P(obj);
+//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -169,6 +170,15 @@ PHP_METHOD(MAPIMailbox, __construct)
 {
 	php_error(E_ERROR, "The mailbox object should not created directly.\n" \
 		  "Use the 'mailbox' method in the session object");
+}
+
+PHP_METHOD(MAPIMailbox, __destruct)
+{
+	php_printf("Mailbox Destruct\n\n");
+	mapi_mailbox_object_t *obj = THIS_STORE_OBJECT(mapi_mailbox_object_t*);
+	S_PARENT_DELREF_P(obj);
+	php_printf("END Mailbox Destruct\n\n");
+//	Z_DTOR_GUARD_P(getThis(), "MAPIMailbox object");
 }
 
 PHP_METHOD(MAPIMailbox, getName)

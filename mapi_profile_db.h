@@ -41,6 +41,7 @@ typedef struct mapi_profile_db_object
 __BEGIN_DECLS
 
 PHP_METHOD(MAPIProfileDB, __construct);
+PHP_METHOD(MAPIProfileDB, __destruct);
 PHP_METHOD(MAPIProfileDB, path);
 PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);

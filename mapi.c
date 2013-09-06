@@ -48,29 +48,10 @@ zend_module_entry mapi_module_entry = {
 ZEND_GET_MODULE(mapi)
 #endif
 
-static void register_constants(int module_number TSRMLS_DC)
-{
-	mapi_id_t value = 0x39FF001F;
-	long to_long =  (long) value;
-	mapi_id_t recast = (mapi_id_t) to_long;
-	php_printf("\nvalue " "0x%" PRIX64 "-> to_long "  "0x%" PRIX64 " =-> recast " "0x%" PRIX64 " \n\n", value, to_long, recast);
-
-	int flags = CONST_CS | CONST_PERSISTENT | CONST_CT_SUBST;
-
-	char *id = "PidTag7BitDisplayName";
-//	REGISTER_LONG_CONSTANT("PidTag7BitDisplayName", to_long, CONST_CS | CONST_PERSISTENT);   // \ CONST_CT_SUBST
-	size_t id_len =  strlen(id)+1;
-
-	zend_register_long_constant(id, id_len,  to_long,  flags, module_number TSRMLS_CC);
-
-
-}
-
 void register_constants(int module_number TSRMLS_DC);
 
 static void register_classes(TSRMLS_D)
 {
-	// register classes
 	MAPIProfileDBRegisterClass(TSRMLS_C);
 	MAPIProfileRegisterClass(TSRMLS_C);
 	MAPISessionRegisterClass(TSRMLS_C);
@@ -93,9 +74,6 @@ PHP_MINIT_FUNCTION(mapi)
 
 	return SUCCESS;
 }
-
-
-
 
 PHP_MSHUTDOWN_FUNCTION(mapi)
 {

@@ -32,7 +32,7 @@ static void mapi_message_free_storage(void *object TSRMLS_DC)
 		efree(obj->message);
 	}
 
-	S_PARENT_DELREF_P(obj);
+//	S_PARENT_DELREF_P(obj);
 //	Z_OBJ_HT_P(obj->parent)->del_ref(obj->parent TSRMLS_CC);
 //	Z_DELREF_P(obj->parent);
 
@@ -99,7 +99,7 @@ zval *create_message_object(char *class, zval *parent, mapi_object_t  *message T
 	new_obj->parent = parent;
 //	Z_ADDREF_P(new_obj->parent);
 //	Z_OBJ_HT_P(new_obj->parent)->add_ref(new_obj->parent TSRMLS_CC);
-	S_PARENT_ADDREF_P(new_obj);
+//	S_PARENT_ADDREF_P(new_obj);
 
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");

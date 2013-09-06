@@ -48,7 +48,27 @@ zend_module_entry mapi_module_entry = {
 ZEND_GET_MODULE(mapi)
 #endif
 
-PHP_MINIT_FUNCTION(mapi)
+static void register_constants(int module_number TSRMLS_DC)
+{
+	mapi_id_t value = 0x39FF001F;
+	long to_long =  (long) value;
+	mapi_id_t recast = (mapi_id_t) to_long;
+	php_printf("\nvalue " "0x%" PRIX64 "-> to_long "  "0x%" PRIX64 " =-> recast " "0x%" PRIX64 " \n\n", value, to_long, recast);
+
+	int flags = CONST_CS | CONST_PERSISTENT | CONST_CT_SUBST;
+
+	char *id = "PidTag7BitDisplayName";
+//	REGISTER_LONG_CONSTANT("PidTag7BitDisplayName", to_long, CONST_CS | CONST_PERSISTENT);   // \ CONST_CT_SUBST
+	size_t id_len =  strlen(id)+1;
+
+	zend_register_long_constant(id, id_len,  to_long,  flags, module_number TSRMLS_CC);
+
+
+}
+
+void register_constants(int module_number TSRMLS_DC);
+
+static void register_classes(TSRMLS_D)
 {
 	// register classes
 	MAPIProfileDBRegisterClass(TSRMLS_C);
@@ -64,9 +84,18 @@ PHP_MINIT_FUNCTION(mapi)
 
 	MAPITableRegisterClass(TSRMLS_C);
 	MAPIMessageTableRegisterClass(TSRMLS_C);
+}
+
+PHP_MINIT_FUNCTION(mapi)
+{
+	register_constants(module_number TSRMLS_CC);
+	register_classes(TSRMLS_C);
 
 	return SUCCESS;
 }
+
+
+
 
 PHP_MSHUTDOWN_FUNCTION(mapi)
 {
@@ -75,7 +104,10 @@ PHP_MSHUTDOWN_FUNCTION(mapi)
 char *mapi_id_to_str(mapi_id_t id)
 {
 	char *str = (char*) emalloc(MAPI_ID_STR_SIZE);
-	snprintf(str, MAPI_ID_STR_SIZE, "0x%" PRIX64, id);
+	int res = snprintf(str, MAPI_ID_STR_SIZE, "0x%" PRIX64, id);
+	if (res < 0) {
+		php_error(E_ERROR, "Error  convertind MAPI ID %l to string", id);
+	}
 	return str;
 }
 
@@ -105,3 +137,5 @@ void print_stacktrace()
 
   free(strings);
 }
+
+

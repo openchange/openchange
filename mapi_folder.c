@@ -99,8 +99,8 @@ void MAPIFolderRegisterClass(TSRMLS_D)
 	mapi_folder_ce->create_object = mapi_folder_create_handler;
 	memcpy(&mapi_folder_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	mapi_folder_object_handlers.add_ref   =  mapi_folder_add_ref;
-	mapi_folder_object_handlers.del_ref   =  mapi_folder_del_ref;
+//	mapi_folder_object_handlers.add_ref   =  mapi_folder_add_ref;
+//	mapi_folder_object_handlers.del_ref   =  mapi_folder_del_ref;
 	mapi_folder_object_handlers.clone_obj = NULL;
 
 }
@@ -134,7 +134,7 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSR
 	new_obj->id = id;
 	new_obj->parent = php_mailbox;
 //	Z_ADDREF_P(new_obj->parent);
-	S_PARENT_ADDREF_P(new_obj);
+//	S_PARENT_ADDREF_P(new_obj);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
 	new_obj->folder_type = estrdup(folder_type);
 

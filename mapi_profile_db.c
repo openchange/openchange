@@ -110,8 +110,8 @@ void MAPIProfileDBRegisterClass(TSRMLS_D)
 	mapi_profile_db_ce->create_object = mapi_profile_db_create_handler;
 	memcpy(&mapi_profile_db_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	mapi_profile_db_object_handlers.add_ref = mapi_profile_db_add_ref;
-	mapi_profile_db_object_handlers.del_ref = mapi_profile_db_del_ref;
+//	mapi_profile_db_object_handlers.add_ref = mapi_profile_db_add_ref;
+//	mapi_profile_db_object_handlers.del_ref = mapi_profile_db_del_ref;
 	mapi_profile_db_object_handlers.clone_obj = NULL;
 }
 

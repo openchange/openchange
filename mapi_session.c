@@ -125,8 +125,8 @@ void MAPISessionRegisterClass(TSRMLS_D)
 	mapi_session_ce->create_object = mapi_session_create_handler;
 	memcpy(&mapi_session_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	mapi_session_object_handlers.add_ref   =  mapi_session_add_ref;
-	mapi_session_object_handlers.del_ref   =  mapi_session_del_ref;
+//	mapi_session_object_handlers.add_ref   =  mapi_session_add_ref;
+//	mapi_session_object_handlers.del_ref   =  mapi_session_del_ref;
 	mapi_session_object_handlers.clone_obj = NULL;
 }
 
@@ -151,7 +151,7 @@ zval *create_session_object(struct mapi_session *session,
 	obj->session = session;
 	obj->parent = profile;
 //	Z_ADDREF_P(obj->parent);
-	S_PARENT_ADDREF_P(obj);
+//	S_PARENT_ADDREF_P(obj);
 	obj->talloc_ctx = talloc_ctx;
 
 	return php_obj;
@@ -210,8 +210,8 @@ PHP_METHOD(MAPISession, __construct)
 PHP_METHOD(MAPISession, __destruct)
 {
 	php_printf("Session Destruct\n\n");
-	mapi_session_object_t *obj = THIS_STORE_OBJECT(mapi_session_object_t*);
-	S_PARENT_DELREF_P(obj);
+//	mapi_session_object_t *obj = THIS_STORE_OBJECT(mapi_session_object_t*);
+//	S_PARENT_DELREF_P(obj);
 	php_printf("END Session Destruct\n\n");
 //	Z_DTOR_GUARD_P(getThis(), "MAPISession object");
 }

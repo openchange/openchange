@@ -77,8 +77,8 @@ zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC)
 
 void MAPITableClassSetObjectHandlers(zend_object_handlers *handlers)
 {
-	handlers->add_ref   = mapi_table_add_ref;
-	handlers->del_ref   = mapi_table_del_ref;
+//	handlers->add_ref   = mapi_table_add_ref;
+//	handlers->del_ref   = mapi_table_del_ref;
 	handlers->clone_obj = NULL;
 }
 
@@ -114,7 +114,7 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = folder_php_obj;
 //	Z_ADDREF_P(new_obj->parent);
-	S_PARENT_ADDREF_P(new_obj);
+//	S_PARENT_ADDREF_P(new_obj);
 
 	mapi_folder_object_t *folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder_php_obj);
 	mapi_object_t* folder =  &(folder_obj->store);
@@ -166,7 +166,7 @@ PHP_METHOD(MAPITable, __destruct)
 {
 	php_printf("Table Destruct\n\n");
 	mapi_table_object_t *obj = THIS_STORE_OBJECT(mapi_table_object_t*);
-	S_PARENT_DELREF_P(obj);
+//	S_PARENT_DELREF_P(obj);
 	php_printf("END Table Destruct\n\n");
 
 }

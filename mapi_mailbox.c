@@ -107,8 +107,8 @@ void MAPIMailboxRegisterClass(TSRMLS_D)
 	mapi_mailbox_ce->create_object = mapi_mailbox_create_handler;
 	memcpy(&mapi_mailbox_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	mapi_mailbox_object_handlers.add_ref   =  mapi_mailbox_add_ref;
-	mapi_mailbox_object_handlers.del_ref   =  mapi_mailbox_del_ref;
+//	mapi_mailbox_object_handlers.add_ref   =  mapi_mailbox_add_ref;
+//	mapi_mailbox_object_handlers.del_ref   =  mapi_mailbox_del_ref;
 	mapi_mailbox_object_handlers.clone_obj = NULL;
 }
 
@@ -156,7 +156,7 @@ zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
 	new_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = php_session;
 //	Z_ADDREF_P(new_obj->parent);
-	S_PARENT_ADDREF_P(new_obj);
+//	S_PARENT_ADDREF_P(new_obj);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "mailbox");
 	new_obj->username = username;
 

@@ -105,8 +105,8 @@ void MAPIProfileRegisterClass(TSRMLS_D)
 	mapi_profile_ce->create_object = mapi_profile_create_handler;
 	memcpy(&mapi_profile_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-	mapi_profile_object_handlers.add_ref   =  mapi_profile_add_ref;
-	mapi_profile_object_handlers.del_ref   =  mapi_profile_del_ref;
+//	mapi_profile_object_handlers.add_ref   =  mapi_profile_add_ref;
+//	mapi_profile_object_handlers.del_ref   =  mapi_profile_del_ref;
 	mapi_profile_object_handlers.clone_obj = NULL;
 }
 
@@ -134,7 +134,7 @@ zval *create_profile_object(struct mapi_profile *profile,
 //	Z_ADDREF_P(obj->parent);
 	php_printf("Create profile obj add ref\n");
 
-	S_PARENT_ADDREF_P(obj);
+//	S_PARENT_ADDREF_P(obj);
 
 	php_printf("Create profile obj END del ref\n");
 
@@ -167,8 +167,8 @@ PHP_METHOD(MAPIProfile, __construct)
 PHP_METHOD(MAPIProfile, __destruct)
 {
 	php_printf("Profile Destruct. Refreces: %i\n\n", Z_REFCOUNT_P(getThis()));
-	mapi_profile_object_t *obj = THIS_STORE_OBJECT(mapi_profile_object_t*);
-	S_PARENT_DELREF_P(obj);
+//	mapi_profile_object_t *obj = THIS_STORE_OBJECT(mapi_profile_object_t*);
+//	S_PARENT_DELREF_P(obj);
 	php_printf("END Profile Destruct\n\n");
 //	Z_DTOR_GUARD_P(getThis(), "MAPIProfile object");
 }

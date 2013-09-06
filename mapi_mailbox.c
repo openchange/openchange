@@ -9,6 +9,7 @@ static zend_function_entry mapi_mailbox_class_functions[] = {
 	PHP_ME(MAPIMailbox,	calendar, 	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	contacts,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMailbox,	tasks,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMailbox,	openFolder,	NULL, ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -175,8 +176,8 @@ PHP_METHOD(MAPIMailbox, __construct)
 PHP_METHOD(MAPIMailbox, __destruct)
 {
 	php_printf("Mailbox Destruct\n\n");
-	mapi_mailbox_object_t *obj = THIS_STORE_OBJECT(mapi_mailbox_object_t*);
-	S_PARENT_DELREF_P(obj);
+//	mapi_mailbox_object_t *obj = THIS_STORE_OBJECT(mapi_mailbox_object_t*);
+//	S_PARENT_DELREF_P(obj);
 	php_printf("END Mailbox Destruct\n\n");
 //	Z_DTOR_GUARD_P(getThis(), "MAPIMailbox object");
 }
@@ -236,36 +237,43 @@ PHP_METHOD(MAPIMailbox, inbox)
 
 	folder = create_folder_object(this_php_obj, id_inbox, "IPF.Note" TSRMLS_CC);
 
+	if (folder == NULL) {
+		RETURN_NULL();
+	}
 	RETURN_ZVAL(folder, 0, 1);
 }
 
-static zval *default_folder_for_item(zval *php_mailbox, char *item TSRMLS_DC)
+static zval *open_folder(zval *php_mailbox, mapi_id_t fid, char *folderType TSRMLS_DC)
+{
+	zval				*folder;
+	folder = create_folder_object(php_mailbox, fid, folderType  TSRMLS_CC);
+	return folder;
+}
+
+static zval *default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_DC)
 {
 	enum MAPISTATUS 		retval;
 	uint32_t	 		i;
 	uint32_t			olFolder = 0;
 	mapi_mailbox_object_t 		*mailbox;
 	mapi_id_t			fid;
-	zval				*folder;
+
 
 	for (i = 0; defaultFolders[i].olFolder; i++) {
-		if (!strncasecmp(defaultFolders[i].container_class, item, strlen(defaultFolders[i].container_class))) {
+		if (!strncasecmp(defaultFolders[i].container_class, folderType, strlen(defaultFolders[i].container_class))) {
 			olFolder = defaultFolders[i].olFolder;
 		}
 	}
 	if (!olFolder) {
-		php_error(E_ERROR, "Cannot found defualt folder for items of type %s", item);
+		php_error(E_ERROR, "Cannot found defualt folder for  type %s", folderType);
 	}
 
 	mailbox = (mapi_mailbox_object_t *) zend_object_store_get_object(php_mailbox TSRMLS_CC);
 	retval = GetDefaultFolder(&(mailbox->store), &fid, olFolder);
-	CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for item type");
+	CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for type");
 
-	folder = create_folder_object(php_mailbox, fid, item TSRMLS_CC);
-
-	return folder;
+	return open_folder(php_mailbox, fid, folderType TSRMLS_CC);
 }
-
 
 PHP_METHOD(MAPIMailbox, calendar)
 {
@@ -285,3 +293,23 @@ PHP_METHOD(MAPIMailbox, tasks)
 	RETURN_ZVAL(folder, 0, 1);
 }
 
+PHP_METHOD(MAPIMailbox, openFolder)
+{
+	mapi_id_t		folder_id;
+	char			*id_str;
+	size_t			id_str_len;
+	char 		        *folder_type;
+	size_t                  folder_type_len;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
+				  &id_str, &id_str_len, &folder_type, &folder_type_len) == FAILURE) {
+		php_error(E_ERROR, "Missing arguments: (folderId, folderType");
+	}
+	folder_id = str_to_mapi_id(id_str);
+	zval *folder = open_folder(getThis(), folder_id, folder_type TSRMLS_CC);
+	if (folder == NULL) {
+		RETURN_NULL();
+	}
+
+	RETURN_ZVAL(folder, 0, 1);
+}

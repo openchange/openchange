@@ -120,18 +120,23 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSR
 	object_init_ex(new_php_obj, *ce);
 
 	new_obj = (mapi_folder_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
+
+	// first try to open the folder
+	mapi_object_init(&(new_obj->store));
+	mailbox = (mapi_mailbox_object_t *) zend_object_store_get_object(php_mailbox TSRMLS_CC);
+	retval = OpenFolder(&(mailbox->store), id, &(new_obj->store));
+	if (retval == MAPI_E_NOT_FOUND) {
+		mapi_object_release(&(new_obj->store));
+		return NULL;
+	}
+	CHECK_MAPI_RETVAL(retval, "Open folder");
+
 	new_obj->id = id;
 	new_obj->parent = php_mailbox;
 //	Z_ADDREF_P(new_obj->parent);
 	S_PARENT_ADDREF_P(new_obj);
-
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
 	new_obj->folder_type = estrdup(folder_type);
-
-	mapi_object_init(&(new_obj->store));
-	mailbox = (mapi_mailbox_object_t *) zend_object_store_get_object(php_mailbox TSRMLS_CC);
-	retval = OpenFolder(&(mailbox->store), id, &(new_obj->store));
-	CHECK_MAPI_RETVAL(retval, "Open folder");
 
 	return new_php_obj;
 }
@@ -144,7 +149,11 @@ PHP_METHOD(MAPIFolder, __construct)
 
 PHP_METHOD(MAPIFolder, __destruct)
 {
-	Z_DTOR_GUARD_P(getThis(), "MAPIFolder object");
+	php_printf("Folder Destruct\n\n");
+	/* mapi_folder_object_t *obj = THIS_STORE_OBJECT(mapi_folder_object_t*); */
+	/* S_PARENT_DELREF_P(obj); */
+	php_printf("END Folder Destruct\n\n");
+//	Z_DTOR_GUARD_P(getThis(), "MAPIFolder object");
 }
 
 PHP_METHOD(MAPIFolder, getName)

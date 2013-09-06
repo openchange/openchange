@@ -151,14 +151,11 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	MAKE_STD_ZVAL(zprop);
 	prop_type =  get_namedid_type(prop_id >> 16); // do it with a bit rotatinon
 	if (prop_type == PT_UNICODE) {
-		char *str_val = (char *) prop_value;
-		ZVAL_STRING(zprop, str_val, 1);
+		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
-		long *long_val = (long *) prop_value;
-		ZVAL_LONG(zprop, *long_val);
+		ZVAL_LONG(zprop, (long *) prop_value);
 	} else if (prop_type == PT_BOOLEAN) {
-		bool *bool_val = (bool *) prop_value;
-		ZVAL_BOOL(zprop, *bool_val);
+		ZVAL_BOOL(zprop, (bool *) prop_value);
 	} else if (prop_type == PT_SYSTIME) {
 		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
 		const char		*date;

@@ -40,16 +40,16 @@ echo "Inbox item type " . $inbox->getFolderType() . "\n";
 
 #echo "CALENDAR\n\n";
 #
-#$calendar = $mailbox->calendar();
-#$calendarTable = $calendar->getMessageTable();
-#echo "Unset calendar\n";
-#$count = $calendarTable->count();
-#while ($count >0) {
-#      echo "Next 3 summary :" . var_dump($calendarTable->summary(3)) . "\n";
-#      $count -= 3;
-#}
-#
-#echo "END CALENDAR\n\n";
+$calendar = $mailbox->calendar();
+$calendarTable = $calendar->getMessageTable();
+echo "Unset calendar\n";
+$count = $calendarTable->count();
+while ($count >0) {
+      echo "Next 3 summary :" . var_dump($calendarTable->summary(3)) . "\n";
+      $count -= 3;
+}
+
+echo "END CALENDAR\n\n";
 
 
 #echo "TASKS\n\n";

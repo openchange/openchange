@@ -54,7 +54,7 @@ void mapi_table_free_storage(void *object TSRMLS_DC);
 zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC);
 void MAPITableClassSetObjectHandlers(zend_object_handlers *handler);
 
-zval *create_table_object(char *class, zval *folder_php_obj, mapi_object_t *table, struct SPropTagArray	*SPropTagArray, uint32_t count TSRMLS_DC);
+zval *create_table_object(char *class, zval *folder_php_obj, mapi_object_t *table, uint32_t count TSRMLS_DC);
 struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC);
 
 

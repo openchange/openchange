@@ -97,12 +97,14 @@ void MAPITableRegisterClass(TSRMLS_D)
 
 
 
-zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, struct SPropTagArray	*SPropTagArray, uint32_t count TSRMLS_DC)
+zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table,  uint32_t count TSRMLS_DC)
 {
 	zval *new_php_obj;
 	mapi_table_object_t *new_obj;
 	zend_class_entry	**ce;
 	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+
 
 	MAKE_STD_ZVAL(new_php_obj);
 	/* create the MapiTable instance in return_value zval */

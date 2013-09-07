@@ -1506,7 +1506,7 @@ _PUBLIC_ int emsmdbp_object_table_get_available_properties(TALLOC_CTX *mem_ctx, 
 		SPropTagArray_add(properties, properties, PR_LAST_MODIFIER_SID);
 		SPropTagArray_add(properties, properties, PR_LAST_MODIFIER_ENTRYID);
 		SPropTagArray_add(properties, properties, PR_ATTR_HIDDEN);
-		SPropTagArray_add(properties, properties, PR_ATTR_SYSTEM);
+		SPropTagArray_add(properties, properties, PidTagAttributeSystem);
 		SPropTagArray_add(properties, properties, PR_ATTR_READONLY);
 		SPropTagArray_add(properties, properties, PR_EXTENDED_ACL_DATA);
 		SPropTagArray_add(properties, properties, PR_CONTAINER_CLASS_UNICODE);

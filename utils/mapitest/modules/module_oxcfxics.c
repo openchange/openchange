@@ -579,7 +579,7 @@ _PUBLIC_ bool mapitest_oxcfxics_SyncConfigure(struct mapitest *mt)
 	ics_state.length = 0;
 	ics_state.data = NULL;
 
-	retval = ICSSyncUploadStateBegin(&obj_sync_context, PidTagIdsetGiven, ics_state.length);
+	retval = ICSSyncUploadStateBegin(&obj_sync_context, MetaTagIdsetGiven, ics_state.length);
 	mapitest_print_retval_clean(mt, "ICSSyncUploadStateBegin", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

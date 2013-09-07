@@ -235,6 +235,7 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/idset.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/fxics.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/property_tags.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/property_altnames.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/socket/netif.h $(DESTDIR)$(includedir)/libmapi/socket/

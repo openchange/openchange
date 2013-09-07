@@ -2,7 +2,7 @@
    OpenChange MAPI implementation.
    libmapi public header file
 
-   Copyright (C) Julien Kerihuel 2007-2011.
+   Copyright (C) Julien Kerihuel 2007-2013.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -70,6 +70,7 @@
 #include "libmapi/idset.h"
 #include "libmapi/property_tags.h"
 #include "libmapi/property_altnames.h"
+#include "libmapi/fxics.h"
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2) PRINTF_ATTRIBUTE(a1, a2)

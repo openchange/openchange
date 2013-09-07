@@ -116,7 +116,7 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 	}
 
 	switch (marker) {
-	case PidTagStartTopFld:
+	case StartTopFld:
 	{
 		/* start collecting properties */
 		struct SPropValue one_prop;
@@ -136,26 +136,26 @@ static enum MAPISTATUS mapistore_marker(uint32_t marker, void *priv)
 		mapistore->current_output_type = MAPISTORE_FOLDER;
 		break;
 	}
-	case PidTagStartSubFld:
+	case StartSubFld:
 		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
 		mapistore->current_output_type = MAPISTORE_FOLDER;
 		break;
-	case PidTagStartMessage:
+	case StartMessage:
 		mapistore->proplist = talloc_zero(mapistore->mstore_ctx, struct SRow);
 		mapistore->current_output_type = MAPISTORE_MESSAGE;
 		break;
-	case PidTagStartFAIMsg:
-	case PidTagStartRecip:
-	case PidTagStartEmbed:
-	case PidTagNewAttach:
+	case StartFAIMsg:
+	case StartRecip:
+	case StartEmbed:
+	case NewAttach:
 		break;
-	case PidTagEndFolder:
+	case EndFolder:
 		DLIST_REMOVE(mapistore->parent_fids, mapistore->parent_fids);
 		break;
-	case PidTagEndMessage:
-	case PidTagEndToRecip:
-	case PidTagEndAttach:
-	case PidTagEndEmbed:
+	case EndMessage:
+	case EndToRecip:
+	case EndAttach:
+	case EndEmbed:
 		break;
 	default:
 		printf("***unhandled *** TODO: Marker: %s (0x%08x)\n", get_proptag_name(marker), marker);

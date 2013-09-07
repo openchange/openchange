@@ -24,6 +24,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/fxics.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"

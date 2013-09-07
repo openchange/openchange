@@ -24,6 +24,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/mapi_nameid.h"
+#include "libmapi/fxics.h"
 
 #include <errno.h>
 #include <err.h>

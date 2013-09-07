@@ -554,12 +554,12 @@ static bool set_external_recipients(TALLOC_CTX *mem_ctx, struct SRowSet *SRowSet
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_7BIT_DISPLAY_NAME */
-	SPropValue.ulPropTag = PidTag7BitDisplayName;
+	SPropValue.ulPropTag = PidTagAddressBookDisplayNamePrintable;
 	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
 	/* PR_SMTP_ADDRESS */
-	SPropValue.ulPropTag = PidTagPrimarySmtpAddress;
+	SPropValue.ulPropTag = PidTagSmtpAddress;
 	SPropValue.value.lpszW = username;
 	SRow_addprop(&(SRowSet->aRow[last]), SPropValue);
 
@@ -620,9 +620,9 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x8,
 					  PidTagObjectType,
 					  PidTagDisplayName,
-					  PidTag7BitDisplayName,
+					  PidTagAddressBookDisplayNamePrintable,
 					  PidTagDisplayName,
-					  PidTagPrimarySmtpAddress,
+					  PidTagSmtpAddress,
 					  PidTagGivenName,
 					  PidTagEmailAddress,
 					  PidTagAddressType);
@@ -631,8 +631,8 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_Recipients(TALLOC_CTX *mem_ctx,
 	usernames = talloc_array(mem_ctx, char *, ctx->recipients->cRows + 1);
 	recipClass = talloc_array(mem_ctx, int, ctx->recipients->cRows + 1);
 	for (i = 0; i < ctx->recipients->cRows; i++) {
-		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTag7BitDisplayName);
-		propdata = get_SPropValue(lpProps, PidTag7BitDisplayName);
+		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTagAddressBookDisplayNamePrintable);
+		propdata = get_SPropValue(lpProps, PidTagAddressBookDisplayNamePrintable);
 		usernames[i] = talloc_strdup((TALLOC_CTX *)usernames, (const char *) propdata);
 
 		lpProps = get_SPropValue_SRow(&(ctx->recipients->aRow[i]), PidTagRecipientType);

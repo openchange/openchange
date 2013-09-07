@@ -545,7 +545,7 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 	uint32_t				i, j, min_string_value_buffer;
 	uint32_t				cn_idx = (uint32_t) -1, email_idx = (uint32_t) -1;
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageRecipients);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
@@ -556,7 +556,7 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 		if (SPropTagArray_find(*msg->columns, PidTagDisplayName, &cn_idx) == MAPI_E_NOT_FOUND
-		    && SPropTagArray_find(*msg->columns, PidTag7BitDisplayName, &cn_idx) == MAPI_E_NOT_FOUND
+		    && SPropTagArray_find(*msg->columns, PidTagAddressBookDisplayNamePrintable, &cn_idx) == MAPI_E_NOT_FOUND
 		    && SPropTagArray_find(*msg->columns, PidTagRecipientDisplayName, &cn_idx) == MAPI_E_NOT_FOUND) {
 			cn_idx = (uint32_t) -1;
 		}
@@ -569,7 +569,7 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 		for (i = 0; i < msg->recipients_count; i++) {
 			recipient = msg->recipients + i;
 
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagStartRecip);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, StartRecip);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagRowid);
@@ -609,7 +609,7 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 			}
 
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, msg->columns, recipient->data, retvals);
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndToRecip);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, EndToRecip);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		}
@@ -636,7 +636,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(struct emsmd
 
 	ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment, mem_ctx, &embedded_message, &messageID, &msg);
 	if (ret == MAPISTORE_SUCCESS) {
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagStartEmbed);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, StartEmbed);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -668,15 +668,15 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(struct emsmd
 			}
 		}
 		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, properties, data_pointers, retvals);
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagFXDelProp);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageRecipients);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagFXDelProp);
 		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageAttachments);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndEmbed);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, EndEmbed);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -697,7 +697,7 @@ static void oxcfxics_push_messageChange_attachments(struct emsmdbp_context *emsm
 	enum MAPISTATUS		*retvals;
 void			**data_pointers, *attachment_object;
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagFXDelProp);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageAttachments);
 
 	table_object = emsmdbp_object_message_open_attachment_table(NULL, emsmdbp_ctx, message_object);
@@ -712,7 +712,7 @@ void			**data_pointers, *attachment_object;
 			mem_ctx = talloc_zero(NULL, void);
 			data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 			if (data_pointers) {
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagNewAttach);
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, NewAttach);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagAttachNumber);
@@ -731,7 +731,7 @@ void			**data_pointers, *attachment_object;
 					}
 				}
 
-				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagEndAttach);
+				ndr_push_uint32(sync_data->ndr, NDR_SCALARS, EndAttach);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 				ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			}
@@ -1021,13 +1021,13 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 		query_props.cValues = i;
 
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncChg);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncChg);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
 
 		/** remaining props */
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncMessage);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncMessage);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -1186,10 +1186,10 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 			/* FIXME: we "convert" the idset hackishly */
 			new_idset->idbased = true;
 			new_idset->repl.id = 1;
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncDel);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncDel);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetDeleted);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagIdsetDeleted);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_idset(sync_data->ndr, new_idset);
@@ -1200,7 +1200,7 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 		}
 
 		/* state */
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncStateBegin);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateBegin);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -1213,7 +1213,7 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 		talloc_free(new_idset);
 
 		IDSET_dump (synccontext->cnset_seen, "cnset_seen");
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetSeen);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
@@ -1222,7 +1222,7 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 
 		if (synccontext->request.fai) {
 			IDSET_dump (synccontext->cnset_seen_fai, "cnset_seen_fai");
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeenFAI);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetSeenFAI);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			ndr_push_idset(sync_data->ndr, synccontext->cnset_seen_fai);
@@ -1230,19 +1230,19 @@ static void oxcfxics_fill_synccontext_with_messageChange(struct emsmdbp_object_s
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 		}
 		IDSET_dump (synccontext->idset_given, "idset_given");
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagIdsetGiven);
 		ndr_push_idset(sync_data->ndr, synccontext->idset_given);
 		if (synccontext->request.read_state) {
 			IDSET_dump (synccontext->cnset_read, "cnset_read");
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetRead);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetRead);
 			ndr_push_idset(sync_data->ndr, synccontext->cnset_read);
 		}
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncStateEnd);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateEnd);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 		/* end of stream */
-		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncEnd);
+		ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncEnd);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
@@ -1430,7 +1430,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			
 			query_props.cValues = j;
 
-			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncChg);
+			ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncChg);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, header_data_pointers, (enum MAPISTATUS *) header_retvals);
@@ -1491,7 +1491,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	/* deletions (mapistore v2) */
 
 	/* state */
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncStateBegin);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateBegin);
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 	old_idset = synccontext->cnset_seen;
@@ -1501,7 +1501,7 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagCnsetSeen);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->cnset_seen);
@@ -1516,19 +1516,19 @@ static void oxcfxics_prepare_synccontext_with_folderChange(struct emsmdbp_object
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIdsetGiven);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagIdsetGiven);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_idset(sync_data->ndr, synccontext->idset_given);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncStateEnd);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncStateEnd);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 	/* end of stream */
-	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagIncrSyncEnd);
+	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, IncrSyncEnd);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 	ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, 0);
@@ -2533,7 +2533,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamBegin(TALLOC_CTX *mem_c
 	}
 
 	property = mapi_req->u.mapi_SyncUploadStateStreamBegin.StateProperty;
-	if (!(property == PidTagIdsetGiven || property == PidTagCnsetSeen || property == PidTagCnsetSeenFAI || property == PidTagCnsetRead)) {
+	if (!(property == MetaTagIdsetGiven || property == MetaTagCnsetSeen || property == MetaTagCnsetSeenFAI || property == MetaTagCnsetRead)) {
 		DEBUG(5, ("  state property is invalid\n"));
 		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
 		goto end;
@@ -2708,14 +2708,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
 	switch (synccontext->state_property) {
-	case PidTagIdsetGiven:
+	case MetaTagIdsetGiven:
 		if (parsed_idset && parsed_idset->range_count == 0) {
 			DEBUG(5, ("empty idset, ignored\n"));
 		}
 		old_idset = synccontext->idset_given;
 		synccontext->idset_given = parsed_idset;
 		break;
-	case PidTagCnsetSeen:
+	case MetaTagCnsetSeen:
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
@@ -2723,7 +2723,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		old_idset = synccontext->cnset_seen;
 		synccontext->cnset_seen = parsed_idset;
 		break;
-	case PidTagCnsetSeenFAI:
+	case MetaTagCnsetSeenFAI:
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
@@ -2731,7 +2731,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = parsed_idset;
 		break;
-	case PidTagCnsetRead:
+	case MetaTagCnsetRead:
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
@@ -3320,7 +3320,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 
 	emsmdbp_ctx = synccontext_object->emsmdbp_ctx;
 	synccontext = synccontext_object->object.synccontext;
-	ndr_push_uint32(ndr, NDR_SCALARS, PidTagIncrSyncStateBegin);
+	ndr_push_uint32(ndr, NDR_SCALARS, IncrSyncStateBegin);
 
 	mem_ctx = talloc_zero(NULL, void);
 
@@ -3358,7 +3358,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 		oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, synccontext_object->parent_object);
 	}
 
-	/* for some reason, Exchange returns the same range for PidTagCnsetSeen, PidTagCnsetSeenFAI and PidTagCnsetRead */
+	/* for some reason, Exchange returns the same range for MetaTagCnsetSeen, MetaTagCnsetSeenFAI and MetaTagCnsetRead */
 
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 	old_idset = synccontext->cnset_seen;
@@ -3367,10 +3367,10 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
-	ndr_push_uint32(ndr, NDR_SCALARS, PidTagCnsetSeen);
+	ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetSeen);
 	ndr_push_idset(ndr, synccontext->cnset_seen);
 	if (synccontext->request.contents_mode && synccontext->request.fai) {
-		ndr_push_uint32(ndr, NDR_SCALARS, PidTagCnsetSeenFAI);
+		ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetSeenFAI);
 		ndr_push_idset(ndr, synccontext->cnset_seen);
 	}
 
@@ -3380,17 +3380,17 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
-	ndr_push_uint32(ndr, NDR_SCALARS, PidTagIdsetGiven);
+	ndr_push_uint32(ndr, NDR_SCALARS, MetaTagIdsetGiven);
 	ndr_push_idset(ndr, synccontext->idset_given);
 
 	if (synccontext->request.contents_mode && synccontext->request.read_state) {
-		ndr_push_uint32(ndr, NDR_SCALARS, PidTagCnsetRead);
+		ndr_push_uint32(ndr, NDR_SCALARS, MetaTagCnsetRead);
 		ndr_push_idset(ndr, synccontext->cnset_seen);
 	}
 
 	talloc_free(mem_ctx);
 
-	ndr_push_uint32(ndr, NDR_SCALARS, PidTagIncrSyncStateEnd);
+	ndr_push_uint32(ndr, NDR_SCALARS, IncrSyncStateEnd);
 }
 
 /**

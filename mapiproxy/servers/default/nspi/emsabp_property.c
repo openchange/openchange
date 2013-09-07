@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009.
+   Copyright (C) Julien Kerihuel 2009-2013.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,8 +42,8 @@ static const struct emsabp_property emsabp_property[] = {
 	{ PidTagSurname,			"sn",			false,	NULL			},
 	{ PidTagOriginalDisplayName,		"displayName",		false,	NULL			},
 	{ PidTagTransmittableDisplayName,	"displayName",		false,	NULL			},
-	{ PidTagPrimarySmtpAddress,		"mail",			false,	NULL			},
-	{ PidTag7BitDisplayName,		"displayName",		false,	NULL			},
+	{ PidTagSmtpAddress,			"mail",			false,	NULL			},
+	{ PidTagAddressBookDisplayNamePrintable,"displayName",		false,	NULL			},
 	{ PR_EMS_AB_HOME_MTA,			"homeMTA",		true,	"legacyExchangeDN"	},
 	{ PR_EMS_AB_ASSOC_NT_ACCOUNT,		"assocNTAccount",	false,	NULL			},
 	{ PidTagDepartmentName,			"department",		false,	NULL			},

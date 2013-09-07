@@ -6,6 +6,7 @@ import string
 import subprocess
 import sys
 import tempfile
+import re
 
 knownpropsets = { "PSETID_PostRss" :           "{00062041-0000-0000-C000-000000000046}",
 		  "PSETID_Sharing" :           "{00062040-0000-0000-C000-000000000046}",
@@ -23,7 +24,8 @@ knownpropsets = { "PSETID_PostRss" :           "{00062041-0000-0000-C000-0000000
 		  "PS_MAPI" :                  "{00020328-0000-0000-C000-000000000046}",
 		  "PSETID_Attachment" :        "{96357f7f-59e1-47d0-99a7-46515c183b54}",
 		  "PSETID_AirSync" :           "{71035549-0739-4DCB-9163-00F0580DBBDF}",
-		  "PSETID_Messaging" :         "{41F28F13-83F4-4114-A584-EEDB5A6B0BFF}"
+		  "PSETID_Messaging" :         "{41F28F13-83F4-4114-A584-EEDB5A6B0BFF}",
+		  "PSETID_XmlExtractedEntities": "{23239608-685D-4732-9C55-4C95CB4E8E33}"
 		  }
 
 knowndatatypes = { "PtypInteger16" : "0x0002",
@@ -244,6 +246,7 @@ knownareas = [
         "ExchangeNonTransmittableReserved",
         "Exchange Profile Configuration",
         "Exchange Property set",
+	"Extracted Entities",
         "Flagging",
         "Folder Properties",
         "Free/Busy Properties",
@@ -304,6 +307,7 @@ knownareas = [
         "Server-side Rules Properties",
         "Server-Side Rules Properties",
         "Sharing",
+	"Site Mailbox",
         "SMS",
         "Spam",
         "Sticky Notes",
@@ -380,6 +384,7 @@ def make_properties_list(propsfilename):
 		if line.strip().startswith("Property set:"):
 			propset = line.strip().split(":")[1].strip()
 			if propset.find(" ") != -1:
+				propset = propset.replace(" - ", '-')
 				propsetname, propsetval = propset.split(" ")
 				propertyinfo["PropertySet"] = propsetname.strip()
 				propertyinfo["PropertySetValue"] = propsetval.strip()
@@ -604,6 +609,12 @@ def make_mapi_properties_file():
 
 	# supplemental properties / alternative names
 	altnamelines.append("#define PidTagFolderChildCount                                               PROP_TAG(PT_LONG      , 0x6638) /* 0x66380003 */\n")
+	altnamelines.append("#define PidTagOriginalDisplayName                                            PROP_TAG(PT_UNICODE   , 0x3A13) /* 0x3A13001F */\n")
+	altnamelines.append("#define PidTagDesignInProgress						  PROP_TAG(PT_BOOLEAN   , 0x3FE4) /* 0x3FE4000B */\n")
+	altnamelines.append("#define PidTagSecureOrigination						  PROP_TAG(PT_BOOLEAN   , 0x3FE5) /* 0x3FE5000B */\n")
+	altnamelines.append("#define PidTagExtendedACLData						  PROP_TAG(PT_BINARY    , 0x3FFE) /* 0x3FFE0102 */\n")
+	altnamelines.append("#define PidTagAttributeSystem						  PROP_TAG(PT_BOOLEAN   , 0x10F5) /* 0x10F5000B */\n")
+	altnamelines.append("#define PidTagUrlCompNameSet                                                 PROP_TAG(PT_BOOLEAN   , 0x0E62) /* 0x0E62000B */\n")
 	altnamelines.append("#define PR_DEFAULT_PROFILE                                                   0x00010102\n")
 	altnamelines.append("#define PR_PROFILE_HOME_SERVER_ADDRS                                         0x6613101e\n")
 	altnamelines.append("#define PR_FID                                                               PidTagFolderId\n")
@@ -638,21 +649,8 @@ def make_mapi_properties_file():
 	altnamelines.append("#define PR_EXTENDED_ACL_DATA						  0x3FFE0102\n")
 	altnamelines.append("#define PR_FOLDER_XVIEWINFO_E						  0x36E00102\n")
 	altnamelines.append("#define PR_FOLDER_VIEWLIST							  0x36EB0102\n")
-	altnamelines.append("#define PR_DELETED_COUNT_TOTAL					          0x670B0003\n")
 	altnamelines.append("#define PR_EMS_AB_HOME_MTA							  0x8007001F\n")
 	altnamelines.append("#define PR_EMS_AB_ASSOC_NT_ACCOUNT						  0x80270102\n")
-	altnamelines.append("#define PR_FX_DEL_PROP							  PidTagFXDelProp\n")
-	altnamelines.append("#define PR_START_RECIP							  PidTagStartRecip\n")
-	altnamelines.append("#define PR_END_RECIP							  PidTagEndToRecip\n")
-	altnamelines.append("#define PR_NEW_ATTACH							  PidTagNewAttach\n")
-	altnamelines.append("#define PR_END_ATTACH							  PidTagEndAttach\n")
-	altnamelines.append("#define PR_ASSOCIATED							  PidTagAssociated\n")
-	altnamelines.append("#define PR_INCR_SYNC_CHG							  PidTagIncrSyncChg\n")
-	altnamelines.append("#define PR_INCR_SYNC_MSG							  PidTagIncrSyncMessage\n")
-	altnamelines.append("#define PR_INCR_SYNC_DEL							  PidTagIncrSyncDel\n")
-	altnamelines.append("#define PR_INCR_SYNC_STATE_BEGIN						  PidTagIncrSyncStateBegin\n")
-	altnamelines.append("#define PR_INCR_SYNC_STATE_END						  PidTagIncrSyncStateEnd\n")
-	altnamelines.append("#define PR_INCR_SYNC_END							  PidTagIncrSyncEnd\n")
 	altnamelines.append("#define PR_DELETED_MSG_COUNT					  	  0x66400003\n")
 	altnamelines.append("#define PR_RECIPIENT_ON_NORMAL_MSG_COUNT					  0x66af0003\n")
 	altnamelines.append("#define PR_CONVERSATION_KEY						  PidTagConversationKey\n")
@@ -820,15 +818,12 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	# Add additional properties, referenced on MSDN but not in MS-OXCPROPS
 	f.write("\t" + string.ljust("PidTagAssociatedContentCount", 68) + " = 0x36170003,\n")
 	f.write("\t" + string.ljust("PidTagFolderChildCount", 68) + " = 0x66380003,\n")
-	f.write("\t" + string.ljust("PidTagDeletedCountTotal", 68) + " = 0x670B0003,\n")
 	f.write("\t" + string.ljust("PidTagIpmPublicFoldersEntryId", 68) + " = 0x66310102,\n")
-	f.write("\t" + string.ljust("PidTagLocalCommitTimeMax", 68) + " = 0x670a0040,\n")
 	f.write("\t" + string.ljust("PidTagConversationKey", 68) + " = 0x000b0102,\n")
 	f.write("\t" + string.ljust("PidTagContactEmailAddresses", 68) + " = 0x3a56101f,\n")
 	f.write("\t" + string.ljust("PidTagGenerateExchangeViews", 68) + " = 0x36e9000b,\n")
 	f.write("\t" + string.ljust("PidTagLatestDeliveryTime", 68) + " = 0x00190040,\n")
 	f.write("\t" + string.ljust("PidTagMailPermission", 68) + " = 0x3a0e000b,\n")
-	f.write("\t" + string.ljust("PidTagOriginalAuthorName", 68) + " = 0x004d001f,\n")
 
 	f.write("\tMAPI_PROP_RESERVED                                                   = 0xFFFFFFFF\n")
 	f.write("} MAPITAGS;\n")
@@ -1422,10 +1417,21 @@ def fix_problems(propsfilename):
 				   "-e", "s/.Alternate names: PR_WB_SF_TAG//",
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS//",
+				   "-e", "s/.General Message Properties Defining reference/General Message Properties\\nDefining reference/",
 				   propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode
 		sys.exit(retcode)
+
+	# Fix data type error for PidTagWlinkGroupHeaderID - PtypGuid instead of PtypBinary
+	with open(propsfilename) as f:
+		file_str = f.read()
+
+	file_str = file_str.replace("Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\n Property ID: 0x6842\n\n Data type: PtypBinary, 0x0102", "Description: Specifies the ID of the navigation shortcut that groups other navigation shortcuts.\n\n Property ID: 0x6842\n\n Data type: PtypGuid, 0x0048")
+
+	with open(propsfilename, "w") as f:
+		f.write(file_str)
+	f.close()
 
 def main():
 	oxpropsparser = argparse.ArgumentParser(description='Convert MS-OXPROPS to other formats')

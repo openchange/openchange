@@ -150,7 +150,7 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	}
 
 	MAKE_STD_ZVAL(zprop);
-	prop_type =  get_namedid_type(prop_id >> 16); // do it with a bit rotatinon
+	prop_type =  prop_id & 0xFFFF;
 	if (prop_type == PT_UNICODE) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {

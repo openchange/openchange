@@ -105,7 +105,7 @@ void MAPIFolderRegisterClass(TSRMLS_D)
 
 }
 
-zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSRMLS_DC)
+zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval			*new_php_obj;
@@ -131,7 +131,6 @@ zval *create_folder_object(zval *php_mailbox, uint64_t id, char *folder_type TSR
 	}
 	CHECK_MAPI_RETVAL(retval, "Open folder");
 
-	new_obj->id = id;
 	new_obj->parent = php_mailbox;
 //	Z_ADDREF_P(new_obj->parent);
 //	S_PARENT_ADDREF_P(new_obj);
@@ -197,7 +196,7 @@ PHP_METHOD(MAPIFolder, getID)
 {
 	char *str_id;
 	mapi_folder_object_t *obj = THIS_STORE_OBJECT(mapi_folder_object_t*);
-	str_id = mapi_id_to_str(obj->id);
+	str_id = mapi_id_to_str(obj->store.id);
 	RETURN_STRING(str_id, 0);
 }
 
@@ -260,7 +259,7 @@ PHP_METHOD(MAPIFolder, openMessage)
 	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
 	mapi_object_init(message);
 
-	retval = OpenMessage(&(this_obj->store), this_obj->id, message_id, message, 0x0);
+	retval = OpenMessage(&(this_obj->store), this_obj->store.id, message_id, message, 0x0);
 	if (retval == MAPI_E_NOT_FOUND) {
 		mapi_object_release(message);
 		efree(message);

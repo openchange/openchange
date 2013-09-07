@@ -25,7 +25,6 @@ typedef struct mapi_folder_object
 	zend_object	std;
 	TALLOC_CTX	*talloc_ctx;
 	zval		*parent;
-	uint64_t        id;
 	mapi_object_t	store;
 	char		*folder_type;
 } mapi_folder_object_t;
@@ -53,7 +52,7 @@ PHP_METHOD(MAPIFolder, openMessage);
 PHP_METHOD(MAPIFolder, createMessage);
 
 void MAPIFolderRegisterClass(TSRMLS_D);
-zval *create_folder_object(zval *php_mailbox, uint64_t id, char *item_type TSRMLS_DC);
+zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *item_type TSRMLS_DC);
 
 __END_DECLS
 

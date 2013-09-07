@@ -907,7 +907,7 @@ _PUBLIC_ bool mapitest_mapidump_foldercreated(struct mapitest *mt)
 	foldercreatednotification.NotificationTags.Tags = talloc_array(mt->mem_ctx, enum MAPITAGS,
                                                            foldercreatednotification.TagCount);
 	foldercreatednotification.NotificationTags.Tags[0] = PidTagTemplateData;
-	foldercreatednotification.NotificationTags.Tags[1] = PR_URL_COMP_NAME;
+	foldercreatednotification.NotificationTags.Tags[1] = PidTagUrlCompName;
 	foldercreatednotification.NotificationTags.Tags[2] = EndAttach;
 
 	mapidump_foldercreated(&foldercreatednotification, "[sep]");

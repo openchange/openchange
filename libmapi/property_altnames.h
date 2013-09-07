@@ -258,6 +258,8 @@
 #define PR_DELETED_ON_ERROR                                                  PROP_TAG(PT_ERROR     , 0x668F)  /* 0x668F000A */
 #define PR_DELETE_AFTER_SUBMIT                                               PidTagDeleteAfterSubmit
 #define PR_DELETE_AFTER_SUBMIT_ERROR                                         PROP_TAG(PT_ERROR     , 0x0E01)  /* 0x0E01000A */
+#define PR_DELIVER_TIME                                                      PidTagDeliverTime
+#define PR_DELIVER_TIME_ERROR                                                PROP_TAG(PT_ERROR     , 0x0010)  /* 0x0010000A */
 #define PR_DEPARTMENT_NAME                                                   PROP_TAG(PT_STRING8   , 0x3A18)  /* 0x3A18001E */
 #define PR_DEPARTMENT_NAME_ERROR                                             PROP_TAG(PT_ERROR     , 0x3A18)  /* 0x3A18000A */
 #define PR_DEPARTMENT_NAME_UNICODE                                           PROP_TAG(PT_UNICODE   , 0x3A18)  /* 0x3A18001F */
@@ -282,6 +284,9 @@
 #define PR_DISPLAY_TYPE_ERROR                                                PROP_TAG(PT_ERROR     , 0x3900)  /* 0x3900000A */
 #define PR_DISPLAY_TYPE_EX                                                   PidTagDisplayTypeEx
 #define PR_DISPLAY_TYPE_EX_ERROR                                             PROP_TAG(PT_ERROR     , 0x3905)  /* 0x3905000A */
+#define PR_DSN_REMOTE_MTA                                                    PROP_TAG(PT_STRING8   , 0x0C21)  /* 0x0C21001E */
+#define PR_DSN_REMOTE_MTA_ERROR                                              PROP_TAG(PT_ERROR     , 0x0C21)  /* 0x0C21000A */
+#define PR_DSN_REMOTE_MTA_UNICODE                                            PROP_TAG(PT_UNICODE   , 0x0C21)  /* 0x0C21001F */
 #define PR_EMAIL_ADDRESS                                                     PROP_TAG(PT_STRING8   , 0x3003)  /* 0x3003001E */
 #define PR_EMAIL_ADDRESS_ERROR                                               PROP_TAG(PT_ERROR     , 0x3003)  /* 0x3003000A */
 #define PR_EMAIL_ADDRESS_UNICODE                                             PROP_TAG(PT_UNICODE   , 0x3003)  /* 0x3003001F */
@@ -585,8 +590,6 @@
 #define PR_INSTANCE_KEY_ERROR                                                PROP_TAG(PT_ERROR     , 0x0FF6)  /* 0x0FF6000A */
 #define PR_INSTANCE_NUM                                                      PidTagInstanceNum
 #define PR_INST_ID                                                           0x674d0014
-#define PR_INTERNET_ARTICLE_NUMBER                                           PidTagInternetArticleNumber
-#define PR_INTERNET_ARTICLE_NUMBER_ERROR                                     PROP_TAG(PT_ERROR     , 0x0E23)  /* 0x0E23000A */
 #define PR_INTERNET_CPID                                                     PidTagInternetCodepage
 #define PR_INTERNET_CPID_ERROR                                               PROP_TAG(PT_ERROR     , 0x3FDE)  /* 0x3FDE000A */
 #define PR_INTERNET_MESSAGE_ID                                               PROP_TAG(PT_STRING8   , 0x1035)  /* 0x1035001E */
@@ -727,6 +730,12 @@
 #define PR_MSG_STATUS_ERROR                                                  PROP_TAG(PT_ERROR     , 0x0E17)  /* 0x0E17000A */
 #define PR_NATIVE_BODY_INFO                                                  PidTagNativeBody
 #define PR_NATIVE_BODY_INFO_ERROR                                            PROP_TAG(PT_ERROR     , 0x1016)  /* 0x1016000A */
+#define PR_NDR_DIAG_CODE                                                     PidTagNonDeliveryReportDiagCode
+#define PR_NDR_DIAG_CODE_ERROR                                               PROP_TAG(PT_ERROR     , 0x0C05)  /* 0x0C05000A */
+#define PR_NDR_REASON_CODE                                                   PidTagNonDeliveryReportReasonCode
+#define PR_NDR_REASON_CODE_ERROR                                             PROP_TAG(PT_ERROR     , 0x0C04)  /* 0x0C04000A */
+#define PR_NDR_STATUS_CODE                                                   PidTagNonDeliveryReportStatusCode
+#define PR_NDR_STATUS_CODE_ERROR                                             PROP_TAG(PT_ERROR     , 0x0C20)  /* 0x0C20000A */
 #define PR_NEXT_SEND_ACCT                                                    PROP_TAG(PT_STRING8   , 0x0E29)  /* 0x0E29001E */
 #define PR_NEXT_SEND_ACCT_ERROR                                              PROP_TAG(PT_ERROR     , 0x0E29)  /* 0x0E29000A */
 #define PR_NEXT_SEND_ACCT_UNICODE                                            PROP_TAG(PT_UNICODE   , 0x0E29)  /* 0x0E29001F */
@@ -736,8 +745,6 @@
 #define PR_NORMALIZED_SUBJECT                                                PROP_TAG(PT_STRING8   , 0x0E1D)  /* 0x0E1D001E */
 #define PR_NORMALIZED_SUBJECT_ERROR                                          PROP_TAG(PT_ERROR     , 0x0E1D)  /* 0x0E1D000A */
 #define PR_NORMALIZED_SUBJECT_UNICODE                                        PROP_TAG(PT_UNICODE   , 0x0E1D)  /* 0x0E1D001F */
-#define PR_NORMAL_MESSAGE_SIZE                                               PidTagNormalMessageSize
-#define PR_NORMAL_MESSAGE_SIZE_ERROR                                         PROP_TAG(PT_ERROR     , 0x66B3)  /* 0x66B3000A */
 #define PR_NTSD_MODIFICATION_TIME						  0x3FD60040
 #define PR_NT_SECURITY_DESCRIPTOR_AS_XML                                     PROP_TAG(PT_STRING8   , 0x0E6A)  /* 0x0E6A001E */
 #define PR_NT_SECURITY_DESCRIPTOR_AS_XML_ERROR                               PROP_TAG(PT_ERROR     , 0x0E6A)  /* 0x0E6A000A */
@@ -900,8 +907,6 @@
 #define PR_PROHIBIT_RECEIVE_QUOTA_ERROR                                      PROP_TAG(PT_ERROR     , 0x666A)  /* 0x666A000A */
 #define PR_PROHIBIT_SEND_QUOTA                                               PidTagProhibitSendQuota
 #define PR_PROHIBIT_SEND_QUOTA_ERROR                                         PROP_TAG(PT_ERROR     , 0x666E)  /* 0x666E000A */
-#define PR_PROVIDER_SUBMIT_TIME                                              PidTagProviderSubmitTime
-#define PR_PROVIDER_SUBMIT_TIME_ERROR                                        PROP_TAG(PT_ERROR     , 0x0048)  /* 0x0048000A */
 #define PR_PURPORTED_SENDER_DOMAIN                                           PROP_TAG(PT_STRING8   , 0x4083)  /* 0x4083001E */
 #define PR_PURPORTED_SENDER_DOMAIN_ERROR                                     PROP_TAG(PT_ERROR     , 0x4083)  /* 0x4083000A */
 #define PR_PURPORTED_SENDER_DOMAIN_UNICODE                                   PROP_TAG(PT_UNICODE   , 0x4083)  /* 0x4083001F */
@@ -929,6 +934,8 @@
 #define PR_READ_RECEIPT_REQUESTED_ERROR                                      PROP_TAG(PT_ERROR     , 0x0029)  /* 0x0029000A */
 #define PR_READ_RECEIPT_SEARCH_KEY                                           PidTagReadReceiptSearchKey
 #define PR_READ_RECEIPT_SEARCH_KEY_ERROR                                     PROP_TAG(PT_ERROR     , 0x0053)  /* 0x0053000A */
+#define PR_RECEIPT_TIME                                                      PidTagReceiptTime
+#define PR_RECEIPT_TIME_ERROR                                                PROP_TAG(PT_ERROR     , 0x002A)  /* 0x002A000A */
 #define PR_RECEIVED_BY_ADDRTYPE                                              PROP_TAG(PT_STRING8   , 0x0075)  /* 0x0075001E */
 #define PR_RECEIVED_BY_ADDRTYPE_ERROR                                        PROP_TAG(PT_ERROR     , 0x0075)  /* 0x0075000A */
 #define PR_RECEIVED_BY_ADDRTYPE_UNICODE                                      PROP_TAG(PT_UNICODE   , 0x0075)  /* 0x0075001F */
@@ -960,8 +967,6 @@
 #define PR_RECIPIENT_PROPOSED_ERROR                                          PROP_TAG(PT_ERROR     , 0x5FE1)  /* 0x5FE1000A */
 #define PR_RECIPIENT_REASSIGNMENT_PROHIBITED                                 PidTagRecipientReassignmentProhibited
 #define PR_RECIPIENT_REASSIGNMENT_PROHIBITED_ERROR                           PROP_TAG(PT_ERROR     , 0x002B)  /* 0x002B000A */
-#define PR_RECIPIENT_RESOURCESTATE                                           PidTagRecipientResourceState
-#define PR_RECIPIENT_RESOURCESTATE_ERROR                                     PROP_TAG(PT_ERROR     , 0x5FDE)  /* 0x5FDE000A */
 #define PR_RECIPIENT_TRACKSTATUS                                             PidTagRecipientTrackStatus
 #define PR_RECIPIENT_TRACKSTATUS_ERROR                                       PROP_TAG(PT_ERROR     , 0x5FFF)  /* 0x5FFF000A */
 #define PR_RECIPIENT_TRACKSTATUS_TIME                                        PidTagRecipientTrackStatusTime
@@ -1154,6 +1159,9 @@
 #define PR_SENT_REPRESENTING_NAME_UNICODE                                    PROP_TAG(PT_UNICODE   , 0x0042)  /* 0x0042001F */
 #define PR_SENT_REPRESENTING_SEARCH_KEY                                      PidTagSentRepresentingSearchKey
 #define PR_SENT_REPRESENTING_SEARCH_KEY_ERROR                                PROP_TAG(PT_ERROR     , 0x003B)  /* 0x003B000A */
+#define PR_SENT_REPRESENTING_SMTP_ADDRESS                                    PROP_TAG(PT_STRING8   , 0x5D02)  /* 0x5D02001E */
+#define PR_SENT_REPRESENTING_SMTP_ADDRESS_ERROR                              PROP_TAG(PT_ERROR     , 0x5D02)  /* 0x5D02000A */
+#define PR_SENT_REPRESENTING_SMTP_ADDRESS_UNICODE                            PROP_TAG(PT_UNICODE   , 0x5D02)  /* 0x5D02001F */
 #define PR_SMTP_ADDRESS                                                      PROP_TAG(PT_STRING8   , 0x39FE)  /* 0x39FE001E */
 #define PR_SMTP_ADDRESS_ERROR                                                PROP_TAG(PT_ERROR     , 0x39FE)  /* 0x39FE000A */
 #define PR_SMTP_ADDRESS_UNICODE                                              PROP_TAG(PT_UNICODE   , 0x39FE)  /* 0x39FE001F */
@@ -1182,16 +1190,17 @@
 #define PR_STREET_ADDRESS                                                    PROP_TAG(PT_STRING8   , 0x3A29)  /* 0x3A29001E */
 #define PR_STREET_ADDRESS_ERROR                                              PROP_TAG(PT_ERROR     , 0x3A29)  /* 0x3A29000A */
 #define PR_STREET_ADDRESS_UNICODE                                            PROP_TAG(PT_UNICODE   , 0x3A29)  /* 0x3A29001F */
-#define PR_SUBFOLDER                                                         PidTagSubfolder
 #define PR_SUBFOLDERS                                                        PidTagSubfolders
 #define PR_SUBFOLDERS_ERROR                                                  PROP_TAG(PT_ERROR     , 0x360A)  /* 0x360A000A */
-#define PR_SUBFOLDER_ERROR                                                   PROP_TAG(PT_ERROR     , 0x6708)  /* 0x6708000A */
 #define PR_SUBJECT                                                           PROP_TAG(PT_STRING8   , 0x0037)  /* 0x0037001E */
 #define PR_SUBJECT_ERROR                                                     PROP_TAG(PT_ERROR     , 0x0037)  /* 0x0037000A */
 #define PR_SUBJECT_PREFIX                                                    PROP_TAG(PT_STRING8   , 0x003D)  /* 0x003D001E */
 #define PR_SUBJECT_PREFIX_ERROR                                              PROP_TAG(PT_ERROR     , 0x003D)  /* 0x003D000A */
 #define PR_SUBJECT_PREFIX_UNICODE                                            PROP_TAG(PT_UNICODE   , 0x003D)  /* 0x003D001F */
 #define PR_SUBJECT_UNICODE                                                   PROP_TAG(PT_UNICODE   , 0x0037)  /* 0x0037001F */
+#define PR_SUPPLEMENTARY_INFO                                                PROP_TAG(PT_STRING8   , 0x0C1B)  /* 0x0C1B001E */
+#define PR_SUPPLEMENTARY_INFO_ERROR                                          PROP_TAG(PT_ERROR     , 0x0C1B)  /* 0x0C1B000A */
+#define PR_SUPPLEMENTARY_INFO_UNICODE                                        PROP_TAG(PT_UNICODE   , 0x0C1B)  /* 0x0C1B001F */
 #define PR_SURNAME                                                           PROP_TAG(PT_STRING8   , 0x3A11)  /* 0x3A11001E */
 #define PR_SURNAME_ERROR                                                     PROP_TAG(PT_ERROR     , 0x3A11)  /* 0x3A11000A */
 #define PR_SURNAME_UNICODE                                                   PROP_TAG(PT_UNICODE   , 0x3A11)  /* 0x3A11001F */
@@ -1226,13 +1235,7 @@
 #define PR_TTYTDD_PHONE_NUMBER                                               PROP_TAG(PT_STRING8   , 0x3A4B)  /* 0x3A4B001E */
 #define PR_TTYTDD_PHONE_NUMBER_ERROR                                         PROP_TAG(PT_ERROR     , 0x3A4B)  /* 0x3A4B000A */
 #define PR_TTYTDD_PHONE_NUMBER_UNICODE                                       PROP_TAG(PT_UNICODE   , 0x3A4B)  /* 0x3A4B001F */
-#define PR_URL_COMP_NAME                                                     PROP_TAG(PT_STRING8   , 0x10F3)  /* 0x10F3001E */
-#define PR_URL_COMP_NAME_ERROR                                               PROP_TAG(PT_ERROR     , 0x10F3)  /* 0x10F3000A */
 #define PR_URL_COMP_NAME_SET                                                 PidTagUrlCompNameSet
-#define PR_URL_COMP_NAME_UNICODE                                             PROP_TAG(PT_UNICODE   , 0x10F3)  /* 0x10F3001F */
-#define PR_URL_NAME                                                          PROP_TAG(PT_STRING8   , 0x6707)  /* 0x6707001E */
-#define PR_URL_NAME_ERROR                                                    PROP_TAG(PT_ERROR     , 0x6707)  /* 0x6707000A */
-#define PR_URL_NAME_UNICODE                                                  PROP_TAG(PT_UNICODE   , 0x6707)  /* 0x6707001F */
 #define PR_USER_CERTIFICATE                                                  PidTagUserCertificate
 #define PR_USER_CERTIFICATE_ERROR                                            PROP_TAG(PT_ERROR     , 0x3A22)  /* 0x3A22000A */
 #define PR_USER_ENTRYID                                                      PidTagUserEntryId
@@ -1302,4 +1305,5 @@
 #define PidTagFolderChildCount                                               PROP_TAG(PT_LONG      , 0x6638) /* 0x66380003 */
 #define PidTagOriginalDisplayName                                            PROP_TAG(PT_UNICODE   , 0x3A13) /* 0x3A13001F */
 #define PidTagSecureOrigination						  PROP_TAG(PT_BOOLEAN   , 0x3FE5) /* 0x3FE5000B */
+#define PidTagUrlCompName							  PROP_TAG(PT_UNICODE   , 0x10F3) /* 0x10F3001F */
 #define PidTagUrlCompNameSet                                                 PROP_TAG(PT_BOOLEAN   , 0x0E62) /* 0x0E62000B */

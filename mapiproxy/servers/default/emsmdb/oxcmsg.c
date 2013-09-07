@@ -488,7 +488,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	pt_long = 0x1;
 	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_ACCESS_LEVEL, (const void *)&pt_long);
 	aRow.cValues++;
-	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PR_URL_COMP_NAME_UNICODE, (const void *)"No Subject.EML");
+	set_SPropValue_proptag(aRow.lpProps + aRow.cValues, PidTagUrlCompName, (const void *)"No Subject.EML");
 	aRow.cValues++;
 
 	gettimeofday(&tv, NULL);

@@ -614,6 +614,7 @@ def make_mapi_properties_file():
 	altnamelines.append("#define PidTagSecureOrigination						  PROP_TAG(PT_BOOLEAN   , 0x3FE5) /* 0x3FE5000B */\n")
 	altnamelines.append("#define PidTagExtendedACLData						  PROP_TAG(PT_BINARY    , 0x3FFE) /* 0x3FFE0102 */\n")
 	altnamelines.append("#define PidTagAttributeSystem						  PROP_TAG(PT_BOOLEAN   , 0x10F5) /* 0x10F5000B */\n")
+	altnamelines.append("#define PidTagUrlCompName							  PROP_TAG(PT_UNICODE   , 0x10F3) /* 0x10F3001F */\n")
 	altnamelines.append("#define PidTagUrlCompNameSet                                                 PROP_TAG(PT_BOOLEAN   , 0x0E62) /* 0x0E62000B */\n")
 	altnamelines.append("#define PR_DEFAULT_PROFILE                                                   0x00010102\n")
 	altnamelines.append("#define PR_PROFILE_HOME_SERVER_ADDRS                                         0x6613101e\n")

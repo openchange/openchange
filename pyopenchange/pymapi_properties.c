@@ -335,6 +335,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagDeletedCountTotal_Error", PyInt_FromLong(0x670B000A));
 	PyModule_AddObject(m, "PidTagDeletedOn", PyInt_FromLong(0x668F0040));
 	PyModule_AddObject(m, "PidTagDeletedOn_Error", PyInt_FromLong(0x668F000A));
+	PyModule_AddObject(m, "PidTagDeliverTime", PyInt_FromLong(0x00100040));
+	PyModule_AddObject(m, "PidTagDeliverTime_Error", PyInt_FromLong(0x0010000A));
 	PyModule_AddObject(m, "PidTagDepartmentName", PyInt_FromLong(0x3A18001F));
 	PyModule_AddObject(m, "PidTagDepartmentName_Error", PyInt_FromLong(0x3A18000A));
 	PyModule_AddObject(m, "PidTagDepth", PyInt_FromLong(0x30050003));
@@ -477,8 +479,6 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagInstanceKey_Error", PyInt_FromLong(0x0FF6000A));
 	PyModule_AddObject(m, "PidTagInstanceNum", PyInt_FromLong(0x674E0003));
 	PyModule_AddObject(m, "PidTagInstanceNum_Error", PyInt_FromLong(0x674E000A));
-	PyModule_AddObject(m, "PidTagInternetArticleNumber", PyInt_FromLong(0x0E230003));
-	PyModule_AddObject(m, "PidTagInternetArticleNumber_Error", PyInt_FromLong(0x0E23000A));
 	PyModule_AddObject(m, "PidTagInternetCodepage", PyInt_FromLong(0x3FDE0003));
 	PyModule_AddObject(m, "PidTagInternetCodepage_Error", PyInt_FromLong(0x3FDE000A));
 	PyModule_AddObject(m, "PidTagInternetMailOverrideFormat", PyInt_FromLong(0x59020003));
@@ -602,8 +602,12 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagNextSendAcct_Error", PyInt_FromLong(0x0E29000A));
 	PyModule_AddObject(m, "PidTagNickname", PyInt_FromLong(0x3A4F001F));
 	PyModule_AddObject(m, "PidTagNickname_Error", PyInt_FromLong(0x3A4F000A));
-	PyModule_AddObject(m, "PidTagNormalMessageSize", PyInt_FromLong(0x66B30003));
-	PyModule_AddObject(m, "PidTagNormalMessageSize_Error", PyInt_FromLong(0x66B3000A));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportDiagCode", PyInt_FromLong(0x0C050003));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportDiagCode_Error", PyInt_FromLong(0x0C05000A));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportReasonCode", PyInt_FromLong(0x0C040003));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportReasonCode_Error", PyInt_FromLong(0x0C04000A));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportStatusCode", PyInt_FromLong(0x0C200003));
+	PyModule_AddObject(m, "PidTagNonDeliveryReportStatusCode_Error", PyInt_FromLong(0x0C20000A));
 	PyModule_AddObject(m, "PidTagNormalizedSubject", PyInt_FromLong(0x0E1D001F));
 	PyModule_AddObject(m, "PidTagNormalizedSubject_Error", PyInt_FromLong(0x0E1D000A));
 	PyModule_AddObject(m, "PidTagObjectType", PyInt_FromLong(0x0FFE0003));
@@ -731,12 +735,6 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagProhibitReceiveQuota_Error", PyInt_FromLong(0x666A000A));
 	PyModule_AddObject(m, "PidTagProhibitSendQuota", PyInt_FromLong(0x666E0003));
 	PyModule_AddObject(m, "PidTagProhibitSendQuota_Error", PyInt_FromLong(0x666E000A));
-	PyModule_AddObject(m, "PidTagProviderSubmitTime", PyInt_FromLong(0x00480040));
-	PyModule_AddObject(m, "PidTagProviderSubmitTime_Error", PyInt_FromLong(0x0048000A));
-	PyModule_AddObject(m, "PidTagPublicFolderAdministrativeDescription", PyInt_FromLong(0x671C001F));
-	PyModule_AddObject(m, "PidTagPublicFolderAdministrativeDescription_Error", PyInt_FromLong(0x671C000A));
-	PyModule_AddObject(m, "PidTagPublicFolderProxy", PyInt_FromLong(0x671D0102));
-	PyModule_AddObject(m, "PidTagPublicFolderProxy_Error", PyInt_FromLong(0x671D000A));
 	PyModule_AddObject(m, "PidTagPurportedSenderDomain", PyInt_FromLong(0x4083001F));
 	PyModule_AddObject(m, "PidTagPurportedSenderDomain_Error", PyInt_FromLong(0x4083000A));
 	PyModule_AddObject(m, "PidTagRadioTelephoneNumber", PyInt_FromLong(0x3A1D001F));
@@ -754,7 +752,11 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagReadReceiptRequested_Error", PyInt_FromLong(0x0029000A));
 	PyModule_AddObject(m, "PidTagReadReceiptSearchKey", PyInt_FromLong(0x00530102));
 	PyModule_AddObject(m, "PidTagReadReceiptSearchKey_Error", PyInt_FromLong(0x0053000A));
+	PyModule_AddObject(m, "PidTagReadReceiptSmtpAddress", PyInt_FromLong(0x5D05001F));
+	PyModule_AddObject(m, "PidTagReadReceiptSmtpAddress_Error", PyInt_FromLong(0x5D05000A));
 	PyModule_AddObject(m, "PidTagRead_Error", PyInt_FromLong(0x0E69000A));
+	PyModule_AddObject(m, "PidTagReceiptTime", PyInt_FromLong(0x002A0040));
+	PyModule_AddObject(m, "PidTagReceiptTime_Error", PyInt_FromLong(0x002A000A));
 	PyModule_AddObject(m, "PidTagReceivedByAddressType", PyInt_FromLong(0x0075001F));
 	PyModule_AddObject(m, "PidTagReceivedByAddressType_Error", PyInt_FromLong(0x0075000A));
 	PyModule_AddObject(m, "PidTagReceivedByEmailAddress", PyInt_FromLong(0x0076001F));
@@ -765,6 +767,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagReceivedByName_Error", PyInt_FromLong(0x0040000A));
 	PyModule_AddObject(m, "PidTagReceivedBySearchKey", PyInt_FromLong(0x00510102));
 	PyModule_AddObject(m, "PidTagReceivedBySearchKey_Error", PyInt_FromLong(0x0051000A));
+	PyModule_AddObject(m, "PidTagReceivedBySmtpAddress", PyInt_FromLong(0x5D07001F));
+	PyModule_AddObject(m, "PidTagReceivedBySmtpAddress_Error", PyInt_FromLong(0x5D07000A));
 	PyModule_AddObject(m, "PidTagReceivedRepresentingAddressType", PyInt_FromLong(0x0077001F));
 	PyModule_AddObject(m, "PidTagReceivedRepresentingAddressType_Error", PyInt_FromLong(0x0077000A));
 	PyModule_AddObject(m, "PidTagReceivedRepresentingEmailAddress", PyInt_FromLong(0x0078001F));
@@ -775,6 +779,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagReceivedRepresentingName_Error", PyInt_FromLong(0x0044000A));
 	PyModule_AddObject(m, "PidTagReceivedRepresentingSearchKey", PyInt_FromLong(0x00520102));
 	PyModule_AddObject(m, "PidTagReceivedRepresentingSearchKey_Error", PyInt_FromLong(0x0052000A));
+	PyModule_AddObject(m, "PidTagReceivedRepresentingSmtpAddress", PyInt_FromLong(0x5D08001F));
+	PyModule_AddObject(m, "PidTagReceivedRepresentingSmtpAddress_Error", PyInt_FromLong(0x5D08000A));
 	PyModule_AddObject(m, "PidTagRecipientDisplayName", PyInt_FromLong(0x5FF6001F));
 	PyModule_AddObject(m, "PidTagRecipientDisplayName_Error", PyInt_FromLong(0x5FF6000A));
 	PyModule_AddObject(m, "PidTagRecipientEntryId", PyInt_FromLong(0x5FF70102));
@@ -791,8 +797,6 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagRecipientProposed_Error", PyInt_FromLong(0x5FE1000A));
 	PyModule_AddObject(m, "PidTagRecipientReassignmentProhibited", PyInt_FromLong(0x002B000B));
 	PyModule_AddObject(m, "PidTagRecipientReassignmentProhibited_Error", PyInt_FromLong(0x002B000A));
-	PyModule_AddObject(m, "PidTagRecipientResourceState", PyInt_FromLong(0x5FDE0003));
-	PyModule_AddObject(m, "PidTagRecipientResourceState_Error", PyInt_FromLong(0x5FDE000A));
 	PyModule_AddObject(m, "PidTagRecipientTrackStatus", PyInt_FromLong(0x5FFF0003));
 	PyModule_AddObject(m, "PidTagRecipientTrackStatusTime", PyInt_FromLong(0x5FFB0040));
 	PyModule_AddObject(m, "PidTagRecipientTrackStatusTime_Error", PyInt_FromLong(0x5FFB000A));
@@ -805,6 +809,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagReferredByName_Error", PyInt_FromLong(0x3A47000A));
 	PyModule_AddObject(m, "PidTagRemindersOnlineEntryId", PyInt_FromLong(0x36D50102));
 	PyModule_AddObject(m, "PidTagRemindersOnlineEntryId_Error", PyInt_FromLong(0x36D5000A));
+	PyModule_AddObject(m, "PidTagRemoteMessageTransferAgent", PyInt_FromLong(0x0C21001F));
+	PyModule_AddObject(m, "PidTagRemoteMessageTransferAgent_Error", PyInt_FromLong(0x0C21000A));
 	PyModule_AddObject(m, "PidTagRenderingPosition", PyInt_FromLong(0x370B0003));
 	PyModule_AddObject(m, "PidTagRenderingPosition_Error", PyInt_FromLong(0x370B000A));
 	PyModule_AddObject(m, "PidTagReplyRecipientEntries", PyInt_FromLong(0x004F0102));
@@ -833,6 +839,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagReportText_Error", PyInt_FromLong(0x1001000A));
 	PyModule_AddObject(m, "PidTagReportTime", PyInt_FromLong(0x00320040));
 	PyModule_AddObject(m, "PidTagReportTime_Error", PyInt_FromLong(0x0032000A));
+	PyModule_AddObject(m, "PidTagReportingMessageTransferAgent", PyInt_FromLong(0x6820001F));
+	PyModule_AddObject(m, "PidTagReportingMessageTransferAgent_Error", PyInt_FromLong(0x6820000A));
 	PyModule_AddObject(m, "PidTagResolveMethod", PyInt_FromLong(0x3FE70003));
 	PyModule_AddObject(m, "PidTagResolveMethod_Error", PyInt_FromLong(0x3FE7000A));
 	PyModule_AddObject(m, "PidTagResponseRequested", PyInt_FromLong(0x0063000B));
@@ -998,6 +1006,8 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagSentRepresentingName_Error", PyInt_FromLong(0x0042000A));
 	PyModule_AddObject(m, "PidTagSentRepresentingSearchKey", PyInt_FromLong(0x003B0102));
 	PyModule_AddObject(m, "PidTagSentRepresentingSearchKey_Error", PyInt_FromLong(0x003B000A));
+	PyModule_AddObject(m, "PidTagSentRepresentingSmtpAddress", PyInt_FromLong(0x5D02001F));
+	PyModule_AddObject(m, "PidTagSentRepresentingSmtpAddress_Error", PyInt_FromLong(0x5D02000A));
 	PyModule_AddObject(m, "PidTagSmtpAddress", PyInt_FromLong(0x39FE001F));
 	PyModule_AddObject(m, "PidTagSmtpAddress_Error", PyInt_FromLong(0x39FE000A));
 	PyModule_AddObject(m, "PidTagSortLocaleId", PyInt_FromLong(0x67050003));
@@ -1022,14 +1032,14 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagStoreSupportMask_Error", PyInt_FromLong(0x340D000A));
 	PyModule_AddObject(m, "PidTagStreetAddress", PyInt_FromLong(0x3A29001F));
 	PyModule_AddObject(m, "PidTagStreetAddress_Error", PyInt_FromLong(0x3A29000A));
-	PyModule_AddObject(m, "PidTagSubfolder", PyInt_FromLong(0x6708000B));
-	PyModule_AddObject(m, "PidTagSubfolder_Error", PyInt_FromLong(0x6708000A));
 	PyModule_AddObject(m, "PidTagSubfolders", PyInt_FromLong(0x360A000B));
 	PyModule_AddObject(m, "PidTagSubfolders_Error", PyInt_FromLong(0x360A000A));
 	PyModule_AddObject(m, "PidTagSubject", PyInt_FromLong(0x0037001F));
 	PyModule_AddObject(m, "PidTagSubjectPrefix", PyInt_FromLong(0x003D001F));
 	PyModule_AddObject(m, "PidTagSubjectPrefix_Error", PyInt_FromLong(0x003D000A));
 	PyModule_AddObject(m, "PidTagSubject_Error", PyInt_FromLong(0x0037000A));
+	PyModule_AddObject(m, "PidTagSupplementaryInfo", PyInt_FromLong(0x0C1B001F));
+	PyModule_AddObject(m, "PidTagSupplementaryInfo_Error", PyInt_FromLong(0x0C1B000A));
 	PyModule_AddObject(m, "PidTagSurname", PyInt_FromLong(0x3A11001F));
 	PyModule_AddObject(m, "PidTagSurname_Error", PyInt_FromLong(0x3A11000A));
 	PyModule_AddObject(m, "PidTagSwappedToDoData", PyInt_FromLong(0x0E2D0102));
@@ -1046,8 +1056,6 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagTemplateData_Error", PyInt_FromLong(0x0001000A));
 	PyModule_AddObject(m, "PidTagTemplateid", PyInt_FromLong(0x39020102));
 	PyModule_AddObject(m, "PidTagTemplateid_Error", PyInt_FromLong(0x3902000A));
-	PyModule_AddObject(m, "PidTagTemporaryDefaultDocument", PyInt_FromLong(0x3F20001F));
-	PyModule_AddObject(m, "PidTagTemporaryDefaultDocument_Error", PyInt_FromLong(0x3F20000A));
 	PyModule_AddObject(m, "PidTagTextAttachmentCharset", PyInt_FromLong(0x371B001F));
 	PyModule_AddObject(m, "PidTagTextAttachmentCharset_Error", PyInt_FromLong(0x371B000A));
 	PyModule_AddObject(m, "PidTagThumbnailPhoto", PyInt_FromLong(0x8C9E0102));
@@ -1064,10 +1072,6 @@ int pymapi_add_properties(PyObject *m)
 	PyModule_AddObject(m, "PidTagTransportMessageHeaders_Error", PyInt_FromLong(0x007D000A));
 	PyModule_AddObject(m, "PidTagTrustSender", PyInt_FromLong(0x0E790003));
 	PyModule_AddObject(m, "PidTagTrustSender_Error", PyInt_FromLong(0x0E79000A));
-	PyModule_AddObject(m, "PidTagUrlCompName", PyInt_FromLong(0x10F3001F));
-	PyModule_AddObject(m, "PidTagUrlCompName_Error", PyInt_FromLong(0x10F3000A));
-	PyModule_AddObject(m, "PidTagUrlName", PyInt_FromLong(0x6707001F));
-	PyModule_AddObject(m, "PidTagUrlName_Error", PyInt_FromLong(0x6707000A));
 	PyModule_AddObject(m, "PidTagUserCertificate", PyInt_FromLong(0x3A220102));
 	PyModule_AddObject(m, "PidTagUserCertificate_Error", PyInt_FromLong(0x3A22000A));
 	PyModule_AddObject(m, "PidTagUserEntryId", PyInt_FromLong(0x66190102));

@@ -3,6 +3,7 @@
 static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	__construct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIMessage,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMessage,	getID,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
@@ -79,7 +80,7 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 	mapi_message_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_object(char *class, zval *parent, mapi_object_t  *message TSRMLS_DC)
+zval *create_message_object(char *class, zval *parent, mapi_object_t *message, mapi_id_t id TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval 			*new_php_obj;
@@ -96,6 +97,7 @@ zval *create_message_object(char *class, zval *parent, mapi_object_t  *message T
 	new_obj->message = message;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "message");
 	new_obj->parent = parent;
+	new_obj->id = id;
 //	Z_ADDREF_P(new_obj->parent);
 //	Z_OBJ_HT_P(new_obj->parent)->add_ref(new_obj->parent TSRMLS_CC);
 //	S_PARENT_ADDREF_P(new_obj);
@@ -124,17 +126,16 @@ PHP_METHOD(MAPIMessage, __destruct)
 
 }
 
-char *prop_name_with_prefix(char *prop_name)
+PHP_METHOD(MAPIMessage, getID)
 {
+	zval			*this_php_obj;
+	mapi_message_object_t 	*this_obj;
+	char 			*str_id;
 
-	size_t 			full_prop_name_len;
-	char 			*full_prop_name;
-	full_prop_name_len = strlen("PidLid") + strlen(prop_name) + 1;
-	full_prop_name = emalloc(full_prop_name_len);
-	strlcpy(full_prop_name, "PidLid", full_prop_name_len);
-	strlcat(full_prop_name, prop_name, full_prop_name_len);
-
-	return full_prop_name;
+	this_php_obj = getThis();
+	this_obj = STORE_OBJECT(mapi_message_object_t*, this_php_obj);
+	str_id = mapi_id_to_str(this_obj->id);
+	RETURN_STRING(str_id, 0);
 }
 
 zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
@@ -153,9 +154,9 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	if (prop_type == PT_UNICODE) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
-		ZVAL_LONG(zprop, (long *) prop_value);
+		ZVAL_LONG(zprop, *((long *) prop_value));
 	} else if (prop_type == PT_BOOLEAN) {
-		ZVAL_BOOL(zprop, (bool *) prop_value);
+		ZVAL_BOOL(zprop, *((bool *) prop_value));
 	} else if (prop_type == PT_SYSTIME) {
 		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
 		const char		*date;
@@ -210,14 +211,18 @@ PHP_METHOD(MAPIMessage, get)
 
 	for (i=0; i<argc; i++) {
 		zval *prop;
+		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
+		if (zend_hash_index_find(Z_OBJPROP_P(this_php_obj),  (long) prop_id, (void**)&temp_prop) == SUCCESS) {
+			php_printf("FOUND in properties table\n");
+			MAKE_STD_ZVAL(prop);
+			ZVAL_ZVAL(prop, *temp_prop, 1, 0);
+		} else {
+			prop  = mapi_message_get_property(this_obj, prop_id);
+			// cache it in properties, if it fails we dont' care bz we will fetch again the same prop
+//			zend_hash_index_update(Z_OBJPROP_P(this_php_obj), (long) prop_id, &prop, sizeof(zval*), NULL);
+		}
 
-		// XXX Do again hash for temporal proeprties
-		/* if (zend_hash_find(Z_OBJPROP_P(this_php_obj),  prop_name, strlen(prop_name)+1, (void**)&temp_prop_value) == SUCCESS) { */
-		/* 	php_printf("FOUND in properties table\n"); */
-		/* 	RETURN_ZVAL(*temp_prop_value, 1, 0); */
-		/* } */
-		prop  = mapi_message_get_property(this_obj, prop_id);
 		if (argc == 1) {
 			result = prop;
 		} else {
@@ -236,32 +241,43 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-// TODO: for other typ
+// TODO: for other types, now it only works for strings
 PHP_METHOD(MAPIMessage, set)
 {
-	char 			*prop_name;
-	size_t 		 	prop_name_len;
-	char 			*prop_value;
-	size_t 			prop_value_len;
-	char			*full_prop_name;
-	zval 			*strval;
+	php_error(E_ERROR, "Not implemented");
+	int 			i, argc;
+	zval 			***args;
+	zval			*this_php_obj;
+	mapi_message_object_t 	*this_obj;
+	zval *result;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
-				  &prop_name, &prop_name_len, &prop_value, &prop_value_len) == FAILURE) {
-		php_error(E_ERROR, "Missing property name");
+	argc = ZEND_NUM_ARGS();
+	php_printf( "argc %i\n", argc);
+
+	if ((argc == 0) || ((argc % 2) == 1)) {
+		WRONG_PARAM_COUNT;
+	php_printf( "wring\n");
 	}
 
-	full_prop_name = prop_name_with_prefix(prop_name);
-	php_printf("__set %s -> %s -> %s\n", prop_name, full_prop_name, prop_value);
-	MAKE_STD_ZVAL(strval);
-	ZVAL_STRING(strval, prop_value, 1);
-
-	if(zend_hash_update(Z_OBJPROP_P(getThis()), full_prop_name, strlen(full_prop_name) + 1,
-					&strval, sizeof(strval), NULL) == FAILURE) {
-		php_error(E_ERROR, "Cannot update object properties table");
+	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+	if (zend_get_parameters_array_ex(argc, args) == FAILURE) {
+		efree(args);
+		WRONG_PARAM_COUNT;
+	php_printf( "wring\n");
 	}
 
-	efree(full_prop_name);
+	php_printf( "get_params\n");
+	for (i=0; i<argc; i+=2) {
+		mapi_id_t id = Z_LVAL_PP(args[i]);
+		zval *val = *(args[i+1]);
+
+		if(zend_hash_index_update(Z_OBJPROP_P(getThis()), (long) id,
+					&val, sizeof(val), NULL) == FAILURE) {
+			php_error(E_ERROR, "Cannot update object properties table");
+		}
+	}
+
+	efree(args);
 }
 
 
@@ -273,6 +289,8 @@ PHP_METHOD(MAPIMessage, set)
 
 PHP_METHOD(MAPIMessage, save)
 {
+	php_error(E_ERROR, "Not implemented");
+
 	zval*			php_this_obj;
 	mapi_message_object_t 	*this_obj;
 	HashTable* 		prop;

@@ -125,10 +125,11 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 			if (retval != MAPI_E_NOT_FOUND) {
 				retval = GetPropsAll(obj_message, MAPI_UNICODE, &properties_array);
 				if (retval == MAPI_E_SUCCESS) {
+					mapi_id_t message_id = row.aRow[i].lpProps[1].value.d;
 					if (summary) {
 						id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64,
 						     row.aRow[i].lpProps[0].value.d,
-						     row.aRow[i].lpProps[1].value.d);
+						      message_id);
 						mapi_SPropValue_array_named(obj_message, &properties_array);
 					}
 
@@ -136,20 +137,20 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = contact_summary_zval(&properties_array, id);
 						} else {
-							message = create_contact_object(php_this_obj, obj_message TSRMLS_CC);
+							message = create_contact_object(php_this_obj, obj_message, message_id TSRMLS_CC);
 						}
 					} else if (this_obj->type == APPOINTMENTS) {
 						if (summary) {
 							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
 						} else {
-							php_error(E_ERROR, "not implemented yet");
+							message = create_appointment_object(php_this_obj, obj_message, message_id TSRMLS_CC);
 						}
 
 					} else if (this_obj->type == TASKS) {
 						if (summary) {
 							message = task_summary_zval(&properties_array, id);
 						} else {
-							message = create_task_object(php_this_obj, obj_message TSRMLS_CC);
+							message = create_task_object(php_this_obj, obj_message, message_id TSRMLS_CC);
 						}
 
 					} else {

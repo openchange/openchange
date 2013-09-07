@@ -269,11 +269,11 @@ PHP_METHOD(MAPIFolder, openMessage)
 	CHECK_MAPI_RETVAL(retval, "Open message");
 
 	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
-		php_message = create_contact_object(php_this_obj, message TSRMLS_CC);
+		php_message = create_contact_object(php_this_obj, message, message_id TSRMLS_CC);
 	} else if (strncmp(this_obj->folder_type, "IPF.Task", 20) == 0) {
-		php_message = create_task_object(php_this_obj, message TSRMLS_CC);
+		php_message = create_task_object(php_this_obj, message, message_id TSRMLS_CC);
 	} else if (strncmp(this_obj->folder_type, "IPF.Appointment", 20) == 0) {
-		php_message = create_appointment_object(php_this_obj, message TSRMLS_CC);
+		php_message = create_appointment_object(php_this_obj, message, message_id TSRMLS_CC);
 	} else {
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}

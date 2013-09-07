@@ -26,6 +26,7 @@ print "Get inexistent message: " .  var_dump($contacts->openMessage($incorrectMe
 
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
+echo "Getting message ID " . $message->getID() . "\n";
 echo "Getting message PidLidFileUnder\n";
 echo $message->get(PidLidFileUnder) . "\n";
 echo "Getting at the same time PidLidFileUnder and PidLidEmail1OriginalDisplayNamen";
@@ -39,17 +40,24 @@ echo "Getting list of inexistent properties at the same time\n";
 $propValues = $message->get(30, 456, 0, -1);
 var_dump($propValues);
 
-return;
 
-echo "Change Email1OriginalDisplayName \n";
-if ($message->Email1OriginalDisplayName == "changed@a.org") {
-   $message->Email1OriginalDisplayName = "jkerihuel@zentyal.com";
-} else if ($message->Email1OriginalDisplayName == "jkerihuel@zentyal.com") {
-  $message->Email1OriginalDisplayName = "changed@a.org";
+echo "testing ->set method\n";
+
+$email = $message->get(PidLidEmail1OriginalDisplayName);
+if ($email == "changed@a.org") {
+    echo "Change " .  $email . " to 'jke@'\n";
+   $message->set(PidLidEmail1OriginalDisplayName, "jkerihuel@zentyal.com");
+} else if ($email == "jkerihuel@zentyal.com") {
+    echo "Change " . $email . " to 'changed@'\n";
+  $message->set(PidLidEmail1OriginalDisplayName, "changed@a.org");
+} else {
+  echo "Not expected value\n";
 }
 
-echo "Value:\n ";
-echo var_dump($message->Email1OriginalDisplayName) . "\n";
+echo "Value: " . $message->get(PidLidEmail1OriginalDisplayName) . "\n";
+
+
+return;
 
 echo "Save changes \n";
 $message->save($mailbox);

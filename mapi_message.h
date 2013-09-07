@@ -26,6 +26,7 @@ typedef struct mapi_message_object
 	mapi_object_t	*message;
 	TALLOC_CTX	*talloc_ctx;
 	zval		*parent;
+	mapi_id_t        id;
 	struct mapi_SPropValue_array	properties;
 } mapi_message_object_t;
 
@@ -43,6 +44,7 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPIMessage, __construct);
 PHP_METHOD(MAPIMessage, __destruct);
+PHP_METHOD(MAPIMessage, getID);
 PHP_METHOD(MAPIMessage, get);
 PHP_METHOD(MAPIMessage, set);
 PHP_METHOD(MAPIMessage, save);
@@ -51,7 +53,7 @@ PHP_METHOD(MAPIMessage, save);
 void MAPIMessageRegisterClass(TSRMLS_D);
 
 zend_object_value mapi_message_create_handler(zend_class_entry *type TSRMLS_DC);
-zval *create_message_object(char *class, zval *folder, mapi_object_t  *message TSRMLS_DC);
+zval *create_message_object(char *class, zval *folder, mapi_object_t *message, mapi_id_t id TSRMLS_DC);
 
 __END_DECLS
 

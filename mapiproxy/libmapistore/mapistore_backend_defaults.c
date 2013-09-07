@@ -208,7 +208,7 @@ static enum mapistore_error mapistore_op_defaults_set_read_flag(void *message_ob
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_save(void *message_object)
+static enum mapistore_error mapistore_op_defaults_save(void *message_object, TALLOC_CTX *mem_ctx)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;

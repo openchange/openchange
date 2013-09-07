@@ -1241,6 +1241,10 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			idx++;
 		}
+
+		if (retval) {
+			DEBUG(5, ("MAPI Rop: 0x%.2x [retval=0x%.8x]\n", mapi_request->mapi_req[i].opnum, retval));
+		}
 	}
 
 notif:

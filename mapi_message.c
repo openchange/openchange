@@ -214,9 +214,10 @@ PHP_METHOD(MAPIMessage, get)
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
 		if (zend_hash_index_find(Z_OBJPROP_P(this_php_obj),  (long) prop_id, (void**)&temp_prop) == SUCCESS) {
-			php_printf("FOUND in properties table\n");
-			MAKE_STD_ZVAL(prop);
-			ZVAL_ZVAL(prop, *temp_prop, 1, 0);
+			php_printf("FOUND in properties table: %l\n", prop_id);
+			php_printf("Value: %s\n", Z_STRVAL_PP(temp_prop));
+
+			prop = *temp_prop;
 		} else {
 			prop  = mapi_message_get_property(this_obj, prop_id);
 			// cache it in properties, if it fails we dont' care bz we will fetch again the same prop
@@ -244,7 +245,6 @@ PHP_METHOD(MAPIMessage, get)
 // TODO: for other types, now it only works for strings
 PHP_METHOD(MAPIMessage, set)
 {
-	php_error(E_ERROR, "Not implemented");
 	int 			i, argc;
 	zval 			***args;
 	zval			*this_php_obj;
@@ -256,23 +256,27 @@ PHP_METHOD(MAPIMessage, set)
 
 	if ((argc == 0) || ((argc % 2) == 1)) {
 		WRONG_PARAM_COUNT;
-	php_printf( "wring\n");
 	}
 
 	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
 	if (zend_get_parameters_array_ex(argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
-	php_printf( "wring\n");
 	}
 
-	php_printf( "get_params\n");
+	php_printf( "set -> get_params\n");
 	for (i=0; i<argc; i+=2) {
 		mapi_id_t id = Z_LVAL_PP(args[i]);
 		zval *val = *(args[i+1]);
 
+		zval *to_store;
+		MAKE_STD_ZVAL(to_store);
+		ZVAL_ZVAL(to_store, 	val, 1, 1);
+//		php_printf("SEt %i -> %s\n", id, Z_STRVAL_P(val));
+		php_printf("SEt %i -> %s\n", id, Z_STRVAL_P(to_store));
 		if(zend_hash_index_update(Z_OBJPROP_P(getThis()), (long) id,
-					&val, sizeof(val), NULL) == FAILURE) {
+//					&val, sizeof(val), NULL) == FAILURE) {
+					&to_store, sizeof(to_store), NULL) == FAILURE) {
 			php_error(E_ERROR, "Cannot update object properties table");
 		}
 	}

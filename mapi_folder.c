@@ -259,7 +259,7 @@ PHP_METHOD(MAPIFolder, openMessage)
 	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
 	mapi_object_init(message);
 
-	retval = OpenMessage(&(this_obj->store), this_obj->store.id, message_id, message, 0x0);
+	retval = OpenMessage(&(this_obj->store), this_obj->store.id, message_id, message, 0x1);
 	if (retval == MAPI_E_NOT_FOUND) {
 		mapi_object_release(message);
 		efree(message);

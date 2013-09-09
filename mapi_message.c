@@ -319,10 +319,6 @@ PHP_METHOD(MAPIMessage, set)
 			php_printf("Saving existent property in pos %i\n", prop_pos);
 			set_mapi_SPropValue(this_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
 		}
-		/* if (data) { */
-		/* 	efree(data); */
-		/* } */
-
 	}
 
 	efree(args);

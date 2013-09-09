@@ -182,6 +182,24 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	return zprop;
 }
 
+uint32_t find_mapi_SPropValue_pos(
+					struct mapi_SPropValue_array *properties, uint32_t mapitag)
+{
+	uint32_t i;
+
+	if ( ! properties) {
+		return NULL;
+	}
+
+	for (i = 0; i < properties->cValues; i++) {
+		if (properties->lpProps[i].ulPropTag == mapitag) {
+			return i;
+		}
+	}
+	return i;
+}
+
+
 
 // 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
 // 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
@@ -213,6 +231,8 @@ PHP_METHOD(MAPIMessage, get)
 		zval *prop;
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
+		php_printf("get 0x%" PRIX64  "\n", prop_id);
+
 		if (zend_hash_index_find(Z_OBJPROP_P(this_php_obj),  (long) prop_id, (void**)&temp_prop) == SUCCESS) {
 			php_printf("FOUND in properties table: %l\n", prop_id);
 			php_printf("Value: %s\n", Z_STRVAL_PP(temp_prop));
@@ -252,8 +272,6 @@ PHP_METHOD(MAPIMessage, set)
 	zval *result;
 
 	argc = ZEND_NUM_ARGS();
-	php_printf( "argc %i\n", argc);
-
 	if ((argc == 0) || ((argc % 2) == 1)) {
 		WRONG_PARAM_COUNT;
 	}
@@ -264,16 +282,16 @@ PHP_METHOD(MAPIMessage, set)
 		WRONG_PARAM_COUNT;
 	}
 
-	php_printf( "set -> get_params\n");
+
 	for (i=0; i<argc; i+=2) {
 		mapi_id_t id = Z_LVAL_PP(args[i]);
 		zval *val = *(args[i+1]);
 
+		php_printf("set 0x%" PRIX64  "\n", id);
+
 		zval *to_store;
 		MAKE_STD_ZVAL(to_store);
 		ZVAL_ZVAL(to_store, 	val, 1, 1);
-//		php_printf("SEt %i -> %s\n", id, Z_STRVAL_P(val));
-		php_printf("SEt %i -> %s\n", id, Z_STRVAL_P(to_store));
 		if(zend_hash_index_update(Z_OBJPROP_P(getThis()), (long) id,
 //					&val, sizeof(val), NULL) == FAILURE) {
 					&to_store, sizeof(to_store), NULL) == FAILURE) {
@@ -293,18 +311,18 @@ PHP_METHOD(MAPIMessage, set)
 
 PHP_METHOD(MAPIMessage, save)
 {
-	php_error(E_ERROR, "Not implemented");
-
 	zval*			php_this_obj;
 	mapi_message_object_t 	*this_obj;
 	HashTable* 		prop;
 	HashPosition 		pos;
 	bool			changes = false;
 	int                     maxProps, nProps;
-	struct SPropValue       *lpProps;
+	struct mapi_SPropValue_array *properties;
 	enum MAPISTATUS	      	retval;
 	zval                		*mailbox;
 	struct mapi_mailbox_object	*mailbox_obj;
+	TALLOC_CTX                      *talloc_ctx;
+
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
                                   &mailbox, mapi_mailbox_ce) == FAILURE) {
@@ -319,8 +337,7 @@ PHP_METHOD(MAPIMessage, save)
 	maxProps = zend_hash_num_elements(prop);
 	php_printf("Number of elements: %i: DDD\n", maxProps);
 
-	lpProps  = emalloc(sizeof(struct SPropValue*)*maxProps);
-	memset(lpProps, 0, sizeof(struct SPropValue*)*maxProps);
+	properties = &(this_obj->properties);
 
 	nProps = 0;
 	for (zend_hash_internal_pointer_reset(prop);
@@ -338,23 +355,20 @@ PHP_METHOD(MAPIMessage, save)
 		if (keyType == HASH_KEY_NON_EXISTANT) {
 			php_printf("Cannot get current key\n");
 			continue;
-		} else if (keyType == HASH_KEY_IS_LONG) {
-			php_printf("Skipping long key %ll\n", idx);
+		} else if (keyType == HASH_KEY_IS_STRING) {
+			php_printf("Skipping string key %s\n", key);
 			continue;
 		}
 
 
-		if (strncmp(key, "PidLid", strlen("PidLid")) != 0 ) {
-			php_printf("Skipping key %s\n", key);
-			continue;
-		}
+
 		if (zend_hash_get_current_data(prop, (void**)&ppzval) == FAILURE) {
 //		if (zend_hash_get_current_data(prop, (void**)ppzval) == FAILURE) {
 			php_printf("Cannot get data of key %s\n", key);
 			continue;
 		}
 
-		php_printf("Extracting key %s DDD\n", key);
+		php_printf("Extracting key %l DDD\n", idx);
 //		const char *data =  (void*) Z_STRVAL_P(ppzval);
 
 //		tmpcopy = **ppzval;
@@ -365,12 +379,13 @@ PHP_METHOD(MAPIMessage, save)
 // convert_to_string(&tmpcopy);
 //		int type = Z_TYPE_P(ppzval);
 		int type = Z_TYPE(tmpcopy);
-		char *data;
+		void *data;
 		if (type == IS_NULL) {
 			data = NULL;
-			data = estrndup("changed@a.org", strlen("changed@a.org")+1);
+			data = (void*)estrndup("TESTSET", sizeof("TESTSET"));
+
 			php_printf("NULL value DDD\n", key);
-			zval_dtor(&tmpcopy);
+//			zval_dtor(&tmpcopy);
 //			continue;
 /* 		} else if (type == IS_LONG) { */
 /* 			data = emalloc(sizeof(long)); */
@@ -381,7 +396,7 @@ PHP_METHOD(MAPIMessage, save)
 		/* 	*data =Z_DVAL_P(ppzval); */
 		} else if (type == IS_STRING) {
 //		    data = estrndup(Z_STRVAL_P(ppzval), Z_STRLEN_P(ppzval));
-		    data = estrndup(Z_STRVAL(tmpcopy), Z_STRLEN(tmpcopy));
+			data = (void*)estrndup(Z_STRVAL(tmpcopy), Z_STRLEN(tmpcopy));
 
 		/* } else if (type == IS_BOOL) { */
 		/* 	data = emalloc(sizeof(bool)); */
@@ -389,51 +404,53 @@ PHP_METHOD(MAPIMessage, save)
 		} else {
 			php_printf("Type not expected: '%i'. Skipped\n", type);
 		}
-		if (!data) {
-			continue;
-		}
+		/* if (!data) { */
+		/* 	continue; */
+		/* } */
 
-		php_printf("data %s DDD\n", data);
+
 		zval_dtor(&tmpcopy);
 
-		bool set_res = set_SPropValue_proptag( &lpProps[nProps], get_namedid_value(key), (void*) data);
-		if (data) {
-			efree(data);
-		}
-		if (!set_res) {
-			php_printf("Error setting key %s\n", key);
-			continue;
+		bool new_prop = false;
+		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, idx);
+		/* for (prop_pos = 0; prop_pos < properties->cValues; prop_pos++) { */
+		/* 	php_printf("0x%" PRIX64 " == " "0x%" PRIX64 "\n", idx, properties->lpProps[prop_pos].ulPropTag); */
+
+		/* 	if (properties->lpProps[prop_pos].ulPropTag == idx) { */
+		/* 		new_prop = false; */
+		/* 		break; */
+		/* 	} */
+		/* } */
+
+		if (new_prop) {
+			php_printf("Saving existent property\n");
+			add_mapi_SPropValue(this_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), idx ,data);
+		} else {
+			php_printf("Setting existent property\n");
+			set_mapi_SPropValue(this_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
 		}
 
 		changes = true;
 		nProps++;
 
 		// delete key. This should not interfere with the pointer
-//		zend_hash_del(prop, key, keylen);
+		zend_hash_index_del(prop, idx);
 	}
 
 	zend_hash_clean(prop);
 
 	php_printf("Number of elements AFTER: %i: DDD\n", zend_hash_num_elements(prop));
-
 	if (!changes) {
-		efree(lpProps);
+	php_printf("NO CHANGES\n");
+		RETVAL_BOOL(false);
 		return;
 	}
-
-	retval = SetProps(this_obj->message,
-			  0,
-			  lpProps,
-			  nProps);
-	CHECK_MAPI_RETVAL(retval, "Setting properties before save");
-
 
 	mailbox_obj = (struct mapi_mailbox_object*) zend_object_store_get_object(mailbox TSRMLS_CC);
 	retval = SaveChangesMessage(&(mailbox_obj->store),
 				    this_obj->message,
 				     KeepOpenReadWrite);
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
-
-	efree(lpProps);
+	RETVAL_BOOL(true);
 }
 

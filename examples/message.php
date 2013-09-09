@@ -54,15 +54,17 @@ if ($email == "changed@a.org") {
   echo "Not expected value\n";
 }
 
+echo 'message after set: ' . var_dump($message);
+
+
 echo "Value: " . $message->get(PidLidEmail1OriginalDisplayName) . "\n";
 
 
-return;
 
 echo "Save changes \n";
 $message->save($mailbox);
 
-echo "Check after save: " . $message->Email1OriginalDisplayName . "\n";
+echo "Check after save: " . $message->get(PidLidEmail1OriginalDisplayName) . "\n";
 
 echo "END SAVE\n\n";
 

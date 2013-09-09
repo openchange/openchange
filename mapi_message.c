@@ -299,7 +299,7 @@ PHP_METHOD(MAPIMessage, set)
 		} else if (type == IS_STRING) {
 
 //		    data = estrndup(Z_STRVAL_P(ppzval), Z_STRLEN_P(ppzval));
-			data = (void*)estrndup(Z_STRVAL_P(val), Z_STRLEN_P(val));
+			data = (void*)talloc_strdup(this_obj->talloc_ctx, Z_STRVAL_P(val));
 			php_printf("STRING %s value DDD\n", (char*) data);
 
 		/* } else if (type == IS_BOOL) { */
@@ -312,15 +312,16 @@ PHP_METHOD(MAPIMessage, set)
 		bool new_prop = false;
 		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
 		if (new_prop) {
-			php_printf("Saving existent property\n");
+			php_printf("Adding property\n");
+
 			add_mapi_SPropValue(this_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data);
 		} else {
-			php_printf("Setting existent property\n");
+			php_printf("Saving existent property in pos %i\n", prop_pos);
 			set_mapi_SPropValue(this_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
 		}
-		if (data) {
-			efree(data);
-		}
+		/* if (data) { */
+		/* 	efree(data); */
+		/* } */
 
 	}
 

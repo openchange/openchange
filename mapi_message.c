@@ -182,15 +182,77 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	return zprop;
 }
 
-uint32_t find_mapi_SPropValue_pos(
-					struct mapi_SPropValue_array *properties, uint32_t mapitag)
+bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 {
-	uint32_t i;
+	int type = Z_TYPE_P(zv);
+	if (type == IS_NULL) {
+		// XXX
 
-	if ( ! properties) {
-		return NULL;
+	} else if (type == IS_LONG) {
+		if (mapi_type == PT_LONG) {
+			return true;
+		}
+
+
+	} else if (type == IS_DOUBLE) {
+		// XXX
+	} else if (type == IS_STRING) {
+		if (mapi_type == PT_UNICODE) {
+			return true;
+		} else if (mapi_type == PT_SYSTIME) {
+			return true;
+		}
+	} else if (type == IS_BOOL) {
+		if (mapi_type == PT_BOOLEAN) {
+			return true;
+		}
+	} else {
+		php_printf("Type not expected: '%i'. Skipped\n", type);
+
 	}
 
+
+	php_printf("Incorrect zval for MAPI type  0x%" PRIX64  "\n", mapi_type);
+	return false;
+
+
+}
+
+void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
+{
+	char* data = NULL;
+	int type = Z_TYPE_P(val);
+	if (type == IS_NULL) {
+		data = NULL;
+
+		php_printf("NULL value DDD\n");
+//					continue;
+/* 		} else if (type == IS_LONG) { */
+/* 			data = emalloc(sizeof(long)); */
+/* //			*data = Z_LVAL_P(ppzval); */
+/* 			*data = Z_LVAL_P(*ppzval); */
+		/* } else if (type == IS_DOUBLE) { */
+		/* 	data = emalloc(sizeof(double)); */
+		/* 	*data =Z_DVAL_P(ppzval); */
+		} else if (type == IS_STRING) {
+			data = (void*)talloc_strdup(talloc_ctx, Z_STRVAL_P(val));
+			php_printf("STRING %s value DDD\n", (char*) data);
+
+		/* } else if (type == IS_BOOL) { */
+		/* 	data = emalloc(sizeof(bool)); */
+		/* 	*data = Z_STRBool_P(ppzval); */
+		} else {
+			php_printf("Type not expected: '%i'. Skipped\n", type);
+		}
+
+	return data;
+}
+
+
+
+uint32_t find_mapi_SPropValue_pos(struct mapi_SPropValue_array *properties, uint32_t mapitag)
+{
+	uint32_t i;
 	for (i = 0; i < properties->cValues; i++) {
 		if (properties->lpProps[i].ulPropTag == mapitag) {
 			return i;
@@ -278,40 +340,20 @@ PHP_METHOD(MAPIMessage, set)
 	struct mapi_SPropValue_array *properties = &(this_obj->properties);
 	for (i=0; i<argc; i+=2) {
 		mapi_id_t id = Z_LVAL_PP(args[i]);
+		uint32_t  prop_type =  id & 0xFFFF;
 		zval *val = *(args[i+1]);
 		void *data;
 		php_printf("set 0x%" PRIX64  "\n", id);
 
-		int type = Z_TYPE_P(val);
-		if (type == IS_NULL) {
-			data = NULL;
-			data = (void*)estrndup("TESTSET", sizeof("TESTSET"));
-
-			php_printf("NULL value DDD\n");
-//			continue;
-/* 		} else if (type == IS_LONG) { */
-/* 			data = emalloc(sizeof(long)); */
-/* //			*data = Z_LVAL_P(ppzval); */
-/* 			*data = Z_LVAL_P(*ppzval); */
-		/* } else if (type == IS_DOUBLE) { */
-		/* 	data = emalloc(sizeof(double)); */
-		/* 	*data =Z_DVAL_P(ppzval); */
-		} else if (type == IS_STRING) {
-
-//		    data = estrndup(Z_STRVAL_P(ppzval), Z_STRLEN_P(ppzval));
-			data = (void*)talloc_strdup(this_obj->talloc_ctx, Z_STRVAL_P(val));
-			php_printf("STRING %s value DDD\n", (char*) data);
-
-		/* } else if (type == IS_BOOL) { */
-		/* 	data = emalloc(sizeof(bool)); */
-		/* 	*data = Z_STRBool_P(ppzval); */
-		} else {
-			php_printf("Type not expected: '%i'. Skipped\n", type);
+		if (mapi_message_types_compatibility(val, prop_type)) {
+			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
+			continue;
 		}
 
-		bool new_prop = false;
+		data = mapi_message_zval_to_mapi_value(this_obj->talloc_ctx, val);
+
 		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
-		if (new_prop) {
+		if (prop_pos >=  properties->cValues) {
 			php_printf("Adding property\n");
 
 			add_mapi_SPropValue(this_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data);

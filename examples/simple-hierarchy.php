@@ -5,6 +5,8 @@ $mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
 echo "Get default profile\n";
 $mapiProfile = $mapi->getProfile();
 
+unset($mapi);
+
 #echo "Logon default profile\n";
 #$session = $mapiProfile->logon();
 #

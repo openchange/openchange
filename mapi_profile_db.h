@@ -26,6 +26,7 @@ typedef struct mapi_profile_db_object
 	char			*path;
 	TALLOC_CTX		*talloc_ctx;
 	struct mapi_context	*mapi_ctx;
+	zval *children;
 } mapi_profile_db_object_t;
 
 #ifndef __BEGIN_DECLS

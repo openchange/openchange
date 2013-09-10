@@ -115,5 +115,3 @@ void print_stacktrace()
 
   free(strings);
 }
-
-

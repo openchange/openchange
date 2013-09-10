@@ -74,6 +74,17 @@ extern zend_module_entry mapi_module_entry;
 #define STORE_OBJECT(type, zv) (type) zend_object_store_get_object(zv TSRMLS_CC)
 #define THIS_STORE_OBJECT(type) STORE_OBJECT(type, getThis())
 
+#define STORE_OBJECT_CHILDREN(store_object)  store_object ? (store_object->children ? store_object->children : NULL) : NULL
+#define ADD_CHILD(parent_store, zchild) add_index_zval(STORE_OBJECT_CHILDREN(parent_store), (long) Z_OBJ_HANDLE_P(zchild), zchild)
+#define REMOVE_CHILD(parent_store, zchild) zval *_tmp_children = STORE_OBJECT_CHILDREN(parent_store); \
+                                           if (_tmp_children) zend_hash_index_del(_tmp_children->value.ht, (long) Z_OBJ_HANDLE_P(zchild))
+#define DESTROY_CHILDRENS(obj)  if (obj->children) { \
+                                        zval *tmp_children = obj->children;	     \
+					obj->children = NULL;		\
+					zval_dtor(tmp_children);	\
+					FREE_ZVAL(tmp_children);	\
+	                        }
+
 #define S_PARENT_ADDREF_P(obj) Z_OBJ_HT_P(obj->parent)->add_ref(obj->parent TSRMLS_CC)
 #define S_PARENT_DELREF_P(obj) Z_OBJ_HT_P(obj->parent)->del_ref(obj->parent TSRMLS_CC)
 #define Z_DTOR_GUARD_P(zv, name) if (Z_REFCOUNT_P(zv) > 1) php_error(E_ERROR, "Cannot destroy %s because it has active children", name)

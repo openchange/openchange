@@ -40,24 +40,9 @@ static zend_function_entry mapi_profile_db_class_functions[] = {
 static zend_class_entry		*mapi_profile_db_ce;
 static zend_object_handlers	mapi_profile_db_object_handlers;
 
-static void  mapi_profile_db_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("profile_db add ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object) + 1);
-//	Z_ADDREF_P(object);
-}
-
-static void mapi_profile_db_del_ref(zval *object TSRMLS_DC)
-{
-	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("profile_db del ref count: %i => %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object) - 1);
-
-	Z_DELREF_P(object);
-}
 
 static void mapi_profile_db_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("profile_db free\n");
-
 	mapi_profile_db_object_t	*obj;
 
 	obj = (mapi_profile_db_object_t *) object;
@@ -110,8 +95,6 @@ void MAPIProfileDBRegisterClass(TSRMLS_D)
 	mapi_profile_db_ce->create_object = mapi_profile_db_create_handler;
 	memcpy(&mapi_profile_db_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-//	mapi_profile_db_object_handlers.add_ref = mapi_profile_db_add_ref;
-//	mapi_profile_db_object_handlers.del_ref = mapi_profile_db_del_ref;
 	mapi_profile_db_object_handlers.clone_obj = NULL;
 }
 
@@ -165,17 +148,14 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
 	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)
 {
-	php_printf("ProfileDB Destruct\n\n");
-        php_printf("Referecne count: %u\n", Z_REFCOUNT_P(getThis()));
-
-//	mapi_profileDB_object_t *obj = THIS_STORE_OBJECT(mapi_profile_db_object_t*);
-//	S_PARENT_DELREF_P(obj);
-	php_printf("END ProfileDB Destruct\n\n");
-//	Z_DTOR_GUARD_P(getThis(), "MAPIProfileDB object");
+	mapi_profile_db_object_t *obj = (mapi_profile_db_object_t*) zend_object_store_get_object(getThis() TSRMLS_CC);
+	DESTROY_CHILDRENS(obj);
 }
 
 
@@ -279,8 +259,8 @@ PHP_METHOD(MAPIProfileDB, profiles)
 
 PHP_METHOD(MAPIProfileDB, getProfile)
 {
-	zval				*this_php_obj;
-	zval				*php_obj;
+	zval				*this_zval;
+	zval				*new_profile;
 	mapi_profile_db_object_t	*this_obj;
 	struct mapi_profile		*profile;
 	TALLOC_CTX			*talloc_ctx;
@@ -288,8 +268,8 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	char				*opt_profname = NULL;
 	int				opt_profname_len;
 
-	this_php_obj= getThis();
-	mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj TSRMLS_CC);
+	this_zval= getThis();
+	mapi_ctx = mapi_profile_db_get_mapi_context(this_zval TSRMLS_CC);
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &opt_profname, &opt_profname_len) == FAILURE) {
@@ -299,9 +279,10 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	talloc_ctx = talloc_named(NULL, 0, "profile");
 	profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
 
-	php_obj = create_profile_object(profile, this_php_obj, talloc_ctx TSRMLS_CC);
-	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	RETURN_ZVAL(php_obj, 0, 1);
+	new_profile = create_profile_object(profile, this_zval, talloc_ctx TSRMLS_CC);
+	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
+	ADD_CHILD(this_obj, new_profile);
+	RETURN_ZVAL(new_profile, 0, 1);
 }
 
 

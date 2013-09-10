@@ -32,7 +32,7 @@ static zend_function_entry mapi_profile_db_class_functions[] = {
 	PHP_ME(MAPIProfileDB,	path,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	profiles,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	getProfile,	NULL, ZEND_ACC_PUBLIC)
-
+	PHP_ME(MAPIProfileDB,	debug,		NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 
@@ -187,6 +187,26 @@ PHP_METHOD(MAPIProfileDB, path)
 	php_obj = getThis();
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	RETURN_STRING(obj->path, 1);
+}
+
+PHP_METHOD(MAPIProfileDB, debug)
+{
+	zval			*this_php_obj;
+	struct mapi_context	*mapi_ctx;
+	long     		lvl = 0;
+        bool                    enabled = false;
+
+	this_php_obj = getThis();
+	mapi_ctx = mapi_profile_db_get_mapi_context(this_php_obj TSRMLS_CC);
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "bl",
+				  &enabled,  &lvl) == FAILURE) {
+		RETURN_NULL();
+	}
+
+	SetMAPIDumpData(mapi_ctx, enabled);
+	SetMAPIDebugLevel(mapi_ctx, lvl);
+
+	RETURN_NULL();
 }
 
 

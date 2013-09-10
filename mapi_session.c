@@ -24,20 +24,6 @@
 #include <inttypes.h>
 #include "php_mapi.h"
 
-/* struct itemfolder { */
-/* 	const uint32_t		olFolder; */
-/* 	const char		*container_class; */
-/* }; */
-
-/* struct itemfolder	defaultFolders[] = { */
-/* 	{olFolderInbox,		"Mail"}, */
-/* 	{olFolderCalendar,	"Appointment"}, */
-/* 	{olFolderContacts,	"Contact"}, */
-/* 	{olFolderTasks,		"Task"}, */
-/* 	{olFolderNotes,		"Note"}, */
-/* 	{0 , NULL} */
-/* }; */
-
 static zend_function_entry mapi_session_class_functions[] = {
 	PHP_ME(MAPISession,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPISession,	__destruct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)

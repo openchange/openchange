@@ -184,33 +184,46 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 
 bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 {
-	int type = Z_TYPE_P(zv);
-	if (type == IS_NULL) {
-		// XXX
+	int	type;
 
-	} else if (type == IS_LONG) {
-		if (mapi_type == PT_LONG) {
+	php_printf("Z_TYPE_P(zv) = %d\n", Z_TYPE_P(zv));
+
+	switch (Z_TYPE_P(zv)) {
+	case IS_NULL:
+		break;
+	case IS_LONG:
+		switch (mapi_type) {
+		case PT_LONG:
 			return true;
+		default:
+			return false;
 		}
-
-
-	} else if (type == IS_DOUBLE) {
-		// XXX
-	} else if (type == IS_STRING) {
-		if (mapi_type == PT_UNICODE) {
+		break;
+	case IS_DOUBLE:
+		return (mapi_type == PT_DOUBLE) ? true : false;
+		break;
+	case IS_STRING:
+		switch (mapi_type) {
+		case PT_STRING8:
+		case PT_UNICODE:
 			return true;
-		} else if (mapi_type == PT_SYSTIME) {
+		case PT_SYSTIME:
 			return true;
+		default:
+			return false;
 		}
-	} else if (type == IS_BOOL) {
-		if (mapi_type == PT_BOOLEAN) {
-			return true;
-		}
-	} else {
-		php_printf("Type not expected: '%i'. Skipped\n", type);
-
+	case IS_BOOL:
+		return (mapi_type == PT_BOOLEAN) ? true : false;
+	case IS_ARRAY:
+		return false;
+	case IS_OBJECT:
+		return false;
+	case IS_RESOURCE:
+		return false;
+	default:
+		php_printf("Type not expected: '%x'. Skipped\n", type);
+		return false;
 	}
-
 
 	php_printf("Incorrect zval for MAPI type  0x%" PRIX64  "\n", mapi_type);
 	return false;
@@ -344,13 +357,25 @@ PHP_METHOD(MAPIMessage, set)
 		zval *val = *(args[i+1]);
 		void *data;
 		php_printf("set 0x%" PRIX64  "\n", id);
-
-		if (mapi_message_types_compatibility(val, prop_type)) {
+		if (mapi_message_types_compatibility(val, prop_type) == false) {
 			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
 			continue;
 		}
 
 		data = mapi_message_zval_to_mapi_value(this_obj->talloc_ctx, val);
+
+		/* Pushing the property with SetProps */
+		{
+			enum MAPISTATUS		retval;
+			struct SPropValue	*lpProps;
+			uint32_t		cValues;
+
+			cValues = 0;
+			lpProps = talloc_array(this_obj->talloc_ctx, struct SPropValue, 2);
+			lpProps = add_SPropValue(this_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
+			retval = SetProps(this_obj->message, 0, lpProps, cValues);
+			MAPIFreeBuffer(lpProps);
+		}
 
 		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
 		if (prop_pos >=  properties->cValues) {

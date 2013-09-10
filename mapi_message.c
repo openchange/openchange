@@ -415,9 +415,12 @@ PHP_METHOD(MAPIMessage, save)
 	folder_obj  = (mapi_folder_object_t*)   zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(folder_obj->parent TSRMLS_CC);
 
+
+
 	retval = SaveChangesMessage(&(mailbox_obj->store),
 				    this_obj->message,
 				     KeepOpenReadWrite);
+
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
 }
 

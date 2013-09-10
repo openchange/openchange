@@ -20,6 +20,9 @@ echo "Get CONTACTS folder\n\n";
 $contacts = $mailbox->contacts();
 echo "contacts->getID -> " . $contacts->getID() . "\n";
 
+echo "Get message table";
+$messageTable = $contacts->getMessageTable();
+
 echo "Get message\n";
 $messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);

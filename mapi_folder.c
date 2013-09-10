@@ -212,7 +212,7 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	zval                    *this_php_obj;
 	mapi_folder_object_t	*this_obj;
 	uint32_t		count;
-	zval			*res;
+	zval			*table;
 
 	this_php_obj = getThis();
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
@@ -222,8 +222,10 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	retval = GetContentsTable(&(this_obj->store), obj_table, 0, &count);
 	CHECK_MAPI_RETVAL(retval, "getMessageTable");
 
-	res = create_message_table_object(this_obj->type, this_php_obj, obj_table, count TSRMLS_CC);
-	RETURN_ZVAL(res, 0, 1);
+	table = create_message_table_object(this_obj->type, this_php_obj, obj_table, count TSRMLS_CC);
+
+	ADD_CHILD(this_obj, table);
+	RETURN_ZVAL(table, 0, 1);
 }
 
 PHP_METHOD(MAPIFolder, openMessage)

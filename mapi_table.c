@@ -10,28 +10,8 @@ static zend_function_entry mapi_table_class_functions[] = {
 static zend_class_entry		*mapi_table_ce;
 static zend_object_handlers	mapi_table_object_handlers;
 
-void  mapi_table_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("table add ref count: %i -> %i\n", Z_REFCOUNT_P(object), Z_REFCOUNT_P(object)+1);
-	Z_ADDREF_P(object);
-	mapi_table_object_t *store_obj = STORE_OBJECT(mapi_table_object_t*, object);
-	S_PARENT_ADDREF_P(store_obj);
-}
-
-void mapi_table_del_ref(zval *object TSRMLS_DC)
-{
-	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("table del ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)-1);
-	Z_DELREF_P(object);
-	mapi_table_object_t *store_obj = STORE_OBJECT(mapi_table_object_t*, object);
-	S_PARENT_DELREF_P(store_obj);
-}
-
-
 void mapi_table_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("Table free");
-
 	mapi_table_object_t	*obj;
 	obj = (mapi_table_object_t *) object;
 	if (obj->table) {
@@ -41,9 +21,6 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-
-//	Z_DELREF_P(obj->parent);
-//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -77,8 +54,6 @@ zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC)
 
 void MAPITableClassSetObjectHandlers(zend_object_handlers *handlers)
 {
-//	handlers->add_ref   = mapi_table_add_ref;
-//	handlers->del_ref   = mapi_table_del_ref;
 	handlers->clone_obj = NULL;
 }
 
@@ -115,8 +90,6 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = folder_php_obj;
-//	Z_ADDREF_P(new_obj->parent);
-//	S_PARENT_ADDREF_P(new_obj);
 
 	mapi_folder_object_t *folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder_php_obj);
 	mapi_object_t* folder =  &(folder_obj->store);
@@ -166,13 +139,13 @@ PHP_METHOD(MAPITable, __construct)
 
 PHP_METHOD(MAPITable, __destruct)
 {
-	php_printf("Table Destruct\n\n");
-	mapi_table_object_t *obj = THIS_STORE_OBJECT(mapi_table_object_t*);
-//	S_PARENT_DELREF_P(obj);
-	php_printf("END Table Destruct\n\n");
-
+	zval		               	*this_zval;
+	mapi_table_object_t	*this_obj;
+	this_zval = getThis();
+	this_obj = (mapi_table_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
+	mapi_folder_object_t* obj_parent =  (mapi_mailbox_object_t*) zend_object_store_get_object(this_obj->parent TSRMLS_CC);
+	REMOVE_CHILD(obj_parent, this_zval);
 }
-
 
 PHP_METHOD(MAPITable, count)
 {

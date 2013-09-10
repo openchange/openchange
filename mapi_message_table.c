@@ -48,15 +48,6 @@ PHP_METHOD(MAPIMessageTable, __construct)
 }
 
 
-/* PHP_METHOD(MAPIMessageTable, __destruct) */
-/* { */
-/* 	/\* zval			*php_this_obj; *\/ */
-/* 	/\* mapi_message_table_object_t	*this_obj; *\/ */
-/* 	/\* php_this_obj = getThis(); *\/ */
-/* 	/\* this_obj = (mapi_message_table_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); *\/ */
-
-/* } */
-
 static zval *contact_summary_zval (struct mapi_SPropValue_array *properties, const char *id)
 {
 	zval		*contact;
@@ -139,20 +130,20 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = contact_summary_zval(&properties_array, id);
 						} else {
-							message = create_contact_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
+							message = create_contact_object(php_this_obj, obj_message,  open_mode TSRMLS_CC);
 						}
 					} else if (this_obj->type == APPOINTMENTS) {
 						if (summary) {
 							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
 						} else {
-							message = create_appointment_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
+							message = create_appointment_object(php_this_obj, obj_message, open_mode TSRMLS_CC);
 						}
 
 					} else if (this_obj->type == TASKS) {
 						if (summary) {
 							message = task_summary_zval(&properties_array, id);
 						} else {
-							message = create_task_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
+							message = create_task_object(php_this_obj, obj_message, open_mode TSRMLS_CC);
 						}
 
 					} else {

@@ -61,7 +61,7 @@ unset($message);
 
 echo "=================\n";
 echo "Create new contact\n";
-$newContact = $contacts->createMessage();
+$newContact = $contacts->createMessage(PidLidEmail1EmailAddress, 'new@contacts.org');
 var_dump($newContact);
 
 print "New contact ID " . $newContact->getID() . "\n";

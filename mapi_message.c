@@ -323,14 +323,60 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
+
+void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRMLS_DC)
+{
+	int i;
+	mapi_message_object_t 	*message_obj;
+	struct mapi_SPropValue_array *properties;
+
+	message_obj = (mapi_message_object_t *) zend_object_store_get_object(message_zval TSRMLS_CC);
+	properties = &(message_obj->properties);
+	for (i=0; i<argc; i+=2) {
+		mapi_id_t id = Z_LVAL_PP(args[i]);
+		uint32_t  prop_type =  id & 0xFFFF;
+		zval *val = *(args[i+1]);
+		void *data;
+		php_printf("set 0x%" PRIX64  "\n", id);
+		if (mapi_message_types_compatibility(val, prop_type) == false) {
+			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
+			continue;
+		}
+
+		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, val);
+
+		/* Pushing the property with SetProps */
+		{
+			enum MAPISTATUS		retval;
+			struct SPropValue	*lpProps;
+			uint32_t		cValues;
+
+			cValues = 0;
+			lpProps = talloc_array(message_obj->talloc_ctx, struct SPropValue, 2);
+			lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
+			retval = SetProps(message_obj->message, 0, lpProps, cValues);
+			MAPIFreeBuffer(lpProps);
+		}
+
+		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
+		if (prop_pos >=  properties->cValues) {
+			php_printf("Adding property\n");
+
+			add_mapi_SPropValue(message_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data);
+		} else {
+			php_printf("Saving existent property in pos %i\n", prop_pos);
+			set_mapi_SPropValue(message_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
+		}
+	}
+
+}
+
+
 // TODO: for other types, now it only works for strings
 PHP_METHOD(MAPIMessage, set)
 {
-	int 			i, argc;
+	int 			argc;
 	zval 			***args;
-	zval			*php_this_obj;
-	mapi_message_object_t 	*this_obj;
-	zval *result;
 
 	argc = ZEND_NUM_ARGS();
 	if ((argc == 0) || ((argc % 2) == 1)) {
@@ -343,50 +389,10 @@ PHP_METHOD(MAPIMessage, set)
 		WRONG_PARAM_COUNT;
 	}
 
-	php_this_obj = getThis();
-	this_obj = (mapi_message_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
-
-	struct mapi_SPropValue_array *properties = &(this_obj->properties);
-	for (i=0; i<argc; i+=2) {
-		mapi_id_t id = Z_LVAL_PP(args[i]);
-		uint32_t  prop_type =  id & 0xFFFF;
-		zval *val = *(args[i+1]);
-		void *data;
-		php_printf("set 0x%" PRIX64  "\n", id);
-		if (mapi_message_types_compatibility(val, prop_type) == false) {
-			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
-			continue;
-		}
-
-		data = mapi_message_zval_to_mapi_value(this_obj->talloc_ctx, val);
-
-		/* Pushing the property with SetProps */
-		{
-			enum MAPISTATUS		retval;
-			struct SPropValue	*lpProps;
-			uint32_t		cValues;
-
-			cValues = 0;
-			lpProps = talloc_array(this_obj->talloc_ctx, struct SPropValue, 2);
-			lpProps = add_SPropValue(this_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
-			retval = SetProps(this_obj->message, 0, lpProps, cValues);
-			MAPIFreeBuffer(lpProps);
-		}
-
-		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
-		if (prop_pos >=  properties->cValues) {
-			php_printf("Adding property\n");
-
-			add_mapi_SPropValue(this_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data);
-		} else {
-			php_printf("Saving existent property in pos %i\n", prop_pos);
-			set_mapi_SPropValue(this_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
-		}
-	}
+	mapi_message_set_properties(getThis(), argc, args TSRMLS_CC);
 
 	efree(args);
 }
-
 
 /* struct SPropValue { */
 /* 	enum MAPITAGS ulPropTag; */
@@ -415,12 +421,4 @@ PHP_METHOD(MAPIMessage, save)
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
 }
 
-zval* create_message(TALLOC_CTX *mem_ctx, mapi_object_t *folder)
-{
-	mapi_object_t *message;
-
-	message = emalloc(sizeof(mapi_object_t));
-
-
-}
 

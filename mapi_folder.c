@@ -282,12 +282,21 @@ PHP_METHOD(MAPIFolder, openMessage)
 
 PHP_METHOD(MAPIFolder, createMessage)
 {
+	int 			argc = ZEND_NUM_ARGS();
+	zval 			***args;
 	enum MAPISTATUS		retval;
 	zval 			*this_zval;
 	zval			*message_zval;
 	mapi_folder_object_t	*this_obj;
 	mapi_object_t		*message;
 	char 			open_mode = 3;
+
+	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+	if (ZEND_NUM_ARGS() == 0 ||
+	    zend_get_parameters_array_ex(argc, args) == FAILURE) {
+		efree(args);
+		WRONG_PARAM_COUNT;
+	}
 
 	this_zval = getThis();
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
@@ -311,16 +320,13 @@ PHP_METHOD(MAPIFolder, createMessage)
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
 	}
 
-
-	// XXX set real properties
-	uint32_t cValues = 0;
-	struct SPropValue *lpProps = talloc_array(this_obj->talloc_ctx, struct SPropValue, 2);
-	retval = SetProps(message, 0, lpProps, cValues);
-	CHECK_MAPI_RETVAL(retval, "SetProps when creating new message");
+	mapi_message_set_properties(message_zval, argc, args TSRMLS_CC);
 
 	mapi_mailbox_object_t *mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	retval = SaveChangesMessage(&(mailbox_obj->store), message, KeepOpenReadOnly);
 	CHECK_MAPI_RETVAL(retval, "Saving new message");
+
+	efree(args);
 
 	ADD_CHILD(this_obj, message_zval);
 	RETURN_ZVAL(message_zval, 0, 1);

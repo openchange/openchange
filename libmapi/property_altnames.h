@@ -745,6 +745,7 @@
 #define PR_NORMALIZED_SUBJECT                                                PROP_TAG(PT_STRING8   , 0x0E1D)  /* 0x0E1D001E */
 #define PR_NORMALIZED_SUBJECT_ERROR                                          PROP_TAG(PT_ERROR     , 0x0E1D)  /* 0x0E1D000A */
 #define PR_NORMALIZED_SUBJECT_UNICODE                                        PROP_TAG(PT_UNICODE   , 0x0E1D)  /* 0x0E1D001F */
+#define PR_NORMAL_MESSAGE_SIZE						  PidTagNormalMessageSize
 #define PR_NTSD_MODIFICATION_TIME						  0x3FD60040
 #define PR_NT_SECURITY_DESCRIPTOR_AS_XML                                     PROP_TAG(PT_STRING8   , 0x0E6A)  /* 0x0E6A001E */
 #define PR_NT_SECURITY_DESCRIPTOR_AS_XML_ERROR                               PROP_TAG(PT_ERROR     , 0x0E6A)  /* 0x0E6A000A */
@@ -1303,6 +1304,7 @@
 #define PidTagDesignInProgress						  PROP_TAG(PT_BOOLEAN   , 0x3FE4) /* 0x3FE4000B */
 #define PidTagExtendedACLData						  PROP_TAG(PT_BINARY    , 0x3FFE) /* 0x3FFE0102 */
 #define PidTagFolderChildCount                                               PROP_TAG(PT_LONG      , 0x6638) /* 0x66380003 */
+#define PidTagNormalMessageSize						  PROP_TAG(PT_LONG      , 0x66b3) /* 0x66B30003 */
 #define PidTagOriginalDisplayName                                            PROP_TAG(PT_UNICODE   , 0x3A13) /* 0x3A13001F */
 #define PidTagSecureOrigination						  PROP_TAG(PT_BOOLEAN   , 0x3FE5) /* 0x3FE5000B */
 #define PidTagUrlCompName							  PROP_TAG(PT_UNICODE   , 0x10F3) /* 0x10F3001F */

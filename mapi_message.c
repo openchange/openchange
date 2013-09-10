@@ -385,23 +385,15 @@ PHP_METHOD(MAPIMessage, set)
 
 PHP_METHOD(MAPIMessage, save)
 {
-	zval*			php_this_obj;
-	mapi_message_object_t 	*this_obj;
+	mapi_message_object_t *this_obj;
+	mapi_folder_object_t  *folder_obj;
+	mapi_mailbox_object_t *mailbox_obj;
 	enum MAPISTATUS	      	retval;
-	zval                		*mailbox;
-	struct mapi_mailbox_object	*mailbox_obj;
-	TALLOC_CTX                      *talloc_ctx;
 
+	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	folder_obj  = (mapi_folder_object_t*)   zend_object_store_get_object(this_obj->parent TSRMLS_CC);
+	mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(folder_obj->parent TSRMLS_CC);
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "O",
-                                  &mailbox, mapi_mailbox_ce) == FAILURE) {
-		php_error(E_ERROR, "Missing mailbox object");
-	}
-
-	php_this_obj = getThis();
-	this_obj = (mapi_message_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC);
-
-	mailbox_obj = (struct mapi_mailbox_object*) zend_object_store_get_object(mailbox TSRMLS_CC);
 	retval = SaveChangesMessage(&(mailbox_obj->store),
 				    this_obj->message,
 				     KeepOpenReadWrite);

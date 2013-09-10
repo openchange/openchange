@@ -35,7 +35,8 @@ if ($email == "changed@a.org") {
 }
 
 echo "=> SaveChangesMessage \n";
-$message->save($mailbox);
+#$message->save($mailbox);
+$message->save();
 unset($message);
 
 echo "===================================================\n";
@@ -56,7 +57,8 @@ if ($email == "changed@a.org") {
 }
 
 echo "=> SaveChangesMessage \n";
-$message->save($mailbox);
+#$message->save($mailbox);
+$message->save();
 unset($message);
 
 

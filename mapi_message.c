@@ -18,8 +18,6 @@ extern zend_class_entry		*mapi_mailbox_ce;
 
 static void mapi_message_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("message free\n");
-
 	mapi_message_object_t	*obj;
 
 	obj = (mapi_message_object_t *) object;
@@ -27,21 +25,13 @@ static void mapi_message_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 	if (obj->message) {
-		php_printf("messag release %p\n", obj->message);
 		mapi_object_release(obj->message);
 		efree(obj->message);
 	}
 
-//	S_PARENT_DELREF_P(obj);
-//	Z_OBJ_HT_P(obj->parent)->del_ref(obj->parent TSRMLS_CC);
-//	Z_DELREF_P(obj->parent);
-
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
-
-	php_printf("END message free\n");
 }
-
 
 zend_object_value mapi_message_create_handler(zend_class_entry *type TSRMLS_DC)
 {
@@ -98,9 +88,6 @@ zval *create_message_object(char *class, zval *parent, mapi_object_t *message, m
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "message");
 	new_obj->parent = parent;
 	new_obj->id = id;
-//	Z_ADDREF_P(new_obj->parent);
-//	Z_OBJ_HT_P(new_obj->parent)->add_ref(new_obj->parent TSRMLS_CC);
-//	S_PARENT_ADDREF_P(new_obj);
 
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");
@@ -118,12 +105,10 @@ PHP_METHOD(MAPIMessage, __construct)
 
 PHP_METHOD(MAPIMessage, __destruct)
 {
-
-	/* zval			*php_this_obj; */
-	/* mapi_message_object_t	*this_obj; */
-	/* php_this_obj = getThis(); */
-	/* this_obj = (mapi_message_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); */
-
+	zval *this_zval = getThis();
+	mapi_message_object_t *this_obj = (mapi_message_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
+	mapi_folder_object_t* obj_parent =  (mapi_folder_object_t*) zend_object_store_get_object(this_obj->parent TSRMLS_CC);
+	REMOVE_CHILD(obj_parent, this_zval);
 }
 
 PHP_METHOD(MAPIMessage, getID)

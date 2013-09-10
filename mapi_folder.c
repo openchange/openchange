@@ -59,8 +59,8 @@ static zend_object_value mapi_folder_create_handler(zend_class_entry *type TSRML
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_folder_object_handlers;
 
-	/* MAKE_STD_ZVAL(obj->children); */
-	/* array_init(obj->children); */
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
 
 	return retval;
 }
@@ -120,7 +120,7 @@ PHP_METHOD(MAPIFolder, __destruct)
 {
 	zval *this_zval = getThis();
 	mapi_folder_object_t *obj = (mapi_folder_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
-//	DESTROY_CHILDRENS(obj);
+	DESTROY_CHILDRENS(obj);
 	mapi_mailbox_object_t* obj_parent =  (mapi_mailbox_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
 }
@@ -246,6 +246,8 @@ PHP_METHOD(MAPIFolder, openMessage)
 	} else {
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}
+
+	ADD_CHILD(this_obj, php_message);
 
 	RETURN_ZVAL(php_message, 0, 1);
 }

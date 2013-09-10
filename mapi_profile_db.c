@@ -83,6 +83,10 @@ static zend_object_value mapi_profile_db_create_handler(zend_class_entry *type T
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_profile_db_object_handlers;
 
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
+	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
+
 	return retval;
 }
 
@@ -147,9 +151,6 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	php_obj = getThis();
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
-	obj->talloc_ctx = talloc_named(NULL, 0, "profile_db");
-	MAKE_STD_ZVAL(obj->children);
-	array_init(obj->children);
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)

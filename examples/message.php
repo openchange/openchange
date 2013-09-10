@@ -1,7 +1,14 @@
 <?php
-$mapi = new MAPIProfileDB("/home/jkerihuel/.openchange/profiles.ldb");
+# System dependent varialbes:
+$path = "/home/jag/.openchange/profiles.ldb";
+$profileName = 'test';
+$contactMessageId = '0xA4010E0000000001';
+# END system dependent vatriables
+
+
+$mapi = new MAPIProfileDB($path);
 echo "=> MAPI Profile Database Path: '", $mapi->path(), "'\n";
-$mapiProfile = $mapi->getProfile();
+$mapiProfile = $mapi->getProfile($profileName);
 $session = $mapiProfile->logon();
 $mailbox = $session->mailbox();
 
@@ -12,8 +19,8 @@ echo "Inbox item type " . $inbox->getFolderType() . "\n";
 echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
-$messageId = '0x4B02130000000001';
-$message = $contacts->openMessage($messageId);
+
+$message = $contacts->openMessage($contactMessageId);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 
 $email = $message->get(PidLidEmail1EmailAddress);
@@ -33,8 +40,8 @@ unset($message);
 
 echo "===================================================\n";
 
-$messageId = '0x4B02130000000001';
-$message = $contacts->openMessage($messageId);
+
+$message = $contacts->openMessage($contactMessageId);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 
 $email = $message->get(PidLidEmail1EmailAddress);

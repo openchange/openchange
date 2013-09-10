@@ -263,13 +263,13 @@ PHP_METHOD(MAPIFolder, openMessage)
 
 	switch(this_obj->type) {
 	case CONTACT:
-		php_message = create_contact_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
+		php_message = create_contact_object(php_this_obj, message, (char) open_mode TSRMLS_CC);
 		break;
 	case TASK:
-		php_message = create_task_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
+		php_message = create_task_object(php_this_obj, message, (char) open_mode TSRMLS_CC);
 		break;
 	case APPOINTMENT:
-		php_message = create_appointment_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
+		php_message = create_appointment_object(php_this_obj, message, (char) open_mode TSRMLS_CC);
 		break;
 	default:
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
@@ -297,18 +297,15 @@ PHP_METHOD(MAPIFolder, createMessage)
 	retval = CreateMessage(&(this_obj->store), message);
 	CHECK_MAPI_RETVAL(retval, "Create message");
 
-	mapi_id_t message_id = 01; // REMOVE TODO
-
-
 	switch(this_obj->type) {
 	case CONTACT:
-		message_zval = create_contact_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		message_zval = create_contact_object(this_zval, message, (char) open_mode TSRMLS_CC);
 		break;
 	case TASK:
-		message_zval = create_task_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		message_zval = create_task_object(this_zval, message, (char) open_mode TSRMLS_CC);
 		break;
 	case APPOINTMENT:
-		message_zval = create_appointment_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		message_zval = create_appointment_object(this_zval, message, (char) open_mode TSRMLS_CC);
 		break;
 	default:
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);

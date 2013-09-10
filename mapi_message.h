@@ -26,7 +26,6 @@ typedef struct mapi_message_object
 	mapi_object_t	*message;
 	TALLOC_CTX	*talloc_ctx;
 	zval		*parent;
-	mapi_id_t        id; // XXX to remove..
 	char 		open_mode;
 	struct mapi_SPropValue_array	properties;
 } mapi_message_object_t;
@@ -54,7 +53,7 @@ PHP_METHOD(MAPIMessage, save);
 void MAPIMessageRegisterClass(TSRMLS_D);
 
 zend_object_value mapi_message_create_handler(zend_class_entry *type TSRMLS_DC);
-zval *create_message_object(char *class, zval *folder, mapi_object_t *message, mapi_id_t id, char open_mode TSRMLS_DC);
+zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC);
 
 __END_DECLS
 

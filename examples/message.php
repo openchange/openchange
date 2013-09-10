@@ -64,4 +64,6 @@ echo "Create new contact\n";
 $newContact = $contacts->createMessage();
 var_dump($newContact);
 
+print "New contact ID " . $newContact->getID() . "\n";
+
 ?>

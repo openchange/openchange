@@ -26,6 +26,7 @@ typedef struct mapi_session_object
 	char			*path;
 	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
+	zval			*children;
 	struct mapi_session	*session;
 } mapi_session_object_t;
 

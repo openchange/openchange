@@ -31,27 +31,8 @@ struct itemfolder	defaultFolders[] = {
 zend_class_entry		*mapi_mailbox_ce; // before static
 static zend_object_handlers	mapi_mailbox_object_handlers;
 
-static void  mapi_mailbox_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("mailbox add ref count: %i\n", Z_REFCOUNT_P(object));
-
-	Z_ADDREF_P(object);
-	mapi_mailbox_object_t *store_obj = STORE_OBJECT(mapi_mailbox_object_t*, object);
-	S_PARENT_ADDREF_P(store_obj);
-}
-
-static void mapi_mailbox_del_ref(zval *object TSRMLS_DC)
-{
-	php_printf("mailbox del ref count: %i\n", Z_REFCOUNT_P(object));
-
-	Z_DELREF_P(object);
-	mapi_mailbox_object_t *store_obj = STORE_OBJECT(mapi_mailbox_object_t*, object);
-	S_PARENT_DELREF_P(store_obj);
-}
-
 static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("Mailbox free\n");
 	mapi_mailbox_object_t	*obj;
 	obj = (mapi_mailbox_object_t *) object;
 
@@ -59,8 +40,6 @@ static void mapi_mailbox_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 	mapi_object_release(&(obj->store));
-
-//	S_PARENT_DELREF_P(obj);
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -175,11 +154,12 @@ PHP_METHOD(MAPIMailbox, __construct)
 
 PHP_METHOD(MAPIMailbox, __destruct)
 {
-	php_printf("Mailbox Destruct\n\n");
-//	mapi_mailbox_object_t *obj = THIS_STORE_OBJECT(mapi_mailbox_object_t*);
-//	S_PARENT_DELREF_P(obj);
-	php_printf("END Mailbox Destruct\n\n");
-//	Z_DTOR_GUARD_P(getThis(), "MAPIMailbox object");
+	zval *this_zval = getThis();
+	mapi_mailbox_object_t *obj = (mapi_mailbox_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
+	/* DESTROY_CHILDRENS(obj); */
+
+	mapi_session_object_t* obj_parent =  (mapi_session_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
+	REMOVE_CHILD(obj_parent, this_zval);
 }
 
 PHP_METHOD(MAPIMailbox, getName)

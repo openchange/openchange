@@ -47,7 +47,6 @@ static void mapi_session_free_storage(void *object TSRMLS_DC)
 		talloc_free(obj->talloc_ctx);
 	}
 
-
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
 }
@@ -76,9 +75,11 @@ static zend_object_value mapi_session_create_handler(zend_class_entry *type TSRM
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_session_object_handlers;
 
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
+
 	return retval;
 }
-
 
 void MAPISessionRegisterClass(TSRMLS_D)
 {
@@ -131,7 +132,7 @@ struct mapi_profile *session_get_profile(zval *php_obj TSRMLS_DC)
 	mapi_session_object_t	*obj ;
 
 	obj = (mapi_session_object_t*) zend_object_store_get_object(php_obj TSRMLS_CC);
-	return get_profile(obj->parent TSRMLS_CC);
+	return mapi_profile_get_profile(obj->parent TSRMLS_CC);
 }
 
 
@@ -171,7 +172,7 @@ PHP_METHOD(MAPISession, __destruct)
 {
 	zval *this_zval = getThis();
 	mapi_session_object_t *obj = (mapi_session_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
-//	DESTROY_CHILDRENS(obj);
+	DESTROY_CHILDRENS(obj);
 	mapi_profile_object_t* obj_parent =  (mapi_profile_db_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
 }
@@ -333,35 +334,37 @@ static zval *get_child_folders(TALLOC_CTX *talloc_ctx,
 	return folders;
 }
 
-
-
 PHP_METHOD(MAPISession, mailbox)
 {
 	char			*username = NULL;
 	int			username_len;
-	zval                    *mailbox_obj;
+	zval                    *new_mailbox;
         struct mapi_profile	*profile;
 	TALLOC_CTX		*talloc_ctx;
 	mapi_session_object_t   *this_obj;
-	zval			*this_php_obj;
+	zval			*this_zval;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &username, &username_len) == FAILURE) {
 		RETURN_NULL();
 	}
 
-	this_php_obj = getThis();
+	this_zval = getThis();
 
         if (username == NULL) {
-		struct mapi_profile *profile = session_get_profile(this_php_obj TSRMLS_CC);
+		struct mapi_profile *profile = session_get_profile(this_zval TSRMLS_CC);
                 username  = (char *) profile->username;
         }
 
-	mailbox_obj = create_mailbox_object(this_php_obj, username TSRMLS_CC);
+	new_mailbox = create_mailbox_object(this_zval, username TSRMLS_CC);
 
-	RETURN_ZVAL(mailbox_obj, 0, 1);
+	this_obj = STORE_OBJECT(mapi_session_object_t*, this_zval);
+	ADD_CHILD(this_obj, new_mailbox);
+
+	RETURN_ZVAL(new_mailbox, 0, 1);
 }
 
+// TO RMEOVWE
 PHP_METHOD(MAPISession, folders)
 {
 	enum MAPISTATUS		retval;

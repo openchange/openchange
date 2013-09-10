@@ -10,11 +10,14 @@ $mapiProfile = $mapi->getProfile();
 echo "Logon default profile\n";
 $session = $mapiProfile->logon();
 
-unset($mapi);
 
-#echo "Get mailbox\n";
-#$mailbox = $session->mailbox();
-#echo "Mailbox name "  . $mailbox->getName() . "\n";
+
+echo "Get mailbox\n";
+$mailbox = $session->mailbox();
+echo "Mailbox name "  . $mailbox->getName() . "\n";
+
+#unset($mapi);
+
 #
 #echo "Get CONTACTS folder\n\n";
 #$contacts = $mailbox->contacts();

@@ -173,7 +173,7 @@ PHP_METHOD(MAPISession, __destruct)
 	zval *this_zval = getThis();
 	mapi_session_object_t *obj = (mapi_session_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
 	DESTROY_CHILDRENS(obj);
-	mapi_profile_object_t* obj_parent =  (mapi_profile_db_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
+	mapi_profile_object_t* obj_parent =  (mapi_profile_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
 }
 

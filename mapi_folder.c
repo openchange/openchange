@@ -17,30 +17,8 @@ static zend_function_entry mapi_folder_class_functions[] = {
 static zend_class_entry		*mapi_folder_ce;
 static zend_object_handlers	mapi_folder_object_handlers;
 
-static void  mapi_folder_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("folder add ref count: %i\n", Z_REFCOUNT_P(object));
-
-	Z_ADDREF_P(object);
-	mapi_folder_object_t *store_obj = STORE_OBJECT(mapi_folder_object_t*, object);
-	S_PARENT_ADDREF_P(store_obj);
-}
-
-static void mapi_folder_del_ref(zval *object TSRMLS_DC)
-{
-	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("folder del ref count: %i -> %i\n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)-1);
-
-	Z_DELREF_P(object);
-	mapi_folder_object_t *store_obj = STORE_OBJECT(mapi_folder_object_t*, object);
-	S_PARENT_DELREF_P(store_obj);
-}
-
-
 static void mapi_folder_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("Folder free\n");
-
 	mapi_folder_object_t	*obj;
 
 	obj = (mapi_folder_object_t *) object;
@@ -51,11 +29,7 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 		efree(obj->folder_type);
 	}
 
-//	Z_DELREF_P(obj->parent);
-	S_PARENT_DELREF_P(obj);
-
 	mapi_object_release(&(obj->store));
-
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -85,10 +59,11 @@ static zend_object_value mapi_folder_create_handler(zend_class_entry *type TSRML
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_folder_object_handlers;
 
+	/* MAKE_STD_ZVAL(obj->children); */
+	/* array_init(obj->children); */
+
 	return retval;
 }
-
-
 
 void MAPIFolderRegisterClass(TSRMLS_D)
 {
@@ -99,10 +74,7 @@ void MAPIFolderRegisterClass(TSRMLS_D)
 	mapi_folder_ce->create_object = mapi_folder_create_handler;
 	memcpy(&mapi_folder_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-//	mapi_folder_object_handlers.add_ref   =  mapi_folder_add_ref;
-//	mapi_folder_object_handlers.del_ref   =  mapi_folder_del_ref;
 	mapi_folder_object_handlers.clone_obj = NULL;
-
 }
 
 zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TSRMLS_DC)
@@ -132,8 +104,6 @@ zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TS
 	CHECK_MAPI_RETVAL(retval, "Open folder");
 
 	new_obj->parent = php_mailbox;
-//	Z_ADDREF_P(new_obj->parent);
-//	S_PARENT_ADDREF_P(new_obj);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
 	new_obj->folder_type = estrdup(folder_type);
 
@@ -148,11 +118,11 @@ PHP_METHOD(MAPIFolder, __construct)
 
 PHP_METHOD(MAPIFolder, __destruct)
 {
-	php_printf("Folder Destruct\n\n");
-	/* mapi_folder_object_t *obj = THIS_STORE_OBJECT(mapi_folder_object_t*); */
-	/* S_PARENT_DELREF_P(obj); */
-	php_printf("END Folder Destruct\n\n");
-//	Z_DTOR_GUARD_P(getThis(), "MAPIFolder object");
+	zval *this_zval = getThis();
+	mapi_folder_object_t *obj = (mapi_folder_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
+//	DESTROY_CHILDRENS(obj);
+	mapi_mailbox_object_t* obj_parent =  (mapi_mailbox_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
+	REMOVE_CHILD(obj_parent, this_zval);
 }
 
 PHP_METHOD(MAPIFolder, getName)

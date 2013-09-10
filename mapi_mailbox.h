@@ -27,6 +27,7 @@ typedef struct mapi_mailbox_object
 	TALLOC_CTX	*talloc_ctx;
 	const char      *username;
 	zval		*parent;
+	zval		*children;
 } mapi_mailbox_object_t;
 
 #ifndef __BEGIN_DECLS

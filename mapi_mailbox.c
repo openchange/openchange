@@ -69,8 +69,8 @@ static zend_object_value mapi_mailbox_create_handler(zend_class_entry *type TSRM
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_mailbox_object_handlers;
 
-	/* MAKE_STD_ZVAL(obj->children_folders); */
-	/* array_init(obj->children_folders); */
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
 
 	return retval;
 }
@@ -86,8 +86,6 @@ void MAPIMailboxRegisterClass(TSRMLS_D)
 	mapi_mailbox_ce->create_object = mapi_mailbox_create_handler;
 	memcpy(&mapi_mailbox_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-//	mapi_mailbox_object_handlers.add_ref   =  mapi_mailbox_add_ref;
-//	mapi_mailbox_object_handlers.del_ref   =  mapi_mailbox_del_ref;
 	mapi_mailbox_object_handlers.clone_obj = NULL;
 }
 
@@ -134,8 +132,6 @@ zval *create_mailbox_object(zval *php_session, char *username TSRMLS_DC)
 
 	new_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = php_session;
-//	Z_ADDREF_P(new_obj->parent);
-//	S_PARENT_ADDREF_P(new_obj);
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "mailbox");
 	new_obj->username = username;
 
@@ -156,7 +152,7 @@ PHP_METHOD(MAPIMailbox, __destruct)
 {
 	zval *this_zval = getThis();
 	mapi_mailbox_object_t *obj = (mapi_mailbox_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
-	/* DESTROY_CHILDRENS(obj); */
+	DESTROY_CHILDRENS(obj);
 
 	mapi_session_object_t* obj_parent =  (mapi_session_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
@@ -209,17 +205,19 @@ PHP_METHOD(MAPIMailbox, inbox)
 	uint32_t	count;
 	zval            *folder;
 
-	zval  *this_php_obj = getThis();
-	mapi_mailbox_object_t *this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
+	zval  *this_zval = getThis();
+	mapi_mailbox_object_t *this_obj = (mapi_mailbox_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
 
 	retval = GetReceiveFolder(&this_obj->store, &id_inbox, NULL);
 	CHECK_MAPI_RETVAL(retval, "Get receive folder");
 
-	folder = create_folder_object(this_php_obj, id_inbox, "IPF.Note" TSRMLS_CC);
-
+	folder = create_folder_object(this_zval, id_inbox, "IPF.Note" TSRMLS_CC);
 	if (folder == NULL) {
 		RETURN_NULL();
 	}
+
+	ADD_CHILD(this_obj, folder);
+
 	RETURN_ZVAL(folder, 0, 1);
 }
 
@@ -227,6 +225,10 @@ static zval *open_folder(zval *php_mailbox, mapi_id_t fid, char *folderType TSRM
 {
 	zval				*folder;
 	folder = create_folder_object(php_mailbox, fid, folderType  TSRMLS_CC);
+
+	mapi_mailbox_object_t* this_obj = STORE_OBJECT(mapi_mailbox_object_t*, php_mailbox);
+	ADD_CHILD(this_obj, folder);
+
 	return folder;
 }
 

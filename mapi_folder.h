@@ -25,6 +25,7 @@ typedef struct mapi_folder_object
 	zend_object	std;
 	TALLOC_CTX	*talloc_ctx;
 	zval		*parent;
+//	zval		*children;
 	mapi_object_t	store;
 	char		*folder_type;
 } mapi_folder_object_t;

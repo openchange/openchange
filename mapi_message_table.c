@@ -23,20 +23,20 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_table_object(char *type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
+zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
 {
 	mapi_table_object_t *new_obj;
 	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table, count TSRMLS_CC);
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
-	if (strcmp(type, "IPF.Contact") == 0) {
+	if (type == CONTACTS) {
 		new_obj->type = CONTACTS;
-	} else if (strcmp(type, "IPF.Appointment") == 0) {
+	} else if (type == APPOINTMENTS) {
 		new_obj->type = APPOINTMENTS;
-	} else if (strcmp(type, "IPF.Task") == 0) {
+	} else if (type == TASKS) {
 		new_obj->type = TASKS;
 	} else {
-		php_error(E_ERROR, "Message table of unknown type: %s", type);
+		php_error(E_ERROR, "Message table of unknown type: %i", type);
 	}
 
 	return new_php_obj;
@@ -107,6 +107,8 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 	uint32_t		i;
 	char			*id = NULL;
 	struct mapi_SPropValue_array	properties_array;
+	unsigned char open_mode = 0; //XXX
+
 
 	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
 	this_obj = STORE_OBJECT(mapi_table_object_t*, php_this_obj);
@@ -137,20 +139,20 @@ zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
 						if (summary) {
 							message = contact_summary_zval(&properties_array, id);
 						} else {
-							message = create_contact_object(php_this_obj, obj_message, message_id TSRMLS_CC);
+							message = create_contact_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
 						}
 					} else if (this_obj->type == APPOINTMENTS) {
 						if (summary) {
 							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
 						} else {
-							message = create_appointment_object(php_this_obj, obj_message, message_id TSRMLS_CC);
+							message = create_appointment_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
 						}
 
 					} else if (this_obj->type == TASKS) {
 						if (summary) {
 							message = task_summary_zval(&properties_array, id);
 						} else {
-							message = create_task_object(php_this_obj, obj_message, message_id TSRMLS_CC);
+							message = create_task_object(php_this_obj, obj_message, message_id, open_mode TSRMLS_CC);
 						}
 
 					} else {

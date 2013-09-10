@@ -20,6 +20,14 @@
 #ifndef MAPI_FOLDER_H
 #define MAPI_FOLDER_H
 
+typedef enum mapi_folder_type {
+	TASK,
+	CONTACT,
+	APPOINTMENT,
+	NOTE
+} mapi_folder_type_t;
+
+
 typedef struct mapi_folder_object
 {
 	zend_object	std;
@@ -27,8 +35,11 @@ typedef struct mapi_folder_object
 	zval		*parent;
 	zval		*children;
 	mapi_object_t	store;
-	char		*folder_type;
+	mapi_folder_type_t type;
 } mapi_folder_object_t;
+
+
+
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

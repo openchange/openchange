@@ -59,4 +59,9 @@ echo "=> SaveChangesMessage \n";
 $message->save();
 unset($message);
 
+echo "=================\n";
+echo "Create new contact\n";
+$newContact = $contacts->createMessage();
+var_dump($newContact);
+
 ?>

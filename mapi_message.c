@@ -117,10 +117,22 @@ PHP_METHOD(MAPIMessage, getID)
 	zval			*this_php_obj;
 	mapi_message_object_t 	*this_obj;
 	char 			*str_id;
+	uint32_t		count;
+	struct SPropTagArray	*SPropTagArray;
+	struct SPropValue	*lpProps;
+	mapi_id_t		*mid;
 
 	this_php_obj = getThis();
 	this_obj = STORE_OBJECT(mapi_message_object_t*, this_php_obj);
-	str_id = mapi_id_to_str(this_obj->id);
+
+	SPropTagArray = set_SPropTagArray(this_obj->talloc_ctx, 0x1, PR_MID);
+	GetProps(this_obj->message, 0, SPropTagArray, &lpProps, &count);
+	MAPIFreeBuffer(SPropTagArray);
+	CHECK_MAPI_RETVAL(GetLastError(), "getID");
+
+	mid = (mapi_id_t*) get_SPropValue_data(lpProps);
+
+	str_id = mapi_id_to_str(*mid);
 	RETURN_STRING(str_id, 0);
 }
 
@@ -388,14 +400,12 @@ PHP_METHOD(MAPIMessage, save)
 	mapi_message_object_t *this_obj;
 	mapi_folder_object_t  *folder_obj;
 	mapi_mailbox_object_t *mailbox_obj;
-	enum MAPISTATUS	      	retval;
+	enum MAPISTATUS	      retval;
 
 	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
-	if (this_obj->open_mode != 1) {
+	if ((this_obj->open_mode != 1) && (this_obj->open_mode != 3)) {
 		php_error(E_ERROR, "Trying to save a non-RW message");
-
 	}
-
 
 	folder_obj  = (mapi_folder_object_t*)   zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(folder_obj->parent TSRMLS_CC);
@@ -404,5 +414,14 @@ PHP_METHOD(MAPIMessage, save)
 				    this_obj->message,
 				     KeepOpenReadWrite);
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
+}
+
+zval* create_message(TALLOC_CTX *mem_ctx, mapi_object_t *folder)
+{
+	mapi_object_t *message;
+
+	message = emalloc(sizeof(mapi_object_t));
+
+
 }
 

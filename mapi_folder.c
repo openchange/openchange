@@ -25,9 +25,6 @@ static void mapi_folder_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-	if (obj->folder_type) {
-		efree(obj->folder_type);
-	}
 
 	mapi_object_release(&(obj->store));
 
@@ -105,7 +102,18 @@ zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TS
 
 	new_obj->parent = php_mailbox;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
-	new_obj->folder_type = estrdup(folder_type);
+
+	if (strncmp(folder_type, "IPF.Contact", 20) == 0) {
+		new_obj->type = CONTACT;
+	} else if (strncmp(folder_type, "IPF.Task", 20) == 0) {
+		new_obj->type = TASK;
+	} else if (strncmp(folder_type, "IPF.Appointment", 20) == 0) {
+		new_obj->type = APPOINTMENT;
+	} else if (strncmp(folder_type, "IPF.Note", 20) == 0) {
+		new_obj->type = NOTE;
+	} else {
+		php_error(E_ERROR, "Unknow folder type: %i", new_obj->type);
+	}
 
 	return new_php_obj;
 }
@@ -178,7 +186,18 @@ PHP_METHOD(MAPIFolder, getFolderType)
 
 	this_php_obj = getThis();
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_php_obj TSRMLS_CC);
-	RETURN_STRING(this_obj->folder_type, 1);
+	switch (this_obj->type) {
+	case TASK:
+		RETURN_STRING("IPF.Task", 1);
+	case CONTACT:
+		RETURN_STRING("IPF.Contact", 1);
+	case APPOINTMENT:
+		RETURN_STRING("IPF.Appointment", 1);
+	case NOTE:
+		RETURN_STRING("IPF.Note", 1);
+	}
+
+	php_error(E_ERROR, "Unknown folder type: %i", this_obj->type);
 }
 
 PHP_METHOD(MAPIFolder, getFolderTable)
@@ -203,7 +222,7 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	retval = GetContentsTable(&(this_obj->store), obj_table, 0, &count);
 	CHECK_MAPI_RETVAL(retval, "getMessageTable");
 
-	res = create_message_table_object(this_obj->folder_type, this_php_obj, obj_table, count TSRMLS_CC);
+	res = create_message_table_object(this_obj->type, this_php_obj, obj_table, count TSRMLS_CC);
 	RETURN_ZVAL(res, 0, 1);
 }
 
@@ -223,6 +242,10 @@ PHP_METHOD(MAPIFolder, openMessage)
 				  &id_str, &id_str_len, &open_mode) == FAILURE) {
 		php_error(E_ERROR, "Missing message ID");
 	}
+	if ((open_mode != 0) && (open_mode != 1)) {
+		php_error(E_ERROR, "Invalid open mode:%i", (int) open_mode);
+	}
+
 	message_id = str_to_mapi_id(id_str);
 
 	php_this_obj = getThis();
@@ -238,14 +261,18 @@ PHP_METHOD(MAPIFolder, openMessage)
 	}
 	CHECK_MAPI_RETVAL(retval, "Open message");
 
-	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
+	switch(this_obj->type) {
+	case CONTACT:
 		php_message = create_contact_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
-	} else if (strncmp(this_obj->folder_type, "IPF.Task", 20) == 0) {
+		break;
+	case TASK:
 		php_message = create_task_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
-	} else if (strncmp(this_obj->folder_type, "IPF.Appointment", 20) == 0) {
+		break;
+	case APPOINTMENT:
 		php_message = create_appointment_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
-	} else {
-		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
+		break;
+	default:
+		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
 	}
 
 	ADD_CHILD(this_obj, php_message);
@@ -255,7 +282,51 @@ PHP_METHOD(MAPIFolder, openMessage)
 
 PHP_METHOD(MAPIFolder, createMessage)
 {
-	php_error(E_ERROR, "Not implemented");
+	enum MAPISTATUS		retval;
+	zval 			*this_zval;
+	zval			*message_zval;
+	mapi_folder_object_t	*this_obj;
+	mapi_object_t		*message;
+	char 			open_mode = 3;
+
+	this_zval = getThis();
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
+	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
+	mapi_object_init(message);
+
+	retval = CreateMessage(&(this_obj->store), message);
+	CHECK_MAPI_RETVAL(retval, "Create message");
+
+	mapi_id_t message_id = 01; // REMOVE TODO
+
+
+	switch(this_obj->type) {
+	case CONTACT:
+		message_zval = create_contact_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		break;
+	case TASK:
+		message_zval = create_task_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		break;
+	case APPOINTMENT:
+		message_zval = create_appointment_object(this_zval, message, message_id, (char) open_mode TSRMLS_CC);
+		break;
+	default:
+		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
+	}
+
+
+	// XXX set real properties
+	uint32_t cValues = 0;
+	struct SPropValue *lpProps = talloc_array(this_obj->talloc_ctx, struct SPropValue, 2);
+	retval = SetProps(message, 0, lpProps, cValues);
+	CHECK_MAPI_RETVAL(retval, "SetProps when creating new message");
+
+	mapi_mailbox_object_t *mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(this_obj->parent TSRMLS_CC);
+	retval = SaveChangesMessage(&(mailbox_obj->store), message, KeepOpenReadOnly);
+	CHECK_MAPI_RETVAL(retval, "Saving new message");
+
+	ADD_CHILD(this_obj, message_zval);
+	RETURN_ZVAL(message_zval, 0, 1);
 }
 
 

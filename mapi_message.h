@@ -26,7 +26,7 @@ typedef struct mapi_message_object
 	mapi_object_t	*message;
 	TALLOC_CTX	*talloc_ctx;
 	zval		*parent;
-	mapi_id_t        id;
+	mapi_id_t        id; // XXX to remove..
 	char 		open_mode;
 	struct mapi_SPropValue_array	properties;
 } mapi_message_object_t;

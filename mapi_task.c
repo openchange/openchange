@@ -23,9 +23,9 @@ void MAPITaskRegisterClass(TSRMLS_D)
 	mapi_task_object_handlers.clone_obj = NULL;
 }
 
-zval *create_task_object(zval *folder, mapi_object_t *message, mapi_id_t id TSRMLS_DC)
+zval *create_task_object(zval *folder, mapi_object_t *message, mapi_id_t id, char open_mode TSRMLS_DC)
 {
-	return create_message_object("mapitask", folder, message, id TSRMLS_CC);
+	return create_message_object("mapitask", folder, message, id, open_mode TSRMLS_CC);
 }
 
 PHP_METHOD(MAPITask, __construct)

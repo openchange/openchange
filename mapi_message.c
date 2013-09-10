@@ -70,7 +70,7 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 	mapi_message_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_object(char *class, zval *parent, mapi_object_t *message, mapi_id_t id TSRMLS_DC)
+zval *create_message_object(char *class, zval *parent, mapi_object_t *message, mapi_id_t id, char open_mode TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval 			*new_php_obj;
@@ -88,6 +88,7 @@ zval *create_message_object(char *class, zval *parent, mapi_object_t *message, m
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "message");
 	new_obj->parent = parent;
 	new_obj->id = id;
+	new_obj->open_mode = open_mode;
 
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");
@@ -191,7 +192,6 @@ bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 		switch (mapi_type) {
 		case PT_STRING8:
 		case PT_UNICODE:
-			return true;
 		case PT_SYSTIME:
 			return true;
 		default:
@@ -391,6 +391,12 @@ PHP_METHOD(MAPIMessage, save)
 	enum MAPISTATUS	      	retval;
 
 	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	if (this_obj->open_mode != 1) {
+		php_error(E_ERROR, "Trying to save a non-RW message");
+
+	}
+
+
 	folder_obj  = (mapi_folder_object_t*)   zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(folder_obj->parent TSRMLS_CC);
 

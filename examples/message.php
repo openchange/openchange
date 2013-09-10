@@ -20,7 +20,7 @@ echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
 
-$message = $contacts->openMessage($contactMessageId);
+$message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 
 $email = $message->get(PidLidEmail1EmailAddress);
@@ -35,14 +35,13 @@ if ($email == "changed@a.org") {
 }
 
 echo "=> SaveChangesMessage \n";
-#$message->save($mailbox);
 $message->save();
-unset($message);
+#unset($message); # XXX does not work! probably for destructor
 
 echo "===================================================\n";
 
 
-$message = $contacts->openMessage($contactMessageId);
+$message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 
 $email = $message->get(PidLidEmail1EmailAddress);
@@ -57,9 +56,7 @@ if ($email == "changed@a.org") {
 }
 
 echo "=> SaveChangesMessage \n";
-#$message->save($mailbox);
 $message->save();
 unset($message);
-
 
 ?>

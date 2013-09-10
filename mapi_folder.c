@@ -217,9 +217,10 @@ PHP_METHOD(MAPIFolder, openMessage)
 	size_t			id_str_len;
 	mapi_object_t		*message;
 	zval                    *php_message;
+	long                    open_mode = 0;
 
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s",
-				  &id_str, &id_str_len) == FAILURE) {
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "s|l",
+				  &id_str, &id_str_len, &open_mode) == FAILURE) {
 		php_error(E_ERROR, "Missing message ID");
 	}
 	message_id = str_to_mapi_id(id_str);
@@ -229,7 +230,7 @@ PHP_METHOD(MAPIFolder, openMessage)
 	message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
 	mapi_object_init(message);
 
-	retval = OpenMessage(&(this_obj->store), this_obj->store.id, message_id, message, 0x1);
+	retval = OpenMessage(&(this_obj->store), this_obj->store.id, message_id, message, open_mode);
 	if (retval == MAPI_E_NOT_FOUND) {
 		mapi_object_release(message);
 		efree(message);
@@ -238,11 +239,11 @@ PHP_METHOD(MAPIFolder, openMessage)
 	CHECK_MAPI_RETVAL(retval, "Open message");
 
 	if (strncmp(this_obj->folder_type, "IPF.Contact", 20) == 0) {
-		php_message = create_contact_object(php_this_obj, message, message_id TSRMLS_CC);
+		php_message = create_contact_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
 	} else if (strncmp(this_obj->folder_type, "IPF.Task", 20) == 0) {
-		php_message = create_task_object(php_this_obj, message, message_id TSRMLS_CC);
+		php_message = create_task_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
 	} else if (strncmp(this_obj->folder_type, "IPF.Appointment", 20) == 0) {
-		php_message = create_appointment_object(php_this_obj, message, message_id TSRMLS_CC);
+		php_message = create_appointment_object(php_this_obj, message, message_id, (char) open_mode TSRMLS_CC);
 	} else {
 		php_error(E_ERROR, "Unknow folder type: %s", this_obj->folder_type);
 	}

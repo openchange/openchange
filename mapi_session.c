@@ -38,37 +38,15 @@ static zend_function_entry mapi_session_class_functions[] = {
 static zend_class_entry		*mapi_session_ce;
 static zend_object_handlers	mapi_session_object_handlers;
 
-static void  mapi_session_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("session add ref count: %i\n", Z_REFCOUNT_P(object));
-
-	Z_ADDREF_P(object);
-	mapi_session_object_t *store_obj = STORE_OBJECT(mapi_session_object_t*, object);
-	S_PARENT_ADDREF_P(store_obj);
-}
-
-static void mapi_session_del_ref(zval *object TSRMLS_DC)
-{
-	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("session del ref count: %i\n", Z_REFCOUNT_P(object));
-
-	Z_DELREF_P(object);
-	mapi_session_object_t *store_obj = STORE_OBJECT(mapi_session_object_t*, object);
-	S_PARENT_DELREF_P(store_obj);
-}
-
 static void mapi_session_free_storage(void *object TSRMLS_DC)
 {
-	php_printf("session free\n");
-
 	mapi_session_object_t	*obj;
 
 	obj = (mapi_session_object_t *) object;
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
-//	Z_DELREF_P(obj->parent);
-//	S_PARENT_DELREF_P(obj);
+
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -111,8 +89,6 @@ void MAPISessionRegisterClass(TSRMLS_D)
 	mapi_session_ce->create_object = mapi_session_create_handler;
 	memcpy(&mapi_session_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-//	mapi_session_object_handlers.add_ref   =  mapi_session_add_ref;
-//	mapi_session_object_handlers.del_ref   =  mapi_session_del_ref;
 	mapi_session_object_handlers.clone_obj = NULL;
 }
 
@@ -136,8 +112,6 @@ zval *create_session_object(struct mapi_session *session,
 	obj = (mapi_session_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->session = session;
 	obj->parent = profile;
-//	Z_ADDREF_P(obj->parent);
-//	S_PARENT_ADDREF_P(obj);
 	obj->talloc_ctx = talloc_ctx;
 
 	return php_obj;
@@ -195,11 +169,11 @@ PHP_METHOD(MAPISession, __construct)
 
 PHP_METHOD(MAPISession, __destruct)
 {
-	php_printf("Session Destruct\n\n");
-//	mapi_session_object_t *obj = THIS_STORE_OBJECT(mapi_session_object_t*);
-//	S_PARENT_DELREF_P(obj);
-	php_printf("END Session Destruct\n\n");
-//	Z_DTOR_GUARD_P(getThis(), "MAPISession object");
+	zval *this_zval = getThis();
+	mapi_session_object_t *obj = (mapi_session_object_t*) zend_object_store_get_object(this_zval TSRMLS_CC);
+//	DESTROY_CHILDRENS(obj);
+	mapi_profile_object_t* obj_parent =  (mapi_profile_db_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
+	REMOVE_CHILD(obj_parent, this_zval);
 }
 
 

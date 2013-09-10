@@ -34,25 +34,6 @@ static zend_function_entry mapi_profile_class_functions[] = {
 static zend_class_entry		*mapi_profile_ce;
 static zend_object_handlers	mapi_profile_object_handlers;
 
-static void  mapi_profile_add_ref(zval *object TSRMLS_DC)
-{
-	php_printf("profile add ref count: %i -> %i \n", Z_REFCOUNT_P(object),  Z_REFCOUNT_P(object)+1);
-
-	mapi_profile_object_t *store_obj = STORE_OBJECT(mapi_profile_object_t*, object);
-	S_PARENT_ADDREF_P(store_obj);
-
-}
-
-static void mapi_profile_del_ref(zval *object TSRMLS_DC)
-{
-	if (Z_REFCOUNT_P(object) == 0) return;
-	php_printf("profile del ref count: %i -> %i\n", Z_REFCOUNT_P(object), Z_REFCOUNT_P(object)-1);
-
-	Z_DELREF_P(object);
-	mapi_profile_object_t *store_obj = STORE_OBJECT(mapi_profile_object_t*, object);
-	S_PARENT_DELREF_P(store_obj);
-}
-
 static void mapi_profile_free_storage(void *object TSRMLS_DC)
 {
 	mapi_profile_object_t *obj = (mapi_profile_object_t *) object;
@@ -86,6 +67,9 @@ static zend_object_value mapi_profile_create_handler(zend_class_entry *type TSRM
 	retval.handle = zend_objects_store_put(obj, NULL, mapi_profile_free_storage,
 					       NULL TSRMLS_CC);
 	retval.handlers = &mapi_profile_object_handlers;
+
+	MAKE_STD_ZVAL(obj->children);
+	array_init(obj->children);
 
 	return retval;
 }
@@ -137,7 +121,7 @@ struct mapi_context *profile_get_mapi_context(zval *profile_obj TSRMLS_DC)
 	return mapi_profile_db_get_mapi_context(obj->parent  TSRMLS_CC);
 }
 
-struct mapi_profile *get_profile(zval *php_profile_obj TSRMLS_DC)
+struct mapi_profile *mapi_profile_get_profile(zval *php_profile_obj TSRMLS_DC)
 {
 	mapi_profile_object_t *obj;
 
@@ -154,6 +138,7 @@ PHP_METHOD(MAPIProfile, __destruct)
 {
 	zval *this_zval = getThis();
 	mapi_profile_object_t *obj = STORE_OBJECT(mapi_profile_object_t*, this_zval);
+	DESTROY_CHILDRENS(obj);
 	mapi_profile_db_object_t* obj_parent =  (mapi_profile_db_object_t*) zend_object_store_get_object(obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
 }
@@ -164,7 +149,7 @@ PHP_METHOD(MAPIProfile, dump)
 	struct mapi_profile	*profile;
 	char			*exchange_version = NULL;
 
-	profile = get_profile(getThis() TSRMLS_CC);
+	profile = mapi_profile_get_profile(getThis() TSRMLS_CC);
 
 	switch (profile->exchange_version) {
 	case 0x0:
@@ -199,13 +184,13 @@ PHP_METHOD(MAPIProfile, logon)
 	struct mapi_profile	*profile;
 	struct mapi_session	*session = NULL;
 	TALLOC_CTX		*talloc_ctx;
-	zval			*this_php_obj;
-	zval			*php_obj;
+	zval			*this_zval;
+	zval			*new_session;
 	mapi_profile_object_t	*this_obj;
 
-	this_php_obj = getThis();
-	mapi_ctx = profile_get_mapi_context(this_php_obj TSRMLS_CC);
-	profile = get_profile(this_php_obj TSRMLS_CC);
+	this_zval = getThis();
+	mapi_ctx = profile_get_mapi_context(this_zval TSRMLS_CC);
+	profile = mapi_profile_get_profile(this_zval TSRMLS_CC);
 
 	status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
 	if (status != MAPI_E_SUCCESS) {
@@ -213,7 +198,9 @@ PHP_METHOD(MAPIProfile, logon)
 	}
 
 	talloc_ctx = talloc_named(NULL, 0, "session");
-	php_obj = create_session_object(session, this_php_obj, talloc_ctx TSRMLS_CC);
+	new_session = create_session_object(session, this_zval, talloc_ctx TSRMLS_CC);
 
-	RETURN_ZVAL(php_obj, 0, 1);
+	this_obj = STORE_OBJECT(mapi_profile_object_t*, this_zval);
+	ADD_CHILD(this_obj, new_session);
+	RETURN_ZVAL(new_session, 0, 1);
 }

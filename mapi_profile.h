@@ -26,6 +26,7 @@ typedef struct mapi_profile_object
 	char			*path;
 	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
+	zval			*children;
 	struct mapi_profile	*profile;
 } mapi_profile_object_t;
 

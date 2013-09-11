@@ -151,6 +151,12 @@ PHP_METHOD(MAPIProfileDB, __construct)
 	php_obj = getThis();
 	obj = (mapi_profile_db_object_t *) zend_object_store_get_object(php_obj TSRMLS_CC);
 	obj->path = estrdup(profdb_path);
+
+	// initialize and check mapi context
+	struct mapi_context *ctx = mapi_profile_db_get_mapi_context(php_obj TSRMLS_CC);
+	if (!ctx) {
+		php_error(E_ERROR, "Cannot initialize mapi context");
+	}
 }
 
 PHP_METHOD(MAPIProfileDB, __destruct)

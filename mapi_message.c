@@ -186,11 +186,8 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 
 bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 {
-	int	type;
-
-	php_printf("Z_TYPE_P(zv) = %d\n", Z_TYPE_P(zv));
-
-	switch (Z_TYPE_P(zv)) {
+	int type = Z_TYPE_P(zv);
+	switch (type) {
 	case IS_NULL:
 		break;
 	case IS_LONG:
@@ -226,7 +223,7 @@ bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 		return false;
 	}
 
-	php_printf("Incorrect zval for MAPI type  0x%" PRIX64  "\n", mapi_type);
+	php_printf("Incorrect zval type %i for MAPI type  0x%" PRIX64  "\n", type, mapi_type);
 	return false;
 
 

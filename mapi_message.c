@@ -184,6 +184,32 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	return zprop;
 }
 
+const char *mapi_date(TALLOC_CTX *parent_ctx,
+		      struct mapi_SPropValue_array *properties,
+		      uint32_t mapitag)
+{
+	const char		*date = NULL;
+	TALLOC_CTX		*talloc_ctx;
+	NTTIME			time;
+	const struct FILETIME	*filetime;
+
+	filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
+	if (filetime) {
+		const char *nt_date_str;
+
+		time = filetime->dwHighDateTime;
+		time = time << 32;
+		time |= filetime->dwLowDateTime;
+		talloc_ctx = talloc_named(parent_ctx, 0, "mapi_date_string");
+		nt_date_str = nt_time_string(talloc_ctx, time);
+		date = estrdup(nt_date_str);
+		talloc_free(talloc_ctx);
+	}
+
+	return date;
+}
+
+
 bool mapi_message_types_compatibility(zval *zv, int mapi_type)
 {
 	int type = Z_TYPE_P(zv);

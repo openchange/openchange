@@ -105,11 +105,9 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 
 struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC)
 {
-	mapi_table_object_t	*store_obj;
 	enum MAPISTATUS		retval;
-
 	if (count == 0) {
-		php_error(E_ERROR, "Bad count parameter, msut be greater than zero");
+		php_error(E_ERROR, "Bad count parameter, must be greater than zero");
 	}
 
 	retval = QueryRows(table, count, TBL_ADVANCE, row_set);

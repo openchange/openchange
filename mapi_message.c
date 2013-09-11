@@ -79,7 +79,7 @@ zval *create_message_object(char *class, zval *folder, mapi_object_t *message, c
 
 	MAKE_STD_ZVAL(new_php_obj);
 	if (zend_hash_find(EG(class_table), class, strlen(class)+1,(void**)&ce) == FAILURE) {
-		php_error(E_ERROR, "create_message_object: class '%s' does not exist.", class);
+		php_error(E_ERROR, "Create_message_object: class '%s' does not exist.", class);
 	}
 	object_init_ex(new_php_obj, *ce);
 
@@ -187,7 +187,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
-		php_error(E_ERROR, "Property type %i is unknow or unsupported", prop_type);
+		php_error(E_ERROR, "Property 0x%" PRIX64 " has a type unknow or unsupported", prop_id);
 	}
 
 	return zprop;

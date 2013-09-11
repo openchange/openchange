@@ -75,15 +75,18 @@ extern zend_module_entry mapi_module_entry;
 #define THIS_STORE_OBJECT(type) STORE_OBJECT(type, getThis())
 
 #define STORE_OBJECT_CHILDREN(store_object)  store_object ? (store_object->children ? store_object->children : NULL) : NULL
-#define ADD_CHILD(parent_store, zchild) add_index_zval(STORE_OBJECT_CHILDREN(parent_store), (ulong) Z_OBJ_HANDLE_P(zchild), zchild)
-#define REMOVE_CHILD(parent_store, zchild) zval *_tmp_children = STORE_OBJECT_CHILDREN(parent_store); \
-                                           if (_tmp_children) zend_hash_index_del(_tmp_children->value.ht, (long) Z_OBJ_HANDLE_P(zchild))
-#define DESTROY_CHILDRENS(obj)  if (obj->children) { \
-                                        zval *tmp_children = obj->children;	     \
-					obj->children = NULL;		\
-					zval_dtor(tmp_children);	\
-					FREE_ZVAL(tmp_children);	\
-	                        }
+#define ADD_CHILD(parent_store, zchild)
+#define REMOVE_CHILD(parent_store, zchild)
+#define DESTROY_CHILDRENS(obj)
+//#define ADD_CHILD(parent_store, zchild) add_index_zval(STORE_OBJECT_CHILDREN(parent_store), (ulong) Z_OBJ_HANDLE_P(zchild), zchild)
+//#define REMOVE_CHILD(parent_store, zchild) zval *_tmp_children = STORE_OBJECT_CHILDREN(parent_store); \
+//                                           if (_tmp_children) zend_hash_index_del(_tmp_children->value.ht, (long) Z_OBJ_HANDLE_P(zchild))
+//#define DESTROY_CHILDRENS(obj)  if (obj->children) { \
+//                                        zval *tmp_children = obj->children;	     \
+//					obj->children = NULL;		\
+//					zval_dtor(tmp_children);	\
+//					FREE_ZVAL(tmp_children);	\
+//	                        }
 
 
 

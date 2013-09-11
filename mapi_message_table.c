@@ -19,7 +19,7 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_ce->create_object = mapi_table_create_handler;
 	memcpy(&mapi_message_table_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 
-//	MAPITableClassSetObjectHandlers(&mapi_message_table_object_handlers);
+	MAPITableClassSetObjectHandlers(&mapi_message_table_object_handlers);
 	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
@@ -29,11 +29,11 @@ zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_ob
 	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table, count TSRMLS_CC);
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
-	if (type == CONTACTS) {
+	if (type == CONTACT) {
 		new_obj->type = CONTACTS;
-	} else if (type == APPOINTMENTS) {
+	} else if (type == APPOINTMENT) {
 		new_obj->type = APPOINTMENTS;
-	} else if (type == TASKS) {
+	} else if (type == TASK) {
 		new_obj->type = TASKS;
 	} else {
 		php_error(E_ERROR, "Message table of unknown type: %i", type);

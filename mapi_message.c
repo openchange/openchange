@@ -113,27 +113,32 @@ PHP_METHOD(MAPIMessage, __destruct)
 
 PHP_METHOD(MAPIMessage, getID)
 {
-	zval			*this_php_obj;
-	mapi_message_object_t 	*this_obj;
 	char 			*str_id;
+	mapi_id_t               mid;
+
+	mid    = mapi_message_get_id(getThis() TSRMLS_CC);
+	str_id = mapi_id_to_str(mid);
+	RETURN_STRING(str_id, 0);
+}
+
+
+mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC)
+{
 	uint32_t		count;
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
 	mapi_id_t		*mid;
+	mapi_message_object_t *msg_obj = STORE_OBJECT(mapi_message_object_t*, message);
 
-	this_php_obj = getThis();
-	this_obj = STORE_OBJECT(mapi_message_object_t*, this_php_obj);
-
-	SPropTagArray = set_SPropTagArray(this_obj->talloc_ctx, 0x1, PR_MID);
-	GetProps(this_obj->message, 0, SPropTagArray, &lpProps, &count);
+	SPropTagArray = set_SPropTagArray(msg_obj->talloc_ctx, 0x1, PR_MID);
+	GetProps(msg_obj->message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	CHECK_MAPI_RETVAL(GetLastError(), "getID");
 
 	mid = (mapi_id_t*) get_SPropValue_data(lpProps);
-
-	str_id = mapi_id_to_str(*mid);
-	RETURN_STRING(str_id, 0);
+	return *mid;
 }
+
 
 zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 {

@@ -55,7 +55,7 @@ void MAPIMessageRegisterClass(TSRMLS_D);
 zend_object_value mapi_message_create_handler(zend_class_entry *type TSRMLS_DC);
 zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC);
 void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRMLS_DC);
-
+mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC);
 
 __END_DECLS
 

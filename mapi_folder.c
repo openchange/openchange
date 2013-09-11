@@ -277,7 +277,10 @@ PHP_METHOD(MAPIFolder, openMessage)
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
 	}
 
+//	RETVAL_ZVAL(php_message, 0, 1);
 	ADD_CHILD(this_obj, php_message);
+
+	php_printf("Message handle in oepn messagwe %i\n",  Z_OBJ_HANDLE_P(php_message));
 
 	RETURN_ZVAL(php_message, 0, 1);
 }
@@ -322,6 +325,8 @@ PHP_METHOD(MAPIFolder, createMessage)
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
 	}
 
+	php_printf("Message handle 0 %i\n",  Z_OBJ_HANDLE_P(message_zval));
+
 	mapi_message_set_properties(message_zval, argc, args TSRMLS_CC);
 
 	mapi_mailbox_object_t *mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(this_obj->parent TSRMLS_CC);
@@ -330,8 +335,10 @@ PHP_METHOD(MAPIFolder, createMessage)
 
 	efree(args);
 
+	// XXX if i use there RETURN_ZVAL after ADD_CHILD it fails bzsomehow the message_zval is assigned a already used object handle
+	// XXX however if i use this same patter in openMessage I get a free error.
+	RETVAL_ZVAL(message_zval, 0, 1);
 	ADD_CHILD(this_obj, message_zval);
-	RETURN_ZVAL(message_zval, 0, 1);
 }
 
 

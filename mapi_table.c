@@ -21,6 +21,9 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
 	}
+	if (obj->tag_array) {
+		MAPIFreeBuffer(obj->tag_array);
+	}
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);
 	efree(obj);
@@ -72,14 +75,12 @@ void MAPITableRegisterClass(TSRMLS_D)
 
 
 
-zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table,  uint32_t count TSRMLS_DC)
+zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, TALLOC_CTX *talloc_ctx, struct SPropTagArray *tag_array, uint count TSRMLS_DC)
 {
 	zval *new_php_obj;
 	mapi_table_object_t *new_obj;
 	zend_class_entry	**ce;
 	enum MAPISTATUS		retval;
-	struct SPropTagArray	*SPropTagArray;
-
 
 	MAKE_STD_ZVAL(new_php_obj);
 	/* create the MapiTable instance in return_value zval */
@@ -90,23 +91,13 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 
 	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->parent = folder_php_obj;
+	new_obj->talloc_ctx = talloc_ctx;
 
-	mapi_folder_object_t *folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder_php_obj);
-	mapi_object_t* folder =  &(folder_obj->store);
-	new_obj->folder = folder;
-	new_obj->talloc_ctx = talloc_named(NULL, 0, "table=%p", new_obj);
-
-	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 0x5,
-					  PR_FID,
-					  PR_MID,
-					  PR_INST_ID,
-					  PR_INSTANCE_NUM,
-					  PR_SUBJECT_UNICODE);
 	new_obj->count = count;
 	new_obj->table = table;
+	new_obj->tag_array = tag_array;
 
-	retval = SetColumns(new_obj->table, SPropTagArray);
-	MAPIFreeBuffer(SPropTagArray);
+	retval = SetColumns(new_obj->table, tag_array);
 	CHECK_MAPI_RETVAL(retval, "Create table objects");
 
 	return new_php_obj;

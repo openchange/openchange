@@ -45,7 +45,7 @@ PHP_METHOD(MAPIMessageTable, getMessages);
 
 void MAPIMessageTableRegisterClass(TSRMLS_D);
 
-zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC);
+zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count, int nProp, zval ***props TSRMLS_DC);
 
 //struct SRowSet* next_row_set(zval *obj  TSRMLS_DC);
 

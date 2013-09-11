@@ -34,22 +34,22 @@ $mailbox = $session->mailbox();
 #var_dump($mailbox);
 echo "Mailbox name "  . $mailbox->getName() . "\n";
 
-
-$inbox = $mailbox->inbox();
-echo "Inbox item type " . $inbox->getFolderType() . "\n";
-
-#echo "CALENDAR\n\n";
 #
-$calendar = $mailbox->calendar();
-$calendarTable = $calendar->getMessageTable();
-echo "Unset calendar\n";
-$count = $calendarTable->count();
-while ($count >0) {
-      echo "Next 3 summary :" . var_dump($calendarTable->summary(3)) . "\n";
-      $count -= 3;
-}
-
-echo "END CALENDAR\n\n";
+#$inbox = $mailbox->inbox();
+#echo "Inbox item type " . $inbox->getFolderType() . "\n";
+#
+##echo "CALENDAR\n\n";
+##
+#$calendar = $mailbox->calendar();
+#$calendarTable = $calendar->getMessageTable();
+#echo "Unset calendar\n";
+#$count = $calendarTable->count();
+#while ($count >0) {
+#      echo "Next 3 summary :" . var_dump($calendarTable->summary(3)) . "\n";
+#      $count -= 3;
+#}
+#
+#echo "END CALENDAR\n\n";
 
 
 #echo "TASKS\n\n";
@@ -75,13 +75,13 @@ echo "contacts->getName -> " . $contacts->getName() . "\n";
 
 
 #echo "Contacts getMessageTable: ";
-#$table =  $contacts->getMessageTable();
+$table =  $contacts->getMessageTable();
 #$table2 = $contacts->getMessageTable();
 #
 #echo var_dump($table) . "\n";
 #echo "Contacts summary\n" .  var_dump($table->summary()) . "\n";
-#$contactMessages = $table->getMessages();
-#echo "Table2 cotnact messages " . var_dump($contactMessages) . "\n";
+$contactMessages = $table->getMessages(2);
+echo "Table cotnact messages " . var_dump($contactMessages) . "\n";
 
 
 

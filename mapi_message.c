@@ -144,14 +144,23 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 {
 	zval *zprop;
 	void *prop_value;
+	prop_value  = (void*) find_mapi_SPropValue_data(&(msg->properties), prop_id);
+	zprop = mapi_message_property_to_zval(msg->talloc_ctx, prop_id, prop_value);
+
+	return zprop;
+}
+
+zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value)
+{
+	zval *zprop;
 	uint32_t prop_type;
 
-	prop_value  = (void*) find_mapi_SPropValue_data(&(msg->properties), prop_id);
+	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
-		return NULL;
+		ZVAL_NULL(zprop);
+		return zprop;
 	}
 
-	MAKE_STD_ZVAL(zprop);
 	prop_type =  prop_id & 0xFFFF;
 	if (prop_type == PT_UNICODE) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
@@ -167,13 +176,13 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 			time = filetime_value->dwHighDateTime;
 			time = time << 32;
 			time |= filetime_value->dwLowDateTime;
-			date = nt_time_string(msg->talloc_ctx, time);
+			date = nt_time_string(talloc_ctx, time);
 		}
 		if (date) {
 			ZVAL_STRING(zprop, date, 1);
 			talloc_free((char*) date);
 		} else {
-			return NULL;
+			php_error(E_ERROR, "Cannot create  zval from PT_SYSTIME");
 		}
 
 	} else {
@@ -183,6 +192,7 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 
 	return zprop;
 }
+
 
 const char *mapi_date(TALLOC_CTX *parent_ctx,
 		      struct mapi_SPropValue_array *properties,

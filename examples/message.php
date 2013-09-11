@@ -65,5 +65,5 @@ $newContact = $contacts->createMessage(PidLidEmail1EmailAddress, 'new@contacts.o
 var_dump($newContact);
 
 print "New contact ID " . $newContact->getID() . "\n";
-
+unset($newContact);
 ?>

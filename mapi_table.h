@@ -16,9 +16,9 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef MAPI_TABLE_H
 #define MAPI_TABLE_H
+
 
 enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS};
 
@@ -26,11 +26,11 @@ typedef struct mapi_table_object
 {
 	zend_object	std;
 	mapi_object_t	*table;
-	mapi_object_t	*folder;
 	zval		*parent;
 	uint32_t count;
 	enum table_type	type;
 	TALLOC_CTX	*talloc_ctx;
+	struct SPropTagArray	*tag_array;
 } mapi_table_object_t;
 
 #ifndef __BEGIN_DECLS
@@ -53,8 +53,7 @@ void MAPITableRegisterClass(TSRMLS_D);
 void mapi_table_free_storage(void *object TSRMLS_DC);
 zend_object_value mapi_table_create_handler(zend_class_entry *type TSRMLS_DC);
 void MAPITableClassSetObjectHandlers(zend_object_handlers *handler);
-
-zval *create_table_object(char *class, zval *folder_php_obj, mapi_object_t *table, uint32_t count TSRMLS_DC);
+zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *table, TALLOC_CTX *talloc_ctx, struct SPropTagArray *tag_array, uint count TSRMLS_DC);
 struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC);
 
 

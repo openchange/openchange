@@ -23,12 +23,22 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count TSRMLS_DC)
+zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count, int nProp, zval ***props TSRMLS_DC)
 {
-	mapi_table_object_t *new_obj;
-	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table, count TSRMLS_CC);
+	int			i;
+	struct SPropTagArray	*tag_array;
+	mapi_table_object_t	*new_obj;
+	TALLOC_CTX         	*talloc_ctx;
 
-	new_obj = (mapi_table_object_t *) zend_object_store_get_object(new_php_obj TSRMLS_CC);
+	talloc_ctx =   talloc_named(NULL, 0, "message_table");
+	tag_array = set_SPropTagArray(talloc_ctx, 2, PR_FID, PR_MID);
+	for(i=0; i < nProp; i++) {
+		mapi_id_t id = Z_LVAL_PP(props[i]);
+		SPropTagArray_add(talloc_ctx, tag_array, id);
+	}
+
+	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table,
+						talloc_ctx, tag_array, count TSRMLS_CC);
 	if (type == CONTACT) {
 		new_obj->type = CONTACTS;
 	} else if (type == APPOINTMENT) {
@@ -87,94 +97,94 @@ static zval *task_summary_zval (struct mapi_SPropValue_array *properties, const 
 	php_error(E_ERROR, "Task summary not implemented yet");
 }
 
-zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC)
-{
-	struct SRowSet		row;
-	enum MAPISTATUS		retval;
-	zval 			*res;
-	zval			*message;
-	mapi_table_object_t	*this_obj;
-	mapi_object_t		*obj_message;
-	uint32_t		i;
-	char			*id = NULL;
-	struct mapi_SPropValue_array	properties_array;
-	unsigned char open_mode = 0; //XXX
+/* zval *fetch_items(zval *php_this_obj, long countParam, bool summary TSRMLS_DC) */
+/* { */
+/* 	struct SRowSet		row; */
+/* 	enum MAPISTATUS		retval; */
+/* 	zval 			*res; */
+/* 	zval			*message; */
+/* 	mapi_table_object_t	*this_obj; */
+/* 	mapi_object_t		*obj_message; */
+/* 	uint32_t		i; */
+/* 	char			*id = NULL; */
+/* 	struct mapi_SPropValue_array	properties_array; */
+/* 	unsigned char open_mode = 0; //XXX */
 
 
-	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
-	this_obj = STORE_OBJECT(mapi_table_object_t*, php_this_obj);
+/* 	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50; */
+/* 	this_obj = STORE_OBJECT(mapi_table_object_t*, php_this_obj); */
 
-	MAKE_STD_ZVAL(res);
-	array_init(res);
-	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
-		for (i = 0; i < row.cRows; i++) {
-			obj_message = (mapi_object_t*) emalloc(sizeof(mapi_object_t));
-			mapi_object_init(obj_message);
+/* 	MAKE_STD_ZVAL(res); */
+/* 	array_init(res); */
+/* 	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) { */
+/* 		for (i = 0; i < row.cRows; i++) { */
+/* 			obj_message = (mapi_object_t*) emalloc(sizeof(mapi_object_t)); */
+/* 			mapi_object_init(obj_message); */
 
-			retval = OpenMessage(this_obj->folder,
-					     row.aRow[i].lpProps[0].value.d,
-					     row.aRow[i].lpProps[1].value.d,
-					     obj_message, 0);
-			if (retval != MAPI_E_NOT_FOUND) {
-				retval = GetPropsAll(obj_message, MAPI_UNICODE, &properties_array);
-				if (retval == MAPI_E_SUCCESS) {
-					mapi_id_t message_id = row.aRow[i].lpProps[1].value.d;
-					if (summary) {
-						id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64,
-						     row.aRow[i].lpProps[0].value.d,
-						      message_id);
-						mapi_SPropValue_array_named(obj_message, &properties_array);
-					}
+/* 			retval = OpenMessage(this_obj->folder, */
+/* 					     row.aRow[i].lpProps[0].value.d, */
+/* 					     row.aRow[i].lpProps[1].value.d, */
+/* 					     obj_message, 0); */
+/* 			if (retval != MAPI_E_NOT_FOUND) { */
+/* 				retval = GetPropsAll(obj_message, MAPI_UNICODE, &properties_array); */
+/* 				if (retval == MAPI_E_SUCCESS) { */
+/* 					mapi_id_t message_id = row.aRow[i].lpProps[1].value.d; */
+/* 					if (summary) { */
+/* 						id = talloc_asprintf(this_obj->talloc_ctx, "%" PRIx64 "/%" PRIx64, */
+/* 						     row.aRow[i].lpProps[0].value.d, */
+/* 						      message_id); */
+/* 						mapi_SPropValue_array_named(obj_message, &properties_array); */
+/* 					} */
 
-					if (this_obj->type == CONTACTS) {
-						if (summary) {
-							message = contact_summary_zval(&properties_array, id);
-						} else {
-							message = create_contact_object(php_this_obj, obj_message,  open_mode TSRMLS_CC);
-						}
-					} else if (this_obj->type == APPOINTMENTS) {
-						if (summary) {
-							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id);
-						} else {
-							message = create_appointment_object(php_this_obj, obj_message, open_mode TSRMLS_CC);
-						}
+/* 					if (this_obj->type == CONTACTS) { */
+/* 						if (summary) { */
+/* 							message = contact_summary_zval(&properties_array, id); */
+/* 						} else { */
+/* 							message = create_contact_object(php_this_obj, obj_message,  open_mode TSRMLS_CC); */
+/* 						} */
+/* 					} else if (this_obj->type == APPOINTMENTS) { */
+/* 						if (summary) { */
+/* 							message = appointment_summary_zval(this_obj->talloc_ctx, &properties_array, id); */
+/* 						} else { */
+/* 							message = create_appointment_object(php_this_obj, obj_message, open_mode TSRMLS_CC); */
+/* 						} */
 
-					} else if (this_obj->type == TASKS) {
-						if (summary) {
-							message = task_summary_zval(&properties_array, id);
-						} else {
-							message = create_task_object(php_this_obj, obj_message, open_mode TSRMLS_CC);
-						}
+/* 					} else if (this_obj->type == TASKS) { */
+/* 						if (summary) { */
+/* 							message = task_summary_zval(&properties_array, id); */
+/* 						} else { */
+/* 							message = create_task_object(php_this_obj, obj_message, open_mode TSRMLS_CC); */
+/* 						} */
 
-					} else {
-						php_printf("Unknown folder type %i\n", this_obj->type);
-					}
+/* 					} else { */
+/* 						php_printf("Unknown folder type %i\n", this_obj->type); */
+/* 					} */
 
-					if (message) {
-						add_next_index_zval(res, message);
-					}
-					if (id) {
-						talloc_free(id);
-						id = NULL;
-					}
-					if (summary) {
-						mapi_object_release(obj_message);
-						efree(obj_message);
-						obj_message = NULL;
-					}
+/* 					if (message) { */
+/* 						add_next_index_zval(res, message); */
+/* 					} */
+/* 					if (id) { */
+/* 						talloc_free(id); */
+/* 						id = NULL; */
+/* 					} */
+/* 					if (summary) { */
+/* 						mapi_object_release(obj_message); */
+/* 						efree(obj_message); */
+/* 						obj_message = NULL; */
+/* 					} */
 
-				}
-			}
-		}
+/* 				} */
+/* 			} */
+/* 		} */
 
-		if (countParam > 0) {
-			break;	// no unlimited
-		}
-	}
+/* 		if (countParam > 0) { */
+/* 			break;	// no unlimited */
+/* 		} */
+/* 	} */
 
-	return res;
+/* 	return res; */
 
-}
+/* } */
 
 PHP_METHOD(MAPIMessageTable, summary)
 {
@@ -184,7 +194,47 @@ PHP_METHOD(MAPIMessageTable, summary)
 		RETURN_NULL();
 	}
 
-	zval *summary = fetch_items(getThis(), countParam, true TSRMLS_CC);
+	struct SRowSet		row_set;
+	enum MAPISTATUS		retval;
+	zval 			*summary;
+	zval			*message;
+	mapi_table_object_t	*this_obj;
+	mapi_object_t		*obj_message;
+	uint32_t		i, j;
+	char			*id = NULL;
+	uint32_t   		count;
+	struct mapi_SPropValue_array	properties_array;
+
+	count = (countParam > 0) ? (uint32_t) countParam : 50;
+	this_obj = (mapi_table_object_t*)  zend_object_store_get_object(getThis() TSRMLS_CC);
+
+	MAKE_STD_ZVAL(summary);
+	array_init(summary);
+	while (next_row_set(this_obj->table,  &row_set, count TSRMLS_CC)) {
+		for (i = 0; i < row_set.cRows; i++) {
+			zval *obj_summary;
+			struct SRow    *aRow;
+			MAKE_STD_ZVAL(obj_summary);
+			array_init(obj_summary);
+
+			aRow = &(row_set.aRow[i]);
+			for (j=0; j < this_obj->tag_array->cValues; j++) {
+				zval 		*zprop;
+				void 		*prop_value;
+				uint32_t 	prop_id = this_obj->tag_array->aulPropTag[j];
+
+				prop_value = (void*) find_SPropValue_data(aRow, prop_id);
+				zprop      = mapi_message_property_to_zval(this_obj->talloc_ctx, prop_id, prop_value);
+				add_index_zval(obj_summary, prop_id, zprop);
+			}
+
+			add_next_index_zval(summary, obj_summary);
+		}
+		if (countParam > 0) {
+			break;	// no unlimited
+		}
+	}
+
 	RETURN_ZVAL(summary, 0, 1);
 }
 
@@ -196,6 +246,72 @@ PHP_METHOD(MAPIMessageTable, getMessages)
 		RETURN_NULL();
 	}
 
-	zval *messages = fetch_items(getThis(), countParam, false TSRMLS_CC);
-	RETURN_ZVAL(messages, 0, 1);
+	struct SRowSet		row;
+	enum MAPISTATUS		retval;
+	zval 			*res;
+	zval			*message;
+	zval			*folder;
+	mapi_folder_object_t	*folder_obj;
+	mapi_table_object_t	*this_obj;
+	mapi_object_t		*obj_message;
+	uint32_t		i;
+	unsigned char open_mode = 0; //XXX
+
+
+	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
+	this_obj = STORE_OBJECT(mapi_table_object_t*, getThis());
+	folder  = this_obj->parent;
+	folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder);
+
+	MAKE_STD_ZVAL(res);
+	array_init(res);
+	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
+		for (i = 0; i < row.cRows; i++) {
+//			row.aRow[i].lpProps[0].value.d, // folder_id
+			mapi_id_t message_id = row.aRow[i].lpProps[1].value.d; // message_id
+			message = mapi_folder_open_message(folder, message_id, open_mode TSRMLS_CC);
+
+			/* obj_message = (mapi_object_t*) emalloc(sizeof(mapi_object_t)); */
+			/* mapi_object_init(obj_message); */
+
+			/* retval = OpenMessage(&(folder_obj->store), */
+			/* 		     row.aRow[i].lpProps[0].value.d, // folder_id */
+			/* 		     row.aRow[i].lpProps[1].value.d, // message_id */
+			/* 		     obj_message, 0); */
+			/* CHECK_MAPI_RETVAL(retval, "Open message from message table"); */
+
+			/* if (folder_obj->type == CONTACTS) { */
+			/* 	message = create_contact_object(folder, obj_message,  open_mode TSRMLS_CC); */
+			/* } else if (folder_obj->type == APPOINTMENTS) { */
+			/* 	message = create_appointment_object(folder, obj_message, open_mode TSRMLS_CC); */
+			/* } else if (folder_obj->type == TASKS) { */
+			/* 	message = create_task_object(folder, obj_message, open_mode TSRMLS_CC); */
+			/* } else { */
+			/* 	php_printf("Unknown folder type %i\n", this_obj->type); */
+			/* } */
+
+			if (message) {
+				add_next_index_zval(res, message);
+			}
+		}
+
+		if (countParam > 0) {
+			break;	// no unlimited
+		}
+	}
+
+	RETURN_ZVAL(res, 0, 1);
 }
+
+
+/* PHP_METHOD(MAPIMessageTable, getMessages) */
+/* { */
+/* 	long countParam = -1; */
+/* 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, */
+/* 			       "|l", &countParam) == FAILURE) { */
+/* 		RETURN_NULL(); */
+/* 	} */
+
+/* 	zval *messages = fetch_items(getThis(), countParam, false TSRMLS_CC); */
+/* 	RETURN_ZVAL(messages, 0, 1); */
+/* } */

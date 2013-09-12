@@ -31,7 +31,7 @@ zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_ob
 	TALLOC_CTX         	*talloc_ctx;
 
 	talloc_ctx =   talloc_named(NULL, 0, "message_table");
-	tag_array = set_SPropTagArray(talloc_ctx, 2, PR_FID, PR_MID);
+	tag_array = set_SPropTagArray(talloc_ctx, 1, PR_MID);
 	for(i=0; i < nProp; i++) {
 		mapi_id_t id = Z_LVAL_PP(props[i]);
 		SPropTagArray_add(talloc_ctx, tag_array, id);
@@ -87,15 +87,14 @@ PHP_METHOD(MAPIMessageTable, summary)
 			MAKE_STD_ZVAL(obj_summary);
 			array_init(obj_summary);
 
-			// start  at 2 because two first are fid and mid
-			for (j=2; j < this_obj->tag_array->cValues; j++) {
+			for (j=0; j < this_obj->tag_array->cValues; j++) {
 				zval 		*zprop;
 				void 		*prop_value;
 				uint32_t 	prop_id = this_obj->tag_array->aulPropTag[j];
 				uint32_t        prop_id_row =  row_set.aRow[i].lpProps[j].ulPropTag;
 				if (prop_id_row != prop_id) {
-					// The type has changed, probably not found or error, use null
-					ZVAL_NULL(zprop);
+					// The type has changed, probably not found or error, ignore
+					continue;
 				} else {
 					prop_value = (void*) find_SPropValue_data(&(row_set.aRow[i]), prop_id_row);
 					zprop      = mapi_message_property_to_zval(this_obj->talloc_ctx, prop_id, prop_value);

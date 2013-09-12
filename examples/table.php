@@ -23,7 +23,7 @@ echo "Get two messages\n";
 var_dump($table1->getMessages(2));
 echo "END end of messages\n";
 
-echo "Get parent folder";
+echo "Get parent folder\n";
 $parentFolder =   $table1->getParentFolder();
 var_dump($parentFolder);
 echo "Parent folder ID ". $parentFolder->getID() .  "\n";

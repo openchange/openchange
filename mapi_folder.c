@@ -219,7 +219,6 @@ PHP_METHOD(MAPIFolder, getFolderTable)
 		table_flags = 0x40;
 	}
 
-
 	this_zval = getThis();
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
 
@@ -228,7 +227,7 @@ PHP_METHOD(MAPIFolder, getFolderTable)
 	retval = GetHierarchyTable(&(this_obj->store), obj_table, table_flags, &count);
 	CHECK_MAPI_RETVAL(retval, "getFolderTable");
 
-	table = create_folder_table_object(this_obj, obj_table, count TSRMLS_CC);
+	table = create_folder_table_object(this_zval, obj_table, count TSRMLS_CC);
 
 	RETVAL_ZVAL(table, 0, 1);
 	ADD_CHILD(this_obj, table);

@@ -81,7 +81,7 @@ PHP_METHOD(MAPIMessageTable, summary)
 
 	MAKE_STD_ZVAL(summary);
 	array_init(summary);
-	while (mapi_table_next_row_set(this_obj->table,  &row_set, count TSRMLS_CC)) {
+	while (mapi_table_next_row_set(this_obj->table, &row_set, count TSRMLS_CC)) {
 		for (i = 0; i < row_set.cRows; i++) {
 			zval *obj_summary;
 			MAKE_STD_ZVAL(obj_summary);

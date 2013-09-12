@@ -17,9 +17,26 @@ echo "Get inbox\n";
 $inbox = $mailbox->inbox();
 echo "Inbox item type " . $inbox->getFolderType() . "\n";
 
+
+
 echo "Get folder table\n";
 $table1 = $inbox->getFolderTable();
-
 var_dump($table1);
+
+echo "Get parent folder\n";
+$parentFolder =   $table1->getParentFolder();
+var_dump($parentFolder);
+echo "Parent folder ID ". $parentFolder->getID() .  "\n";
+
+echo "Get folders from table\n";
+$folders = $table1->getFolders();
+var_dump($folders);
+echo "First folder ID " . $folders[0]->getID() . "\n";
+
+echo "Get othe folder table\n";
+$table2 = $inbox->getFolderTable();
+var_dump($table2);
+echo "Folder table summary\n";
+var_dump($table2->summary());
 
 ?>

@@ -32,8 +32,8 @@ zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint
 
 	mem_ctx =   talloc_named(NULL, 0, "directory_table");
 	tag_array = set_SPropTagArray(mem_ctx, 6,
-					  PR_DISPLAY_NAME_UNICODE,
 					  PR_FID,
+					  PR_DISPLAY_NAME_UNICODE,
 					  PR_COMMENT_UNICODE,
 					  PR_CONTENT_UNREAD,
 					  PR_CONTENT_COUNT,
@@ -42,6 +42,7 @@ zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint
 
 	zval *new_php_obj = create_table_object("mapifoldertable", parent, folder_table,
 						mem_ctx, tag_array, count TSRMLS_CC);
+	new_obj = (mapi_table_object_t*)  zend_object_store_get_object(new_php_obj TSRMLS_CC);
 	new_obj->type = FOLDERS;
 
 	return new_php_obj;
@@ -76,21 +77,20 @@ PHP_METHOD(MAPIFolderTable, summary)
 
 	MAKE_STD_ZVAL(summary);
 	array_init(summary);
-	while (mapi_table_next_row_set(this_obj->table,  &row_set, count TSRMLS_CC)) {
+	while (mapi_table_next_row_set(this_obj->table, &row_set, count TSRMLS_CC)) {
 		for (i = 0; i < row_set.cRows; i++) {
 			zval *obj_summary;
 			MAKE_STD_ZVAL(obj_summary);
 			array_init(obj_summary);
 
-			// start  at 2 because two first are fid and mid
-			for (j=2; j < this_obj->tag_array->cValues; j++) {
+			for (j=0; j < this_obj->tag_array->cValues; j++) {
 				zval 		*zprop;
 				void 		*prop_value;
 				uint32_t 	prop_id = this_obj->tag_array->aulPropTag[j];
 				uint32_t        prop_id_row =  row_set.aRow[i].lpProps[j].ulPropTag;
 				if (prop_id_row != prop_id) {
-					// The type has changed, probably not found or error, use null
-					ZVAL_NULL(zprop);
+					// The type has changed, probably not found or error, skip
+					continue;
 				} else {
 					prop_value = (void*) find_SPropValue_data(&(row_set.aRow[i]), prop_id_row);
 					zprop      = mapi_message_property_to_zval(this_obj->talloc_ctx, prop_id, prop_value);
@@ -110,7 +110,16 @@ PHP_METHOD(MAPIFolderTable, summary)
 
 PHP_METHOD(MAPIFolderTable, getFolders)
 {
-	php_error(E_ERROR, "Not implemented");
+	zval *php_mailbox = NULL;
+	struct SRowSet		row_set;
+	enum MAPISTATUS		retval;
+	zval 			*res;
+	zval			*mailbox;
+	zval			*folder;
+	mapi_folder_object_t	*folder_obj;
+	mapi_table_object_t	*this_obj;
+	mapi_object_t		*obj_message;
+	uint32_t		i;
 
 	long countParam = -1;
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
@@ -118,31 +127,22 @@ PHP_METHOD(MAPIFolderTable, getFolders)
 		RETURN_NULL();
 	}
 
-	struct SRowSet		row;
-	enum MAPISTATUS		retval;
-	zval 			*res;
-	zval			*message;
-	zval			*folder;
-	mapi_folder_object_t	*folder_obj;
-	mapi_table_object_t	*this_obj;
-	mapi_object_t		*obj_message;
-	uint32_t		i;
-	unsigned char open_mode = 0; //XXX
-
-
 	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
 	this_obj = STORE_OBJECT(mapi_table_object_t*, getThis());
 	folder  = this_obj->parent;
-	folder_obj = STORE_OBJECT(mapi_folder_object_t*, folder);
+	folder_obj = (mapi_folder_object_t*) zend_object_store_get_object(folder TSRMLS_CC);
+	mailbox = folder_obj->parent;
 
 	MAKE_STD_ZVAL(res);
 	array_init(res);
-	while (mapi_table_next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
-		for (i = 0; i < row.cRows; i++) {
-			mapi_id_t message_id = row.aRow[i].lpProps[1].value.d; // message_id
-			message = mapi_folder_open_message(folder, message_id, open_mode TSRMLS_CC);
-			if (message) {
-				add_next_index_zval(res, message);
+
+	while (mapi_table_next_row_set(this_obj->table, &row_set, count TSRMLS_CC)) {
+		for (i = 0; i < row_set.cRows; i++) {
+			zval* folder;
+			mapi_id_t folder_id = row_set.aRow[i].lpProps[0].value.d; // folder_id
+	 		folder = create_folder_object(mailbox, folder_id, "IPF.Note" TSRMLS_CC); // XXX change!!
+			if (folder) {
+				add_next_index_zval(res, folder);
 			}
 		}
 

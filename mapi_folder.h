@@ -64,8 +64,10 @@ PHP_METHOD(MAPIFolder, openMessage);
 PHP_METHOD(MAPIFolder, createMessage);
 
 void MAPIFolderRegisterClass(TSRMLS_D);
-zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *item_type TSRMLS_DC);
+zval *create_folder_object(zval *php_mailbox, mapi_id_t id, mapi_folder_type_t type TSRMLS_DC);
 zval* mapi_folder_open_message(zval *folder, mapi_id_t message_id, char open_mode TSRMLS_DC);
+mapi_folder_type_t mapi_folder_type_from_string(char *folder_type_str);
+
 
 __END_DECLS
 

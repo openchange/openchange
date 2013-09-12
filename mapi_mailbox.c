@@ -211,7 +211,7 @@ PHP_METHOD(MAPIMailbox, inbox)
 	retval = GetReceiveFolder(&this_obj->store, &id_inbox, NULL);
 	CHECK_MAPI_RETVAL(retval, "Get receive folder");
 
-	folder = create_folder_object(this_zval, id_inbox, "IPF.Note" TSRMLS_CC);
+	folder = create_folder_object(this_zval, id_inbox, NOTE TSRMLS_CC);
 	if (folder == NULL) {
 		RETURN_NULL();
 	}
@@ -221,7 +221,7 @@ PHP_METHOD(MAPIMailbox, inbox)
 	RETURN_ZVAL(folder, 0, 1);
 }
 
-static zval *open_folder(zval *php_mailbox, mapi_id_t fid, char *folderType TSRMLS_DC)
+static zval *open_folder(zval *php_mailbox, mapi_id_t fid, mapi_folder_type_t folderType TSRMLS_DC)
 {
 	zval				*folder;
 	folder = create_folder_object(php_mailbox, fid, folderType  TSRMLS_CC);
@@ -239,7 +239,7 @@ static zval *default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_
 	uint32_t			olFolder = 0;
 	mapi_mailbox_object_t 		*mailbox;
 	mapi_id_t			fid;
-
+	mapi_folder_type_t 		ftype;
 
 	for (i = 0; defaultFolders[i].olFolder; i++) {
 		if (!strncasecmp(defaultFolders[i].container_class, folderType, strlen(defaultFolders[i].container_class))) {
@@ -254,7 +254,8 @@ static zval *default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_
 	retval = GetDefaultFolder(&(mailbox->store), &fid, olFolder);
 	CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for type");
 
-	return open_folder(php_mailbox, fid, folderType TSRMLS_CC);
+	ftype = mapi_folder_type_from_string(folderType);
+	return open_folder(php_mailbox, fid, ftype TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIMailbox, calendar)
@@ -282,13 +283,16 @@ PHP_METHOD(MAPIMailbox, openFolder)
 	size_t			id_str_len;
 	char 		        *folder_type;
 	size_t                  folder_type_len;
+	mapi_folder_type_t      ftype;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ss",
 				  &id_str, &id_str_len, &folder_type, &folder_type_len) == FAILURE) {
 		php_error(E_ERROR, "Missing arguments: (folderId, folderType");
 	}
 	folder_id = str_to_mapi_id(id_str);
-	zval *folder = open_folder(getThis(), folder_id, folder_type TSRMLS_CC);
+	ftype = mapi_folder_type_from_string(folder_type);
+
+	zval *folder = open_folder(getThis(), folder_id, ftype TSRMLS_CC);
 	if (folder == NULL) {
 		RETURN_NULL();
 	}

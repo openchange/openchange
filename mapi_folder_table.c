@@ -140,7 +140,7 @@ PHP_METHOD(MAPIFolderTable, getFolders)
 		for (i = 0; i < row_set.cRows; i++) {
 			zval* folder;
 			mapi_id_t folder_id = row_set.aRow[i].lpProps[0].value.d; // folder_id
-	 		folder = create_folder_object(mailbox, folder_id, "IPF.Note" TSRMLS_CC); // XXX change!!
+	 		folder = create_folder_object(mailbox, folder_id, NOTE TSRMLS_CC); // XXX TYPE change!!
 			if (folder) {
 				add_next_index_zval(res, folder);
 			}

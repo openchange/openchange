@@ -74,7 +74,24 @@ void MAPIFolderRegisterClass(TSRMLS_D)
 	mapi_folder_object_handlers.clone_obj = NULL;
 }
 
-zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TSRMLS_DC)
+
+mapi_folder_type_t mapi_folder_type_from_string(char *folder_type_str)
+{
+	if (strncmp(folder_type_str, "IPF.Contact", 20) == 0) {
+		return CONTACT;
+	} else if (strncmp(folder_type_str, "IPF.Task", 20) == 0) {
+		return TASK;
+	} else if (strncmp(folder_type_str, "IPF.Appointment", 20) == 0) {
+		return APPOINTMENT;
+	} else if (strncmp(folder_type_str, "IPF.Note", 20) == 0) {
+		return NOTE;
+	} else {
+		php_error(E_ERROR, "Unknow folder type: %s", folder_type_str);
+	}
+}
+
+
+zval *create_folder_object(zval *php_mailbox, mapi_id_t id, mapi_folder_type_t type TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	zval			*new_php_obj;
@@ -102,18 +119,7 @@ zval *create_folder_object(zval *php_mailbox, mapi_id_t id, char *folder_type TS
 
 	new_obj->parent = php_mailbox;
 	new_obj->talloc_ctx = talloc_named(NULL, 0, "folder");
-
-	if (strncmp(folder_type, "IPF.Contact", 20) == 0) {
-		new_obj->type = CONTACT;
-	} else if (strncmp(folder_type, "IPF.Task", 20) == 0) {
-		new_obj->type = TASK;
-	} else if (strncmp(folder_type, "IPF.Appointment", 20) == 0) {
-		new_obj->type = APPOINTMENT;
-	} else if (strncmp(folder_type, "IPF.Note", 20) == 0) {
-		new_obj->type = NOTE;
-	} else {
-		php_error(E_ERROR, "Unknow folder type: %i", new_obj->type);
-	}
+	new_obj->type = type;
 
 	return new_php_obj;
 }

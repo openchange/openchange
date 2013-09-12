@@ -103,7 +103,7 @@ zval *create_table_object(char *class, zval* folder_php_obj, mapi_object_t *tabl
 	return new_php_obj;
 }
 
-struct SRowSet* next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC)
+struct SRowSet* mapi_table_next_row_set(mapi_object_t* table, struct SRowSet *row_set, uint32_t count TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	if (count == 0) {

@@ -82,7 +82,7 @@ PHP_METHOD(MAPIMessageTable, summary)
 
 	MAKE_STD_ZVAL(summary);
 	array_init(summary);
-	while (next_row_set(this_obj->table,  &row_set, count TSRMLS_CC)) {
+	while (mapi_table_next_row_set(this_obj->table,  &row_set, count TSRMLS_CC)) {
 		for (i = 0; i < row_set.cRows; i++) {
 			zval *obj_summary;
 			MAKE_STD_ZVAL(obj_summary);
@@ -141,7 +141,7 @@ PHP_METHOD(MAPIMessageTable, getMessages)
 
 	MAKE_STD_ZVAL(res);
 	array_init(res);
-	while (next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
+	while (mapi_table_next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
 		for (i = 0; i < row.cRows; i++) {
 			mapi_id_t message_id = row.aRow[i].lpProps[1].value.d; // message_id
 			message = mapi_folder_open_message(folder, message_id, open_mode TSRMLS_CC);

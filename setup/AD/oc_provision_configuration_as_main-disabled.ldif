@@ -20,4 +20,3 @@
 #changetype: modify
 #add: msExchAddressListServiceLink
 #msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-

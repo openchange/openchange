@@ -32,12 +32,14 @@ zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint
 
 	mem_ctx =   talloc_named(NULL, 0, "directory_table");
 	tag_array = set_SPropTagArray(mem_ctx, 6,
-					  PR_FID,
-					  PR_DISPLAY_NAME_UNICODE,
-					  PR_COMMENT_UNICODE,
-					  PR_CONTENT_UNREAD,
-					  PR_CONTENT_COUNT,
-					  PR_FOLDER_CHILD_COUNT);
+				      PR_FID,
+				      PR_CONTAINER_CLASS,
+				      PR_DISPLAY_NAME_UNICODE,
+				      PR_COMMENT_UNICODE,
+				      PR_CONTENT_UNREAD,
+				      PR_CONTENT_COUNT,
+				      PR_FOLDER_CHILD_COUNT
+		    );
 
 
 	zval *new_php_obj = create_table_object("mapifoldertable", parent, folder_table,
@@ -138,9 +140,16 @@ PHP_METHOD(MAPIFolderTable, getFolders)
 
 	while (mapi_table_next_row_set(this_obj->table, &row_set, count TSRMLS_CC)) {
 		for (i = 0; i < row_set.cRows; i++) {
-			zval* folder;
-			mapi_id_t folder_id = row_set.aRow[i].lpProps[0].value.d; // folder_id
-	 		folder = create_folder_object(mailbox, folder_id, NOTE TSRMLS_CC); // XXX TYPE change!!
+			zval			*folder;
+			mapi_id_t    		folder_id;
+			char            	*folder_type_str;
+			mapi_folder_type_t 	 folder_type;
+
+			folder_id            = row_set.aRow[i].lpProps[0].value.d;
+			folder_type_str      = row_set.aRow[i].lpProps[1].value.lpszA;
+			folder_type          = mapi_folder_type_from_string(folder_type_str);
+
+	 		folder = create_folder_object(mailbox, folder_id, folder_type TSRMLS_CC); // XXX TYPE change!!
 			if (folder) {
 				add_next_index_zval(res, folder);
 			}

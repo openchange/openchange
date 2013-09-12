@@ -162,7 +162,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	}
 
 	prop_type =  prop_id & 0xFFFF;
-	if (prop_type == PT_UNICODE) {
+	if ((prop_type == PT_UNICODE) || (prop_type == PT_STRING8)) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
 		ZVAL_LONG(zprop, *((long *) prop_value));

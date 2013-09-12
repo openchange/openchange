@@ -59,12 +59,6 @@ PHP_METHOD(MAPIMessageTable, __construct)
 
 PHP_METHOD(MAPIMessageTable, summary)
 {
-	long countParam = -1;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-			       "|l", &countParam) == FAILURE) {
-		RETURN_NULL();
-	}
-
 	struct SRowSet		row_set;
 	enum MAPISTATUS		retval;
 	zval 			*summary;
@@ -75,6 +69,12 @@ PHP_METHOD(MAPIMessageTable, summary)
 	char			*id = NULL;
 	uint32_t   		count;
 	struct mapi_SPropValue_array	properties_array;
+
+	long countParam = -1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+			       "|l", &countParam) == FAILURE) {
+		RETURN_NULL();
+	}
 
 	count = (countParam > 0) ? (uint32_t) countParam : 50;
 	this_obj = (mapi_table_object_t*)  zend_object_store_get_object(getThis() TSRMLS_CC);
@@ -115,12 +115,6 @@ PHP_METHOD(MAPIMessageTable, summary)
 
 PHP_METHOD(MAPIMessageTable, getMessages)
 {
-	long countParam = -1;
-	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
-			       "|l", &countParam) == FAILURE) {
-		RETURN_NULL();
-	}
-
 	struct SRowSet		row;
 	enum MAPISTATUS		retval;
 	zval 			*res;
@@ -132,6 +126,11 @@ PHP_METHOD(MAPIMessageTable, getMessages)
 	uint32_t		i;
 	unsigned char open_mode = 0; //XXX
 
+	long countParam = -1;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC,
+			       "|l", &countParam) == FAILURE) {
+		RETURN_NULL();
+	}
 
 	uint32_t count = (countParam > 0) ? (uint32_t) countParam : 50;
 	this_obj = STORE_OBJECT(mapi_table_object_t*, getThis());

@@ -320,7 +320,7 @@ PHP_METHOD(MAPIMessage, get)
 	mapi_message_object_t 	*this_obj;
 	zval *result;
 
-	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+	args = (zval***) safe_emalloc(argc, sizeof(zval **), 0);
 
 	if (ZEND_NUM_ARGS() == 0 ||
 	    zend_get_parameters_array_ex(argc, args) == FAILURE) {

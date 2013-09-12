@@ -24,7 +24,12 @@ echo "Contacts item type " . $contacts->getFolderType() . "\n";
 #echo "END end of messages\n";
 
 echo "Contacts getMessageTable with properties PidLidFileUnder, PidLidEmail1EmailAddress \n";
-$table2 =  $contacts->getMessageTable(PidLidFileUnder, PidLidEmail1EmailAddress);
+$table2 =  $contacts->getMessageTable(PidLidFileUnder,
+				      PidLidEmail1EmailAddress,
+				      PidTagEmailAddress,
+				      PidTagCompanyName,
+				      PidTagDisplayName,
+				      PidTagGivenName);
 
 echo "Get 4 summary contacts\n";
 var_dump($table2->summary(4));

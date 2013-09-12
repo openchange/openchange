@@ -168,6 +168,10 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		ZVAL_LONG(zprop, *((long *) prop_value));
 	} else if (prop_type == PT_BOOLEAN) {
 		ZVAL_BOOL(zprop, *((bool *) prop_value));
+	} else if (prop_type == PT_I8) {
+		mapi_id_t id = *((mapi_id_t*) prop_value);
+		char *str_id = mapi_id_to_str(id);
+		ZVAL_STRING(zprop, str_id, 0);
 	} else if (prop_type == PT_SYSTIME) {
 		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
 		const char		*date;

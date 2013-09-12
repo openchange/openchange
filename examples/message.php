@@ -19,6 +19,21 @@ echo "Inbox item type " . $inbox->getFolderType() . "\n";
 echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
+$roContactId = "A5010E0000000001";
+$roContact = $contacts->openMessage($contactMessageId, 0);
+
+echo "get PidTagGivenName\n";
+$retGet = $roContact->get(PidTagGivenName);
+var_dump($retGet);
+
+echo "get various properties at the same time\n";
+$retMultipleGet = $roContact->get(PidLidEmail1EmailAddress,
+				  PidTagEmailAddress,
+				  PidTagCompanyName,
+				  PidTagDisplayName,
+				  PidTagGivenName);
+var_dump($retMultipleGet);
+
 
 $message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";

@@ -341,8 +341,6 @@ PHP_METHOD(MAPIFolder, openMessage)
 //	RETVAL_ZVAL(php_message, 0, 1);
 	ADD_CHILD(this_obj, php_message);
 
-	php_printf("Message handle in oepn messagwe %i\n",  Z_OBJ_HANDLE_P(php_message));
-
 	RETURN_ZVAL(php_message, 0, 1);
 }
 

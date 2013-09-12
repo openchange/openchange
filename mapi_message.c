@@ -344,17 +344,17 @@ PHP_METHOD(MAPIMessage, get)
 		zval *prop;
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
-		php_printf("get 0x%" PRIX64  "\n", prop_id);
+//		php_printf("get 0x%" PRIX64  "\n", prop_id);
 		prop  = mapi_message_get_property(this_obj, prop_id);
 
 		if (argc == 1) {
 			result = prop;
 		} else {
-			if (prop == NULL) {
-				MAKE_STD_ZVAL(prop);
-				ZVAL_NULL(prop);
+			if ((prop == NULL) || (ZVAL_IS_NULL(prop))) {
+				continue;
 			}
-			add_next_index_zval(result, prop);			}
+			add_index_zval(result, prop_id, prop);
+		}
 	}
 
 	efree(args);
@@ -379,7 +379,6 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 		uint32_t  prop_type =  id & 0xFFFF;
 		zval *val = *(args[i+1]);
 		void *data;
-		php_printf("set 0x%" PRIX64  "\n", id);
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
 			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
 			continue;

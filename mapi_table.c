@@ -132,7 +132,7 @@ PHP_METHOD(MAPITable, __destruct)
 	mapi_table_object_t	*this_obj;
 	this_zval = getThis();
 	this_obj = (mapi_table_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
-	mapi_folder_object_t* obj_parent =  (mapi_folder_object_t*) zend_object_store_get_object(this_obj->parent TSRMLS_CC);
+	mapi_folder_object_t* obj_parent =  (mapi_mailbox_object_t*) zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	REMOVE_CHILD(obj_parent, this_zval);
 }
 

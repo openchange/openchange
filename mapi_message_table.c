@@ -35,7 +35,6 @@ zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_ob
 	for(i=0; i < nProp; i++) {
 		mapi_id_t id = Z_LVAL_PP(props[i]);
 		SPropTagArray_add(talloc_ctx, tag_array, id);
-		php_printf("Create table added property id 0x%" PRIX64 " \n", id);
 	}
 
 	zval *new_php_obj = create_table_object("mapimessagetable", folder, message_table,

@@ -17,11 +17,11 @@ echo "CONTACTS\n\n";
 $contacts = $mailbox->contacts();
 echo "Contacts item type " . $contacts->getFolderType() . "\n";
 
-#echo "Contacts getMessageTable \n";
-#$table0 =  $contacts->getMessageTable();
-#echo "Get all messages\n";
-#var_dump($table0->getMessages());
-#echo "END end of messages\n";
+echo "Contacts getMessageTable \n";
+$table1 =  $contacts->getMessageTable();
+echo "Get all messages\n";
+var_dump($table1->getMessages());
+echo "END end of messages\n";
 
 echo "Contacts getMessageTable with properties PidLidFileUnder, PidLidEmail1EmailAddress \n";
 $table2 =  $contacts->getMessageTable(PidLidFileUnder,

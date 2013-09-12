@@ -16,16 +16,22 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MAPI_FOLDER_TABLE_H
+#define MAPI_FOLDER_TABLE_H
 
-#ifndef MAPI_MESSAGE_TABLE_H
-#define MAPI_MESSAGE_TABLE_H
 
-/* typedef struct mapi_message_table_object */
+/* enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS}; */
+
+/* typedef struct mapi_table_object */
 /* { */
 /* 	zend_object	std; */
-/* 	mapi_object_t	*message_table; */
+/* 	mapi_object_t	*table; */
+/* 	zval		*parent; */
+/* 	uint32_t count; */
+/* 	enum table_type	type; */
 /* 	TALLOC_CTX	*talloc_ctx; */
-/* } mapi_message_table_object_t; */
+/* 	struct SPropTagArray	*tag_array; */
+/* } mapi_table_object_t; */
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -39,13 +45,13 @@
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPIMessageTable, __construct);
-PHP_METHOD(MAPIMessageTable, summary);
-PHP_METHOD(MAPIMessageTable, getMessages);
+PHP_METHOD(MAPIFolderTable, __construct);
+PHP_METHOD(MAPIFolderTable, summary);
+PHP_METHOD(MAPIFolderTable, getFolders);
 
-void MAPIMessageTableRegisterClass(TSRMLS_D);
+void MAPITableFolderRegisterClass(TSRMLS_D);
+zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint32_t count TSRMLS_DC);
 
-zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count, int nProp, zval ***props TSRMLS_DC);
 
 __END_DECLS
 

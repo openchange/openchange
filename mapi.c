@@ -65,6 +65,7 @@ static void register_classes(TSRMLS_D)
 
 	MAPITableRegisterClass(TSRMLS_C);
 	MAPIMessageTableRegisterClass(TSRMLS_C);
+	MAPIFolderTableRegisterClass(TSRMLS_C);
 }
 
 PHP_MINIT_FUNCTION(mapi)

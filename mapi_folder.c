@@ -202,7 +202,36 @@ PHP_METHOD(MAPIFolder, getFolderType)
 
 PHP_METHOD(MAPIFolder, getFolderTable)
 {
-	php_error(E_ERROR, "Not implemented");
+	enum MAPISTATUS		retval;
+	mapi_object_t		*obj_table;
+	zval                    *this_zval;
+	mapi_folder_object_t	*this_obj;
+	uint32_t		count;
+	zval			*table;
+	bool			recursive = true; // XXX parameter to turn this off/on
+	uint32_t                table_flags = 0;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|b",
+				  &recursive) == FAILURE) {
+		php_error(E_ERROR, "Bad paremetes list");
+	}
+	if (recursive) {
+		table_flags = 0x40;
+	}
+
+
+	this_zval = getThis();
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
+
+	obj_table = emalloc(sizeof(mapi_object_t));
+	mapi_object_init(obj_table);
+	retval = GetHierarchyTable(&(this_obj->store), obj_table, table_flags, &count);
+	CHECK_MAPI_RETVAL(retval, "getFolderTable");
+
+	table = create_folder_table_object(this_obj, obj_table, count TSRMLS_CC);
+
+	RETVAL_ZVAL(table, 0, 1);
+	ADD_CHILD(this_obj, table);
 }
 
 PHP_METHOD(MAPIFolder, getMessageTable)

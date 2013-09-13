@@ -19,11 +19,13 @@ void mapi_table_free_storage(void *object TSRMLS_DC)
 		mapi_object_release(obj->table);
 		efree(obj->table);
 	}
+	if (obj->tag_array) {
+		enum MAPISTATUS		retval;
+		retval = MAPIFreeBuffer(obj->tag_array);
+		CHECK_MAPI_RETVAL(retval, "Freeing table tag_array");
+	}
 	if (obj->talloc_ctx) {
 		talloc_free(obj->talloc_ctx);
-	}
-	if (obj->tag_array) {
-		MAPIFreeBuffer(obj->tag_array);
 	}
 
 	zend_object_std_dtor(&(obj->std) TSRMLS_CC);

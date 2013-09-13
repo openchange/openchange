@@ -21,6 +21,8 @@ echo "Contacts getMessageTable \n";
 $table1 =  $contacts->getMessageTable();
 echo "Get two messages\n";
 var_dump($table1->getMessages(2));
+#echo "Get remaining messages\n";
+#var_dump($table1->getMessages());
 echo "END end of messages\n";
 
 echo "Get parent folder\n";

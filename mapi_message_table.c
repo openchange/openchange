@@ -140,7 +140,7 @@ PHP_METHOD(MAPIMessageTable, getMessages)
 	array_init(res);
 	while (mapi_table_next_row_set(this_obj->table,  &row, count TSRMLS_CC)) {
 		for (i = 0; i < row.cRows; i++) {
-			mapi_id_t message_id = row.aRow[i].lpProps[1].value.d; // message_id
+			mapi_id_t message_id = row.aRow[i].lpProps[0].value.d; // message_id
 			message = mapi_folder_open_message(folder, message_id, open_mode TSRMLS_CC);
 			if (message) {
 				add_next_index_zval(res, message);

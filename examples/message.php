@@ -25,6 +25,9 @@ $roContact = $contacts->openMessage($contactMessageId, 0);
 echo "get PidTagGivenName\n";
 $retGet = $roContact->get(PidTagGivenName);
 var_dump($retGet);
+unset($retGet);
+
+
 
 echo "get various properties at the same time\n";
 $retMultipleGet = $roContact->get(PidLidEmail1EmailAddress,
@@ -32,8 +35,13 @@ $retMultipleGet = $roContact->get(PidLidEmail1EmailAddress,
 				  PidTagCompanyName,
 				  PidTagDisplayName,
 				  PidTagGivenName);
+foreach ($retMultipleGet as $prop) {
+	print "REmoving $prop\n";
+	unset($prop);
+}
 var_dump($retMultipleGet);
 
+return; # XXX
 
 $message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
@@ -51,7 +59,7 @@ if ($email == "changed@a.org") {
 
 echo "=> SaveChangesMessage \n";
 $message->save();
-#unset($message); # XXX does not work! probably for destructor
+unset($message); 
 
 echo "===================================================\n";
 

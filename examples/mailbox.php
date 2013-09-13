@@ -34,7 +34,11 @@ echo "Open by ID draft folder " . $drafts->getName() . "/" . $drafts->getFolderT
 
 $badMapiId = '0xFFFF0d0000000001'; # nothing folder
 echo "Open folder with bad ID \n";
-var_dump($mailbox->openFolder($badMapiId, "IPF.Note"));
+#var_dump($mailbox->openFolder($badMapiId, "IPF.Note"));
 echo "\n";
+
+
+
+
 
 ?>

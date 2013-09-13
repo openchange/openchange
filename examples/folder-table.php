@@ -39,4 +39,19 @@ var_dump($table2);
 echo "Folder table summary\n";
 var_dump($table2->summary());
 
+unset($table2);
+foreach ($folders as $one_folder) {
+	unset($one_folder);
+}
+unset($folders);
+unset($table1);
+unset($info);
+unset($parentFolder);
+unset($mailbox);
+unset($session);
+unset($mapiProfile);
+unset($mapi);
+
+
+
 ?>

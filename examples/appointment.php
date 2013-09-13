@@ -25,4 +25,13 @@ print "Message\n";
 var_dump($message);
 
 
+# workaround against shutdown problem
+#unset($message);
+#unset($calendar);
+#unset($mailbox);
+#unset($session);
+#unset($mapiProfile);
+#unset($mapi);
+
+
 ?>

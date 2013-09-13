@@ -224,7 +224,7 @@ const char *mapi_date(TALLOC_CTX *parent_ctx,
 }
 
 
-bool mapi_message_types_compatibility(zval *zv, int mapi_type)
+bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 {
 	int type = Z_TYPE_P(zv);
 	switch (type) {
@@ -350,9 +350,13 @@ PHP_METHOD(MAPIMessage, get)
 		if (argc == 1) {
 			result = prop;
 		} else {
-			if ((prop == NULL) || (ZVAL_IS_NULL(prop))) {
+			if (prop == NULL) {
+				continue;
+			} else if (ZVAL_IS_NULL(prop)) {
+				zval_ptr_dtor(&prop);
 				continue;
 			}
+
 			add_index_zval(result, prop_id, prop);
 		}
 	}
@@ -376,7 +380,7 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 	properties = &(message_obj->properties);
 	for (i=0; i<argc; i+=2) {
 		mapi_id_t id = Z_LVAL_PP(args[i]);
-		uint32_t  prop_type =  id & 0xFFFF;
+		mapi_id_t  prop_type =  id & 0xFFFF;
 		zval *val = *(args[i+1]);
 		void *data;
 		if (mapi_message_types_compatibility(val, prop_type) == false) {

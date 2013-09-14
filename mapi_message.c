@@ -382,16 +382,18 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 		mapi_id_t id = Z_LVAL_PP(args[i]);
 		mapi_id_t  prop_type =  id & 0xFFFF;
 		zval *val = *(args[i+1]);
+
 		void *data;
+		php_printf("to set 0x%" PRIX64 " type 0x%" PRIX64 " long param %i\n", id, prop_type, Z_LVAL_PP(args[i]));
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
-			php_printf("Incorrect type for property " PRIX64  ". Skipping\n", id);
+			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
 			continue;
 		}
 
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, val);
 
 		/* Pushing the property with SetProps */
-		{
+//		{
 			enum MAPISTATUS		retval;
 			struct SPropValue	*lpProps;
 			uint32_t		cValues;
@@ -401,17 +403,17 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 			lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
 			retval = SetProps(message_obj->message, 0, lpProps, cValues);
 			MAPIFreeBuffer(lpProps);
-		}
+//		}
 
-		uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id);
-		if (prop_pos >=  properties->cValues) {
-			php_printf("Adding property\n");
+		/* uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id); */
+		/* if (prop_pos >=  properties->cValues) { */
+		/* 	php_printf("Adding property\n"); */
 
-			add_mapi_SPropValue(message_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data);
-		} else {
-			php_printf("Saving existent property in pos %i\n", prop_pos);
-			set_mapi_SPropValue(message_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data);
-		}
+		/* 	add_mapi_SPropValue(message_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data); */
+		/* } else { */
+		/* 	php_printf("Saving existent property in pos %i\n", prop_pos); */
+		/* 	set_mapi_SPropValue(message_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data); */
+		/* } */
 	}
 
 }
@@ -428,7 +430,7 @@ PHP_METHOD(MAPIMessage, set)
 		WRONG_PARAM_COUNT;
 	}
 
-	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+	args = (zval ***)safe_emalloc(argc, sizeof(zval ***), 0);
 	if (zend_get_parameters_array_ex(argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;

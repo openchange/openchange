@@ -96,7 +96,7 @@ PHP_METHOD(MAPIMessageTable, summary)
 					// The type has changed, probably not found or error, ignore
 					continue;
 				} else {
-					prop_value = (void*) find_SPropValue_data(&(row_set.aRow[i]), prop_id_row);
+					prop_value = (void*) find_SPropValue_data(&(row_set.aRow[i]), prop_id);
 					zprop      = mapi_message_property_to_zval(this_obj->talloc_ctx, prop_id, prop_value);
 				}
 				add_index_zval(obj_summary, prop_id, zprop);

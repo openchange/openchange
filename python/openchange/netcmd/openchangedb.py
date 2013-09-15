@@ -145,20 +145,23 @@ class cmd_openchangedb_provision(Command):
                                       first_organization_unit)
 
         print "OpenChange Database Provisioning"
-        openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
-        openchange_ldb.setup()
+        try:
+            openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
+            openchange_ldb.setup()
+            print "* Provisioning root DSE"
+            openchange_ldb.add_rootDSE(self.ocserverdn, self.firstorg, self.firstou)
 
-        print "Adding root DSE"
-        openchange_ldb.add_rootDSE(self.ocserverdn, self.firstorg, self.firstou)
+            # Add a server object
+            # It is responsible for holding the GlobalCount identifier (48 bytes)
+            # and the Replica identifier
+            print "* Provisioning server object"
+            openchange_ldb.add_server(self.ocserverdn, self.netbiosname, self.firstorg, self.firstou)
 
-        # Add a server object
-        # It is responsible for holding the GlobalCount identifier (48 bytes)
-        # and the Replica identifier
-        openchange_ldb.add_server(self.ocserverdn, self.netbiosname, self.firstorg, self.firstou)
-
-        print "[+] Public Folders"
-        print "==================="
-        openchange_ldb.add_public_folders(self)
+            print "* Provisioning public folders"
+            openchange_ldb.add_public_folders(self)
+            print "OK."
+        except Exception, e:
+            raise CommandError(openchangedb_url(lp), e)
 
         return
 

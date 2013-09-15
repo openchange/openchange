@@ -248,17 +248,17 @@ PHP_METHOD(MAPIFolder, getMessageTable)
 	uint32_t		count;
 	zval			*table;
 	int			i;
-	zval 			***args;
+	zval 			**args;
 	int 			argc = ZEND_NUM_ARGS();
 
-	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
-	if ( zend_get_parameters_array_ex(argc, args) == FAILURE) {
+	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
+	if ( zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}
 	for (i=0; i < argc; i++) {
-		zval **val = args[i];
-		if (Z_TYPE_PP(val) != IS_LONG) {
+		zval *val = args[i];
+		if (Z_TYPE_P(val) != IS_LONG) {
 			efree(args);
 			php_error(E_ERROR, "getMessageTable() only accepts properties ID as optional parameters");
 		}

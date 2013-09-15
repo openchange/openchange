@@ -23,7 +23,7 @@ void MAPIMessageTableRegisterClass(TSRMLS_D)
 	mapi_message_table_object_handlers.clone_obj = NULL;
 }
 
-zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count, int nProp, zval ***props TSRMLS_DC)
+zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_object_t* message_table, uint32_t count, int nProp, zval **props TSRMLS_DC)
 {
 	int			i;
 	struct SPropTagArray	*tag_array;
@@ -33,7 +33,7 @@ zval *create_message_table_object(mapi_folder_type_t type, zval* folder, mapi_ob
 	talloc_ctx =   talloc_named(NULL, 0, "message_table");
 	tag_array = set_SPropTagArray(talloc_ctx, 1, PR_MID);
 	for(i=0; i < nProp; i++) {
-		mapi_id_t id = Z_LVAL_PP(props[i]);
+		mapi_id_t id = Z_LVAL_P(props[i]);
 		SPropTagArray_add(talloc_ctx, tag_array, id);
 	}
 

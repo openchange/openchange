@@ -8,16 +8,16 @@
 ########################################################
 
 ########################################################
-# To mark SVN snapshots this should be set to 'yes'    #
+# To mark GIT snapshots this should be set to 'yes'    #
 # in the development BRANCH, and set to 'no' only in   #
 # the release BRANCH                                   #
 #                                                      #
-# <MAJOR>.<MINOR>[...]-SVN-build-xxx                   #
+# <MAJOR>.<MINOR>[...]-GIT-build-xxx                   #
 #                                                      #
-# e.g. OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes          #
-#  ->  "0.7-SVN-build-199"                             #
+# e.g. OPENCHANGE_VERSION_IS_GIT_SNAPSHOT=yes          #
+#  ->  "0.7-GIT-build-199"                             #
 ########################################################
-OPENCHANGE_VERSION_IS_SVN_SNAPSHOT=yes
+OPENCHANGE_VERSION_IS_GIT_SNAPSHOT=yes
 
 
 #############################################################

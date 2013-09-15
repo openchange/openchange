@@ -70,3 +70,16 @@ class OpenChangeOptions(optparse.OptionGroup):
         else:
             self._lp.load_default()
         return self._lp
+
+class VersionOptions(optparse.OptionGroup):
+    """Command line option for printing OpenChange version."""
+    def __init__(self, parser):
+        optparse.OptionGroup.__init__(self, parser, "Version Options")
+        self.add_option("-V", "--version", action="callback",
+                        callback=self._display_version,
+                        help="Display version number")
+
+    def _display_version(self, option, opt_str, arg, parser):
+        import openchange
+        print openchange.version
+        sys.exit(0)

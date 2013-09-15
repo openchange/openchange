@@ -120,7 +120,7 @@ class Command(object):
             self.errf.write("ERROR(%s): %s - %s\n" % (str(etype), message, evalue))
             force_traceback = True
 
-        if force_traceback: or samba.get_debug_level() >= 3:
+        if force_traceback or samba.get_debug_level() >= 3:
             traceback.print_tb(etraceback)
 
     def _create_parser(self, prog, epilog=None):

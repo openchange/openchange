@@ -103,5 +103,7 @@ ZEND_END_ARG_INFO()
 
 void print_stacktrace();
 
+#define UNUSED_PARAM -1 // macro for non-used parameter in zend_get_parameters_array
+
 
 #endif /*! PHP_MAPI_H */

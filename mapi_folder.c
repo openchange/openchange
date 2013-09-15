@@ -352,7 +352,7 @@ PHP_METHOD(MAPIFolder, openMessage)
 PHP_METHOD(MAPIFolder, createMessage)
 {
 	int 			argc = ZEND_NUM_ARGS();
-	zval 			***args;
+	zval 			**args;
 	enum MAPISTATUS		retval;
 	zval 			*this_zval;
 	zval			*message_zval;
@@ -360,12 +360,12 @@ PHP_METHOD(MAPIFolder, createMessage)
 	mapi_object_t		*message;
 	char 			open_mode = 3;
 
-	args = (zval ***)safe_emalloc(argc, sizeof(zval **), 0);
+	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
 	if ((argc == 0) || ((argc % 2) == 1)) {
 		WRONG_PARAM_COUNT;
 	}
 
-	if (zend_get_parameters_array_ex(argc, args) == FAILURE) {
+	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}
@@ -391,8 +391,6 @@ PHP_METHOD(MAPIFolder, createMessage)
 	default:
 		php_error(E_ERROR, "Unknow folder type: %i", this_obj->type);
 	}
-
-	php_printf("Message handle 0 %i\n",  Z_OBJ_HANDLE_P(message_zval));
 
 	mapi_message_set_properties(message_zval, argc, args TSRMLS_CC);
 

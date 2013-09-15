@@ -315,15 +315,15 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 PHP_METHOD(MAPIMessage, get)
 {
 	int 			i, argc = ZEND_NUM_ARGS();
-	zval 			***args;
+	zval 			**args;
 	zval			*this_php_obj;
 	mapi_message_object_t 	*this_obj;
 	zval *result;
 
-	args = (zval***) safe_emalloc(argc, sizeof(zval **), 0);
+	args = (zval**) safe_emalloc(argc, sizeof(zval **), 0);
 
 	if (ZEND_NUM_ARGS() == 0 ||
-	    zend_get_parameters_array_ex(argc, args) == FAILURE) {
+	    zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}
@@ -339,7 +339,7 @@ PHP_METHOD(MAPIMessage, get)
 	for (i=0; i<argc; i++) {
 		zval *prop;
 		zval **temp_prop;
-		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_PP(args[i]);
+		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_P(args[i]);
 //		php_printf("get 0x%" PRIX64  "\n", prop_id);
 		prop  = mapi_message_get_property(this_obj, prop_id);
 
@@ -366,7 +366,7 @@ PHP_METHOD(MAPIMessage, get)
 }
 
 
-void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRMLS_DC)
+void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
 {
 	int i;
 	mapi_message_object_t 	*message_obj;
@@ -375,12 +375,12 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 	message_obj = (mapi_message_object_t *) zend_object_store_get_object(message_zval TSRMLS_CC);
 	properties = &(message_obj->properties);
 	for (i=0; i<argc; i+=2) {
-		mapi_id_t id = Z_LVAL_PP(args[i]);
+		mapi_id_t id = Z_LVAL_P(args[i]);
 		mapi_id_t  prop_type =  id & 0xFFFF;
-		zval *val = *(args[i+1]);
+		zval *val = args[i+1];
 
 		void *data;
-		php_printf("to set 0x%" PRIX64 " type 0x%" PRIX64 " long param %i\n", id, prop_type, Z_LVAL_PP(args[i]));
+		php_printf("to set 0x%" PRIX64 " type 0x%" PRIX64 " long param %i\n", id, prop_type, Z_LVAL_P(args[i]));
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
 			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
 			continue;
@@ -419,15 +419,15 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval***args TSRML
 PHP_METHOD(MAPIMessage, set)
 {
 	int 			argc;
-	zval 			***args;
+	zval 			**args;
 
 	argc = ZEND_NUM_ARGS();
 	if ((argc == 0) || ((argc % 2) == 1)) {
 		WRONG_PARAM_COUNT;
 	}
 
-	args = (zval ***)safe_emalloc(argc, sizeof(zval ***), 0);
-	if (zend_get_parameters_array_ex(argc, args) == FAILURE) {
+	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
+	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}

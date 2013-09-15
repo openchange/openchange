@@ -299,20 +299,16 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 	return data;
 }
 
-
-
-uint32_t find_mapi_SPropValue_pos(struct mapi_SPropValue_array *properties, uint32_t mapitag)
-{
-	uint32_t i;
-	for (i = 0; i < properties->cValues; i++) {
-		if (properties->lpProps[i].ulPropTag == mapitag) {
-			return i;
-		}
-	}
-	return i;
-}
-
-
+/* uint32_t find_mapi_SPropValue_pos(struct mapi_SPropValue_array *properties, uint32_t mapitag) */
+/* { */
+/* 	uint32_t i; */
+/* 	for (i = 0; i < properties->cValues; i++) { */
+/* 		if (properties->lpProps[i].ulPropTag == mapitag) { */
+/* 			return i; */
+/* 		} */
+/* 	} */
+/* 	return i; */
+/* } */
 
 // 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
 // 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);

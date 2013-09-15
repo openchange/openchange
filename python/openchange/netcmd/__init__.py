@@ -25,6 +25,7 @@ import optparse
 import samba
 import sys, traceback
 import textwrap
+from ldb import LdbError
 
 class Option(optparse.Option):
     pass
@@ -114,6 +115,8 @@ class Command(object):
         elif type(inner_exception) is Exception:
             self.errf.write("ERROR(exception): %s - %s\n" % (message, evalue))
             force_traceback = True
+        elif type(inner_exception) is LdbError:
+            self.errf.write("ERROR(ldb): %s - %s\n" % (message, evalue))
         elif inner_exception is None:
             self.errf.write("ERROR: %s\n" % (message))
         else:

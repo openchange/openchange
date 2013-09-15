@@ -335,6 +335,12 @@ PHP_METHOD(MAPIMessage, get)
 		MAKE_STD_ZVAL(result);
 		array_init(result);
 	}
+	for (i=0; i < argc ; i++) {
+		if (Z_TYPE_P(args[i]) != IS_LONG) {
+			php_error(E_ERROR, "Argument %i is not a numeric property id", i);
+		}
+
+	}
 
 	for (i=0; i<argc; i++) {
 		zval *prop;
@@ -420,6 +426,7 @@ PHP_METHOD(MAPIMessage, set)
 {
 	int 			argc;
 	zval 			**args;
+	int			i;
 
 	argc = ZEND_NUM_ARGS();
 	if ((argc == 0) || ((argc % 2) == 1)) {
@@ -430,6 +437,12 @@ PHP_METHOD(MAPIMessage, set)
 	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
+	}
+	for (i=0; i < argc ; i+=2) {
+		if (Z_TYPE_P(args[i]) != IS_LONG) {
+			php_error(E_ERROR, "Argument %i is not a numeric property id", i);
+		}
+
 	}
 
 	mapi_message_set_properties(getThis(), argc, args TSRMLS_CC);

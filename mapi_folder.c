@@ -359,6 +359,7 @@ PHP_METHOD(MAPIFolder, createMessage)
 	mapi_folder_object_t	*this_obj;
 	mapi_object_t		*message;
 	char 			open_mode = 3;
+	int 			i;
 
 	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
 	if ((argc == 0) || ((argc % 2) == 1)) {
@@ -368,6 +369,11 @@ PHP_METHOD(MAPIFolder, createMessage)
 	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
+	}
+	for (i=0; i < argc ; i+=2) {
+		if (Z_TYPE_P(args[i]) != IS_LONG) {
+			php_error(E_ERROR, "Argument %i is not a numeric property id", i);
+		}
 	}
 
 	this_zval = getThis();

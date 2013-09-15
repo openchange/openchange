@@ -6,6 +6,10 @@ aclocal.m4
 *~
 configure
 Doxyfile
+<<<<<<< HEAD
+=======
+./bin/
+>>>>>>> Start refactoring openchange administration tools into a single tool
 config.h
 config.h.in
 config.log

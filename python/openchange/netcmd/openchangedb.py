@@ -70,7 +70,7 @@ class cmd_openchangedb_provision(Command):
         Option("--first-organization-unit", type="string", metavar="First Organization Unit",
                help="set first organization unit"),
         ]
-    take_args = []
+    takes_args = []
 
     def guess_names_from_smbconf(self, lp, firstorg=None, firstou=None):
         """Guess configuration settings to use from smb.conf.

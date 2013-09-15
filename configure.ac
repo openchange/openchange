@@ -265,9 +265,9 @@ dnl ---------------------------------------------------------------------------
 dnl Define an assert macro if this is a development release
 dnl ---------------------------------------------------------------------------
 . `dirname $0`/VERSION
-AC_SUBST(OPENCHANGE_VERSION_IS_SVN_SNAPSHOT)
+AC_SUBST(OPENCHANGE_VERSION_IS_GIT_SNAPSHOT)
 
-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then
    ASSERT_DEFINITION="-DENABLE_ASSERTS"
 fi
 AC_SUBST(ASSERT_DEFINITION)
@@ -337,7 +337,7 @@ dnl Check for Flex
 dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
 dnl default version provided under FreeBSD or RHL5
 dnl ----------------------------------------------------------------------------
-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then
    AC_ARG_VAR([FLEX], [Location of the flex program.])
    AC_CHECK_PROG([FLEX], [flex], [flex])
 
@@ -505,7 +505,7 @@ dnl ###########################################################################
 dnl ---------------------------------------------------------------------------
 dnl Check for Bison
 dnl ---------------------------------------------------------------------------
-if test x"$OPENCHANGE_VERSION_IS_SVN_SNAPSHOT" = x"yes"; then
+if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then
    AC_ARG_VAR([BISON], [Location of the bison program.])
    AC_PATH_PROG([BISON], [bison], [bison])
 

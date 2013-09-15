@@ -45,6 +45,7 @@ all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
+		python-modules		\
 		$(PYMAPIALL)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
@@ -1470,12 +1471,21 @@ pythonscriptdir = python
 
 PYTHON_MODULES = $(patsubst $(pythonscriptdir)/%,%,$(shell find  $(pythonscriptdir) -name "*.py"))
 
-python-install::
+python-modules:	$(pythonscriptdir)/openchange/_glue.$(SHLIBEXT)
+
+$(pythonscriptdir)/openchange/_glue.${SHLIBEXT}: python/openchange/pyglue.c
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) -fno-strict-aliasing $(DSOOPT) $(LDFLAGS) -o $@ $^ $(PYTHON_CFLAGS) $(PYTHON_LIBS) $(LIBS)
+
+python-install:: python-modules
+	@echo "Installing Administration Tools"
+	$(INSTALL) -m 0755 scripting/bin/openchange-tool $(DESTDIR)$(bindir)
 	@echo "Installing Python modules"
 	@$(foreach MODULE, $(PYTHON_MODULES), \
 		$(INSTALL) -d $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 		$(INSTALL) -m 0644 $(pythonscriptdir)/$(MODULE) $(DESTDIR)$(pythondir)/$(dir $(MODULE)); \
 	)
+	$(INSTALL) -m 0755 $(pythonscriptdir)/openchange/_glue.$(SHLIBEXT) $(DESTDIR)$(pythondir)/openchange
 
 python-uninstall::
 	rm -rf $(DESTDIR)$(pythondir)/openchange
@@ -1493,7 +1503,9 @@ check:: check-python
 clean-python:
 	rm -f pymapi/*.o
 	rm -f $(pythonscriptdir)/mapi.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/openchange/_glue.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/*.pyc
+	rm -f $(pythonscriptdir)/openchange/netcmd/*.pyc
 
 clean:: clean-python
 
@@ -1532,7 +1544,7 @@ pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
-#	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
+	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 #	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 

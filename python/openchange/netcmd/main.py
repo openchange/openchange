@@ -17,11 +17,17 @@
 
 """The main openchange-tool command implementation."""
 
+from openchange import getopt as options
+
 from openchange.netcmd import SuperCommand
 from openchange.netcmd.openchangedb import cmd_openchangedb
 
 class cmd_openchangetool(SuperCommand):
     """Main OpenChange administration tool."""
+
+    takes_optiongroups = {
+        "versionopts": options.VersionOptions,
+        }
 
     subcommands = {}
     subcommands["openchangedb"] = cmd_openchangedb()

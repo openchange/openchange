@@ -59,6 +59,7 @@ class cmd_openchangedb_provision(Command):
 
     takes_optiongroups = {
         "openchangeopts": options.OpenChangeOptions,
+        "versionopts": options.VersionOptions,
         }
 
     takes_options = [
@@ -129,6 +130,7 @@ class cmd_openchangedb_provision(Command):
         self.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, self.ocfirstorg, self.ocserverdn)
 
     def run(self, openchangeopts=None,
+            versionopts=None,
             first_organization=None, 
             first_organization_unit=None,
             smbconf=None):

@@ -37,24 +37,6 @@ from openchange.netcmd import (
 class cmd_openchangedb_provision(Command):
     """Provision openchange database."""
 
-    def __init__(self, errf=sys.stderr):
-        self.errf = errf
-        self.rootdn = None
-        self.domaindn = None
-        self.configdn = None
-        self.schemadn = None
-        self.dnsdomain = None
-        self.netbiosname = None
-        self.domain = None
-        self.hostname = None
-        self.serverrole = None
-        self.firstorg = None
-        self.firstou = None
-        self.firstorgdn = None
-        # OpenChange dispatcher database specific
-        self.ocfirstorgdn = None
-        self.ocserverdn = None
-    
     synopsys = "%prog [options]"
 
     takes_optiongroups = {
@@ -129,6 +111,23 @@ class cmd_openchangedb_provision(Command):
         self.ocfirstorg = firstorg
         self.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, self.ocfirstorg, self.ocserverdn)
 
+    def _initAttributes(self):
+        self.rootdn = None
+        self.domaindn = None
+        self.configdn = None
+        self.schemadn = None
+        self.dnsdomain = None
+        self.netbiosname = None
+        self.domain = None
+        self.hostname = None
+        self.serverrole = None
+        self.firstorg = None
+        self.firstou = None
+        self.firstorgdn = None
+        # OpenChange dispatcher database specific
+        self.ocfirstorgdn = None
+        self.ocserverdn = None
+    
     def run(self, openchangeopts=None,
             versionopts=None,
             first_organization=None, 
@@ -141,25 +140,27 @@ class cmd_openchangedb_provision(Command):
             if smbconf is None:
                 raise CommandError("smb.conf not found!")
 
+        self._initAttributes()
         self.guess_names_from_smbconf(lp, first_organization,
                                       first_organization_unit)
 
-        print "OpenChange Database Provisioning"
+        self.outf.write("OpenChange Database Provisioning\n")
         try:
-            openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
+            openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp), 
+                                                  self.outf)
             openchange_ldb.setup()
-            print "* Provisioning root DSE"
+            self.outf.write("* Provisioning root DSE\n")
             openchange_ldb.add_rootDSE(self.ocserverdn, self.firstorg, self.firstou)
 
             # Add a server object
             # It is responsible for holding the GlobalCount identifier (48 bytes)
             # and the Replica identifier
-            print "* Provisioning server object"
+            self.outf.write("* Provisioning server object\n")
             openchange_ldb.add_server(self.ocserverdn, self.netbiosname, self.firstorg, self.firstou)
 
-            print "* Provisioning public folders"
+            self.outf.write("* Provisioning public folders\n")
             openchange_ldb.add_public_folders(self)
-            print "OK."
+            self.outf.write("OK.\n")
         except Exception, e:
             raise CommandError(openchangedb_url(lp), e)
 

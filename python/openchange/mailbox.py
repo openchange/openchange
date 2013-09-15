@@ -19,6 +19,7 @@
 #
 
 import os
+import sys
 import samba
 from samba import Ldb, unix2nttime
 import ldb
@@ -36,7 +37,8 @@ class OpenChangeDB(object):
     """The OpenChange database.
     """
 
-    def __init__(self, url):
+    def __init__(self, url, outf=sys.stdout):
+        self.outf = outf
         self.url = url
         self.ldb = Ldb(self.url)
 	self.nttime = samba.unix2nttime(int(time.time()))
@@ -123,7 +125,7 @@ dn: CASE_INSENSITIVE
         dn = "CN=%s,%s" % (fid, dn_prefix)
         change_num = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
         childcount = len(children)
-        print "\t* [0x%.16x] %s" % (int(fid, 10), name)
+        self.outf.write("\t* [0x%.16x] %s\n" % (int(fid, 10), name))
         if parent_fid == 0:
             self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount)
         else:

@@ -50,13 +50,13 @@ echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
 
 echo "Check one-argument prop set: setting PidTagDisplayName to 'juju'\n";
 $message->set(PidTagDisplayName, 'juju');
-echo "Value after set: " . $message->get('PidTagDisplayName') . "\n";
+echo "Value after set: " . $message->get(PidTagDisplayName) . "\n";
 
 
 $email = $message->get(PidLidEmail1EmailAddress);
 if ($email == "changed@a.org") {
    echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
-   $message->set(PidLidEmail1EmailAddress, "jkeriheuel@zentyal.com", 'PidTagDisplayName', 'julien');
+   $message->set(PidLidEmail1EmailAddress, "jkeriheuel@zentyal.com", PidTagDisplayName, 'julien');
 } else if ($email == "jkerihuel@zentyal.com") {
    echo "=> [2] Set PidLidEmail1EmailAddress to changed@a.org\n";
    $message->set(PidLidEmail1EmailAddress, "changed@a.org", PidTagDisplayName, 'changedD');
@@ -64,6 +64,7 @@ if ($email == "changed@a.org") {
   echo "Not expected value\n";
    $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", PidTagDisplayName, 'julien');
 }
+
 
 echo "=> SaveChangesMessage \n";
 $message->save();
@@ -81,13 +82,13 @@ $email = $message->get(PidLidEmail1EmailAddress);
 echo "Reverting changes\n";
 if ($email == "changed@a.org") {
    echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
-   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", 'PidTagDisplayName', 'julien');
+   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", PidTagDisplayName, 'julien');
 } else if ($email == "jkerihuel@zentyal.com") {
    echo "=> [2] Set PidLidEmail1EmailAddress to changed@a.org\n";
-   $message->set(PidLidEmail1EmailAddress, "changed@a.org", 'PidTagDisplayName', 'changedD');
+   $message->set(PidLidEmail1EmailAddress, "changed@a.org", PidTagDisplayName, 'changedD');
 } else {
   echo "Not expected value\n";
-   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", 'PidTagDisplayName', 'julien');
+   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", PidTagDisplayName, 'julien');
 }
 
 

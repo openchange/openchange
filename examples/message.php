@@ -36,57 +36,64 @@ $retMultipleGet = $roContact->get(PidLidEmail1EmailAddress,
 				  PidTagDisplayName,
 				  PidTagGivenName);
 foreach ($retMultipleGet as $prop) {
-	print "REmoving $prop\n";
 	unset($prop);
 }
 var_dump($retMultipleGet);
 
-return; # XXX
 
 $message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
+echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
+echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
+
+
+
+echo "Check one-argument prop set: setting PidTagDisplayName to 'juju'\n";
+$message->set(PidTagDisplayName, 'juju');
+echo "Value after set: " . $message->get('PidTagDisplayName') . "\n";
+
 
 $email = $message->get(PidLidEmail1EmailAddress);
 if ($email == "changed@a.org") {
    echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
-   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com");
+   $message->set(PidLidEmail1EmailAddress, "jkeriheuel@zentyal.com", 'PidTagDisplayName', 'julien');
 } else if ($email == "jkerihuel@zentyal.com") {
    echo "=> [2] Set PidLidEmail1EmailAddress to changed@a.org\n";
-   $message->set(PidLidEmail1EmailAddress, "changed@a.org");
+   $message->set(PidLidEmail1EmailAddress, "changed@a.org", PidTagDisplayName, 'changedD');
 } else {
   echo "Not expected value\n";
-}
-
-echo "=> SaveChangesMessage \n";
-$message->save();
-unset($message); 
-
-echo "===================================================\n";
-
-
-$message = $contacts->openMessage($contactMessageId, 1);
-echo "=> Message with message ID " . $message->getID() . " opened\n";
-
-$email = $message->get(PidLidEmail1EmailAddress);
-if ($email == "changed@a.org") {
-   echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
-   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com");
-} else if ($email == "jkerihuel@zentyal.com") {
-   echo "=> [2] Set PidLidEmail1EmailAddress to changed@a.org\n";
-   $message->set(PidLidEmail1EmailAddress, "changed@a.org");
-} else {
-  echo "Not expected value\n";
+   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", PidTagDisplayName, 'julien');
 }
 
 echo "=> SaveChangesMessage \n";
 $message->save();
 unset($message);
 
-echo "=================\n";
-echo "Create new contact\n";
-$newContact = $contacts->createMessage(PidLidEmail1EmailAddress, 'new@contacts.org');
-var_dump($newContact);
+echo "===================================================\n";
 
-print "New contact ID " . $newContact->getID() . "\n";
-unset($newContact);
+
+$message = $contacts->openMessage($contactMessageId, 1);
+echo "=> Message with message ID " . $message->getID() . " opened\n";
+echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
+echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
+
+$email = $message->get(PidLidEmail1EmailAddress);
+echo "Reverting changes\n";
+if ($email == "changed@a.org") {
+   echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
+   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", 'PidTagDisplayName', 'julien');
+} else if ($email == "jkerihuel@zentyal.com") {
+   echo "=> [2] Set PidLidEmail1EmailAddress to changed@a.org\n";
+   $message->set(PidLidEmail1EmailAddress, "changed@a.org", 'PidTagDisplayName', 'changedD');
+} else {
+  echo "Not expected value\n";
+   $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", 'PidTagDisplayName', 'julien');
+}
+
+
+
+echo "=> SaveChangesMessage \n";
+$message->save();
+unset($message);
+
 ?>

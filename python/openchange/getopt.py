@@ -59,7 +59,12 @@ class OpenChangeOptions(optparse.OptionGroup):
     def get_loadparm(self):
         """Return loadparm object with data specified on the command line."""
         if self._configfile is not None:
-            self._lp.load(self._configfile)
+            try:
+                self._lp.load(self._configfile)
+            except RuntimeError as e:
+                print "[!] %s" % (e)
+                sys.exit(0)
+                
         elif os.getenv("SMB_CONF_PATH") is not None:
             self._lp.load(os.getenv("SMB_CONF_PATH"))
         else:

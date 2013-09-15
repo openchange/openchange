@@ -6,7 +6,6 @@ aclocal.m4
 *~
 configure
 Doxyfile
-./bin/
 config.h
 config.h.in
 config.log

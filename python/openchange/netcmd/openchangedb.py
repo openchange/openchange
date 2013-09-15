@@ -19,7 +19,7 @@
 
 import os
 import sys
-import samba.getopt as options
+from openchange import getopt as options
 from openchange import mailbox
 from openchange.urlutils import openchangedb_url
 
@@ -58,7 +58,7 @@ class cmd_openchangedb_provision(Command):
     synopsys = "%prog [options]"
 
     takes_optiongroups = {
-        "sambaopts": options.SambaOptions,
+        "openchangeopts": options.OpenChangeOptions,
         }
 
     takes_options = [
@@ -128,22 +128,21 @@ class cmd_openchangedb_provision(Command):
         self.ocfirstorg = firstorg
         self.ocfirstorgdn = "CN=%s,CN=%s,%s" % (firstou, self.ocfirstorg, self.ocserverdn)
 
-    def run(self, sambaopts=None,
+    def run(self, openchangeopts=None,
             first_organization=None, 
             first_organization_unit=None,
             smbconf=None):
 
-        lp = sambaopts.get_loadparm()
+        lp = openchangeopts.get_loadparm()
         if smbconf is None:
             smbconf = lp.configfile
             if smbconf is None:
                 raise CommandError("smb.conf not found!")
-        print "SMB configuration file: %s" % smbconf
 
         self.guess_names_from_smbconf(lp, first_organization,
                                       first_organization_unit)
 
-        print "Setting up openchange db"
+        print "OpenChange Database Provisioning"
         openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
         openchange_ldb.setup()
 

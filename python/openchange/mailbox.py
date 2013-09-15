@@ -123,7 +123,7 @@ dn: CASE_INSENSITIVE
         dn = "CN=%s,%s" % (fid, dn_prefix)
         change_num = gen_mailbox_folder_fid(ChangeNumber, ReplicaID)
         childcount = len(children)
-        print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)
+        print "\t* [0x%.16x] %s" % (int(fid, 10), name)
         if parent_fid == 0:
             self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount)
         else:

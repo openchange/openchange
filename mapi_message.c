@@ -374,15 +374,15 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-
 void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
 {
 	int i;
 	mapi_message_object_t 	*message_obj;
-	struct mapi_SPropValue_array *properties;
+	enum MAPISTATUS		retval;
+	struct SPropValue	*lpProps;
+	uint32_t		cValues;
 
 	message_obj = (mapi_message_object_t *) zend_object_store_get_object(message_zval TSRMLS_CC);
-	properties = &(message_obj->properties);
 	for (i=0; i<argc; i+=2) {
 		mapi_id_t id = Z_LVAL_P(args[i]);
 		mapi_id_t  prop_type =  id & 0xFFFF;
@@ -397,31 +397,14 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, val);
 
 		/* Pushing the property with SetProps */
-//		{
-			enum MAPISTATUS		retval;
-			struct SPropValue	*lpProps;
-			uint32_t		cValues;
-
-			cValues = 0;
-			lpProps = talloc_array(message_obj->talloc_ctx, struct SPropValue, 2);
-			lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
-			retval = SetProps(message_obj->message, 0, lpProps, cValues);
-			MAPIFreeBuffer(lpProps);
-//		}
-
-		/* uint32_t prop_pos = find_mapi_SPropValue_pos(properties, id); */
-		/* if (prop_pos >=  properties->cValues) { */
-		/* 	php_printf("Adding property\n"); */
-
-		/* 	add_mapi_SPropValue(message_obj->talloc_ctx,  properties->lpProps, &(properties->cValues), id ,data); */
-		/* } else { */
-		/* 	php_printf("Saving existent property in pos %i\n", prop_pos); */
-		/* 	set_mapi_SPropValue(message_obj->talloc_ctx,  &(properties->lpProps[prop_pos]), data); */
-		/* } */
+		cValues = 0;
+		lpProps = talloc_array(message_obj->talloc_ctx, struct SPropValue, 2);
+		lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
+		retval = SetProps(message_obj->message, 0, lpProps, cValues);
+		MAPIFreeBuffer(lpProps);
 	}
 
 }
-
 
 // TODO: for other types, now it only works for strings
 PHP_METHOD(MAPIMessage, set)

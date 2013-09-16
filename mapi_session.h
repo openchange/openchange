@@ -44,20 +44,11 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPISession, __construct);
 PHP_METHOD(MAPISession, __destruct);
-/* PHP_METHOD(MAPISession, folders); */
-/* PHP_METHOD(MAPISession, fetchmail); */
-/* PHP_METHOD(MAPISession, appointments); */
-/* PHP_METHOD(MAPISession, contacts); */
 PHP_METHOD(MAPISession, mailbox);
 
-
-/* static zval *get_child_folders(TALLOC_CTX *, mapi_object_t *, mapi_id_t, int); */
-/* static const char *get_container_class(TALLOC_CTX *, mapi_object_t *, mapi_id_t); */
-/* static void init_message_store(mapi_object_t *, struct mapi_session *, bool, char *); */
 void MAPISessionRegisterClass(TSRMLS_D);
 zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
 void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
 
 
 __END_DECLS

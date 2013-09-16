@@ -85,7 +85,7 @@ char *mapi_id_to_str(mapi_id_t id)
 	char *str = (char*) emalloc(MAPI_ID_STR_SIZE);
 	int res = snprintf(str, MAPI_ID_STR_SIZE, "0x%" PRIX64, id);
 	if (res < 0) {
-		php_error(E_ERROR, "Error  convertind MAPI ID 0x" PRIX64 " to string", id);
+		php_error(E_ERROR, "Error converting MAPI ID 0x" PRIX64 " to string", id);
 	}
 	return str;
 }

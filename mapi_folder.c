@@ -10,6 +10,7 @@ static zend_function_entry mapi_folder_class_functions[] = {
 	PHP_ME(MAPIFolder,	getMessageTable,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	openMessage,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIFolder,	createMessage,		NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIFolder,	deleteMessages,		NULL, ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -412,4 +413,43 @@ PHP_METHOD(MAPIFolder, createMessage)
 	ADD_CHILD(this_obj, message_zval);
 }
 
+PHP_METHOD(MAPIFolder, deleteMessages)
+{
+	enum MAPISTATUS 	res;
+	int 			argc;
+	zval 			**args;
+	int 			i;
+	mapi_folder_object_t    *this_obj;
+	mapi_id_t 		*to_delete;
 
+	argc = ZEND_NUM_ARGS();
+	if (argc == 0) {
+		WRONG_PARAM_COUNT;
+	}
+
+	args = (zval**) safe_emalloc(argc, sizeof(zval **), 0);
+	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
+		efree(args);
+		php_error(E_ERROR, "Error when get parameters for deleteMessages method");
+	}
+	for (i=0; i < argc ; i++) {
+		int type = Z_TYPE_P(args[i]);
+		if (( type != IS_STRING) && (type != IS_LONG)) {
+			php_error(E_ERROR, "Argument %i is not a message id", i);
+		}
+	}
+
+	to_delete = (mapi_id_t*) emalloc(argc*sizeof(mapi_id_t*));
+	for (i=0; i < argc ; i++) {
+		int type = Z_TYPE_P(args[i]);
+		if (type == IS_STRING) {
+			to_delete[i] = str_to_mapi_id(Z_STRVAL_P(args[i]));
+		} else if (type == IS_LONG) {
+			to_delete[i] = Z_LVAL_P(args[i]);
+		}
+	}
+
+	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	res = DeleteMessage(&(this_obj->store), to_delete, argc);
+	CHECK_MAPI_RETVAL(res, "DeleteMessage");
+}

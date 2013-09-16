@@ -222,6 +222,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 {
 	struct dcesrv_mapiproxy_private		*private;
 	bool					server_mode;
+	bool					ndrdump;
 	char					*server_id_printable = NULL;
 	
 	server_id_printable = server_id_str(NULL, &(dce_call->conn->server_id));
@@ -236,6 +237,9 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	/* Retrieve server mode parametric option */
 	server_mode = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
 
+	/* Retrieve ndrdump parametric option */
+	ndrdump = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "ndrdump", false);
+
 	/* Initialize private structure */
 	private = talloc(dce_call->context, struct dcesrv_mapiproxy_private);
 	if (!private) {
@@ -246,6 +250,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	private->exchname = NULL;
 	private->server_mode = server_mode;
 	private->connected = false;
+	private->ndrdump = ndrdump;
 
 	dce_call->context->private_data = private;
 
@@ -485,7 +490,7 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		  table->calls[opnum].name, opnum, table->calls[opnum].struct_size));
 
 	if (private->server_mode == false) {
-		if (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN) {
+		if ((private->ndrdump == true) && (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_IN)) {
 			ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
 		}
 
@@ -493,9 +498,13 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 	}
 
 	if ((private->server_mode == true) || (mapiproxy_server_loaded(NDR_EXCHANGE_NSP_NAME) == true)) {
-		ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
+		if (private->ndrdump == true) {
+			ndr_print_function_debug(call->ndr_print, name, NDR_IN | NDR_SET_VALUES, r);
+		}
 		status = mapiproxy_server_dispatch(dce_call, mem_ctx, r, &mapiproxy);
-		ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
+		if (private->ndrdump == true) {
+			ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
+		}
 		if (!NT_STATUS_IS_OK(status)) {
 			return NT_STATUS_NET_WRITE_FAULT;
 		}
@@ -540,7 +549,9 @@ static NTSTATUS mapiproxy_op_dispatch(struct dcesrv_call_state *dce_call, TALLOC
 		
 		if ((dce_call->fault_code == 0) && 
 		    (private->c_pipe->conn->flags & DCERPC_DEBUG_PRINT_OUT) && mapiproxy.norelay == false) {
-			ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
+			if (private->ndrdump == true) {
+				ndr_print_function_debug(call->ndr_print, name, NDR_OUT | NDR_SET_VALUES, r);
+			}
 		}
 		
 		if (mapiproxy.ahead == true) goto ahead;

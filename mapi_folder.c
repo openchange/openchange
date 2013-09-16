@@ -361,12 +361,11 @@ PHP_METHOD(MAPIFolder, createMessage)
 	mapi_object_t		*message;
 	char 			open_mode = 3;
 	int 			i;
-
-	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
 	if ((argc == 0) || ((argc % 2) == 1)) {
 		WRONG_PARAM_COUNT;
 	}
 
+	args = (zval **)safe_emalloc(argc, sizeof(zval **), 0);
 	if (zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;

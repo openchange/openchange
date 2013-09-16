@@ -274,27 +274,24 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 	char* data = NULL;
 	int type = Z_TYPE_P(val);
 	if (type == IS_NULL) {
+		// XXX TO CHECK
 		data = NULL;
-
-		php_printf("NULL value DDD\n");
-//					continue;
-/* 		} else if (type == IS_LONG) { */
-/* 			data = emalloc(sizeof(long)); */
-/* //			*data = Z_LVAL_P(ppzval); */
-/* 			*data = Z_LVAL_P(*ppzval); */
-		/* } else if (type == IS_DOUBLE) { */
-		/* 	data = emalloc(sizeof(double)); */
-		/* 	*data =Z_DVAL_P(ppzval); */
-		} else if (type == IS_STRING) {
-			data = (void*)talloc_strdup(talloc_ctx, Z_STRVAL_P(val));
-			php_printf("STRING %s value DDD\n", (char*) data);
-
-		/* } else if (type == IS_BOOL) { */
-		/* 	data = emalloc(sizeof(bool)); */
-		/* 	*data = Z_STRBool_P(ppzval); */
-		} else {
-			php_printf("Type not expected: '%i'. Skipped\n", type);
-		}
+	} else if (type == IS_LONG) {
+		// XXX TO CHECK
+		data = emalloc(sizeof(long));
+		*data = Z_LVAL_P(val);
+	} else if (type == IS_DOUBLE) {
+		// XXX TO CHECK
+		data = emalloc(sizeof(double));
+		*data =Z_DVAL_P(val);
+	} else if (type == IS_STRING) {
+		data = (void*)talloc_strdup(talloc_ctx, Z_STRVAL_P(val));
+	} else if (type == IS_BOOL) {
+		data = emalloc(sizeof(bool));
+		*data = Z_STRBOOL_P(val);
+	} else {
+		php_printf("Type not expected: '%i'. Skipped\n", type);
+	}
 
 	return data;
 }
@@ -314,16 +311,22 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 // 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
 PHP_METHOD(MAPIMessage, get)
 {
-	int 			i, argc = ZEND_NUM_ARGS();
+
+	int 			argc;
 	zval 			**args;
 	zval			*this_php_obj;
 	mapi_message_object_t 	*this_obj;
 	zval *result;
+	int 			i;
+
+	argc = ZEND_NUM_ARGS();
+	if (ZEND_NUM_ARGS() == 0) {
+		efree(args);
+		WRONG_PARAM_COUNT;
+	}
 
 	args = (zval**) safe_emalloc(argc, sizeof(zval **), 0);
-
-	if (ZEND_NUM_ARGS() == 0 ||
-	    zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
+	if ( zend_get_parameters_array(UNUSED_PARAM, argc, args) == FAILURE) {
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}
@@ -386,7 +389,6 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 		zval *val = args[i+1];
 
 		void *data;
-		php_printf("to set 0x%" PRIX64 " type 0x%" PRIX64 " long param %i\n", id, prop_type, Z_LVAL_P(args[i]));
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
 			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
 			continue;

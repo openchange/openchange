@@ -125,7 +125,6 @@ PHP_METHOD(MAPIMessage, getID)
 	RETURN_STRING(str_id, 0);
 }
 
-
 mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC)
 {
 	uint32_t		count;
@@ -143,7 +142,6 @@ mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC)
 	return *mid;
 }
 
-
 zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 {
 	zval *zprop;
@@ -159,8 +157,13 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	zval *zprop;
 	uint32_t prop_type;
 
+	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
+
+
+
 	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
+		php_printf("Property 0x%" PRIX64 " NULL\n", prop_id); //DDD
 		ZVAL_NULL(zprop);
 		return zprop;
 	}
@@ -170,7 +173,9 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
 		ZVAL_LONG(zprop, *((long *) prop_value));
+		php_printf("Property 0x%" PRIX64 " long value %i\n", prop_id, *((long *) prop_value)); //DDD
 	} else if (prop_type == PT_BOOLEAN) {
+		php_printf("Property 0x%" PRIX64 " bool value %i\n", prop_id, *((bool *) prop_value)); //DDD
 		ZVAL_BOOL(zprop, *((bool *) prop_value));
 	} else if (prop_type == PT_I8) {
 		mapi_id_t id = *((mapi_id_t*) prop_value);
@@ -227,7 +232,6 @@ const char *mapi_date(TALLOC_CTX *parent_ctx,
 	return date;
 }
 
-
 bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 {
 	int type = Z_TYPE_P(zv);
@@ -275,24 +279,29 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 
 void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 {
-	char* data = NULL;
+	void* data = NULL;
 	int type = Z_TYPE_P(val);
 	if (type == IS_NULL) {
 		// XXX TO CHECK
 		data = NULL;
 	} else if (type == IS_LONG) {
 		// XXX TO CHECK
-		data = emalloc(sizeof(long));
-		*data = Z_LVAL_P(val);
+		long *ldata = talloc_ptrtype(talloc_ctx, ldata);
+		*ldata = Z_LVAL_P(val);
+		data = (void*) ldata;
+		php_printf( "zval to long: %p -> %i\n", data, *((long*)data));
 	} else if (type == IS_DOUBLE) {
 		// XXX TO CHECK
-		data = emalloc(sizeof(double));
-		*data =Z_DVAL_P(val);
+		double *ddata =  talloc_ptrtype(talloc_ctx, ddata);
+		*ddata = Z_DVAL_P(val);
+		data = (void*) ddata;
 	} else if (type == IS_STRING) {
 		data = (void*)talloc_strdup(talloc_ctx, Z_STRVAL_P(val));
 	} else if (type == IS_BOOL) {
-		data = emalloc(sizeof(bool));
-		*data = Z_STRBOOL_P(val);
+		bool *bdata =  talloc_ptrtype(talloc_ctx, bdata);
+		*bdata = Z_BVAL_P(val);
+		data = (void*) bdata;
+		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data));
 	} else {
 		php_printf("Type not expected: '%i'. Skipped\n", type);
 	}
@@ -342,7 +351,7 @@ PHP_METHOD(MAPIMessage, get)
 		MAKE_STD_ZVAL(result);
 		array_init(result);
 	}
-	for (i=0; i < argc ; i++) {
+	for (i=0; i < argc; i++) {
 		if (Z_TYPE_P(args[i]) != IS_LONG) {
 			php_error(E_ERROR, "Argument %i is not a numeric property id", i);
 		}
@@ -353,7 +362,7 @@ PHP_METHOD(MAPIMessage, get)
 		zval *prop;
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_P(args[i]);
-//		php_printf("get 0x%" PRIX64  "\n", prop_id);
+		php_printf("get 0x%" PRIX64  "\n", prop_id); //DDD
 		prop  = mapi_message_get_property(this_obj, prop_id);
 
 		if (argc == 1) {
@@ -380,11 +389,11 @@ PHP_METHOD(MAPIMessage, get)
 
 void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
 {
-	int i;
 	mapi_message_object_t 	*message_obj;
 	enum MAPISTATUS		retval;
-	struct SPropValue	*lpProps;
+	struct SPropValue	*lpProps = NULL;
 	uint32_t		cValues;
+	int 			i;
 
 	message_obj = (mapi_message_object_t *) zend_object_store_get_object(message_zval TSRMLS_CC);
 	for (i=0; i<argc; i+=2) {
@@ -398,6 +407,8 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 			continue;
 		}
 
+		php_printf("TO SET with id 0x%" PRIX64 " with type 0x%" PRIX64  " \n", id, prop_type); // DDD
+
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, val);
 
 		/* Pushing the property with SetProps */
@@ -405,7 +416,9 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 		lpProps = talloc_array(message_obj->talloc_ctx, struct SPropValue, 2);
 		lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
 		retval = SetProps(message_obj->message, 0, lpProps, cValues);
+		CHECK_MAPI_RETVAL(retval, "SetProps");
 		MAPIFreeBuffer(lpProps);
+		lpProps = NULL;
 	}
 
 }
@@ -427,7 +440,7 @@ PHP_METHOD(MAPIMessage, set)
 		efree(args);
 		WRONG_PARAM_COUNT;
 	}
-	for (i=0; i < argc ; i+=2) {
+	for (i=0; i < argc; i+=2) {
 		if (Z_TYPE_P(args[i]) != IS_LONG) {
 			php_error(E_ERROR, "Argument %i is not a numeric property id", i);
 		}
@@ -460,13 +473,9 @@ PHP_METHOD(MAPIMessage, save)
 	folder_obj  = (mapi_folder_object_t*)   zend_object_store_get_object(this_obj->parent TSRMLS_CC);
 	mailbox_obj = (mapi_mailbox_object_t*)  zend_object_store_get_object(folder_obj->parent TSRMLS_CC);
 
-
-
 	retval = SaveChangesMessage(&(mailbox_obj->store),
 				    this_obj->message,
 				     KeepOpenReadWrite);
 
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
 }
-
-

@@ -68,6 +68,10 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 	mapi_message_ce->create_object = mapi_message_create_handler;
 	memcpy(&mapi_message_object_handlers, zend_get_std_object_handlers(), sizeof(zend_object_handlers));
 	mapi_message_object_handlers.clone_obj = NULL;
+
+	zend_declare_class_constant_long(mapi_message_ce, ZEND_STRL("RO"), 1 TSRMLS_CC);
+	zend_declare_class_constant_long(mapi_message_ce, ZEND_STRL("RW"), 1 TSRMLS_CC);
+
 }
 
 zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)

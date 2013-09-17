@@ -20,7 +20,7 @@ echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
 $roContactId = "A5010E0000000001";
-$roContact = $contacts->openMessage($contactMessageId, 0);
+$roContact = $contacts->openMessage($contactMessageId, MAPIMessage::RO);
 
 echo "get PidTagGivenName\n";
 $retGet = $roContact->get(PidTagGivenName);
@@ -41,7 +41,7 @@ foreach ($retMultipleGet as $prop) {
 var_dump($retMultipleGet);
 
 
-$message = $contacts->openMessage($contactMessageId, 1);
+$message = $contacts->openMessage($contactMessageId,  MAPIMessage::RW);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
 echo "Displayname " . $message->get(PidTagDisplayName) . "\n";

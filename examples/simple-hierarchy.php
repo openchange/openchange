@@ -1,16 +1,19 @@
 <?php
+# environment settings
+$pathDB = "/home/jag/.openchange/profiles.ldb";
+$profileName = 'u2';
+$messageId = '0x7500000000000001';
+# END
+
+
 echo "Create ProfileDB\n";
-$mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
+$mapi = new MAPIProfileDB($pathDB);
 
 echo "Get default profile\n";
-$mapiProfile = $mapi->getProfile();
-
-
+$mapiProfile = $mapi->getProfile($profileName);
 
 echo "Logon default profile\n";
 $session = $mapiProfile->logon();
-
-
 
 echo "Get mailbox\n";
 $mailbox = $session->mailbox();
@@ -20,12 +23,13 @@ echo "Get CONTACTS folder\n\n";
 $contacts = $mailbox->contacts();
 echo "contacts->getID -> " . $contacts->getID() . "\n";
 
-echo "Get message table";
+echo "Get message table\n";
 $messageTable = $contacts->getMessageTable();
+var_dump($messageTable);
 
 echo "Get message\n";
-$messageId = '0xA4010E0000000001';
 $message = $contacts->openMessage($messageId);
+var_dump($message);
 
 #unset($mapi); # do not work..
 #unset($profile);

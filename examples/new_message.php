@@ -1,7 +1,7 @@
 <?php
 # System dependent varialbes:
 $path = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'test';
+$profileName = 'u2';
 $contactMessageId = '0xA4010E0000000001';
 # END system dependent vatriables
 

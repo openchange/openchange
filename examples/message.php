@@ -1,9 +1,10 @@
 <?php
 # System dependent varialbes:
 $path = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'test';
-$contactMessageId = '0xA4010E0000000001';
-# END system dependent vatriables
+$profileName = 'u2';
+$contactMessageId = '0x7500000000000001';
+$roContactId = $contactMessageId;
+# END system dependent variables
 
 
 $mapi = new MAPIProfileDB($path);
@@ -19,7 +20,7 @@ echo "Inbox item type " . $inbox->getFolderType() . "\n";
 echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
-$roContactId = "A5010E0000000001";
+
 $roContact = $contacts->openMessage($contactMessageId, MAPIMessage::RO);
 
 echo "get PidTagGivenName\n";

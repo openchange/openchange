@@ -1,5 +1,8 @@
 <?php
-$mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
+$dbPath = "/home/jag/.openchange/profiles.ldb";
+
+
+$mapi = new MAPIProfileDB($dbPath);
 echo "MAPI DB path: '", $mapi->path(), "'\n";
 
 echo "Default profile\n";

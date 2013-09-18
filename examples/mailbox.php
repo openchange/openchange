@@ -1,10 +1,16 @@
 <?php
-$mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
+$dbPath = "/home/jag/.openchange/profiles.ldb";
+$profileName = "u2";
+$draftFolderId =  "0x3d00000000000001";
+$inexistentFolderId = '0xFFFF0d0000000001';
+
+
+$mapi = new MAPIProfileDB($dbPath);
 echo "MAPI DB path: '", $mapi->path(), "'\n";
 
 
 echo "Profile test\n";
-$mapiProfile = $mapi->getProfile('test');
+$mapiProfile = $mapi->getProfile($profileName);
 
 
 echo "Logon test profile\n";
@@ -28,13 +34,13 @@ echo "Tasks folder " . $tasks->getName() . "/" . $tasks->getFolderType() . "/" .
 $contacts = $mailbox->contacts();
 echo "Contacts folder " . $contacts->getName() . "/" . $contacts->getFolderType() . "/" . $contacts->getID() . "\n";
 
-$mapiId =    '0x8a010d0000000001'; # drafts folder
-$drafts = $mailbox->openFolder($mapiId, "IPF.Note");
-echo "Open by ID draft folder " . $drafts->getName() . "/" . $drafts->getFolderType() . "/" . $drafts->getID() . "\n";
 
-$badMapiId = '0xFFFF0d0000000001'; # nothing folder
+#$drafts = $mailbox->openFolder($draftFolderId, "IPF.Note");
+#echo "Open by ID draft folder " . $drafts->getName() . "/" . $drafts->getFolderType() . "/" . $drafts->getID() . "\n";
+
+
 echo "Open folder with bad ID \n";
-#var_dump($mailbox->openFolder($badMapiId, "IPF.Note"));
+var_dump($mailbox->openFolder($inexistentFolderId, "IPF.Note"));
 echo "\n";
 
 

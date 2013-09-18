@@ -1,14 +1,16 @@
 <?php
-$id = "0x2F00000000000001";
+$dbPath = "/home/jag/.openchange/profiles.ldb";
+$profileName = 'u2';
+$id = "0x2500000000000001";
 
 
-$mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
+$mapi = new MAPIProfileDB($dbPath);
 echo "MAPI DB path: '", $mapi->path(), "'\n";
 
 #$mapi->debug(true, 10);
 
 echo "Profile test\n";
-$mapiProfile = $mapi->getProfile('test');
+$mapiProfile = $mapi->getProfile($profileName);
 
 
 echo "Logon test profile\n";

@@ -49,9 +49,20 @@ echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
 
 
 
-echo "Check one-argument prop set: setting PidTagDisplayName to 'juju'\n";
+echo "Check one-argument prop set: setting PidTagDisplayName to 'juju' and PidTagDescription to 'descChanged'\n";
 $message->set(PidTagDisplayName, 'juju');
-echo "Value after set: " . $message->get(PidTagDisplayName) . "\n";
+echo "PidTagDisplayName value after set: " . $message->get(PidTagDisplayName) . "\n";
+$message->set(PidTagBody, 'descChanged');
+echo "PidTagBody value after set: " . $message->get(PidTagBody) . "\n";
+
+echo "Check set of binary field\n";
+$binaryValue1 = array(5, 55, 255);
+$message->set(PidLidContactLinkedGlobalAddressListEntryId, $binaryValue1);
+echo "Binary value: " . $message->get(PidLidContactLinkedGlobalAddressListEntryId) . "\n";
+
+
+echo "Set PidLidContactCharacterSet to 33";
+$message->set(PidLidContactCharacterSet, 33);
 
 
 $email = $message->get(PidLidEmail1EmailAddress);
@@ -78,6 +89,8 @@ $message = $contacts->openMessage($contactMessageId, 1);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
 echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
+echo "Get contact link: " . $message->get(PidLidContactCharacterSet) . "\n";
+
 
 $email = $message->get(PidLidEmail1EmailAddress);
 echo "Reverting changes\n";
@@ -91,6 +104,12 @@ if ($email == "changed@a.org") {
   echo "Not expected value\n";
    $message->set(PidLidEmail1EmailAddress, "jkerihuel@zentyal.com", PidTagDisplayName, 'julien');
 }
+echo "Setting contact link to 14\n";
+$message->set(PidLidContactCharacterSet, 14);
+echo "Set of binary field to all zeros\n";
+$binaryValue2 = array(0, 0, 0);
+$message->set(PidLidContactLinkedGlobalAddressListEntryId, $binaryValue2);
+echo "Binary value: " . $message->get(PidLidContactLinkedGlobalAddressListEntryId) . "\n";
 
 
 

@@ -157,13 +157,11 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	zval *zprop;
 	uint32_t prop_type;
 
-	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
-
-
+//	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
 
 	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
-		php_printf("Property 0x%" PRIX64 " NULL\n", prop_id); //DDD
+//		php_printf("Property 0x%" PRIX64 " NULL\n", prop_id); //DDD
 		ZVAL_NULL(zprop);
 		return zprop;
 	}
@@ -173,14 +171,24 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
 		ZVAL_LONG(zprop, *((long *) prop_value));
-		php_printf("Property 0x%" PRIX64 " long value %i\n", prop_id, *((long *) prop_value)); //DDD
+//		php_printf("Property 0x%" PRIX64 " long value %i\n", prop_id, *((long *) prop_value)); //DDD
 	} else if (prop_type == PT_BOOLEAN) {
-		php_printf("Property 0x%" PRIX64 " bool value %i\n", prop_id, *((bool *) prop_value)); //DDD
+//		php_printf("Property 0x%" PRIX64 " bool value %i\n", prop_id, *((bool *) prop_value)); //DDD
 		ZVAL_BOOL(zprop, *((bool *) prop_value));
 	} else if (prop_type == PT_I8) {
 		mapi_id_t id = *((mapi_id_t*) prop_value);
 		char *str_id = mapi_id_to_str(id);
 		ZVAL_STRING(zprop, str_id, 0);
+	} else if (prop_type == PT_BINARY) {
+		int i;
+		struct Binary_r *bin = ((struct Binary_r*) prop_value);
+		php_printf("Binary prop 0x%" PRIX64 " length %i\n", prop_id, bin->cb);
+
+		array_init(zprop);
+		for (i=0; i < bin->cb; i++) {
+			uint8_t value = bin->lpb[i];
+			add_next_index_long(zprop, value);
+		}
 	} else if (prop_type == PT_SYSTIME) {
 		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
 		const char		*date;
@@ -232,6 +240,28 @@ const char *mapi_date(TALLOC_CTX *parent_ctx,
 	return date;
 }
 
+void mapi_message_check_binary_array_zval(zval *zv)
+{
+	int       arrayLen;
+	int	  i;
+	HashTable *ht = zv->value.ht;
+	arrayLen = zend_hash_num_elements(ht);
+	for (i=0; i < arrayLen; i++) {
+		int found;
+		long **value;
+		found = zend_hash_index_find(ht, i, (void**) &value);
+		if (found != SUCCESS) {
+			php_error(E_ERROR, "Binary array has not element in position %i", i);
+
+		}
+
+		long bval = **value;
+		if ((bval < 0) || (bval > 255)) {
+			php_error(E_ERROR, "Binary array has bad value %ld at position %i", bval, i);
+		}
+	}
+}
+
 bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 {
 	int type = Z_TYPE_P(zv);
@@ -261,6 +291,12 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 	case IS_BOOL:
 		return (mapi_type == PT_BOOLEAN) ? true : false;
 	case IS_ARRAY:
+		if (mapi_type == PT_BINARY) {
+			mapi_message_check_binary_array_zval(zv);
+			return true;
+
+		}
+
 		return false;
 	case IS_OBJECT:
 		return false;
@@ -277,7 +313,31 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 
 }
 
-void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
+void mapi_message_fill_binary_array(TALLOC_CTX *mem_ctx, zval *src, struct Binary_r *bi)
+{
+	int 		i;
+	HashTable 	*ht;
+	int             nBits;
+	ht = src->value.ht;
+	nBits = zend_hash_num_elements(ht);
+	bi->cb = nBits;
+        bi->lpb =  talloc_named (mem_ctx, nBits*sizeof(uint8_t), "mapi_message_fill_binary_array");
+
+	for(i=0; i < bi->cb; i++) {
+		int found;
+		long **value;
+		found = zend_hash_index_find(ht, i, (void**) &value);
+		if (found != SUCCESS) {
+			php_error(E_ERROR, "Cannot found byte in array position %i", i);
+		}
+
+		bi->lpb[i] = **value;
+	}
+}
+
+
+
+void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_type, zval *val)
 {
 	void* data = NULL;
 	int type = Z_TYPE_P(val);
@@ -289,7 +349,7 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 		long *ldata = talloc_ptrtype(talloc_ctx, ldata);
 		*ldata = Z_LVAL_P(val);
 		data = (void*) ldata;
-		php_printf( "zval to long: %p -> %i\n", data, *((long*)data));
+		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data));
 	} else if (type == IS_DOUBLE) {
 		// XXX TO CHECK
 		double *ddata =  talloc_ptrtype(talloc_ctx, ddata);
@@ -302,8 +362,12 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, zval *val)
 		*bdata = Z_BVAL_P(val);
 		data = (void*) bdata;
 		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data));
+	} else if ((type == IS_ARRAY) && (mapi_type == PT_BINARY)) {
+		struct Binary_r *bidata = talloc_ptrtype(talloc_ctx, bidata);
+		mapi_message_fill_binary_array(talloc_ctx, val, bidata);
+		data = (void*) bidata;
 	} else {
-		php_printf("Type not expected: '%i'. Skipped\n", type);
+		php_printf("ZVAL type %i for MAPI ID type 0x%" PRIX64 "  not expected. Skipped\n", type, mapi_type);
 	}
 
 	return data;
@@ -409,7 +473,7 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 
 		php_printf("TO SET with id 0x%" PRIX64 " with type 0x%" PRIX64  " \n", id, prop_type); // DDD
 
-		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, val);
+		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
 
 		/* Pushing the property with SetProps */
 		cValues = 0;

@@ -7,6 +7,8 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
+
 
 	{ NULL, NULL, NULL }
 };
@@ -452,7 +454,6 @@ void set_message_obj_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t
 	lpProps = NULL;
 }
 
-
 void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
 {
 	mapi_message_object_t 	*message_obj;
@@ -528,4 +529,27 @@ PHP_METHOD(MAPIMessage, save)
 				     KeepOpenReadWrite);
 
 	CHECK_MAPI_RETVAL(retval, "Saving properties");
+}
+
+PHP_METHOD(MAPIMessage, getBodyContentFormat)
+{
+	enum MAPISTATUS	      ret;
+	mapi_message_object_t *this_obj;
+	uint8_t  	      format;
+
+	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	ret = GetBestBody(this_obj->message, &format);
+	switch(format) {
+	case olEditorText:
+		RETURN_STRING("txt", 1);
+		break;
+	case olEditorHTML:
+		RETURN_STRING("html", 1);
+		break;
+	case olEditorRTF:
+		RETURN_STRING("rtf", 1);
+		break;
+	default:
+		php_error(E_ERROR, "Unknown body content format: %i", format);
+	}
 }

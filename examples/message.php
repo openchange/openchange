@@ -44,6 +44,7 @@ var_dump($retMultipleGet);
 
 $message = $contacts->openMessage($contactMessageId,  MAPIMessage::RW);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
+echo "Body content format: " . $message->getBodyContentFormat() . "\n";
 echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
 echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
 
@@ -54,11 +55,6 @@ $message->set(PidTagDisplayName, 'juju');
 echo "PidTagDisplayName value after set: " . $message->get(PidTagDisplayName) . "\n";
 $message->set(PidTagBody, 'descChanged');
 echo "PidTagBody value after set: " . $message->get(PidTagBody) . "\n";
-
-echo "Check set of binary field\n";
-$binaryValue1 = array(5, 55, 255);
-$message->set(PidLidContactLinkedGlobalAddressListEntryId, $binaryValue1);
-echo "Binary value: " . $message->get(PidLidContactLinkedGlobalAddressListEntryId) . "\n";
 
 
 echo "Set PidLidContactCharacterSet to 33";

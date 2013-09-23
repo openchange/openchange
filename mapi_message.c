@@ -157,7 +157,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	zval *zprop;
 	uint32_t prop_type;
 
-//	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
+	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
 
 	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
@@ -335,8 +335,6 @@ void mapi_message_fill_binary_array(TALLOC_CTX *mem_ctx, zval *src, struct Binar
 	}
 }
 
-
-
 void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_type, zval *val)
 {
 	void* data = NULL;
@@ -349,7 +347,7 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_typ
 		long *ldata = talloc_ptrtype(talloc_ctx, ldata);
 		*ldata = Z_LVAL_P(val);
 		data = (void*) ldata;
-		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data));
+//		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data)); //DDD
 	} else if (type == IS_DOUBLE) {
 		// XXX TO CHECK
 		double *ddata =  talloc_ptrtype(talloc_ctx, ddata);
@@ -361,31 +359,18 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_typ
 		bool *bdata =  talloc_ptrtype(talloc_ctx, bdata);
 		*bdata = Z_BVAL_P(val);
 		data = (void*) bdata;
-		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data));
+//		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data)); //DDD
 	} else if ((type == IS_ARRAY) && (mapi_type == PT_BINARY)) {
 		struct Binary_r *bidata = talloc_ptrtype(talloc_ctx, bidata);
 		mapi_message_fill_binary_array(talloc_ctx, val, bidata);
 		data = (void*) bidata;
 	} else {
-		php_printf("ZVAL type %i for MAPI ID type 0x%" PRIX64 "  not expected. Skipped\n", type, mapi_type);
+		php_error(E_ERROR, "ZVAL type %i for MAPI ID type 0x%" PRIX64 "  not expected. Skipped\n", type, mapi_type);
 	}
 
 	return data;
 }
 
-/* uint32_t find_mapi_SPropValue_pos(struct mapi_SPropValue_array *properties, uint32_t mapitag) */
-/* { */
-/* 	uint32_t i; */
-/* 	for (i = 0; i < properties->cValues; i++) { */
-/* 		if (properties->lpProps[i].ulPropTag == mapitag) { */
-/* 			return i; */
-/* 		} */
-/* 	} */
-/* 	return i; */
-/* } */
-
-// 	const char	*card_name = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidFileUnder);
-// 	const char	*email = (const char *)find_mapi_SPropValue_data(&(this_obj->properties), PidLidEmail1OriginalDisplayName);
 PHP_METHOD(MAPIMessage, get)
 {
 
@@ -426,7 +411,7 @@ PHP_METHOD(MAPIMessage, get)
 		zval *prop;
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_P(args[i]);
-		php_printf("get 0x%" PRIX64  "\n", prop_id); //DDD
+//		php_printf("get 0x%" PRIX64  "\n", prop_id); //DDD
 		prop  = mapi_message_get_property(this_obj, prop_id);
 
 		if (argc == 1) {
@@ -451,12 +436,26 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
+void set_message_obj_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t id, void *data)
 {
-	mapi_message_object_t 	*message_obj;
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps = NULL;
 	uint32_t		cValues;
+
+	/* Pushing the property with SetProps */
+	cValues = 0;
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, id, (const void *) data);
+	retval = SetProps(message, 0, lpProps, cValues);
+	CHECK_MAPI_RETVAL(retval, "SetProps");
+	MAPIFreeBuffer(lpProps);
+	lpProps = NULL;
+}
+
+
+void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRMLS_DC)
+{
+	mapi_message_object_t 	*message_obj;
 	int 			i;
 
 	message_obj = (mapi_message_object_t *) zend_object_store_get_object(message_zval TSRMLS_CC);
@@ -471,18 +470,11 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 			continue;
 		}
 
-		php_printf("TO SET with id 0x%" PRIX64 " with type 0x%" PRIX64  " \n", id, prop_type); // DDD
+//		php_printf("TO SET with id 0x%" PRIX64 " with type 0x%" PRIX64  " \n", id, prop_type); // DDD
 
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
 
-		/* Pushing the property with SetProps */
-		cValues = 0;
-		lpProps = talloc_array(message_obj->talloc_ctx, struct SPropValue, 2);
-		lpProps = add_SPropValue(message_obj->talloc_ctx, lpProps, &cValues, id, (const void *) data);
-		retval = SetProps(message_obj->message, 0, lpProps, cValues);
-		CHECK_MAPI_RETVAL(retval, "SetProps");
-		MAPIFreeBuffer(lpProps);
-		lpProps = NULL;
+		set_message_obj_prop(message_obj->talloc_ctx,	message_obj->message, id, data);
 	}
 
 }
@@ -515,12 +507,6 @@ PHP_METHOD(MAPIMessage, set)
 
 	efree(args);
 }
-
-/* struct SPropValue { */
-/* 	enum MAPITAGS ulPropTag; */
-/* 	uint32_t dwAlignPad; */
-/* 	union SPropValue_CTR value;/\* [switch_is(ulPropTag&0xFFFF)] *\/ */
-/* }/\* [noprint,nopush,public,nopull] *\/; */
 
 PHP_METHOD(MAPIMessage, save)
 {

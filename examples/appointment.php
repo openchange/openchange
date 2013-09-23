@@ -1,4 +1,14 @@
 <?php
+
+function showApp($message) {
+	echo "Message " . $message->getID() . "  Properties:\n";
+	echo "PidLidAppointmentSubType (boolean):" . $message->get(PidLidAppointmentSubType) . "\n";
+	echo "PidLidAppointmentDuration    (long):" . $message->get(PidLidAppointmentDuration) . "\n";
+	echo "PidTagBody    (string):" . $message->get(PidTagBody) . "\n";
+	echo "PidLidAppointmentProposedEndWhole   (date):" . $message->get(PidLidAppointmentProposedEndWhole) . "\n";
+	echo "PidLidAppointmentRecur   (binary/especial):" . serialize($message->get(PidLidAppointmentRecur)) . "\n";
+}
+
 $dbPath = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 $id = "0x2500000000000001";
@@ -28,27 +38,32 @@ echo "Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType(
 
 $message = $calendar->openMessage($id, 1);
 
-# PidLidAppointmentCounterProposal (bolean)  0x8257000b
+# PidLidAppointmentSubType (bolean)  0x8257000b
 # PidLidAppointmentDuration (long) 0x82130003
 # PidLidAppointmentProposedEndWhole (date)
 # PidLidAppointmentRecur (binary)
-echo "Message " . $id .  " properties: " . var_dump($message->get(PidLidAppointmentCounterProposal, PidLidAppointmentDuration)) . "\n";
+showApp($message);
+
+echo "changing PidTagBody to 'bodyChanged'\n";
+$message->set(PidTagBody, 'bodyChanged');
+
 echo "Changing properties and saving\n";
-#$message->set(PidLidAppointmentCounterProposal, true, PidLidAppointmentDuration, 45);
+$message->set(PidLidAppointmentSubType, true, PidLidAppointmentDuration, 2);
 $message->set(PidLidAppointmentDuration, 77);
+$message->setRecurrence();
 $message->save();
 
-return 0;
 
-
-echo "New properties of message: " . var_dump($message->get(PidLidAppointmentCounterProposal, PidLidAppointmentDuration)) . "\n";
+echo "\n--- After save:\n";
+showApp($message);
 echo "Changing and saving again\n";
-#$message->set(PidLidAppointmentCounterProposal, false, PidLidAppointmentDuration, 110);
+$message->set(PidLidAppointmentSubType, false, PidLidAppointmentDuration, 2);
 $message->set(PidLidAppointmentDuration, 999);
+$message->set(PidTagBody, 'bodyRestored');
 $message->save();
 
-echo "Properties after last change: " . var_dump($message->get(PidLidAppointmentCounterProposal, PidLidAppointmentDuration)) . "\n";
-
+echo "\n --After last change: \n";
+showApp($message);
 
 # workaround against shutdown problem
 unset($message);

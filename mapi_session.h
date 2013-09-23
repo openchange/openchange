@@ -49,7 +49,7 @@ PHP_METHOD(MAPISession, mailbox);
 void MAPISessionRegisterClass(TSRMLS_D);
 zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
 void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-
+struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
 
 __END_DECLS
 

@@ -172,6 +172,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	if ((prop_type == PT_UNICODE) || (prop_type == PT_STRING8)) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
+//		php_printf("DDD LONG \n"); //DDD
 		ZVAL_LONG(zprop, *((long *) prop_value));
 //		php_printf("Property 0x%" PRIX64 " long value %i\n", prop_id, *((long *) prop_value)); //DDD
 	} else if (prop_type == PT_BOOLEAN) {
@@ -539,6 +540,8 @@ PHP_METHOD(MAPIMessage, getBodyContentFormat)
 
 	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	ret = GetBestBody(this_obj->message, &format);
+	CHECK_MAPI_RETVAL(ret, "getBodyContentFormat");
+
 	switch(format) {
 	case olEditorText:
 		RETURN_STRING("txt", 1);

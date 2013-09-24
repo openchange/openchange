@@ -80,7 +80,8 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 	}
 
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (uniPropTag == emsabp_property[i].ulPropTag) {
+		if ((uniPropTag == emsabp_property[i].ulPropTag) || 
+		    (ulPropTag == emsabp_property[i].ulPropTag)) {
 			return emsabp_property[i].attribute;
 		}
 	}
@@ -136,7 +137,8 @@ _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 	}
 
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (uniPropTag == emsabp_property[i].ulPropTag) {
+		if ((uniPropTag == emsabp_property[i].ulPropTag) ||
+		    (ulPropTag == emsabp_property[i].ulPropTag)) {
 			return (emsabp_property[i].ref == true) ? 1 : 0;
 		}
 	}
@@ -168,7 +170,8 @@ _PUBLIC_ const char *emsabp_property_get_ref_attr(uint32_t ulPropTag)
 	}
 
 	for (i = 0; emsabp_property[i].attribute; i++) {
-		if (uniPropTag == emsabp_property[i].ulPropTag) {
+		if ((uniPropTag == emsabp_property[i].ulPropTag) ||
+		    (ulPropTag == emsabp_property[i].ulPropTag)) {
 			return emsabp_property[i].ref_attr;
 		}
 	}

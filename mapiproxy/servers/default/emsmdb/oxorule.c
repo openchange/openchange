@@ -20,7 +20,7 @@
  */
 
 /**
-   \file oxctabl.c
+   \file oxorule.c
 
    \brief E-mail rules object routines and Rops
  */

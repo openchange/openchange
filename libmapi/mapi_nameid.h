@@ -105,6 +105,7 @@ struct mapi_nameid {
 #define PidLidWorkAddressPostalCode                                  0x8048001f          
 #define PidLidWorkAddressPostOfficeBox                               0x804a001f          
 #define PidLidWorkAddressState                                       0x8047001f          
+#define PidLidWorkAddressStreet                                      0x8045001f          
 #define PidLidYomiCompanyName                                        0x802e001f          
 #define PidLidYomiFirstName                                          0x802c001f          
 #define PidLidYomiLastName                                           0x802d001f          

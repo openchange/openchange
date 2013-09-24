@@ -7,6 +7,18 @@ $roContactId = $contactMessageId;
 # END system dependent variables
 
 
+function dumpContact($contact) {
+  echo "Contact ID " . $contact->getID() . "\n";
+  echo "PidLidEmail1EmailAddress: " . $contact->get(PidLidEmail1EmailAddress) . "\n";
+  echo "PidTagEmailAddress: " . $contact->get(PidTagEmailAddress) . "\n";
+  echo "PidTagCompanyName: " . $contact->get(PidTagCompanyName) . "\n";
+  echo "PidTagDisplayName: " . $contact->get(PidTagDisplayName) . "\n";
+  echo  "PidTagGivenName: " . $contact->get(PidTagGivenName) . "\n";
+  echo "PidLidBusyStatus: " . $contact->get(PidLidBusyStatus) . "\n";
+  echo "\n";
+}
+
+
 $mapi = new MAPIProfileDB($path);
 echo "=> MAPI Profile Database Path: '", $mapi->path(), "'\n";
 $mapiProfile = $mapi->getProfile($profileName);
@@ -21,45 +33,27 @@ echo "=> Opening Contact Folder\n";
 $contacts = $mailbox->contacts();
 
 
+echo "Open RO message and show its properties\n";
 $roContact = $contacts->openMessage($contactMessageId, MAPIMessage::RO);
-
-echo "get PidTagGivenName\n";
-$retGet = $roContact->get(PidTagGivenName);
-var_dump($retGet);
-unset($retGet);
-
-
-
-echo "get various properties at the same time\n";
-$retMultipleGet = $roContact->get(PidLidEmail1EmailAddress,
-				  PidTagEmailAddress,
-				  PidTagCompanyName,
-				  PidTagDisplayName,
-				  PidTagGivenName);
-foreach ($retMultipleGet as $prop) {
-	unset($prop);
-}
-var_dump($retMultipleGet);
+dumpContact($roContact);
 
 
 $message = $contacts->openMessage($contactMessageId,  MAPIMessage::RW);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
 echo "Body content format: " . $message->getBodyContentFormat() . "\n";
-echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
-echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
 
-
+echo "Contact just after oepning it\n";
+dumpContact($message);
 
 echo "Check one-argument prop set: setting PidTagDisplayName to 'juju' and PidTagDescription to 'descChanged'\n";
 $message->set(PidTagDisplayName, 'juju');
-echo "PidTagDisplayName value after set: " . $message->get(PidTagDisplayName) . "\n";
 $message->set(PidTagBody, 'descChanged');
-echo "PidTagBody value after set: " . $message->get(PidTagBody) . "\n";
+echo "Set PidLidBusyStatus to 1\n";
+$message->set(PidLidBusyStatus, 1);
 
 
 echo "Set PidLidContactCharacterSet to 33";
 $message->set(PidLidContactCharacterSet, 33);
-
 
 $email = $message->get(PidLidEmail1EmailAddress);
 if ($email == "changed@a.org") {
@@ -81,14 +75,15 @@ unset($message);
 echo "===================================================\n";
 
 
+
 $message = $contacts->openMessage($contactMessageId, 1);
+echo "Dump after reopening after save\n";
+dumpContact($message);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
-echo "PidLidEmail1EmailAddress " .$message->get(PidLidEmail1EmailAddress) . " \n";
-echo "Displayname " . $message->get(PidTagDisplayName) . "\n";
-echo "Get contact link: " . $message->get(PidLidContactCharacterSet) . "\n";
 
+echo "Set PidLidBusyStatus to 2\n";
+$message->set(PidLidBusyStatus, 2);
 
-$email = $message->get(PidLidEmail1EmailAddress);
 echo "Reverting changes\n";
 if ($email == "changed@a.org") {
    echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
@@ -102,15 +97,14 @@ if ($email == "changed@a.org") {
 }
 echo "Setting contact link to 14\n";
 $message->set(PidLidContactCharacterSet, 14);
-echo "Set of binary field to all zeros\n";
-$binaryValue2 = array(0, 0, 0);
-$message->set(PidLidContactLinkedGlobalAddressListEntryId, $binaryValue2);
-echo "Binary value: " . $message->get(PidLidContactLinkedGlobalAddressListEntryId) . "\n";
-
 
 
 echo "=> SaveChangesMessage \n";
 $message->save();
+
+echo "Dump after second save\n";
+dumpContact($message);
+
 unset($message);
 
 ?>

@@ -42,6 +42,8 @@
 #include <mapi_message_table.h>
 #include <mapi_folder_table.h>
 
+#include "../libexchange2ical/libexchange2ical.h"
+
 #define PHP_MAPI_VERSION "1.0"
 #define PHP_MAPI_EXTNAME "mapi"
 

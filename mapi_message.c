@@ -169,7 +169,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	zval *zprop;
 	uint32_t prop_type;
 
-	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
+//	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
 
 	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
@@ -195,7 +195,7 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	} else if (prop_type == PT_BINARY) {
 		int i;
 		struct Binary_r *bin = ((struct Binary_r*) prop_value);
-		php_printf("Binary prop 0x%" PRIX64 " length %i\n", prop_id, bin->cb);
+//		php_printf("Binary prop 0x%" PRIX64 " length %i\n", prop_id, bin->cb);
 
 		array_init(zprop);
 		for (i=0; i < bin->cb; i++) {
@@ -316,14 +316,11 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 	case IS_RESOURCE:
 		return false;
 	default:
-		php_printf("Type not expected: '%x'. Skipped\n", type);
 		return false;
 	}
 
-	php_printf("Incorrect zval type %i for MAPI type  0x%" PRIX64  "\n", type, mapi_type);
+//	php_printf("Incorrect zval type %i for MAPI type  0x%" PRIX64  "\n", type, mapi_type);
 	return false;
-
-
 }
 
 void mapi_message_fill_binary_array(TALLOC_CTX *mem_ctx, zval *src, struct Binary_r *bi)
@@ -478,7 +475,8 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 
 		void *data;
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
-			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
+			php_log_err("mapi_message_set_properties: trying to set invalid zval type to a property" TSRMLS_CC);
+//			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
 			continue;
 		}
 

@@ -347,8 +347,7 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 	}
 
 	if (!locale || !cpid || !lcid) {
-		php_log_err("Invalid Language supplied or unknown system language" TSRMLS_CC);
-		php_log_err("Deleting profile" TSRMLS_CC);
+		php_log_err("Invalid Language supplied or unknown system language. Deleting profile" TSRMLS_CC);
 		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", retval);
 		}

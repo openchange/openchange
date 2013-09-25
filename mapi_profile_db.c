@@ -32,7 +32,7 @@ static zend_function_entry mapi_profile_db_class_functions[] = {
 	PHP_ME(MAPIProfileDB,	path,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	profiles,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	getProfile,	NULL, ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIProfileDB,	profileForUser,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIProfileDB,	createAndGetProfile,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	debug,		NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
@@ -290,11 +290,154 @@ zval* mapi_profile_db_get_profile(zval *profile_db, char *profname TSRMLS_DC)
 	return new_profile;
 }
 
+
+static uint32_t nop_callback(struct SRowSet *rowset, void *private)
+{
+}
+
+static bool mapiprofile_create(struct mapi_context *mapi_ctx,
+			       const char *profdb, const char *profname,
+//			       const char *pattern,
+			       const char *username,
+			       const char *password, const char *address,
+			       const char *language, const char *workstation,
+			       const char *domain, const char *realm,
+			       uint32_t flags, bool seal,
+//			       bool opt_dumpdata, const char *opt_debuglevel,
+			       uint8_t exchange_version, const char *kerberos)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_session	*session = NULL;
+	TALLOC_CTX		*mem_ctx;
+	struct mapi_profile	*profile;
+	const char		*locale;
+	uint32_t		cpid = 0;
+	uint32_t		lcid = 0;
+	char			*exchange_version_str;
+	char			*cpid_str;
+	char			*lcid_str;
+
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_create");
+	profile = talloc(mem_ctx, struct mapi_profile);
+
+/* 	/\* catch CTRL-C *\/ */
+/* 	g_profname = profname; */
+/* 	g_mapi_ctx = mapi_ctx; */
+
+/* #if defined (__FreeBSD__) */
+/* 	(void) signal(SIGINT, (sig_t) signal_delete_profile); */
+/* #elif defined (__SunOS) */
+/*         (void) signal(SIGINT, signal_delete_profile); */
+/* #else */
+/* 	(void) signal(SIGINT, (sighandler_t) signal_delete_profile); */
+/* #endif */
+
+	/* /\* debug options *\/ */
+	/* SetMAPIDumpData(mapi_ctx, opt_dumpdata); */
+
+	/* if (opt_debuglevel) { */
+	/* 	SetMAPIDebugLevel(mapi_ctx, atoi(opt_debuglevel)); */
+	/* } */
+
+	/* /\* Sanity check *\/ */
+	/* retval = OpenProfile(mapi_ctx, profile, profname, NULL); */
+	/* if (retval == MAPI_E_SUCCESS) { */
+	/* 	fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname); */
+	/* 	talloc_free(mem_ctx); */
+	/* 	return false; */
+	/* } */
+
+	retval = CreateProfile(mapi_ctx, profname, username, password, flags);
+	if (retval != MAPI_E_SUCCESS) {
+		php_printf("CreateProfile failed retval: %i", retval);
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	mapi_profile_add_string_attr(mapi_ctx, profname, "binding", address);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
+
+	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
+	talloc_free(exchange_version_str);
+
+	if (realm) {
+		mapi_profile_add_string_attr(mapi_ctx, profname, "realm", realm);
+	}
+
+	locale = (const char *) (language) ? mapi_get_locale_from_language(language) : mapi_get_system_locale();
+
+	if (locale) {
+		cpid = mapi_get_cpid_from_locale(locale);
+		lcid = mapi_get_lcid_from_locale(locale);
+	}
+
+	if (!locale || !cpid || !lcid) {
+		printf("Invalid Language supplied or unknown system language '%s\n'", language);
+		printf("Deleting profile\n");
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("DeleteProfile", retval);
+		}
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	cpid_str = talloc_asprintf(mem_ctx, "%d", cpid);
+	lcid_str = talloc_asprintf(mem_ctx, "%d", lcid);
+
+	mapi_profile_add_string_attr(mapi_ctx, profname, "codepage", cpid_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "language", lcid_str);
+	mapi_profile_add_string_attr(mapi_ctx, profname, "method", lcid_str);
+
+	talloc_free(cpid_str);
+	talloc_free(lcid_str);
+
+	if (kerberos) {
+		mapi_profile_add_string_attr(mapi_ctx, profname, "kerberos", kerberos);
+	}
+
+	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_errstr("MapiLogonProvider", retval);
+		php_printf("Deleting profile\n");
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("DeleteProfile", retval);
+		}
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+//	if (pattern) {
+//		username = pattern;
+//	}
+
+	retval = ProcessNetworkProfile(session, username, (mapi_profile_callback_t) nop_callback, "Select a user id");
+	if (retval != MAPI_E_SUCCESS && retval != 0x1) {
+		mapi_errstr("ProcessNetworkProfile", retval);
+		php_printf("Deleting profile\n");
+		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
+			mapi_errstr("DeleteProfile", retval);
+		}
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	php_printf("Profile %s completed and added to database %s\n", profname, profdb);
+
+	talloc_free(mem_ctx);
+
+	return true;
+}
+
+
+
 PHP_METHOD(MAPIProfileDB, getProfile)
 {
 	zval *new_profile;
-	char				*opt_profname = NULL;
-	int				opt_profname_len;
+	char *opt_profname = NULL;
+	int  opt_profname_len;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &opt_profname, &opt_profname_len) == FAILURE) {
@@ -310,10 +453,67 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 	RETURN_ZVAL(new_profile, 0, 1);
 }
 
-PHP_METHOD(MAPIProfileDB, profileForUser)
+PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 {
-	php_error(E_ERROR, "Not implemented");
+	zval	*z_profile;
+	char 	*opt_profname;
+	int  	opt_profname_len;
+	char    *opt_username;
+	int     opt_username_len;
+	char    *opt_password;
+	int     opt_password_len;
+	char    *opt_domain;
+	int     opt_domain_len;
+	char    *opt_realm;
+	int     opt_realm_len;
+	char    *opt_address;
+	int     opt_address_len;
 
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssssss",
+				  &opt_profname, &opt_profname_len,
+				  &opt_username, &opt_username_len,
+				  &opt_password, &opt_password_len,
+				  &opt_domain, &opt_domain_len,
+				  &opt_realm, &opt_realm_len,
+				  &opt_address, &opt_address_len
+		    ) == FAILURE) {
+		php_error(E_ERROR, "createAndGetProfile invalid arguments. Must be: profile, user, passwd, domain, realm, address");
+	}
+
+	z_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);
+	if (z_profile != NULL) {
+		RETURN_ZVAL(z_profile, 0, 1);
+	}
+
+	char *kerberos = NULL;
+	uint8_t exchange_version = 2000;
+	char *language = NULL;
+	char *workstation = "localhost";
+	bool seal = false;
+	uint32_t nopass =1;
+
+	struct mapi_context *mapi_ctx;
+
+	zval				*this_php;
+	mapi_profile_db_object_t	*this_obj;
+
+	this_php = getThis();
+	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_php TSRMLS_CC);
+	mapi_ctx = mapi_profile_db_get_mapi_context(this_php TSRMLS_CC);
+
+
+	mapiprofile_create(mapi_ctx, this_obj->path, opt_profname,
+			   opt_username, opt_password, opt_address,
+			   language, workstation, opt_domain, opt_realm,
+			   nopass, seal, exchange_version, kerberos);
+
+
+	z_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);
+	if (z_profile != NULL) {
+		RETURN_ZVAL(z_profile, 0, 1);
+	} else {
+		RETURN_NULL();
+	}
 }
 
 

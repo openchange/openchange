@@ -95,9 +95,19 @@ zval *create_message_object(char *class, zval *folder, mapi_object_t *message, c
 	new_obj->parent = folder;
 	new_obj->open_mode = open_mode;
 
+// XXX replace
 	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");
 
+
+// XXX 	 GetProps bu message type
+//	struct SPropTagArray	*SPropTagArray;
+//	int count;
+//	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 1, 0x8045001F);
+//	retval = GetProps(new_obj->message, MAPI_UNICODE, SPropTagArray, &(new_obj->properties), &count);
+//        CHECK_MAPI_RETVAL(retval, "Getting message properties");
+
+//     XXX remove
 	mapi_SPropValue_array_named(new_obj->message,  &(new_obj->properties));
 
 	return new_php_obj;

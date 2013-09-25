@@ -46,6 +46,7 @@ PHP_METHOD(MAPIProfileDB, __destruct);
 PHP_METHOD(MAPIProfileDB, path);
 PHP_METHOD(MAPIProfileDB, profiles);
 PHP_METHOD(MAPIProfileDB, getProfile);
+PHP_METHOD(MAPIProfileDB, profileForUser);
 PHP_METHOD(MAPIProfileDB, debug);
 
 

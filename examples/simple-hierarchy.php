@@ -9,6 +9,10 @@ $messageId = '0x7500000000000001';
 echo "Create ProfileDB\n";
 $mapi = new MAPIProfileDB($pathDB);
 
+echo "Get inexistent profile\n";
+$inexistent = $mapi->getProfile("idonotexist_232");
+var_dump($inexistent);
+
 echo "Get default profile\n";
 $mapiProfile = $mapi->getProfile($profileName);
 

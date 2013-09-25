@@ -32,6 +32,7 @@ static zend_function_entry mapi_profile_db_class_functions[] = {
 	PHP_ME(MAPIProfileDB,	path,		NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	profiles,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	getProfile,	NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIProfileDB,	profileForUser,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIProfileDB,	debug,		NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
@@ -126,6 +127,10 @@ static struct mapi_profile *get_profile_ptr(TALLOC_CTX *talloc_ctx,
 	retval = OpenProfile(mapi_ctx, profile, profname, NULL);
 	talloc_free(profname);
 
+	if (retval == MAPI_E_NOT_FOUND) {
+		talloc_free(talloc_ctx);
+		return NULL;
+	}
 	if (retval && (retval != MAPI_E_INVALID_PARAMETER)) {
 		talloc_free(talloc_ctx);
 		err_str = mapi_get_errstr(retval);
@@ -275,14 +280,15 @@ zval* mapi_profile_db_get_profile(zval *profile_db, char *profname TSRMLS_DC)
 	mapi_ctx = mapi_profile_db_get_mapi_context(profile_db TSRMLS_CC);
 	mem_ctx = talloc_named(NULL, 0, "profile");
 	profile = get_profile_ptr(mem_ctx, mapi_ctx, profname);
+	if (profile == NULL) {
+		return NULL;
+	}
 
 	new_profile = create_profile_object(profile, profile_db, mem_ctx TSRMLS_CC);
 	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(profile_db TSRMLS_CC);
 	ADD_CHILD(this_obj, new_profile);
 	return new_profile;
 }
-
-
 
 PHP_METHOD(MAPIProfileDB, getProfile)
 {
@@ -292,13 +298,23 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &opt_profname, &opt_profname_len) == FAILURE) {
-		RETURN_NULL();
+		php_error(E_ERROR, "getProfile invalid parameters (need profile name or none for default profile");
 	}
 
 	new_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);
+	if (new_profile == NULL) {
+		RETURN_NULL();
+	}
+
+
 	RETURN_ZVAL(new_profile, 0, 1);
 }
 
+PHP_METHOD(MAPIProfileDB, profileForUser)
+{
+	php_error(E_ERROR, "Not implemented");
+
+}
 
 
 

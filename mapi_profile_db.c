@@ -302,7 +302,7 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 			       const char *language, const char *workstation,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
-			       uint8_t exchange_version, const char *kerberos)
+			       uint8_t exchange_version, const char *kerberos TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -320,7 +320,7 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 
 	retval = CreateProfile(mapi_ctx, profname, username, password, flags);
 	if (retval != MAPI_E_SUCCESS) {
-		php_printf("CreateProfile failed retval: %i", retval);
+		php_log_err("CreateProfile failed" TSRMLS_CC);
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -347,8 +347,8 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 	}
 
 	if (!locale || !cpid || !lcid) {
-		printf("Invalid Language supplied or unknown system language '%s\n'", language);
-		printf("Deleting profile\n");
+		php_log_err("Invalid Language supplied or unknown system language" TSRMLS_CC);
+		php_log_err("Deleting profile" TSRMLS_CC);
 		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
 			mapi_errstr("DeleteProfile", retval);
 		}
@@ -372,10 +372,9 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 
 	retval = MapiLogonProvider(mapi_ctx, &session, profname, password, PROVIDER_ID_NSPI);
 	if (retval != MAPI_E_SUCCESS) {
-		mapi_errstr("MapiLogonProvider", retval);
-		php_printf("Deleting profile\n");
+		php_log_err("MAPILogon provider failed. Deleting profile" TSRMLS_CC);
 		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
-			mapi_errstr("DeleteProfile", retval);
+			php_log_err("DeleteProfile" TSRMLS_CC);
 		}
 		talloc_free(mem_ctx);
 		return false;
@@ -383,16 +382,15 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 
 	retval = ProcessNetworkProfile(session, username, (mapi_profile_callback_t) nop_callback, "Select a user id");
 	if (retval != MAPI_E_SUCCESS && retval != 0x1) {
-		mapi_errstr("ProcessNetworkProfile", retval);
-		php_printf("Deleting profile\n");
+		php_log_err("ProcessNetworkProfile failed. Deleting profile" TSRMLS_CC);
 		if ((retval = DeleteProfile(mapi_ctx, profname)) != MAPI_E_SUCCESS) {
-			mapi_errstr("DeleteProfile", retval);
+			php_log_err("DeleteProfile" TSRMLS_CC);
 		}
 		talloc_free(mem_ctx);
 		return false;
 	}
 
-	php_printf("Profile %s completed and added to database %s\n", profname, profdb);
+	php_log_err("Profile  completed and added to database " TSRMLS_CC);
 
 	talloc_free(mem_ctx);
 
@@ -471,7 +469,7 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 	create_mapi_profile(mapi_ctx, this_obj->path, opt_profname,
 			   opt_username, opt_password, opt_address,
 			   language, workstation, opt_domain, opt_realm,
-			   no_pass, seal, exchange_version, kerberos);
+			   no_pass, seal, exchange_version, kerberos TSRMLS_CC);
 
 
 	z_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);

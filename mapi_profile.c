@@ -177,20 +177,18 @@ PHP_METHOD(MAPIProfile, dump)
 	add_assoc_string(return_value, "server", (char *) profile->server, 1);
 }
 
-PHP_METHOD(MAPIProfile, logon)
+zval* mapi_profile_logon(zval *z_profile TSRMLS_DC)
 {
 	enum MAPISTATUS		status;
 	struct mapi_context	*mapi_ctx;
 	struct mapi_profile	*profile;
 	struct mapi_session	*session = NULL;
 	TALLOC_CTX		*talloc_ctx;
-	zval			*this_zval;
 	zval			*new_session;
-	mapi_profile_object_t	*this_obj;
+	mapi_profile_object_t	*profile_obj;
 
-	this_zval = getThis();
-	mapi_ctx = profile_get_mapi_context(this_zval TSRMLS_CC);
-	profile = mapi_profile_get_profile(this_zval TSRMLS_CC);
+	mapi_ctx = profile_get_mapi_context(z_profile TSRMLS_CC);
+	profile = mapi_profile_get_profile(z_profile TSRMLS_CC);
 
 	status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
 	if (status != MAPI_E_SUCCESS) {
@@ -198,9 +196,19 @@ PHP_METHOD(MAPIProfile, logon)
 	}
 
 	talloc_ctx = talloc_named(NULL, 0, "session");
-	new_session = create_session_object(session, this_zval, talloc_ctx TSRMLS_CC);
+	new_session = create_session_object(session, z_profile, talloc_ctx TSRMLS_CC);
 
-	this_obj = STORE_OBJECT(mapi_profile_object_t*, this_zval);
-	ADD_CHILD(this_obj, new_session);
+	profile_obj = STORE_OBJECT(mapi_profile_object_t*, z_profile);
+	ADD_CHILD(profile_obj, new_session);
+	return new_session;
+}
+
+PHP_METHOD(MAPIProfile, logon)
+{
+	zval *new_session =  mapi_profile_logon(getThis() TSRMLS_CC);
+	if (new_session == NULL) {
+		RETURN_NULL();
+	}
+
 	RETURN_ZVAL(new_session, 0, 1);
 }

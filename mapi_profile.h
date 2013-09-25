@@ -51,7 +51,7 @@ void MAPIProfileRegisterClass(TSRMLS_D);
 zval *create_profile_object(struct mapi_profile *, zval *, TALLOC_CTX *  TSRMLS_DC);
 struct mapi_profile *mapi_profile_get_profile(zval * TSRMLS_DC);
 struct mapi_context *profile_get_mapi_context(zval * TSRMLS_DC);
-void mapi_profile_remove_children_session(zval *, zend_object_handle TSRMLS_DC);
+zval *mapi_profile_logon(zval *z_profile TSRMLS_DC);
 
 __END_DECLS
 

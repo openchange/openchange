@@ -34,6 +34,8 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPIAppointment, __construct);
 PHP_METHOD(MAPIAppointment, __destruct);
+PHP_METHOD(MAPIAppointment, setRecurrence);
+PHP_METHOD(MAPIAppointment, getRecurrence);
 
 
 void MAPIAppointmentRegisterClass(TSRMLS_D);

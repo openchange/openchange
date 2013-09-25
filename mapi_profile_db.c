@@ -264,32 +264,41 @@ PHP_METHOD(MAPIProfileDB, profiles)
 	}
 }
 
-PHP_METHOD(MAPIProfileDB, getProfile)
+zval* mapi_profile_db_get_profile(zval *profile_db, char *profname TSRMLS_DC)
 {
-	zval				*this_zval;
 	zval				*new_profile;
 	mapi_profile_db_object_t	*this_obj;
 	struct mapi_profile		*profile;
-	TALLOC_CTX			*talloc_ctx;
+	TALLOC_CTX			*mem_ctx;
 	struct mapi_context		*mapi_ctx;
+
+	mapi_ctx = mapi_profile_db_get_mapi_context(profile_db TSRMLS_CC);
+	mem_ctx = talloc_named(NULL, 0, "profile");
+	profile = get_profile_ptr(mem_ctx, mapi_ctx, profname);
+
+	new_profile = create_profile_object(profile, profile_db, mem_ctx TSRMLS_CC);
+	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(profile_db TSRMLS_CC);
+	ADD_CHILD(this_obj, new_profile);
+	return new_profile;
+}
+
+
+
+PHP_METHOD(MAPIProfileDB, getProfile)
+{
+	zval *new_profile;
 	char				*opt_profname = NULL;
 	int				opt_profname_len;
-
-	this_zval= getThis();
-	mapi_ctx = mapi_profile_db_get_mapi_context(this_zval TSRMLS_CC);
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "|s",
 				  &opt_profname, &opt_profname_len) == FAILURE) {
 		RETURN_NULL();
 	}
 
-	talloc_ctx = talloc_named(NULL, 0, "profile");
-	profile = get_profile_ptr(talloc_ctx, mapi_ctx, opt_profname);
-
-	new_profile = create_profile_object(profile, this_zval, talloc_ctx TSRMLS_CC);
-	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_zval TSRMLS_CC);
-	ADD_CHILD(this_obj, new_profile);
+	new_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);
 	RETURN_ZVAL(new_profile, 0, 1);
 }
+
+
 
 

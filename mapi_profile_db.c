@@ -420,7 +420,12 @@ PHP_METHOD(MAPIProfileDB, getProfile)
 
 PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 {
-	zval	*z_profile;
+	zval				*z_profile;
+	struct mapi_context 		*mapi_ctx;
+	zval				*this_php;
+	mapi_profile_db_object_t	*this_obj;
+
+	// method parameters
 	char 	*opt_profname;
 	int  	opt_profname_len;
 	char    *opt_username;
@@ -431,8 +436,16 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 	int     opt_domain_len;
 	char    *opt_realm;
 	int     opt_realm_len;
-	char    *opt_address;
+	char   	*opt_address;
 	int     opt_address_len;
+
+	// new profile default values
+	char 				*kerberos = NULL;
+	uint8_t 			exchange_version = 0;
+	char 				*language = NULL;
+	char 				*workstation = "localhost";
+	bool 				seal = false;
+	uint32_t 			no_pass =0;
 
 	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ssssss",
 				  &opt_profname, &opt_profname_len,
@@ -450,20 +463,9 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 		RETURN_ZVAL(z_profile, 0, 1);
 	}
 
-	char 				*kerberos = NULL;
-	uint8_t 			exchange_version = 0;
-	char 				*language = NULL;
-	char 				*workstation = "localhost";
-	bool 				seal = false;
-	uint32_t 			no_pass =0;
-	struct mapi_context 		*mapi_ctx;
-	zval				*this_php;
-	mapi_profile_db_object_t	*this_obj;
-
 	this_php = getThis();
 	this_obj = (mapi_profile_db_object_t *) zend_object_store_get_object(this_php TSRMLS_CC);
 	mapi_ctx = mapi_profile_db_get_mapi_context(this_php TSRMLS_CC);
-
 
 	create_mapi_profile(mapi_ctx, this_obj->path, opt_profname,
 			   opt_username, opt_password, opt_address,

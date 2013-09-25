@@ -295,15 +295,13 @@ static uint32_t nop_callback(struct SRowSet *rowset, void *private)
 {
 }
 
-static bool mapiprofile_create(struct mapi_context *mapi_ctx,
+static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 			       const char *profdb, const char *profname,
-//			       const char *pattern,
 			       const char *username,
 			       const char *password, const char *address,
 			       const char *language, const char *workstation,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
-//			       bool opt_dumpdata, const char *opt_debuglevel,
 			       uint8_t exchange_version, const char *kerberos)
 {
 	enum MAPISTATUS		retval;
@@ -317,35 +315,8 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	char			*cpid_str;
 	char			*lcid_str;
 
-	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "mapiprofile_create");
+	mem_ctx = talloc_named(mapi_ctx->mem_ctx, 0, "create_mapi_profile");
 	profile = talloc(mem_ctx, struct mapi_profile);
-
-/* 	/\* catch CTRL-C *\/ */
-/* 	g_profname = profname; */
-/* 	g_mapi_ctx = mapi_ctx; */
-
-/* #if defined (__FreeBSD__) */
-/* 	(void) signal(SIGINT, (sig_t) signal_delete_profile); */
-/* #elif defined (__SunOS) */
-/*         (void) signal(SIGINT, signal_delete_profile); */
-/* #else */
-/* 	(void) signal(SIGINT, (sighandler_t) signal_delete_profile); */
-/* #endif */
-
-	/* /\* debug options *\/ */
-	/* SetMAPIDumpData(mapi_ctx, opt_dumpdata); */
-
-	/* if (opt_debuglevel) { */
-	/* 	SetMAPIDebugLevel(mapi_ctx, atoi(opt_debuglevel)); */
-	/* } */
-
-	/* /\* Sanity check *\/ */
-	/* retval = OpenProfile(mapi_ctx, profile, profname, NULL); */
-	/* if (retval == MAPI_E_SUCCESS) { */
-	/* 	fprintf(stderr, "[ERROR] mapiprofile: profile \"%s\" already exists\n", profname); */
-	/* 	talloc_free(mem_ctx); */
-	/* 	return false; */
-	/* } */
 
 	retval = CreateProfile(mapi_ctx, profname, username, password, flags);
 	if (retval != MAPI_E_SUCCESS) {
@@ -408,10 +379,6 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 		talloc_free(mem_ctx);
 		return false;
 	}
-
-//	if (pattern) {
-//		username = pattern;
-//	}
 
 	retval = ProcessNetworkProfile(session, username, (mapi_profile_callback_t) nop_callback, "Select a user id");
 	if (retval != MAPI_E_SUCCESS && retval != 0x1) {
@@ -485,15 +452,13 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 		RETURN_ZVAL(z_profile, 0, 1);
 	}
 
-	char *kerberos = NULL;
-	uint8_t exchange_version = 2000;
-	char *language = NULL;
-	char *workstation = "localhost";
-	bool seal = false;
-	uint32_t nopass =1;
-
-	struct mapi_context *mapi_ctx;
-
+	char 				*kerberos = NULL;
+	uint8_t 			exchange_version = 2000;
+	char 				*language = NULL;
+	char 				*workstation = "localhost";
+	bool 				seal = false;
+	uint32_t 			store_pass =1;
+	struct mapi_context 		*mapi_ctx;
 	zval				*this_php;
 	mapi_profile_db_object_t	*this_obj;
 
@@ -502,10 +467,10 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 	mapi_ctx = mapi_profile_db_get_mapi_context(this_php TSRMLS_CC);
 
 
-	mapiprofile_create(mapi_ctx, this_obj->path, opt_profname,
+	create_mapi_profile(mapi_ctx, this_obj->path, opt_profname,
 			   opt_username, opt_password, opt_address,
 			   language, workstation, opt_domain, opt_realm,
-			   nopass, seal, exchange_version, kerberos);
+			   store_pass, seal, exchange_version, kerberos);
 
 
 	z_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);

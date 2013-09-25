@@ -331,6 +331,7 @@ static bool create_mapi_profile(struct mapi_context *mapi_ctx,
 	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
 
 	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
+
 	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
 	talloc_free(exchange_version_str);
 
@@ -453,11 +454,11 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 	}
 
 	char 				*kerberos = NULL;
-	uint8_t 			exchange_version = 2000;
+	uint8_t 			exchange_version = 0;
 	char 				*language = NULL;
 	char 				*workstation = "localhost";
 	bool 				seal = false;
-	uint32_t 			store_pass =1;
+	uint32_t 			no_pass =0;
 	struct mapi_context 		*mapi_ctx;
 	zval				*this_php;
 	mapi_profile_db_object_t	*this_obj;
@@ -470,7 +471,7 @@ PHP_METHOD(MAPIProfileDB, createAndGetProfile)
 	create_mapi_profile(mapi_ctx, this_obj->path, opt_profname,
 			   opt_username, opt_password, opt_address,
 			   language, workstation, opt_domain, opt_realm,
-			   store_pass, seal, exchange_version, kerberos);
+			   no_pass, seal, exchange_version, kerberos);
 
 
 	z_profile = mapi_profile_db_get_profile(getThis(), opt_profname TSRMLS_CC);

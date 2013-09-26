@@ -76,9 +76,26 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 
 }
 
-zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
+// XXX 	 GetProps bu message type
+//	struct SPropTagArray	*SPropTagArray;
+//	int count;
+//	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 1, 0x8045001F);
+//	retval = GetProps(new_obj->message, MAPI_UNICODE, SPropTagArray, &(new_obj->properties), &count);
+//        CHECK_MAPI_RETVAL(retval, "Getting message properties");
+void mapi_message_request_all_properties(zval *z_message TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
+	mapi_message_object_t 	*obj;
+
+	obj = (mapi_message_object_t *) zend_object_store_get_object(z_message TSRMLS_CC);
+	retval = GetPropsAll(obj->message, MAPI_UNICODE, &(obj->properties));
+        CHECK_MAPI_RETVAL(retval, "Getting message properties");
+	mapi_SPropValue_array_named(obj->message,  &(obj->properties));
+}
+
+zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
+{
+
 	zval 			*new_php_obj;
 	mapi_message_object_t 	*new_obj;
 	zend_class_entry	**ce;
@@ -95,23 +112,11 @@ zval *create_message_object(char *class, zval *folder, mapi_object_t *message, c
 	new_obj->parent = folder;
 	new_obj->open_mode = open_mode;
 
-// XXX replace
-	retval = GetPropsAll(new_obj->message, MAPI_UNICODE, &(new_obj->properties));
-        CHECK_MAPI_RETVAL(retval, "Getting message properties");
-
-
-// XXX 	 GetProps bu message type
-//	struct SPropTagArray	*SPropTagArray;
-//	int count;
-//	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 1, 0x8045001F);
-//	retval = GetProps(new_obj->message, MAPI_UNICODE, SPropTagArray, &(new_obj->properties), &count);
-//        CHECK_MAPI_RETVAL(retval, "Getting message properties");
-
-//     XXX remove
-	mapi_SPropValue_array_named(new_obj->message,  &(new_obj->properties));
-
 	return new_php_obj;
 }
+
+
+
 
 PHP_METHOD(MAPIMessage, __construct)
 {

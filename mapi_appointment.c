@@ -28,7 +28,9 @@ void MAPIAppointmentRegisterClass(TSRMLS_D)
 
 zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
-	return create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
+	zval *appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
+	mapi_message_request_all_properties(appointment TSRMLS_CC);
+	return appointment;
 }
 
 int hash_find_long(HashTable *ht, char *key, long *foundValue)

@@ -25,7 +25,9 @@ void MAPIContactRegisterClass(TSRMLS_D)
 
 zval *create_contact_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
-	return create_message_object("mapicontact", folder, message, open_mode TSRMLS_CC);
+	zval *contact =  create_message_object("mapicontact", folder, message, open_mode TSRMLS_CC);
+	mapi_message_request_all_properties(contact TSRMLS_CC);
+	return contact;
 }
 
 PHP_METHOD(MAPIContact, __construct)

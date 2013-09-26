@@ -25,7 +25,9 @@ void MAPITaskRegisterClass(TSRMLS_D)
 
 zval *create_task_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
-	return create_message_object("mapitask", folder, message, open_mode TSRMLS_CC);
+	zval *task = create_message_object("mapitask", folder, message, open_mode TSRMLS_CC);
+	mapi_message_request_all_properties(task TSRMLS_CC);
+	return task;
 }
 
 PHP_METHOD(MAPITask, __construct)

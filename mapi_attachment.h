@@ -34,6 +34,7 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPIAttachment, __construct);
 PHP_METHOD(MAPIAttachment, __destruct);
+PHP_METHOD(MAPIAttachment, dump);
 
 
 void MAPIAttachmentRegisterClass(TSRMLS_D);

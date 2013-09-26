@@ -20,7 +20,7 @@
 #define MAPI_TABLE_H
 
 
-enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS};
+enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS, ATTACHMENTS};
 
 typedef struct mapi_table_object
 {
@@ -48,7 +48,8 @@ __BEGIN_DECLS
 PHP_METHOD(MAPITable, __construct);
 PHP_METHOD(MAPITable, __destruct);
 PHP_METHOD(MAPITable, count);
-PHP_METHOD(MAPITable, getParentFolder);
+PHP_METHOD(MAPITable, getParent);
+PHP_METHOD(MAPITable, getParentFolder); // XXX to be deprecated
 
 void MAPITableRegisterClass(TSRMLS_D);
 void mapi_table_free_storage(void *object TSRMLS_DC);

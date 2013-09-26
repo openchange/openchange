@@ -8,7 +8,7 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
-
+	PHP_ME(MAPIMessage,	getAttachmentTable,  NULL,           	ZEND_ACC_PUBLIC)
 
 	{ NULL, NULL, NULL }
 };
@@ -558,4 +558,44 @@ PHP_METHOD(MAPIMessage, getBodyContentFormat)
 	default:
 		php_error(E_ERROR, "Unknown body content format: %i", format);
 	}
+}
+
+zval *mapi_message_get_attachment(zval *z_message, const uint32_t attach_num TSRMLS_DC)
+{
+	mapi_message_object_t 	*message_obj;
+	zval 	   	 	*z_attachment;
+	mapi_object_t 		*attachment_obj;
+	enum MAPISTATUS		retval;
+
+	message_obj    = (mapi_message_object_t *) zend_object_store_get_object(z_message TSRMLS_CC);
+	attachment_obj = emalloc(sizeof(mapi_object_t));
+	mapi_object_init(attachment_obj);
+	retval = OpenAttach(message_obj->message, attach_num, attachment_obj);
+	CHECK_MAPI_RETVAL(retval, "Open attachment");
+
+	z_attachment = create_attachment_object(z_message, attachment_obj TSRMLS_CC);
+	return z_attachment;
+}
+
+
+PHP_METHOD(MAPIMessage, getAttachmentTable)
+{
+	zval			*z_this_obj;
+	mapi_message_object_t 	*this_obj;
+	enum MAPISTATUS		retval;
+	mapi_object_t           *obj_table;
+	zval			*z_table;
+
+	z_this_obj     = getThis();
+	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(z_this_obj TSRMLS_CC);
+
+	obj_table = emalloc(sizeof(mapi_object_t));
+	mapi_object_init(obj_table);
+	retval = GetAttachmentTable(this_obj->message, obj_table);
+	CHECK_MAPI_RETVAL(retval, "GetAttachmentTable");
+
+	z_table = create_attachment_table_object(z_this_obj, obj_table  TSRMLS_CC);
+
+	RETVAL_ZVAL(z_table, 0, 1);
+//	ADD_CHILD(this_obj, z_table);
 }

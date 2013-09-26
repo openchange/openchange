@@ -62,10 +62,12 @@ static void register_classes(TSRMLS_D)
 	MAPIContactRegisterClass(TSRMLS_C);
 	MAPITaskRegisterClass(TSRMLS_C);
 	MAPIAppointmentRegisterClass(TSRMLS_C);
+	MAPIAttachmentRegisterClass(TSRMLS_C);
 
 	MAPITableRegisterClass(TSRMLS_C);
 	MAPIMessageTableRegisterClass(TSRMLS_C);
 	MAPIFolderTableRegisterClass(TSRMLS_C);
+	MAPIAttachmentTableRegisterClass(TSRMLS_C);
 }
 
 PHP_MINIT_FUNCTION(mapi)

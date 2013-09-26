@@ -49,6 +49,7 @@ PHP_METHOD(MAPIMessage, get);
 PHP_METHOD(MAPIMessage, set);
 PHP_METHOD(MAPIMessage, save);
 PHP_METHOD(MAPIMessage, getBodyContentFormat);
+PHP_METHOD(MAPIMessage, getAttachmentTable);
 
 
 void MAPIMessageRegisterClass(TSRMLS_D);
@@ -63,6 +64,9 @@ void set_message_obj_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t
 
 mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC);
 zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value);
+zval *mapi_message_get_attachment(zval *message, const uint32_t attach_num TSRMLS_DC);
+
+
 
 __END_DECLS
 

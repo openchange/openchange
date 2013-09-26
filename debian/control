@@ -1,0 +1,12 @@
+Source: php5-mapi
+Section: php
+Priority: optional
+Maintainer: Zentyal Packaging Maintainers <pkg-team@zentyal.com>
+Build-Depends: cdbs, debhelper (>= 5.0.0), build-essential, php5-dev, libdcerpc-dev, libtalloc-dev, libtevent-dev, libsamba-hostconfig-dev, libldb-dev, libmapi-dev, libsamba-credentials-dev, libpopt-dev, flex, bison
+Standards-Version: 3.9.2
+
+Package: php5-mapi
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, ${php:Depends}, libmapi0
+Description: MAPI extensions module for PHP5
+ This extension allows you to work with libmapi in your php5 applications.

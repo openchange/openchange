@@ -1,0 +1,22 @@
+#!/usr/bin/make -f
+
+EXTN=mapi
+BUILD=$(CURDIR)/debian/php5-$(EXTN)
+PHP_EX=$(shell /usr/bin/php-config5 --extension-dir)
+PHP_APIVER=$(shell /usr/bin/php-config5 --phpapi)
+
+include /usr/share/cdbs/1/rules/debhelper.mk
+include /usr/share/cdbs/1/class/autotools.mk
+
+DEB_CONFIGURE_EXTRA_FLAGS = --with-pkgconfig-path=/opt/samba4/lib/pkgconfig
+DEB_MAKE_INSTALL_TARGET =
+
+makebuilddir/php5-$(EXTN)::
+	[ -f configure ] || phpize5 --with-pkgconfig-path=/opt/samba4/lib/pkgconfig
+
+cleanbuilddir::
+	phpize5 --clean
+
+install/php5-$(EXTN)::
+	install -D -m 644 modules/$(EXTN).so $(BUILD)$(PHP_EX)/$(EXTN).so
+	echo "php:Depends=phpapi-$(PHP_APIVER)" >> $(BUILD).substvars

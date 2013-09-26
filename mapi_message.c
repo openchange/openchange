@@ -9,6 +9,7 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getAttachmentTable,  NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	dump,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 
 	{ NULL, NULL, NULL }
 };
@@ -599,3 +600,40 @@ PHP_METHOD(MAPIMessage, getAttachmentTable)
 	RETVAL_ZVAL(z_table, 0, 1);
 //	ADD_CHILD(this_obj, z_table);
 }
+
+// XXXX tyr to generalize to all kinds of messages
+zval *mapi_message_dump(zval *z_message TSRMLS_DC)
+{
+	mapi_message_object_t		*message_obj;
+	zval				*dump;
+	int				i;
+
+	MAKE_STD_ZVAL(dump);
+	array_init(dump);
+
+	message_obj = (mapi_message_object_t *) zend_object_store_get_object(z_message TSRMLS_CC);
+
+	for (i = 0; i < message_obj->properties.cValues; i++) {
+		zval  *prop;
+		mapi_id_t prop_id =  message_obj->properties.lpProps[i].ulPropTag;
+		prop = mapi_message_get_property(message_obj, prop_id);
+		if (prop == NULL) {
+			continue;
+		} else if (ZVAL_IS_NULL(prop)) {
+			zval_ptr_dtor(&prop);
+			continue;
+		}
+	        add_index_zval(dump, prop_id, prop);
+	}
+
+
+	return dump;
+}
+
+
+PHP_METHOD(MAPIMessage, dump)
+{
+	zval *dump = mapi_message_dump(getThis() TSRMLS_CC);
+	RETURN_ZVAL(dump, 0, 1);
+}
+

@@ -359,9 +359,27 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 		data = NULL;
 	} else if (type == IS_LONG) {
 		// XXX TO CHECK
-		long *ldata = talloc_ptrtype(mem_ctx, ldata);
-		*ldata = Z_LVAL_P(val);
-		data = (void*) ldata;
+		if (mapi_type == PT_LONG) {
+			long *ldata = talloc_ptrtype(mem_ctx, ldata);
+			*ldata = Z_LVAL_P(val);
+			data = (void*) ldata;
+		} else if (mapi_type == PT_SYSTIME) {
+			struct FILETIME		*date;
+			long 			*ldata;
+			NTTIME                  nttime;
+			ldata =  talloc_ptrtype(mem_ctx, ldata);
+			*ldata = Z_LVAL_P(val);
+
+			unix_to_nt_time(&nttime, (time_t) *ldata);
+
+			date = talloc(mem_ctx, struct FILETIME);
+			date->dwLowDateTime  = (nttime << 32) >> 32;
+			date->dwHighDateTime = (nttime >> 32);
+			data = (void*) date;
+		} else {
+			php_error(E_ERROR, "Incorrect PHP long variable for mapi type  0x%" PRIX64 "", mapi_type);
+		}
+
 //		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data)); //DDD
 	} else if (type == IS_DOUBLE) {
 		if (mapi_type == PT_DOUBLE) {
@@ -369,17 +387,6 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 			double *ddata =  talloc_ptrtype(mem_ctx, ddata);
 			*ddata = Z_DVAL_P(val);
 			data = (void*) ddata;
-		}  else if (mapi_type == PT_SYSTIME) {
-			struct FILETIME		*date;
-			double 			*ddata;
-			NTTIME                  nttime;
-			ddata =  talloc_ptrtype(mem_ctx, ddata);
-			*ddata = Z_DVAL_P(val);
-			nttime = *ddata;
-			date = talloc(mem_ctx, struct FILETIME);
-			date->dwLowDateTime  = (nttime << 32) >> 32;
-			date->dwHighDateTime = (nttime >> 32);
-			data = (void*) date;
 		} else {
 			php_error(E_ERROR, "Incorrect PHP double variable for mapi type  0x%" PRIX64 "", mapi_type);
 		}

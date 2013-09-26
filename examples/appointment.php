@@ -2,11 +2,11 @@
 
 function showApp($message) {
 	echo "Message " . $message->getID() . "  Properties:\n";
-	echo "PidLidAppointmentSubType (boolean):" . $message->get(PidLidAppointmentSubType) . "\n";
-	echo "PidLidAppointmentDuration    (long):" . $message->get(PidLidAppointmentDuration) . "\n";
+#	echo "PidLidAppointmentSubType (boolean):" . $message->get(PidLidAppointmentSubType) . "\n";
+#	echo "PidLidAppointmentDuration    (long):" . $message->get(PidLidAppointmentDuration) . "\n";
 	echo "PidTagBody    (string):" . $message->get(PidTagBody) . "\n";
-	echo "PidLidAppointmentProposedEndWhole   (date):" . $message->get(PidLidAppointmentProposedEndWhole) . "\n";
-	echo "PidLidAppointmentRecur   (binary/especial):" . serialize($message->get(PidLidAppointmentRecur)) . "\n";
+	echo "PidLidAppointmentEndWhole   (date):" . $message->get(PidLidAppointmentEndWhole) . "\n";
+#	echo "PidLidAppointmentRecur   (binary/especial):" . serialize($message->get(PidLidAppointmentRecur)) . "\n";
 }
 
 $dbPath = "/home/jag/.openchange/profiles.ldb";
@@ -40,16 +40,17 @@ $message = $calendar->openMessage($id, 1);
 
 # PidLidAppointmentSubType (bolean)  0x8257000b
 # PidLidAppointmentDuration (long) 0x82130003
-# PidLidAppointmentProposedEndWhole (date)
+# (date)
 # PidLidAppointmentRecur (binary)
 showApp($message);
 
 echo "changing PidTagBody to 'bodyChanged'\n";
 $message->set(PidTagBody, 'bodyChanged');
 
-echo "Changing properties and saving\n";
-$message->set(PidLidAppointmentSubType, true, PidLidAppointmentDuration, 2);
-$message->set(PidLidAppointmentDuration, 77);
+echo "Changing  PidLidAppointmentEndWhole to 1380204166 (09/26/2013 @ 10:02am in EST.)\n";
+$unixtime = 1380204166;
+$message->set(PidLidAppointmentEndWhole, $unixtime);
+
 $message->save();
 unset($message);
 
@@ -57,9 +58,9 @@ echo "\n--- After save:\n";
 $message = $calendar->openMessage($id, 1);
 showApp($message);
 echo "Changing and saving again\n";
-$message->set(PidLidAppointmentSubType, false, PidLidAppointmentDuration, 2);
-$message->set(PidLidAppointmentDuration, 999);
 $message->set(PidTagBody, 'bodyRestored');
+echo "Changing  PidLidAppointmentEndWhole to 100 seconds more \n";
+$message->set(PidLidAppointmentEndWhole, $unixtime + 100);
 $message->save();
 unset($message);
 

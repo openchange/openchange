@@ -50,19 +50,21 @@ $message->set(PidTagBody, 'bodyChanged');
 echo "Changing properties and saving\n";
 $message->set(PidLidAppointmentSubType, true, PidLidAppointmentDuration, 2);
 $message->set(PidLidAppointmentDuration, 77);
-$message->setRecurrence();
 $message->save();
-
+unset($message);
 
 echo "\n--- After save:\n";
+$message = $calendar->openMessage($id, 1);
 showApp($message);
 echo "Changing and saving again\n";
 $message->set(PidLidAppointmentSubType, false, PidLidAppointmentDuration, 2);
 $message->set(PidLidAppointmentDuration, 999);
 $message->set(PidTagBody, 'bodyRestored');
 $message->save();
+unset($message);
 
 echo "\n --After last change: \n";
+$message = $calendar->openMessage($id, 1);
 showApp($message);
 
 # workaround against shutdown problem

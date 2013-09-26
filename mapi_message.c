@@ -5,6 +5,7 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 	PHP_ME(MAPIMessage,	getID,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
@@ -169,6 +170,35 @@ zval* mapi_message_get_property(mapi_message_object_t* msg, mapi_id_t prop_id)
 	zprop = mapi_message_property_to_zval(msg->talloc_ctx, prop_id, prop_value);
 
 	return zprop;
+}
+
+zval* mapi_message_get_base64_binary_property(mapi_message_object_t* msg, mapi_id_t prop_id)
+{
+	zval 		*result;
+	uint32_t 	prop_type;
+	struct Binary_r *bin;
+	char *		base64;
+	DATA_BLOB 	blob;
+
+	prop_type =  prop_id & 0xFFFF;
+	if (prop_type != PT_BINARY) {
+		php_error(E_ERROR, "This function should be only used upon binary properties");
+	}
+
+	bin  = (struct Binary_r*) find_mapi_SPropValue_data(&(msg->properties), prop_id);
+	blob = data_blob_talloc_named(msg->talloc_ctx, bin->lpb, bin->cb, "blob to hex");
+
+//	blob.data   = bin->cb;
+//	blob.length = bin->lpb;
+
+	base64 = base64_encode_data_blob(msg->talloc_ctx, blob);
+
+	MAKE_STD_ZVAL(result);
+	ZVAL_STRING(result, base64, dup);
+
+	data_blob_free(&blob);
+
+	return result;
 }
 
 zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value)
@@ -648,3 +678,17 @@ PHP_METHOD(MAPIMessage, dump)
 	RETURN_ZVAL(dump, 0, 1);
 }
 
+PHP_METHOD(MAPIMessage, getAsBase64)
+{
+	zval 		      *base64;
+	long		      prop_id;
+	mapi_message_object_t *this_obj;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &prop_id  ) == FAILURE) {
+		php_error(E_ERROR, "getAsBase64 invalid arguments. Must be: property ID number");
+	}
+
+	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	base64 = mapi_message_get_base64_binary_property(this_obj, (mapi_id_t) prop_id);
+	RETURN_ZVAL(base64, 0, 1);
+}

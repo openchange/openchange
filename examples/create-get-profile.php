@@ -1,8 +1,8 @@
 <?php
 # environment settings
 $pathDB = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'new1';
-$username='u6';
+$profileName = 'new15';
+$username='u10';
 $password = 'a';
 $domain = 'example42';
 $realm = 'example42.com';

@@ -13,8 +13,10 @@ function dumpContact($contact) {
   echo "PidTagEmailAddress: " . $contact->get(PidTagEmailAddress) . "\n";
   echo "PidTagCompanyName: " . $contact->get(PidTagCompanyName) . "\n";
   echo "PidTagDisplayName: " . $contact->get(PidTagDisplayName) . "\n";
-  echo  "PidTagGivenName: " . $contact->get(PidTagGivenName) . "\n";
+  echo "PidTagGivenName: " . $contact->get(PidTagGivenName) . "\n";
   echo "PidLidBusyStatus: " . $contact->get(PidLidBusyStatus) . "\n";
+  echo "PidLidWorkAddressStreet: " .  $contact->get(PidLidWorkAddressStreet) . "\n";
+
   echo "\n";
 }
 
@@ -36,7 +38,7 @@ $contacts = $mailbox->contacts();
 echo "Open RO message and show its properties\n";
 $roContact = $contacts->openMessage($contactMessageId, MAPIMessage::RO);
 dumpContact($roContact);
-
+$roContact->dump();
 
 $message = $contacts->openMessage($contactMessageId,  MAPIMessage::RW);
 echo "=> Message with message ID " . $message->getID() . " opened\n";
@@ -51,6 +53,8 @@ $message->set(PidTagBody, 'descChanged');
 echo "Set PidLidBusyStatus to 1\n";
 $message->set(PidLidBusyStatus, 1);
 
+print "[1] PidLidWorkAddressStreet: " . $message->get(PidLidWorkAddressStreet);
+$message->set(PidLidWorkAddressStreet, "New Before street");
 
 echo "Set PidLidContactCharacterSet to 33";
 $message->set(PidLidContactCharacterSet, 33);
@@ -84,6 +88,9 @@ echo "=> Message with message ID " . $message->getID() . " opened\n";
 echo "Set PidLidBusyStatus to 2\n";
 $message->set(PidLidBusyStatus, 2);
 
+print "[2] PidLidWorkAddressStreet: " . $message->get(PidLidWorkAddressStreet);
+$message->set(PidLidWorkAddressStreet, "New After street");
+
 echo "Reverting changes\n";
 if ($email == "changed@a.org") {
    echo "=> [1] Set PidLidEmail1EmailAddress to jkerihuel@zentyal.com\n";
@@ -103,6 +110,7 @@ echo "=> SaveChangesMessage \n";
 $message->save();
 
 echo "Dump after second save\n";
+print "PidLidWorkAddressStreet: " . $message->get(PidLidWorkAddressStreet);
 dumpContact($message);
 
 unset($message);

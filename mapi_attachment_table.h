@@ -34,6 +34,7 @@ __BEGIN_DECLS
 PHP_METHOD(MAPIAttachmentTable, __construct);
 PHP_METHOD(MAPIAttachmentTable, getParentFolder);
 PHP_METHOD(MAPIAttachmentTable, getAttachments);
+PHP_METHOD(MAPIAttachmentTable, count);
 
 void MAPITableAttachmentRegisterClass(TSRMLS_D);
 zval *create_attachment_table_object(zval* parent, mapi_object_t* attachment_table TSRMLS_DC);

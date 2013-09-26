@@ -4,6 +4,7 @@ static zend_function_entry mapi_attachment_table_class_functions[] = {
  	PHP_ME(MAPIAttachmentTable,	__construct,	NULL, ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
 	PHP_ME(MAPIAttachmentTable,	getAttachments,	NULL, ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIAttachmentTable,	getParentFolder,NULL, ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIAttachmentTable,   count,          NULL, ZEND_ACC_PUBLIC)
 	{ NULL, NULL, NULL }
 };
 
@@ -96,4 +97,9 @@ PHP_METHOD(MAPIAttachmentTable, getAttachments)
 	}
 
 	RETURN_ZVAL(res, 0, 1);
+}
+
+PHP_METHOD(MAPIAttachmentTable, count)
+{
+	php_error(E_ERROR, "This method is not available for attachments tables");
 }

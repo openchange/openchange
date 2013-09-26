@@ -8,6 +8,7 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAttachment,  NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getAttachmentTable,  NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	dump,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 
@@ -578,6 +579,16 @@ zval *mapi_message_get_attachment(zval *z_message, const uint32_t attach_num TSR
 	return z_attachment;
 }
 
+PHP_METHOD(MAPIMessage, getAttachment)
+{
+	long attach_num;
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "l", &attach_num  ) == FAILURE) {
+		php_error(E_ERROR, "getAttachment invalid arguments. Must be: attachment number");
+	}
+
+	zval *attch = mapi_message_get_attachment(getThis(), (uint32_t) attach_num TSRMLS_CC);
+	RETURN_ZVAL(attch, 0, 1);
+}
 
 PHP_METHOD(MAPIMessage, getAttachmentTable)
 {

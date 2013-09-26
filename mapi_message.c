@@ -209,53 +209,21 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		}
 	} else if (prop_type == PT_SYSTIME) {
 		const struct FILETIME *filetime_value = (const struct FILETIME *) prop_value;
-		const char		*date;
+		time_t		      unix_time = 0;
 		if (filetime_value) {
-			NTTIME			time;
-			time = filetime_value->dwHighDateTime;
-			time = time << 32;
-			time |= filetime_value->dwLowDateTime;
-			date = nt_time_string(talloc_ctx, time);
+			NTTIME			nt_time;
+			nt_time = filetime_value->dwHighDateTime;
+			nt_time = nt_time << 32;
+			nt_time |= filetime_value->dwLowDateTime;
+			unix_time = nt_time_to_unix(nt_time);
 		}
-		if (date) {
-			ZVAL_STRING(zprop, date, 1);
-			talloc_free((char*) date);
-		} else {
-			php_error(E_ERROR, "Cannot create  zval from PT_SYSTIME");
-		}
-
+		ZVAL_LONG(zprop, unix_time);
 	} else {
 // TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property 0x%" PRIX64 " has a type unknow or unsupported", prop_id);
 	}
 
 	return zprop;
-}
-
-
-const char *mapi_date(TALLOC_CTX *parent_ctx,
-		      struct mapi_SPropValue_array *properties,
-		      uint32_t mapitag)
-{
-	const char		*date = NULL;
-	TALLOC_CTX		*talloc_ctx;
-	NTTIME			time;
-	const struct FILETIME	*filetime;
-
-	filetime = (const struct FILETIME *) find_mapi_SPropValue_data(properties, mapitag);
-	if (filetime) {
-		const char *nt_date_str;
-
-		time = filetime->dwHighDateTime;
-		time = time << 32;
-		time |= filetime->dwLowDateTime;
-		talloc_ctx = talloc_named(parent_ctx, 0, "mapi_date_string");
-		nt_date_str = nt_time_string(talloc_ctx, time);
-		date = estrdup(nt_date_str);
-		talloc_free(talloc_ctx);
-	}
-
-	return date;
 }
 
 void mapi_message_check_binary_array_zval(zval *zv)

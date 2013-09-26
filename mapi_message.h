@@ -62,7 +62,6 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 void set_message_obj_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t id, void *data);
 
 mapi_id_t mapi_message_get_id(zval *message TSRMLS_DC);
-const char *mapi_date(TALLOC_CTX *parent_ctx,  struct mapi_SPropValue_array *properties,   uint32_t mapitag);
 zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value);
 
 __END_DECLS

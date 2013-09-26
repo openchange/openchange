@@ -289,6 +289,7 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 	case IS_LONG:
 		switch (mapi_type) {
 		case PT_LONG:
+		case PT_SYSTIME:
 			return true;
 		default:
 			return false;
@@ -301,7 +302,6 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 		switch (mapi_type) {
 		case PT_STRING8:
 		case PT_UNICODE:
-		case PT_SYSTIME:
 			return true;
 		default:
 			return false;
@@ -350,7 +350,7 @@ void mapi_message_fill_binary_array(TALLOC_CTX *mem_ctx, zval *src, struct Binar
 	}
 }
 
-void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_type, zval *val)
+void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, zval *val)
 {
 	void* data = NULL;
 	int type = Z_TYPE_P(val);
@@ -359,25 +359,40 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *talloc_ctx, mapi_id_t mapi_typ
 		data = NULL;
 	} else if (type == IS_LONG) {
 		// XXX TO CHECK
-		long *ldata = talloc_ptrtype(talloc_ctx, ldata);
+		long *ldata = talloc_ptrtype(mem_ctx, ldata);
 		*ldata = Z_LVAL_P(val);
 		data = (void*) ldata;
 //		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data)); //DDD
 	} else if (type == IS_DOUBLE) {
-		// XXX TO CHECK
-		double *ddata =  talloc_ptrtype(talloc_ctx, ddata);
-		*ddata = Z_DVAL_P(val);
-		data = (void*) ddata;
+		if (mapi_type == PT_DOUBLE) {
+			// XXX TO CHECK
+			double *ddata =  talloc_ptrtype(mem_ctx, ddata);
+			*ddata = Z_DVAL_P(val);
+			data = (void*) ddata;
+		}  else if (mapi_type == PT_SYSTIME) {
+			struct FILETIME		*date;
+			double 			*ddata;
+			NTTIME                  nttime;
+			ddata =  talloc_ptrtype(mem_ctx, ddata);
+			*ddata = Z_DVAL_P(val);
+			nttime = *ddata;
+			date = talloc(mem_ctx, struct FILETIME);
+			date->dwLowDateTime  = (nttime << 32) >> 32;
+			date->dwHighDateTime = (nttime >> 32);
+			data = (void*) date;
+		} else {
+			php_error(E_ERROR, "Incorrect PHP double variable for mapi type  0x%" PRIX64 "", mapi_type);
+		}
 	} else if (type == IS_STRING) {
-		data = (void*)talloc_strdup(talloc_ctx, Z_STRVAL_P(val));
+		data = (void*)talloc_strdup(mem_ctx, Z_STRVAL_P(val));
 	} else if (type == IS_BOOL) {
-		bool *bdata =  talloc_ptrtype(talloc_ctx, bdata);
+		bool *bdata =  talloc_ptrtype(mem_ctx, bdata);
 		*bdata = Z_BVAL_P(val);
 		data = (void*) bdata;
 //		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data)); //DDD
 	} else if ((type == IS_ARRAY) && (mapi_type == PT_BINARY)) {
-		struct Binary_r *bidata = talloc_ptrtype(talloc_ctx, bidata);
-		mapi_message_fill_binary_array(talloc_ctx, val, bidata);
+		struct Binary_r *bidata = talloc_ptrtype(mem_ctx, bidata);
+		mapi_message_fill_binary_array(mem_ctx, val, bidata);
 		data = (void*) bidata;
 	} else {
 		php_error(E_ERROR, "ZVAL type %i for MAPI ID type 0x%" PRIX64 "  not expected. Skipped\n", type, mapi_type);

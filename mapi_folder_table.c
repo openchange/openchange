@@ -31,7 +31,7 @@ zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint
 	TALLOC_CTX         	*mem_ctx;
 
 	mem_ctx =   talloc_named(NULL, 0, "directory_table");
-	tag_array = set_SPropTagArray(mem_ctx, 6,
+	tag_array = set_SPropTagArray(mem_ctx, 7,
 				      PR_FID,
 				      PR_CONTAINER_CLASS,
 				      PR_DISPLAY_NAME_UNICODE,

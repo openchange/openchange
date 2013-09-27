@@ -221,19 +221,6 @@ zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_i
 
 	efree(bin);
 	data_blob_free(&blob);
-	// XXX
-
-	/* bin  = (struct Binary_r*) find_mapi_SPropValue_data(&(msg->properties), prop_id); */
-	/* blob = data_blob_talloc_named(msg->talloc_ctx, bin->lpb, bin->cb, "blob to hex"); */
-
-	/* base64 = base64_encode_data_blob(msg->talloc_ctx, blob); */
-
-	/* MAKE_STD_ZVAL(result); */
-	/* ZVAL_STRING(result, base64, dup); */
-
-	/* data_blob_free(&blob); */
-
-	/* return result; */
 }
 
 zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value)

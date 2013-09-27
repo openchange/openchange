@@ -26,19 +26,6 @@ void MAPIAppointmentRegisterClass(TSRMLS_D)
 	mapi_appointment_object_handlers.clone_obj = NULL;
 }
 
-
-/* struct SPropValue { */
-/* 	enum MAPITAGS ulPropTag; */
-/* 	uint32_t dwAlignPad; */
-/* 	union SPropValue_CTR value;/\* [switch_is(ulPropTag&0xFFFF)] *\/ */
-/* }/\* [noprint,nopush,public,nopull] *\/; */
-
-/* struct mapi_SPropValue_array { */
-/* 	uint16_t cValues; */
-/* 	struct mapi_SPropValue *lpProps;/\* [flag(LIBNDR_FLAG_REMAINING|LIBNDR_FLAG_NOALIGN)] *\/ */
-/* }/\* [public,flag(LIBNDR_FLAG_NOALIGN)] *\/; */
-
-
 zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
 	zval 			*appointment;

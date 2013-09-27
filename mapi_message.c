@@ -80,12 +80,6 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 
 }
 
-// XXX 	 GetProps bu message type
-//	struct SPropTagArray	*SPropTagArray;
-//	int count;
-//	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 1, 0x8045001F);
-//	retval = GetProps(new_obj->message, MAPI_UNICODE, SPropTagArray, &(new_obj->properties), &count);
-//        CHECK_MAPI_RETVAL(retval, "Getting message properties");
 void mapi_message_request_all_properties(zval *z_message TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;

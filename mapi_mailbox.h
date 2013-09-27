@@ -17,18 +17,18 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_SESSION_H
-#define MAPI_SESSION_H
+#ifndef MAPI_MAILBOX_H
+#define MAPI_MAILBOX_H
 
-typedef struct mapi_session_object
+typedef struct mapi_mailbox_object
 {
-	zend_object		std;
-	char			*path;
-	TALLOC_CTX		*talloc_ctx;
-	zval			*parent;
-	zval			*children;
-	struct mapi_session	*session;
-} mapi_session_object_t;
+	zend_object	std;
+	mapi_object_t	store;
+	TALLOC_CTX	*talloc_ctx;
+	const char      *username;
+	zval		*parent;
+	zval		*children;
+} mapi_mailbox_object_t;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,14 +42,23 @@ typedef struct mapi_session_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, __destruct);
-PHP_METHOD(MAPISession, mailbox);
+PHP_METHOD(MAPIMailbox, __construct);
+PHP_METHOD(MAPIMailbox, __destruct);
+PHP_METHOD(MAPIMailbox, getName);
+PHP_METHOD(MAPIMailbox, setName);
+PHP_METHOD(MAPIMailbox, inbox);
+PHP_METHOD(MAPIMailbox, calendar);
+PHP_METHOD(MAPIMailbox, contacts);
+PHP_METHOD(MAPIMailbox, tasks);
+PHP_METHOD(MAPIMailbox, openFolder);
 
-void MAPISessionRegisterClass(TSRMLS_D);
-zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
-void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
+void MAPIMailboxRegisterClass(TSRMLS_D);
+zval *create_mailbox_object(zval *session, char *username TSRMLS_DC);
+
+// XXX to be removed
+void init_message_store(mapi_object_t *store,
+			       struct mapi_session *session,
+			bool public_folder, char *username);
 
 __END_DECLS
 

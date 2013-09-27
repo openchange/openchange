@@ -16,19 +16,22 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
+#ifndef MAPI_FOLDER_TABLE_H
+#define MAPI_FOLDER_TABLE_H
 
-#ifndef MAPI_SESSION_H
-#define MAPI_SESSION_H
 
-typedef struct mapi_session_object
-{
-	zend_object		std;
-	char			*path;
-	TALLOC_CTX		*talloc_ctx;
-	zval			*parent;
-	zval			*children;
-	struct mapi_session	*session;
-} mapi_session_object_t;
+/* enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS}; */
+
+/* typedef struct mapi_table_object */
+/* { */
+/* 	zend_object	std; */
+/* 	mapi_object_t	*table; */
+/* 	zval		*parent; */
+/* 	uint32_t count; */
+/* 	enum table_type	type; */
+/* 	TALLOC_CTX	*talloc_ctx; */
+/* 	struct SPropTagArray	*tag_array; */
+/* } mapi_table_object_t; */
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,14 +45,13 @@ typedef struct mapi_session_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, __destruct);
-PHP_METHOD(MAPISession, mailbox);
+PHP_METHOD(MAPIFolderTable, __construct);
+PHP_METHOD(MAPIFolderTable, summary);
+PHP_METHOD(MAPIFolderTable, getFolders);
 
-void MAPISessionRegisterClass(TSRMLS_D);
-zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
-void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
+void MAPITableFolderRegisterClass(TSRMLS_D);
+zval *create_folder_table_object(zval* parent, mapi_object_t* folder_table, uint32_t count TSRMLS_DC);
+
 
 __END_DECLS
 

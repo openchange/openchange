@@ -16,19 +16,8 @@
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#ifndef MAPI_SESSION_H
-#define MAPI_SESSION_H
-
-typedef struct mapi_session_object
-{
-	zend_object		std;
-	char			*path;
-	TALLOC_CTX		*talloc_ctx;
-	zval			*parent;
-	zval			*children;
-	struct mapi_session	*session;
-} mapi_session_object_t;
+#ifndef MAPI_ATTACHMENT_TABLE_H
+#define MAPI_ATTACHMENT_TABLE_H
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,14 +31,14 @@ typedef struct mapi_session_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, __destruct);
-PHP_METHOD(MAPISession, mailbox);
+PHP_METHOD(MAPIAttachmentTable, __construct);
+PHP_METHOD(MAPIAttachmentTable, getParentFolder);
+PHP_METHOD(MAPIAttachmentTable, getAttachments);
+PHP_METHOD(MAPIAttachmentTable, count);
 
-void MAPISessionRegisterClass(TSRMLS_D);
-zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
-void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
+void MAPITableAttachmentRegisterClass(TSRMLS_D);
+zval *create_attachment_table_object(zval* parent, mapi_object_t* attachment_table TSRMLS_DC);
+
 
 __END_DECLS
 

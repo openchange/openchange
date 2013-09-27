@@ -17,18 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef MAPI_SESSION_H
-#define MAPI_SESSION_H
-
-typedef struct mapi_session_object
-{
-	zend_object		std;
-	char			*path;
-	TALLOC_CTX		*talloc_ctx;
-	zval			*parent;
-	zval			*children;
-	struct mapi_session	*session;
-} mapi_session_object_t;
+#ifndef MAPI_APPOINTMENT_H
+#define MAPI_APPOINTMENT_H
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -42,14 +32,14 @@ typedef struct mapi_session_object
 
 __BEGIN_DECLS
 
-PHP_METHOD(MAPISession, __construct);
-PHP_METHOD(MAPISession, __destruct);
-PHP_METHOD(MAPISession, mailbox);
+PHP_METHOD(MAPIAppointment, __construct);
+PHP_METHOD(MAPIAppointment, __destruct);
+PHP_METHOD(MAPIAppointment, setRecurrence);
+PHP_METHOD(MAPIAppointment, getRecurrence);
 
-void MAPISessionRegisterClass(TSRMLS_D);
-zval *create_session_object(struct mapi_session *, zval *, TALLOC_CTX * TSRMLS_DC);
-void mapi_mailbox_remove_children_mailbox(zval *mapi_mailbox, zend_object_handle mailbox_handle TSRMLS_DC);
-struct mapi_session *mapi_session_get_session(zval *php_obj TSRMLS_DC);
+
+void MAPIAppointmentRegisterClass(TSRMLS_D);
+zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC);
 
 __END_DECLS
 

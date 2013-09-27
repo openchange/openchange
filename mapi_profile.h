@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -24,9 +24,9 @@ typedef struct mapi_profile_object
 {
 	zend_object		std;
 	char			*path;
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX		*talloc_ctx;
 	zval			*parent;
-	zval			*children_sessions;
+	zval			*children;
 	struct mapi_profile	*profile;
 } mapi_profile_object_t;
 
@@ -49,9 +49,9 @@ PHP_METHOD(MAPIProfile, logon);
 
 void MAPIProfileRegisterClass(TSRMLS_D);
 zval *create_profile_object(struct mapi_profile *, zval *, TALLOC_CTX *  TSRMLS_DC);
-struct mapi_profile *get_profile(zval * TSRMLS_DC);
+struct mapi_profile *mapi_profile_get_profile(zval * TSRMLS_DC);
 struct mapi_context *profile_get_mapi_context(zval * TSRMLS_DC);
-void mapi_profile_remove_children_session(zval *, zend_object_handle TSRMLS_DC);
+zval *mapi_profile_logon(zval *z_profile TSRMLS_DC);
 
 __END_DECLS
 

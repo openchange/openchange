@@ -7,6 +7,7 @@ static zend_function_entry mapi_message_class_functions[] = {
 	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	setAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getAttachment,  NULL,           	ZEND_ACC_PUBLIC)
@@ -188,9 +189,6 @@ zval* mapi_message_get_base64_binary_property(mapi_message_object_t* msg, mapi_i
 	bin  = (struct Binary_r*) find_mapi_SPropValue_data(&(msg->properties), prop_id);
 	blob = data_blob_talloc_named(msg->talloc_ctx, bin->lpb, bin->cb, "blob to hex");
 
-//	blob.data   = bin->cb;
-//	blob.length = bin->lpb;
-
 	base64 = base64_encode_data_blob(msg->talloc_ctx, blob);
 
 	MAKE_STD_ZVAL(result);
@@ -199,6 +197,43 @@ zval* mapi_message_get_base64_binary_property(mapi_message_object_t* msg, mapi_i
 	data_blob_free(&blob);
 
 	return result;
+}
+
+zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_id_t prop_id, char *base64)
+{
+	zval 		*result;
+	uint32_t 	prop_type;
+	struct Binary_r *bin;
+	DATA_BLOB 	blob;
+
+
+	prop_type =  prop_id & 0xFFFF;
+	if (prop_type != PT_BINARY) {
+		php_error(E_ERROR, "This function should be only used upon binary properties");
+	}
+
+	blob = base64_decode_data_blob_talloc(msg->talloc_ctx, base64);
+	bin  = emalloc(sizeof(struct Binary_r));
+	bin->cb = blob.length;
+	bin->lpb = blob.data;
+
+	set_message_obj_prop(msg->talloc_ctx, msg->message, prop_id, (void*) bin);
+
+	efree(bin);
+	data_blob_free(&blob);
+	// XXX
+
+	/* bin  = (struct Binary_r*) find_mapi_SPropValue_data(&(msg->properties), prop_id); */
+	/* blob = data_blob_talloc_named(msg->talloc_ctx, bin->lpb, bin->cb, "blob to hex"); */
+
+	/* base64 = base64_encode_data_blob(msg->talloc_ctx, blob); */
+
+	/* MAKE_STD_ZVAL(result); */
+	/* ZVAL_STRING(result, base64, dup); */
+
+	/* data_blob_free(&blob); */
+
+	/* return result; */
 }
 
 zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, void *prop_value)
@@ -691,4 +726,22 @@ PHP_METHOD(MAPIMessage, getAsBase64)
 	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	base64 = mapi_message_get_base64_binary_property(this_obj, (mapi_id_t) prop_id);
 	RETURN_ZVAL(base64, 0, 1);
+}
+
+PHP_METHOD(MAPIMessage, setAsBase64)
+{
+	char 		      *base64 = NULL;
+	size_t	              base64_len;
+	long		      prop_id;
+	mapi_message_object_t *this_obj;
+
+	if (zend_parse_parameters(ZEND_NUM_ARGS() TSRMLS_CC, "ls", &prop_id, &base64, &base64_len  ) == FAILURE) {
+		php_error(E_ERROR, "setAsBase64 invalid arguments. Must be: property ID number, base 64 string");
+	}
+	if (base64 == NULL) {
+		php_error(E_ERROR, "setAsBase64 was passed a NULL string");
+	}
+
+	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
+	mapi_message_set_base64_binary_property(this_obj, (mapi_id_t) prop_id, base64);
 }

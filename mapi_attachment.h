@@ -34,7 +34,7 @@ __BEGIN_DECLS
 
 PHP_METHOD(MAPIAttachment, __construct);
 PHP_METHOD(MAPIAttachment, __destruct);
-
+PHP_METHOD(MAPIAttachment, save);
 
 void MAPIAttachmentRegisterClass(TSRMLS_D);
 zval *create_attachment_object(zval *message, mapi_object_t *attachment TSRMLS_DC);

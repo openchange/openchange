@@ -48,6 +48,7 @@ PHP_METHOD(MAPIMessage, getID);
 PHP_METHOD(MAPIMessage, get);
 PHP_METHOD(MAPIMessage, getAsBase64);
 PHP_METHOD(MAPIMessage, set);
+PHP_METHOD(MAPIMessage, setAsBase64);
 PHP_METHOD(MAPIMessage, save);
 PHP_METHOD(MAPIMessage, getBodyContentFormat);
 PHP_METHOD(MAPIMessage, getAttachment);

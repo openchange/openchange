@@ -91,6 +91,27 @@ void mapi_message_request_all_properties(zval *z_message TSRMLS_DC)
 	mapi_SPropValue_array_named(obj->message,  &(obj->properties));
 }
 
+void mapi_message_so_request_properties(mapi_message_object_t *obj, struct SPropTagArray *SPropTagArray TSRMLS_DC)
+{
+	enum MAPISTATUS		retval;
+	struct SPropValue 	*lpProps;
+	int			i;
+	int			count;
+
+	retval = GetProps(obj->message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
+        CHECK_MAPI_RETVAL(retval, "Getting appointment properties");
+	php_printf("COUNT %i\n", count);
+
+	obj->properties.cValues = count;
+	obj->properties.lpProps =  talloc_array(obj->talloc_ctx, struct mapi_SPropValue, count);
+	for (i=0; i < count; i++) {
+		cast_mapi_SPropValue(obj->talloc_ctx, &(obj->properties.lpProps[i]), &lpProps[i]);
+	}
+	MAPIFreeBuffer(lpProps);
+
+	mapi_SPropValue_array_named(obj->message,  &(obj->properties));
+}
+
 zval *create_message_object(char *class, zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
 

@@ -26,10 +26,38 @@ void MAPIAppointmentRegisterClass(TSRMLS_D)
 	mapi_appointment_object_handlers.clone_obj = NULL;
 }
 
+
+/* struct SPropValue { */
+/* 	enum MAPITAGS ulPropTag; */
+/* 	uint32_t dwAlignPad; */
+/* 	union SPropValue_CTR value;/\* [switch_is(ulPropTag&0xFFFF)] *\/ */
+/* }/\* [noprint,nopush,public,nopull] *\/; */
+
+/* struct mapi_SPropValue_array { */
+/* 	uint16_t cValues; */
+/* 	struct mapi_SPropValue *lpProps;/\* [flag(LIBNDR_FLAG_REMAINING|LIBNDR_FLAG_NOALIGN)] *\/ */
+/* }/\* [public,flag(LIBNDR_FLAG_NOALIGN)] *\/; */
+
+
 zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
-	zval *appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
+	zval 			*appointment;
+	mapi_message_object_t 	*obj;
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+
+	appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
 	mapi_message_request_all_properties(appointment TSRMLS_CC);
+
+	/* obj = (mapi_message_object_t *) zend_object_store_get_object(appointment TSRMLS_CC); */
+	/* SPropTagArray = set_SPropTagArray(obj->talloc_ctx, 13, */
+	/* 				  PidTagOriginalSubject, PidTagHasAttachments, PidLidBusyStatus, PidLidLocation, */
+	/* 				  PidLidAppointmentStartWhole, PidLidAppointmentEndWhole, PidNameKeywords,  PidLidAppointmentSubType, */
+	/* 				  PidTagLastModificationTime, PidLidAllAttendeesString,	PidTagBody, PidTagSensitivity, */
+	/* 				  PidTagPriority); */
+	/* mapi_message_so_request_properties(obj, SPropTagArray TSRMLS_CC); */
+	/* MAPIFreeBuffer(SPropTagArray); */
+
 	return appointment;
 }
 

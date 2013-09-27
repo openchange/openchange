@@ -1,18 +1,18 @@
 #include <php_mapi.h>
 
 static zend_function_entry mapi_message_class_functions[] = {
-	PHP_ME(MAPIMessage,	__construct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIMessage,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(MAPIMessage,	getID,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	setAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	__construct,	       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIMessage,	__destruct,	       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMessage,	getID,	               NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	get,	               NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAsBase64,           NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	set,	       	       NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	setAsBase64,           NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	save,	      	       NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAttachment,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAttachmentTable,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	dump,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMessage,	getAttachment,         NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAttachmentTable,    NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	dump,		       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 
 	{ NULL, NULL, NULL }
 };

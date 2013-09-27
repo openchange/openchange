@@ -88,18 +88,6 @@ void set_recurrence_pattern(struct RecurrencePattern *rPattern, zval *to_set)
 	uint32_t                        patternType;
 
 	ht = to_set->value.ht;
-	/* recurFrequency = 0x200A; // diary */
-	/* patternType    = 0x0; // diary */
-
-
-	/* struct icaltimetype dtstart; */
-	/* dtstart.year = 2013; */
-	/* dtstart.month= 12; */
-	/* dtstart.day  = 15; */
-	/* dtstart.hour = 0; */
-	/* dtstart.minute = 0; */
-	/* dtstart.second = 0; */
-	/* startTime = get_minutes_from_icaltimetype(dtstart); */
 
 	rPattern->ReaderVersion 	= 0x3004;
 	rPattern->WriterVersion 	= 0x3004;
@@ -317,7 +305,7 @@ zval* appointment_recurrence_pattern_to_zval(struct AppointmentRecurrencePattern
 		add_assoc_long(zrp, "OccurrenceCount", rp->OccurrenceCount);
 	}
 
-	add_assoc_long(zrp, "DetedInstanceCount", rp->DeletedInstanceCount);
+	add_assoc_long(zrp, "DeletedInstanceCount", rp->DeletedInstanceCount);
 	add_assoc_long(zrp, "ModifiedInstanceCount", rp->ModifiedInstanceCount);
 	// TODO list of Delted And Modified count
 

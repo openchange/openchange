@@ -2,7 +2,7 @@ Source: php5-mapi
 Section: php
 Priority: optional
 Maintainer: Zentyal Packaging Maintainers <pkg-team@zentyal.com>
-Build-Depends: cdbs, debhelper (>= 5.0.0), build-essential, php5-dev, libdcerpc-dev, libtalloc-dev, libtevent-dev, libsamba-hostconfig-dev, libldb-dev, libmapi-dev, libsamba-credentials-dev, libpopt-dev, flex, bison
+Build-Depends: cdbs, debhelper (>= 5.0.0), build-essential, php5-dev, libtalloc-dev, libtevent-dev, libldb-dev, libmapi-dev, libpopt-dev, flex, bison, samba4 (>= 4.1.0rc3-zentyal4)
 Standards-Version: 3.9.2
 
 Package: php5-mapi

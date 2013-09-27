@@ -1,3 +1,9 @@
+php5-mapi (0.1.1) precise; urgency=low
+
+  * Fix depends
+
+ -- José A. Calvo <jacalvo@zentyal.com>  Fri, 27 Sep 2013 11:01:33 +0200
+
 php5-mapi (0.1) precise; urgency=low
 
   * Initial release

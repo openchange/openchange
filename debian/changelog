@@ -1,3 +1,9 @@
+php5-mapi (0.1.2) precise; urgency=low
+
+  * Merged api-with-mailboxes-and-folders
+
+ -- José A. Calvo <jacalvo@zentyal.com>  Fri, 27 Sep 2013 12:07:56 +0200
+
 php5-mapi (0.1.1) precise; urgency=low
 
   * Fix depends

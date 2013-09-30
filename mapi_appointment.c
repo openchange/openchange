@@ -28,8 +28,23 @@ void MAPIAppointmentRegisterClass(TSRMLS_D)
 
 zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_mode TSRMLS_DC)
 {
-	zval *appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
+	zval 			*appointment;
+	mapi_message_object_t 	*obj;
+	enum MAPISTATUS		retval;
+	struct SPropTagArray	*SPropTagArray;
+
+	appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
 	mapi_message_request_all_properties(appointment TSRMLS_CC);
+
+	/* obj = (mapi_message_object_t *) zend_object_store_get_object(appointment TSRMLS_CC); */
+	/* SPropTagArray = set_SPropTagArray(obj->talloc_ctx, 13, */
+	/* 				  PidTagOriginalSubject, PidTagHasAttachments, PidLidBusyStatus, PidLidLocation, */
+	/* 				  PidLidAppointmentStartWhole, PidLidAppointmentEndWhole, PidNameKeywords,  PidLidAppointmentSubType, */
+	/* 				  PidTagLastModificationTime, PidLidAllAttendeesString,	PidTagBody, PidTagSensitivity, */
+	/* 				  PidTagPriority); */
+	/* mapi_message_so_request_properties(obj, SPropTagArray TSRMLS_CC); */
+	/* MAPIFreeBuffer(SPropTagArray); */
+
 	return appointment;
 }
 
@@ -88,18 +103,6 @@ void set_recurrence_pattern(struct RecurrencePattern *rPattern, zval *to_set)
 	uint32_t                        patternType;
 
 	ht = to_set->value.ht;
-	/* recurFrequency = 0x200A; // diary */
-	/* patternType    = 0x0; // diary */
-
-
-	/* struct icaltimetype dtstart; */
-	/* dtstart.year = 2013; */
-	/* dtstart.month= 12; */
-	/* dtstart.day  = 15; */
-	/* dtstart.hour = 0; */
-	/* dtstart.minute = 0; */
-	/* dtstart.second = 0; */
-	/* startTime = get_minutes_from_icaltimetype(dtstart); */
 
 	rPattern->ReaderVersion 	= 0x3004;
 	rPattern->WriterVersion 	= 0x3004;
@@ -317,7 +320,7 @@ zval* appointment_recurrence_pattern_to_zval(struct AppointmentRecurrencePattern
 		add_assoc_long(zrp, "OccurrenceCount", rp->OccurrenceCount);
 	}
 
-	add_assoc_long(zrp, "DetedInstanceCount", rp->DeletedInstanceCount);
+	add_assoc_long(zrp, "DeletedInstanceCount", rp->DeletedInstanceCount);
 	add_assoc_long(zrp, "ModifiedInstanceCount", rp->ModifiedInstanceCount);
 	// TODO list of Delted And Modified count
 
@@ -354,7 +357,7 @@ PHP_METHOD(MAPIAppointment, setRecurrence)
 	mem_ctx = message_obj->talloc_ctx;
 
 	bin_pattern = set_AppointmentRecurrencePattern(mem_ctx, &recurrence);
-	set_message_obj_prop(mem_ctx, message_obj->message, id, (void*) bin_pattern);
+	mapi_message_so_set_prop(mem_ctx, message_obj->message, id, (void*) bin_pattern);
 }
 
 PHP_METHOD(MAPIAppointment, getRecurrence)

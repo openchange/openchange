@@ -1,18 +1,18 @@
 #include <php_mapi.h>
 
 static zend_function_entry mapi_message_class_functions[] = {
-	PHP_ME(MAPIMessage,	__construct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
-	PHP_ME(MAPIMessage,	__destruct,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
-	PHP_ME(MAPIMessage,	getID,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	get,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	set,	        NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	setAsBase64,    NULL,		 	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	save,	        NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	__construct,	       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_CTOR)
+	PHP_ME(MAPIMessage,	__destruct,	       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMessage,	getID,	               NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	get,	               NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAsBase64,           NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	set,	       	       NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	setAsBase64,           NULL,	 	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	save,	      	       NULL,           	ZEND_ACC_PUBLIC)
 	PHP_ME(MAPIMessage,	getBodyContentFormat,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAttachment,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	getAttachmentTable,  NULL,           	ZEND_ACC_PUBLIC)
-	PHP_ME(MAPIMessage,	dump,	NULL,			ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
+	PHP_ME(MAPIMessage,	getAttachment,         NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	getAttachmentTable,    NULL,           	ZEND_ACC_PUBLIC)
+	PHP_ME(MAPIMessage,	dump,		       NULL,		ZEND_ACC_PUBLIC|ZEND_ACC_DTOR)
 
 	{ NULL, NULL, NULL }
 };
@@ -80,12 +80,6 @@ void MAPIMessageRegisterClass(TSRMLS_D)
 
 }
 
-// XXX 	 GetProps bu message type
-//	struct SPropTagArray	*SPropTagArray;
-//	int count;
-//	SPropTagArray = set_SPropTagArray(new_obj->talloc_ctx, 1, 0x8045001F);
-//	retval = GetProps(new_obj->message, MAPI_UNICODE, SPropTagArray, &(new_obj->properties), &count);
-//        CHECK_MAPI_RETVAL(retval, "Getting message properties");
 void mapi_message_request_all_properties(zval *z_message TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
@@ -94,6 +88,27 @@ void mapi_message_request_all_properties(zval *z_message TSRMLS_DC)
 	obj = (mapi_message_object_t *) zend_object_store_get_object(z_message TSRMLS_CC);
 	retval = GetPropsAll(obj->message, MAPI_UNICODE, &(obj->properties));
         CHECK_MAPI_RETVAL(retval, "Getting message properties");
+	mapi_SPropValue_array_named(obj->message,  &(obj->properties));
+}
+
+void mapi_message_so_request_properties(mapi_message_object_t *obj, struct SPropTagArray *SPropTagArray TSRMLS_DC)
+{
+	enum MAPISTATUS		retval;
+	struct SPropValue 	*lpProps;
+	int			i;
+	int			count;
+
+	retval = GetProps(obj->message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
+        CHECK_MAPI_RETVAL(retval, "Getting appointment properties");
+	php_printf("COUNT %i\n", count);
+
+	obj->properties.cValues = count;
+	obj->properties.lpProps =  talloc_array(obj->talloc_ctx, struct mapi_SPropValue, count);
+	for (i=0; i < count; i++) {
+		cast_mapi_SPropValue(obj->talloc_ctx, &(obj->properties.lpProps[i]), &lpProps[i]);
+	}
+	MAPIFreeBuffer(lpProps);
+
 	mapi_SPropValue_array_named(obj->message,  &(obj->properties));
 }
 
@@ -217,7 +232,7 @@ zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_i
 	bin->cb = blob.length;
 	bin->lpb = blob.data;
 
-	set_message_obj_prop(msg->talloc_ctx, msg->message, prop_id, (void*) bin);
+	mapi_message_so_set_prop(msg->talloc_ctx, msg->message, prop_id, (void*) bin);
 
 	efree(bin);
 	data_blob_free(&blob);
@@ -495,7 +510,7 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-void set_message_obj_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t id, void *data)
+void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t id, void *data)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps = NULL;
@@ -533,7 +548,7 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
 
-		set_message_obj_prop(message_obj->talloc_ctx,	message_obj->message, id, data);
+		mapi_message_so_set_prop(message_obj->talloc_ctx,	message_obj->message, id, data);
 	}
 
 }

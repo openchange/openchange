@@ -45,7 +45,7 @@
 #include <mapi_attachment_table.h>
 
 #define PHP_MAPI_VERSION "1.0"
-#define PHP_MAPI_EXTNAME "mapi"
+#define PHP_MAPI_EXTNAME "openchange"
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -60,8 +60,8 @@
 
 __BEGIN_DECLS
 
-PHP_MINIT_FUNCTION(mapi);
-PHP_MSHUTDOWN_FUNCTION(mapi);
+PHP_MINIT_FUNCTION(openchange);
+PHP_MSHUTDOWN_FUNCTION(openchange);
 
 __END_DECLS
 

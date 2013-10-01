@@ -33,8 +33,8 @@ zend_module_entry mapi_module_entry = {
 #endif
 	PHP_MAPI_EXTNAME,
 	mapi_functions,
-	PHP_MINIT(mapi),
-	PHP_MSHUTDOWN(mapi),
+	PHP_MINIT(openchange),
+	PHP_MSHUTDOWN(openchange),
 	NULL,
 	NULL,
 	NULL,

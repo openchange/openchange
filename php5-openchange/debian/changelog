@@ -1,3 +1,9 @@
+php5-openchange (0.1.2) precise; urgency=low
+
+  * Fixed link with libmapi
+
+ -- José A. Calvo <jacalvo@zentyal.com>  Tue, 01 Oct 2013 22:33:06 +0200
+
 php5-openchange (0.1.1) precise; urgency=low
 
   * Rename module to openchange instead of mapi

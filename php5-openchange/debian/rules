@@ -7,9 +7,6 @@ PHP_APIVER=$(shell /usr/bin/php-config5 --phpapi)
 include /usr/share/cdbs/1/rules/debhelper.mk
 include /usr/share/cdbs/1/class/autotools.mk
 
-CFLAGS := -I /opt/samba4/include
-
-DEB_CONFIGURE_EXTRA_FLAGS = --with-pkgconfig-path=/opt/samba4/lib/pkgconfig
 DEB_MAKE_INSTALL_TARGET =
 
 makebuilddir/php5-openchange::

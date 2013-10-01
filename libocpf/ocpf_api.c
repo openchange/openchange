@@ -199,6 +199,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 	case PT_SYSTIME:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
 		return OCPF_SUCCESS;
+	case PT_SVREID:
 	case PT_BINARY:
 		*value = (const void *)talloc_zero(ctx, struct Binary_r);
 		((struct Binary_r *)*value)->cb = lpProp.bin.cb;

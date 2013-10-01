@@ -447,8 +447,11 @@ PHP_METHOD(MAPIFolder, deleteMessages)
 			to_delete[i] = Z_LVAL_P(args[i]);
 		}
 	}
+	efree(args);
 
 	this_obj = (mapi_folder_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
 	res = DeleteMessage(&(this_obj->store), to_delete, argc);
 	CHECK_MAPI_RETVAL(res, "DeleteMessage");
+
+	efree(to_delete);
 }

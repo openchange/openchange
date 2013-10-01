@@ -1,18 +1,6 @@
-php5-mapi (0.1.2) precise; urgency=low
-
-  * Merged api-with-mailboxes-and-folders
-
- -- José A. Calvo <jacalvo@zentyal.com>  Fri, 27 Sep 2013 12:07:56 +0200
-
-php5-mapi (0.1.1) precise; urgency=low
-
-  * Fix depends
-
- -- José A. Calvo <jacalvo@zentyal.com>  Fri, 27 Sep 2013 11:01:33 +0200
-
-php5-mapi (0.1) precise; urgency=low
+php5-openchange (0.1) precise; urgency=low
 
   * Initial release
 
- -- José A. Calvo <jacalvo@zentyal.com>  Thu, 26 Sep 2013 17:29:30 +0100
+ -- José A. Calvo <jacalvo@zentyal.com>  Tue, 01 Oct 2013 10:51:11 +0200
 

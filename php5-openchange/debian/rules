@@ -1,6 +1,6 @@
 #!/usr/bin/make -f
 
-EXTN=mapi
+EXTN=openchange
 BUILD=$(CURDIR)/debian/php5-$(EXTN)
 PHP_EX=$(shell /usr/bin/php-config5 --extension-dir)
 PHP_APIVER=$(shell /usr/bin/php-config5 --phpapi)

@@ -6,6 +6,7 @@ $path = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 $contactMessageId = '0x7500000000000001';
 $roContactId = $contactMessageId;
+$inexistentMesageId = '0x7500000CAAA00001';
 # END system dependent variables
 
 $pidTagBody1 = 'body1';
@@ -31,6 +32,8 @@ ok($mailbox, "Default mailbox for $profileName");
 
 $contacts = $mailbox->contacts();
 ok($contacts, "Opening contact folder");
+
+ok(is_null($contacts->openMessage($inexistentMesageId)), "Trying to open a inexistent message return NULL");
 
 $message = $contacts->openMessage($contactMessageId,  MAPIMessage::RW);
 ok($message, "Open message RW");

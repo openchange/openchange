@@ -1,7 +1,6 @@
 #!/usr/bin/make -f
 
-EXTN=openchange
-BUILD=$(CURDIR)/debian/php5-$(EXTN)
+BUILD=$(CURDIR)/debian/php5-openchange
 PHP_EX=$(shell /usr/bin/php-config5 --extension-dir)
 PHP_APIVER=$(shell /usr/bin/php-config5 --phpapi)
 
@@ -13,12 +12,12 @@ CFLAGS := -I /opt/samba4/include
 DEB_CONFIGURE_EXTRA_FLAGS = --with-pkgconfig-path=/opt/samba4/lib/pkgconfig
 DEB_MAKE_INSTALL_TARGET =
 
-makebuilddir/php5-$(EXTN)::
+makebuilddir/php5-openchange::
 	[ -f configure ] || phpize5
 
 cleanbuilddir::
 	phpize5 --clean
 
-install/php5-$(EXTN)::
-	install -D -m 644 modules/$(EXTN).so $(BUILD)$(PHP_EX)/$(EXTN).so
+install/php5-openchange::
+	install -D -m 644 modules/mapi.so $(BUILD)$(PHP_EX)/openchange.so
 	echo "php:Depends=phpapi-$(PHP_APIVER)" >> $(BUILD).substvars

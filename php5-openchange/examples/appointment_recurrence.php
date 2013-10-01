@@ -1,6 +1,9 @@
 <?php
 include('./test-helpers.php');
 
+diag("Test disabled for now");
+exit(0);
+
 # System dependent varialbes:
 $path = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'miky';

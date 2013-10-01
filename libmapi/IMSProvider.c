@@ -310,9 +310,12 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
 		mapistatus = RfrGetNewDSA(mapi_ctx, session, profile->server, profile->mailbox, &server);
-		OPENCHANGE_RETVAL_IF(mapistatus != MAPI_E_SUCCESS, mapistatus, NULL);
-		binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
-		talloc_free(server);
+		if (mapistatus != MAPI_E_SUCCESS) {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		} else {
+			binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
+			talloc_free(server);
+		}
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

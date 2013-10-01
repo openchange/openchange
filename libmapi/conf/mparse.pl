@@ -777,6 +777,7 @@ sub codepage_lcid_interface($)
 	}
     }
 
+    mparse q|{ "C",                             "C",               0x0409, 1252, CP_WESTERN_EUROPE_AND_US },|;
     mparse "{ NULL, NULL, 0, 0, 0 }";
     deindent;
     mparse "};";

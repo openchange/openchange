@@ -1,72 +1,69 @@
 <?php
-
-function showApp($message) {
-	echo "Message " . $message->getID() . "  Properties:\n";
-#	echo "PidLidAppointmentSubType (boolean):" . $message->get(PidLidAppointmentSubType) . "\n";
-#	echo "PidLidAppointmentDuration    (long):" . $message->get(PidLidAppointmentDuration) . "\n";
-	echo "PidTagBody    (string):" . $message->get(PidTagBody) . "\n";
-	echo "PidLidAppointmentEndWhole   (date):" . $message->get(PidLidAppointmentEndWhole) . "\n";
-#	echo "PidLidAppointmentRecur   (binary/especial):" . serialize($message->get(PidLidAppointmentRecur)) . "\n";
-}
+include('./test-helpers.php');
 
 $dbPath = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 $id = "0x2500000000000001";
 
+# values to be set
+$tagBody1 = "body1";
+$tagBody2 = "body2";
+$unixtime1 = 1380204166;
+$unixtime2 = $unixtime1 + 100;
+
 
 $mapi = new MAPIProfileDB($dbPath);
-echo "MAPI DB path: '", $mapi->path(), "'\n";
+ok($mapi, "MAPIProfileDB open");
+is($mapi->path(), $dbPath  , "MAPI DB correct path");
 
 #$mapi->debug(true, 10);
 
-echo "Profile test\n";
 $mapiProfile = $mapi->getProfile($profileName);
+ok($mapiProfile, "Get profile $profileName");
 
-
-echo "Logon test profile\n";
 $session = $mapiProfile->logon();
-
-echo "Get mailbox\n";
+ok ($session, "Profile logon");
 
 $mailbox = $session->mailbox();
+ok ($mailbox, "Get default mailbox");
 echo "Mailbox name "  . $mailbox->getName() . "\n";
-
 
 $calendar = $mailbox->calendar();
 echo "Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType() .  "\n";
+ok($calendar, "Get calendar");
 
 
-$message = $calendar->openMessage($id, 1);
+$message = $calendar->openMessage($id, MAPIMessage::RW);
+ok($message, "Appointment $id opened in RW mode");
+is($message->getID(), $id, "Check opened message Id (msut be $id)");
 
-# PidLidAppointmentSubType (bolean)  0x8257000b
-# PidLidAppointmentDuration (long) 0x82130003
-# (date)
-# PidLidAppointmentRecur (binary)
-showApp($message);
+echo "Changing PidTagBody to '$tagBody1'\n";
+$message->set(PidTagBody, $tagBody1);
 
-echo "changing PidTagBody to 'bodyChanged'\n";
-$message->set(PidTagBody, 'bodyChanged');
-
-echo "Changing  PidLidAppointmentEndWhole to 1380204166 (09/26/2013 @ 10:02am in EST.)\n";
-$unixtime = 1380204166;
-$message->set(PidLidAppointmentEndWhole, $unixtime);
+echo "Changing  PidLidAppointmentEndWhole to $unixtime1 (09/26/2013 @ 10:02am in EST.)\n";
+$message->set(PidLidAppointmentEndWhole, $unixtime1);
 
 $message->save();
 unset($message);
 
-echo "\n--- After save:\n";
-$message = $calendar->openMessage($id, 1);
-showApp($message);
-echo "Changing and saving again\n";
-$message->set(PidTagBody, 'bodyRestored');
+$message = $calendar->openMessage($id, MAPIMessage::RW);
+ok($message, "Reopen message in RW mode after saving changes");
+is($message->get(PidTagBody), $tagBody1, "Checking that PidTagBody has correctly been changed");
+is($message->get(PidLidAppointmentEndWhole), $unixtime1, "Checking that PidLidAppointmentEndWhole has correctly been changed");
+
+
+echo "Changing PidTagBody again to $tagBody2\n";
+$message->set(PidTagBody, $tagBody2);
 echo "Changing  PidLidAppointmentEndWhole to 100 seconds more \n";
-$message->set(PidLidAppointmentEndWhole, $unixtime + 100);
+$message->set(PidLidAppointmentEndWhole, $unixtime2);
 $message->save();
 unset($message);
 
-echo "\n --After last change: \n";
-$message = $calendar->openMessage($id, 1);
-showApp($message);
+echo "\n --After last changes: \n";
+$message = $calendar->openMessage($id, MAPIMessage::RO);
+ok($message, "Reopen message in RO mode after saving the last changes");
+is($message->get(PidTagBody), $tagBody2, "Checking that PidTagBody has changed again");
+is($message->get(PidLidAppointmentEndWhole), $unixtime2, "Checking that PidLidAppointmentEndWhole has changed again");
 
 # workaround against shutdown problem
 unset($message);

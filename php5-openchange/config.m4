@@ -7,7 +7,7 @@ dnl remove php_mapi_constants.c when it is genration is included in the build
 
 if test "$PHP_MAPI" = "yes"; then
   AC_DEFINE(HAVE_MAPI, 1, [Whether you have LibMapi ])
-  PHP_NEW_EXTENSION(mapi, $PHP_MAPI_SRC, $ext_shared)
+  PHP_NEW_EXTENSION(openchange, $PHP_MAPI_SRC, $ext_shared)
 fi
 
 PHP_ARG_WITH(openchange-path, path to openchange source,

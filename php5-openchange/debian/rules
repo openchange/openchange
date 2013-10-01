@@ -19,6 +19,6 @@ cleanbuilddir::
 	phpize5 --clean
 
 install/php5-openchange::
-	install -D -m 644 modules/mapi.so $(BUILD)$(PHP_EX)/openchange.so
+	install -D -m 644 modules/openchange.so $(BUILD)$(PHP_EX)/openchange.so
 	install -D -m 644 debian/openchange.ini $(BUILD)/etc/php5/conf.d/openchange.ini
 	echo "php:Depends=phpapi-$(PHP_APIVER)" >> $(BUILD).substvars

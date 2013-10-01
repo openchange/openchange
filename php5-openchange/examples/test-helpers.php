@@ -4,7 +4,8 @@ function __testOk($msg) {
 }
 
 function __testFailed($msg) {
-	   exit("Failed: " . $msg . "\n");
+	   echo("Failed: " . $msg . "\n");
+	   exit(1);
 }
 
 function ok($expr, $msg) {

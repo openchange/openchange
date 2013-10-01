@@ -26,10 +26,10 @@ ok ($session, "Profile logon");
 
 $mailbox = $session->mailbox();
 ok ($mailbox, "Get default mailbox");
-echo "Mailbox name "  . $mailbox->getName() . "\n";
+diag("Mailbox name "  . $mailbox->getName());
 
 $calendar = $mailbox->calendar();
-echo "Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType() .  "\n";
+diag("Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType());
 ok($calendar, "Get calendar");
 
 
@@ -37,29 +37,30 @@ $message = $calendar->openMessage($id, MAPIMessage::RW);
 ok($message, "Appointment $id opened in RW mode");
 is($message->getID(), $id, "Check opened message Id (msut be $id)");
 
-echo "Changing PidTagBody to '$tagBody1'\n";
+diag("Changing PidTagBody to '$tagBody1'");
 $message->set(PidTagBody, $tagBody1);
 
-echo "Changing  PidLidAppointmentEndWhole to $unixtime1 (09/26/2013 @ 10:02am in EST.)\n";
+diag("Changing  PidLidAppointmentEndWhole to $unixtime1 (09/26/2013 @ 10:02am in EST.)");
 $message->set(PidLidAppointmentEndWhole, $unixtime1);
 
 $message->save();
 unset($message);
 
+diag("--After saving changes:");
 $message = $calendar->openMessage($id, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
 is($message->get(PidTagBody), $tagBody1, "Checking that PidTagBody has correctly been changed");
 is($message->get(PidLidAppointmentEndWhole), $unixtime1, "Checking that PidLidAppointmentEndWhole has correctly been changed");
 
 
-echo "Changing PidTagBody again to $tagBody2\n";
+diag("Changing PidTagBody again to $tagBody2");
 $message->set(PidTagBody, $tagBody2);
-echo "Changing  PidLidAppointmentEndWhole to 100 seconds more \n";
+diag("Changing  PidLidAppointmentEndWhole to 100 seconds more");
 $message->set(PidLidAppointmentEndWhole, $unixtime2);
 $message->save();
 unset($message);
 
-echo "\n --After last changes: \n";
+diag("--After last changes:");
 $message = $calendar->openMessage($id, MAPIMessage::RO);
 ok($message, "Reopen message in RO mode after saving the last changes");
 is($message->get(PidTagBody), $tagBody2, "Checking that PidTagBody has changed again");
@@ -73,5 +74,6 @@ unset($message);
 #unset($mapiProfile);
 #unset($mapi);
 
+endTestSuite("appointment.php");
 
 ?>

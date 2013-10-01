@@ -33,7 +33,7 @@ ok ($messageTable->count() > 0, "Checking that message table contains messages")
 
 $message = $contacts->openMessage($messageId);
 ok($message, "Get message with ID $messageId");
-is($message->getID(), $messageId, "Check opened message Id (msut be $messageId)");
+is($message->getID(), $messageId, "Check opened message Id (must be $messageId)");
 
 #unset($mapi); # do not work..
 #unset($profile);
@@ -41,4 +41,6 @@ is($message->getID(), $messageId, "Check opened message Id (msut be $messageId)"
 #unset($mailbox);
 #unset($contacts);
 #unset($messages);
+
+endTestSuite("simple-hierarchy.php");
 ?>

@@ -85,4 +85,6 @@ is($multipleValues[PidLidEmail1EmailAddress], $pidLidEmail1EmailAddress2, "Check
 
 unset($message);
 
+endTestSuite("message.php");
+
 ?>

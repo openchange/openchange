@@ -48,5 +48,6 @@ foreach ($ids as $newId) {
     ok(is_null($retrieved), "Check that removed contact $newId has been removed");
 }
 
+endTestSuite("new_message.php");
 
 ?>

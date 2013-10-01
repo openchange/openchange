@@ -19,4 +19,5 @@ ok($profile, "createAndGet profile for $profileName");
 $session = $profile->logon();
 ok($session, "Check logon with profile $profileName");
 
+endTestSuite("create-get-profile.php");
 ?>

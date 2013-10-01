@@ -1,4 +1,6 @@
 <?php
+include('./test-helpers.php');
+
 # System dependent varialbes:
 $path = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'miky';

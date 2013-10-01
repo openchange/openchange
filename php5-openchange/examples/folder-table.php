@@ -1,37 +1,38 @@
 <?php
-$dbPath = "/home/jag/.openchange/profiles.ldb";
+include('./test-helpers.php');
 
+$dbPath = "/home/jag/.openchange/profiles.ldb";
+$profile = "u2";
 
 $mapi = new MAPIProfileDB($dbPath);
-echo "MAPI DB path: '", $mapi->path(), "'\n";
+ok($mapi, "MAPIProfileDB for $dbPath");
 
-echo "Default profile\n";
 $mapiProfile = $mapi->getProfile();
+ok($mapiProfile, "Profile $profile");
 
-echo "Logon default profile\n";
 $session = $mapiProfile->logon();
+ok($session, "Logon for profile $profile");
 
-echo "Get mailbox\n";
 $mailbox = $session->mailbox();
-#var_dump($mailbox);
-echo "Mailbox name "  . $mailbox->getName() . "\n";
+ok($mailbox, "Get default mailbox");
 
-echo "Get inbox\n";
+
 $inbox = $mailbox->inbox();
-echo "Inbox item type " . $inbox->getFolderType() . "\n";
+ok($inbox,"Get inbox");
+diag("Inbox item type " . $inbox->getFolderType());
+$inboxId = $inbox->getID();
 
-
-
-echo "Get folder table\n";
 $table1 = $inbox->getFolderTable();
-var_dump($table1);
+ok($table1, "Get folder table for inbox");
 
-echo "Get parent folder\n";
+
 $parentFolder =   $table1->getParentFolder();
-var_dump($parentFolder);
-echo "Parent folder ID ". $parentFolder->getID() .  "\n";
+ok($parentFolder, "Get parent folder for table");
+is($parentFolder->getID(), $inboxId, "Checking by ID that parent is the inbox");
+ok(($table1->count() > 0), "Check that table is not empty");
 
-echo "Get folders from table\n";
+# XXX continue whern we have folders..
+
 $folders = $table1->getFolders();
 var_dump($folders);
 echo "First folder ID " . $folders[0]->getID() . "\n";
@@ -55,6 +56,6 @@ unset($session);
 unset($mapiProfile);
 unset($mapi);
 
-
+endTestSuite("folder-table.php");
 
 ?>

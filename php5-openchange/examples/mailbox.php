@@ -1,50 +1,55 @@
 <?php
+include('./test-helpers.php');
+
 $dbPath = "/home/jag/.openchange/profiles.ldb";
 $profileName = "u2";
-$draftFolderId =  "0x3d00000000000001";
+$draftFolderId =  "0x1a00000000000001";
 $inexistentFolderId = '0xFFFF0d0000000001';
-
+$mailboxName = 'OpenChange Mailbox: u2';
+$inboxName = 'INBOX';
+$calendarName = "Personal Calendar (c)";
+$tasksName = "Personal Calendar (t)";
+$contactsName = "Personal Address Book";
 
 $mapi = new MAPIProfileDB($dbPath);
-echo "MAPI DB path: '", $mapi->path(), "'\n";
+ok($mapi, "Open MAPIProfileDB with path $dbPath");
 
-
-echo "Profile test\n";
 $mapiProfile = $mapi->getProfile($profileName);
+ok($mapiProfile, "Get profile $profileName");
 
-
-echo "Logon test profile\n";
 $session = $mapiProfile->logon();
+ok($session, "Logon with profile $profileName");
 
-echo "Get mailbox\n";
 
 $mailbox = $session->mailbox();
-echo "Mailbox name "  . $mailbox->getName() . "\n";
-
+ok($mailbox, "Get default mailbox");
+is($mailbox->getName(), $mailboxName, "Get mailbox name");
 
 $inbox = $mailbox->inbox();
-echo "Inbox folder " . $inbox->getName() . "/" . $inbox->getFolderType() . "/" . $inbox->getID() .  "\n";
+ok($inbox, "Get inbox folder");
+is($inbox->getFolderType(), "IPF.Note", "Get inbox folder type");
+is($inbox->getName(), $inboxName, "Get inbox folder name");
 
 $calendar = $mailbox->calendar();
-echo "Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType() . "/" . $calendar->getID() . "\n";
+ok($calendar, "Get calendar folder");
+is($calendar->getFolderType(), "IPF.Appointment", "Get calendar folder type");
+is($calendar->getName(), $calendarName, "Get calendar folder name");
 
 $tasks = $mailbox->tasks();
-echo "Tasks folder " . $tasks->getName() . "/" . $tasks->getFolderType() . "/" . $tasks->getID() .  "\n";
+ok($tasks, "Get tasks folder");
+is($tasks->getFolderType(), "IPF.Task", "Get tasks folder type");
+is($tasks->getName(), $tasksName, "Get tasks folder name");
 
 $contacts = $mailbox->contacts();
-echo "Contacts folder " . $contacts->getName() . "/" . $contacts->getFolderType() . "/" . $contacts->getID() . "\n";
+ok($contacts, "Get contacts folder");
+is($contacts->getFolderType(), "IPF.Contact", "Get contacts folder type");
+is($contacts->getName(), $contactsName, "Get contacts folder name");
 
 
-#$drafts = $mailbox->openFolder($draftFolderId, "IPF.Note");
-#echo "Open by ID draft folder " . $drafts->getName() . "/" . $drafts->getFolderType() . "/" . $drafts->getID() . "\n";
+$drafts = $mailbox->openFolder($draftFolderId, "IPF.Note");
+ok($drafts, "Open by ID draft folder");
 
+ok(is_null($mailbox->openFolder($inexistentFolderId, "IPF.Note")), "Open folder with inexistent ID returns NULL");
 
-echo "Open folder with bad ID \n";
-var_dump($mailbox->openFolder($inexistentFolderId, "IPF.Note"));
-echo "\n";
-
-
-
-
-
+endTestSuite("mailbox.php");
 ?>

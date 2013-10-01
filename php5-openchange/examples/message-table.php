@@ -68,5 +68,5 @@ foreach ($remainingSummary as $msg) {
 	unset($msg);
 }
 
-
+endTestSuite("message-table.php");
 ?>

@@ -26,4 +26,12 @@ function is($a, $b, $msg) {
 	 }
 }
 
+function diag($msg) {
+	 echo "# $msg\n";
+}
+
+function endTestSuite($msg) {
+    diag("END test suite: $msg");
+}
+
 ?>

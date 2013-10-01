@@ -70,7 +70,7 @@ static void register_classes(TSRMLS_D)
 	MAPIAttachmentTableRegisterClass(TSRMLS_C);
 }
 
-PHP_MINIT_FUNCTION(mapi)
+PHP_MINIT_FUNCTION(openchange)
 {
 	register_constants(module_number TSRMLS_CC);
 	register_classes(TSRMLS_C);
@@ -78,7 +78,7 @@ PHP_MINIT_FUNCTION(mapi)
 	return SUCCESS;
 }
 
-PHP_MSHUTDOWN_FUNCTION(mapi)
+PHP_MSHUTDOWN_FUNCTION(openchange)
 {
 }
 

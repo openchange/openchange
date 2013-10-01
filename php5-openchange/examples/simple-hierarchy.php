@@ -1,39 +1,39 @@
 <?php
+include('./test-helpers.php');
+
 # environment settings
 $pathDB = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 $messageId = '0x7500000000000001';
 # END
 
-
-echo "Create ProfileDB\n";
 $mapi = new MAPIProfileDB($pathDB);
+ok($mapi, "MAPIProfileDB open for path $pathDB");
+is($mapi->path(), $pathDB, "MAPI DB correct path");
 
-echo "Get inexistent profile\n";
 $inexistent = $mapi->getProfile("idonotexist_232");
-var_dump($inexistent);
+ok(is_null($inexistent), "Checking that trying to get inexistent profile return NULL");
 
-echo "Get default profile\n";
 $mapiProfile = $mapi->getProfile($profileName);
+ok($mapiProfile, "Getting profile $profileName");
 
-echo "Logon default profile\n";
 $session = $mapiProfile->logon();
+ok($session, "Logon with profile $profileName");
 
-echo "Get mailbox\n";
 $mailbox = $session->mailbox();
-echo "Mailbox name "  . $mailbox->getName() . "\n";
+ok($mailbox, "Get default mailbox");
+diag("Mailbox name "  . $mailbox->getName());
 
-echo "Get CONTACTS folder\n\n";
 $contacts = $mailbox->contacts();
-echo "contacts->getID -> " . $contacts->getID() . "\n";
+ok($contacts, "Get contacts folder");
 
-echo "Get message table\n";
 $messageTable = $contacts->getMessageTable();
-var_dump($messageTable);
+ok ($messageTable, "Get message table from contacts folder");
+ok ($messageTable->count() > 0, "Checking that message table contains messages");
 
-echo "Get message\n";
 $message = $contacts->openMessage($messageId);
-var_dump($message);
+ok($message, "Get message with ID $messageId");
+is($message->getID(), $messageId, "Check opened message Id (msut be $messageId)");
 
 #unset($mapi); # do not work..
 #unset($profile);

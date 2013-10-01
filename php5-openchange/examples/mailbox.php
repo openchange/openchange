@@ -20,7 +20,6 @@ ok($mapiProfile, "Get profile $profileName");
 $session = $mapiProfile->logon();
 ok($session, "Logon with profile $profileName");
 
-
 $mailbox = $session->mailbox();
 ok($mailbox, "Get default mailbox");
 is($mailbox->getName(), $mailboxName, "Get mailbox name");
@@ -29,7 +28,6 @@ $inbox = $mailbox->inbox();
 ok($inbox, "Get inbox folder");
 is($inbox->getFolderType(), "IPF.Note", "Get inbox folder type");
 is($inbox->getName(), $inboxName, "Get inbox folder name");
-unset($inbox);
 
 $calendar = $mailbox->calendar();
 ok($calendar, "Get calendar folder");
@@ -41,24 +39,16 @@ $tasks = $mailbox->tasks();
 ok($tasks, "Get tasks folder");
 is($tasks->getFolderType(), "IPF.Task", "Get tasks folder type");
 is($tasks->getName(), $tasksName, "Get tasks folder name");
-unset($tasks);
 
 $contacts = $mailbox->contacts();
 ok($contacts, "Get contacts folder");
 is($contacts->getFolderType(), "IPF.Contact", "Get contacts folder type");
 is($contacts->getName(), $contactsName, "Get contacts folder name");
-unset($contactt);
 
 $drafts = $mailbox->openFolder($draftFolderId, "IPF.Note");
 ok($drafts, "Open by ID draft folder");
-unset($drafts);
 
 ok(is_null($mailbox->openFolder($inexistentFolderId, "IPF.Note")), "Open folder with inexistent ID returns NULL");
-
-unset($mailbox);
-unset($session);
-unset($profile);
-unset($mapi);
 
 endTestSuite("mailbox.php");
 ?>

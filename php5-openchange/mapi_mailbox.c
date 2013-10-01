@@ -221,10 +221,13 @@ PHP_METHOD(MAPIMailbox, inbox)
 	RETURN_ZVAL(folder, 0, 1);
 }
 
-static zval *open_folder(zval *php_mailbox, mapi_id_t fid, mapi_folder_type_t folderType TSRMLS_DC)
+static zval *mapi_mailbox_open_folder(zval *php_mailbox, mapi_id_t fid, mapi_folder_type_t folderType TSRMLS_DC)
 {
 	zval				*folder;
 	folder = create_folder_object(php_mailbox, fid, folderType  TSRMLS_CC);
+	if (folder == NULL) {
+		return NULL;
+	}
 
 	mapi_mailbox_object_t* this_obj = STORE_OBJECT(mapi_mailbox_object_t*, php_mailbox);
 	ADD_CHILD(this_obj, folder);
@@ -232,7 +235,7 @@ static zval *open_folder(zval *php_mailbox, mapi_id_t fid, mapi_folder_type_t fo
 	return folder;
 }
 
-static zval *default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_DC)
+static zval *mapi_mailbox_default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_DC)
 {
 	enum MAPISTATUS 		retval;
 	uint32_t	 		i;
@@ -255,24 +258,24 @@ static zval *default_folder_for_item(zval *php_mailbox, char *folderType TSRMLS_
 	CHECK_MAPI_RETVAL(retval, "GetDefaultFolder for type");
 
 	ftype = mapi_folder_type_from_string(folderType);
-	return open_folder(php_mailbox, fid, ftype TSRMLS_CC);
+	return mapi_mailbox_open_folder(php_mailbox, fid, ftype TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIMailbox, calendar)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPF.Appointment"  TSRMLS_CC);
+	zval *folder = mapi_mailbox_default_folder_for_item(getThis(), "IPF.Appointment"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 1);
 }
 
 PHP_METHOD(MAPIMailbox, contacts)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPF.Contact"  TSRMLS_CC);
+	zval *folder = mapi_mailbox_default_folder_for_item(getThis(), "IPF.Contact"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 1);
 }
 
 PHP_METHOD(MAPIMailbox, tasks)
 {
-	zval *folder = default_folder_for_item(getThis(), "IPF.Task"  TSRMLS_CC);
+	zval *folder = mapi_mailbox_default_folder_for_item(getThis(), "IPF.Task"  TSRMLS_CC);
 	RETURN_ZVAL(folder, 0, 1);
 }
 
@@ -292,7 +295,7 @@ PHP_METHOD(MAPIMailbox, openFolder)
 	folder_id = str_to_mapi_id(id_str);
 	ftype = mapi_folder_type_from_string(folder_type);
 
-	zval *folder = open_folder(getThis(), folder_id, ftype TSRMLS_CC);
+	zval *folder = mapi_mailbox_open_folder(getThis(), folder_id, ftype TSRMLS_CC);
 	if (folder == NULL) {
 		RETURN_NULL();
 	}

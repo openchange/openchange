@@ -1,51 +1,72 @@
 <?php
-$mapi = new MAPIProfileDB("/home/jag/.openchange/profiles.ldb");
-echo "MAPI DB path: '", $mapi->path(), "'\n";
+include('./test-helpers.php');
+# System dependent variables
+  $dbPath      = "/home/jag/.openchange/profiles.ldb";
+  $profileName = "u2";
+# END system dependent variables
 
-echo "Default profile\n";
-$mapiProfile = $mapi->getProfile();
+$mapi = new MAPIProfileDB($dbPath);
+ok($mapi, "Opened MAPIProfileDB with path $dbPath");
 
-echo "Logon default profile\n";
+$mapiProfile = $mapi->getProfile($profileName);
+ok ($mapiProfile, "Opened profile $profileName");
+
 $session = $mapiProfile->logon();
+ok($session, "Logon with profile $profileName");
 
-echo "Get mailbox\n";
 $mailbox = $session->mailbox();
-#var_dump($mailbox);
+ok ($mailbox, "Get default mailbox");
 echo "Mailbox name "  . $mailbox->getName() . "\n";
 
-echo "CONTACTS\n\n";
+
 $contacts = $mailbox->contacts();
-echo "Contacts item type " . $contacts->getFolderType() . "\n";
+ok($contacts, "Opened contact folders");
+is($contacts->getFolderType(), "IPF.Contact", "Check contact folder type");
+$contactsId = $contacts->getID();
 
-echo "Contacts getMessageTable \n";
 $table1 =  $contacts->getMessageTable();
-echo "Get two messages\n";
-var_dump($table1->getMessages(2));
-#echo "Get remaining messages\n";
-#var_dump($table1->getMessages());
-echo "END end of messages\n";
+ok($table1, "Get a message table from contacts folder");
 
-echo "Get parent folder\n";
+$twoMessages = $table1->getMessages(2);
+is(count($twoMessages), 2, "Check the retrieval of two messages from the table");
+is(get_class($twoMessages[0]), 'MAPIContact', 'Check that first retrieved value is a MAPIContact');
+is(get_class($twoMessages[1]), 'MAPIContact', 'Check that second retrieved value is a MAPIContact');
+foreach($twoMessages as $msg) {
+     unset($msg);
+}
+unset($twoMessages);
+
+$remainingMessages = $table1->getMessages();
+ok(count($remainingMessages)>0, "Check the retrieval of remainig from the table");
+is(get_class($remainingMessages[0]), 'MAPIContact', 'Check that we have retrieved a MAPIContact');
+foreach($remainingMessages as $msg) {
+     unset($msg);
+}
+unset($remainingMessages);
+
+
 $parentFolder =   $table1->getParentFolder();
-var_dump($parentFolder);
-echo "Parent folder ID ". $parentFolder->getID() .  "\n";
-
+ok($parentFolder, "Getting parent folder");
+is($parentFolder->getID(), $contactsId, "Checking that ID of parent fodler is the correct one");
 
 echo "Contacts getMessageTable with properties PidLidFileUnder, PidLidEmail1EmailAddress \n";
-$table2 =  $contacts->getMessageTable(PidLidFileUnder,
-				      PidLidEmail1EmailAddress,
-				      PidTagEmailAddress,
-				      PidTagCompanyName,
-				      PidTagDisplayName,
-				      PidTagGivenName);
+$table2 =  $contacts->getMessageTable(PidLidEmail1EmailAddress,
+				      PidTagDisplayName);
+ok($table2, "Contacts getMessageTable with properties PidLidEmail1EmailAddress and PidTagDisplayName");
 
-echo "Get 4 summary contacts\n";
-var_dump($table2->summary(4));
+$oneSummaryContact = $table2->summary(1);
+is(count($oneSummaryContact), 1, "Get one summary contact");
+ok($oneSummaryContact[0].PidLidEmail1EmailAddress, "Checking PidLidEmail1EmailAddress attribute for contact");
 
-echo "Get 1 summary contact\n";
-var_dump($table2->summary(1));
+$remainingSummary = $table2->summary();
+ok(count($remainingSummary)>0, "Getting remaining sumamries");
 
-echo "Get remaining summary contact\n";
-var_dump($table2->summary());
+foreach ($oneSummaryContact as $msg) {
+	unset($msg);
+}
+foreach ($remainingSummary as $msg) {
+	unset($msg);
+}
+
 
 ?>

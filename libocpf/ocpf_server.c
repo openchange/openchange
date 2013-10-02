@@ -51,6 +51,29 @@ _PUBLIC_ enum MAPISTATUS ocpf_server_set_type(uint32_t context_id,
 	return ocpf_type_add(ctx, type);
 }
 
+
+/**
+   \details Set an arbitrary folder identifier for a loaded
+   message. This is required for migration purposes.
+
+   \param context_id identifier to the context to update
+   \param folderID new folder identifier value
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_INVALID_PARAMETER
+ */
+_PUBLIC_ enum MAPISTATUS ocpf_server_set_folderID(uint32_t context_id, 
+						  mapi_id_t folderID)
+{
+	struct ocpf_context	*ctx;
+
+	ctx = ocpf_context_search_by_context_id(ocpf->context, context_id);
+	if (!ctx) return MAPI_E_INVALID_PARAMETER;
+
+	ctx->folder = folderID;
+	return MAPI_E_SUCCESS;
+}
+
+
 /**
    \details Build a SPropValue array from ocpf context
 

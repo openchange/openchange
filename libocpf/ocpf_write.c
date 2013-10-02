@@ -216,6 +216,8 @@ static char *ocpf_write_mv_long(struct ocpf_context *ctx, const struct LongArray
 		}
 	}
 
+	str = talloc_asprintf_append_buffer(str, " }\n");
+
 	return str;
 }
 

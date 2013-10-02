@@ -518,7 +518,7 @@ void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_
 
 	/* Pushing the property with SetProps */
 	cValues = 0;
-	lpProps = talloc_array(mem_ctx, struct SPropValue, 2);
+	lpProps = talloc_array(mem_ctx, struct SPropValue, 1);
 	lpProps = add_SPropValue(mem_ctx, lpProps, &cValues, id, (const void *) data);
 	retval = SetProps(message, 0, lpProps, cValues);
 	CHECK_MAPI_RETVAL(retval, "SetProps");

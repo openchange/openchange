@@ -103,8 +103,6 @@ ZEND_END_ARG_INFO()
 ZEND_BEGIN_ARG_INFO_EX(php_method_two_args, 0, 0, 2)
 ZEND_END_ARG_INFO()
 
-void print_stacktrace();
-
 #define UNUSED_PARAM -1 // macro for non-used parameter in zend_get_parameters_array
 
 

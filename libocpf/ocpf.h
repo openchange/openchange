@@ -74,6 +74,7 @@ enum MAPISTATUS ocpf_clear_props (uint32_t context_id);
 
 /* The following public definitions come from libocpf/ocpf_server.c */
 enum MAPISTATUS ocpf_server_set_type(uint32_t, const char *);
+enum MAPISTATUS ocpf_server_set_folderID(uint32_t, mapi_id_t);
 enum MAPISTATUS ocpf_server_set_SPropValue(TALLOC_CTX *, uint32_t);
 enum MAPISTATUS ocpf_server_add_SPropValue(uint32_t, struct SPropValue *);
 enum MAPISTATUS ocpf_server_sync(uint32_t);

@@ -4,6 +4,7 @@ include('./test-helpers.php');
 $path = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 $contactMessageId = '0xA4010E0000000001';
+$inexistentContactId = '0xA4010E0000ABCDEF';
 # END system dependent vatriables
 
 
@@ -47,6 +48,9 @@ foreach ($ids as $newId) {
     $retrieved = $contacts->openMessage($newId);
     ok(is_null($retrieved), "Check that removed contact $newId has been removed");
 }
+
+diag("Try to delete inexistent contact. XXX does not return error because SOGO limitation");
+$contacts->deleteMessages($inexistentContactId);
 
 endTestSuite("new_message.php");
 

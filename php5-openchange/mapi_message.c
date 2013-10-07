@@ -134,14 +134,10 @@ zval *create_message_object(char *class, zval *folder, mapi_object_t *message, c
 	return new_php_obj;
 }
 
-
-
-
 PHP_METHOD(MAPIMessage, __construct)
 {
 	php_error(E_ERROR, "This a base class and cannot created directly.");
 }
-
 
 PHP_METHOD(MAPIMessage, __destruct)
 {

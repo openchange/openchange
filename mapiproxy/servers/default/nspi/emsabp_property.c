@@ -74,8 +74,7 @@ _PUBLIC_ const char *emsabp_property_get_attribute(uint32_t ulPropTag)
 
 	if ((ulPropTag & 0x0fff) == PT_STRING8) {
 		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
-	}
-	else {
+	} else {
 		uniPropTag = ulPropTag;
 	}
 
@@ -131,8 +130,7 @@ _PUBLIC_ int emsabp_property_is_ref(uint32_t ulPropTag)
 
 	if ((ulPropTag & 0x0fff) == PT_STRING8) {
 		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
-	}
-	else {
+	} else {
 		uniPropTag = ulPropTag;
 	}
 
@@ -164,8 +162,7 @@ _PUBLIC_ const char *emsabp_property_get_ref_attr(uint32_t ulPropTag)
 
 	if ((ulPropTag & 0x0fff) == PT_STRING8) {
 		uniPropTag = (ulPropTag & 0xfffff000) | PT_UNICODE;
-	}
-	else {
+	} else {
 		uniPropTag = ulPropTag;
 	}
 

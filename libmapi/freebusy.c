@@ -207,7 +207,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(!mid || *mid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
 
 	mapi_object_init(&obj_message);
-	retval = OpenMessage(obj_store, *fid, *mid, &obj_message, 0x0);
+	retval = OpenMessage(&obj_exfreebusy, *fid, *mid, &obj_message, 0x0);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 11. Get FreeBusy properties */

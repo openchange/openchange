@@ -166,7 +166,8 @@ static uint16_t next_unused_id(struct namedprops_context *self)
 	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, 0, mem_ctx);
 
 	uint16_t highest_id = 0;
-	for (unsigned int i = 0; i < res->count; i++) {
+	unsigned int i;
+	for (i = 0; i < res->count; i++) {
 		uint16_t current_id = ldb_msg_find_attr_as_uint(res->msgs[i], "mappedId", 0);
 		if (current_id > 0 && highest_id < current_id)
 			highest_id = current_id;

@@ -908,11 +908,11 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_backend.po			\
 							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
-							mapiproxy/libmapistore/mapistore_ldb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
 							mapiproxy/libmapistore/mapistore_notification.po 		\
+							mapiproxy/libmapistore/backends/namedprops_ldb.po 		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)

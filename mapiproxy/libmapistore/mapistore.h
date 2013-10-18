@@ -256,7 +256,7 @@ struct mapistore_context {
 	struct replica_mapping_context_list	*replica_mapping_list;
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;
-	struct ldb_context			*nprops_ctx;
+	struct namedprops_backend		*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 #if 0
 	mqd_t					mq_ipc;
@@ -379,12 +379,14 @@ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *, c
 enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const char *username, const struct GUID *, uint16_t *);
 enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, const char *username, uint16_t, struct GUID *);
 
+struct namedprops_backend;
+
 /* definitions from mapistore_namedprops.c */
-enum mapistore_error mapistore_namedprops_get_mapped_id(struct ldb_context *ldb_ctx, struct MAPINAMEID, uint16_t *);
-uint16_t mapistore_namedprops_next_unused_id(struct ldb_context *);
-enum mapistore_error mapistore_namedprops_create_id(struct ldb_context *, struct MAPINAMEID, uint16_t);
-enum mapistore_error mapistore_namedprops_get_nameid(struct ldb_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
-enum mapistore_error mapistore_namedprops_get_nameid_type(struct ldb_context *, uint16_t, uint16_t *);
+enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_backend *, struct MAPINAMEID, uint16_t *);
+uint16_t mapistore_namedprops_next_unused_id(struct namedprops_backend *);
+enum mapistore_error mapistore_namedprops_create_id(struct namedprops_backend *, struct MAPINAMEID, uint16_t);
+enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_backend *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
+enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_backend *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */
 #if 0
@@ -476,6 +478,8 @@ struct mapistore_notification {
 		struct mapistore_object_notification_parameters object_parameters;
 	} parameters;
 };
+
+struct mapistore_context;
 
 struct mapistore_subscription_list *mapistore_find_matching_subscriptions(struct mapistore_context *, struct mapistore_notification *);
 enum mapistore_error mapistore_delete_subscription(struct mapistore_context *, uint32_t, uint16_t);

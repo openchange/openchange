@@ -23,6 +23,7 @@
 #define	__MAPISTORE_PRIVATE_H__
 
 #include <talloc.h>
+#include "backends/namedprops_backend.h"
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \
@@ -45,18 +46,6 @@ struct tdb_wrap {
 	const char		*name;
 	struct tdb_wrap		*prev;
 	struct tdb_wrap		*next;
-};
-
-
-struct ldb_wrap {
-  struct ldb_wrap			*next;
-	struct ldb_wrap			*prev;
-	struct ldb_wrap_context {
-		const char		*url;
-		struct tevent_context	*ev;
-		unsigned int		flags;
-	} context;
-	struct ldb_context		*ldb;
 };
 
 /**
@@ -108,7 +97,6 @@ struct indexing_context_list {
 	struct indexing_context_list	*next;
 };
 
-#define	MAPISTORE_DB_NAMED		"named_properties.ldb"
 #define	MAPISTORE_DB_INDEXING		"indexing.tdb"
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
@@ -205,9 +193,6 @@ enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_conte
 /* definitions from mapistore_tdb_wrap.c */
 struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
-/* definitions from mapistore_ldb_wrap.c */
-struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
-
 /* definitions from mapistore_indexing.c */
 struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
 enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
@@ -217,9 +202,6 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
 // enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
 // enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
-
-/* definitions from mapistore_namedprops.c */
-enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);
 
 __END_DECLS
 

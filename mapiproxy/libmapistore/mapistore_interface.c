@@ -93,7 +93,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->conn_info = NULL;
 
 	mstore_ctx->nprops_ctx = NULL;
-	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	retval = mapistore_namedprops_init(mstore_ctx, "ldb:///usr/local/samba/private/mapistore/named_properties.ldb", &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);

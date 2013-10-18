@@ -25,7 +25,6 @@
 // available named_properties backend implementations
 #include "backends/namedprops_ldb.h"
 
-#define	MAPISTORE_DB_NAMED  "named_properties.ldb"
 
 // Known prefixes for connection strings
 #define LDB_PREFIX "ldb://"

@@ -73,6 +73,9 @@ typedef	int (*init_backend_fn) (void);
 #define	MAPISTORE_SOFT_DELETE		1
 #define	MAPISTORE_PERMANENT_DELETE	2
 
+/* Default filename for named properties backend using ldb */
+#define MAPISTORE_DB_NAMED  "named_properties.ldb"
+
 struct mapistore_message {
 	/* message props */
 	char					*subject_prefix;

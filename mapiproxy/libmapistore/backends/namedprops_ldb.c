@@ -1,7 +1,6 @@
 #include "namedprops_ldb.h"
 #include "../mapistore.h"
 #include "../mapistore_private.h"
-#define	MAPISTORE_DB_NAMED  "named_properties.ldb"
 
 struct ldb_wrap {
 	struct ldb_wrap *next;
@@ -327,7 +326,6 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 	// Stat the database and populate it if it doesn't exist
 	if (stat(database, &sb) == -1) {
 		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
-		talloc_free(database);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 		filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",
@@ -379,7 +377,6 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 		fclose(f);
 	} else {
 		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
-		talloc_free(database);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 	}
 

@@ -256,7 +256,7 @@ struct mapistore_context {
 	struct replica_mapping_context_list	*replica_mapping_list;
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;
-	struct namedprops_backend		*nprops_ctx;
+	struct namedprops_context		*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 #if 0
 	mqd_t					mq_ipc;
@@ -379,14 +379,14 @@ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_context *, c
 enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct mapistore_context *, const char *username, const struct GUID *, uint16_t *);
 enum mapistore_error mapistore_replica_mapping_replid_to_guid(struct mapistore_context *, const char *username, uint16_t, struct GUID *);
 
-struct namedprops_backend;
+struct namedprops_context;
 
 /* definitions from mapistore_namedprops.c */
-enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_backend *, struct MAPINAMEID, uint16_t *);
-uint16_t mapistore_namedprops_next_unused_id(struct namedprops_backend *);
-enum mapistore_error mapistore_namedprops_create_id(struct namedprops_backend *, struct MAPINAMEID, uint16_t);
-enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_backend *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
-enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_backend *, uint16_t, uint16_t *);
+enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_context *, struct MAPINAMEID, uint16_t *);
+uint16_t mapistore_namedprops_next_unused_id(struct namedprops_context *);
+enum mapistore_error mapistore_namedprops_create_id(struct namedprops_context *, struct MAPINAMEID, uint16_t);
+enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
+enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_context *, uint16_t, uint16_t *);
 
 /* definitions from mapistore_mgmt.c */
 #if 0

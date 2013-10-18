@@ -22,13 +22,15 @@
 #include <stdbool.h>
 #include <string.h>
 #include "mapistore.h"
-// available backend implementations
+// available named_properties backend implementations
 #include "backends/namedprops_ldb.h"
 
 #define	MAPISTORE_DB_NAMED  "named_properties.ldb"
 
+// Known prefixes for connection strings
 #define LDB_PREFIX "ldb://"
 #define MYSQL_PREFIX "mysql://"
+
 
 static bool starts_with(const char *str, const char *prefix)
 {
@@ -47,19 +49,20 @@ static bool starts_with(const char *str, const char *prefix)
  */
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 					       const char *conn_info,
-					       struct namedprops_backend **_nprops)
+					       struct namedprops_context **nprops)
 {
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!_nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (starts_with(conn_info, LDB_PREFIX)) {
 		char *database = talloc_strdup(mem_ctx, conn_info + strlen(LDB_PREFIX));
-		return mapistore_namedprops_ldb_init(mem_ctx, database, _nprops);
+		return mapistore_namedprops_ldb_init(mem_ctx, database, nprops);
 	} else if (starts_with(conn_info, MYSQL_PREFIX)) {
-		return MAPISTORE_ERR_INVALID_PARAMETER;
+		return MAPISTORE_ERR_NOT_IMPLEMENTED;
 	} else {
-		DEBUG(5, ("Unknown type of backend for %s\n", conn_info));
+		DEBUG(5, ("Unknown type of named_properties backend for %s\n",
+			  conn_info));
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 }
@@ -72,7 +75,7 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 
    \return 0 on error, the next mapped id otherwise
  */
-_PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct namedprops_backend *nprops)
+_PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct namedprops_context *nprops)
 {
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERROR, NULL);
 
@@ -92,7 +95,7 @@ _PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct namedprops_backend 
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ enum mapistore_error mapistore_namedprops_create_id(struct namedprops_backend *nprops,
+_PUBLIC_ enum mapistore_error mapistore_namedprops_create_id(struct namedprops_context *nprops,
 							     struct MAPINAMEID nameid,
 							     uint16_t mapped_id)
 {
@@ -111,7 +114,7 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_create_id(struct namedprops_b
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_backend *nprops,
+_PUBLIC_ enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_context *nprops,
 								 struct MAPINAMEID nameid,
 								 uint16_t *propID)
 {
@@ -131,13 +134,14 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedpro
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_backend *nprops,
+_PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_context *nprops,
 							      uint16_t propID,
 							      TALLOC_CTX *mem_ctx,
 							      struct MAPINAMEID **nameidp)
 {
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(propID < 0x8000, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
 
 	return nprops->get_nameid(nprops, propID, mem_ctx, nameidp);
@@ -152,7 +156,7 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
  */
-_PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_backend *nprops,
+_PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_context *nprops,
 								   uint16_t propID,
 								   uint16_t *propTypeP)
 {

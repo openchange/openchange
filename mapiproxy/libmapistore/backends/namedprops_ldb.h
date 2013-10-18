@@ -3,6 +3,6 @@
 
 #include "namedprops_backend.h"
 
-enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *, const char *, struct namedprops_backend **);
+enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *, const char *, struct namedprops_context **);
 
 #endif /* __NAMEDPROPS_LDB_H_ */

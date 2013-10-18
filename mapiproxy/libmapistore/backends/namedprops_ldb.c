@@ -113,7 +113,7 @@ static struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 	return ldb;
 }
 
-static enum mapistore_error get_mapped_id(struct namedprops_backend *self,
+static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 					  struct MAPINAMEID nameid,
 					  uint16_t *propID)
 {
@@ -155,7 +155,7 @@ static enum mapistore_error get_mapped_id(struct namedprops_backend *self,
 	return MAPISTORE_SUCCESS;
 }
 
-static uint16_t next_unused_id(struct namedprops_backend *self)
+static uint16_t next_unused_id(struct namedprops_context *self)
 {
 	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -178,7 +178,7 @@ static uint16_t next_unused_id(struct namedprops_backend *self)
 	return highest_id + 1;
 }
 
-static enum mapistore_error create_id(struct namedprops_backend *self,
+static enum mapistore_error create_id(struct namedprops_context *self,
 				      struct MAPINAMEID nameid,
 				      uint16_t mapped_id)
 {
@@ -236,7 +236,7 @@ static enum mapistore_error create_id(struct namedprops_backend *self,
 	return ret;
 }
 
-static enum mapistore_error get_nameid(struct namedprops_backend *self,
+static enum mapistore_error get_nameid(struct namedprops_context *self,
 				       uint16_t propID,
 				       TALLOC_CTX *mem_ctx,
 				       struct MAPINAMEID **nameidp)
@@ -286,7 +286,7 @@ static enum mapistore_error get_nameid(struct namedprops_backend *self,
 	return rc;
 }
 
-static enum mapistore_error get_nameid_type(struct namedprops_backend *self,
+static enum mapistore_error get_nameid_type(struct namedprops_context *self,
 					    uint16_t propID,
 					    uint16_t *propTypeP)
 {
@@ -309,7 +309,7 @@ static enum mapistore_error get_nameid_type(struct namedprops_backend *self,
 
 enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 						   const char *database,
-						   struct namedprops_backend **_nprops)
+						   struct namedprops_context **_nprops)
 {
 	int                     ret;
 	struct stat             sb;
@@ -383,7 +383,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 	}
 
-	struct namedprops_backend *nprops = talloc_zero(mem_ctx, struct namedprops_backend);
+	struct namedprops_context *nprops = talloc_zero(mem_ctx, struct namedprops_context);
 
 	nprops->backend_type = talloc_strdup(mem_ctx, "ldb");
 	nprops->create_id = create_id;

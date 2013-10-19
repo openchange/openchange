@@ -479,7 +479,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 	       [
 	        ov_cv_boost_thread=no
 		ov_save_LIBS=$LIBS
-		LIBS="-lboost_thread$BOOST_LIB_SUFFIX $LIBS"
+		LIBS="-lboost_thread$BOOST_LIB_SUFFIX -lboost_system$BOOST_LIB_SUFFIX $LIBS"
 		AC_LANG_PUSH([C++])
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <boost/thread.hpp>]],
 						[[boost::thread t]])],

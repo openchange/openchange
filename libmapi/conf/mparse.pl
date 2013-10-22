@@ -1182,9 +1182,9 @@ sub mapistore_namedprops($)
     mparse sprintf "cn: custom";
     mparse sprintf "";
 
-    for my $key ( keys %oleguid ) {
+    for my $key (sort(keys %oleguid)) {
         my $value = $oleguid{$key};
-        
+
         mparse sprintf "dn: CN=%s,CN=default", $value;
         mparse sprintf "cn: %s", $value;
         mparse sprintf "name: %s", $key;

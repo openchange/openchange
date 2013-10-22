@@ -13,6 +13,8 @@ struct namedprops_context {
 	enum mapistore_error (*create_id)(struct namedprops_context *, struct MAPINAMEID, uint16_t);
 	enum mapistore_error (*get_nameid)(struct namedprops_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
 	enum mapistore_error (*get_nameid_type)(struct namedprops_context *, uint16_t, uint16_t *);
+	enum mapistore_error (*transaction_start)(struct namedprops_context *);
+	enum mapistore_error (*transaction_commit)(struct namedprops_context *);
 
 	const char *backend_type;
 	void *data;

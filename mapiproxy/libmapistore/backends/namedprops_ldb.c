@@ -307,6 +307,22 @@ static enum mapistore_error get_nameid_type(struct namedprops_context *self,
 	return MAPISTORE_SUCCESS;
 }
 
+static enum mapistore_error transaction_start(struct namedprops_context *self)
+{
+	struct ldb_context *ldb_ctx = self->data;
+	int ret = ldb_transaction_start(ldb_ctx);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERROR, NULL);
+	return MAPISTORE_SUCCESS;
+}
+
+static enum mapistore_error transaction_commit(struct namedprops_context *self)
+{
+	struct ldb_context *ldb_ctx = self->data;
+	int ret = ldb_transaction_commit(ldb_ctx);
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERROR, NULL);
+	return MAPISTORE_SUCCESS;
+}
+
 enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 						   const char *database,
 						   struct namedprops_context **_nprops)
@@ -389,6 +405,8 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 	nprops->get_nameid = get_nameid;
 	nprops->get_nameid_type = get_nameid_type;
 	nprops->next_unused_id = next_unused_id;
+	nprops->transaction_commit = transaction_commit;
+	nprops->transaction_start = transaction_start;
 	nprops->data = ldb_ctx;
 
 	*_nprops = nprops;

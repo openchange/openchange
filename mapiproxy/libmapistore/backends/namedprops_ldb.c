@@ -2,6 +2,7 @@
 #include "../mapistore.h"
 #include "../mapistore_private.h"
 
+
 struct ldb_wrap {
 	struct ldb_wrap *next;
 	struct ldb_wrap *prev;
@@ -15,10 +16,6 @@ struct ldb_wrap {
 
 static struct ldb_wrap *ldb_wrap_list;
 
-static const char *mapistore_namedprops_get_ldif_path(void)
-{
-	return MAPISTORE_LDIF;
-}
 
 /*
   see if two database opens are equivalent

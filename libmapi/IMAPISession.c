@@ -338,12 +338,13 @@ retry:
 	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
 	size = 0;
 
-	if (!username) {
-		mailbox = talloc_strdup(mem_ctx, session->profile->mailbox);
-	} else {
-		mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org,
-					  session->profile->ou, username);
-	}
+	/* if (!username) { */
+	/* 	mailbox = talloc_strdup(mem_ctx, session->profile->mailbox); */
+	/* } else { */
+	/* 	mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org, */
+	/* 				  session->profile->ou, username); */
+	/* } */
+	mailbox = talloc_strdup(mem_ctx, session->profile->mailbox);
 
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;

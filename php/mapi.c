@@ -23,29 +23,29 @@
 
 #include "php_mapi.h"
 
-static zend_function_entry mapi_functions[] = {
+static zend_function_entry openchange_functions[] = {
 	{NULL, NULL, NULL}
 };
 
-zend_module_entry mapi_module_entry = {
+zend_module_entry openchange_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	STANDARD_MODULE_HEADER,
 #endif
-	PHP_MAPI_EXTNAME,
-	mapi_functions,
+	PHP_OPENCHANGE_EXTNAME,
+	openchange_functions,
 	PHP_MINIT(openchange),
 	PHP_MSHUTDOWN(openchange),
 	NULL,
 	NULL,
 	NULL,
 #if ZEND_MODULE_API_NO >= 20010901
-	PHP_MAPI_VERSION,
+	PHP_OPENCHANGE_VERSION,
 #endif
 	STANDARD_MODULE_PROPERTIES
 };
 
-#ifdef COMPILE_DL_MAPI
-ZEND_GET_MODULE(mapi)
+#ifdef COMPILE_DL_OPENCHANGE
+ZEND_GET_MODULE(openchange)
 #endif
 
 void register_constants(int module_number TSRMLS_DC);

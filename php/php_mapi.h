@@ -17,8 +17,8 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef PHP_MAPI_H
-#define PHP_MAPI_H 1
+#ifndef PHP_OPENCHANGE_H
+#define PHP_OPENCHANGE_H 1
 
 
 #define __STDC_FORMAT_MACROS
@@ -44,8 +44,8 @@
 #include <mapi_folder_table.h>
 #include <mapi_attachment_table.h>
 
-#define PHP_MAPI_VERSION "1.0"
-#define PHP_MAPI_EXTNAME "openchange"
+#define PHP_OPENCHANGE_VERSION "1.0"
+#define PHP_OPENCHANGE_EXTNAME "openchange"
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -65,9 +65,9 @@ PHP_MSHUTDOWN_FUNCTION(openchange);
 
 __END_DECLS
 
-extern zend_module_entry mapi_module_entry;
+extern zend_module_entry openchange_module_entry;
 
-#define phpext_mapi_ptr &mapi_module_entry
+#define phpext_openchange_ptr &openchange_module_entry
 #define EXPECTED_MAPI_OBJECTS 32
 #define OBJ_GET_TALLOC_CTX(objType, obj) ((objType) zend_object_store_get_object(obj TSRMLS_CC))->talloc_ctx;
 #define add_assoc_mapi_id_t(zv, name, value) add_assoc_long(zv, name, (long) value)
@@ -106,4 +106,4 @@ ZEND_END_ARG_INFO()
 #define UNUSED_PARAM -1 // macro for non-used parameter in zend_get_parameters_array
 
 
-#endif /*! PHP_MAPI_H */
+#endif /*! PHP_OPENCHANGE_H */

@@ -450,7 +450,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 					     rowset.aRow[i].lpProps[0].value.d,
 					     rowset.aRow[i].lpProps[1].value.d,
 					     &obj_message, 0);
-			if (GetLastError() == MAPI_E_SUCCESS) {
+			if (retval == MAPI_E_SUCCESS) {
 				if (oclient->summary) {
 					mapidump_message_summary(&obj_message);
 				} else {

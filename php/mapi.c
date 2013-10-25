@@ -27,7 +27,7 @@ static zend_function_entry openchange_functions[] = {
 	{NULL, NULL, NULL}
 };
 
-zend_module_entry mapi_module_entry = {
+zend_module_entry openchange_module_entry = {
 #if ZEND_MODULE_API_NO >= 20010901
 	STANDARD_MODULE_HEADER,
 #endif

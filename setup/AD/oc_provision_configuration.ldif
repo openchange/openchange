@@ -5,7 +5,7 @@
 
 #
 # Exchange configuration information object
-# This object stores configuration information for the Exchange Server 
+# This object stores configuration information for the Exchange Server
 #
 dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
 objectClass: top
@@ -28,7 +28,7 @@ dn: ${FIRSTORGDN}
 objectClass: top
 objectClass: container
 objectClass: msExchOrganizationContainer
-cn: First Organization
+cn: ${FIRSTORG}
 distinguishedName: ${FIRSTORGDN}
 showInAdvancedViewOnly: TRUE
 adminDisplayName: {335A1087-5131-4D45-BE3E-3C6C7F76F5EC}
@@ -55,16 +55,16 @@ objectCategory: CN=ms-Exch-Admin-Group-Container,${SCHEMADN}
 #
 # First Administrative Group
 #
-dn: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+dn: CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
 objectClass: top
 objectClass: msExchAdminGroup
-cn: First Administrative Group
-distinguishedName: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-displayName: First Administrative Group
+cn: ${FIRSTOU}
+distinguishedName: CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+displayName: ${FIRSTOU}
 showInAdvancedViewOnly: TRUE
 siteFolderGUID: 4b2d197b-1cb3-486a-b8c3-42e8c5c08e27
-name: First Administrative Group
-legacyExchangeDN: /o=${FIRSTORG}/ou=First Administrative Group
+name: ${FIRSTOU}
+legacyExchangeDN: /o=${FIRSTORG}/ou=${FIRSTOU}
 objectCategory: CN=ms-Exch-Admin-Group,${SCHEMADN}
 msExchAdminGroupMode: 0
 msExchDefaultAdminGroup: TRUE
@@ -72,12 +72,12 @@ msExchDefaultAdminGroup: TRUE
 #
 # Servers
 #
-dn: CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+dn: CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
 objectClass: top
 objectClass: container
 objectClass: msExchServersContainer
 cn: Servers
-distinguishedName: CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN} 
+distinguishedName: CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
 showInAdvancedViewOnly: TRUE
 adminDisplayName: Servers
 containerInfo: 8

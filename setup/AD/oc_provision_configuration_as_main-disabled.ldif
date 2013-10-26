@@ -10,7 +10,7 @@
 #add: siteFolderServer
 #siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
 #add: offLineABServer
-#offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+#offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
 
 #
 #  Finalize Recipient Update Service (Enterprise Configuration)
@@ -19,4 +19,4 @@
 #dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
 #changetype: modify
 #add: msExchAddressListServiceLink
-#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
+#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}

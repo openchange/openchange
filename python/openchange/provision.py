@@ -126,7 +126,7 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     if not firstorg:
         firstorg = db.searchone(
             'name', exchangedn, '(objectclass=msExchOrganizationContainer)',
-            ldb.SCOPE_SUB)
+            ldb.SCOPE_SUBTREE)
     assert(firstorg)
     firstorgdn = "CN=%s,%s" % (firstorg, exchangedn)
 
@@ -134,7 +134,7 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
         firstou = db.searchone(
             'name', firstorgdn,
             '(&(objectclass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))',
-            ldb.SCOPE_SUB)
+            ldb.SCOPE_SUBTREE)
     assert(firstou)
 
     names.firstorg = firstorg

@@ -23,14 +23,7 @@ struct namedprops_context {
 
 // Implemented on mapistore_namedprops
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, const char *, struct namedprops_context **);
+const char *mapistore_namedprops_get_ldif_path(void);
 
-/**
-   \details Path to the ldif file with initial named properties to populate the
-   database.
- */
-const char *mapistore_namedprops_get_ldif_path(void)
-{
-	return MAPISTORE_LDIF; // Defined on compilation time
-}
 
 #endif /* __NAMEDPROPS_BACKEND_H__ */

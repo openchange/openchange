@@ -30,11 +30,21 @@
 #define LDB_PREFIX "ldb://"
 #define MYSQL_PREFIX "mysql://"
 
+/**
+   \details Path to the ldif file with initial named properties to populate the
+   database.
+ */
+const char *mapistore_namedprops_get_ldif_path(void)
+{
+       return MAPISTORE_LDIF; // Defined on compilation time
+}
+
 
 static bool starts_with(const char *str, const char *prefix)
 {
 	return strncmp(str, prefix, strlen(prefix)) == 0;
 }
+
 
 /**
    \details Initialize the named properties database or return pointer

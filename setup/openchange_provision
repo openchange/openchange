@@ -75,7 +75,7 @@ if not opts.openchangedb:
     elif opts.additional:
         openchange.register(setup_path, provisionnames, lp, creds)
     elif opts.standalone:
-        openchange.provision(setup_path, provisionnames, lp)
+        openchange.provision(setup_path, provisionnames, lp, creds)
         openchange.register(setup_path, provisionnames, lp, creds)
         openchange.registerasmain(setup_path, provisionnames, lp, creds)
     elif opts.primary_server:

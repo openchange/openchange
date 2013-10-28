@@ -176,6 +176,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
         ldif_function(db, setup_path(ldif), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
+                "FIRSTOU": names.firstou,
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
                 "DOMAINDN": names.domaindn,
@@ -231,6 +232,7 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
         ldif_content = read_and_sub_file(setup_path(ldif),
                                          {"FIRSTORG": names.firstorg,
                                           "FIRSTORGDN": names.firstorgdn,
+                                          "FIRSTOU": names.firstou,
                                           "CONFIGDN": names.configdn,
                                           "SCHEMADN": names.schemadn,
                                           "DOMAINDN": names.domaindn,

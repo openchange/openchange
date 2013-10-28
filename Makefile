@@ -9,6 +9,8 @@ endif
 
 default: all
 
+LIBS+=-lmysqlclient
+
 # Until we add proper dependencies for all the C files:
 .NOTPARALLEL:
 
@@ -902,17 +904,18 @@ distclean:: libmapistore-distclean
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
 							mapiproxy/libmapistore/mapistore_interface.po			\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\
-							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po		\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po	\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
 							mapiproxy/libmapistore/mapistore_processing.po			\
-							mapiproxy/libmapistore/mapistore_backend.po			\
-							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
+							mapiproxy/libmapistore/mapistore_backend.po				\
+							mapiproxy/libmapistore/mapistore_backend_defaults.po	\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
-							mapiproxy/libmapistore/mapistore_notification.po 		\
-							mapiproxy/libmapistore/backends/namedprops_ldb.po 		\
+							mapiproxy/libmapistore/mapistore_notification.po		\
+							mapiproxy/libmapistore/backends/namedprops_ldb.po		\
+							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)

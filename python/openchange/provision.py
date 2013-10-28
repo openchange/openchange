@@ -397,17 +397,15 @@ def get_user_dn(ldb, basedn, username):
 
     return user_dn
 
-def newuser(lp, creds, firstorg=None, firstou=None, username=None):
+def newuser(names, lp, creds, username=None):
     """extend user record with OpenChange settings.
 
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: Organization name
-    :param firstou: Organization's administrative group
+    :param names: provision names object.
     :param username: Name of user to extend
     """
 
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
@@ -461,18 +459,16 @@ msExchUserAccountControl: 0
         print "[!] User '%s' not found" % username
 
 
-def accountcontrol(lp, creds, firstorg=None, firstou=None, username=None, value=0):
+def accountcontrol(names, lp, creds, username=None, value=0):
     """enable/disable an OpenChange user account.
 
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: Organization name
-    :param firstou: Organization's administrative group
+    :param names: Provision Names object
     :param username: Name of user to disable
     :param value: the control value
     """
 
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
@@ -489,19 +485,17 @@ msExchUserAccountControl: %d
         print "[+] Account %s enabled" % username
 
 
-def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
+def provision(setup_path, names, lp, creds, reporter=None):
     """Extend Samba4 with OpenChange data.
 
     :param setup_path: Path to the setup directory
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: OpenChange Organization Name
-    :param firstou: OpenChange Administrative Group
+    :param names: Provision Names object
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
 
     If a progress reporter is not provided, a text output reporter is provided
     """
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
 
     print "NOTE: This operation can take several minutes"
 
@@ -512,7 +506,7 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None)
     install_schemas(setup_path, names, lp, creds, reporter)
 
 
-def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
+def deprovision(setup_path, names, lp, creds, reporter=None):
     """Remove all configuration entries added by the OpenChange
     installation.
 
@@ -520,8 +514,6 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
     :param names: provision names object.
     :param lp: Loadparm context
     :param creds: Credentials Context
-    :param firstorg: Organization name
-    :param firstou: Organization's administrative group
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
     if reporter is None:
@@ -530,8 +522,6 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
     session_info = system_session()
 
     lp.set("dsdb:schema update allowed", "yes")
-
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
 
     samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                   credentials=creds, lp=lp)
@@ -592,24 +582,17 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
                # % ldb_error.args)
 
 
-def register(setup_path, lp, creds, firstorg, firstou, reporter=None):
+def register(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as a valid Exchange server.
 
     :param setup_path: Path to the setup directory
+    :param names: Provision Names object
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: OpenChange Organization Name
-    :param firstou: OpenChange Administrative Group
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
 
     If a progress reporter is not provided, a text output reporter is provided
     """
-    if not firstorg:
-        raise TypeError("firstorg cannot be None or the empty string")
-    if not firstou:
-        raise TypeError("firstou cannot be None or the empty string")
-
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
 
     if reporter is None:
         reporter = TextProgressReporter()
@@ -622,25 +605,17 @@ def register(setup_path, lp, creds, firstorg, firstou, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
-def registerasmain(setup_path, lp, creds, firstorg, firstou, reporter=None):
+def registerasmain(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as the main Exchange server.
 
     :param setup_path: Path to the setup directory
+    :param names: Provision Names object
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: OpenChange Organization Name
-    :param firstou: OpenChange Administrative Group
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
 
     If a progress reporter is not provided, a text output reporter is provided
     """
-    if not firstorg:
-        raise TypeError("firstorg cannot be None or the empty string")
-    if not firstou:
-        raise TypeError("firstou cannot be None or the empty string")
-
-
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
 
     if reporter is None:
         reporter = TextProgressReporter()
@@ -653,15 +628,13 @@ def registerasmain(setup_path, lp, creds, firstorg, firstou, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
-def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
+def openchangedb_provision(names, lp, mapistore=None):
     """Create the OpenChange database.
 
+    :param names: Provision names object
     :param lp: Loadparm context
-    :param firstorg: OpenChange Organization Name
-    :param firstou: OpenChange Administrative Group
     :param mapistore: The public folder store type (fsocpf, sqlite, etc)
     """
-    names = guess_names_from_smbconf(lp, creds, firstorg, firstou)
 
     print "Setting up openchange db"
     openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))

@@ -63,22 +63,25 @@ def setup_path(*args):
     global _setupdir
     return os.path.join(_setupdir, *args)
 
+provisionnames = openchange.guess_names_from_smbconf(
+    lp, creds, opts.firstorg, opts.firstou)
+
 if not opts.openchangedb:
     if opts.deprovision:
-        openchange.deprovision(setup_path, lp, creds, opts.firstorg, opts.firstou)
+        openchange.deprovision(setup_path, provisionnames, lp, creds)
     elif opts.additional and opts.primary_server:
-        openchange.register(setup_path, lp, creds, opts.firstorg, opts.firstou)
-        openchange.registerasmain(setup_path, lp, creds, opts.firstorg, opts.firstou)
+        openchange.register(setup_path, provisionnames, lp, creds)
+        openchange.registerasmain(setup_path, provisionnames, lp, creds)
     elif opts.additional:
-        openchange.register(setup_path, lp, creds, opts.firstorg, opts.firstou)
+        openchange.register(setup_path, provisionnames, lp, creds)
     elif opts.standalone:
-        openchange.provision(setup_path, lp, creds, opts.firstorg, opts.firstou)
-        openchange.register(setup_path, lp, creds, opts.firstorg, opts.firstou)
-        openchange.registerasmain(setup_path, lp, creds, opts.firstorg, opts.firstou)
+        openchange.provision(setup_path, provisionnames, lp)
+        openchange.register(setup_path, provisionnames, lp, creds)
+        openchange.registerasmain(setup_path, provisionnames, lp, creds)
     elif opts.primary_server:
-        openchange.registerasmain(setup_path, lp, creds, opts.firstorg, opts.firstou)
+        openchange.registerasmain(setup_path, provisionnames, lp, creds)
     else:
         parser.print_help()
         sys.exit(1)
 else:
-    openchange.openchangedb_provision(lp, opts.firstorg, opts.firstou)
+    openchange.openchangedb_provision(provisionnames, lp)

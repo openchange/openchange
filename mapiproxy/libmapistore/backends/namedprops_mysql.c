@@ -43,17 +43,23 @@ static enum mapistore_error get_nameid_type(struct namedprops_context *self,
 
 static enum mapistore_error transaction_start(struct namedprops_context *self)
 {
+	MYSQL *conn = self->data;
+	int res = mysql_query(conn, "START TRANSACTION");
+	MAPISTORE_RETVAL_IF(res, MAPISTORE_ERR_DATABASE_OPS, NULL);
 	return MAPISTORE_SUCCESS;
 }
 
 static enum mapistore_error transaction_commit(struct namedprops_context *self)
 {
+	MYSQL *conn = self->data;
+	int res = mysql_query(conn, "COMMIT");
+	MAPISTORE_RETVAL_IF(res, MAPISTORE_ERR_DATABASE_OPS, NULL);
 	return MAPISTORE_SUCCESS;
 }
 
-static int mapistore_namedprops_mysql_destructor(struct namedprops_context *nprops)
+static int mapistore_namedprops_mysql_destructor(struct namedprops_context *self)
 {
-	MYSQL *conn = nprops->data;
+	MYSQL *conn = self->data;
 	mysql_close(conn);
 	return 0;
 }

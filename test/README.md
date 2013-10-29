@@ -6,8 +6,9 @@ Depencencies
 
 How to execute the test
 =======================
-$ cmake .
-$ make
+
+    $ cmake .
+    $ make
 
 How to add more test
 ====================

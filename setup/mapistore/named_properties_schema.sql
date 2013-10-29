@@ -1,7 +1,7 @@
 --
 -- Schema used by named_properties MySQL backend (from mapiproxy/mapistore lib) 
 --
-CREATE TABLE `named_properties` (
+CREATE TABLE IF NOT EXISTS `named_properties` (
     `id` int(10) unsigned NOT NULL AUTO_INCREMENT,
     `type` TINYINT(1) NOT NULL,
     `propType` INT(10) unsigned NOT NULL,

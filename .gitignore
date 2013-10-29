@@ -12,6 +12,10 @@ config.h.in
 config.log
 config.mk
 config.status
+debian/tmp
+debian/*.log
+debian/libmapi-dev/
+debian/openchangeserver/
 apidocs/
 gen_ndr/
 libmapi++.pc
@@ -38,6 +42,9 @@ mapiproxy/libmapistore.pc
 mapiproxy/libmapistore/Doxyfile
 mapiproxy/libmapistore/mapistore_nameid.h
 mapiproxy/libmapistore/mgmt/gen_ndr/
+mapiproxy/services/ocsmanager/build/
+mapiproxy/services/ocsmanager/ocsmanager.egg-info/
+mapiproxy/services/web/rpcproxy/build/
 pyopenchange/mapistore/errors.c
 setup/mapistore/
 stamp-h1

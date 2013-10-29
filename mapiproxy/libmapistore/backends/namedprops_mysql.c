@@ -3,8 +3,11 @@
 #include "../mapistore_private.h"
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 #include <mysql/mysql.h>
 #include <ldb.h>
+#include <samba_util.h>
+
 
 #define SCHEMA_FILE "named_properties_schema.sql"
 #define TABLE_NAME "named_properties"
@@ -165,8 +168,166 @@ static bool is_database_empty(MYSQL *conn)
 	}
 }
 
-static bool insert_ldif_entry(MYSQL *conn, struct ldb_message *ldif)
+static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
+				const char ***fields, const char *field,
+				bool mandatory)
 {
+	const char *val = ldb_msg_find_attr_as_string(ldif, field, "");
+	if (strlen(val) == 0) {
+		if (mandatory) {
+			DEBUG(0, ("%s value hasn't been found! malformed ldif?",
+				  field));
+		}
+		return false;
+	}
+	if (isdigit(val[0])) {
+		*fields = str_list_add(*fields,
+				       talloc_asprintf(mem_ctx, "%s=%d", field,
+						   (int)strtol(val, NULL, 10)));
+	} else {
+		*fields = str_list_add(*fields,
+				       talloc_asprintf(mem_ctx, "%s='%s'",
+						       field, val));
+	}
+	return true;
+}
+
+
+/**
+  Table fields:
+    * Mandatory fields:
+        * `type` TINYINT(1)
+        * `propType` INT(10) unsigned
+        * `oleguid` VARCHAR(255)
+        * `mappedId` INT(10) unsigned
+    * Optional fields:
+        * `propId` INT(10) unsigned
+        * `propName` VARCHAR(255)
+        * `oom` VARCHAR(255)
+        * `canonical` VARCHAR(255)
+ */
+static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
+{
+	const char *val = ldb_msg_find_attr_as_string(ldif, "objectClass", "");
+	if (strlen(val) < strlen("MNID_ID")) {
+		// It's not a valid entry, ignore it
+		return true;
+	}
+	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	const char **fields = (const char **) str_list_make_empty(mem_ctx);
+
+	// Optional fields
+	add_field_from_ldif(mem_ctx, ldif, &fields, "propId", false);
+	add_field_from_ldif(mem_ctx, ldif, &fields, "propName", false);
+	add_field_from_ldif(mem_ctx, ldif, &fields, "oom", false);
+	add_field_from_ldif(mem_ctx, ldif, &fields, "canonical", false);
+	// Mandatory fields
+	// oleguid and mappedId
+	if (!add_field_from_ldif(mem_ctx, ldif, &fields, "oleguid", true) ||
+	    !add_field_from_ldif(mem_ctx, ldif, &fields, "mappedId", true)) {
+		return false;
+	}
+	// type
+	int type;
+	if (strcmp(val, "MNID_STRING") == 0) {
+		type = MNID_STRING;
+	} else if (strcmp(val, "MNID_ID") == 0) {
+		type = MNID_ID;
+	} else {
+		DEBUG(0, ("Invalid objectClass %s", val));
+		return false;
+	}
+	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "type=%d", type));
+	// propType: it could be either an integer or a constant PT_*, we have
+	//           to store it as an integer
+	val = ldb_msg_find_attr_as_string(ldif, "propType", "");
+	if (strlen(val) == 0) {
+		DEBUG(0, ("propType value hasn't been found! malformed ldif?"));
+		return false;
+	}
+	int propType;
+	if (isalpha(val[0])) {
+		if (strcmp(val, "PT_UNSPECIFIED") == 0) {
+			propType = PT_UNSPECIFIED;
+		} else if (strcmp(val, "PT_NULL") == 0) {
+			propType = PT_NULL;
+		} else if (strcmp(val, "PT_I2") == 0) {
+			propType = PT_I2;
+		} else if (strcmp(val, "PT_SHORT") == 0) {
+			propType = PT_SHORT;
+		} else if (strcmp(val, "PT_LONG") == 0) {
+			propType = PT_LONG;
+		} else if (strcmp(val, "PT_FLOAT") == 0) {
+			propType = PT_FLOAT;
+		} else if (strcmp(val, "PT_DOUBLE") == 0) {
+			propType = PT_DOUBLE;
+		} else if (strcmp(val, "PT_CURRENCY") == 0) {
+			propType = PT_CURRENCY;
+		} else if (strcmp(val, "PT_APPTIME") == 0) {
+			propType = PT_APPTIME;
+		} else if (strcmp(val, "PT_ERROR") == 0) {
+			propType = PT_ERROR;
+		} else if (strcmp(val, "PT_BOOLEAN") == 0) {
+			propType = PT_BOOLEAN;
+		} else if (strcmp(val, "PT_OBJECT") == 0) {
+			propType = PT_OBJECT;
+		} else if (strcmp(val, "PT_I8") == 0) {
+			propType = PT_I8;
+		} else if (strcmp(val, "PT_STRING8") == 0) {
+			propType = PT_STRING8;
+		} else if (strcmp(val, "PT_UNICODE") == 0) {
+			propType = PT_UNICODE;
+		} else if (strcmp(val, "PT_SYSTIME") == 0) {
+			propType = PT_SYSTIME;
+		} else if (strcmp(val, "PT_CLSID") == 0) {
+			propType = PT_CLSID;
+		} else if (strcmp(val, "PT_SVREID") == 0) {
+			propType = PT_SVREID;
+		} else if (strcmp(val, "PT_SRESTRICT") == 0) {
+			propType = PT_SRESTRICT;
+		} else if (strcmp(val, "PT_ACTIONS") == 0) {
+			propType = PT_ACTIONS;
+		} else if (strcmp(val, "PT_BINARY") == 0) {
+			propType = PT_BINARY;
+		} else if (strcmp(val, "PT_MV_SHORT") == 0) {
+			propType = PT_MV_SHORT;
+		} else if (strcmp(val, "PT_MV_LONG") == 0) {
+			propType = PT_MV_LONG;
+		} else if (strcmp(val, "PT_MV_FLOAT") == 0) {
+			propType = PT_MV_FLOAT;
+		} else if (strcmp(val, "PT_MV_DOUBLE") == 0) {
+			propType = PT_MV_DOUBLE;
+		} else if (strcmp(val, "PT_MV_CURRENCY") == 0) {
+			propType = PT_MV_CURRENCY;
+		} else if (strcmp(val, "PT_MV_APPTIME") == 0) {
+			propType = PT_MV_APPTIME;
+		} else if (strcmp(val, "PT_MV_I8") == 0) {
+			propType = PT_MV_I8;
+		} else if (strcmp(val, "PT_MV_STRING8") == 0) {
+			propType = PT_MV_STRING8;
+		} else if (strcmp(val, "PT_MV_UNICODE") == 0) {
+			propType = PT_MV_UNICODE;
+		} else if (strcmp(val, "PT_MV_SYSTIME") == 0) {
+			propType = PT_MV_SYSTIME;
+		} else if (strcmp(val, "PT_MV_CLSID") == 0) {
+			propType = PT_MV_CLSID;
+		} else if (strcmp(val, "PT_MV_BINARY") == 0) {
+			propType = PT_MV_BINARY;
+		} else {
+			DEBUG(0, ("Invalid propType %s", val));
+			return false;
+		}
+	} else {
+		propType = strtol(val, NULL, 10);
+	}
+	fields = str_list_add(fields,
+			      talloc_asprintf(mem_ctx, "propType=%d", propType));
+	// Done, we have all fields on fields array
+	char *fields_sql = str_list_join(mem_ctx, fields, ',');
+	char *sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO " TABLE_NAME " SET %s", fields_sql);
+	mysql_query(conn, sql);
+	talloc_free(mem_ctx);
 	return true;
 }
 
@@ -192,7 +353,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 		int ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg,
 					    &normalized_msg);
 		MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
-		bool inserted = insert_ldif_entry(conn, normalized_msg);
+		bool inserted = insert_ldif_msg(conn, normalized_msg);
 		ldb_ldif_read_free(ldb_ctx, ldif);
 		if (!inserted) {
 			fclose(f);
@@ -206,6 +367,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 
 	return MAPISTORE_SUCCESS;
 }
+
 
 enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 						     const char *connection_string,
@@ -236,7 +398,8 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	talloc_set_destructor(nprops, mapistore_namedprops_mysql_destructor);
 
 	// 2) Initialize database
-	bool should_initialize_database = !is_schema_created(conn) || is_database_empty(conn);
+	bool should_initialize_database = (!is_schema_created(conn) ||
+					    is_database_empty(conn));
 	if (should_initialize_database) {
 		enum mapistore_error ret = initialize_database(conn);
 		MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);

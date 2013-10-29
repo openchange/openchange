@@ -115,7 +115,7 @@ START_TEST (test_is_schema_created) {
 START_TEST (test_initialize_database) {
 	ck_assert(is_database_empty(conn) == true);
 
-	ck_assert(initialize_database(conn) == MAPISTORE_SUCCESS);
+	ck_assert_int_eq(initialize_database(conn), MAPISTORE_SUCCESS);
 
 	ck_assert(is_database_empty(conn) == false);
 } END_TEST
@@ -131,6 +131,9 @@ Suite *namedprops_mysql_suite (void)
 	tcase_add_test(tc_core, test_parse_connection_fail);
 
 	TCase *tc_mysql = tcase_create("Mysql");
+	// We insert 1410 entries to mysql.
+	// It take a little bit more than 4 seconds (the default timeout)
+	tcase_set_timeout(tc_mysql, 60);
 	tcase_add_checked_fixture(tc_mysql, mysql_setup, mysql_teardown);
 	tcase_add_test(tc_mysql, test_is_schema_created);
 	tcase_add_test(tc_mysql, test_initialize_database);

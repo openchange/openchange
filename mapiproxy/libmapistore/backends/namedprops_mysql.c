@@ -82,11 +82,51 @@ static enum mapistore_error create_id(struct namedprops_context *self,
 }
 
 static enum mapistore_error get_nameid(struct namedprops_context *self,
-				       uint16_t propID,
+				       uint16_t mapped_id,
 				       TALLOC_CTX *mem_ctx,
 				       struct MAPINAMEID **nameidp)
 {
-	return MAPISTORE_SUCCESS;
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	MYSQL *conn = self->data;
+	const char *sql = talloc_asprintf(local_mem_ctx,
+		"SELECT type, oleguid, propName, propId FROM "TABLE_NAME" "
+		"WHERE mappedId=%d", mapped_id);
+	if (mysql_query(conn, sql) != 0) {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_DATABASE_OPS,
+				    local_mem_ctx);
+	}
+	MYSQL_RES *res = mysql_store_result(conn);
+	if (mysql_num_rows(res) == 0) {
+		// Not found
+		mysql_free_result(res);
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_NOT_FOUND,
+				    local_mem_ctx);
+	}
+	MYSQL_ROW row = mysql_fetch_row(res);
+
+	enum mapistore_error ret = MAPISTORE_SUCCESS;
+	struct MAPINAMEID *nameid = talloc_zero(mem_ctx, struct MAPINAMEID);
+	const char *guid = row[1];
+	GUID_from_string(guid, &nameid->lpguid);
+	int type = strtol(row[0], NULL, 10);
+	nameid->ulKind = type;
+	if (type == MNID_ID) {
+		nameid->kind.lid = strtol(row[3], NULL, 10);
+	} else if (type == MNID_STRING) {
+		const char *propName = row[2];
+		nameid->kind.lpwstr.NameSize = strlen(propName) * 2 + 2;//FIXME WHY *2+2 and not just +1?
+		nameid->kind.lpwstr.Name = talloc_strdup(nameid, propName);
+	} else {
+		nameid = NULL;
+		ret = MAPISTORE_ERROR;
+	}
+
+	*nameidp = nameid;
+
+	mysql_free_result(res);
+	talloc_free(local_mem_ctx);
+
+	return ret;
 }
 
 static enum mapistore_error get_nameid_type(struct namedprops_context *self,

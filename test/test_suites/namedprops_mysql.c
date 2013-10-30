@@ -226,6 +226,14 @@ START_TEST (test_get_mapped_id_MNID_STRING) {
 	ck_assert_int_eq(prop, 38365);
 } END_TEST
 
+START_TEST (test_get_mapped_id_not_found) {
+	struct MAPINAMEID nameid = {0};
+	uint16_t prop;
+
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_ERR_NOT_FOUND);
+} END_TEST
+
 START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = -1;
 
@@ -240,6 +248,55 @@ START_TEST (test_get_nameid_type) {
 
 	get_nameid_type(nprops, 37090, &prop_type);
 	ck_assert_int_eq(prop_type, PT_SYSTIME);
+} END_TEST
+
+START_TEST (test_get_nameid_type_not_found) {
+	uint16_t prop_type = -1;
+
+	enum mapistore_error ret = get_nameid_type(nprops, 42, &prop_type);
+	ck_assert_int_eq(ret, MAPISTORE_ERR_NOT_FOUND);
+} END_TEST
+
+START_TEST (test_get_nameid_MNID_STRING) {
+	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	struct MAPINAMEID *nameid;
+
+	get_nameid(nprops, 38306, mem_ctx, &nameid);
+	ck_assert(nameid != NULL);
+	ck_assert_str_eq("urn:schemas:httpmail:junkemail",
+			 nameid->kind.lpwstr.Name);
+
+	get_nameid(nprops, 38344, mem_ctx, &nameid);
+	ck_assert(nameid != NULL);
+	ck_assert_str_eq("http://schemas.microsoft.com/exchange/mailbox-owner-name",
+			 nameid->kind.lpwstr.Name);
+
+	talloc_free(mem_ctx);
+} END_TEST
+
+START_TEST (test_get_nameid_MNID_ID) {
+	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	struct MAPINAMEID *nameid;
+
+	get_nameid(nprops, 38212, mem_ctx, &nameid);
+	ck_assert(nameid != NULL);
+	ck_assert_int_eq(32778, nameid->kind.lid);
+
+	get_nameid(nprops, 38111, mem_ctx, &nameid);
+	ck_assert(nameid != NULL);
+	ck_assert_int_eq(34063, nameid->kind.lid);
+
+	talloc_free(mem_ctx);
+} END_TEST
+
+
+START_TEST (test_get_nameid_not_found) {
+	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	struct MAPINAMEID *nameid;
+
+	enum mapistore_error ret = get_nameid(nprops, 42, mem_ctx, &nameid);
+	ck_assert(nameid == NULL);
+	ck_assert_int_eq(ret, MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
 
@@ -265,7 +322,12 @@ Suite *namedprops_mysql_suite(void)
 	tcase_add_test(tc_mysql_q, test_next_unused_id);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_STRING);
+	tcase_add_test(tc_mysql_q, test_get_mapped_id_not_found);
 	tcase_add_test(tc_mysql_q, test_get_nameid_type);
+	tcase_add_test(tc_mysql_q, test_get_nameid_type_not_found);
+	tcase_add_test(tc_mysql_q, test_get_nameid_MNID_ID);
+	tcase_add_test(tc_mysql_q, test_get_nameid_MNID_STRING);
+	tcase_add_test(tc_mysql_q, test_get_nameid_not_found);
 
 	suite_add_tcase(s, tc_core);
 	suite_add_tcase(s, tc_mysql);

@@ -228,10 +228,12 @@ static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
 		}
 		return false;
 	}
-	if (isdigit(val[0])) {
+	char *end;
+	int intval = strtol(val, &end, 10);
+	if (end && strlen(val) == (end - val)) {
 		*fields = str_list_add(*fields,
 				       talloc_asprintf(mem_ctx, "%s=%d", field,
-						   (int)strtol(val, NULL, 10)));
+						       intval));
 	} else {
 		*fields = str_list_add(*fields,
 				       talloc_asprintf(mem_ctx, "%s='%s'",

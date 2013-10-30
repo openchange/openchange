@@ -123,6 +123,7 @@ static bool parse_connection_string(TALLOC_CTX *local_mem_ctx,
 static bool is_schema_created(MYSQL *conn)
 {
 	MYSQL_RES *res = mysql_list_tables(conn, TABLE_NAME);
+	if (res == NULL) return false;
 	bool created = mysql_num_rows(res) == 1;
 	mysql_free_result(res);
 	return created;
@@ -157,7 +158,7 @@ static bool create_schema(MYSQL *conn)
 static bool is_database_empty(MYSQL *conn)
 {
 	if (mysql_query(conn, "SELECT count(*) FROM " TABLE_NAME)) {
-		// Query failed
+		// Query failed, table doesn't exist?
 		return true;
 	} else {
 		MYSQL_RES *res = mysql_store_result(conn);
@@ -386,13 +387,37 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 
 	// 1) Establish mysql connection
 	MYSQL *conn = mysql_init(NULL);
+	my_bool reconnect = true;
+	mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
 	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	char *host, *user, *passwd, *db;
 	bool parsed = parse_connection_string(local_mem_ctx, connection_string,
 					  &host, &user, &passwd, &db);
-	if (!parsed || mysql_real_connect(conn, host, user, passwd, db, 0, NULL, 0) == NULL) {
-		DEBUG(0, ("Can't connect to mysql using %s", connection_string));
+	if (!parsed) {
+		DEBUG(0, ("Wrong connection string to mysql %s", connection_string));
 		MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT, local_mem_ctx);
+	}
+	// First try to connect to the database, if it fails try to create it
+	if (mysql_real_connect(conn, host, user, passwd, db, 0, NULL, 0) == NULL) {
+		// Try to create database
+		if (mysql_real_connect(conn, host, user, passwd, NULL, 0, NULL, 0) == NULL) {
+			// Nop
+			DEBUG(0, ("Can't connect to mysql using %s",
+				  connection_string));
+			MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT,
+					    local_mem_ctx);
+		} else {
+			// Connect it!, let's try to create database
+			char *sql = talloc_asprintf(local_mem_ctx,
+						    "CREATE DATABASE %s", db);
+			if (mysql_query(conn, sql) != 0 ||
+			    mysql_select_db(conn, db) != 0) {
+				DEBUG(0, ("Can't connect to mysql using %s",
+					  connection_string));
+				MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT,
+						    local_mem_ctx);
+			}
+		}
 	}
 	nprops->data = conn;
 	talloc_set_destructor(nprops, mapistore_namedprops_mysql_destructor);

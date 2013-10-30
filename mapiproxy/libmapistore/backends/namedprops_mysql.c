@@ -22,9 +22,19 @@ static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 
 static uint16_t next_unused_id(struct namedprops_context *self)
 {
-	uint16_t unused_id = 0;
+	uint16_t highest_id = 0;
+	MYSQL *conn = self->data;
 
-	return ++unused_id;
+	const char *sql = "SELECT max(mappedId) FROM " TABLE_NAME;
+
+	if (mysql_query(conn, sql) == 0) {
+		MYSQL_RES *res = mysql_store_result(conn);
+		MYSQL_ROW row = mysql_fetch_row(res);
+		highest_id = strtol(row[0], NULL, 10);
+		mysql_free_result(res);
+	}
+
+	return highest_id + 1;
 }
 
 static enum mapistore_error create_id(struct namedprops_context *self,

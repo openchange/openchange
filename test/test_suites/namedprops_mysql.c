@@ -3,6 +3,9 @@
 
 #include "mapiproxy/libmapistore/backends/namedprops_mysql.c"
 
+// According to the initial ldif file we insert into database
+#define NEXT_UNUSED_ID 38392
+
 
 START_TEST (test_parse_connection_with_password) {
 	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
@@ -144,12 +147,82 @@ void mysql_q_setup(void)
 
 void mysql_q_teardown(void)
 {
-	mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
+	//mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
 	talloc_free(mem_ctx);
 }
 
 START_TEST (test_next_unused_id) {
-	ck_assert_int_eq(next_unused_id(nprops), 38392);
+	ck_assert_int_eq(next_unused_id(nprops), NEXT_UNUSED_ID);
+} END_TEST
+
+START_TEST (test_get_mapped_id_MNID_ID) {
+	/*
+	Looking for:
+		dn: CN=0x8102,CN=00062003-0000-0000-c000-000000000046,CN=default
+		objectClass: MNID_ID
+		cn: 0x8102
+		canonical: PidLidPercentComplete
+		oleguid: 00062003-0000-0000-c000-000000000046
+		mappedId: 37153
+		propId: 33026
+		propType: 5
+		oom: PercentComplete
+	 */
+	struct MAPINAMEID nameid = {0};
+	nameid.lpguid.time_low = 0x62003;
+	nameid.lpguid.clock_seq[0] = 0xc0;
+	nameid.lpguid.node[5] = 0x46;
+	nameid.kind.lid = 33026;
+	uint16_t prop;
+
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(prop, 37153);
+
+	// A couple more...
+	nameid.lpguid.time_low = 0x62004;
+	nameid.kind.lid = 32978;
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(prop, 37524);
+
+	nameid.kind.lid = 32901;
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(prop, 37297);
+
+} END_TEST
+
+START_TEST (test_get_mapped_id_MNID_STRING) {
+	/*
+	Looking for:
+		dn: CN=http://schemas.microsoft.com/exchange/smallicon,CN=00020329-0000-0000-c000-000000000046,CN=default
+		objectClass: MNID_STRING
+		cn: http://schemas.microsoft.com/exchange/smallicon
+		canonical: PidNameSmallicon
+		oleguid: 00020329-0000-0000-c000-000000000046
+		mappedId: 38342
+		propId: 0
+		propType: PT_NULL
+		propName: http://schemas.microsoft.com/exchange/smallicon
+	 */
+	struct MAPINAMEID nameid = {0};
+	nameid.ulKind = MNID_STRING;
+	nameid.lpguid.time_low = 0x20329;
+	nameid.lpguid.clock_seq[0] = 0xc0;
+	nameid.lpguid.node[5] = 0x46;
+	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/smallicon";
+	uint16_t prop;
+
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(prop, 38342);
+
+	// Another...
+	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/searchfolder";
+	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
+			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(prop, 38365);
 } END_TEST
 
 
@@ -173,6 +246,8 @@ Suite *namedprops_mysql_suite(void)
 	TCase *tc_mysql_q = tcase_create("Mysql queries");
 	tcase_add_unchecked_fixture(tc_mysql_q, mysql_q_setup, mysql_q_teardown);
 	tcase_add_test(tc_mysql_q, test_next_unused_id);
+	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_ID);
+	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_STRING);
 
 	suite_add_tcase(s, tc_core);
 	suite_add_tcase(s, tc_mysql);
@@ -180,3 +255,4 @@ Suite *namedprops_mysql_suite(void)
 
 	return s;
 }
+

@@ -15,8 +15,45 @@
 
 static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 					  struct MAPINAMEID nameid,
-					  uint16_t *propID)
+					  uint16_t *mapped_id)
 {
+	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	int type = nameid.ulKind;
+	char *guid = GUID_string(mem_ctx, &nameid.lpguid);
+	MYSQL *conn = self->data;
+
+	char *sql = NULL;
+	if (type == MNID_ID) {
+		uint32_t prop_id = nameid.kind.lid;
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT mappedId FROM "TABLE_NAME" "
+			"WHERE `type`=%d AND `oleguid`='%s' AND `propId`=%d",
+			type, guid, prop_id);
+	} else if (type == MNID_STRING) {
+		const char *prop_name = nameid.kind.lpwstr.Name;
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT mappedId FROM "TABLE_NAME" "
+			"WHERE `type`=%d AND `oleguid`='%s' AND `propName`='%s'",
+			type, guid, prop_name);
+	} else {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERROR, mem_ctx);
+	}
+
+	if (mysql_query(conn, sql) != 0) {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	}
+
+	MYSQL_RES *res = mysql_store_result(conn);
+	if (mysql_num_rows(res) == 0) {
+		// Not found
+		mysql_free_result(res);
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	}
+	MYSQL_ROW row = mysql_fetch_row(res);
+	*mapped_id = strtol(row[0], NULL, 10);
+	mysql_free_result(res);
+
+	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
 

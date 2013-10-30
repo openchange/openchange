@@ -121,7 +121,39 @@ START_TEST (test_initialize_database) {
 } END_TEST
 
 
-Suite *namedprops_mysql_suite (void)
+TALLOC_CTX *mem_ctx;
+struct namedprops_context *nprops;
+
+void mysql_q_setup(void)
+{
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	char *database;
+	if (strlen(MYSQL_PASS) == 0) {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
+					   MYSQL_HOST "/" MYSQL_DB);
+	} else {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER ":"
+					   MYSQL_PASS "@" MYSQL_HOST "/"
+					   MYSQL_DB);
+	}
+	nprops = talloc_zero(mem_ctx, struct namedprops_context);
+	if (mapistore_namedprops_mysql_init(mem_ctx, database, &nprops) != MAPISTORE_SUCCESS) {
+		fprintf(stderr, "Error initializing namedprops %d", errno);
+	}
+}
+
+void mysql_q_teardown(void)
+{
+	mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
+	talloc_free(mem_ctx);
+}
+
+START_TEST (test_next_unused_id) {
+	ck_assert_int_eq(next_unused_id(nprops), 38392);
+} END_TEST
+
+
+Suite *namedprops_mysql_suite(void)
 {
 	Suite *s = suite_create ("Named Properties Mysql Backend");
 
@@ -130,7 +162,7 @@ Suite *namedprops_mysql_suite (void)
 	tcase_add_test(tc_core, test_parse_connection_with_password);
 	tcase_add_test(tc_core, test_parse_connection_fail);
 
-	TCase *tc_mysql = tcase_create("Mysql");
+	TCase *tc_mysql = tcase_create("Mysql initialization");
 	// We insert 1410 entries to mysql.
 	// It take a little bit more than 4 seconds (the default timeout)
 	tcase_set_timeout(tc_mysql, 60);
@@ -138,8 +170,13 @@ Suite *namedprops_mysql_suite (void)
 	tcase_add_test(tc_mysql, test_is_schema_created);
 	tcase_add_test(tc_mysql, test_initialize_database);
 
+	TCase *tc_mysql_q = tcase_create("Mysql queries");
+	tcase_add_unchecked_fixture(tc_mysql_q, mysql_q_setup, mysql_q_teardown);
+	tcase_add_test(tc_mysql_q, test_next_unused_id);
+
 	suite_add_tcase(s, tc_core);
 	suite_add_tcase(s, tc_mysql);
+	suite_add_tcase(s, tc_mysql_q);
 
 	return s;
 }

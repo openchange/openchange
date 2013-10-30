@@ -169,6 +169,7 @@ START_TEST (test_get_mapped_id_MNID_ID) {
 		oom: PercentComplete
 	 */
 	struct MAPINAMEID nameid = {0};
+	nameid.ulKind = MNID_ID;
 	nameid.lpguid.time_low = 0x62003;
 	nameid.lpguid.clock_seq[0] = 0xc0;
 	nameid.lpguid.node[5] = 0x46;
@@ -225,6 +226,22 @@ START_TEST (test_get_mapped_id_MNID_STRING) {
 	ck_assert_int_eq(prop, 38365);
 } END_TEST
 
+START_TEST (test_get_nameid_type) {
+	uint16_t prop_type = -1;
+
+	get_nameid_type(nprops, 38306, &prop_type);
+	ck_assert_int_eq(prop_type, PT_NULL);
+
+	get_nameid_type(nprops, 37975, &prop_type);
+	ck_assert_int_eq(prop_type, PT_UNICODE);
+
+	get_nameid_type(nprops, 37097, &prop_type);
+	ck_assert_int_eq(prop_type, PT_LONG);
+
+	get_nameid_type(nprops, 37090, &prop_type);
+	ck_assert_int_eq(prop_type, PT_SYSTIME);
+} END_TEST
+
 
 Suite *namedprops_mysql_suite(void)
 {
@@ -248,6 +265,7 @@ Suite *namedprops_mysql_suite(void)
 	tcase_add_test(tc_mysql_q, test_next_unused_id);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_STRING);
+	tcase_add_test(tc_mysql_q, test_get_nameid_type);
 
 	suite_add_tcase(s, tc_core);
 	suite_add_tcase(s, tc_mysql);

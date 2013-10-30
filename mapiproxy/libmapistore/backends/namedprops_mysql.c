@@ -90,9 +90,28 @@ static enum mapistore_error get_nameid(struct namedprops_context *self,
 }
 
 static enum mapistore_error get_nameid_type(struct namedprops_context *self,
-					    uint16_t propID,
-					    uint16_t *propTypeP)
+					    uint16_t mapped_id,
+					    uint16_t *prop_type)
 {
+	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	MYSQL *conn = self->data;
+	const char *sql = talloc_asprintf(mem_ctx,
+		//FIXME mappedId or propId? mappedId is not unique
+		"SELECT propType FROM "TABLE_NAME" WHERE mappedId=%d",
+		mapped_id);
+	if (mysql_query(conn, sql) != 0) {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	}
+	MYSQL_RES *res = mysql_store_result(conn);
+	if (mysql_num_rows(res) == 0) {
+		// Not found
+		mysql_free_result(res);
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+	}
+	MYSQL_ROW row = mysql_fetch_row(res);
+	*prop_type = strtol(row[0], NULL, 10);
+	mysql_free_result(res);
+	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
 

@@ -29,6 +29,7 @@ SET(OPENCHANGE_TEST_SRCS
 
 ADD_DEFINITIONS(
     -Wall
+    -fprofile-arcs -ftest-coverage
     -DMAPISTORE_LDIF="/usr/local/samba/share/setup/mapistore"            
     -DMAPISTORE_BACKEND_INSTALLDIR="/usr/local/samba/lib/mapistore_backends"
 )
@@ -48,9 +49,8 @@ ADD_EXECUTABLE(
     ${OPENCHANGE_TEST_SRCS}
 )
 
-TARGET_LINK_LIBRARIES(
-    # Test main
-    openchange_test
+TARGET_LINK_LIBRARIES(openchange_test  
+    -fprofile-arcs  
     # Dependencies
     mysqlclient
     # unittest framework

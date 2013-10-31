@@ -147,7 +147,7 @@ void mysql_q_setup(void)
 
 void mysql_q_teardown(void)
 {
-	//mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
+	mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
 	talloc_free(mem_ctx);
 }
 

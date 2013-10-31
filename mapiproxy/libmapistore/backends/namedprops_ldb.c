@@ -296,9 +296,14 @@ static enum mapistore_error get_nameid_type(struct namedprops_context *self,
 			     LDB_SCOPE_SUBTREE, attrs, "(mappedId=%d)", propID);
 	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPISTORE_ERROR, mem_ctx);
 
-	int type = ldb_msg_find_attr_as_int(res->msgs[0], "propType", 0);
-	MAPISTORE_RETVAL_IF(!type, MAPISTORE_ERROR, mem_ctx);
-	*propTypeP = type;
+	int propType = ldb_msg_find_attr_as_int(res->msgs[0], "propType", 0);
+	if (!propType) {
+		const char *val = ldb_msg_find_attr_as_string(res->msgs[0], "propType", "");
+		propType = mapistore_namedprops_prop_type_from_string(val);
+		MAPISTORE_RETVAL_IF(propType == -1, MAPISTORE_ERROR, mem_ctx);
+	}
+	MAPISTORE_RETVAL_IF(!propType, MAPISTORE_ERROR, mem_ctx);
+	*propTypeP = propType;
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;

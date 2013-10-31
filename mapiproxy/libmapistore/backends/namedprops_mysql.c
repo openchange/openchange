@@ -390,73 +390,8 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 	}
 	int propType;
 	if (isalpha(val[0])) {
-		if (strcmp(val, "PT_UNSPECIFIED") == 0) {
-			propType = PT_UNSPECIFIED;
-		} else if (strcmp(val, "PT_NULL") == 0) {
-			propType = PT_NULL;
-		} else if (strcmp(val, "PT_I2") == 0) {
-			propType = PT_I2;
-		} else if (strcmp(val, "PT_SHORT") == 0) {
-			propType = PT_SHORT;
-		} else if (strcmp(val, "PT_LONG") == 0) {
-			propType = PT_LONG;
-		} else if (strcmp(val, "PT_FLOAT") == 0) {
-			propType = PT_FLOAT;
-		} else if (strcmp(val, "PT_DOUBLE") == 0) {
-			propType = PT_DOUBLE;
-		} else if (strcmp(val, "PT_CURRENCY") == 0) {
-			propType = PT_CURRENCY;
-		} else if (strcmp(val, "PT_APPTIME") == 0) {
-			propType = PT_APPTIME;
-		} else if (strcmp(val, "PT_ERROR") == 0) {
-			propType = PT_ERROR;
-		} else if (strcmp(val, "PT_BOOLEAN") == 0) {
-			propType = PT_BOOLEAN;
-		} else if (strcmp(val, "PT_OBJECT") == 0) {
-			propType = PT_OBJECT;
-		} else if (strcmp(val, "PT_I8") == 0) {
-			propType = PT_I8;
-		} else if (strcmp(val, "PT_STRING8") == 0) {
-			propType = PT_STRING8;
-		} else if (strcmp(val, "PT_UNICODE") == 0) {
-			propType = PT_UNICODE;
-		} else if (strcmp(val, "PT_SYSTIME") == 0) {
-			propType = PT_SYSTIME;
-		} else if (strcmp(val, "PT_CLSID") == 0) {
-			propType = PT_CLSID;
-		} else if (strcmp(val, "PT_SVREID") == 0) {
-			propType = PT_SVREID;
-		} else if (strcmp(val, "PT_SRESTRICT") == 0) {
-			propType = PT_SRESTRICT;
-		} else if (strcmp(val, "PT_ACTIONS") == 0) {
-			propType = PT_ACTIONS;
-		} else if (strcmp(val, "PT_BINARY") == 0) {
-			propType = PT_BINARY;
-		} else if (strcmp(val, "PT_MV_SHORT") == 0) {
-			propType = PT_MV_SHORT;
-		} else if (strcmp(val, "PT_MV_LONG") == 0) {
-			propType = PT_MV_LONG;
-		} else if (strcmp(val, "PT_MV_FLOAT") == 0) {
-			propType = PT_MV_FLOAT;
-		} else if (strcmp(val, "PT_MV_DOUBLE") == 0) {
-			propType = PT_MV_DOUBLE;
-		} else if (strcmp(val, "PT_MV_CURRENCY") == 0) {
-			propType = PT_MV_CURRENCY;
-		} else if (strcmp(val, "PT_MV_APPTIME") == 0) {
-			propType = PT_MV_APPTIME;
-		} else if (strcmp(val, "PT_MV_I8") == 0) {
-			propType = PT_MV_I8;
-		} else if (strcmp(val, "PT_MV_STRING8") == 0) {
-			propType = PT_MV_STRING8;
-		} else if (strcmp(val, "PT_MV_UNICODE") == 0) {
-			propType = PT_MV_UNICODE;
-		} else if (strcmp(val, "PT_MV_SYSTIME") == 0) {
-			propType = PT_MV_SYSTIME;
-		} else if (strcmp(val, "PT_MV_CLSID") == 0) {
-			propType = PT_MV_CLSID;
-		} else if (strcmp(val, "PT_MV_BINARY") == 0) {
-			propType = PT_MV_BINARY;
-		} else {
+		propType = mapistore_namedprops_prop_type_from_string(val);
+		if (propType == -1) {
 			DEBUG(0, ("Invalid propType %s", val));
 			return false;
 		}

@@ -24,6 +24,7 @@ struct namedprops_context {
 // Implemented on mapistore_namedprops
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, const char *, struct namedprops_context **);
 const char *mapistore_namedprops_get_ldif_path(void);
+int mapistore_namedprops_prop_type_from_string(const char *);
 
 
 #endif /* __NAMEDPROPS_BACKEND_H__ */

@@ -216,3 +216,76 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedp
 
 	return MAPISTORE_SUCCESS;
 }
+
+int mapistore_namedprops_prop_type_from_string(const char *prop_type_str)
+{
+	if (strcmp(prop_type_str, "PT_UNSPECIFIED") == 0) {
+		return PT_UNSPECIFIED;
+	} else if (strcmp(prop_type_str, "PT_NULL") == 0) {
+		return PT_NULL;
+	} else if (strcmp(prop_type_str, "PT_I2") == 0) {
+		return PT_I2;
+	} else if (strcmp(prop_type_str, "PT_SHORT") == 0) {
+		return PT_SHORT;
+	} else if (strcmp(prop_type_str, "PT_LONG") == 0) {
+		return PT_LONG;
+	} else if (strcmp(prop_type_str, "PT_FLOAT") == 0) {
+		return PT_FLOAT;
+	} else if (strcmp(prop_type_str, "PT_DOUBLE") == 0) {
+		return PT_DOUBLE;
+	} else if (strcmp(prop_type_str, "PT_CURRENCY") == 0) {
+		return PT_CURRENCY;
+	} else if (strcmp(prop_type_str, "PT_APPTIME") == 0) {
+		return PT_APPTIME;
+	} else if (strcmp(prop_type_str, "PT_ERROR") == 0) {
+		return PT_ERROR;
+	} else if (strcmp(prop_type_str, "PT_BOOLEAN") == 0) {
+		return PT_BOOLEAN;
+	} else if (strcmp(prop_type_str, "PT_OBJECT") == 0) {
+		return PT_OBJECT;
+	} else if (strcmp(prop_type_str, "PT_I8") == 0) {
+		return PT_I8;
+	} else if (strcmp(prop_type_str, "PT_STRING8") == 0) {
+		return PT_STRING8;
+	} else if (strcmp(prop_type_str, "PT_UNICODE") == 0) {
+		return PT_UNICODE;
+	} else if (strcmp(prop_type_str, "PT_SYSTIME") == 0) {
+		return PT_SYSTIME;
+	} else if (strcmp(prop_type_str, "PT_CLSID") == 0) {
+		return PT_CLSID;
+	} else if (strcmp(prop_type_str, "PT_SVREID") == 0) {
+		return PT_SVREID;
+	} else if (strcmp(prop_type_str, "PT_SRESTRICT") == 0) {
+		return PT_SRESTRICT;
+	} else if (strcmp(prop_type_str, "PT_ACTIONS") == 0) {
+		return PT_ACTIONS;
+	} else if (strcmp(prop_type_str, "PT_BINARY") == 0) {
+		return PT_BINARY;
+	} else if (strcmp(prop_type_str, "PT_MV_SHORT") == 0) {
+		return PT_MV_SHORT;
+	} else if (strcmp(prop_type_str, "PT_MV_LONG") == 0) {
+		return PT_MV_LONG;
+	} else if (strcmp(prop_type_str, "PT_MV_FLOAT") == 0) {
+		return PT_MV_FLOAT;
+	} else if (strcmp(prop_type_str, "PT_MV_DOUBLE") == 0) {
+		return PT_MV_DOUBLE;
+	} else if (strcmp(prop_type_str, "PT_MV_CURRENCY") == 0) {
+		return PT_MV_CURRENCY;
+	} else if (strcmp(prop_type_str, "PT_MV_APPTIME") == 0) {
+		return PT_MV_APPTIME;
+	} else if (strcmp(prop_type_str, "PT_MV_I8") == 0) {
+		return PT_MV_I8;
+	} else if (strcmp(prop_type_str, "PT_MV_STRING8") == 0) {
+		return PT_MV_STRING8;
+	} else if (strcmp(prop_type_str, "PT_MV_UNICODE") == 0) {
+		return PT_MV_UNICODE;
+	} else if (strcmp(prop_type_str, "PT_MV_SYSTIME") == 0) {
+		return PT_MV_SYSTIME;
+	} else if (strcmp(prop_type_str, "PT_MV_CLSID") == 0) {
+		return PT_MV_CLSID;
+	} else if (strcmp(prop_type_str, "PT_MV_BINARY") == 0) {
+		return PT_MV_BINARY;
+	} else {
+		return -1;
+	}
+}

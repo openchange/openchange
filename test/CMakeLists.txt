@@ -18,11 +18,11 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_indexing.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_replica_mapping.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_namedprops.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/backends/namedprops_ldb.c    
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c    
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/namedprops_mysql.c
+    ${CMAKE_SOURCE_DIR}/test_suites/namedprops_ldb.c
     # =========================================================================
  
 )
@@ -30,8 +30,8 @@ SET(OPENCHANGE_TEST_SRCS
 ADD_DEFINITIONS(
     -Wall
     -fprofile-arcs -ftest-coverage
-    -DMAPISTORE_LDIF="/usr/local/samba/share/setup/mapistore"            
-    -DMAPISTORE_BACKEND_INSTALLDIR="/usr/local/samba/lib/mapistore_backends"
+    -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"            
+    -DMAPISTORE_BACKEND_INSTALLDIR="/not/used/for/now/on/this/test"
 )
 
 INCLUDE_DIRECTORIES(

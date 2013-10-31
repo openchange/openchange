@@ -1,4 +1,4 @@
-#include "namedprops_mysql.h"
+#include "namedprops_backends.h"
 #include "test_common.h"
 
 #include "mapiproxy/libmapistore/backends/namedprops_mysql.c"

@@ -10,6 +10,8 @@
 #define MYSQL_PASS ""
 #define MYSQL_DB   "openchange_test"
 
+#define NAMEDPROPS_LDB_PATH "/tmp/nprops.ldb"
+
 #define CHECK_MYSQL_ERROR \
 	if (mysql_errno(conn)) \
 		fprintf(stderr, "Error on MySQL: %s", mysql_error(conn))

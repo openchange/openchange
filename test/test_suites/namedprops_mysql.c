@@ -299,6 +299,41 @@ START_TEST (test_get_nameid_not_found) {
 	ck_assert_int_eq(ret, MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
+START_TEST (test_create_id_MNID_ID) {
+	struct MAPINAMEID nameid = {0};
+	uint16_t mapped_id = 42;
+
+	nameid.ulKind = MNID_ID;
+	nameid.kind.lid = 42;
+
+	int ret = create_id(nprops, nameid, mapped_id);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+
+	mapped_id = 0;
+	ret = get_mapped_id(nprops, nameid, &mapped_id);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	ck_assert_int_eq(mapped_id, 42);
+} END_TEST
+
+START_TEST (test_create_id_MNID_STRING) {
+	struct MAPINAMEID nameid = {0};
+	uint16_t mapped_id = 41;
+	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+
+	nameid.ulKind = MNID_STRING;
+	nameid.kind.lpwstr.Name = talloc_strdup(mem_ctx, "foobar");
+
+	int ret = create_id(nprops, nameid, mapped_id);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+
+	mapped_id = 0;
+	ret = get_mapped_id(nprops, nameid, &mapped_id);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	ck_assert_int_eq(mapped_id, 41);
+
+	talloc_free(mem_ctx);
+} END_TEST
+
 
 Suite *namedprops_mysql_suite(void)
 {
@@ -328,6 +363,8 @@ Suite *namedprops_mysql_suite(void)
 	tcase_add_test(tc_mysql_q, test_get_nameid_MNID_ID);
 	tcase_add_test(tc_mysql_q, test_get_nameid_MNID_STRING);
 	tcase_add_test(tc_mysql_q, test_get_nameid_not_found);
+	tcase_add_test(tc_mysql_q, test_create_id_MNID_ID);
+	tcase_add_test(tc_mysql_q, test_create_id_MNID_STRING);
 
 	suite_add_tcase(s, tc_core);
 	suite_add_tcase(s, tc_mysql);

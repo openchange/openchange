@@ -78,6 +78,40 @@ static enum mapistore_error create_id(struct namedprops_context *self,
 				      struct MAPINAMEID nameid,
 				      uint16_t mapped_id)
 {
+	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	const char **fields = (const char **) str_list_make_empty(mem_ctx);
+
+	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "type=%d",
+						      nameid.ulKind));
+	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "propType=%d",
+						      PT_NULL));
+	char *guid = GUID_string(mem_ctx, &nameid.lpguid);
+	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "oleguid='%s'",
+						      guid));
+	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "mappedId=%u",
+						      mapped_id));
+	if (nameid.ulKind == MNID_ID) {
+		fields = str_list_add(fields,
+				      talloc_asprintf(mem_ctx, "propId=%u",
+						      nameid.kind.lid));
+	} else if (nameid.ulKind == MNID_STRING) {
+		fields = str_list_add(fields,
+				      talloc_asprintf(mem_ctx, "propName='%s'",
+						      nameid.kind.lpwstr.Name));
+	} else {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERROR, mem_ctx);
+	}
+
+	char *fields_sql = str_list_join(mem_ctx, fields, ',');
+	char *sql = talloc_asprintf(mem_ctx,
+		"INSERT INTO " TABLE_NAME " SET %s", fields_sql);
+	DEBUG(5, ("Inserting record:\n%s\n", sql));
+	MYSQL *conn = self->data;
+	if (mysql_query(conn, sql) != 0) {
+		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	}
+
+	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
 

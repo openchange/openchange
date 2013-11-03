@@ -229,7 +229,22 @@ struct mapistore_backend {
 	} manager;
 };
 
-struct indexing_context;
+struct indexing_context {
+	enum mapistore_error	(*add_fid)(struct indexing_context *, const char *, uint64_t, const char *);
+	enum mapistore_error	(*del_fid)(struct indexing_context *, const char *, uint64_t, uint8_t);
+
+	enum mapistore_error	(*add_mid)(struct indexing_context *, const char *, uint64_t, const char *);
+	enum mapistore_error	(*del_mid)(struct indexing_context *, const char *, uint64_t, uint8_t);
+
+	enum mapistore_error	(*get_uri)(struct indexing_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
+	enum mapistore_error	(*get_fmid)(struct indexing_context *, const char *, const char *, bool, uint64_t *, bool *);
+
+	/* Backend URL */
+	const char *url;
+
+	/* Custom backend data */
+	void *data;
+};
 
 struct backend_context {
 	const struct mapistore_backend	*backend;
@@ -252,6 +267,7 @@ struct processing_context;
 struct mapistore_context {
 	struct processing_context		*processing_ctx;
 	struct backend_context_list		*context_list;
+	struct indexing_context_list		*indexing_list;
 	struct replica_mapping_context_list	*replica_mapping_list;
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;

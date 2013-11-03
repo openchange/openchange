@@ -7,37 +7,12 @@
 #include <tdb.h>
 
 
-#define	TDB_WRAP(context)	((struct tdb_context_list*)context)->index_ctx
+#define	TDB_WRAP(context)	((struct tdb_wrap*)context->data)
 #if 0
 
 This will be indexing_init code
 
-/**
-   \details Search the indexing record matching the username
 
-   \param mstore_ctx pointer to the mapistore context
-   \param username the username to lookup
-
-   \return pointer to the tdb_wrap structure on success, otherwise NULL
- */
-struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *mstore_ctx, 
-							const char *username)
-{
-	struct indexing_context_list	*el;
-
-	/* Sanity checks */
-	if (!mstore_ctx) return NULL;
-	if (!mstore_ctx->indexing_list) return NULL;
-	if (!username) return NULL;
-
-	for (el = mstore_ctx->indexing_list; el; el = el->next) {
-		if (el && el->username && !strcmp(el->username, username)) {
-			return el;
-		}
-	}
-
-	return NULL;
-}
 
 /**
    \details Open connection to indexing database for a given user
@@ -66,6 +41,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
 	ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
+
+	/* ensure the user mapistore directory exists before any mapistore operation occurs */
+	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
+	mkdir(mapistore_dir, 0700);
 
 	/* Step 1. Open/Create the indexing database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb", 

@@ -96,6 +96,14 @@ struct processing_context {
 	uint64_t			dflt_start_id;
 };
 
+struct indexing_context_list {
+	struct indexing_context		*ctx;
+	struct indexing_context_list	*prev;
+	struct indexing_context_list	*next;
+};
+
+#define  MAPISTORE_DB_NAMED    "named_properties.ldb"
+
 struct replica_mapping_context_list {
 	struct tdb_context		*tdb;
 	char				*username;
@@ -193,14 +201,11 @@ struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, i
 struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *, struct tevent_context *, const char *, unsigned int);
 
 /* definitions from mapistore_indexing.c */
-struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
-enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
-enum mapistore_error mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+struct indexing_context *mapistore_indexing_search(struct mapistore_context *, const char *);
+enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context **);
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
-enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t);
-enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
-// enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
-// enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
+enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t, int type);
 
 /* definitions from mapistore_namedprops.c */
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, struct ldb_context **);

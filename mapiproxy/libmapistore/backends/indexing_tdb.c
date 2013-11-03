@@ -1,74 +1,18 @@
 #include <string.h>
 
+#include "../mapistore.h"
+#include "../mapistore_private.h"
+#include "../mapistore_errors.h"
 #include "indexing_tdb.h"
 #include <dlinklist.h>
 #include "libmapi/libmapi_private.h"
 
+#include <talloc.h>
 #include <tdb.h>
 
 
 #define	TDB_WRAP(context)	((struct tdb_wrap*)context->data)
-#if 0
 
-This will be indexing_init code
-
-
-
-/**
-   \details Open connection to indexing database for a given user
-
-   \param mstore_ctx pointer to the mapistore context
-   \param username name for which the indexing database has to be
-   created
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-_PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *mstore_ctx, 
-						     const char *username, struct indexing_context_list **ictxp)
-{
-	TALLOC_CTX			*mem_ctx;
-	struct indexing_context_list	*ictx;
-	char				*dbpath = NULL;
-
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
-
-	/* Step 1. Search if the context already exists */
-	ictx = mapistore_indexing_search(mstore_ctx, username);
-	*ictxp = ictx;
-	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
-
-	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
-	ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
-
-	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
-	mkdir(mapistore_dir, 0700);
-
-	/* Step 1. Open/Create the indexing database */
-	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb", 
-				 mapistore_get_mapping_path(), username);
-	ictx->index_ctx = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
-	talloc_free(dbpath);
-	if (!ictx->index_ctx) {
-		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
-		talloc_free(ictx);
-		talloc_free(mem_ctx);
-		return MAPISTORE_ERR_DATABASE_INIT;
-	}
-	ictx->username = talloc_strdup(ictx, username);
-	/* ictx->ref_count = 0; */
-	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);
-
-	*ictxp = ictx;
-
-	talloc_free(mem_ctx);
-
-	return MAPISTORE_SUCCESS;
-}
-
-#endif
 
 
 static enum mapistore_error tdb_search_existing_fmid(struct indexing_context *ictx,
@@ -121,7 +65,7 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
 
 	/* Check if the fid/mid doesn't already exist within the database */
-	ret = tdb_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
+	ret = tdb_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
 	/* Add the record given its fid and mapistore_uri */
@@ -150,7 +94,6 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 					   uint8_t flags)
 {
 	int				ret;
-	struct backend_context		*backend_ctx;
 	TDB_DATA			key;
 	TDB_DATA			newkey;
 	TDB_DATA			dbuf;
@@ -161,7 +104,7 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
 
 	/* Check if the fid/mid still exists within the database */
-	ret = tdb_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
+	ret = tdb_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
 	MAPISTORE_RETVAL_IF(!ret, ret, NULL);
 
 	if (IsSoftDeleted == true) {
@@ -183,7 +126,7 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 		/* Retrieve previous value */
 		dbuf = tdb_fetch(TDB_WRAP(ictx)->tdb, key);
 		/* Add new record */
-		ret = tdb_store(TDB_WRAP(ictx), newkey, dbuf, TDB_INSERT);
+		ret = tdb_store(TDB_WRAP(ictx)->tdb, newkey, dbuf, TDB_INSERT);
 		free(dbuf.dptr);
 		/* Delete previous record */
 		ret = tdb_delete(TDB_WRAP(ictx)->tdb, key);
@@ -398,4 +341,74 @@ static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 	}
 
 	return ret;
+}
+
+
+
+/**
+   \details Open connection to indexing database for a given user
+
+   \param mstore_ctx pointer to the mapistore context
+   \param username name for which the indexing database has to be
+   created
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+
+_PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_context *mstore_ctx,
+							  const char *username,
+							  struct indexing_context **ictxp)
+{
+	TALLOC_CTX			*mem_ctx;
+	char				*dbpath = NULL;
+	char				*mapistore_dir = NULL;
+	struct indexing_context		*ictx;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
+
+	/* Step 1. Search if the context already exists */
+	ictx = mapistore_indexing_search(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
+	ictx = talloc_zero(mstore_ctx, struct indexing_context);
+
+	/* ensure the user mapistore directory exists before any mapistore operation occurs */
+	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s",
+					mapistore_get_mapping_path(), username);
+	mkdir(mapistore_dir, 0700);
+
+	/* Step 1. Open/Create the indexing database */
+	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb",
+				 mapistore_get_mapping_path(), username);
+
+	ictx->data = mapistore_tdb_wrap_open(*ictxp, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	talloc_free(dbpath);
+	if (!TDB_WRAP(ictx)) {
+		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		talloc_free(ictx);
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_DATABASE_INIT;
+	}
+
+	/* TODO: extract url from backend mapping, by the moment we use the username */
+	ictx->url = talloc_strdup(ictx, username);
+
+	/* Fill function pointers */
+	ictx->add_fid = tdb_record_add;
+	ictx->del_fid = tdb_record_del;
+
+	ictx->add_mid = tdb_record_add;
+	ictx->del_mid = tdb_record_del;
+
+	ictx->get_uri = tdb_record_get_uri;
+	ictx->get_fmid = tdb_record_get_fmid;
+
+	*ictxp = ictx;
+
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
 }

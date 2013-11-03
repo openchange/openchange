@@ -93,9 +93,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
 	mapistore_indexing_tdb_init(mstore_ctx, username, &ictx->ctx);
 
-	/* TODO: extract url from backend mapping, by the moment we use the username */
-	ictx->ctx->url = talloc_strdup(ictx, username);
-
 	/* ictx->ref_count = 0; */
 	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);
 

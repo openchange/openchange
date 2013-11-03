@@ -135,6 +135,15 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	int		ret;
 	TDB_DATA	key;
 	TDB_DATA	dbuf;
+	bool		IsSoftDeleted = false;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+
+	/* Check if the fid/mid doesn't already exist within the database */
+	ret = tdb_search_existing_fmid(ictx, fmid, &IsSoftDeleted);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
 	/* Add the record given its fid and mapistore_uri */
 	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
@@ -156,10 +165,10 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
-static enum mapistore_error tdb_record_del_fmid(struct indexing_context *ictx,
-						const char *username,
-						uint64_t fmid,
-						uint8_t flags)
+static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
+					   const char *username,
+					   uint64_t fmid,
+					   uint8_t flags)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;

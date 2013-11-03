@@ -96,22 +96,6 @@ struct processing_context {
 	uint64_t			dflt_start_id;
 };
 
-
-/**
-   Indexing identifier list
- */
-struct indexing_context_list {
-	struct tdb_wrap			*index_ctx;
-	char				*username;
-	// uint32_t			ref_count;
-	struct indexing_context_list	*prev;
-	struct indexing_context_list	*next;
-};
-
-#define	MAPISTORE_DB_NAMED		"named_properties.ldb"
-#define	MAPISTORE_DB_INDEXING		"indexing.tdb"
-#define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
-
 struct replica_mapping_context_list {
 	struct tdb_context		*tdb;
 	char				*username;

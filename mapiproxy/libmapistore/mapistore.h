@@ -229,13 +229,13 @@ struct mapistore_backend {
 	} manager;
 };
 
-struct indexing_context_list;
+struct indexing_context;
 
 struct backend_context {
 	const struct mapistore_backend	*backend;
 	void				*backend_object;
 	void				*root_folder_object;
-	struct indexing_context_list	*indexing;
+	struct indexing_context		*indexing;
 	uint32_t			context_id;
 	uint32_t			ref_count;
 	char				*uri;
@@ -252,7 +252,6 @@ struct processing_context;
 struct mapistore_context {
 	struct processing_context		*processing_ctx;
 	struct backend_context_list		*context_list;
-	struct indexing_context_list		*indexing_list;
 	struct replica_mapping_context_list	*replica_mapping_list;
 	struct mapistore_subscription_list	*subscriptions;
 	struct mapistore_notification_list	*notifications;

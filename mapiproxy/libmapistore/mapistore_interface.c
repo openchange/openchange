@@ -86,7 +86,6 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	}
 
 	mstore_ctx->context_list = NULL;
-	mstore_ctx->indexing_list = talloc_zero(mstore_ctx, struct indexing_context_list);
 	mstore_ctx->replica_mapping_list = talloc_zero(mstore_ctx, struct replica_mapping_context_list);
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
@@ -187,7 +186,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	char					*namespace_start;
 	char					*backend_uri;
 	char					*mapistore_dir;
-	struct indexing_context_list		*ictx;
+	struct indexing_context			*ictx;
 
 	/* Step 1. Perform Sanity Checks on URI */
 	if (!uri || strlen(uri) < 4) {
@@ -208,6 +207,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
 		/* ensure the user mapistore directory exists before any mapistore operation occurs */
+		// TODO exekias move this to TDB indexing backend
 		mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
 		mkdir(mapistore_dir, 0700);
 
@@ -216,7 +216,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
-		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx->index_ctx, namespace_start, backend_uri, fid, &backend_ctx);
+		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx, namespace_start, backend_uri, fid, &backend_ctx);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}

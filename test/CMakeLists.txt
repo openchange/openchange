@@ -23,6 +23,14 @@ SET(OPENCHANGE_TEST_SRCS
 
 )
 
+IF(DEFINED ENV{SAMBA_PREFIX})
+    SET(SAMBA_PREFIX $ENV{SAMBA_PREFIX})
+ELSE()
+    SET(SAMBA_PREFIX /usr/local/samba)
+ENDIF()
+
+message("Using samba ${SAMBA_PREFIX}")
+
 ADD_DEFINITIONS(
     -Wall
     -fprofile-arcs -ftest-coverage
@@ -33,11 +41,11 @@ ADD_DEFINITIONS(
 INCLUDE_DIRECTORIES(
     ${CMAKE_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/..
-    /usr/local/samba/include
+    ${SAMBA_PREFIX}/include
 )
 
 LINK_DIRECTORIES(
-    /usr/local/samba/lib
+    ${SAMBA_PREFIX}/lib
 )
 
 ADD_EXECUTABLE(

@@ -368,10 +368,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
 
-	/* Step 1. Search if the context already exists */
-	ictx = mapistore_indexing_search(mstore_ctx, username);
-	MAPISTORE_RETVAL_IF(ictx, MAPISTORE_SUCCESS, NULL);
-
 	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
 	ictx = talloc_zero(mstore_ctx, struct indexing_context);
 

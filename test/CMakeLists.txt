@@ -6,11 +6,7 @@ SET(OPENCHANGE_TEST_SRCS
     # =========================================================================
     # Libmapistore
     # -------------------------------------------------------------------------
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_interface.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mgmt/mapistore_mgmt.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_processing.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_backend.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_backend_defaults.c

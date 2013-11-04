@@ -292,11 +292,11 @@ START_TEST (test_get_nameid_MNID_ID) {
 
 START_TEST (test_get_nameid_not_found) {
 	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
-	struct MAPINAMEID *nameid;
+	struct MAPINAMEID *nameid = NULL;
 
 	enum mapistore_error ret = get_nameid(nprops, 42, mem_ctx, &nameid);
-	ck_assert(nameid == NULL);
 	ck_assert_int_eq(ret, MAPISTORE_ERR_NOT_FOUND);
+	ck_assert(nameid == NULL);
 } END_TEST
 
 START_TEST (test_create_id_MNID_ID) {

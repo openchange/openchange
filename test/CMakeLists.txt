@@ -1,7 +1,7 @@
 PROJECT(OPENCHANGE_TEST C)
 CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
-SET(OPENCHANGE_TEST_SRCS    
+SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/openchange_test_suite.c
     # =========================================================================
     # Libmapistore
@@ -18,19 +18,19 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_indexing.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_replica_mapping.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_namedprops.c
-    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c    
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/namedprops_mysql.c
     ${CMAKE_SOURCE_DIR}/test_suites/namedprops_ldb.c
     # =========================================================================
- 
+
 )
 
 ADD_DEFINITIONS(
     -Wall
     -fprofile-arcs -ftest-coverage
-    -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"            
+    -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"
     -DMAPISTORE_BACKEND_INSTALLDIR="/not/used/for/now/on/this/test"
 )
 
@@ -49,16 +49,16 @@ ADD_EXECUTABLE(
     ${OPENCHANGE_TEST_SRCS}
 )
 
-TARGET_LINK_LIBRARIES(openchange_test  
-    -fprofile-arcs  
+TARGET_LINK_LIBRARIES(openchange_test
+    -fprofile-arcs
     # Dependencies
     mysqlclient
     # unittest framework
     check
     # Samba shit
-    #samba-credentials dcerpc dcerpc-binding 
-    ndr samba-hostconfig samba-util tevent talloc 
-    dl rt 
+    #samba-credentials dcerpc dcerpc-binding
+    ndr samba-hostconfig samba-util tevent talloc
+    dl rt
     ldb tdb
 )
 

@@ -9,6 +9,9 @@ endif
 
 default: all
 
+# TODO move to configure.ac
+LIBS+=-lmysqlclient -lm -lcheck
+
 # Until we add proper dependencies for all the C files:
 .NOTPARALLEL:
 
@@ -1326,6 +1329,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
 
+
 utils/mapitest/proto.h:					\
 	utils/mapitest/mapitest_suite.c			\
 	utils/mapitest/mapitest_print.c			\
@@ -1351,6 +1355,26 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_lzxpress.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
+
+
+###################
+# unittest
+###################
+
+unittest: bin/unittest
+
+bin/unittest: test/test_suites/indexing.o   \
+              test/openchange_test_suite.c  \
+              mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
+
+
+unittest-clean:
+	rm -f bin/unittest
+	rm -f test/test_suites/*.o
+
+clean:: unittest-clean
 
 #####################
 # openchangemapidump

@@ -152,7 +152,7 @@ static enum mapistore_error tdb_record_get_uri(struct indexing_context *ictx,
 {
 	TDB_DATA			key, dbuf;
 	int				ret;
-	
+
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);

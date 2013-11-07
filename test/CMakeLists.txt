@@ -17,6 +17,7 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c
     # Test suites
     # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/test_suites/indexing.c
     ${CMAKE_SOURCE_DIR}/test_suites/namedprops_mysql.c
     ${CMAKE_SOURCE_DIR}/test_suites/namedprops_ldb.c
     # =========================================================================

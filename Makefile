@@ -1365,11 +1365,15 @@ utils/mapitest/proto.h:					\
 
 unittest: bin/unittest
 
-bin/unittest: test/test_suites/indexing.o   \
-              test/openchange_test_suite.c  \
-              mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
+unittest: CFLAGS += -Itest
+
+bin/unittest: test/test_suites/indexing.o \
+	test/test_suites/namedprops_mysql.o \
+	test/test_suites/namedprops_ldb.o \
+	test/openchange_test_suite.o \
+	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@ $^"
+	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
 
 
 unittest-clean:

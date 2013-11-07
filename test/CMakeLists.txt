@@ -57,11 +57,11 @@ ADD_EXECUTABLE(
 )
 
 TARGET_LINK_LIBRARIES(openchange_test
-    -fprofile-arcs
+    -fprofile-arcs gcov
     # Dependencies
     mysqlclient
     # unittest framework
-    check
+    check m pthread
     # Samba shit
     #samba-credentials dcerpc dcerpc-binding
     ndr samba-hostconfig samba-util tevent talloc

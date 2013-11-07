@@ -7,7 +7,7 @@ TALLOC_CTX *mem_ctx;
 struct namedprops_context *nprops;
 
 
-void ldb_q_setup(void)
+static void ldb_q_setup(void)
 {
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	nprops = talloc_zero(mem_ctx, struct namedprops_context);
@@ -18,7 +18,7 @@ void ldb_q_setup(void)
 	}
 }
 
-void ldb_q_teardown(void)
+static void ldb_q_teardown(void)
 {
 	unlink(NAMEDPROPS_LDB_PATH);
 	talloc_free(mem_ctx);

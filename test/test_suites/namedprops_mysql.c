@@ -78,7 +78,7 @@ START_TEST (test_parse_connection_fail) {
 
 MYSQL *conn = NULL;
 
-void mysql_setup(void)
+static void mysql_setup(void)
 {
 	if (conn) return;
 
@@ -97,7 +97,7 @@ void mysql_setup(void)
 	CHECK_MYSQL_ERROR;
 }
 
-void mysql_teardown(void)
+static void mysql_teardown(void)
 {
 	mysql_query(conn, "DROP DATABASE " MYSQL_DB);
 	CHECK_MYSQL_ERROR;
@@ -127,7 +127,7 @@ START_TEST (test_initialize_database) {
 TALLOC_CTX *mem_ctx;
 struct namedprops_context *nprops;
 
-void mysql_q_setup(void)
+static void mysql_q_setup(void)
 {
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	char *database;
@@ -145,7 +145,7 @@ void mysql_q_setup(void)
 	}
 }
 
-void mysql_q_teardown(void)
+static void mysql_q_teardown(void)
 {
 	mysql_query(nprops->data, "DROP DATABASE " MYSQL_DB);
 	talloc_free(mem_ctx);

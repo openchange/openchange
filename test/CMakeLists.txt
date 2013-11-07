@@ -15,6 +15,7 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_replica_mapping.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_namedprops.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/backends/indexing_tdb.c
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/indexing.c
@@ -35,6 +36,7 @@ message("Using samba ${SAMBA_PREFIX}")
 ADD_DEFINITIONS(
     -Wall
     -fprofile-arcs -ftest-coverage
+    -g -rdynamic -static
     -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"
     -DMAPISTORE_BACKEND_INSTALLDIR="/not/used/for/now/on/this/test"
 )

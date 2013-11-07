@@ -1365,7 +1365,7 @@ utils/mapitest/proto.h:					\
 
 unittest: bin/unittest
 
-unittest: CFLAGS += -Itest
+unittest: CFLAGS += -Itest -fprofile-arcs -ftest-coverage -g -rdynamic
 
 bin/unittest: test/test_suites/indexing.o \
 	test/test_suites/namedprops_mysql.o \

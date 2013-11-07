@@ -2,12 +2,16 @@
 #include <check.h>
 
 #include "test_suites/namedprops_backends.h"
+#include "test_suites/indexing.h"
 
 
 int main(void)
 {
-	SRunner *sr = srunner_create(namedprops_ldb_suite());
+	SRunner *sr = srunner_create(suite_create("Open Change unit tests"));
+
 	srunner_add_suite(sr, namedprops_mysql_suite());
+	srunner_add_suite(sr, namedprops_ldb_suite());
+	srunner_add_suite(sr, indexing_suite());
 
 	srunner_set_xml(sr, "test_results.xml");
 	srunner_run_all(sr, CK_NORMAL);

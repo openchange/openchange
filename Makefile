@@ -9,7 +9,8 @@ endif
 
 default: all
 
-LIBS+=-lmysqlclient
+# TODO move to configure.ac
+LIBS+=-lmysqlclient -lm -lcheck
 
 # Until we add proper dependencies for all the C files:
 .NOTPARALLEL:
@@ -918,6 +919,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_notification.po		\
 							mapiproxy/libmapistore/backends/namedprops_ldb.po		\
 							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
+							mapiproxy/libmapistore/backends/indexing_tdb.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
@@ -1355,6 +1357,26 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_lzxpress.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
+
+
+###################
+# unittest
+###################
+
+unittest: bin/unittest
+
+bin/unittest: test/test_suites/indexing.o   \
+              test/openchange_test_suite.c  \
+              mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
+
+
+unittest-clean:
+	rm -f bin/unittest
+	rm -f test/test_suites/*.o
+
+clean:: unittest-clean
 
 #####################
 # openchangemapidump

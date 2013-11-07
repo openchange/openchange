@@ -85,20 +85,11 @@ struct processing_context {
 	uint64_t			dflt_start_id;
 };
 
-
-/**
-   Indexing identifier list
- */
 struct indexing_context_list {
-	struct tdb_wrap			*index_ctx;
-	char				*username;
-	// uint32_t			ref_count;
+	struct indexing_context		*ctx;
 	struct indexing_context_list	*prev;
 	struct indexing_context_list	*next;
 };
-
-#define	MAPISTORE_DB_INDEXING		"indexing.tdb"
-#define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
 struct replica_mapping_context_list {
 	struct tdb_context		*tdb;
@@ -194,14 +185,11 @@ enum mapistore_error mapistore_backend_manager_generate_uri(struct backend_conte
 struct tdb_wrap *mapistore_tdb_wrap_open(TALLOC_CTX *, const char *, int, int, int, mode_t);
 
 /* definitions from mapistore_indexing.c */
-struct indexing_context_list *mapistore_indexing_search(struct mapistore_context *, const char *);
-enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context_list **);
-enum mapistore_error mapistore_indexing_search_existing_fmid(struct indexing_context_list *, uint64_t, bool *);
+struct indexing_context *mapistore_indexing_search(struct mapistore_context *, const char *);
+enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const char *, struct indexing_context **);
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
-enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t);
-enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t);
-// enum mapistore_error mapistore_indexing_add_ref_count(struct indexing_context_list *);
-// enum mapistore_error mapistore_indexing_del_ref_count(struct indexing_context_list *);
+enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
+enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t, int type);
 
 __END_DECLS
 

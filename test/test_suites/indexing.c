@@ -24,7 +24,9 @@ typedef enum mapistore_error add_fmidp(struct indexing_context *,
 typedef enum mapistore_error del_fmidp(struct indexing_context *,
 				       const char *, uint64_t, uint8_t);
 
-static void test_backend_add_fmid(add_fmidp add_fmid)
+/* add_fmid */
+
+START_TEST (test_backend_add_fmid)
 {
 	enum mapistore_error	ret;
 	const uint64_t		fid = 0x11;
@@ -32,28 +34,69 @@ static void test_backend_add_fmid(add_fmidp add_fmid)
 	char			*retrieved_uri = NULL;
 	bool			softDel = true;
 
-	ret = add_fmid(ictx, USERNAME, fid, uri);
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
 
 	ck_assert(!softDel);
 	ck_assert_str_eq(uri, retrieved_uri);
-}
+} END_TEST
 
-static void test_backend_del_unkown_fmid(del_fmidp del_fmid)
+
+START_TEST (test_backend_repeated_add_fails)
+{
+	enum mapistore_error	ret;
+	const uint64_t		fid = 0x11;
+	const char		*uri = "random://url";
+
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ck_assert(ret != MAPISTORE_SUCCESS);
+} END_TEST
+
+/* update_fmid */
+
+START_TEST (test_backend_update_fmid)
+{
+	enum mapistore_error	ret;
+	const uint64_t		fid = 0x11;
+	const char		*uri = "random://url";
+	const char		*uri2 = "random://url2";
+	char			*retrieved_uri = NULL;
+	bool			softDel = true;
+
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = ictx->update_fmid(ictx, USERNAME, fid, uri2);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
+
+	ck_assert(!softDel);
+	ck_assert_str_eq(uri2, retrieved_uri);
+} END_TEST
+
+
+/* del_fmid */
+
+START_TEST (test_backend_del_unkown_fmid)
 {
 	enum mapistore_error	ret;
 	const uint64_t		fid = 0x11;
 
 	// Unkown fid returns SUCCESS
-	ret = del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
+	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
-	ret = del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
+	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
-}
+} END_TEST
 
-static void test_backend_del_fmid_soft(add_fmidp add_fmid, del_fmidp del_fmid)
+
+START_TEST (test_backend_del_fmid_soft)
 {
 	enum mapistore_error	ret;
 	const uint64_t		fid = 0x11;
@@ -61,20 +104,20 @@ static void test_backend_del_fmid_soft(add_fmidp add_fmid, del_fmidp del_fmid)
 	char			*retrieved_uri = NULL;
 	bool			softDel = false;
 
-	ret = add_fmid(ictx, USERNAME, fid, uri);
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
+	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 	ck_assert(softDel);
 	ck_assert_str_eq(uri, retrieved_uri);
-}
+} END_TEST
 
-static void test_backend_del_fmid_permanent(add_fmidp add_fmid,
-					    del_fmidp del_fmid)
+
+START_TEST (test_backend_del_fmid_permanent)
 {
 	enum mapistore_error	ret;
 	const uint64_t		fid = 0x11;
@@ -82,59 +125,14 @@ static void test_backend_del_fmid_permanent(add_fmidp add_fmid,
 	char			*retrieved_uri = NULL;
 	bool			softDel = true;
 
-	ret = add_fmid(ictx, USERNAME, fid, uri);
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
+	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
 	ck_assert(ret == MAPISTORE_ERR_NOT_FOUND);
-}
-
-
-/* add/del fid */
-
-START_TEST (test_backend_add_fid) {
-	test_backend_add_fmid(ictx->add_fid);
-} END_TEST
-
-
-START_TEST (test_backend_del_unkown_fid) {
-	test_backend_del_unkown_fmid(ictx->del_fid);
-} END_TEST
-
-
-START_TEST (test_backend_del_fid_soft) {
-	test_backend_del_fmid_soft(ictx->add_fid, ictx->del_fid);
-} END_TEST
-
-
-START_TEST (test_backend_del_fid_permanent) {
-	test_backend_del_fmid_permanent(ictx->add_fid, ictx->del_fid);
-} END_TEST
-
-
-
-/* add/del mid */
-
-START_TEST (test_backend_add_mid) {
-	test_backend_add_fmid(ictx->add_mid);
-} END_TEST
-
-
-START_TEST (test_backend_del_unkown_mid) {
-	test_backend_del_unkown_fmid(ictx->del_mid);
-} END_TEST
-
-
-START_TEST (test_backend_del_mid_soft) {
-	test_backend_del_fmid_soft(ictx->add_mid, ictx->del_mid);
-} END_TEST
-
-
-START_TEST (test_backend_del_mid_permanent) {
-	test_backend_del_fmid_permanent(ictx->add_mid, ictx->del_mid);
 } END_TEST
 
 
@@ -150,9 +148,10 @@ START_TEST (test_backend_get_uri_unknown) {
 	ck_assert(ret == MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
+
 /* get_fmid */
 
-static void test_backend_get_fmid(add_fmidp add_fmid)
+START_TEST (test_backend_get_fmid)
 {
 	enum mapistore_error	ret;
 	const uint64_t		fid = 0x11;
@@ -160,7 +159,7 @@ static void test_backend_get_fmid(add_fmidp add_fmid)
 	uint64_t		retrieved_fid;
 	bool			softDel = true;
 
-	ret = add_fmid(ictx, USERNAME, fid, uri);
+	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ret = ictx->get_fmid(ictx, USERNAME, uri, false, &retrieved_fid, &softDel);
@@ -168,16 +167,7 @@ static void test_backend_get_fmid(add_fmidp add_fmid)
 
 	ck_assert(!softDel);
 	ck_assert(retrieved_fid == fid);
-}
-
-START_TEST (test_backend_get_uri_fid) {
-	test_backend_get_fmid(ictx->add_fid);
 } END_TEST
-
-START_TEST (test_backend_get_uri_mid) {
-	test_backend_get_fmid(ictx->add_mid);
-} END_TEST
-
 
 
 
@@ -218,20 +208,19 @@ static void indexing_backend_add_case(Suite *s, char *name, void setup(void),
 	tcase_add_checked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_backend_initialized);
-	tcase_add_test(tc, test_backend_add_fid);
-	tcase_add_test(tc, test_backend_del_unkown_fid);
-	tcase_add_test(tc, test_backend_del_fid_soft);
-	tcase_add_test(tc, test_backend_del_fid_permanent);
 
-	tcase_add_test(tc, test_backend_add_mid);
-	tcase_add_test(tc, test_backend_del_unkown_mid);
-	tcase_add_test(tc, test_backend_del_mid_soft);
-	tcase_add_test(tc, test_backend_del_mid_permanent);
+	tcase_add_test(tc, test_backend_add_fmid);
+	tcase_add_test(tc, test_backend_repeated_add_fails);
+
+	tcase_add_test(tc, test_backend_update_fmid);
+
+	tcase_add_test(tc, test_backend_del_unkown_fmid);
+	tcase_add_test(tc, test_backend_del_fmid_soft);
+	tcase_add_test(tc, test_backend_del_fmid_permanent);
 
 	tcase_add_test(tc, test_backend_get_uri_unknown);
 
-	tcase_add_test(tc, test_backend_get_uri_fid);
-	tcase_add_test(tc, test_backend_get_uri_mid);
+	tcase_add_test(tc, test_backend_get_fmid);
 
 	suite_add_tcase(s, tc);
 }

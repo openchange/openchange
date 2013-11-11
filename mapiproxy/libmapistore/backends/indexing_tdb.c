@@ -88,6 +88,39 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
+					      const char *username,
+					      uint64_t fmid,
+					      const char *mapistore_URI)
+{
+	int		ret;
+	TDB_DATA	key;
+	TDB_DATA	dbuf;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+
+	/* Add the record given its fid and mapistore_uri */
+	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
+	key.dsize = strlen((const char *) key.dptr);
+
+	dbuf.dptr = (unsigned char *) talloc_strdup(ictx, mapistore_URI);
+	dbuf.dsize = strlen((const char *) dbuf.dptr);
+
+	ret = tdb_store(TDB_WRAP(ictx)->tdb, key, dbuf, TDB_MODIFY);
+	talloc_free(key.dptr);
+	talloc_free(dbuf.dptr);
+
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d]: Unable to update 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
+			  fmid, mapistore_URI));
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
 static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 					   const char *username,
 					   uint64_t fmid,
@@ -395,6 +428,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	/* Fill function pointers */
 	ictx->add_fmid = tdb_record_add;
 	ictx->del_fmid = tdb_record_del;
+	ictx->update_fmid = tdb_record_update;
 	ictx->get_uri = tdb_record_get_uri;
 	ictx->get_fmid = tdb_record_get_fmid;
 

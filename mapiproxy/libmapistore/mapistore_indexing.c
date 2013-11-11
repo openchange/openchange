@@ -145,10 +145,8 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	/* Add the record given its fid and mapistore_uri */
 	switch(type) {
 	case MAPISTORE_FOLDER:
-		ret = ictx->add_fid(ictx, username, fmid, mapistore_URI);
-		break;
 	case MAPISTORE_MESSAGE:
-		ret = ictx->add_mid(ictx, username, fmid, mapistore_URI);
+		ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
 		break;
 	default:
 		return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -196,10 +194,8 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
 	switch(type) {
 	case MAPISTORE_FOLDER:
-		ret = ictx->del_fid(ictx, username, fmid, flags);
-		break;
 	case MAPISTORE_MESSAGE:
-		ret = ictx->del_mid(ictx, username, fmid, flags);
+		ret = ictx->del_fmid(ictx, username, fmid, flags);
 		break;
 	default:
 		return MAPISTORE_ERR_INVALID_PARAMETER;

@@ -393,12 +393,8 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	ictx->url = talloc_strdup(ictx, username);
 
 	/* Fill function pointers */
-	ictx->add_fid = tdb_record_add;
-	ictx->del_fid = tdb_record_del;
-
-	ictx->add_mid = tdb_record_add;
-	ictx->del_mid = tdb_record_del;
-
+	ictx->add_fmid = tdb_record_add;
+	ictx->del_fmid = tdb_record_del;
 	ictx->get_uri = tdb_record_get_uri;
 	ictx->get_fmid = tdb_record_get_fmid;
 

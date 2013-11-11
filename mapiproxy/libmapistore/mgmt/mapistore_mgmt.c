@@ -536,7 +536,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_register_message(struct mapistore_m
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
 
-	ret = ictxp->add_mid(ictxp, sysuser, mid, uri);
+	ret = ictxp->add_fmid(ictxp, sysuser, mid, uri);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
 
 	*registered_uri = uri;

@@ -91,7 +91,7 @@ static int emsmdbp_mapi_handles_destructor(void *data)
  */
 _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 					      const char *username,
-					      void *ldb_ctx)
+					      void *oc_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
@@ -130,7 +130,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	}
 
 	/* Reference global OpenChange dispatcher database pointer within current context */
-	emsmdbp_ctx->oc_ctx = ldb_ctx;
+	emsmdbp_ctx->oc_ctx = oc_ctx;
 
 	/* Initialize the mapistore context */		
 	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);

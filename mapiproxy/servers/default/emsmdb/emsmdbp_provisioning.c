@@ -90,8 +90,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;
 		property_row.lpProps[0].value.lpszW = dn_user;
-		openchangedb_message_set_properties(mem_ctx, message_object, &property_row);
-		openchangedb_message_save(message_object, 0);
+		openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);
+		openchangedb_message_save(emsmdbp_ctx->oc_ctx, message_object, 0);
 	}
 
 	ret = MAPI_E_SUCCESS;

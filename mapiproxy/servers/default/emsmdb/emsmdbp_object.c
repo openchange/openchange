@@ -1418,7 +1418,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 					return table_object;
 				}
 				DEBUG(0, ("Initializaing openchangedb table\n"));
-				openchangedb_table_init((TALLOC_CTX *)table_object, table_type, folderID, &table_object->backend_object);
+				openchangedb_table_init((TALLOC_CTX *)table_object, parent_object->emsmdbp_ctx->oc_ctx, table_type, folderID, &table_object->backend_object);
 			}
 		}
 	}
@@ -1622,10 +1622,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		/* 1. retrieve the object id from odb */
 		switch (table_object->object.table->ulType) {
 		case MAPISTORE_FOLDER_TABLE:
-			retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, PR_FID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFMId);
+			retval = openchangedb_table_get_property(odb_ctx, emsmdbp_ctx->oc_ctx, table_object->backend_object, PR_FID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFMId);
 			break;
 		case MAPISTORE_MESSAGE_TABLE:
-			retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx, PR_MID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFMId);
+			retval = openchangedb_table_get_property(odb_ctx, emsmdbp_ctx->oc_ctx, table_object->backend_object, PR_MID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFMId);
 			break;
 			/* case MAPISTORE_FAI_TABLE: 
 			   retval = openchangedb_table_get_property(odb_ctx, table_object->backend_object, emsmdbp_ctx->oc_ctx,
@@ -1703,8 +1703,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 					retval = MAPI_E_SUCCESS;
 					break;
 				default:
-					retval = openchangedb_table_get_property(data_pointers, table_object->backend_object, 
-										 emsmdbp_ctx->oc_ctx,
+					retval = openchangedb_table_get_property(data_pointers, emsmdbp_ctx->oc_ctx,
+										 table_object->backend_object,
 										 table->properties[i], 
 										 row_id,
 										 (query_type == MAPISTORE_LIVEFILTERED_QUERY),
@@ -1716,8 +1716,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				}
 			}
 			else {
-				retval = openchangedb_table_get_property(data_pointers, table_object->backend_object, 
-									 emsmdbp_ctx->oc_ctx,
+				retval = openchangedb_table_get_property(data_pointers, emsmdbp_ctx->oc_ctx,
+									 table_object->backend_object,
 									 table->properties[i], 
 									 row_id,
 									 (query_type == MAPISTORE_LIVEFILTERED_QUERY),
@@ -2325,11 +2325,11 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 					retval = MAPI_E_SUCCESS;
 					break;
 				default:
-					retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+					retval = openchangedb_message_get_property(data_pointers, emsmdbp_ctx->oc_ctx, object->backend_object, properties->aulPropTag[i], data_pointers + i);
 				}
 			}
 			else {
-				retval = openchangedb_message_get_property(data_pointers, object->backend_object, properties->aulPropTag[i], data_pointers + i);
+				retval = openchangedb_message_get_property(data_pointers, emsmdbp_ctx->oc_ctx, object->backend_object, properties->aulPropTag[i], data_pointers + i);
 			}
 		}
 		retvals[i] = retval;
@@ -2678,7 +2678,8 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.mailbox->folderID, rowp);
 			}
 			else if (object->type == EMSMDBP_OBJECT_MESSAGE) {
-				openchangedb_message_set_properties((TALLOC_CTX *)object->object.message, 
+				openchangedb_message_set_properties((TALLOC_CTX *)object->object.message,
+								    emsmdbp_ctx->oc_ctx,
 								    object->backend_object, rowp);
 			}
 			else {

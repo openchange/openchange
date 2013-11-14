@@ -51,7 +51,7 @@ struct emsmdbp_context {
 	uint32_t				userLanguage;
 	char					*username;
 	struct loadparm_context			*lp_ctx;
-	struct ldb_context			*oc_ctx;
+	struct openchangedb_context		*oc_ctx;
 	struct ldb_context			*samdb_ctx;
 	struct mapistore_context		*mstore_ctx;
 	struct mapi_handles_context		*handles_ctx;

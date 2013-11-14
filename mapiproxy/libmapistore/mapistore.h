@@ -156,6 +156,9 @@ struct indexing_context {
 	enum mapistore_error	(*get_uri)(struct indexing_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
 	enum mapistore_error	(*get_fmid)(struct indexing_context *, const char *, const char *, bool, uint64_t *, bool *);
 
+	enum mapistore_error	(*allocate_fmid)(struct indexing_context *, const char *, uint64_t *);
+	enum mapistore_error	(*allocate_fmids)(struct indexing_context *, const char *, int, uint64_t *);
+
 	/* Backend URL */
 	const char *url;
 

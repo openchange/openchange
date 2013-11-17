@@ -170,6 +170,24 @@ START_TEST (test_backend_get_fmid)
 } END_TEST
 
 
+/* allocate_fmid */
+
+START_TEST (test_backend_allocate_fmid)
+{
+	enum mapistore_error	ret;
+	uint64_t		fmid1 = 222;
+	uint64_t		fmid2 = 222;
+
+	ret = ictx->allocate_fmid(ictx, USERNAME, &fmid1);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ret = ictx->allocate_fmid(ictx, USERNAME, &fmid2);
+	ck_assert(ret == MAPISTORE_SUCCESS);
+
+	ck_assert(fmid1 != fmid2);
+} END_TEST
+
+
 
 /* TDB backend */
 
@@ -221,6 +239,8 @@ static void indexing_backend_add_case(Suite *s, char *name, void setup(void),
 	tcase_add_test(tc, test_backend_get_uri_unknown);
 
 	tcase_add_test(tc, test_backend_get_fmid);
+
+	tcase_add_test(tc, test_backend_allocate_fmid);
 
 	suite_add_tcase(s, tc);
 }

@@ -2,7 +2,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapistore/mapistore.h"
-#include "libmapiproxy.h"
+#include "../libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 

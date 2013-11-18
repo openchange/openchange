@@ -219,7 +219,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	ldb_transaction_start(emsmdbp_ctx->oc_ctx);
+	openchangedb_transaction_start(emsmdbp_ctx->oc_ctx);
 
 	/* Retrieve list of folders from backends */
 	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);
@@ -641,7 +641,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 	}
 
-	ldb_transaction_commit(emsmdbp_ctx->oc_ctx);
+	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
 
 
 	/* TODO: rename/create/delete folders at IPM level */

@@ -1681,6 +1681,18 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS transaction_start(struct openchangedb_context *self)
+{
+	ldb_transaction_start(self->data);
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
+{
+	ldb_transaction_commit(self->data);
+	return MAPI_E_SUCCESS;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2352,6 +2364,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->message_open = message_open;
 	oc_ctx->message_get_property = message_get_property;
 	oc_ctx->message_set_properties = message_set_properties;
+
+	oc_ctx->transaction_start = transaction_start;
+	oc_ctx->transaction_commit = transaction_commit;
 
 	*ctx = oc_ctx;
 

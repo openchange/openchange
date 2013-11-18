@@ -233,6 +233,8 @@ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *, uint64
 enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *, uint64_t);
 enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchangedb_context *, const char *, uint64_t *);
 enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t *, char ***, char ***);
+enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *);
+enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *);
 
 /* definitions from openchangedb_table.c */
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, uint8_t, uint64_t, void **);

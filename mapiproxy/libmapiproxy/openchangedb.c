@@ -842,3 +842,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context
 
 	return oc_ctx->get_system_idx(oc_ctx, fid, system_idx_p);
 }
+
+_PUBLIC_ enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *oc_ctx)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->transaction_start(oc_ctx);
+}
+
+_PUBLIC_ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *oc_ctx)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->transaction_commit(oc_ctx);
+}

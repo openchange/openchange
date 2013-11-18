@@ -49,6 +49,9 @@ struct openchangedb_context {
 	enum MAPISTATUS (*message_get_property)(TALLOC_CTX *, struct openchangedb_context *, void *, uint32_t, void **);
 	enum MAPISTATUS (*message_set_properties)(TALLOC_CTX *, struct openchangedb_context *, void *, struct SRow *);
 
+	enum MAPISTATUS (*transaction_start)(struct openchangedb_context *);
+	enum MAPISTATUS (*transaction_commit)(struct openchangedb_context *);
+
 	const char *backend_type;
 	void *data;
 };

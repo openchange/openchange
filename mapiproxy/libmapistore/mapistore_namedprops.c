@@ -289,3 +289,17 @@ int mapistore_namedprops_prop_type_from_string(const char *prop_type_str)
 		return -1;
 	}
 }
+
+_PUBLIC_ enum mapistore_error mapistore_namedprops_transaction_start(struct namedprops_context *nprops)
+{
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	return nprops->transaction_start(nprops);
+}
+
+_PUBLIC_ enum mapistore_error mapistore_namedprops_transaction_commit(struct namedprops_context *nprops)
+{
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	return nprops->transaction_commit(nprops);
+}

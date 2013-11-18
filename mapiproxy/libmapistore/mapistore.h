@@ -152,7 +152,22 @@ struct mapistore_contexts_list {
 	struct mapistore_contexts_list	*next;
 };
 
-struct tdb_wrap;
+struct indexing_context {
+	enum mapistore_error	(*add_fmid)(struct indexing_context *, const char *, uint64_t, const char *);
+	enum mapistore_error	(*update_fmid)(struct indexing_context *, const char *, uint64_t, const char *);
+	enum mapistore_error	(*del_fmid)(struct indexing_context *, const char *, uint64_t, uint8_t);
+	enum mapistore_error	(*get_uri)(struct indexing_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
+	enum mapistore_error	(*get_fmid)(struct indexing_context *, const char *, const char *, bool, uint64_t *, bool *);
+
+	enum mapistore_error	(*allocate_fmid)(struct indexing_context *, const char *, uint64_t *);
+	enum mapistore_error	(*allocate_fmids)(struct indexing_context *, const char *, int, uint64_t *);
+
+	/* Backend URL */
+	const char *url;
+
+	/* Custom backend data */
+	void *data;
+};
 
 struct mapistore_backend {
 	/** backend operations */
@@ -162,8 +177,8 @@ struct mapistore_backend {
 		const char	*namespace;
 
 		enum mapistore_error	(*init)(void);
-		enum mapistore_error	(*list_contexts)(const char *, struct tdb_wrap *, TALLOC_CTX *, struct mapistore_contexts_list **);
-		enum mapistore_error	(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, struct tdb_wrap *, const char *, void **);
+		enum mapistore_error	(*list_contexts)(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
+		enum mapistore_error	(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, struct indexing_context *, const char *, void **);
 		enum mapistore_error	(*create_root_folder)(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 	} backend;
 
@@ -230,23 +245,6 @@ struct mapistore_backend {
 	struct {
 		enum mapistore_error	(*generate_uri)(TALLOC_CTX *, const char *, const char *, const char *, const char *, char **);
 	} manager;
-};
-
-struct indexing_context {
-	enum mapistore_error	(*add_fid)(struct indexing_context *, const char *, uint64_t, const char *);
-	enum mapistore_error	(*del_fid)(struct indexing_context *, const char *, uint64_t, uint8_t);
-
-	enum mapistore_error	(*add_mid)(struct indexing_context *, const char *, uint64_t, const char *);
-	enum mapistore_error	(*del_mid)(struct indexing_context *, const char *, uint64_t, uint8_t);
-
-	enum mapistore_error	(*get_uri)(struct indexing_context *, const char *, TALLOC_CTX *, uint64_t, char **, bool *);
-	enum mapistore_error	(*get_fmid)(struct indexing_context *, const char *, const char *, bool, uint64_t *, bool *);
-
-	/* Backend URL */
-	const char *url;
-
-	/* Custom backend data */
-	void *data;
 };
 
 struct backend_context {

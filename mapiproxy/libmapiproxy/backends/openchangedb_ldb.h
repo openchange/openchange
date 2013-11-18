@@ -3,6 +3,6 @@
 
 #include "openchangedb_backends.h"
 
-enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *, struct openchangedb_context **);
+enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *, struct loadparm_context *lp_ctx, struct openchangedb_context **);
 
 #endif /* __OPENCHANGEDB_LDB_H__ */

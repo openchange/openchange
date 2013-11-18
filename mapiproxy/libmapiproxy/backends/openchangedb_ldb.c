@@ -2255,10 +2255,55 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 
 // ^ openchangedb message -----------------------------------------------------
 
-_PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx, struct openchangedb_context **ctx)
+_PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
+						     struct loadparm_context *lp_ctx,
+						     struct openchangedb_context **ctx)
 {
-	struct openchangedb_context *oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
+	struct openchangedb_context 	*oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
+	char				*ldb_path;
+	struct tevent_context		*ev;
+	int				ret;
+	struct ldb_result		*res;
+	struct ldb_dn			*tmp_dn = NULL;
+	static const char		*attrs[] = {
+		"rootDomainNamingContext",
+		"defaultNamingContext",
+		NULL
+	};
+	struct ldb_context		*ldb_ctx;
 
+	// Connect to ldb
+	ev = tevent_context_init(talloc_autofree_context());
+	OPENCHANGE_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
+
+	/* Step 0. Retrieve a LDB context pointer on openchange.ldb database */
+	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
+	ldb_ctx = ldb_init(mem_ctx, ev);
+	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_ENOUGH_MEMORY, oc_ctx);
+
+	/* Step 1. Connect to the database */
+	ret = ldb_connect(ldb_ctx, ldb_path, 0, NULL);
+	talloc_free(ldb_path);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_INITIALIZED, ldb_ctx);
+
+	/* Step 2. Search for the rootDSE record */
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, ldb_ctx, "@ROOTDSE"),
+			  LDB_SCOPE_BASE, attrs, NULL);
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_INITIALIZED, ldb_ctx);
+	OPENCHANGE_RETVAL_IF(res->count != 1, MAPI_E_NOT_INITIALIZED, ldb_ctx);
+
+	/* Step 3. Set opaque naming */
+	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx, res->msgs[0],
+					 "rootDomainNamingContext");
+	ldb_set_opaque(ldb_ctx, "rootDomainNamingContext", tmp_dn);
+
+	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx, res->msgs[0],
+					 "defaultNamingContext");
+	ldb_set_opaque(ldb_ctx, "defaultNamingContext", tmp_dn);
+
+	oc_ctx->data = ldb_ctx;
+
+	// Initialize struct with function pointers
 	oc_ctx->backend_type = talloc_strdup(mem_ctx, "ldb");
 
 	oc_ctx->get_new_folderID = get_new_folderID;
@@ -2307,9 +2352,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx, struct
 	oc_ctx->message_open = message_open;
 	oc_ctx->message_get_property = message_get_property;
 	oc_ctx->message_set_properties = message_set_properties;
-
-	// Connect to ldb
-	// TODO
 
 	*ctx = oc_ctx;
 

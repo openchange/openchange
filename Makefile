@@ -764,13 +764,14 @@ mapiproxy/libmapiproxy/modules.o mapiproxy/libmapiproxy/modules.po: CFLAGS+=-DMO
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
-							mapiproxy/libmapiproxy/openchangedb.po			\
+							mapiproxy/libmapiproxy/openchangedb.po				\
 							mapiproxy/libmapiproxy/openchangedb_table.po		\
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
-							mapiproxy/libmapiproxy/mapi_handles.po			\
-							mapiproxy/libmapiproxy/entryid.po			\
-							mapiproxy/libmapiproxy/modules.po			\
+							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
+							mapiproxy/libmapiproxy/mapi_handles.po				\
+							mapiproxy/libmapiproxy/entryid.po					\
+							mapiproxy/libmapiproxy/modules.po					\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS)

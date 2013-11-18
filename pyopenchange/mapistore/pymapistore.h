@@ -33,7 +33,7 @@ typedef struct {
 	PyObject		*datetime_module;
 	PyObject		*datetime_datetime_class;
 	struct ldb_context	*samdb_ctx;
-	struct ldb_context	*ocdb_ctx;
+	struct openchangedb_context *ocdb_ctx;
 } PyMAPIStoreGlobals;
 
 typedef struct {

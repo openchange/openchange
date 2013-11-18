@@ -90,8 +90,8 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;
 		property_row.lpProps[0].value.lpszW = dn_user;
-		openchangedb_message_set_properties(mem_ctx, message_object, &property_row);
-		openchangedb_message_save(message_object, 0);
+		openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);
+		openchangedb_message_save(emsmdbp_ctx->oc_ctx, message_object, 0);
 	}
 
 	ret = MAPI_E_SUCCESS;
@@ -219,7 +219,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	ldb_transaction_start(emsmdbp_ctx->oc_ctx);
+	openchangedb_transaction_start(emsmdbp_ctx->oc_ctx);
 
 	/* Retrieve list of folders from backends */
 	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);
@@ -641,7 +641,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 	}
 
-	ldb_transaction_commit(emsmdbp_ctx->oc_ctx);
+	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
 
 
 	/* TODO: rename/create/delete folders at IPM level */

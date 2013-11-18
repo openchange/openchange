@@ -32,6 +32,7 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
+const char *nil_string = "<nil>";
 
 /**
    \details Retrieve the mailbox FolderID for given recipient from
@@ -646,7 +647,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
 	OPENCHANGE_RETVAL_IF(!foldername, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	return oc_ctx->get_fid_by_name(oc_ctx, fid, foldername, fid);
+	return oc_ctx->get_fid_by_name(oc_ctx, parent_fid, foldername, fid);
 }
 
 /**

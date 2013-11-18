@@ -1,6 +1,11 @@
 #ifndef __OPENCHANGEDB_BACKEND_H__
 #define __OPENCHANGEDB_BACKEND_H__
 
+#include <stdint.h>
+#include <stdbool.h>
+#include <talloc.h>
+#include <gen_ndr/exchange.h>
+
 struct openchangedb_context {
 	enum MAPISTATUS (*get_new_folderID)(struct openchangedb_context *, uint64_t *);
 	enum MAPISTATUS (*get_new_folderIDs)(struct openchangedb_context *, TALLOC_CTX *, uint64_t, struct UI8Array_r **);
@@ -55,5 +60,7 @@ struct openchangedb_context {
 	const char *backend_type;
 	void *data;
 };
+
+const char *nil_string;
 
 #endif /* __OPENCHANGEDB_BACKEND_H__ */

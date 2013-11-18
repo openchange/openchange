@@ -1,7 +1,5 @@
 #include "openchangedb_ldb.h"
 
-#include <inttypes.h>
-
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "libmapiproxy.h"
@@ -11,8 +9,6 @@
 #define	OPENCHANGE_LDB_NAME "openchange.ldb"
 
 extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
-
-const char *nil_string = "<nil>";
 
 
 static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
@@ -709,25 +705,6 @@ static struct LongArray_r *decode_mv_long(TALLOC_CTX *mem_ctx, const char *str)
 }
 
 /**
-   \details Retrieve a MAPI property from a OpenChange LDB result set
-
-   \param mem_ctx pointer to the memory context
-   \param res pointer to the LDB results
-   \param pos the LDB result index
-   \param proptag the MAPI property tag to lookup
-   \param PidTagAttr the mapped MAPI property name
-
-   \return valid data pointer on success, otherwise NULL
- */
-static void *get_property_data(TALLOC_CTX *mem_ctx, struct ldb_result *res,
-			       uint32_t pos, uint32_t proptag,
-			       const char *PidTagAttr)
-{
-	return get_property_data_message(mem_ctx, res->msgs[pos],
-						      proptag, PidTagAttr);
-}
-
-/**
    \details Retrieve a MAPI property from an OpenChange LDB message
 
    \param mem_ctx pointer to the memory context
@@ -815,6 +792,24 @@ static void *get_property_data_message(TALLOC_CTX *mem_ctx, struct ldb_message *
 	}
 
 	return data;
+}
+
+/**
+   \details Retrieve a MAPI property from a OpenChange LDB result set
+
+   \param mem_ctx pointer to the memory context
+   \param res pointer to the LDB results
+   \param pos the LDB result index
+   \param proptag the MAPI property tag to lookup
+   \param PidTagAttr the mapped MAPI property name
+
+   \return valid data pointer on success, otherwise NULL
+ */
+static void *get_property_data(TALLOC_CTX *mem_ctx, struct ldb_result *res,
+			       uint32_t pos, uint32_t proptag,
+			       const char *PidTagAttr)
+{
+	return get_property_data_message(mem_ctx, res->msgs[pos], proptag, PidTagAttr);
 }
 
 static enum MAPISTATUS get_new_folderID(struct openchangedb_context *self, uint64_t *fid)
@@ -1275,11 +1270,11 @@ static enum MAPISTATUS delete_folder(struct openchangedb_context *self, uint64_t
 	struct ldb_dn	*dn;
 	int		retval;
 	enum MAPISTATUS	ret;
-	struct ldb_context *ldb_ctx = self->data;
+	struct ldb_context *ldb_ctx = (struct ldb_context *)self->data;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	ret = get_distinguishedName(mem_ctx, ldb_ctx, fid, &dnstr);
+	ret = get_distinguishedName(mem_ctx, self, fid, &dnstr);
 	if (ret != MAPI_E_SUCCESS) {
 		goto end;
 	}
@@ -2061,8 +2056,8 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS message_save(struct openchangedb_context *, void *_msg,
-				    uint8_t SaveFlags)
+static enum MAPISTATUS message_save(struct openchangedb_context *self,
+				    void *_msg, uint8_t SaveFlags)
 {
 	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
 
@@ -2268,7 +2263,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 // ^ openchangedb message -----------------------------------------------------
 
 _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
-						     struct loadparm_context *lp_ctx,
+						     const char *private_dir,
 						     struct openchangedb_context **ctx)
 {
 	struct openchangedb_context 	*oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
@@ -2289,7 +2284,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!ev, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
 	/* Step 0. Retrieve a LDB context pointer on openchange.ldb database */
-	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
+	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", private_dir, OPENCHANGE_LDB_NAME);
 	ldb_ctx = ldb_init(mem_ctx, ev);
 	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_ENOUGH_MEMORY, oc_ctx);
 

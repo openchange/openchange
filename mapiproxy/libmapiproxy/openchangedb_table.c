@@ -94,8 +94,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *mem_ctx,
 							 bool live_filtered,
 							 void **data)
 {
+	OPENCHANGE_RETVAL_IF(!self, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!ldb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_NOT_INITIALIZED, NULL);
 
 	return self->table_get_property(mem_ctx, self, table_object, proptag, pos, live_filtered, data);

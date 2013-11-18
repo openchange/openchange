@@ -164,7 +164,7 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
-							    struct ldb_context *sam_ctx, struct ldb_context *oc_ctx, const char *username)
+							    struct ldb_context *sam_ctx, struct openchangedb_context *oc_ctx, const char *username)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);

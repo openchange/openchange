@@ -35,6 +35,9 @@
 
 #include <gen_ndr/server_id.h>
 
+#include "backends/openchangedb_backends.h"
+#include "backends/openchangedb_ldb.h"
+
 struct mapiproxy {
 	bool			norelay;
 	bool			ahead;
@@ -240,7 +243,7 @@ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *);
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, uint8_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(struct openchangedb_context *, void *, struct SSortOrderSet *);
 enum MAPISTATUS openchangedb_table_set_restrictions(struct openchangedb_context *, void *, struct mapi_SRestriction *);
-enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, void *, struct openchangedb_context *, enum MAPITAGS, uint32_t, bool live_filtered, void **);
+enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);
 
 /* definitions from openchangedb_message.c */
 enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct openchangedb_context *, uint64_t, uint64_t, void **, void **);
@@ -274,3 +277,4 @@ openchange_plugin_init_fn *load_openchange_plugins(TALLOC_CTX *mem_ctx, const ch
 __END_DECLS
 
 #endif /* ! __LIBMAPIPROXY_H__ */
+

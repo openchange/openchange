@@ -342,7 +342,8 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	mem_ctx = talloc_named(NULL, 0, "mapiproxy_server_openchange_ldb_init");
 	if (!mem_ctx) return NULL;
 
-	ret = openchangedb_ldb_initialize(mem_ctx, lp_ctx, &openchange_ldb_ctx);
+	ret = openchangedb_ldb_initialize(mem_ctx, lpcfg_private_dir(lp_ctx),
+					  (struct openchangedb_context **)&openchange_ldb_ctx);
 	if (ret != MAPI_E_SUCCESS) return NULL;
 
 	return openchange_ldb_ctx;

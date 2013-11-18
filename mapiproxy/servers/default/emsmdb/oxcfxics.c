@@ -2623,7 +2623,7 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_check_cnset(struct ldb_context *oc_ctx, struct idset *parsed_idset, const char *label)
+static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct idset *parsed_idset, const char *label)
 {
 	uint64_t next_cn, high_cn;
 

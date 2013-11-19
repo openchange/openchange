@@ -1354,14 +1354,14 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 				      const char *username, int systemIdx,
-				      uint64_t *fidp)
+				      uint64_t fid)
 {
-	enum MAPISTATUS		retval;
+	int			ret;
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_dn		*mailboxdn;
 	struct ldb_message	*msg;
 	NTTIME			now;
-	uint64_t		fid, changeNum;
+	uint64_t		changeNum;
 	struct GUID		guid;
 	struct ldb_context	*ldb_ctx = self->data;
 
@@ -1369,7 +1369,6 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_ldb create_mailbox");
 
-	get_new_folderID(self, &fid);
 	get_new_changeNumber(self, &changeNum);
 
 	/* Retrieve distinguesName for parent folder */
@@ -1409,20 +1408,12 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		retval = MAPI_E_CALL_FAILED;
-	}
-	else {
-		if (fidp) {
-			*fidp = fid;
-		}
-
-		retval = MAPI_E_SUCCESS;
-	}
+	ret = ldb_add(ldb_ctx, msg);
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CALL_FAILED, mem_ctx);
 
 	talloc_free(mem_ctx);
 
-	return retval;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,

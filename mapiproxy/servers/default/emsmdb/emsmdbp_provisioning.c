@@ -321,7 +321,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	/* Mailbox and subfolders */
 	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
 	if (ret != MAPI_E_SUCCESS) {
-		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
+		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &mailbox_fid);
+		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid);
 	}
 	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;

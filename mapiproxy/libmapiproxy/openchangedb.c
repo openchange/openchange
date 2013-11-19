@@ -710,19 +710,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
    \param oc_ctx pointer to the openchange DB context
    \param username the owner of the mailbox
    \param systemIdx the id of the mailbox
-   \param fidp a pointer to the fid of the mailbox
+   \param fid The fid used for the mailbox
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
 						     const char *username, int systemIdx,
-						     uint64_t *fidp)
+						     uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!fidp, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fidp);
+	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fid);
 }
 
 /**

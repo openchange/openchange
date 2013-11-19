@@ -69,7 +69,7 @@ TARGET_LINK_LIBRARIES(openchange_test
     dl rt
     ldb tdb
     # Openchange
-    mapi
+    -Wl,../libmapi.so.2.0
 )
 
 ADD_CUSTOM_TARGET(test ALL

@@ -49,6 +49,7 @@ INCLUDE_DIRECTORIES(
 
 LINK_DIRECTORIES(
     ${SAMBA_PREFIX}/lib
+    ${CMAKE_SOURCE_DIR}/..
 )
 
 ADD_EXECUTABLE(
@@ -67,6 +68,8 @@ TARGET_LINK_LIBRARIES(openchange_test
     ndr samba-hostconfig samba-util tevent talloc
     dl rt
     ldb tdb
+    # Openchange
+    mapi
 )
 
 ADD_CUSTOM_TARGET(test ALL

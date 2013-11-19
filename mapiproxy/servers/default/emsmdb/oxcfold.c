@@ -478,7 +478,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	}
 	else {
 		/* Step 3. Turn CreateFolder parameters into MAPI property array */
-		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+		retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fid);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
@@ -1011,7 +1011,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 		/* We prepare a set of new MIDs for the backend */
 		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
 		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
-			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMIDs[i]);
+			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &targetMIDs[i]);
 		}
 
 		/* We invoke the backend method */

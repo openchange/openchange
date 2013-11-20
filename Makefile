@@ -1018,6 +1018,7 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
+	$(INSTALL) -m 0644 setup/openchangedb/openchangedb_schema.sql $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif

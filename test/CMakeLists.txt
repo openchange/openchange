@@ -39,6 +39,7 @@ ADD_DEFINITIONS(
     -g -rdynamic -static
     -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"
     -DMAPISTORE_BACKEND_INSTALLDIR="/not/used/for/now/on/this/test"
+    -DOPENCHANGEDB_DATA_DIR="${CMAKE_SOURCE_DIR}/../setup/openchangedb"
 )
 
 INCLUDE_DIRECTORIES(

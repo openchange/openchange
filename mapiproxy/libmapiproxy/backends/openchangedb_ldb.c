@@ -2198,7 +2198,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_SystemFolderID = get_SystemFolderID;
 	oc_ctx->get_PublicFolderID = get_PublicFolderID;
 	oc_ctx->get_distinguishedName = get_distinguishedName;
-	oc_ctx->get_mailboxDN = get_mailboxDN;
 	oc_ctx->get_MailboxGuid = get_MailboxGuid;
 	oc_ctx->get_MailboxReplica = get_MailboxReplica;
 	oc_ctx->get_PublicFolderReplica = get_PublicFolderReplica;

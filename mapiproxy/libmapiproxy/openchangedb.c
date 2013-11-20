@@ -97,28 +97,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
 }
 
 /**
-   \details Retrieve the mailboxDN associated to a mailbox system
-   folder.
-
-   \param parent_ctx pointer to the parent memory context
-   \param oc_ctx pointer to the openchange DB context
-   \param fid the folder identifier to search for
-   \param mailboxDN pointer on pointer to the mailboxDN string the
-   function returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
- */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx,
-						    struct openchangedb_context *oc_ctx,
-						    uint64_t fid, char **mailboxDN)
-{
-	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!mailboxDN, MAPI_E_INVALID_PARAMETER, NULL);
-
-	return oc_ctx->get_mailboxDN(parent_ctx, oc_ctx, fid, mailboxDN);
-}
-
-/**
    \details Retrieve the mailbox GUID for given recipient from
    openchange dispatcher database
 

@@ -13,7 +13,6 @@ struct openchangedb_context {
 	enum MAPISTATUS (*get_SystemFolderID)(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
 	enum MAPISTATUS (*get_PublicFolderID)(struct openchangedb_context *, uint32_t, uint64_t *);
 	enum MAPISTATUS (*get_distinguishedName)(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
-	enum MAPISTATUS (*get_mailboxDN)(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
 	enum MAPISTATUS (*get_MailboxGuid)(struct openchangedb_context *, const char *, struct GUID *);
 	enum MAPISTATUS (*get_MailboxReplica)(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
 	enum MAPISTATUS (*get_PublicFolderReplica)(struct openchangedb_context *, uint16_t *, struct GUID *);

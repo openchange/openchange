@@ -812,82 +812,6 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, struct ldb_result *res,
 	return get_property_data_message(mem_ctx, res->msgs[pos], proptag, PidTagAttr);
 }
 
-static enum MAPISTATUS get_new_folderID(struct openchangedb_context *self, uint64_t *fid)
-{
-	TALLOC_CTX		*mem_ctx;
-	int			ret;
-	struct ldb_result	*res;
-	struct ldb_message	*msg;
-	const char * const	attrs[] = { "*", NULL };
-	struct ldb_context	*ldb_ctx = self->data;
-
-	/* Get the current GlobalCount */
-	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-
-	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
-
-	/* Update GlobalCount value */
-	msg = ldb_msg_new(mem_ctx);
-	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRIu64, ((*fid) + 1));
-	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-	ret = ldb_modify(ldb_ctx, msg);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
-
-	return MAPI_E_SUCCESS;
-}
-
-static enum MAPISTATUS get_new_folderIDs(struct openchangedb_context *self,
-					 TALLOC_CTX *mem_ctx, uint64_t max,
-					 struct UI8Array_r **fids_p)
-{
-	TALLOC_CTX		*local_mem_ctx;
-	int			ret;
-	struct ldb_result	*res;
-	struct ldb_message	*msg;
-	const char * const	attrs[] = { "*", NULL };
-	uint64_t		fid, count;
-	struct UI8Array_r	*fids;
-	struct ldb_context	*ldb_ctx = self->data;
-
-	/* Get the current GlobalCount */
-	local_mem_ctx = talloc_named(NULL, 0, "get_next_folderIDs");
-	ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, local_mem_ctx);
-
-	fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
-
-	fids = talloc_zero(local_mem_ctx, struct UI8Array_r);
-	fids->cValues = max;
-	fids->lpui8 = talloc_array(fids, uint64_t, max);
-
-	for (count = 0; count < max; count++) {
-		fids->lpui8[count] = (exchange_globcnt(fid + count) << 16) | 0x0001;
-	}
-
-	/* Update GlobalCount value */
-	msg = ldb_msg_new(local_mem_ctx);
-	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, local_mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRIu64, ((fid) + max));
-	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-	ret = ldb_modify(ldb_ctx, msg);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, local_mem_ctx);
-
-	*fids_p = fids;
-	(void) talloc_reference(mem_ctx, fids);
-	talloc_free(local_mem_ctx);
-
-	return MAPI_E_SUCCESS;
-}
-
 static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self, uint64_t *cn)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -984,42 +908,6 @@ static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
 	talloc_free(mem_ctx);
 
 	*cn = (exchange_globcnt(*cn) << 16) | 0x0001;
-
-	return MAPI_E_SUCCESS;
-}
-
-static enum MAPISTATUS reserve_fmid_range(struct openchangedb_context *self,
-					  uint64_t range_len, uint64_t *first_fmidp)
-{
-	TALLOC_CTX		*mem_ctx;
-	int			ret;
-	struct ldb_result	*res;
-	struct ldb_message	*msg;
-	uint64_t		fmid;
-	const char * const	attrs[] = { "*", NULL };
-	struct ldb_context	*ldb_ctx = self->data;
-
-	/* Step 1. Get the current GlobalCount */
-	mem_ctx = talloc_named(NULL, 0, "get_next_folderID");
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(objectClass=server)");
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-
-	fmid = ldb_msg_find_attr_as_uint64(res->msgs[0], "GlobalCount", 0);
-
-	/* Step 2. Update GlobalCount value */
-	mem_ctx = talloc_zero(NULL, void);
-
-	msg = ldb_msg_new(mem_ctx);
-	msg->dn = ldb_dn_copy(msg, ldb_msg_find_attr_as_dn(ldb_ctx, mem_ctx, res->msgs[0], "distinguishedName"));
-	ldb_msg_add_fmt(msg, "GlobalCount", "%"PRIu64, (fmid + range_len));
-	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
-	ret = ldb_modify(ldb_ctx, msg);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NO_SUPPORT, mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	*first_fmidp = (exchange_globcnt(fmid) << 16) | 0x0001;
 
 	return MAPI_E_SUCCESS;
 }
@@ -1466,14 +1354,14 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 				      const char *username, int systemIdx,
-				      uint64_t *fidp)
+				      uint64_t fid)
 {
-	enum MAPISTATUS		retval;
+	int			ret;
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_dn		*mailboxdn;
 	struct ldb_message	*msg;
 	NTTIME			now;
-	uint64_t		fid, changeNum;
+	uint64_t		changeNum;
 	struct GUID		guid;
 	struct ldb_context	*ldb_ctx = self->data;
 
@@ -1481,7 +1369,6 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_ldb create_mailbox");
 
-	get_new_folderID(self, &fid);
 	get_new_changeNumber(self, &changeNum);
 
 	/* Retrieve distinguesName for parent folder */
@@ -1521,20 +1408,12 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
 
-	if (ldb_add(ldb_ctx, msg) != LDB_SUCCESS) {
-		retval = MAPI_E_CALL_FAILED;
-	}
-	else {
-		if (fidp) {
-			*fidp = fid;
-		}
-
-		retval = MAPI_E_SUCCESS;
-	}
+	ret = ldb_add(ldb_ctx, msg);
+	MAPI_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_CALL_FAILED, mem_ctx);
 
 	talloc_free(mem_ctx);
 
-	return retval;
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,
@@ -2313,12 +2192,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	// Initialize struct with function pointers
 	oc_ctx->backend_type = talloc_strdup(mem_ctx, "ldb");
 
-	oc_ctx->get_new_folderID = get_new_folderID;
-	oc_ctx->get_new_folderIDs = get_new_folderIDs;
 	oc_ctx->get_new_changeNumber = get_new_changeNumber;
 	oc_ctx->get_new_changeNumbers = get_new_changeNumbers;
 	oc_ctx->get_next_changeNumber = get_next_changeNumber;
-	oc_ctx->reserve_fmid_range = reserve_fmid_range;
 	oc_ctx->get_SystemFolderID = get_SystemFolderID;
 	oc_ctx->get_PublicFolderID = get_PublicFolderID;
 	oc_ctx->get_distinguishedName = get_distinguishedName;

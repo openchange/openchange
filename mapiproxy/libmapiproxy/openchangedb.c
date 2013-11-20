@@ -447,42 +447,6 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 }
 
 /**
-   \details Allocates a new FolderID and returns it
-   
-   \param oc_ctx pointer to the openchange DB context
-   \param fid pointer to the fid value the function returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderID(struct openchangedb_context *oc_ctx, uint64_t *fid)
-{
-	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
-
-	return oc_ctx->get_new_folderID(oc_ctx, fid);
-}
-
-/**
-   \details Allocates a batch of new folder ids and returns them
-   
-   \param oc_ctx pointer to the openchange DB context
-   \param mem_ctx memory context where the fid will be allocated
-   \param max number of fids to allocate
-   \param fids_p pointer array of fids values the function returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_folderIDs(struct openchangedb_context *oc_ctx,
-							TALLOC_CTX *mem_ctx, uint64_t max,
-							struct UI8Array_r **fids_p)
-{
-	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!fids_p, MAPI_E_INVALID_PARAMETER, NULL);
-
-	return oc_ctx->get_new_folderIDs(oc_ctx, mem_ctx, max, fids_p);
-}
-
-/**
    \details Allocates a new change number and returns it
    
    \param oc_ctx pointer to the openchange DB context
@@ -534,25 +498,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_
 	OPENCHANGE_RETVAL_IF(!cn, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_next_changeNumber(oc_ctx, cn);
-}
-
-/**
-   \details Reserve a range of FMID
-   
-   \param oc_ctx pointer to the openchange DB context
-   \param range_len size of the range of fmids to reserve
-   \param first_fmidp pointer to the first reserved fid value the function
-   returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
-_PUBLIC_ enum MAPISTATUS openchangedb_reserve_fmid_range(struct openchangedb_context *oc_ctx,
-							 uint64_t range_len, uint64_t *first_fmidp)
-{
-	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!first_fmidp, MAPI_E_INVALID_PARAMETER, NULL);
-
-	return oc_ctx->reserve_fmid_range(oc_ctx, range_len, first_fmidp);
 }
 
 /**
@@ -765,19 +710,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
    \param oc_ctx pointer to the openchange DB context
    \param username the owner of the mailbox
    \param systemIdx the id of the mailbox
-   \param fidp a pointer to the fid of the mailbox
+   \param fid The fid used for the mailbox
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
 						     const char *username, int systemIdx,
-						     uint64_t *fidp)
+						     uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!fidp, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fidp);
+	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fid);
 }
 
 /**

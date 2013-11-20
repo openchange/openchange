@@ -145,10 +145,8 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	/* Add the record given its fid and mapistore_uri */
 	switch(type) {
 	case MAPISTORE_FOLDER:
-		ret = ictx->add_fid(ictx, username, fmid, mapistore_URI);
-		break;
 	case MAPISTORE_MESSAGE:
-		ret = ictx->add_mid(ictx, username, fmid, mapistore_URI);
+		ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
 		break;
 	default:
 		return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -196,10 +194,8 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
 	switch(type) {
 	case MAPISTORE_FOLDER:
-		ret = ictx->del_fid(ictx, username, fmid, flags);
-		break;
 	case MAPISTORE_MESSAGE:
-		ret = ictx->del_mid(ictx, username, fmid, flags);
+		ret = ictx->del_fmid(ictx, username, fmid, flags);
 		break;
 	default:
 		return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -336,4 +332,115 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore
 								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags, MAPISTORE_MESSAGE);
+}
+
+static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_context *mstore_ctx,
+							    uint64_t range_len, uint64_t *fid)
+{
+	enum mapistore_error ret;
+	struct indexing_context	*ictx;
+	const char *username;
+
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	username = mstore_ctx->conn_info->username;
+	ictx = mapistore_indexing_search(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	ret = ictx->allocate_fmids(ictx, username, range_len, fid);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Allocates a new FolderID and returns it
+
+   \param mstore_ctx pointer to the mapistore context
+   \param fid pointer to the fid value the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID(struct mapistore_context *mstore_ctx,
+								  uint64_t *fid)
+{
+	enum mapistore_error ret;
+
+	ret = mapistore_indexing_allocate_fid(mstore_ctx, 1, fid);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Allocates a batch of new folder ids and returns them
+
+   \param mstore_ctx pointer to the mapistore context
+   \param mem_ctx memory context where the fid will be allocated
+   \param max number of fids to allocate
+   \param fids_p pointer array of fids values the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapistore_context *mstore_ctx,
+								   TALLOC_CTX *mem_ctx,
+								   uint64_t max,
+								   struct UI8Array_r **fids_p)
+{
+	uint64_t fid;
+	uint64_t count;
+	enum mapistore_error ret;
+	struct UI8Array_r *fids;
+
+	ret = mapistore_indexing_allocate_fid(mstore_ctx, max, &fid);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	fids = talloc_zero(mem_ctx, struct UI8Array_r);
+	fids->cValues = max;
+	fids->lpui8 = talloc_array(fids, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		fids->lpui8[count] = (exchange_globcnt(fid + count) << 16) | 0x0001;
+	}
+
+	*fids_p = fids;
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Reserve a range of FMID
+
+   \param mstore_ctx pointer to the mapistore context
+   \param range_len size of the range of fmids to reserve
+   \param first_fmidp pointer to the first reserved fid value the function
+   returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_indexing_reserve_fmid_range(struct mapistore_context *mstore_ctx,
+								    uint64_t range_len,
+								    uint64_t *first_fmidp)
+{
+	enum mapistore_error ret;
+	uint64_t fmid;
+	struct indexing_context	*ictx;
+	const char *username;
+
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!first_fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	username = mstore_ctx->conn_info->username;
+	ictx = mapistore_indexing_search(mstore_ctx, username);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	ret = ictx->allocate_fmids(ictx, username, range_len, &fmid);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	*first_fmidp = (exchange_globcnt(fmid) << 16) | 0x0001;
+
+	return MAPISTORE_SUCCESS;
 }

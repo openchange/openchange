@@ -227,8 +227,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
 
-		/* TODO change backend definition to accept indexing_context instead of tdb_wrap */
-		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, (struct tdb_wrap*)ictx->data, namespace_start, backend_uri, fid, &backend_ctx);
+		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx, namespace_start, backend_uri, fid, &backend_ctx);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}
@@ -465,7 +464,7 @@ _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_
 
 	mapistore_indexing_add(mstore_ctx, owner, &ictx);
 	/* TODO change backend definition to accept indexing_context instead of tdb_wrap */
-	return mapistore_backend_list_contexts(owner, (struct tdb_wrap*)ictx->data, mem_ctx, contexts_listp);
+	return mapistore_backend_list_contexts(owner, ictx, mem_ctx, contexts_listp);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)

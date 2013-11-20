@@ -88,6 +88,39 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
+					      const char *username,
+					      uint64_t fmid,
+					      const char *mapistore_URI)
+{
+	int		ret;
+	TDB_DATA	key;
+	TDB_DATA	dbuf;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+
+	/* Add the record given its fid and mapistore_uri */
+	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
+	key.dsize = strlen((const char *) key.dptr);
+
+	dbuf.dptr = (unsigned char *) talloc_strdup(ictx, mapistore_URI);
+	dbuf.dsize = strlen((const char *) dbuf.dptr);
+
+	ret = tdb_store(TDB_WRAP(ictx)->tdb, key, dbuf, TDB_MODIFY);
+	talloc_free(key.dptr);
+	talloc_free(dbuf.dptr);
+
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d]: Unable to update 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
+			  fmid, mapistore_URI));
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
 static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 					   const char *username,
 					   uint64_t fmid,
@@ -344,6 +377,58 @@ static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 }
 
 
+static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *ictx,
+						      const char *username,
+						      int count,
+						      uint64_t *fmidp)
+{
+	TDB_DATA		key, data;
+	int			ret;
+	uint64_t		GlobalCount;
+
+	/* SANITY checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+
+	/* Retrieve current counter */
+	key.dptr = (unsigned char*)"GlobalCount";
+	key.dsize = strlen((const char *)key.dptr);
+
+	data = tdb_fetch(TDB_WRAP(ictx)->tdb, key);
+	if (!data.dptr || !data.dsize) {
+		GlobalCount = 1;
+	}
+	else {
+		GlobalCount = strtoull((const char*)data.dptr, NULL, 16);
+	}
+
+	/* Save and increment the counter (reserve) */
+	*fmidp = GlobalCount;
+	GlobalCount += count,
+
+	/* Store new counter */
+	data.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, GlobalCount);
+	data.dsize = strlen((const char *) data.dptr);
+	ret = tdb_store(TDB_WRAP(ictx)->tdb, key, data, TDB_REPLACE);
+	talloc_free(data.dptr);
+
+	if (ret == -1) {
+		DEBUG(3, ("[%s:%d]: Unable to create %s record: 0x%.16"PRIx64" \n", __FUNCTION__, __LINE__,
+			  key.dptr, GlobalCount));
+		return MAPISTORE_ERR_DATABASE_OPS;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+static enum mapistore_error tdb_record_allocate_fmid(struct indexing_context *ictx,
+						     const char *username,
+						     uint64_t *fmidp)
+{
+	return tdb_record_allocate_fmids(ictx, username, 1, fmidp);
+}
+
 
 /**
    \details Open connection to indexing database for a given user
@@ -393,14 +478,13 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	ictx->url = talloc_strdup(ictx, username);
 
 	/* Fill function pointers */
-	ictx->add_fid = tdb_record_add;
-	ictx->del_fid = tdb_record_del;
-
-	ictx->add_mid = tdb_record_add;
-	ictx->del_mid = tdb_record_del;
-
+	ictx->add_fmid = tdb_record_add;
+	ictx->del_fmid = tdb_record_del;
+	ictx->update_fmid = tdb_record_update;
 	ictx->get_uri = tdb_record_get_uri;
 	ictx->get_fmid = tdb_record_get_fmid;
+	ictx->allocate_fmid = tdb_record_allocate_fmid;
+	ictx->allocate_fmids = tdb_record_allocate_fmids;
 
 	*ictxp = ictx;
 

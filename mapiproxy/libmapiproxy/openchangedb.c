@@ -75,6 +75,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_con
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Retrieve the distinguishedName associated to a mailbox
    system folder.
 
@@ -335,6 +336,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_conte
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Check if a property exists within an openchange dispatcher
    database record
 
@@ -441,6 +443,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Allocates a batch of new change numbers and returns them
    
    \param oc_ctx pointer to the openchange DB context
@@ -520,6 +523,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_
 }
 
 /**
+   FIXME Not used anywhere, remove it? see mapiproxy/servers/default/emsmdb/emsmdbp_object.c +1712
    \details Retrieve a MAPI property from a table (ldb search results)
 
    \param parent_ctx pointer to the memory context
@@ -538,7 +542,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 uint32_t pos,
 							 void **data)
 {
-	// FIXME NOT USED
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_INVALID_PARAMETER, NULL);
@@ -632,6 +635,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(struct openchangedb_cont
 }
 
 /**
+   FIXME Not used anywhere, remove it?
    \details Get fid given a partial MAPIStoreURI
 
    \param oc_ctx pointer to the openchange DB context

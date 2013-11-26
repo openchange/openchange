@@ -6,8 +6,6 @@
 #include <inttypes.h>
 
 
-#define CHECK_SUCCESS ck_assert_int_eq(ret, MAPI_E_SUCCESS)
-#define CHECK_FAILURE ck_assert_int_ne(ret, MAPI_E_SUCCESS)
 #define OPENCHANGEDB_LDB         RESOURCES_DIR "/openchange.ldb"
 #define OPENCHANGEDB_SAMPLE_LDIF RESOURCES_DIR "/openchangedb_sample.ldif"
 #define LDB_DEFAULT_CONTEXT "CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"

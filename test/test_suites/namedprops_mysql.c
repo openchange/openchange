@@ -8,11 +8,11 @@
 
 
 START_TEST (test_parse_connection_with_password) {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	char *host, *user, *passwd, *db;
 	bool ret;
 
-	ret = parse_connection_string(mem_ctx,
+	ret = parse_connection_string(local_mem_ctx,
 				      "mysql://root:secret@localhost/mysql",
 				      &host, &user, &passwd, &db);
 	ck_assert(ret == true);
@@ -21,7 +21,7 @@ START_TEST (test_parse_connection_with_password) {
 	ck_assert_str_eq(host, "localhost");
 	ck_assert_str_eq(db, "mysql");
 
-	ret = parse_connection_string(mem_ctx,
+	ret = parse_connection_string(local_mem_ctx,
 				      "mysql://lang:langpass@10.11.12.13/openchange_db",
 				      &host, &user, &passwd, &db);
 	ck_assert(ret == true);
@@ -30,16 +30,16 @@ START_TEST (test_parse_connection_with_password) {
 	ck_assert_str_eq(host, "10.11.12.13");
 	ck_assert_str_eq(db, "openchange_db");
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 
 START_TEST (test_parse_connection_without_password) {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	char *host, *user, *passwd, *db;
 	bool ret;
 
-	ret = parse_connection_string(mem_ctx, "mysql://root@localhost/mysql",
+	ret = parse_connection_string(local_mem_ctx, "mysql://root@localhost/mysql",
 				      &host, &user, &passwd, &db);
 	ck_assert(ret == true);
 	ck_assert_str_eq(user, "root");
@@ -47,7 +47,7 @@ START_TEST (test_parse_connection_without_password) {
 	ck_assert_str_eq(host, "localhost");
 	ck_assert_str_eq(db, "mysql");
 
-	ret = parse_connection_string(mem_ctx,
+	ret = parse_connection_string(local_mem_ctx,
 				      "mysql://chuck@192.168.42.42/norris",
 		 		      &host, &user, &passwd, &db);
 	ck_assert(ret == true);
@@ -56,32 +56,30 @@ START_TEST (test_parse_connection_without_password) {
 	ck_assert_str_eq(host, "192.168.42.42");
 	ck_assert_str_eq(db, "norris");
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 
 START_TEST (test_parse_connection_fail) {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	char *host, *user, *passwd, *db;
 
-	bool ret = parse_connection_string(mem_ctx, "ldb:///tmp/lalal",
+	bool ret = parse_connection_string(local_mem_ctx, "ldb:///tmp/lalal",
 					  &host, &user, &passwd, &db);
 	ck_assert(ret == false);
 
-	ret = parse_connection_string(mem_ctx, "mysql://ÑAÑÑAÑAÑAÑAÑA",
+	ret = parse_connection_string(local_mem_ctx, "mysql://ÑAÑÑAÑAÑAÑAÑA",
 				      &host, &user, &passwd, &db);
 	ck_assert(ret == false);
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 
-MYSQL *conn = NULL;
+static MYSQL *conn = NULL;
 
 static void mysql_setup(void)
 {
-	if (conn) return;
-
 	conn = mysql_init(NULL);
 	CHECK_MYSQL_ERROR;
 
@@ -124,8 +122,8 @@ START_TEST (test_initialize_database) {
 } END_TEST
 
 
-TALLOC_CTX *mem_ctx;
-struct namedprops_context *nprops;
+static TALLOC_CTX *mem_ctx;
+static struct namedprops_context *nprops;
 
 static void mysql_q_setup(void)
 {
@@ -258,45 +256,46 @@ START_TEST (test_get_nameid_type_not_found) {
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_STRING) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(nprops, 38306, mem_ctx, &nameid);
+	get_nameid(nprops, 38306, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_str_eq("urn:schemas:httpmail:junkemail",
 			 nameid->kind.lpwstr.Name);
 
-	get_nameid(nprops, 38344, mem_ctx, &nameid);
+	get_nameid(nprops, 38344, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_str_eq("http://schemas.microsoft.com/exchange/mailbox-owner-name",
 			 nameid->kind.lpwstr.Name);
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_ID) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(nprops, 38212, mem_ctx, &nameid);
+	get_nameid(nprops, 38212, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_int_eq(32778, nameid->kind.lid);
 
-	get_nameid(nprops, 38111, mem_ctx, &nameid);
+	get_nameid(nprops, 38111, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_int_eq(34063, nameid->kind.lid);
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 
 START_TEST (test_get_nameid_not_found) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid = NULL;
 
-	enum mapistore_error ret = get_nameid(nprops, 42, mem_ctx, &nameid);
+	enum mapistore_error ret = get_nameid(nprops, 42, local_mem_ctx, &nameid);
 	ck_assert_int_eq(ret, MAPISTORE_ERR_NOT_FOUND);
 	ck_assert(nameid == NULL);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 START_TEST (test_create_id_MNID_ID) {
@@ -318,10 +317,10 @@ START_TEST (test_create_id_MNID_ID) {
 START_TEST (test_create_id_MNID_STRING) {
 	struct MAPINAMEID nameid = {0};
 	uint16_t mapped_id = 41;
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
 
 	nameid.ulKind = MNID_STRING;
-	nameid.kind.lpwstr.Name = talloc_strdup(mem_ctx, "foobar");
+	nameid.kind.lpwstr.Name = talloc_strdup(local_mem_ctx, "foobar");
 
 	int ret = create_id(nprops, nameid, mapped_id);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
@@ -331,7 +330,7 @@ START_TEST (test_create_id_MNID_STRING) {
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(mapped_id, 41);
 
-	talloc_free(mem_ctx);
+	talloc_free(local_mem_ctx);
 } END_TEST
 
 

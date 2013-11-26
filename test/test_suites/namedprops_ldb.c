@@ -3,8 +3,8 @@
 
 #include "mapiproxy/libmapistore/backends/namedprops_ldb.c"
 
-TALLOC_CTX *mem_ctx;
-struct namedprops_context *nprops;
+static TALLOC_CTX *mem_ctx;
+static struct namedprops_context *nprops;
 
 
 static void ldb_q_setup(void)
@@ -15,6 +15,7 @@ static void ldb_q_setup(void)
 						&nprops);
 	if (ret != MAPISTORE_SUCCESS) {
 		fprintf(stderr, "Error initializing namedprops %d", errno);
+		ck_abort();
 	}
 }
 

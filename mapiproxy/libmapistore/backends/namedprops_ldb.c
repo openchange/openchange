@@ -340,7 +340,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 	ev = tevent_context_init(mem_ctx);
 	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	DEBUG(0, ("database = %s\n", database));
+	DEBUG(5, ("database = %s\n", database));
 
 	// Stat the database and populate it if it doesn't exist
 	if (stat(database, &sb) == -1) {

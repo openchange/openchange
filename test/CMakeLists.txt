@@ -31,10 +31,12 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb_message.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb_property.c    
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_ldb.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_mysql.c
     # -------------------------------------------------------------------------    
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb_ldb.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb_mysql.c
     # =========================================================================
 )
 

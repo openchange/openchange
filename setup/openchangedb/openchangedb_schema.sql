@@ -1,8 +1,3 @@
-SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
-SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
-SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
-
-
 -- -----------------------------------------------------
 -- Table `company`
 -- -----------------------------------------------------
@@ -12,7 +7,7 @@ CREATE TABLE IF NOT EXISTS `company` (
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `domain_UNIQUE` ON `company` (`domain` ASC);
+CREATE UNIQUE INDEX `domain_UNIQUE` ON `company` (`domain`(767) ASC);
 
 
 -- -----------------------------------------------------
@@ -233,8 +228,3 @@ CREATE TABLE IF NOT EXISTS `folders_names` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
-
-
-SET SQL_MODE=@OLD_SQL_MODE;
-SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
-SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

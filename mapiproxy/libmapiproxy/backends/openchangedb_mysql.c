@@ -9,7 +9,9 @@
 #include <samba_util.h>
 #include <inttypes.h>
 
+
 #define SCHEMA_FILE "openchangedb_schema.sql"
+
 
 // We only used one connection
 // FIXME assumption that every user will use the same mysql server. Change
@@ -253,7 +255,7 @@ static enum MAPISTATUS transaction_start(struct openchangedb_context *self)
 {
 	MYSQL *conn = self->data;
 	int res = mysql_query(conn, "START TRANSACTION");
-	MAPISTORE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
 	return MAPI_E_SUCCESS;
 }
 
@@ -261,7 +263,7 @@ static enum MAPISTATUS transaction_rollback(struct openchangedb_context *self)
 {
 	MYSQL *conn = self->data;
 	int res = mysql_query(conn, "ROLLBACK");
-	MAPISTORE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
 	return MAPI_E_SUCCESS;
 }
 
@@ -269,7 +271,7 @@ static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
 {
 	MYSQL *conn = self->data;
 	int res = mysql_query(conn, "COMMIT");
-	MAPISTORE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
+	OPENCHANGE_RETVAL_IF(res, MAPI_E_CALL_FAILED, NULL);
 	return MAPI_E_SUCCESS;
 }
 
@@ -386,6 +388,11 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 
 // ^ openchangedb message -----------------------------------------------------
 
+static const char *openchangedb_data_dir(void)
+{
+	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
+}
+
 static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 				   const char *connection_string,
 				   char **host, char **user, char **passwd,
@@ -452,8 +459,8 @@ static bool create_schema(MYSQL *conn)
 	TALLOC_CTX *mem_ctx;
 	FILE *f;
 	int sql_size, bytes_read;
-	char *sql, *schema_file;
-	bool ret;
+	char *sql, *schema_file, *query;
+	bool ret, queries_to_execute;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
@@ -474,7 +481,15 @@ static bool create_schema(MYSQL *conn)
 		ret = false;
 		goto end;
 	}
-	ret = mysql_query(conn, sql) ? false : true;
+	// schema is a series of create table/index queries separated by ';'
+	query = strtok (sql, ";");
+	queries_to_execute = query != NULL;
+	while (queries_to_execute) {
+		ret = mysql_query(conn, query) ? false : true;
+		if (!ret) break;
+		query = strtok(NULL, ";");
+		queries_to_execute = ret && query && strlen(query) > 10;
+	}
 end:
 	talloc_free(mem_ctx);
 	if (f) fclose(f);
@@ -527,16 +542,10 @@ end:
 
 }
 
-static const char *openchangedb_data_dir(void)
-{
-	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
-}
-
 _PUBLIC_ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 					 	       const char *connection_string,
 						       struct openchangedb_context **ctx)
 {
-	char *schema_file;
 	struct openchangedb_context *oc_ctx;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
@@ -593,8 +602,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = create_connection(connection_string);
 	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
 	if (!is_schema_created(oc_ctx->data)) {
+		DEBUG(0, ("Creating schema for openchangedb on mysql %s",
+			  connection_string));
 		bool schema_created = create_schema(oc_ctx->data);
-		OPENCHANGE_RETVAL_IF(schema_created, MAPI_E_NOT_INITIALIZED, oc_ctx);
+		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED, oc_ctx);
 	}
 
 	*ctx = oc_ctx;

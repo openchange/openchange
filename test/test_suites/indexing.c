@@ -7,22 +7,9 @@
 #include "../../mapiproxy/libmapistore/backends/indexing_tdb.h"
 
 /* Global test variables */
-struct mapistore_context *mstore_ctx = NULL;
-struct indexing_context *ictx = NULL;
-const char *USERNAME = "testuser";
-
-START_TEST (test_backend_initialized) {
-	ck_assert(ictx != NULL);
-} END_TEST
-
-/* common test for mid / fid */
-
-typedef enum mapistore_error add_fmidp(struct indexing_context *,
-				       const char *, uint64_t,
-				       const char *);
-
-typedef enum mapistore_error del_fmidp(struct indexing_context *,
-				       const char *, uint64_t, uint8_t);
+static struct mapistore_context *mstore_ctx = NULL;
+static struct indexing_context *ictx = NULL;
+static const char *USERNAME = "testuser";
 
 /* add_fmid */
 
@@ -203,30 +190,27 @@ static void tdb_setup(void)
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
 
 	mapistore_indexing_tdb_init(mstore_ctx, USERNAME, &ictx);
+	fail_if(!ictx);
 }
 
 static void tdb_teardown(void)
 {
 	char *indexing_file = NULL;
 
-	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	indexing_file = talloc_asprintf(mstore_ctx, "%s/%s/indexing.tdb",
+	indexing_file = talloc_asprintf(mstore_ctx, "%s%s/indexing.tdb",
 					mapistore_get_mapping_path(),
 					USERNAME);
 	unlink(indexing_file);
 	talloc_free(mstore_ctx);
-
-	mstore_ctx = NULL;
-	ictx = NULL;
 }
 
-static void indexing_backend_add_case(Suite *s, char *name, void setup(void),
-			       void teardown(void))
-{
-	TCase *tc = tcase_create(name);
-	tcase_add_checked_fixture(tc, setup, teardown);
 
-	tcase_add_test(tc, test_backend_initialized);
+Suite *indexing_suite (void)
+{
+	Suite *s = suite_create ("Indexing backends tests");
+
+	TCase *tc = tcase_create("tdb indexing");
+	tcase_add_checked_fixture(tc, tdb_setup, tdb_teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);
 	tcase_add_test(tc, test_backend_repeated_add_fails);
@@ -244,13 +228,6 @@ static void indexing_backend_add_case(Suite *s, char *name, void setup(void),
 	tcase_add_test(tc, test_backend_allocate_fmid);
 
 	suite_add_tcase(s, tc);
-}
-
-Suite *indexing_suite (void)
-{
-	Suite *s = suite_create ("Indexing backends tests");
-
-	indexing_backend_add_case(s, "tdb", tdb_setup, tdb_teardown);
 
 	return s;
 }

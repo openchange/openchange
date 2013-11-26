@@ -344,7 +344,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 
 	// Stat the database and populate it if it doesn't exist
 	if (stat(database, &sb) == -1) {
-		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
+		ldb_ctx = mapistore_ldb_wrap_connect(mem_ctx, ev, database, 0);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 		filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",
@@ -395,7 +395,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 		ldb_transaction_commit(ldb_ctx);
 		fclose(f);
 	} else {
-		ldb_ctx = mapistore_ldb_wrap_connect(ldb_ctx, ev, database, 0);
+		ldb_ctx = mapistore_ldb_wrap_connect(mem_ctx, ev, database, 0);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 	}
 

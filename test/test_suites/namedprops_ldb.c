@@ -3,16 +3,18 @@
 
 #include "mapiproxy/libmapistore/backends/namedprops_ldb.c"
 
+
 static TALLOC_CTX *mem_ctx;
 static struct namedprops_context *nprops;
+static int ret;
 
 
 static void ldb_q_setup(void)
 {
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	nprops = talloc_zero(mem_ctx, struct namedprops_context);
-	int ret = mapistore_namedprops_ldb_init(mem_ctx, NAMEDPROPS_LDB_PATH,
-						&nprops);
+
+	ret = mapistore_namedprops_ldb_init(mem_ctx, NAMEDPROPS_LDB_PATH, &nprops);
+
 	if (ret != MAPISTORE_SUCCESS) {
 		fprintf(stderr, "Error initializing namedprops %d", errno);
 		ck_abort();
@@ -111,7 +113,6 @@ START_TEST (test_get_mapped_id_not_found) {
 
 START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = 0;
-	int ret;
 
 	ret = get_nameid_type(nprops, 38306, &prop_type);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
@@ -137,7 +138,7 @@ START_TEST (test_get_nameid_type) {
 START_TEST (test_get_nameid_type_not_found) {
 	uint16_t prop_type = -1;
 
-	enum mapistore_error ret = get_nameid_type(nprops, 42, &prop_type);
+	ret = get_nameid_type(nprops, 42, &prop_type);
 	ck_assert_int_eq(ret, MAPISTORE_ERROR);
 } END_TEST
 
@@ -177,7 +178,7 @@ START_TEST (test_get_nameid_not_found) {
 	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid = NULL;
 
-	enum mapistore_error ret = get_nameid(nprops, 42, mem_ctx, &nameid);
+	ret = get_nameid(nprops, 42, mem_ctx, &nameid);
 	ck_assert_int_eq(ret, MAPISTORE_ERROR);
 	ck_assert(nameid == NULL);
 } END_TEST
@@ -189,7 +190,7 @@ START_TEST (test_create_id_MNID_ID) {
 	nameid.ulKind = MNID_ID;
 	nameid.kind.lid = 42;
 
-	int ret = create_id(nprops, nameid, mapped_id);
+	ret = create_id(nprops, nameid, mapped_id);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 
 	mapped_id = 0;
@@ -206,7 +207,7 @@ START_TEST (test_create_id_MNID_STRING) {
 	nameid.ulKind = MNID_STRING;
 	nameid.kind.lpwstr.Name = talloc_strdup(mem_ctx, "foobar");
 
-	int ret = create_id(nprops, nameid, mapped_id);
+	ret = create_id(nprops, nameid, mapped_id);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 
 	mapped_id = 0;

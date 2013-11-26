@@ -656,6 +656,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchange
 }
 
 /**
+   FIXME broken? mailboxDN not saved?
    \details Get users given a partial MAPIStoreURI
 
    \param parent_ctx memory context

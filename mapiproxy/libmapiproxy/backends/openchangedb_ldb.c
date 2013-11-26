@@ -1523,7 +1523,6 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs,
 			 "(&(objectClass=%s)(PidTagParentFolderId=%"PRIu64"))", objectClass, fid);
-	printf("ldb error: %s\n", ldb_errstring(ldb_ctx));
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
 
 	*RowCount = res->count;
@@ -1752,11 +1751,11 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 		/* Build ldb filter */
 		if (live_filtered) {
 			ldb_filter = _table_build_filter(NULL, table, 0, NULL);
-			DEBUG(0, ("(live-filtered) ldb_filter = %s\n", ldb_filter));
+			DEBUG(5, ("(live-filtered) ldb_filter = %s\n", ldb_filter));
 		}
 		else {
 			ldb_filter = _table_build_filter(NULL, table, 0, table->restrictions);
-			DEBUG(0, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
+			DEBUG(5, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
 		}
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
 		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &table->res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
@@ -1781,12 +1780,12 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 			childIdAttr = "PidTagFolderId";
 			break;
 		default:
-			DEBUG(0, ("unsupported table type for openchangedb: %d\n", table->table_type));
+			DEBUG(5, ("unsupported table type for openchangedb: %d\n", table->table_type));
 			abort();
 		}
 		row_fmid = get_property_data(mem_ctx, res, pos, PR_MID, childIdAttr);
 		if (!row_fmid || !*row_fmid) {
-			DEBUG(0, ("ldb object must have a '%s' field\n", childIdAttr));
+			DEBUG(5, ("ldb object must have a '%s' field\n", childIdAttr));
 			abort();
 		}
 
@@ -1794,7 +1793,7 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 
 		ldb_filter = _table_build_filter(local_mem_ctx, table, *row_fmid, table->restrictions);
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
-		DEBUG(0, ("  row ldb_filter = %s\n", ldb_filter));
+		DEBUG(5, ("  row ldb_filter = %s\n", ldb_filter));
 		ret = ldb_search(ldb_ctx, local_mem_ctx, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || live_res->count == 0, MAPI_E_INVALID_OBJECT, local_mem_ctx);
 		talloc_free(local_mem_ctx);
@@ -1975,7 +1974,7 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	if (!msg) {
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
-	printf("openchangedb_ldb message_open: folderID=%"PRIu64" messageID=%"PRIu64"\n", folderID, messageID);
+	DEBUG(5, ("openchangedb_ldb message_open: folderID=%"PRIu64" messageID=%"PRIu64"\n", folderID, messageID));
 
 	msg->status = OPENCHANGEDB_MESSAGE_OPEN;
 	msg->folderID = folderID;
@@ -1988,7 +1987,7 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	ldb_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=%"PRIu64"))", folderID, messageID);
 	ret = ldb_search(ldb_ctx, (TALLOC_CTX *)msg, &msg->res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
-	printf("We have found: %d messages for ldb_filter = %s\n", msg->res->count, ldb_filter);
+	DEBUG(5, ("We have found: %d messages for ldb_filter = %s\n", msg->res->count, ldb_filter));
 	talloc_free(ldb_filter);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !msg->res->count, MAPI_E_NOT_FOUND, msg);
 	*message_object = (void *)msg;

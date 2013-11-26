@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 #define MYSQL_HOST "localhost"
 #define MYSQL_USER "root"
@@ -15,5 +16,13 @@
 #define CHECK_MYSQL_ERROR \
 	if (mysql_errno(conn)) \
 		fprintf(stderr, "Error on MySQL: %s", mysql_error(conn))
+
+#ifndef RESOURCES_DIR
+#define RESOURCES_DIR "../../resources"
+#endif
+
+
+void copy(char *source, char *dest);
+void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path);
 
 #endif /* TEST_COMMON_H_ */

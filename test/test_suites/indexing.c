@@ -197,6 +197,7 @@ static void tdb_setup(void)
 	enum mapistore_error	ret;
 
 	ret = mapistore_set_mapping_path("/tmp/");
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 
 	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);

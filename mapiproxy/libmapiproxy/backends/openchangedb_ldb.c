@@ -1325,9 +1325,8 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 
 	/* Search mapistoreURI given partial URI */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "(MAPIStoreURI=%s)", partialURI);
+			 LDB_SCOPE_SUBTREE, attrs, "(&(MAPIStoreURI=%s)(mailboxDN=*))", partialURI);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-
 	*count = res->count;
 	*MAPIStoreURI = talloc_array(parent_ctx, char *, *count);
 	*users = talloc_array(parent_ctx, char *, *count);

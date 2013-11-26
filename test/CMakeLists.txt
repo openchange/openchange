@@ -20,9 +20,9 @@ SET(OPENCHANGE_TEST_SRCS
     # -------------------------------------------------------------------------
     # Test suites
     # -------------------------------------------------------------------------
-    ${CMAKE_SOURCE_DIR}/test_suites/indexing.c
-    ${CMAKE_SOURCE_DIR}/test_suites/namedprops_mysql.c
-    ${CMAKE_SOURCE_DIR}/test_suites/namedprops_ldb.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/indexing.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/namedprops_mysql.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/namedprops_ldb.c
     # =========================================================================
     # Libmapiproxy
     # -------------------------------------------------------------------------

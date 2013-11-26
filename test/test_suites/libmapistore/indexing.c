@@ -1,10 +1,10 @@
 #include "indexing.h"
-#include "../test_common.h"
+#include "test_common.h"
 
-#include "../../mapiproxy/libmapistore/mapistore.h"
-#include "../../mapiproxy/libmapistore/mapistore_errors.h"
-#include "../../mapiproxy/libmapistore/mapistore_private.h"
-#include "../../mapiproxy/libmapistore/backends/indexing_tdb.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
+#include "mapiproxy/libmapistore/backends/indexing_tdb.h"
 
 /* Global test variables */
 static struct mapistore_context *mstore_ctx = NULL;

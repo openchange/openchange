@@ -5,3 +5,4 @@ cmake_install.cmake
 cpp/
 openchange_test
 test_results.xml
+resources/openchangedb_sample.ldb

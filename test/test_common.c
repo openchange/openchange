@@ -22,19 +22,20 @@ void copy(char *source, char *dest)
 
 }
 
-void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path)
+void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path,
+			  const char *default_context, const char *root_context)
 {
 	FILE *f;
 	struct ldb_ldif *ldif;
 	struct ldb_context *ldb_ctx = NULL;
-	TALLOC_CTX *_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	struct ldb_message *msg;
 
-	ldb_ctx = ldb_init(_mem_ctx, NULL);
+	ldb_ctx = ldb_init(local_mem_ctx, NULL);
 	ldb_connect(ldb_ctx, ldb_path, 0, 0);
 	f = fopen(ldif_path, "r");
 
-	msg = ldb_msg_new(_mem_ctx);
+	msg = ldb_msg_new(local_mem_ctx);
 	msg->dn = ldb_dn_new(msg, ldb_ctx, "@INDEXLIST");
 	ldb_msg_add_string(msg, "@IDXATTR", "cn");
 	ldb_msg_add_string(msg, "@IDXATTR", "oleguid");
@@ -44,13 +45,23 @@ void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path)
 
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 		struct ldb_message *normalized_msg;
-		ldb_msg_normalize(ldb_ctx, _mem_ctx, ldif->msg, &normalized_msg);
+		ldb_msg_normalize(ldb_ctx, local_mem_ctx, ldif->msg,
+				  &normalized_msg);
 		ldb_add(ldb_ctx, normalized_msg);
 		talloc_free(normalized_msg);
 		ldb_ldif_read_free(ldb_ctx, ldif);
 	}
 
+	if (default_context && root_context) {
+		msg = ldb_msg_new(local_mem_ctx);
+		msg->dn = ldb_dn_new(msg, ldb_ctx, "@ROOTDSE");
+		ldb_msg_add_string(msg, "defaultNamingContext", default_context);
+		ldb_msg_add_string(msg, "rootDomainNamingContext", root_context);
+		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+		ldb_add(ldb_ctx, msg);
+	}
+
 	fclose(f);
-	talloc_free(_mem_ctx);
+	talloc_free(local_mem_ctx);
 }
 

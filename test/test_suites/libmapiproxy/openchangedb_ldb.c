@@ -9,8 +9,9 @@
 #define CHECK_SUCCESS ck_assert_int_eq(ret, MAPI_E_SUCCESS)
 #define CHECK_FAILURE ck_assert_int_ne(ret, MAPI_E_SUCCESS)
 #define OPENCHANGEDB_LDB         RESOURCES_DIR "/openchange.ldb"
-#define OPENCHANGEDB_SAMPLE_LDB  RESOURCES_DIR "/openchangedb_sample.ldb"
 #define OPENCHANGEDB_SAMPLE_LDIF RESOURCES_DIR "/openchangedb_sample.ldif"
+#define LDB_DEFAULT_CONTEXT "CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"
+#define LDB_ROOT_CONTEXT "CN=ZENTYAL,DC=zentyal-domain,DC=lan"
 
 
 static TALLOC_CTX *mem_ctx;
@@ -20,10 +21,8 @@ static enum MAPISTATUS ret;
 
 static void ldb_setup(void)
 {
-	// Create from ldif is better because ldif is 14kb and ldb is 1.6MB but
-	// I don't know how to import the rootDSE
-	//create_ldb_from_ldif(OPENCHANGEDB_LDB, OPENCHANGEDB_SAMPLE_LDIF);
-	copy(OPENCHANGEDB_SAMPLE_LDB, OPENCHANGEDB_LDB);
+	create_ldb_from_ldif(OPENCHANGEDB_LDB, OPENCHANGEDB_SAMPLE_LDIF,
+			     LDB_DEFAULT_CONTEXT, LDB_ROOT_CONTEXT);
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	int ret = openchangedb_ldb_initialize(mem_ctx, RESOURCES_DIR, &oc_ctx);

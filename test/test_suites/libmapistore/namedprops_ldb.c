@@ -4,6 +4,9 @@
 #include "mapiproxy/libmapistore/backends/namedprops_ldb.c"
 
 
+#define NAMEDPROPS_LDB_PATH "/tmp/nprops.ldb"
+
+
 static TALLOC_CTX *mem_ctx;
 static struct namedprops_context *nprops;
 static int ret;

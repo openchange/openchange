@@ -1,3 +1,8 @@
+SET @OLD_UNIQUE_CHECKS=@@UNIQUE_CHECKS, UNIQUE_CHECKS=0;
+SET @OLD_FOREIGN_KEY_CHECKS=@@FOREIGN_KEY_CHECKS, FOREIGN_KEY_CHECKS=0;
+SET @OLD_SQL_MODE=@@SQL_MODE, SQL_MODE='TRADITIONAL,ALLOW_INVALID_DATES';
+
+
 -- -----------------------------------------------------
 -- Table `company`
 -- -----------------------------------------------------
@@ -49,7 +54,7 @@ ENGINE = InnoDB;
 -- Table `mailboxes`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mailboxes` (
-  `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
+  `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ou_id` INT NOT NULL,
   `folder_id` BIGINT UNSIGNED NOT NULL,
   `name` VARCHAR(256) NOT NULL,
@@ -76,7 +81,7 @@ CREATE TABLE IF NOT EXISTS `folders` (
   `ou_id` INT NOT NULL,
   `folder_id` BIGINT UNSIGNED NOT NULL,
   `folder_class` VARCHAR(6) NOT NULL DEFAULT 'system',
-  `mailbox_id` INT UNSIGNED NULL,
+  `mailbox_id` BIGINT UNSIGNED NULL,
   `parent_folder_id` BIGINT UNSIGNED NULL,
   `FolderType` INT NULL,
   `SystemIdx` INT NULL,
@@ -115,8 +120,8 @@ CREATE TABLE IF NOT EXISTS `messages` (
   `message_id` BIGINT UNSIGNED NULL,
   `message_type` VARCHAR(45) NULL,
   `folder_id` BIGINT UNSIGNED NULL,
-  `mailbox_id` INT UNSIGNED NULL,
-  `NormalizedSubject` TEXT NULL,
+  `mailbox_id` BIGINT UNSIGNED NULL,
+  `normalized_subject` TEXT NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_messages_ou_id`
     FOREIGN KEY (`ou_id`)
@@ -165,7 +170,7 @@ CREATE INDEX `message_properties_message_id_name_idx` ON `messages_properties` (
 -- Table `mailboxes_properties`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mailboxes_properties` (
-  `mailbox_id` INT UNSIGNED NOT NULL,
+  `mailbox_id` BIGINT UNSIGNED NOT NULL,
   `name` VARCHAR(128) NOT NULL,
   `value` VARCHAR(512) NULL,
   CONSTRAINT `fk_mailboxes_properties_mailbox_id`
@@ -228,3 +233,8 @@ CREATE TABLE IF NOT EXISTS `folders_names` (
     ON DELETE NO ACTION
     ON UPDATE NO ACTION)
 ENGINE = InnoDB;
+
+
+SET SQL_MODE=@OLD_SQL_MODE;
+SET FOREIGN_KEY_CHECKS=@OLD_FOREIGN_KEY_CHECKS;
+SET UNIQUE_CHECKS=@OLD_UNIQUE_CHECKS;

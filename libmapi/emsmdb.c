@@ -582,7 +582,9 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	
-	ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
+	if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response) != NDR_ERR_SUCCESS) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	*repl = mapi2k7_response.mapi_response;
 

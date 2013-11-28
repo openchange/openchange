@@ -261,6 +261,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(!msg->res->count, MAPI_E_NOT_INITIALIZED, NULL);
 		message = msg->res->msgs[0];
 		break;
+	default:
+		return MAPI_E_INVALID_PARAMETER;
 	}
 
 
@@ -325,6 +327,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *mem_ctx
 		OPENCHANGE_RETVAL_IF(!msg->res->count, MAPI_E_NOT_INITIALIZED, NULL);
 		message = msg->res->msgs[0];
 		break;
+	default:
+		return MAPI_E_INVALID_PARAMETER;
 	}
 
 	for (i = 0; i < row->cValues; i++) {

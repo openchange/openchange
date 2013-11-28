@@ -11,13 +11,13 @@
 
 
 #define SCHEMA_FILE "openchangedb_schema.sql"
-
+#define PUBLIC_FOLDER "public"
+#define SYSTEM_FOLDER "system"
 
 // We only used one connection
 // FIXME assumption that every user will use the same mysql server. Change
 // into list of connections indexed by username, like indexing backend.
 static MYSQL *conn = NULL;
-
 
 static enum MAPISTATUS _not_implemented(const char *caller) {
 	DEBUG(0, ("Called not implemented function `%s` from mysql backend",
@@ -26,7 +26,6 @@ static enum MAPISTATUS _not_implemented(const char *caller) {
 }
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
 
-// v openchangedb -------------------------------------------------------------
 
 static enum MAPISTATUS select_first_uint(MYSQL *conn, const char *sql,
 					 uint64_t *n)
@@ -63,6 +62,43 @@ static enum MAPISTATUS select_first_uint(MYSQL *conn, const char *sql,
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
+					   const char *sql, char **s)
+{
+	MYSQL_RES *res;
+
+	if (mysql_query(conn, sql) != 0) {
+		DEBUG(0, ("Error on query `%s`: %s", sql, mysql_error(conn)));
+		return MAPI_E_CALL_FAILED;
+	}
+
+	res = mysql_store_result(conn);
+	if (res == NULL) {
+		DEBUG(0, ("Error getting results of `%s`: %s", sql,
+			  mysql_error(conn)));
+		return MAPI_E_CALL_FAILED;
+	}
+
+	if (mysql_num_rows(res) == 0) {
+		mysql_free_result(res);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	MYSQL_ROW row = mysql_fetch_row(res);
+	if (row == NULL) {
+		DEBUG(0, ("Error getting row of `%s`: %s", sql,
+			  mysql_error(conn)));
+		return MAPI_E_CALL_FAILED;
+	}
+
+	*s = talloc_strdup(mem_ctx, row[0]);
+	mysql_free_result(res);
+
+	return MAPI_E_SUCCESS;
+}
+
+// v openchangedb -------------------------------------------------------------
+
 static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 					  const char *recipient,
 					  uint32_t SystemIdx,
@@ -83,7 +119,8 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f.folder_id FROM folders f JOIN mailboxes m ON "
 			"f.mailbox_id = m.id AND m.name = '%s' "
-			"WHERE f.SystemIdx = %"PRIu32, recipient, SystemIdx);
+			"WHERE f.SystemIdx = %"PRIu32" AND f.folder_class = '%s'",
+			recipient, SystemIdx, SYSTEM_FOLDER);
 	}
 
 	ret = select_first_uint(conn, sql, FolderId);
@@ -98,7 +135,21 @@ static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
 					  uint32_t SystemIdx,
 					  uint64_t *FolderId)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	char *sql;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT f.folder_id FROM folders f WHERE f.SystemIdx = %"PRIu32
+		" AND f.folder_class = '%s'", SystemIdx, PUBLIC_FOLDER);
+
+	ret = select_first_uint(conn, sql, FolderId);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_distinguishedName(TALLOC_CTX *parent_ctx,
@@ -113,7 +164,23 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       const char *recipient,
 				       struct GUID *MailboxGUID)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	char *sql, *guid;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT MailboxGUID FROM mailboxes WHERE name = '%s'",
+		recipient);
+
+	ret = select_first_string(mem_ctx, conn, sql, &guid);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	GUID_from_string(guid, MailboxGUID);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,

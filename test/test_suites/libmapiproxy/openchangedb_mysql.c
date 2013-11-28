@@ -88,6 +88,35 @@ START_TEST (test_get_SystemFolderID) {
 	ck_assert_int_eq(folder_id, 1729382256910270465);
 } END_TEST
 
+START_TEST (test_get_PublicFolderID) {
+	uint64_t folder_id = 0;
+
+	ret = openchangedb_get_PublicFolderID(oc_ctx, 14, &folder_id);
+	CHECK_FAILURE;
+
+	ret = openchangedb_get_PublicFolderID(oc_ctx, 5, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 504403158265495553);
+
+	ret = openchangedb_get_PublicFolderID(oc_ctx, 6, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 360287970189639681);
+} END_TEST
+
+START_TEST (test_get_MailboxGuid) {
+	struct GUID *guid = talloc_zero(mem_ctx, struct GUID);
+	struct GUID *expected_guid = talloc_zero(mem_ctx, struct GUID);
+
+	ret = openchangedb_get_MailboxGuid(oc_ctx, "paco", guid);
+	CHECK_SUCCESS;
+
+	GUID_from_string("13c54881-02f6-4ade-ba7d-8b28c5f638c6", expected_guid);
+	ck_assert(GUID_equal(expected_guid, guid));
+
+	talloc_free(guid);
+	talloc_free(expected_guid);
+} END_TEST
+
 // ^ unit test ----------------------------------------------------------------
 
 // v test suite definition ----------------------------------------------------
@@ -100,6 +129,8 @@ Suite *openchangedb_mysql_suite(void)
 	tcase_add_unchecked_fixture(tc_mysql, mysql_setup, mysql_teardown);
 
 	tcase_add_test(tc_mysql, test_get_SystemFolderID);
+	tcase_add_test(tc_mysql, test_get_PublicFolderID);
+	tcase_add_test(tc_mysql, test_get_MailboxGuid);
 
 	suite_add_tcase(s, tc_mysql);
 

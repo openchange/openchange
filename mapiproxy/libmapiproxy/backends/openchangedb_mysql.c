@@ -27,43 +27,8 @@ static enum MAPISTATUS _not_implemented(const char *caller) {
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
 
 
-static enum MAPISTATUS select_first_uint(MYSQL *conn, const char *sql,
-					 uint64_t *n)
-{
-	MYSQL_RES *res;
-
-	if (mysql_query(conn, sql) != 0) {
-		DEBUG(0, ("Error on query `%s`: %s", sql, mysql_error(conn)));
-		return MAPI_E_CALL_FAILED;
-	}
-
-	res = mysql_store_result(conn);
-	if (res == NULL) {
-		DEBUG(0, ("Error getting results of `%s`: %s", sql,
-			  mysql_error(conn)));
-		return MAPI_E_CALL_FAILED;
-	}
-
-	if (mysql_num_rows(res) == 0) {
-		mysql_free_result(res);
-		return MAPI_E_NOT_FOUND;
-	}
-
-	MYSQL_ROW row = mysql_fetch_row(res);
-	if (row == NULL) {
-		DEBUG(0, ("Error getting row of `%s`: %s", sql,
-			  mysql_error(conn)));
-		return MAPI_E_CALL_FAILED;
-	}
-
-	*n = strtol(row[0], NULL, 10);
-	mysql_free_result(res);
-
-	return MAPI_E_SUCCESS;
-}
-
 static enum MAPISTATUS select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
-					   const char *sql, char **s)
+					   const char *sql, const char **s)
 {
 	MYSQL_RES *res;
 
@@ -93,6 +58,22 @@ static enum MAPISTATUS select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 
 	*s = talloc_strdup(mem_ctx, row[0]);
 	mysql_free_result(res);
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS select_first_uint(MYSQL *conn, const char *sql,
+					 uint64_t *n)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "select_first_uint");
+	const char *result;
+	enum MAPISTATUS ret;
+
+	ret = select_first_string(mem_ctx, conn, sql, &result);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	*n = strtol(result, NULL, 10);
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }
@@ -140,6 +121,7 @@ static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 
+	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT f.folder_id FROM folders f WHERE f.SystemIdx = %"PRIu32
 		" AND f.folder_class = '%s'", SystemIdx, PUBLIC_FOLDER);
@@ -164,11 +146,13 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       const char *recipient,
 				       struct GUID *MailboxGUID)
 {
-	char *sql, *guid;
+	char *sql;
+	const char *guid;
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 
+	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT MailboxGUID FROM mailboxes WHERE name = '%s'",
 		recipient);
@@ -188,41 +172,105 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 					  uint16_t *ReplID,
 					  struct GUID *ReplGUID)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	char *sql;
+	const char *guid;
+	uint64_t n;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+
+	if (ReplID) {
+		// FIXME ou_id
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT ReplicaID FROM mailboxes WHERE name = '%s'",
+			recipient);
+
+		ret = select_first_uint(conn, sql, &n);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		*ReplID = (uint16_t) n;
+	}
+
+	if (ReplGUID) {
+		// FIXME ou_id
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT ReplicaGUID FROM mailboxes WHERE name = '%s'",
+			recipient);
+
+		ret = select_first_string(mem_ctx, conn, sql, &guid);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		GUID_from_string(guid, ReplGUID);
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self,
 					       uint16_t *ReplID,
 					       struct GUID *ReplGUID)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	char *sql;
+	const char *guid;
+	uint64_t n;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderReplica");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+
+	if (ReplID) {
+		// FIXME ou_id
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT ReplicaID FROM public_folders");
+
+		ret = select_first_uint(conn, sql, &n);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		*ReplID = (uint16_t) n;
+	}
+
+	if (ReplGUID) {
+		// FIXME ou_id
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT StoreGUID FROM public_folders");
+
+		ret = select_first_string(mem_ctx, conn, sql, &guid);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		GUID_from_string(guid, ReplGUID);
+	}
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 				        struct openchangedb_context *self,
 				        uint64_t fid, char **mapistoreURL,
 				        bool mailboxstore)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 				        uint64_t fid, const char *mapistoreURL,
 				        bool mailboxstore)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 				      uint64_t fid, uint64_t *parent_fidp,
 				      bool mailboxstore)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
 			       const char *mapistoreURL, uint64_t *fidp)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -231,7 +279,50 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 					 TALLOC_CTX *mem_ctx,
 					 struct StringArrayW_r **urisP)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	struct StringArrayW_r *uris;
+	char *sql;
+	MYSQL_RES *res;
+	uint32_t i = 0;
+
+	// TODO ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT MAPIStoreURI FROM folders f JOIN mailboxes m "
+		"ON f.mailbox_id = m.id AND m.name = '%s' "
+		"WHERE MAPIStoreURI IS NOT NULL", username);
+
+	if (mysql_query(conn, sql) != 0) {
+		DEBUG(0, ("Error on query `%s`: %s", sql, mysql_error(conn)));
+		return MAPI_E_CALL_FAILED;
+	}
+
+	res = mysql_store_result(conn);
+	if (res == NULL) {
+		DEBUG(0, ("Error getting results of `%s`: %s", sql,
+			  mysql_error(conn)));
+		return MAPI_E_CALL_FAILED;
+	}
+
+	uris = talloc_zero(mem_ctx, struct StringArrayW_r);
+	uris->cValues = mysql_num_rows(res);
+	uris->lppszW = talloc_zero_array(uris, const char *, uris->cValues);
+	*urisP = uris;
+
+	for (i = 0; i < uris->cValues; i++) {
+		MYSQL_ROW row = mysql_fetch_row(res);
+		if (row == NULL) {
+			DEBUG(0, ("Error getting row %d of `%s`: %s", i, sql,
+				  mysql_error(conn)));
+			talloc_free(sql);
+			mysql_free_result(res);
+			return MAPI_E_CALL_FAILED;
+		}
+		uris->lppszW[i] = talloc_strdup(uris, row[0]);
+	}
+
+	talloc_free(sql);
+	mysql_free_result(res);
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
@@ -253,7 +344,7 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 					uint64_t fid, uint32_t *RowCount)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -286,13 +377,13 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 					   struct openchangedb_context *self,
 					   uint32_t proptag, uint64_t fid,
 					   void **data)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 					     uint64_t fid, struct SRow *row)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -308,7 +399,7 @@ static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,
 static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 				       uint64_t parent_fid,
 				       const char* foldername, uint64_t *fid)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -316,13 +407,13 @@ static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
 					  uint64_t parent_fid,
 					  const char *subject,
 					  bool mailboxstore, uint64_t *mid)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
 				     uint64_t fid)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -361,19 +452,20 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 				     uint64_t parentFolderID, uint64_t fid,
 				     uint64_t changeNumber,
 				     const char *MAPIStoreURI, int systemIdx)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
-					 uint64_t fid, uint32_t *RowCount, bool fai)
-{
+					 uint64_t fid, uint32_t *RowCount,
+					 bool fai)
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 				      uint64_t fid, int *system_idx_p)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -418,7 +510,7 @@ static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
 				  struct openchangedb_context *self,
 				  uint8_t table_type, uint64_t folderID,
 				  void **table_object)
-{
+{//TODO NEEDS USER
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 

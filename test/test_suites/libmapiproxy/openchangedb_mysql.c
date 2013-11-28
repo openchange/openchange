@@ -117,6 +117,56 @@ START_TEST (test_get_MailboxGuid) {
 	talloc_free(expected_guid);
 } END_TEST
 
+START_TEST (test_get_MailboxReplica) {
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	struct GUID *repl = talloc_zero(local_mem_ctx, struct GUID);
+	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
+	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
+
+	ret = openchangedb_get_MailboxReplica(oc_ctx, "paco", repl_id, repl);
+	CHECK_SUCCESS;
+
+	GUID_from_string("d87292c1-1bc3-4370-a734-98b559b69a52", expected_repl);
+	ck_assert(GUID_equal(expected_repl, repl));
+
+	ck_assert_int_eq(*repl_id, 1);
+
+	talloc_free(local_mem_ctx);
+} END_TEST
+
+START_TEST (test_get_PublicFolderReplica) {
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	struct GUID *repl = talloc_zero(local_mem_ctx, struct GUID);
+	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
+	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
+
+	ret = openchangedb_get_PublicFolderReplica(oc_ctx, repl_id, repl);
+	CHECK_SUCCESS;
+
+	GUID_from_string("c4898b91-da9d-4f3e-9ae4-8a8bd5051b89", expected_repl);
+	ck_assert(GUID_equal(expected_repl, repl));
+
+	ck_assert_int_eq(*repl_id, 1);
+
+	talloc_free(local_mem_ctx);
+} END_TEST
+
+START_TEST (test_get_MAPIStoreURIs) {
+	struct StringArrayW_r *uris = talloc_zero(mem_ctx, struct StringArrayW_r);
+	bool found = false;
+	int i;
+
+	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(uris->cValues, 23);
+
+	for (i = 0; i < uris->cValues; i++) {
+		found = strcmp(uris->lppszW[i], "sogo://paco:paco@mail/folderFUCK/") == 0;
+		if (found) break;
+	}
+	ck_assert(found);
+} END_TEST
+
 // ^ unit test ----------------------------------------------------------------
 
 // v test suite definition ----------------------------------------------------
@@ -131,6 +181,10 @@ Suite *openchangedb_mysql_suite(void)
 	tcase_add_test(tc_mysql, test_get_SystemFolderID);
 	tcase_add_test(tc_mysql, test_get_PublicFolderID);
 	tcase_add_test(tc_mysql, test_get_MailboxGuid);
+	tcase_add_test(tc_mysql, test_get_MailboxReplica);
+	tcase_add_test(tc_mysql, test_get_PublicFolderReplica);
+
+	tcase_add_test(tc_mysql, test_get_MAPIStoreURIs);
 
 	suite_add_tcase(s, tc_mysql);
 

@@ -502,6 +502,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	uint32_t		pulTransTime = 0;
 	DATA_BLOB		rgbOut;
 	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
+	enum ndr_err_code ndr_err;
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.pulFlags = r.out.pulFlags = &pulFlags;
@@ -569,7 +570,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	status = dcerpc_EcDoRpcExt2_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	talloc_free(ndr_rgbIn);
 	talloc_free(ndr_comp_rgbIn);
-		
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	} else if (r.out.result) {
@@ -581,9 +582,10 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	rgbOut.length = *r.out.pcbOut;
 	ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	
-	if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response) != NDR_ERR_SUCCESS) {
-		return NT_STATUS_UNSUCCESSFUL;
+
+	ndr_err = ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		return ndr_map_error2ntstatus(ndr_err);
 	}
 
 	*repl = mapi2k7_response.mapi_response;

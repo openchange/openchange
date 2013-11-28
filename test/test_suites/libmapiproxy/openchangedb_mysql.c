@@ -4,15 +4,9 @@
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include "libmapi/libmapi.h"
 #include <inttypes.h>
+#include <mysql/mysql.h>
 
-
-#define CHECK_SUCCESS ck_assert_int_eq(ret, MAPI_E_SUCCESS)
-#define CHECK_FAILURE ck_assert_int_ne(ret, MAPI_E_SUCCESS)
-#define OPENCHANGEDB_LDB         RESOURCES_DIR "/openchange.ldb"
-#define OPENCHANGEDB_SAMPLE_LDIF RESOURCES_DIR "/openchangedb_sample.ldif"
-#define LDB_DEFAULT_CONTEXT "CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"
-#define LDB_ROOT_CONTEXT "CN=ZENTYAL,DC=zentyal-domain,DC=lan"
-
+#define OPENCHANGEDB_SAMPLE_SQL RESOURCES_DIR "/openchangedb_sample.sql"
 
 static TALLOC_CTX *mem_ctx;
 static struct openchangedb_context *oc_ctx;
@@ -22,6 +16,13 @@ static enum MAPISTATUS ret;
 static void mysql_setup(void)
 {
 	const char *database;
+	FILE *f;
+	long int sql_size;
+	size_t bytes_read;
+	char *sql, *insert;
+	bool inserts_to_execute;
+	MYSQL *conn;
+
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	if (strlen(MYSQL_PASS) == 0) {
 		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
@@ -32,9 +33,35 @@ static void mysql_setup(void)
 					   MYSQL_DB);
 	}
 	ret = openchangedb_mysql_initialize(mem_ctx, database, &oc_ctx);
+
 	if (ret != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
 		ck_abort();
+	}
+
+	// Populate database with sample data
+	conn = oc_ctx->data;
+	f = fopen(OPENCHANGEDB_SAMPLE_SQL, "r");
+	if (!f) {
+		fprintf(stderr, "file %s not found", OPENCHANGEDB_SAMPLE_SQL);
+		ck_abort();
+	}
+	fseek(f, 0, SEEK_END);
+	sql_size = ftell(f);
+	rewind(f);
+	sql = talloc_zero_array(mem_ctx, char, sql_size + 1);
+	bytes_read = fread(sql, sizeof(char), sql_size, f);
+	if (bytes_read != sql_size) {
+		fprintf(stderr, "error reading file %s", OPENCHANGEDB_SAMPLE_SQL);
+		ck_abort();
+	}
+	insert = strtok(sql, ";");
+	inserts_to_execute = insert != NULL;
+	while (inserts_to_execute) {
+		ret = mysql_query(conn, insert) ? false : true;
+		if (!ret) break;
+		insert = strtok(NULL, ";");
+		inserts_to_execute = ret && insert && strlen(insert) > 10;
 	}
 }
 
@@ -44,9 +71,10 @@ static void mysql_teardown(void)
 	talloc_free(mem_ctx);
 }
 
+// v unit test ----------------------------------------------------------------
 
 START_TEST (test_get_SystemFolderID) {
-	/*uint64_t folder_id = 0;
+	uint64_t folder_id = 0;
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 14, &folder_id);
 	CHECK_SUCCESS;
@@ -57,9 +85,12 @@ START_TEST (test_get_SystemFolderID) {
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 15, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 1729382256910270465);*/
+	ck_assert_int_eq(folder_id, 1729382256910270465);
 } END_TEST
 
+// ^ unit test ----------------------------------------------------------------
+
+// v test suite definition ----------------------------------------------------
 
 Suite *openchangedb_mysql_suite(void)
 {

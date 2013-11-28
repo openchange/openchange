@@ -5,6 +5,7 @@ INSERT public_folders VALUES (1, 1, 'c4898b91-da9d-4f3e-9ae4-8a8bd5051b89');
 INSERT mailboxes VALUES (1, 1, 720575940379279361, 'paco', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1);
 INSERT mailboxes_properties VALUES (1, 'PidTagAccess', '63'), (1, 'PidTagCreationTime', '130268260180000000'),(1, 'PidTagFolderType', '1'),(1, 'PidTagLastModificationTime', '130268260180000000'),(1, 'PidTagRights', '2043'),(1, 'PidTagSubFolders', 'TRUE'),(1, 'PidTagMessageClass', 'IPC'),(1, 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA=='),(1, 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA=='),(1, 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA=='),(1, 'PidTagIpmTaskEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB0AAA=='),(1, 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA=='),(1, 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA=='),(1, 'PidTagRemindersOnlineEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABIAAA=='),(1, 'PidTagChangeNumber', '4683743612465315841');
 
+
 INSERT INTO folders VALUES (0, 1, 72057594037927937, 'publicfolder', 1, NULL, NULL, 1, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Public Folder Root');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '2');
@@ -25,7 +26,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmTaskEntryId', 'AAA
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA==');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA==');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAccess', '63');
-INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'OpenChange Mailbox paco');
+INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'OpenChange Mailbox: paco');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagMessageClass', 'IPC');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '4683743612465315841');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA==');
@@ -46,7 +47,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '2');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1152921504606846977, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 7, 'sogo//paco@fallback/0x1000000000000001/');
+INSERT INTO folders VALUES (0, 1, 1152921504606846977, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 7, 'sogo://paco@fallback/0x1000000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Views');
@@ -75,7 +76,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '2');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 2377900603251621889, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, NULL, 'sogo//paco@fallback/0x2100000000000001/');
+INSERT INTO folders VALUES (0, 1, 2377900603251621889, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, NULL, 'sogo://paco@fallback/0x2100000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Freebusy Data');
@@ -89,7 +90,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1008806316530991105, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 5, 'sogo//paco@fallback/0xe00000000000001/');
+INSERT INTO folders VALUES (0, 1, 1008806316530991105, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 5, 'sogo://paco@fallback/0xe00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Schedule');
@@ -103,7 +104,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 864691128455135233, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 3, 'sogo//paco@fallback/0xc00000000000001/');
+INSERT INTO folders VALUES (0, 1, 864691128455135233, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 3, 'sogo://paco@fallback/0xc00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Spooler Queue');
@@ -117,7 +118,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 792633534417207297, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 2, 'sogo//paco@fallback/0xb00000000000001/');
+INSERT INTO folders VALUES (0, 1, 792633534417207297, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 2, 'sogo://paco@fallback/0xb00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Deferred Action');
@@ -146,7 +147,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1585267068834414593, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 13, 'sogo//pacopaco@mail/folderINBOX/');
+INSERT INTO folders VALUES (0, 1, 1585267068834414593, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 13, 'sogo://paco:paco@mail/folderINBOX/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA==');
@@ -169,7 +170,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmTaskEntryId', 'AAA
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA==');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 11961560610296037377, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo//pacopaco@mail/folderFUCK/');
+INSERT INTO folders VALUES (0, 1, 11961560610296037377, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo://paco:paco@mail/folderFUCK/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'FUCK');
@@ -184,7 +185,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1080863910568919041, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 6, 'sogo//paco@fallback/0xf00000000000001/');
+INSERT INTO folders VALUES (0, 1, 1080863910568919041, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 6, 'sogo://paco@fallback/0xf00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Finder');
@@ -210,7 +211,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 2161727821137838081, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 4, 'sogo//paco@notes/');
+INSERT INTO folders VALUES (0, 1, 2161727821137838081, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 4, 'sogo://paco@notes/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.StickyNote');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -249,7 +250,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 936748722493063169, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 4, 'sogo//paco@fallback/0xd00000000000001/');
+INSERT INTO folders VALUES (0, 1, 936748722493063169, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 4, 'sogo://paco@fallback/0xd00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Common Views');
@@ -263,7 +264,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 2017612633061982209, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 2, 'sogo//paco@contacts/personal/');
+INSERT INTO folders VALUES (0, 1, 2017612633061982209, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 2, 'sogo://paco@contacts/personal/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Contact');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -290,7 +291,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1224979098644774913, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 8, 'sogo//paco@fallback/0x1100000000000001/');
+INSERT INTO folders VALUES (0, 1, 1224979098644774913, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 720575940379279361) as t), 1, 8, 'sogo://paco@fallback/0x1100000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Shortcuts');
@@ -319,7 +320,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '2');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 2089670227099910145, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 3, 'sogo//paco@tasks/personal/');
+INSERT INTO folders VALUES (0, 1, 2089670227099910145, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 3, 'sogo://paco@tasks/personal/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Task');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -334,7 +335,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Person
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '3891110078048108545');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 15852670688344145921, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo//pacopaco@mail/folderA3/');
+INSERT INTO folders VALUES (0, 1, 15852670688344145921, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo://paco:paco@mail/folderA3/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'A3');
@@ -349,7 +350,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1657324662872342529, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 14, 'sogo//pacopaco@outbox/folderDrafts/');
+INSERT INTO folders VALUES (0, 1, 1657324662872342529, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 14, 'sogo://paco:paco@outbox/folderDrafts/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -364,7 +365,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Outbox
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '2594073385365405697');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 15708555500268290049, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo//pacopaco@mail/folderA1/');
+INSERT INTO folders VALUES (0, 1, 15708555500268290049, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo://paco:paco@mail/folderA1/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'A1');
@@ -379,7 +380,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 2233785415175766017, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 5, 'sogo//paco@fallback/0x1f00000000000001/');
+INSERT INTO folders VALUES (0, 1, 2233785415175766017, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 5, 'sogo://paco@fallback/0x1f00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Journal');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -394,7 +395,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Journa
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '4467570830351532033');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 1801439850948198401, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 16, 'sogo//paco@fallback/0x1900000000000001/');
+INSERT INTO folders VALUES (0, 1, 1801439850948198401, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 16, 'sogo://paco@fallback/0x1900000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -409,7 +410,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Delete
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '2882303761517117441');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 15780613094306217985, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo//pacopaco@mail/folderA2/');
+INSERT INTO folders VALUES (0, 1, 15780613094306217985, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo://paco:paco@mail/folderA2/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'A2');
@@ -424,7 +425,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1729382256910270465, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 15, 'sogo//pacopaco@mail/folderSent/');
+INSERT INTO folders VALUES (0, 1, 1729382256910270465, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 15, 'sogo://paco:paco@mail/folderSent/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -439,7 +440,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Sent')
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '2738188573441261569');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1'); 
 
-INSERT INTO folders VALUES (0, 1, 2305843009213693953, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo//pacopaco@mail/folderSpam/');
+INSERT INTO folders VALUES (0, 1, 2305843009213693953, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, NULL, 'sogo://paco:paco@mail/folderSpam/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagRights', '2043');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Spam');
@@ -454,7 +455,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1873497444986126337, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 0, 'sogo//pacopaco@mail/folderDrafts/');
+INSERT INTO folders VALUES (0, 1, 1873497444986126337, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 0, 'sogo://paco:paco@mail/folderDrafts/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -481,7 +482,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime'
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
-INSERT INTO folders VALUES (0, 1, 1945555039024054273, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 1, 'sogo//paco@calendar/personal/');
+INSERT INTO folders VALUES (0, 1, 1945555039024054273, 'systemfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1513209474796486657) as t), 1, 1, 'sogo://paco@calendar/personal/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Appointment');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -509,7 +510,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0'); 
 
 INSERT INTO folders VALUES (0, 1, 576460752303423489, 'publicfolder', 1, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 504403158265495553) as t), 1, 8, NULL);
-INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'EX/o=first organization/ou=first administrative group');
+INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'EX:/o=first organization/ou=first administrative group');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagCreationTime', '130264095410000000');

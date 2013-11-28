@@ -113,7 +113,7 @@ def parse_file(file_path):
                 values[key] += value
             elif l[0] != '#':
                 splitted = l.split(':')
-                key, value = splitted[0].strip(), ''.join(splitted[1:]).strip()
+                key, value = splitted[0].strip(), ':'.join(splitted[1:]).strip()
                 if key == 'objectClass' and value not in valid_classes:
                     continue
                 values[key] = value

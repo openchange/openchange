@@ -277,6 +277,8 @@ int emsmdb_disconnect_dtor(void *data)
 
 	emsmdb_disconnect(emsmdb_ctx);	
 
+	if (emsmdb_ctx == NULL) return 0;
+
 	talloc_free(emsmdb_ctx->cache_requests);
 
 	if (emsmdb_ctx->info.szDisplayName) {
@@ -593,6 +595,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
 					     struct mapi_request *req,
 					     struct mapi_response **repl)
 {
+	if (session->emsmdb->ctx == NULL) return NT_STATUS_INVALID_PARAMETER;
 	switch (session->profile->exchange_version) {
 	case 0x0:
 	  return emsmdb_transaction((struct emsmdb_context *)session->emsmdb->ctx, mem_ctx, req, repl);

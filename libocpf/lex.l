@@ -295,7 +295,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 				return INTEGER;
 			
 			}
-S0x[0-9A-Fa-f]+|-S[0-9]+ {
+S0x[0-9A-Fa-f]+|-?S[0-9]+ {
 			   struct ocpf_context *ctx = yyextra;
 			   char *e, *y;
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;

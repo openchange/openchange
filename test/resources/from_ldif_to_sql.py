@@ -17,8 +17,13 @@ class BaseDict(object):
         sql = [("INSERT %s VALUES (LAST_INSERT_ID(), '%s', '%s');" %
                    (table_name, name, value))
                for name, value in self.values.iteritems()
-               if name.startswith('Pid')]
-        return "\n".join(sql)
+               if name.startswith('Pid') and not isinstance(value, list)]
+        sql2 = [("INSERT %s VALUES (LAST_INSERT_ID(), '%s', '%s');" %
+                   (table_name, name, v))
+               for name, value in self.values.iteritems()
+               if isinstance(value, list)
+               for v in value]
+        return "\n".join(sql + sql2)
 
     def __str__(self):
         return self.to_sql()
@@ -60,8 +65,15 @@ class Folder(BaseDict):
             return ''
         return ("\nINSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', "
                 "'%s');" % self.values['PidTagDisplayName'])
-        
+
+    def is_mailbox(self):
+        return ('PidTagDisplayName' in self.values and 
+                self.values['PidTagDisplayName'].startswith('OpenChange Mailbox'))
+
     def to_sql(self):
+        if self.is_mailbox():
+            return ''
+
         folder_id = self.pop('PidTagFolderId')
         folder_class = self.pop('objectClass', varchar=True)
         folder_type = self.pop('FolderType')
@@ -122,7 +134,13 @@ def parse_file(file_path):
                 key, value = splitted[0].strip(), ':'.join(splitted[1:]).strip()
                 if key == 'objectClass' and value not in valid_classes:
                     continue
-                values[key] = value
+                if key in values:
+                    if isinstance(values[key], list):
+                        values[key].append(value)
+                    else:
+                        values[key] = [values[key], value]
+                else:
+                    values[key] = value
         except Exception as ex:
             print "Error for line %s: %r" % (l, ex)
     return sort_folders(folders) + messages

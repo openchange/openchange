@@ -192,7 +192,7 @@ START_TEST (test_get_MAPIStoreURIs) {
 } END_TEST
 
 START_TEST (test_get_ReceiveFolder) {
-	uint64_t fid;
+	uint64_t fid = 0;
 	const char *explicit;
 
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
@@ -201,12 +201,14 @@ START_TEST (test_get_ReceiveFolder) {
 	ck_assert_int_eq(fid, 1585267068834414593ul);
 	ck_assert_str_eq(explicit, "Report.IPM");
 
+	fid = 0;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "IPM",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, 1585267068834414593ul);
 	ck_assert_str_eq(explicit, "IPM");
 
+	fid = 0;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "all",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
@@ -402,7 +404,7 @@ START_TEST (test_set_ReceiveFolder) {
 	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_2);
 	CHECK_SUCCESS;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
-						     "whatever", &fid, &e);
+					     "whatever", &fid, &e);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_2);
 } END_TEST

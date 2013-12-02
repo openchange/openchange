@@ -167,11 +167,75 @@ START_TEST (test_get_MAPIStoreURIs) {
 	ck_assert(found);
 } END_TEST
 
+START_TEST (test_get_ReceiveFolder) {
+	uint64_t fid;
+	const char *explicit = NULL;
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+					     "Report.IPM", &fid, &explicit);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_str_eq(explicit, "Report.IPM");
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "IPM",
+					     &fid, &explicit);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_str_eq(explicit, "IPM");
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "All",
+					     &fid, &explicit);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_str_eq(explicit, "");
+} END_TEST
+
 START_TEST (test_get_TransportFolder) {
 	uint64_t fid;
 	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, 1657324662872342529ul);
+} END_TEST
+
+START_TEST (test_get_new_changeNumber) {
+	uint64_t cn = 0, new_cn;
+	int i;
+	for (i = 0; i < 5; i++) {
+		ret = openchangedb_get_new_changeNumber(oc_ctx, &cn);
+		CHECK_SUCCESS;
+		new_cn = ((exchange_globcnt(NEXT_CHANGE_NUMBER+i) << 16) | 0x0001);
+		ck_assert(cn == new_cn);
+	}
+} END_TEST
+
+START_TEST (test_get_next_changeNumber) {
+	uint64_t new_cn = 0, next_cn = 0;
+	int i;
+	for (i = 0; i < 5; i++) {
+		ret = openchangedb_get_next_changeNumber(oc_ctx, &next_cn);
+		CHECK_SUCCESS;
+		ret = openchangedb_get_new_changeNumber(oc_ctx, &new_cn);
+		CHECK_SUCCESS;
+		ck_assert(next_cn == new_cn);
+	}
+} END_TEST
+
+START_TEST (test_set_ReceiveFolder) {
+	uint64_t fid_1 = 15708555500268290049ul,
+		 fid_2 = 15780613094306217985ul, fid = 0;
+	const char *e;
+
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_1);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+					     "whatever", &fid, &e);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, fid_1);
+
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_2);
+	CHECK_SUCCESS;
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+					     "whatever", &fid, &e);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, fid_2);
 } END_TEST
 
 // ^ unit test ----------------------------------------------------------------
@@ -192,8 +256,13 @@ Suite *openchangedb_mysql_suite(void)
 	tcase_add_test(tc_mysql, test_get_PublicFolderReplica);
 
 	tcase_add_test(tc_mysql, test_get_MAPIStoreURIs);
-
+	tcase_add_test(tc_mysql, test_get_ReceiveFolder);
 	tcase_add_test(tc_mysql, test_get_TransportFolder);
+
+	tcase_add_test(tc_mysql, test_get_new_changeNumber);
+	tcase_add_test(tc_mysql, test_get_next_changeNumber);
+
+	tcase_add_test(tc_mysql, test_set_ReceiveFolder);
 
 	suite_add_tcase(s, tc_mysql);
 

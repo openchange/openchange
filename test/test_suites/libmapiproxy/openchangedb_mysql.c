@@ -167,6 +167,13 @@ START_TEST (test_get_MAPIStoreURIs) {
 	ck_assert(found);
 } END_TEST
 
+START_TEST (test_get_TransportFolder) {
+	uint64_t fid;
+	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, 1657324662872342529ul);
+} END_TEST
+
 // ^ unit test ----------------------------------------------------------------
 
 // v test suite definition ----------------------------------------------------
@@ -185,6 +192,8 @@ Suite *openchangedb_mysql_suite(void)
 	tcase_add_test(tc_mysql, test_get_PublicFolderReplica);
 
 	tcase_add_test(tc_mysql, test_get_MAPIStoreURIs);
+
+	tcase_add_test(tc_mysql, test_get_TransportFolder);
 
 	suite_add_tcase(s, tc_mysql);
 

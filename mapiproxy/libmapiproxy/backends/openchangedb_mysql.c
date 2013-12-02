@@ -14,6 +14,9 @@
 #define PUBLIC_FOLDER "public"
 #define SYSTEM_FOLDER "system"
 
+#define TRANSPORT_FOLDER_NAME "Outbox"
+#define TRANSPORT_FOLDER_LOCALE "en_US"
+
 // We only used one connection
 // FIXME assumption that every user will use the same mysql server. Change
 // into list of connections indexed by username, like indexing backend.
@@ -339,7 +342,22 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 					   const char *recipient,
 					   uint64_t *FolderId)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_TransportFolder");
+	MYSQL *conn = self->data;
+	char *sql;
+	enum MAPISTATUS ret;
+
+	// FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT f.folder_id FROM folders f "
+		"JOIN mailboxes m ON f.mailbox_id = m.id AND m.name = '%s' "
+		"JOIN folders_names n ON n.folder_id = f.id"
+		" AND n.locale = '%s' AND n.display_name = '%s'",
+		recipient, TRANSPORT_FOLDER_LOCALE, TRANSPORT_FOLDER_NAME);
+
+	ret = select_first_uint(conn, sql, FolderId);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,

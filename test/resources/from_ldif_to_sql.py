@@ -55,6 +55,12 @@ class Message(BaseDict):
 
 
 class Folder(BaseDict):
+    def display_name(self):
+        if 'PidTagDisplayName' not in self.values:
+            return ''
+        return ("\nINSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', "
+                "'%s');" % self.values['PidTagDisplayName'])
+        
     def to_sql(self):
         folder_id = self.pop('PidTagFolderId')
         folder_class = self.pop('objectClass', varchar=True)
@@ -67,7 +73,7 @@ class Folder(BaseDict):
                (OU_ID, folder_id, folder_class, MAILBOX_ID, parent_folder,
                 folder_type,system_idx, mapi_uri))
 
-        return sql + self.properties('folders_properties')
+        return sql + self.properties('folders_properties') + self.display_name()
 
 
 valid_classes = ['systemfolder', 'publicfolder', 'paiMessage', 'systemMessage']
@@ -131,5 +137,5 @@ if __name__ == "__main__":
     f = len(sys.argv) == 3 and open(sys.argv[2], 'a') or sys.stdout
     entries = parse_file(sys.argv[1])
     for entry in entries:
-        print >>f, entry, "\n"
-
+        print >>f, entry
+        print >>f

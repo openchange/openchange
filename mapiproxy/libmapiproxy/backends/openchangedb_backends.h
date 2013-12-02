@@ -18,8 +18,8 @@ struct openchangedb_context {
 	enum MAPISTATUS (*get_PublicFolderReplica)(struct openchangedb_context *, uint16_t *, struct GUID *);
 	enum MAPISTATUS (*get_parent_fid)(struct openchangedb_context *, uint64_t, uint64_t *, bool);
 	enum MAPISTATUS (*get_MAPIStoreURIs)(struct openchangedb_context *, const char *, TALLOC_CTX *, struct StringArrayW_r **);
-	enum MAPISTATUS (*get_mapistoreURI)(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **, bool);
-	enum MAPISTATUS (*set_mapistoreURI)(struct openchangedb_context *, uint64_t, const char *, bool);
+	enum MAPISTATUS (*get_mapistoreURI)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, char **, bool);
+	enum MAPISTATUS (*set_mapistoreURI)(struct openchangedb_context *, const char *, uint64_t, const char *);
 	enum MAPISTATUS (*get_fid)(struct openchangedb_context *, const char *, uint64_t *);
 	enum MAPISTATUS (*get_ReceiveFolder)(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *, uint64_t *, const char **);
 	enum MAPISTATUS (*get_TransportFolder)(struct openchangedb_context *, const char *, uint64_t *);

@@ -118,15 +118,19 @@ START_TEST (test_get_PublicFolderReplica) {
 START_TEST (test_get_mapistoreURI) {
 	char *mapistoreURI;
 
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, 2305843009213693953,
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    2305843009213693953,
 					    &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderSpam/");
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, 2305843009213693953,
-					    &mapistoreURI, false);
-	CHECK_SUCCESS;
 
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, 1873497444986126337,
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    2305843009213693953,
+					    &mapistoreURI, false);
+	CHECK_FAILURE;
+
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    1873497444986126337,
 					    &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderDrafts/");
@@ -136,18 +140,18 @@ START_TEST (test_set_mapistoreURI) {
 	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
 	char *uri;
 	uint64_t fid = 15708555500268290049U;
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, fid, &uri, true);
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, initial_uri);
 
-	ret = openchangedb_set_mapistoreURI(oc_ctx, fid, "foobar", true);
+	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, "foobar");
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, fid, &uri, true);
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, "foobar");
 
-	ret = openchangedb_set_mapistoreURI(oc_ctx, fid, initial_uri, true);
+	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, initial_uri);
 	CHECK_SUCCESS;
 } END_TEST
 

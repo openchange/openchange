@@ -151,6 +151,46 @@ START_TEST (test_get_PublicFolderReplica) {
 	talloc_free(local_mem_ctx);
 } END_TEST
 
+START_TEST (test_get_mapistoreURI) {
+	char *mapistoreURI;
+
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    2305843009213693953,
+					    &mapistoreURI, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderSpam/");
+
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    2305843009213693953,
+					    &mapistoreURI, false);
+	CHECK_FAILURE;
+
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+					    1873497444986126337,
+					    &mapistoreURI, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderDrafts/");
+} END_TEST
+
+START_TEST (test_set_mapistoreURI) {
+	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
+	char *uri;
+	uint64_t fid = 15708555500268290049U;
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(uri, initial_uri);
+
+	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, "foobar");
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(uri, "foobar");
+
+	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, initial_uri);
+	CHECK_SUCCESS;
+} END_TEST
+
 START_TEST (test_get_MAPIStoreURIs) {
 	struct StringArrayW_r *uris = talloc_zero(mem_ctx, struct StringArrayW_r);
 	bool found = false;
@@ -254,6 +294,8 @@ Suite *openchangedb_mysql_suite(void)
 	tcase_add_test(tc_mysql, test_get_MailboxGuid);
 	tcase_add_test(tc_mysql, test_get_MailboxReplica);
 	tcase_add_test(tc_mysql, test_get_PublicFolderReplica);
+	tcase_add_test(tc_mysql, test_get_mapistoreURI);
+	tcase_add_test(tc_mysql, test_set_mapistoreURI);
 
 	tcase_add_test(tc_mysql, test_get_MAPIStoreURIs);
 	tcase_add_test(tc_mysql, test_get_ReceiveFolder);

@@ -240,6 +240,7 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 
 static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 				        struct openchangedb_context *self,
+				        const char *username,
 				        uint64_t fid, char **mapistoreURL,
 				        bool mailboxstore)
 {
@@ -255,8 +256,10 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 	} else {
-		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
+		DEBUG(0, ("Called get_mapistoreURI with mailboxstore=false!"));
+		return MAPI_E_NOT_IMPLEMENTED;
+		//ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
+		//		 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 	}
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
@@ -269,8 +272,8 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
-				        uint64_t fid, const char *mapistoreURL,
-				        bool mailboxstore)
+					const char *username, uint64_t fid,
+					const char *mapistoreURL)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -281,13 +284,8 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 
 	mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 
-	if (mailboxstore == true) {
-		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
-	} else {
-		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
-				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
-	}
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 

@@ -157,51 +157,53 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchanged
 }
 
 /**
-   \details Retrieve the mapistore URI associated to a mailbox system
-   folder.
+   \details Retrieve the mapistore URI associated to a mailbox system folder.
 
    \param parent_ctx pointer to the memory context
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param fid the Folder identifier to search for
    \param mapistoreURL pointer on pointer to the mapistore URI the
    function returns
    \param mailboxstore boolean value which defines whether the record
    has to be searched within Public folders hierarchy or not
+   FIXME mailboxstore always true? remove it?
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 						       struct openchangedb_context *oc_ctx,
-						       uint64_t fid, char **mapistoreURL,
+						       const char *username,
+						       uint64_t fid,
+						       char **mapistoreURL,
 						       bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_mapistoreURI(parent_ctx, oc_ctx, fid, mapistoreURL, mailboxstore);
+	return oc_ctx->get_mapistoreURI(parent_ctx, oc_ctx, username, fid,
+					mapistoreURL, mailboxstore);
 }
 
 /**
-   \details Store the mapistore URI associated to a mailbox system
-   folder.
+   \details Store the mapistore URI associated to a mailbox system folder.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param fid the Folder identifier to search for
-   \param mapistoreURL pointer on pointer to the mapistore URI the
-   function returns
-   \param mailboxstore boolean value which defines whether the record
-   has to be searched within Public folders hierarchy or not
+   \param mapistoreURL The mapistore URI to set
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_context *oc_ctx,
-						       uint64_t fid, const char *mapistoreURL,
-						       bool mailboxstore)
+						       const char *username,
+						       uint64_t fid,
+						       const char *mapistoreURL)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->set_mapistoreURI(oc_ctx, fid, mapistoreURL, mailboxstore);
+	return oc_ctx->set_mapistoreURI(oc_ctx, username, fid, mapistoreURL);
 }
 
 /**

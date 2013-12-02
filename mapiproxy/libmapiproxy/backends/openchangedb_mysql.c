@@ -311,17 +311,47 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 
 static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 				        struct openchangedb_context *self,
-				        uint64_t fid, char **mapistoreURL,
-				        bool mailboxstore)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+				        const char *username, uint64_t fid,
+				        char **mapistoreURL, bool mailboxstore)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
+	enum MAPISTATUS ret;
+	char *sql;
+
+	if (!mailboxstore) { // FIXME is it possible?
+		return _not_implemented("get_mapistoreURI with mailboxstore=false");
+	}
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT MAPIStoreURI FROM folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"WHERE f.folder_id = %"PRIu64, username, fid);
+
+	ret = select_first_string(parent_ctx, conn, sql,
+				  (const char **)mapistoreURL);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
-				        uint64_t fid, const char *mapistoreURL,
-				        bool mailboxstore)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+					const char *username, uint64_t fid,
+					const char *mapistoreURL)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_mapistoreURI");
+	enum MAPISTATUS ret;
+	char *sql;
+
+	sql = talloc_asprintf(mem_ctx,
+		"UPDATE folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"SET f.MAPIStoreURI = '%s' "
+		"WHERE f.folder_id = %"PRIu64, username, mapistoreURL, fid);
+	ret = execute_query(conn, sql);
+	if (mysql_affected_rows(conn) == 0) {
+		ret = MAPI_E_NOT_FOUND;
+	}
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,

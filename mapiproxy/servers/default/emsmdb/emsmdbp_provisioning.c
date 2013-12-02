@@ -607,7 +607,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		}
 		else {
 			/* open the existing folder */
-			openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, current_fid, &url, true);
+			openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, current_fid, &url, true);
 			mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, url, current_fid, &context_id, &backend_object);
 			/* if (emsmdbp_ctx->mstore_ctx */
 			/* mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, url, &context_id, &backend_object); */

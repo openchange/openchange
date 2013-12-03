@@ -329,7 +329,8 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *mapistoreURL, uint64_t *fidp)
+			       const char *username, const char *mapistoreURL,
+			       uint64_t *fidp)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;

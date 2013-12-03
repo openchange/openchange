@@ -317,6 +317,7 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_mapistoreURI");
 	enum MAPISTATUS ret;
 	char *sql;
+	MYSQL *conn = self->data;
 
 	if (!mailboxstore) { // FIXME is it possible?
 		return _not_implemented("get_mapistoreURI with mailboxstore=false");
@@ -340,6 +341,7 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_mapistoreURI");
 	enum MAPISTATUS ret;
 	char *sql;
+	MYSQL *conn = self->data;
 
 	sql = talloc_asprintf(mem_ctx,
 		"UPDATE folders f "
@@ -355,16 +357,37 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
-				      uint64_t fid, uint64_t *parent_fidp,
-				      bool mailboxstore)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+				      const char *username, uint64_t fid,
+				      uint64_t *parent_fidp, bool mailboxstore)
+{
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *mapistoreURL, uint64_t *fidp)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+			       const char *mapistore_uri, uint64_t *fidp)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_fid");
+	enum MAPISTATUS ret;
+	MYSQL *conn = self->data;
+	char *sql, *mapistore_uri_2;
+
+	mapistore_uri_2 = talloc_strdup(mem_ctx, mapistore_uri);
+	if (mapistore_uri_2[strlen(mapistore_uri_2)-1] == '/') {
+		mapistore_uri_2[strlen(mapistore_uri_2)-1] = '\0';
+	} else {
+		mapistore_uri_2 = talloc_asprintf(mem_ctx, "%s/",
+						  mapistore_uri_2);
+	}
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT folder_id FROM folders "
+		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
+		mapistore_uri, mapistore_uri_2);
+
+	ret = select_first_uint(conn, sql, fidp);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,

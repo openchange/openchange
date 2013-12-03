@@ -238,7 +238,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(struct openchangedb_context *oc_ctx,
-					      const char *mapistoreURL, uint64_t *fidp)
+					      const char *mapistoreURL,
+					      uint64_t *fidp)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);

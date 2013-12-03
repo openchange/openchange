@@ -624,8 +624,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_PublicFolderReplica);
 	tcase_add_test(tc, test_get_mapistoreURI);
 	tcase_add_test(tc, test_set_mapistoreURI);
-//	tcase_add_test(tc, test_get_parent_fid);
-//	tcase_add_test(tc, test_get_fid);
+	//tcase_add_test(tc, test_get_parent_fid);
+	tcase_add_test(tc, test_get_fid);
 	tcase_add_test(tc, test_get_MAPIStoreURIs);
 	tcase_add_test(tc, test_get_ReceiveFolder);
 	tcase_add_test(tc, test_get_TransportFolder);

@@ -438,7 +438,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				abort();
 			}
 			mailbox_object = emsmdbp_get_mailbox(parent);
-			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
+			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
 			if (ret != MAPI_E_SUCCESS) {
 				DEBUG(0, ("folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid));
 				talloc_free(local_ctx);
@@ -519,12 +519,12 @@ static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, uint64_t 
 	char		*uri, *parent_uri;
 
 	mem_ctx = talloc_zero(NULL, void);
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, parent_fidp, true);
-	if (retval == MAPISTORE_SUCCESS) {
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, true);
+	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, fid, parent_fidp, false);
-	if (retval == MAPISTORE_SUCCESS) {
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, false);
+	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
 

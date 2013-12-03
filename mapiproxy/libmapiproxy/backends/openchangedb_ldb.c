@@ -302,8 +302,8 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
-				      uint64_t fid, uint64_t *parent_fidp,
-				      bool mailboxstore)
+				      const char *username, uint64_t fid,
+				      uint64_t *parent_fidp, bool mailboxstore)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
@@ -329,8 +329,7 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,
-			       const char *username, const char *mapistoreURL,
-			       uint64_t *fidp)
+			       const char *mapistoreURL, uint64_t *fidp)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;

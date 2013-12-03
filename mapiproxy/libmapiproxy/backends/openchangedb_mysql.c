@@ -342,7 +342,7 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 	MYSQL *conn = self->data;
-
+	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
 		"UPDATE folders f "
 		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
@@ -360,8 +360,30 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 				      const char *username, uint64_t fid,
 				      uint64_t *parent_fidp, bool mailboxstore)
 {
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_parent_fid");
+	enum MAPISTATUS ret;
+	char *sql;
+	MYSQL *conn = self->data;
 
-	return MAPI_E_SUCCESS;
+	if (mailboxstore) {
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+			"SELECT f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f1.id = f2.parent_folder_id"
+			"  AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes m ON m.id = f2.mailbox_id"
+			"  AND m.name = '%s'",
+			fid, username);
+	} else {
+		sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+			"SELECT f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f1.id = f2.parent_folder_id"
+			"  AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s'", fid, PUBLIC_FOLDER);
+	}
+
+	ret = select_first_uint(conn, sql, parent_fidp);
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_fid(struct openchangedb_context *self,

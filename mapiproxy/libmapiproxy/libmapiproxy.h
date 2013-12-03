@@ -210,7 +210,7 @@ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *, struct openchangedb_con
 enum MAPISTATUS	openchangedb_get_MailboxGuid(struct openchangedb_context *, const char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *, uint16_t *, struct GUID *);
-enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *, uint64_t, uint64_t *, bool);
+enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *, const char *, uint64_t, uint64_t *, bool);
 enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct openchangedb_context *, const char *, TALLOC_CTX *, struct StringArrayW_r **);
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, char **, bool);
 enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_context *, const char *, uint64_t, const char *);

@@ -148,14 +148,20 @@ START_TEST (test_get_parent_fid) {
 	uint64_t pfid = 0ul, fid = 0ul;
 
 	fid = 15708555500268290049ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, fid, &pfid, true);
+	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(1513209474796486657ul, pfid);
 
 	fid = 216172782113783809ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, fid, &pfid, true);
+	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(72057594037927937ul, pfid);
+
+	fid = 504403158265495553ul;
+	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
+					  &pfid, false);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(216172782113783809ul, pfid);
 } END_TEST
 
 START_TEST (test_get_fid) {
@@ -624,7 +630,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_PublicFolderReplica);
 	tcase_add_test(tc, test_get_mapistoreURI);
 	tcase_add_test(tc, test_set_mapistoreURI);
-	//tcase_add_test(tc, test_get_parent_fid);
+	tcase_add_test(tc, test_get_parent_fid);
 	tcase_add_test(tc, test_get_fid);
 	tcase_add_test(tc, test_get_MAPIStoreURIs);
 	tcase_add_test(tc, test_get_ReceiveFolder);

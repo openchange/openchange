@@ -211,6 +211,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
    folder.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username the mailbox name
    \param fid the Folder identifier to search for
    \param parent_fidp pointer to the parent_fid the function returns
    \param mailboxstore boolean value which defines whether the record
@@ -219,13 +220,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *oc_ctx,
-						     uint64_t fid, uint64_t *parent_fidp,
+						     const char *username,
+						     uint64_t fid,
+						     uint64_t *parent_fidp,
 						     bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!parent_fidp, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_parent_fid(oc_ctx, fid, parent_fidp, mailboxstore);
+	return oc_ctx->get_parent_fid(oc_ctx, username, fid, parent_fidp,
+				      mailboxstore);
 }
 
 /**

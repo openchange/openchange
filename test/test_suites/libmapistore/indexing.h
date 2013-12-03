@@ -1,3 +1,3 @@
 #include <check.h>
 
-Suite *indexing_suite(void);
+Suite *indexing_tdb_suite(void);

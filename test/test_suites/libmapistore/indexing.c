@@ -174,9 +174,9 @@ START_TEST (test_backend_allocate_fmid)
 	ck_assert(fmid1 != fmid2);
 } END_TEST
 
+// ^ unit tests ---------------------------------------------------------------
 
-
-/* TDB backend */
+// v suite definition ---------------------------------------------------------
 
 static void tdb_setup(void)
 {
@@ -204,30 +204,33 @@ static void tdb_teardown(void)
 	talloc_free(mstore_ctx);
 }
 
-
-Suite *indexing_suite (void)
+static Suite *indexing_create_suite(const char *backend_name, SFun setup,
+				    SFun teardown)
 {
-	Suite *s = suite_create ("Indexing backends tests");
+	char *suite_name = talloc_asprintf(talloc_autofree_context(),
+					   "Indexing %s backend",
+					   backend_name);
+	Suite *s = suite_create(suite_name);
 
-	TCase *tc = tcase_create("tdb indexing");
+	TCase *tc = tcase_create(backend_name);
 	tcase_add_checked_fixture(tc, tdb_setup, tdb_teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);
 	tcase_add_test(tc, test_backend_repeated_add_fails);
-
 	tcase_add_test(tc, test_backend_update_fmid);
-
 	tcase_add_test(tc, test_backend_del_unkown_fmid);
 	tcase_add_test(tc, test_backend_del_fmid_soft);
 	tcase_add_test(tc, test_backend_del_fmid_permanent);
-
 	tcase_add_test(tc, test_backend_get_uri_unknown);
-
 	tcase_add_test(tc, test_backend_get_fmid);
-
 	tcase_add_test(tc, test_backend_allocate_fmid);
 
 	suite_add_tcase(s, tc);
 
 	return s;
+}
+
+Suite *indexing_tdb_suite(void)
+{
+	return indexing_create_suite("TDB", tdb_setup, tdb_teardown);
 }

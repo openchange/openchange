@@ -1372,7 +1372,7 @@ unittest: CFLAGS += -Itest -fprofile-arcs -ftest-coverage -g -rdynamic
 bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapistore/namedprops_mysql.o \
 	test/test_suites/libmapistore/namedprops_ldb.o \
-	test/test_suites/libmapiproxy/openchangedb_ldb.o \
+	test/test_suites/libmapiproxy/openchangedb.o \
 	test/openchange_test_suite.o \
 	test/test_common.c \
     mapiproxy/libmapiproxy/openchangedb.o \
@@ -1380,6 +1380,7 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	mapiproxy/libmapiproxy/openchangedb_message.o \
     mapiproxy/libmapiproxy/openchangedb_property.o \
 	mapiproxy/libmapiproxy/backends/openchangedb_ldb.o \
+	mapiproxy/libmapiproxy/backends/openchangedb_mysql.o \
 	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)"

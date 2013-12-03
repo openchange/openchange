@@ -3,18 +3,20 @@
 
 #include "test_suites/libmapistore/namedprops_backends.h"
 #include "test_suites/libmapistore/indexing.h"
-#include "test_suites/libmapiproxy/openchangedb_backends.h"
+#include "test_suites/libmapiproxy/openchangedb.h"
+
 
 int main(void)
 {
 	SRunner *sr = srunner_create(suite_create("Open Change unit tests"));
 
+	srunner_add_suite(sr, openchangedb_mysql_suite());/*
 	srunner_add_suite(sr, openchangedb_ldb_suite());
 
-	srunner_add_suite(sr, indexing_suite());
+	srunner_add_suite(sr, indexing_tdb_suite());
 
 	srunner_add_suite(sr, namedprops_ldb_suite());
-	srunner_add_suite(sr, namedprops_mysql_suite());
+	srunner_add_suite(sr, namedprops_mysql_suite());*/
 
 	srunner_set_fork_status(sr, CK_NOFORK);
 	srunner_set_xml(sr, "test_results.xml");

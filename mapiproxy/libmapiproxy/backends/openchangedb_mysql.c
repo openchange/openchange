@@ -8,11 +8,13 @@
 #include <mysql/mysql.h>
 #include <samba_util.h>
 #include <inttypes.h>
-
+#include <time.h>
 
 #define SCHEMA_FILE "openchangedb_schema.sql"
 #define PUBLIC_FOLDER "public"
 #define SYSTEM_FOLDER "system"
+
+#define THRESHOLD_SLOW_QUERIES 0.25
 
 #define TRANSPORT_FOLDER_NAME "Outbox"
 #define TRANSPORT_FOLDER_LOCALE "en_US"
@@ -30,11 +32,31 @@ static enum MAPISTATUS _not_implemented(const char *caller) {
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
 
 
+float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
+{
+	return ((float)((end->tv_sec * 1000000000 + end->tv_nsec) -
+			(start->tv_sec * 1000000000 + start->tv_nsec)))
+		/ 1000000000;
+}
+
 static enum MAPISTATUS execute_query(MYSQL *conn, const char *sql)
 {
+	struct timespec start, end;
+	float seconds_spent;
+
+	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (mysql_query(conn, sql) != 0) {
 		DEBUG(0, ("Error on query `%s`: %s", sql, mysql_error(conn)));
 		return MAPI_E_CALL_FAILED;
+	}
+	clock_gettime(CLOCK_MONOTONIC, &end);
+
+	seconds_spent = timespec_diff_in_seconds(&end, &start);
+	if (seconds_spent > THRESHOLD_SLOW_QUERIES) {
+		printf("Openchangedb mysql backend slow query!\n"
+		       "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
+		DEBUG(5, ("Openchangedb mysql backend slow query!\n"
+			  "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent));
 	}
 	return MAPI_E_SUCCESS;
 }

@@ -153,7 +153,8 @@ START_TEST (test_get_parent_fid) {
 	ck_assert_int_eq(1513209474796486657ul, pfid);
 
 	fid = 216172782113783809ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
+	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
+					  &pfid, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(72057594037927937ul, pfid);
 
@@ -227,14 +228,14 @@ START_TEST (test_get_folder_count) {
 	uint64_t fid;
 
 	fid = 1513209474796486657ul;
-	ret = openchangedb_get_folder_count(oc_ctx, fid, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
-	fid = 216172782113783809ul;
-	ret = openchangedb_get_folder_count(oc_ctx, fid, &count);
+	fid = 720575940379279361ul;
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(count, 4);
+	ck_assert_int_eq(count, 12);
 } END_TEST
 
 START_TEST (test_get_new_changeNumber) {
@@ -375,14 +376,14 @@ START_TEST (test_delete_folder) {
 
 	fid = 11961560610296037377ul;
 	pfid = 1513209474796486657ul;
-	ret = openchangedb_get_folder_count(oc_ctx, pfid, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
 	ret = openchangedb_delete_folder(oc_ctx, fid);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, pfid, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 14);
 } END_TEST
@@ -439,7 +440,7 @@ START_TEST (test_create_folder) {
 
 	pfid = 1513209474796486657ul;
 
-	ret = openchangedb_get_folder_count(oc_ctx, pfid, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
 	fid = 4242;
@@ -448,7 +449,7 @@ START_TEST (test_create_folder) {
 					 "sogo://paco@mail/folderOhlala", 100);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, pfid, &count_after);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count + 1, count_after);
 } END_TEST
@@ -635,7 +636,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_MAPIStoreURIs);
 	tcase_add_test(tc, test_get_ReceiveFolder);
 	tcase_add_test(tc, test_get_TransportFolder);
-//	tcase_add_test(tc, test_get_folder_count);
+	tcase_add_test(tc, test_get_folder_count);
 	tcase_add_test(tc, test_get_new_changeNumber);
 	tcase_add_test(tc, test_get_next_changeNumber);
 //	tcase_add_test(tc, test_get_folder_property);

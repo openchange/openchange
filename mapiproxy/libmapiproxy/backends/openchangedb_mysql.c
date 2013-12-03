@@ -521,9 +521,58 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
-					uint64_t fid, uint32_t *RowCount)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+					const char *username, uint64_t fid,
+					uint32_t *RowCount)
+{
+	// FIXME always a folder from a mailbox?
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_count");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t count = 0, mailbox_id = 0, mailbox_folder_id = 0;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+
+	// The fid could be either from the mailbox or from a folder from
+	// user's mailbox
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+		"SELECT m.id, m.folder_id FROM mailboxes m WHERE m.name = '%s'",
+		username);
+	ret = select_without_fetch(conn, sql, &res);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	row = mysql_fetch_row(res);
+	if (row == NULL) {
+		DEBUG(0, ("Error getting user's mailbox `%s`: %s", sql,
+			  mysql_error(conn)));
+		mysql_free_result(res);
+		talloc_free(mem_ctx);
+		return MAPI_E_NOT_FOUND;
+	}
+
+	mailbox_id = strtoul(row[0], NULL, 10);
+	mailbox_folder_id = strtoul(row[1], NULL, 10);
+	mysql_free_result(res);
+
+	if (mailbox_folder_id == fid) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT count(f.id) FROM folders f "
+			"WHERE f.mailbox_id = %"PRIu64" "
+			"  AND f.parent_folder_id IS NULL",
+			mailbox_id);
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT count(f1.id) FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
+			"  AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.mailbox_id = %"PRIu64,
+			fid, mailbox_id);
+	}
+
+	ret = select_first_uint(conn, sql, &count);
+	*RowCount = count;
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,

@@ -1182,7 +1182,7 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 			return MAPISTORE_ERROR;
 		}
 		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
-		retval = (int) openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, folderID, row_countp);
+		retval = (int) openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, row_countp);
 	}
 
 	return retval;
@@ -2197,12 +2197,12 @@ static int emsmdbp_object_get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx
         for (i = 0; i < properties->cValues; i++) {
                 if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
-			retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, obj_count);
+			retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, obj_count);
 			data_pointers[i] = obj_count;
                 }
 		else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
 			obj_count = talloc_zero(NULL, uint32_t);
-			retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, obj_count);
+			retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, obj_count);
 			has_subobj = talloc_zero(data_pointers, uint8_t);
 			*has_subobj = (*obj_count > 0) ? 1 : 0;
 			data_pointers[i] = has_subobj;

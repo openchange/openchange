@@ -221,7 +221,7 @@ enum MAPISTATUS openchangedb_lookup_folder_property(struct openchangedb_context 
 enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_context *, uint64_t, struct SRow *);
 char *          openchangedb_set_folder_property_data(TALLOC_CTX *, struct SPropValue *);
 enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, struct openchangedb_context *, uint32_t, uint64_t, void **);
-enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *, uint64_t, uint32_t *);
+enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *, const char *, uint64_t, uint32_t *);
 enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_context *, uint64_t, uint32_t *, bool);
 enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context *, uint64_t, int *);
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, uint32_t, void **);

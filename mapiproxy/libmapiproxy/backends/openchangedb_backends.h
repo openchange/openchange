@@ -26,7 +26,7 @@ struct openchangedb_context {
 	enum MAPISTATUS (*lookup_folder_property)(struct openchangedb_context *, uint32_t, uint64_t);
 	enum MAPISTATUS (*set_folder_properties)(struct openchangedb_context *, uint64_t, struct SRow *);
 	enum MAPISTATUS (*get_folder_property)(TALLOC_CTX *, struct openchangedb_context *, uint32_t, uint64_t, void **);
-	enum MAPISTATUS (*get_folder_count)(struct openchangedb_context *, uint64_t, uint32_t *);
+	enum MAPISTATUS (*get_folder_count)(struct openchangedb_context *, const char *, uint64_t, uint32_t *);
 	enum MAPISTATUS (*get_message_count)(struct openchangedb_context *, uint64_t, uint32_t *, bool);
 	enum MAPISTATUS (*get_system_idx)(struct openchangedb_context *, uint64_t, int *);
 	enum MAPISTATUS (*get_table_property)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, uint32_t, void **);

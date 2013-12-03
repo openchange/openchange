@@ -537,7 +537,8 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
-					uint64_t fid, uint32_t *RowCount)
+					const char *username, uint64_t fid,
+					uint32_t *RowCount)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res;

@@ -328,18 +328,21 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(struct openchangedb_co
    \details Retrieve the number of sub folders for a given fid
 
    \param oc_ctx pointer to the openchange DB context
+   \param username name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param RowCount pointer to the returned number of results
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *oc_ctx,
-						       uint64_t fid, uint32_t *RowCount)
+						       const char *username,
+						       uint64_t fid,
+						       uint32_t *RowCount)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_folder_count(oc_ctx, fid, RowCount);
+	return oc_ctx->get_folder_count(oc_ctx, username, fid, RowCount);
 }
 
 /**

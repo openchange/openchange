@@ -80,10 +80,11 @@ class Folder(BaseDict):
         system_idx = self.pop('SystemIdx')
         mapi_uri = self.pop('MAPIStoreURI', varchar=True)
         parent_folder = self.pop_folder_id()
+        mailbox_id = folder_class[1:13] == 'systemfolder' and MAILBOX_ID or 'NULL'        
 
         sql = ("INSERT INTO folders VALUES (0, %s, %s, %s, %s, %s, %s, %s, %s);\n" %
-               (OU_ID, folder_id, folder_class, MAILBOX_ID, parent_folder,
-                folder_type,system_idx, mapi_uri))
+               (OU_ID, folder_id, folder_class, mailbox_id, parent_folder,
+                folder_type, system_idx, mapi_uri))
 
         return sql + self.properties('folders_properties') + self.display_name()
 

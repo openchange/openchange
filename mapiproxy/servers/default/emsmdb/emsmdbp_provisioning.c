@@ -459,7 +459,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	for (i = 0; i < nbr_special_folders; i++) {
 		current_folder = special_folders + i;
-		ret = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, current_folder->entryid_property, mailbox_fid, (void **) &entryId);
+		ret = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, current_folder->entryid_property, mailbox_fid, (void **) &entryId);
 		if (ret != MAPI_E_SUCCESS) {
 			property_row.cValues = 2;
 			property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;

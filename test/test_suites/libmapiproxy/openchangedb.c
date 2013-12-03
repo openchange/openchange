@@ -269,31 +269,42 @@ START_TEST (test_get_folder_property) {
 	// PT_LONG
 	proptag = PidTagAccess;
 	fid = 2089670227099910145ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid, &data);
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
 	ck_assert_int_eq(63, *(int *)data);
 
 	// PT_UNICODE
 	proptag = PidTagDisplayName;
 	fid = 15852670688344145921ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid, &data);
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
 	ck_assert_str_eq("A3", (char *)data);
 	proptag = PidTagRights;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid, &data);
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
 	ck_assert_int_eq(2043, *(int *)data);
 
 	// PT_SYSTIME
 	proptag = PidTagLastModificationTime;
 	fid = 720575940379279361ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid, &data);
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
 	ck_assert_int_eq(130268260180000000 >> 32,
 			 ((struct FILETIME *)data)->dwHighDateTime);
 	ck_assert_int_eq(130268260180000000 & 0xffffffff,
 			 ((struct FILETIME *)data)->dwLowDateTime);
 
+	// Mailbox display name
+	proptag = PidTagDisplayName;
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
+	ck_assert_str_eq("OpenChange Mailbox: paco", (char *)data);
+
 	// PT_BINARY
 	proptag = PidTagIpmDraftsEntryId;
 	fid = 720575940379279361ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid, &data);
+	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
+					 &data);
 	ck_assert_int_eq(46, ((struct Binary_r *)data)->cb);
 } END_TEST
 
@@ -309,17 +320,17 @@ START_TEST (test_set_folder_properties) {
 	// changed (besides the property we are setting)
 	fid = 15852670688344145921ul;
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&last_modification);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&last_modification);
 	CHECK_SUCCESS;
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&change_number);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&change_number);
 	CHECK_SUCCESS;
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&display_name);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "A3");
 
@@ -331,12 +342,12 @@ START_TEST (test_set_folder_properties) {
 	CHECK_SUCCESS;
 
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&last_modification_after);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&last_modification_after);
 	CHECK_SUCCESS;
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&change_number_after);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&change_number_after);
 	CHECK_SUCCESS;
 
 	ck_assert(change_number != change_number_after);
@@ -346,8 +357,8 @@ START_TEST (test_set_folder_properties) {
 		  != last_modification_after->dwLowDateTime);
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, proptag, fid,
-					       (void **)&display_name);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "foo");
 } END_TEST
@@ -426,7 +437,7 @@ START_TEST (test_create_mailbox) {
 	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, 11);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx,
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
 					       PidTagDisplayName, 11,
 					       (void **)&data);
 	CHECK_SUCCESS;
@@ -639,7 +650,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_folder_count);
 	tcase_add_test(tc, test_get_new_changeNumber);
 	tcase_add_test(tc, test_get_next_changeNumber);
-//	tcase_add_test(tc, test_get_folder_property);
+	tcase_add_test(tc, test_get_folder_property);
 //	tcase_add_test(tc, test_set_folder_properties);
 //	tcase_add_test(tc, test_get_fid_by_name);
 //	tcase_add_test(tc, test_get_mid_by_subject);

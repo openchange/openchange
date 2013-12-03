@@ -496,6 +496,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_
 
    \param parent_ctx pointer to the memory context
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param proptag the MAPI property tag to retrieve value for
    \param fid the record folder identifier
    \param data pointer on pointer to the data the function returns
@@ -504,14 +505,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  struct openchangedb_context *oc_ctx,
-							  uint32_t proptag, uint64_t fid,
+							  const char *username,
+							  uint32_t proptag,
+							  uint64_t fid,
 							  void **data)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_folder_property(parent_ctx, oc_ctx, proptag, fid, data);
-
+	return oc_ctx->get_folder_property(parent_ctx, oc_ctx, username,
+					   proptag, fid, data);
 }
 
 /**

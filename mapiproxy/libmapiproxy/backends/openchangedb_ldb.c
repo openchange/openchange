@@ -576,7 +576,7 @@ static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,
 	int		       	ret;
 	struct ldb_context	*ldb_ctx = self->data;
 
-	mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+	mem_ctx = talloc_named(NULL, 0, "lookup_folder_property");
 
 	/* Step 1. Find PidTagFolderId record */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
@@ -913,6 +913,7 @@ static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
 
 static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 					   struct openchangedb_context *self,
+					   const char *username,
 					   uint32_t proptag, uint64_t fid,
 					   void **data)
 {

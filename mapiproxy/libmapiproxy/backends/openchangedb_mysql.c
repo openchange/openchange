@@ -520,6 +520,38 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 	return ret;
 }
 
+static enum MAPISTATUS get_mailbox_ids_by_name(MYSQL *conn,
+					       const char *username,
+					       uint64_t *mailbox_id,
+					       uint64_t *mailbox_folder_id)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_mailbox_ids_by_name");
+	enum MAPISTATUS ret;
+	char * sql;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+		"SELECT m.id, m.folder_id FROM mailboxes m WHERE m.name = '%s'",
+		username);
+	ret = select_without_fetch(conn, sql, &res);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	row = mysql_fetch_row(res);
+	if (row == NULL) {
+		DEBUG(0, ("Error getting user's mailbox `%s`: %s", sql,
+			  mysql_error(conn)));
+		ret = MAPI_E_NOT_FOUND;
+		goto end;
+	}
+
+	*mailbox_id = strtoul(row[0], NULL, 10);
+	*mailbox_folder_id = strtoul(row[1], NULL, 10);
+end:
+	mysql_free_result(res);
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 					const char *username, uint64_t fid,
 					uint32_t *RowCount)
@@ -530,28 +562,12 @@ static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 	uint64_t count = 0, mailbox_id = 0, mailbox_folder_id = 0;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
 
-	// The fid could be either from the mailbox or from a folder from
-	// user's mailbox
-	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
-		"SELECT m.id, m.folder_id FROM mailboxes m WHERE m.name = '%s'",
-		username);
-	ret = select_without_fetch(conn, sql, &res);
+	// The fid could be from either the mailbox or a folder from user's
+	// mailbox
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
-	row = mysql_fetch_row(res);
-	if (row == NULL) {
-		DEBUG(0, ("Error getting user's mailbox `%s`: %s", sql,
-			  mysql_error(conn)));
-		mysql_free_result(res);
-		talloc_free(mem_ctx);
-		return MAPI_E_NOT_FOUND;
-	}
-
-	mailbox_id = strtoul(row[0], NULL, 10);
-	mailbox_folder_id = strtoul(row[1], NULL, 10);
-	mysql_free_result(res);
 
 	if (mailbox_folder_id == fid) {
 		sql = talloc_asprintf(mem_ctx,
@@ -664,12 +680,267 @@ static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
 	return MAPI_E_SUCCESS;
 }
 
+static char *_unknown_property(TALLOC_CTX *mem_ctx, uint32_t proptag)
+{
+	return talloc_asprintf(mem_ctx, "Unknown%.8x", proptag);
+}
+
+static struct BinaryArray_r *decode_mv_binary(TALLOC_CTX *mem_ctx, const char *str)
+{
+	const char *start;
+	char *tmp;
+	size_t i, current, len;
+	uint32_t j;
+	struct BinaryArray_r *bin_array;
+
+	bin_array = talloc_zero(mem_ctx, struct BinaryArray_r);
+
+	start = str;
+	len = strlen(str);
+	i = 0;
+	while (i < len && start[i] != ';') {
+		i++;
+	}
+	if (i < len) {
+		tmp = talloc_memdup(NULL, start, i + 1);
+		tmp[i] = 0;
+		bin_array->cValues = strtol(tmp, NULL, 16);
+		bin_array->lpbin = talloc_array(bin_array, struct Binary_r, bin_array->cValues);
+		talloc_free(tmp);
+
+		i++;
+		for (j = 0; j < bin_array->cValues; j++) {
+			current = i;
+			while (i < len && start[i] != ';') {
+				i++;
+			}
+
+			tmp = talloc_memdup(bin_array, start + current, i - current + 1);
+			tmp[i - current] = 0;
+			i++;
+
+			if (tmp[0] != 0 && strcmp(tmp, nil_string) != 0) {
+				bin_array->lpbin[j].lpb = (uint8_t *) tmp;
+				bin_array->lpbin[j].cb = ldb_base64_decode((char *) bin_array->lpbin[j].lpb);
+			}
+			else {
+				bin_array->lpbin[j].lpb = talloc_zero(bin_array, uint8_t);
+				bin_array->lpbin[j].cb = 0;
+			}
+		}
+	}
+
+	return bin_array;
+}
+
+static struct LongArray_r *decode_mv_long(TALLOC_CTX *mem_ctx, const char *str)
+{
+	const char *start;
+	char *tmp;
+	size_t i, current, len;
+	uint32_t j;
+	struct LongArray_r *long_array;
+
+	long_array = talloc_zero(mem_ctx, struct LongArray_r);
+
+	start = str;
+	len = strlen(str);
+	i = 0;
+	while (i < len && start[i] != ';') {
+		i++;
+	}
+	if (i < len) {
+		tmp = talloc_memdup(NULL, start, i + 1);
+		tmp[i] = 0;
+		long_array->cValues = strtol(tmp, NULL, 16);
+		long_array->lpl = talloc_array(long_array, uint32_t, long_array->cValues);
+		talloc_free(tmp);
+
+		i++;
+		for (j = 0; j < long_array->cValues; j++) {
+			current = i;
+			while (i < len && start[i] != ';') {
+				i++;
+			}
+
+			tmp = talloc_memdup(long_array, start + current, i - current + 1);
+			tmp[i - current] = 0;
+			i++;
+
+			long_array->lpl[j] = strtol(tmp, NULL, 16);
+			talloc_free(tmp);
+		}
+	}
+
+	return long_array;
+}
+
+static void *_get_special_property(TALLOC_CTX *mem_ctx, uint32_t proptag)
+{
+	uint32_t *l;
+
+	switch (proptag) {
+	case PR_DEPTH:
+		l = talloc_zero(mem_ctx, uint32_t);
+		*l = 0;
+		return (void *)l;
+	}
+
+	return NULL;
+}
+
+/**
+   \details Retrieve a MAPI property from an OpenChange LDB message
+
+   \param mem_ctx pointer to the memory context
+   \param msg pointer to the LDB message
+   \param proptag the MAPI property tag to lookup
+   \param PidTagAttr the mapped MAPI property name
+
+   \return valid data pointer on success, otherwise NULL
+ */
+static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char *value)
+{
+	void			*data;
+	uint64_t		*ll;
+	uint32_t		*l;
+	int			*b;
+	struct FILETIME		*ft;
+	struct Binary_r		*bin;
+	struct BinaryArray_r	*bin_array;
+	struct LongArray_r	*long_array;
+
+	switch (proptag & 0xFFFF) {
+	case PT_BOOLEAN:
+		b = talloc_zero(mem_ctx, int);
+		if (strlen(value) == 4 && strncasecmp(value, "TRUE", 4) == 0) {
+			*b = 1;
+		}
+		data = (void *)b;
+		break;
+	case PT_LONG:
+		l = talloc_zero(mem_ctx, uint32_t);
+		*l = strtoul(value, NULL, 10);
+		data = (void *)l;
+		break;
+	case PT_I8:
+		ll = talloc_zero(mem_ctx, uint64_t);
+		*ll = strtoul(value, NULL, 10);
+		data = (void *)ll;
+		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		data = (void *)talloc_strdup(mem_ctx, value);
+		break;
+	case PT_SYSTIME:
+		ft = talloc_zero(mem_ctx, struct FILETIME);
+		ll = talloc_zero(mem_ctx, uint64_t);
+		*ll = strtoul(value, NULL, 10);
+		ft->dwLowDateTime = (*ll & 0xffffffff);
+		ft->dwHighDateTime = *ll >> 32;
+		data = (void *)ft;
+		talloc_free(ll);
+		break;
+	case PT_BINARY:
+		bin = talloc_zero(mem_ctx, struct Binary_r);
+		if (strcmp(value, nil_string) == 0) {
+			bin->lpb = (uint8_t *) talloc_zero(mem_ctx, uint8_t);
+			bin->cb = 0;
+		} else {
+			bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, value);
+			bin->cb = ldb_base64_decode((char *) bin->lpb);
+		}
+		data = (void *)bin;
+		break;
+	case PT_MV_BINARY:
+		bin_array = decode_mv_binary(mem_ctx, value);
+		data = (void *)bin_array;
+		break;
+	case PT_MV_LONG:
+		long_array = decode_mv_long(mem_ctx, value);
+		data = (void *)long_array;
+		break;
+	default:
+		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		abort();
+		return NULL;
+	}
+
+	return data;
+}
+
 static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 					   struct openchangedb_context *self,
+					   const char *username,
 					   uint32_t proptag, uint64_t fid,
 					   void **data)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	// FIXME always a folder from a mailbox?
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t mailbox_id, mailbox_folder_id;
+	uint64_t *n;
+	const char *attr, *value;
+
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	attr = openchangedb_property_get_attribute(proptag);
+	if (!attr) {
+		attr = _unknown_property(parent_ctx, proptag);
+	}
+
+	*data = _get_special_property(parent_ctx, proptag);
+	if (*data != NULL) goto end;
+
+	if (proptag == PidTagFolderId) {
+		n = talloc_zero(parent_ctx, uint64_t);
+		*n = fid;
+		*data = (void *) n;
+		goto end;
+	}
+
+	if (mailbox_folder_id == fid) {
+		if (proptag == PidTagDisplayName) {
+			// FIXME i18n
+			*data = talloc_asprintf(parent_ctx,
+						"OpenChange Mailbox: %s",
+						username);
+			goto end;
+		}
+
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT mp.value FROM mailboxes_properties mp "
+			"WHERE mp.mailbox_id = %"PRIu64" AND mp.name = '%s'",
+			mailbox_id, attr);
+	} else {
+		if (proptag == PidTagParentFolderId) {
+			n = talloc_zero(parent_ctx, uint64_t);
+			ret = get_parent_fid(self, username, fid, n, true);
+			OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+			*data = (void *) n;
+			goto end;
+		}
+
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT fp.value FROM folders_properties fp "
+			"JOIN folders f ON f.id = fp.folder_id "
+			"  AND f.mailbox_id = %"PRIu64" "
+			"  AND f.folder_id = %"PRIu64" "
+			"WHERE fp.name = '%s'",
+			mailbox_id, fid, attr);
+	}
+
+	ret = select_first_string(mem_ctx, conn, sql, &value);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	// Transform string into the expected data type
+	*data = get_property_data(parent_ctx, proptag, value);
+end:
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,

@@ -306,7 +306,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, owner, fid);
 	new_folder->object.folder->contextID = context_id;
 
-	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, fid, new_folder->object.folder->postponed_props);
+	openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, new_folder->object.folder->postponed_props);
 	mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, new_folder->backend_object, new_folder->object.folder->postponed_props);
 
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
@@ -2636,7 +2636,7 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 		mapistore_uri = NULL;
 		openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, &mapistore_uri, true);
-		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);
+		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, rowp);
 		contextID = emsmdbp_get_contextID(object);
 		mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, rowp);
 		/* if the display name of a resource has changed, some backends may have modified the folder uri and we need to update the openchangedb record accordingly */
@@ -2672,10 +2672,10 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 		switch (mapistore) {
 		case false:
 			if (object->type == EMSMDBP_OBJECT_FOLDER) {
-				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);
+				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, rowp);
 			}
 			else if (object->type == EMSMDBP_OBJECT_MAILBOX) {
-				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.mailbox->folderID, rowp);
+				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.mailbox->folderID, rowp);
 			}
 			else if (object->type == EMSMDBP_OBJECT_MESSAGE) {
 				openchangedb_message_set_properties((TALLOC_CTX *)object->object.message,

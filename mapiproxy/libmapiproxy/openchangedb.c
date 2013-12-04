@@ -521,18 +521,21 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
    \details Set a MAPI property value from a folder record
 
    \param oc_ctx pointer to the openchange DB context
+   \param username name of the mailbox where the folder is
    \param fid the record folder identifier
    \param row the MAPI property to set
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_context *oc_ctx,
-							    uint64_t fid, struct SRow *row)
+							    const char *username,
+							    uint64_t fid,
+							    struct SRow *row)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->set_folder_properties(oc_ctx, fid, row);
+	return oc_ctx->set_folder_properties(oc_ctx, username, fid, row);
 }
 
 /**

@@ -323,6 +323,7 @@ START_TEST (test_set_folder_properties) {
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification);
 	CHECK_SUCCESS;
+
 	proptag = PidTagChangeNumber;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number);
@@ -338,13 +339,14 @@ START_TEST (test_set_folder_properties) {
 	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
 	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foo");
-	ret = openchangedb_set_folder_properties(oc_ctx, fid, row);
+	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
 	proptag = PidTagLastModificationTime;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification_after);
 	CHECK_SUCCESS;
+
 	proptag = PidTagChangeNumber;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number_after);
@@ -651,7 +653,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_new_changeNumber);
 	tcase_add_test(tc, test_get_next_changeNumber);
 	tcase_add_test(tc, test_get_folder_property);
-//	tcase_add_test(tc, test_set_folder_properties);
+	tcase_add_test(tc, test_set_folder_properties);
 //	tcase_add_test(tc, test_get_fid_by_name);
 //	tcase_add_test(tc, test_get_mid_by_subject);
 //	tcase_add_test(tc, test_delete_folder);

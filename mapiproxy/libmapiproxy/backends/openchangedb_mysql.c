@@ -965,10 +965,132 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
+static char *str_list_join_for_sql(TALLOC_CTX *mem_ctx, const char **list)
+{
+	char *ret = NULL;
+	int i;
+
+	if (list[0] == NULL) {
+		return talloc_strdup(mem_ctx, "");
+	}
+
+	ret = talloc_asprintf(mem_ctx, "'%s'", list[0]);
+
+	for (i = 1; list[i]; i++) {
+		ret = talloc_asprintf_append_buffer(ret, ",'%s'", list[i]);
+	}
+
+	return ret;
+}
+
 static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
-					     uint64_t fid, struct SRow *row)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+					     const char *username, uint64_t fid,
+					     struct SRow *row)
+{
+	// FIXME always a folder from a mailbox?
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t mailbox_id, mailbox_folder_id, id;
+	uint64_t *n;
+	uint32_t i;
+	const char *attr;
+	struct SPropValue *value;
+	enum MAPITAGS tag;
+	const char **names, **values;
+	char *table, *str_value, *column_id, *names_for_sql, *values_for_sql;
+	time_t unix_time = time(NULL);
+	NTTIME nt_time;
+
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
+	if (mailbox_folder_id == fid) {
+		// Updating mailbox properties
+		table = talloc_strdup(mem_ctx, "mailboxes_properties");
+		column_id = talloc_strdup(mem_ctx, "mailbox_id");
+		id = fid;
+	} else {
+		// Updating folder
+		table = talloc_strdup(mem_ctx, "folders_properties");
+		column_id = talloc_strdup(mem_ctx, "folder_id");
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f.id FROM folders f "
+			"WHERE f.folder_id = %"PRIu64" "
+			"  AND f.mailbox_id = %"PRIu64, fid, mailbox_id);
+		ret = select_first_uint(conn, sql, &id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	}
+
+	names = (const char **)str_list_make_empty(mem_ctx);
+	values = (const char **)str_list_make_empty(mem_ctx);
+	for (i = 0; i < row->cValues; i++) {
+		value = row->lpProps + i;
+		tag = value->ulPropTag;
+		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY ||
+		    tag == PR_PARENT_SOURCE_KEY || tag == PR_CREATION_TIME ||
+		    tag == PR_LAST_MODIFICATION_TIME) {
+			DEBUG(5, ("Ignored attempt to set handled property %.8x\n",
+				  tag));
+			continue;
+		}
+		attr = openchangedb_property_get_attribute(tag);
+		if (!attr) {
+			attr = _unknown_property(mem_ctx, tag);
+		}
+
+		str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+		if (!str_value) {
+			DEBUG(5, ("Ignored property of unhandled type %.4x\n",
+				  (tag & 0xffff)));
+			continue;
+		}
+
+		names = str_list_add(names, attr);
+		values = str_list_add(values, str_value);
+	}
+
+	// Add last modification
+	value = talloc_zero(mem_ctx, struct SPropValue);
+	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
+	unix_to_nt_time(&nt_time, unix_time);
+	value->value.ft.dwLowDateTime = nt_time & 0xffffffff;
+	value->value.ft.dwHighDateTime = nt_time >> 32;
+	attr = openchangedb_property_get_attribute(value->ulPropTag);
+	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+	names = str_list_add(names, attr);
+	values = str_list_add(values, str_value);
+
+	// Add change number
+	value->ulPropTag = PidTagChangeNumber;
+	get_new_changeNumber(self, (uint64_t *) &value->value.d);
+	attr = openchangedb_property_get_attribute(value->ulPropTag);
+	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+	names = str_list_add(names, attr);
+	values = str_list_add(values, str_value);
+
+	// Delete previous values
+	names_for_sql = str_list_join_for_sql(mem_ctx, names);
+	sql = talloc_asprintf(mem_ctx,
+		"DELETE FROM %s WHERE %s = %"PRIu64" AND name IN (%s)",
+		table, column_id, id, names_for_sql);
+	ret = execute_query(conn, sql);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	// Insert new values
+	values_for_sql = talloc_asprintf(mem_ctx, "(%"PRIu64", '%s', '%s')",
+					 id, names[0], values[0]);
+	for (i = 1; names[i]; i++) {
+		values_for_sql = talloc_asprintf_append_buffer(values_for_sql,
+			",(%"PRIu64", '%s', '%s')", id, names[i], values[i]);
+	}
+	sql = talloc_asprintf(mem_ctx, "INSERT INTO %s VALUES %s",
+			      table, values_for_sql);
+	ret = execute_query(conn, sql);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,

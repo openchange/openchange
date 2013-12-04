@@ -954,7 +954,8 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
-					     uint64_t fid, struct SRow *row)
+					     const char *username, uint64_t fid,
+					     struct SRow *row)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;

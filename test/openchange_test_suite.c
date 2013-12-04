@@ -18,7 +18,7 @@ int main(void)
 	srunner_add_suite(sr, namedprops_ldb_suite());
 	srunner_add_suite(sr, namedprops_mysql_suite());*/
 
-	srunner_set_fork_status(sr, CK_NOFORK);
+	srunner_set_fork_status(sr, CK_FORK);
 	srunner_set_xml(sr, "test_results.xml");
 	srunner_run_all(sr, CK_NORMAL);
 	int number_failed = srunner_ntests_failed(sr);

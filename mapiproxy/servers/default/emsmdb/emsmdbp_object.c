@@ -1234,7 +1234,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	contextID = emsmdbp_get_contextID(move_folder);
 	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
 	if (move_folder->object.folder->mapistore_root) {
-		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID);
+		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
 		if (retval) {
 			DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
 		}
@@ -1282,7 +1282,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 			goto end;
 		}
 
-		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, fid);
+		mapiret = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
 		if (mapiret != MAPI_E_SUCCESS) {
 			ret = MAPISTORE_ERR_NOT_FOUND;
 			goto end;

@@ -1154,7 +1154,8 @@ static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS delete_folder(struct openchangedb_context *self, uint64_t fid)
+static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
+				     const char *username, uint64_t fid)
 {
 	TALLOC_CTX	*mem_ctx;
 	char		*dnstr;

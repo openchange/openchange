@@ -393,7 +393,7 @@ START_TEST (test_delete_folder) {
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
-	ret = openchangedb_delete_folder(oc_ctx, fid);
+	ret = openchangedb_delete_folder(oc_ctx, "paco", fid);
 	CHECK_SUCCESS;
 
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
@@ -656,7 +656,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_set_folder_properties);
 	tcase_add_test(tc, test_get_fid_by_name);
 	tcase_add_test(tc, test_get_mid_by_subject);
-//	tcase_add_test(tc, test_delete_folder);
+	tcase_add_test(tc, test_delete_folder);
 	tcase_add_test(tc, test_set_ReceiveFolder);
 //	tcase_add_test(tc, test_get_users_from_partial_uri);// <-- broken?
 //	tcase_add_test(tc, test_create_mailbox);

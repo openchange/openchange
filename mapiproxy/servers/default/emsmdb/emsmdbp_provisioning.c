@@ -267,7 +267,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			if (!exists) {
 				DEBUG(5, ("  removing entry '%s'\n", mapistore_url));
 				openchangedb_get_fid(emsmdbp_ctx->oc_ctx, mapistore_url, &found_fid);
-				openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, found_fid);
+				openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, username, found_fid);
 			}
 		}
 	}

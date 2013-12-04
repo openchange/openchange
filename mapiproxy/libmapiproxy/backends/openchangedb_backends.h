@@ -35,7 +35,7 @@ struct openchangedb_context {
 	enum MAPISTATUS (*set_ReceiveFolder)(struct openchangedb_context *, const char *, const char *, uint64_t);
 	enum MAPISTATUS (*create_mailbox)(struct openchangedb_context *, const char *, int, uint64_t);
 	enum MAPISTATUS (*create_folder)(struct openchangedb_context *, uint64_t, uint64_t, uint64_t, const char *, int);
-	enum MAPISTATUS (*delete_folder)(struct openchangedb_context *, uint64_t);
+	enum MAPISTATUS (*delete_folder)(struct openchangedb_context *, const char *, uint64_t);
 	enum MAPISTATUS (*get_fid_from_partial_uri)(struct openchangedb_context *, const char *, uint64_t *);
 	enum MAPISTATUS (*get_users_from_partial_uri)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t *, char ***, char ***);
 

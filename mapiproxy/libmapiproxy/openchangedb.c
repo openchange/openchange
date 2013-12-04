@@ -625,15 +625,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_con
    \details Delete a folder
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param fid the record folder identifier to be deleted
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *oc_ctx, uint64_t fid)
+_PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *oc_ctx,
+						    const char *username,
+						    uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
-	return oc_ctx->delete_folder(oc_ctx, fid);
+	return oc_ctx->delete_folder(oc_ctx, username, fid);
 }
 
 /**

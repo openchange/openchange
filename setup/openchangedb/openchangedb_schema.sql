@@ -22,8 +22,8 @@ CREATE TABLE IF NOT EXISTS `organizational_units` (
   CONSTRAINT `fk_organizational_units_company_id`
     FOREIGN KEY (`company_id`)
     REFERENCES `company` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_organizational_units_company_id_idx` ON `organizational_units` (`company_id` ASC);
@@ -40,8 +40,8 @@ CREATE TABLE IF NOT EXISTS `public_folders` (
   CONSTRAINT `fk_public_folders_ou_id`
     FOREIGN KEY (`ou_id`)
     REFERENCES `organizational_units` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 
@@ -61,8 +61,8 @@ CREATE TABLE IF NOT EXISTS `mailboxes` (
   CONSTRAINT `fk_mailboxes_ou_id`
     FOREIGN KEY (`ou_id`)
     REFERENCES `organizational_units` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_mailboxes_ou_id_idx` ON `mailboxes` (`ou_id` ASC);
@@ -85,18 +85,18 @@ CREATE TABLE IF NOT EXISTS `folders` (
   CONSTRAINT `fk_folders_ou_id`
     FOREIGN KEY (`ou_id`)
     REFERENCES `organizational_units` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_folders_mailbox_id`
     FOREIGN KEY (`mailbox_id`)
     REFERENCES `mailboxes` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_folders_parent_folder_id`
     FOREIGN KEY (`parent_folder_id`)
     REFERENCES `folders` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_folders_ou_id_idx` ON `folders` (`ou_id` ASC);
@@ -121,18 +121,18 @@ CREATE TABLE IF NOT EXISTS `messages` (
   CONSTRAINT `fk_messages_ou_id`
     FOREIGN KEY (`ou_id`)
     REFERENCES `organizational_units` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_messages_folder_id`
     FOREIGN KEY (`folder_id`)
     REFERENCES `folders` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION,
+    ON DELETE CASCADE
+    ON UPDATE CASCADE,
   CONSTRAINT `fk_messages_mailbox_id`
     FOREIGN KEY (`mailbox_id`)
     REFERENCES `mailboxes` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_messages_ou_id_idx` ON `messages` (`ou_id` ASC);
@@ -152,8 +152,8 @@ CREATE TABLE IF NOT EXISTS `messages_properties` (
   CONSTRAINT `fk_messages_properties_message_id`
     FOREIGN KEY (`message_id`)
     REFERENCES `messages` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_messages_properties_message_id_idx` ON `messages_properties` (`message_id` ASC);
@@ -171,8 +171,8 @@ CREATE TABLE IF NOT EXISTS `mailboxes_properties` (
   CONSTRAINT `fk_mailboxes_properties_mailbox_id`
     FOREIGN KEY (`mailbox_id`)
     REFERENCES `mailboxes` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_mailboxes_properties_mailbox_id_idx` ON `mailboxes_properties` (`mailbox_id` ASC);
@@ -188,8 +188,8 @@ CREATE TABLE IF NOT EXISTS `folders_properties` (
   CONSTRAINT `fk_folders_properties_folder_id`
     FOREIGN KEY (`folder_id`)
     REFERENCES `folders` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_folders_properties_folder_id_idx` ON `folders_properties` (`folder_id` ASC);
@@ -207,8 +207,8 @@ CREATE TABLE IF NOT EXISTS `servers` (
   CONSTRAINT `fk_servers_company_id`
     FOREIGN KEY (`company_id`)
     REFERENCES `company` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;
 
 CREATE INDEX `fk_servers_company_id_idx` ON `servers` (`company_id` ASC);
@@ -225,6 +225,6 @@ CREATE TABLE IF NOT EXISTS `folders_names` (
   CONSTRAINT `fk_folders_names_folder_id`
     FOREIGN KEY (`folder_id`)
     REFERENCES `folders` (`id`)
-    ON DELETE NO ACTION
-    ON UPDATE NO ACTION)
+    ON DELETE CASCADE
+    ON UPDATE CASCADE)
 ENGINE = InnoDB;

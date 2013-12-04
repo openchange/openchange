@@ -1232,9 +1232,26 @@ static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
+				     const char *username,
 				     uint64_t fid)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "delete_folder");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+
+	// Parent folder is a public folder
+	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+		"DELETE f FROM folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id"
+		"  AND m.name = '%s' "
+		"WHERE f.folder_id = %"PRIu64,
+		username, fid);
+
+	ret = execute_query(conn, sql);
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,

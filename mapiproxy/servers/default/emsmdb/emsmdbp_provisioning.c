@@ -74,14 +74,14 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		goto end;
 	}
 
-	ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, public_fb_fid, dn_root, &group_fid);
+	ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, "FIXME", public_fb_fid, dn_root, &group_fid);
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &group_fid);
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
 		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, public_fb_fid, group_fid, change_num, NULL, -1);
 	}
 
-	ret = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, group_fid, dn_user, false, &fb_mid);
+	ret = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fb_mid);
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
@@ -426,7 +426,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* Ensure the name is unique */
 			base_name = current_name;
 			j = 1;
-			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
 				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
 				j++;
 			}
@@ -482,7 +482,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* Ensure the name is unique */
 			base_name = current_name;
 			j = 1;
-			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+			while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
 				current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
 				j++;
 			}
@@ -554,7 +554,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				/* Ensure the name is unique */
 				base_name = current_name;
 				j = 1;
-				while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
+				while (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_name, &found_fid) == MAPI_E_SUCCESS) {
 					current_name = talloc_asprintf(mem_ctx, "%s (%d)", base_name, j);
 					j++;
 				}
@@ -582,7 +582,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		uint8_t status;
 
 		/* find out whether the "Freebusy Data" folder exists at the mailbox root */
-		ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, mailbox_fid, "Freebusy Data", &current_fid);
+		ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, username, mailbox_fid, "Freebusy Data", &current_fid);
 		if (ret == MAPI_E_NOT_FOUND) {
 			/* create the folder */
 			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &current_fid);

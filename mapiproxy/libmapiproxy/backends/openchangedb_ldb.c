@@ -1085,6 +1085,7 @@ static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
+				       const char *username,
 				       uint64_t parent_fid,
 				       const char* foldername, uint64_t *fid)
 {
@@ -1115,6 +1116,7 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
+					  const char *username,
 					  uint64_t parent_fid,
 					  const char *subject,
 					  bool mailboxstore, uint64_t *mid)

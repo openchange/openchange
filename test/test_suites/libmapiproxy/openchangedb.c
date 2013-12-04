@@ -368,7 +368,7 @@ START_TEST (test_set_folder_properties) {
 START_TEST (test_get_fid_by_name) {
 	uint64_t pfid, fid = 0;
 	pfid = 1513209474796486657ul;
-	ret = openchangedb_get_fid_by_name(oc_ctx, pfid, "A2", &fid);
+	ret = openchangedb_get_fid_by_name(oc_ctx, "paco", pfid, "A2", &fid);
 	CHECK_SUCCESS;
 	ck_assert(fid == 15780613094306217985ul);
 } END_TEST
@@ -376,9 +376,9 @@ START_TEST (test_get_fid_by_name) {
 START_TEST (test_get_mid_by_subject) {
 	uint64_t pfid, mid = 0;
 	pfid = 576460752303423489ul;
-	ret = openchangedb_get_mid_by_subject(oc_ctx, pfid,
+	ret = openchangedb_get_mid_by_subject(oc_ctx, NULL, pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
-					      true, &mid);
+					      false, &mid);
 	CHECK_SUCCESS;
 	ck_assert(mid == 2522015791327477761ul);
 } END_TEST
@@ -654,8 +654,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_next_changeNumber);
 	tcase_add_test(tc, test_get_folder_property);
 	tcase_add_test(tc, test_set_folder_properties);
-//	tcase_add_test(tc, test_get_fid_by_name);
-//	tcase_add_test(tc, test_get_mid_by_subject);
+	tcase_add_test(tc, test_get_fid_by_name);
+	tcase_add_test(tc, test_get_mid_by_subject);
 //	tcase_add_test(tc, test_delete_folder);
 	tcase_add_test(tc, test_set_ReceiveFolder);
 //	tcase_add_test(tc, test_get_users_from_partial_uri);// <-- broken?

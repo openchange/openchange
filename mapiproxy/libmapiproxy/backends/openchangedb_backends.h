@@ -30,8 +30,8 @@ struct openchangedb_context {
 	enum MAPISTATUS (*get_message_count)(struct openchangedb_context *, uint64_t, uint32_t *, bool);
 	enum MAPISTATUS (*get_system_idx)(struct openchangedb_context *, uint64_t, int *);
 	enum MAPISTATUS (*get_table_property)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, uint32_t, void **);
-	enum MAPISTATUS (*get_fid_by_name)(struct openchangedb_context *, uint64_t, const char*, uint64_t *);
-	enum MAPISTATUS (*get_mid_by_subject)(struct openchangedb_context *, uint64_t, const char *, bool, uint64_t *);
+	enum MAPISTATUS (*get_fid_by_name)(struct openchangedb_context *, const char *, uint64_t, const char*, uint64_t *);
+	enum MAPISTATUS (*get_mid_by_subject)(struct openchangedb_context *, const char *, uint64_t, const char *, bool, uint64_t *);
 	enum MAPISTATUS (*set_ReceiveFolder)(struct openchangedb_context *, const char *, const char *, uint64_t);
 	enum MAPISTATUS (*create_mailbox)(struct openchangedb_context *, const char *, int, uint64_t);
 	enum MAPISTATUS (*create_folder)(struct openchangedb_context *, uint64_t, uint64_t, uint64_t, const char *, int);

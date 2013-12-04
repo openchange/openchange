@@ -46,7 +46,8 @@ static enum MAPISTATUS execute_query(MYSQL *conn, const char *sql)
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (mysql_query(conn, sql) != 0) {
-		DEBUG(0, ("Error on query `%s`: %s", sql, mysql_error(conn)));
+		printf("Error on query `%s`: %s\n", sql, mysql_error(conn));
+		DEBUG(5, ("Error on query `%s`: %s", sql, mysql_error(conn)));
 		return MAPI_E_CALL_FAILED;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &end);
@@ -993,7 +994,6 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 	uint64_t mailbox_id, mailbox_folder_id, id;
-	uint64_t *n;
 	uint32_t i;
 	const char *attr;
 	struct SPropValue *value;
@@ -1103,18 +1103,132 @@ static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
+				       const char *username,
 				       uint64_t parent_fid,
-				       const char* foldername, uint64_t *fid)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+				       const char *foldername, uint64_t *fid)
+{
+	// FIXME public folders
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_fid_by_name");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t mailbox_id, mailbox_folder_id;
+
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	// FIXME i18n
+	if (mailbox_folder_id == parent_fid) {
+		// The parent folder is the mailbox itself
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f.folder_id FROM folders f "
+			"JOIN folders_names fn ON fn.folder_id = f.id"
+			"  AND fn.locale = 'en_US'"
+			"  AND fn.display_name = '%s' "
+			"WHERE f.mailbox_id = %"PRIu64,
+			foldername, mailbox_id);
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.folder_id FROM folders f1 "
+			"JOIN folders_names fn ON fn.folder_id = f1.id"
+			"  AND fn.locale = 'en_US'"
+			"  AND fn.display_name = '%s' "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
+			" AND f2.folder_id = %"PRIu64,
+			foldername, parent_fid);
+	}
+
+	ret = select_first_uint(conn, sql, fid);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static enum MAPISTATUS get_mid_by_subject_from_public_folder(struct openchangedb_context *self,
+							     const char *username,
+					  	  	     uint64_t parent_fid,
+					  	  	     const char *subject,
+					  	  	     uint64_t *mid)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0,
+		"get_mid_by_subject_from_public_folder");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+
+	// Parent folder is a public folder
+	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+		"SELECT m.message_id FROM messages m "
+		"JOIN folders f1 ON f1.id = m.folder_id"
+		"  AND f1.folder_class = '%s'"
+		"  AND f1.folder_id = %"PRIu64" "
+		"WHERE m.normalized_subject = '%s'",
+		PUBLIC_FOLDER, parent_fid, subject);
+
+	ret = select_first_uint(conn, sql, mid);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static enum MAPISTATUS get_mid_by_subject_from_system_folder(struct openchangedb_context *self,
+							     const char *username,
+					  	  	     uint64_t parent_fid,
+					  	  	     const char *subject,
+					  	  	     uint64_t *mid)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0,
+		"get_mid_by_subject_from_system_folder");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t mailbox_id, mailbox_folder_id;
+
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	if (mailbox_folder_id == parent_fid) {
+		// The parent folder is the mailbox itself
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m.message_id FROM messages m "
+			"WHERE m.mailbox_id = %"PRIu64
+			"  AND m.normalized_subject = '%s'",
+			mailbox_id, subject);
+	} else {
+		// Parent folder is a system folder
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m.message_id FROM messages m "
+			"JOIN folders f1 ON f1.id = m.folder_id "
+			"  AND f1.folder_class = '%s'"
+			"  AND f1.folder_id = %"PRIu64" "
+			"  AND f1.mailbox_id = %"PRIu64" "
+			"WHERE m.normalized_subject = '%s'",
+			SYSTEM_FOLDER, parent_fid, mailbox_id, subject);
+	}
+
+	ret = select_first_uint(conn, sql, mid);
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
+					  const char *username,
 					  uint64_t parent_fid,
 					  const char *subject,
 					  bool mailboxstore, uint64_t *mid)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	if (mailboxstore) {
+		return get_mid_by_subject_from_system_folder(self, username,
+							     parent_fid,
+							     subject, mid);
+	} else {
+		return get_mid_by_subject_from_public_folder(self, username,
+							     parent_fid,
+							     subject, mid);
+	}
 }
 
 static enum MAPISTATUS delete_folder(struct openchangedb_context *self,

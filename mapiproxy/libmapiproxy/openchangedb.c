@@ -574,6 +574,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
    be provided.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param parent_fid the folder ID of the parent folder 
    \param foldername the name to look up
    \param fid the folder ID for the folder with the specified name (0 if not found)
@@ -581,6 +582,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_context *oc_ctx,
+						      const char *username,
 						      uint64_t parent_fid,
 						      const char* foldername,
 						      uint64_t *fid)
@@ -589,13 +591,14 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
 	OPENCHANGE_RETVAL_IF(!foldername, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	return oc_ctx->get_fid_by_name(oc_ctx, parent_fid, foldername, fid);
+	return oc_ctx->get_fid_by_name(oc_ctx, username, parent_fid, foldername, fid);
 }
 
 /**
    \details Retrieve the message ID associated with a given subject (normalized)
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the parent folder is
    \param parent_fid the folder ID of the parent folder 
    \param subject the normalized subject to look up
    \param mailboxstore whether the folder is under a mailbox or not
@@ -604,14 +607,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_context *oc_ctx,
-							 uint64_t parent_fid, const char *subject,
-							 bool mailboxstore, uint64_t *mid)
+							 const char *username,
+							 uint64_t parent_fid,
+							 const char *subject,
+							 bool mailboxstore,
+							 uint64_t *mid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!subject, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!mid, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_mid_by_subject(oc_ctx, parent_fid, subject, mailboxstore, mid);
+	return oc_ctx->get_mid_by_subject(oc_ctx, username, parent_fid, subject,
+					  mailboxstore, mid);
 }
 
 /**

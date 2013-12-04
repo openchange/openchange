@@ -193,7 +193,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 		return MAPISTORE_SUCCESS;
 	}
 	else {
-		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, folderID, name, fidp);
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, name, fidp);
 	}
 }
 
@@ -351,7 +351,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			talloc_free(new_folder);
 			return MAPI_E_INVALID_PARAMETER;
 		}
-		if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, parentFolderID,
+		if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parentFolderID,
 						 value->value.lpszW, &testFolderID) == MAPI_E_SUCCESS) {
 			/* this folder already exists */
 			DEBUG(4, ("emsmdbp_object: CreateFolder Duplicate Folder error\n"));

@@ -21,6 +21,8 @@ debian/libmapi-dev/
 debian/libmapi0/
 debian/libmapiadmin-dev/
 debian/libmapiadmin0/
+debian/libmapipp-dev/
+debian/libmapipp0/
 debian/libmapiproxy-dev/
 debian/libmapiproxy0/
 debian/libmapistore-dev/

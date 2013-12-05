@@ -290,28 +290,36 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 				mapi_nameid_custom_string_add(nameid, nel->mnid_string, nel->propType, nel->oleguid);
 			}
 		}
-		
+
 		/* Step3. GetIDsFromNames and map property types */
 		SPropTagArray = talloc_zero(mem_ctx, struct SPropTagArray);
-		retval = GetIDsFromNames(obj_folder, nameid->count, 
-					 nameid->nameid, 0, &SPropTagArray);
-		if (retval != MAPI_E_SUCCESS) {
+		retval = mapi_nameid_GetIDsFromNames(nameid, obj_folder, SPropTagArray);
+		if ((retval != MAPI_E_SUCCESS) && (retval != MAPI_W_ERRORS_RETURNED)) {
 			MAPIFreeBuffer(SPropTagArray);
 			MAPIFreeBuffer(nameid);
 			return retval;
 		}
-		mapi_nameid_SPropTagArray(nameid, SPropTagArray);
 		MAPIFreeBuffer(nameid);
 
 
 		/* Step4. Add named properties */
 		for (nel = ctx->nprops, i = 0; SPropTagArray->aulPropTag[i] && nel->next; nel = nel->next, i++) {
 			if (SPropTagArray->aulPropTag[i]) {
-				if (((SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_BINARY) && 
+				if (((SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_BINARY) &&
 				    (((struct Binary_r *)nel->value)->cb > MAX_READ_SIZE)) {
-					retval = ocpf_stream(mem_ctx, obj_message, SPropTagArray->aulPropTag[i], 
+					retval = ocpf_stream(mem_ctx, obj_message, SPropTagArray->aulPropTag[i],
 							     (struct Binary_r *)nel->value);
 					MAPI_RETVAL_IF(retval, retval, NULL);
+				} else if ((retval == MAPI_W_ERRORS_RETURNED) &&
+					   (SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_ERROR) {
+					/* It's an unsupported property, log it */
+					if (nel->OOM) {
+						DEBUG(0, ("Ignoring unsupported property %s:%s\n", nel->oleguid, nel->OOM));
+					} else if (nel->mnid_id) {
+						DEBUG(0, ("Ignoring unsupported property %s:0x%04X\n", nel->oleguid, nel->mnid_id));
+					} else if (nel->mnid_string) {
+						DEBUG(0, ("Ignoring unsupported property %s:%s\n", nel->oleguid, nel->mnid_string));
+					}
 				} else {
 					ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,
 								       SPropTagArray->aulPropTag[i], nel->value);

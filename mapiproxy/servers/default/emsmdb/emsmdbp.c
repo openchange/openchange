@@ -97,6 +97,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
 	enum mapistore_error	ret;
+	char			*samdb_url;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -121,8 +122,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
+	/* Retrieve samdb url (local or external) */
+	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
+	if (!samdb_url) {
+		samdb_url = "sam.ldb";
+	}
+
 	/* return an opaque context pointer on samDB database */
-	emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+	emsmdbp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));

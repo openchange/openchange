@@ -783,18 +783,21 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_cont
    \details Retrieve the system idx associated with a folder record
 
    \param oc_ctx pointer to the openchange DB context
+   \param username the name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param system_idx_p pointer to the returned value
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context *oc_ctx,
-						     uint64_t fid, int *system_idx_p)
+						     const char *username,
+						     uint64_t fid,
+						     int *system_idx_p)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!system_idx_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_system_idx(oc_ctx, fid, system_idx_p);
+	return oc_ctx->get_system_idx(oc_ctx, username, fid, system_idx_p);
 }
 
 _PUBLIC_ enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *oc_ctx)

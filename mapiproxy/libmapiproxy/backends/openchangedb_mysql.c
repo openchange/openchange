@@ -1329,9 +1329,25 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
-				      uint64_t fid, int *system_idx_p)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+				      const char *username, uint64_t fid,
+				      int *system_idx_p)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_system_idx");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql;
+	uint64_t system_idx = 0;
+
+	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+		"SELECT f.SystemIdx FROM folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"WHERE f.folder_id = %"PRIu64,
+		username, fid);
+
+	ret = select_first_uint(conn, sql, &system_idx);
+	*system_idx_p = (int)system_idx;
+
+	return ret;
 }
 
 static enum MAPISTATUS transaction_start(struct openchangedb_context *self)

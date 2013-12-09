@@ -1206,7 +1206,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 		return MAPISTORE_ERR_DENIED;
 
 		/* target is the "Top of Information Store" ? */
-		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, target_folder->object.folder->folderID, &system_idx);
+		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, target_folder->object.folder->folderID, &system_idx);
 		if (retval != MAPI_E_SUCCESS) {
 			return MAPISTORE_ERROR;
 		}
@@ -1221,7 +1221,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 
 	/* we check whether the folder is a special folder that cannot be moved */
 	if (move_folder->object.folder->mapistore_root) {
-		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, move_folder->object.folder->folderID, &system_idx);
+		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID, &system_idx);
 		if (retval != MAPI_E_SUCCESS) {
 			return MAPISTORE_ERROR;
 		}

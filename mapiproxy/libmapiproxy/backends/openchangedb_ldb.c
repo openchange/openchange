@@ -1536,7 +1536,8 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
-				      uint64_t fid, int *system_idx_p)
+				      const char *username, uint64_t fid,
+				      int *system_idx_p)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;

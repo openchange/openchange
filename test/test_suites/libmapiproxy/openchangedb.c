@@ -480,13 +480,13 @@ START_TEST (test_get_message_count) {
 
 START_TEST (test_get_system_idx) {
 	int system_idx = 0;
-	uint64_t fid = 432345564227567617ul;
-	ret = openchangedb_get_system_idx(oc_ctx, fid, &system_idx);
+	uint64_t fid = 864691128455135233ul;
+	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(9, system_idx);
+	ck_assert_int_eq(3, system_idx);
 
 	fid = 1729382256910270465ul;
-	ret = openchangedb_get_system_idx(oc_ctx, fid, &system_idx);
+	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(15, system_idx);
 } END_TEST
@@ -658,11 +658,11 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_mid_by_subject);
 	tcase_add_test(tc, test_delete_folder);
 	tcase_add_test(tc, test_set_ReceiveFolder);
-//	tcase_add_test(tc, test_get_users_from_partial_uri);// <-- broken?
+	//tcase_add_test(tc, test_get_users_from_partial_uri);// broken
 //	tcase_add_test(tc, test_create_mailbox);
 //	tcase_add_test(tc, test_create_folder);
 //	tcase_add_test(tc, test_get_message_count);
-//	tcase_add_test(tc, test_get_system_idx);
+	tcase_add_test(tc, test_get_system_idx);
 
 //	tcase_add_test(tc, test_create_and_edit_message);
 

@@ -1322,10 +1322,50 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
-					 uint64_t fid, uint32_t *RowCount,
-					 bool fai)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+					 const char *username, uint64_t fid,
+					 uint32_t *RowCount, bool fai)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_message_count");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql, *message_type;
+	uint64_t mailbox_id, mailbox_folder_id, count;
+
+	ret = get_mailbox_ids_by_name(conn, username,
+				      &mailbox_id, &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	if (fai) {
+		message_type = talloc_strdup(mem_ctx, "faiMessage");
+	} else {
+		message_type = talloc_strdup(mem_ctx, "systemMessage");
+	}
+
+	if (mailbox_folder_id == fid) {
+		// The parent folder is the mailbox itself
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT count(*) FROM messages m "
+			"WHERE m.mailbox_id = %"PRIu64
+			"  AND m.folder_id IS NULL"
+			"  AND m.message_type = '%s'",
+			mailbox_id, message_type);
+	} else {
+		// Parent folder is a system folder
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT count(*) FROM messages m "
+			"JOIN folders f1 ON f1.id = m.folder_id "
+			"  AND f1.folder_class = '%s'"
+			"  AND f1.folder_id = %"PRIu64" "
+			"  AND f1.mailbox_id = %"PRIu64" "
+			"WHERE m.message_type = '%s'",
+			SYSTEM_FOLDER, fid, mailbox_id, message_type);
+	}
+
+	ret = select_first_uint(conn, sql, &count);
+	*RowCount = (uint32_t)count;
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,

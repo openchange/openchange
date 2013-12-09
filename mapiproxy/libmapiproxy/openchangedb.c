@@ -763,6 +763,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context 
    \details Retrieve the number of messages within the specified folder
 
    \param oc_ctx pointer to the openchange DB context
+   \param username Name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param RowCount pointer to the returned number of results
    \param fai whether we want to count fai messages or system messages
@@ -770,13 +771,15 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_context *oc_ctx,
-							uint64_t fid, uint32_t *RowCount,
+							const char *username,
+							uint64_t fid,
+							uint32_t *RowCount,
 							bool fai)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_message_count(oc_ctx, fid, RowCount, fai);
+	return oc_ctx->get_message_count(oc_ctx, username, fid, RowCount, fai);
 }
 
 /**

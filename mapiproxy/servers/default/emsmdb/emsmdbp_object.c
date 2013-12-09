@@ -1386,14 +1386,16 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 				/* Non-mapistore message tables */
 				switch (table_type) {
 				case MAPISTORE_MESSAGE_TABLE:
-					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
-								       folderID, 
+					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx,
+								       parent_object->emsmdbp_ctx->username,
+								       folderID,
 								       &table_object->object.table->denominator,
 								       false);
 					break;
 				case MAPISTORE_FAI_TABLE:
-					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx, 
-								       folderID, 
+					openchangedb_get_message_count(parent_object->emsmdbp_ctx->oc_ctx,
+								       parent_object->emsmdbp_ctx->username,
+								       folderID,
 								       &table_object->object.table->denominator,
 								       true);
 					break;

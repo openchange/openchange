@@ -1506,7 +1506,8 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
-					 uint64_t fid, uint32_t *RowCount, bool fai)
+					 const char *username, uint64_t fid,
+					 uint32_t *RowCount, bool fai)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res;

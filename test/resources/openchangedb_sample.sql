@@ -555,6 +555,9 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE')
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', '/o=First Organization/cn=addrlists/cn=oabs/cn=Default Offline Address Book');
 
+INSERT INTO messages VALUES (0, 1, 2522015791327477762, 'systemMessage', (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1873497444986126337) as t), 1, 'Sample message on system folder');
+INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
+
 INSERT INTO messages VALUES (0, 1, 2522015791327477761, 'systemMessage', (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 576460752303423489) as t), 1, 'USER-/CN=RECIPIENTS/CN=PACO');
 INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
 

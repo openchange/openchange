@@ -469,7 +469,7 @@ START_TEST (test_create_folder) {
 
 START_TEST (test_get_message_count) {
 	uint32_t count = 0;
-	uint64_t fid = 576460752303423489ul;
+	uint64_t fid = 1873497444986126337ul;
 	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);

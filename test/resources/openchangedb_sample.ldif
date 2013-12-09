@@ -331,6 +331,17 @@ distinguishedName: CN=1873497444986126337,CN=1513209474796486657,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
+dn: CN=2522015791327477762,CN=1873497444986126337,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 2522015791327477762
+objectClass: systemMessage
+PidTagHasNamedProperties: 0
+PidTagMessageId: 2522015791327477762
+PidTagNormalizedSubject: Sample message on system folder
+PidTagParentFolderId: 1873497444986126337
+distinguishedName: CN=2522015791327477762,CN=1873497444986126337,CN=1513209474
+ 796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENT
+ YAL,DC=zentyal-domain,DC=lan
+
 # record 15
 dn: CN=864691128455135233,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 cn: 864691128455135233

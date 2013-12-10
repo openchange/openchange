@@ -1346,10 +1346,12 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 		"(LAST_INSERT_ID(), 'PidTagCreationTime', '%"PRId64"')", now);
 	l = str_list_add(l, value);
 	value = talloc_asprintf(mem_ctx,
-		"(LAST_INSERT_ID(), 'PidTagLastModificationTime', '%"PRId64"')", now);
+		"(LAST_INSERT_ID(), 'PidTagLastModificationTime', '%"PRId64"')",
+		now);
 	l = str_list_add(l, value);
 	value = talloc_asprintf(mem_ctx,
-		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')", change_number);
+		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')",
+		change_number);
 	l = str_list_add(l, value);
 	values_sql = str_list_join(mem_ctx, l, ',');
 	sql = talloc_asprintf(mem_ctx,
@@ -1361,11 +1363,64 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,
-				     uint64_t parentFolderID, uint64_t fid,
+				     const char *username,
+				     uint64_t pfid, uint64_t fid,
 				     uint64_t changeNumber,
 				     const char *MAPIStoreURI, int systemIdx)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "create_folder");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql, *mailbox_guid, *replica_guid, *values_sql, *value;
+	const char **l;
+	uint64_t change_number;
+	NTTIME now;
+
+	unix_to_nt_time(&now, time(NULL));
+
+	get_new_changeNumber(self, &change_number);
+
+	// Insert row in folders
+	sql = talloc_asprintf(mem_ctx,
+		"INSERT INTO folders SET ou_id = (SELECT ou_id FROM mailboxes "
+						 "WHERE name = '%s'),"
+		"folder_id = %"PRIu64", folder_class = '%s', "
+		"mailbox_id = (SELECT id FROM mailboxes WHERE name = '%s'), "
+		"parent_folder_id = (SELECT f.id FROM folders f "
+				    "JOIN mailboxes m ON m.id = f.mailbox_id "
+				    "WHERE m.name = '%s' "
+				    "  AND f.folder_id = %"PRIu64"), "
+		"FolderType = %d, SystemIdx = %d, MAPIStoreURI = '%s'",
+		username, fid, SYSTEM_FOLDER, username, username, pfid, 1,
+		systemIdx, MAPIStoreURI);
+	ret = execute_query(conn, sql);
+	// FIXME return MAPI_E_COLLISION if applies
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	// Insert mailboxes properties
+	l = (const char **) str_list_make_empty(mem_ctx);
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagContentUnreadCount', '0')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagContentCount', '0')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeHidden', '0')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeSystem', '0')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeReadOnly', '0')");
+	/* FIXME: PidTagAccess and PidTagRights are user-specific */
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAccess', '63')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagRights', '2043')");
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagCreationTime', '%"PRId64"')", now);
+	l = str_list_add(l, value);
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')",
+		change_number);
+	l = str_list_add(l, value);
+	values_sql = str_list_join(mem_ctx, l, ',');
+	sql = talloc_asprintf(mem_ctx,
+		"INSERT INTO folders_properties VALUES %s", values_sql);
+	ret = execute_query(conn, sql);
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS get_message_count(struct openchangedb_context *self,

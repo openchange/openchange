@@ -291,7 +291,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	}
 
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PidTagChangeNumber);
-	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, parent_fid, fid, value->value.d, mapistore_uri, -1);
+	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parent_fid, fid, value->value.d, mapistore_uri, -1);
 	if (retval != MAPI_E_SUCCESS) {
 		if (retval == MAPI_E_COLLISION) {
 			ret = MAPISTORE_ERR_EXIST;

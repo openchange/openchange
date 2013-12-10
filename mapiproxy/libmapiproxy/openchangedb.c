@@ -738,6 +738,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context
    \details Create a folder in openchangedb
 
    \param oc_ctx pointer to the openchange DB context
+   \param username The name of the mailbox where the parent folder is
    \param parentFolderID the FID of the parent folder
    \param fid the FID of the folder to create
    \param changeNumber the change number
@@ -747,17 +748,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *oc_ctx,
-						    uint64_t parentFolderID, uint64_t fid,
+						    const char *username,
+						    uint64_t parentFolderID,
+						    uint64_t fid,
 						    uint64_t changeNumber,
-						    const char *MAPIStoreURI, int systemIdx)
+						    const char *MAPIStoreURI,
+						    int systemIdx)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!parentFolderID, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!changeNumber, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->create_folder(oc_ctx, parentFolderID, fid, changeNumber,
-				     MAPIStoreURI, systemIdx);
+	return oc_ctx->create_folder(oc_ctx, username, parentFolderID, fid,
+				     changeNumber, MAPIStoreURI, systemIdx);
 }
 
 /**

@@ -470,7 +470,7 @@ START_TEST (test_create_folder) {
 
 	fid = 4242;
 	changenumber = 424242;
-	ret = openchangedb_create_folder(oc_ctx, pfid, fid, changenumber,
+	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
 					 "sogo://paco@mail/folderOhlala", 100);
 	CHECK_SUCCESS;
 
@@ -673,7 +673,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_set_ReceiveFolder);
 	//tcase_add_test(tc, test_get_users_from_partial_uri);// broken
 	tcase_add_test(tc, test_create_mailbox);
-//	tcase_add_test(tc, test_create_folder);
+	tcase_add_test(tc, test_create_folder);
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_system_idx);
 

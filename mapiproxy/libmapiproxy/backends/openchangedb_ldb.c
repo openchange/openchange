@@ -1420,6 +1420,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,
+				     const char *username,
 				     uint64_t parentFolderID, uint64_t fid,
 				     uint64_t changeNumber,
 				     const char *MAPIStoreURI, int systemIdx)

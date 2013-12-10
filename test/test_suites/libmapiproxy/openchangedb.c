@@ -435,6 +435,7 @@ START_TEST (test_get_users_from_partial_uri) {
 
 START_TEST (test_create_mailbox) {
 	char *data;
+	uint32_t *data_int;
 
 	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, 11);
 	CHECK_SUCCESS;
@@ -445,6 +446,17 @@ START_TEST (test_create_mailbox) {
 	CHECK_SUCCESS;
 	ck_assert_str_eq("OpenChange Mailbox: chuck", (char *)data);
 
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
+					       PidTagAccess, 11,
+					       (void **)&data_int);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(63, *data_int);
+
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
+					       PidTagRights, 11,
+					       (void **)&data_int);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(2043, *data_int);
 } END_TEST
 
 START_TEST (test_create_folder) {
@@ -660,7 +672,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_delete_folder);
 	tcase_add_test(tc, test_set_ReceiveFolder);
 	//tcase_add_test(tc, test_get_users_from_partial_uri);// broken
-//	tcase_add_test(tc, test_create_mailbox);
+	tcase_add_test(tc, test_create_mailbox);
 //	tcase_add_test(tc, test_create_folder);
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_system_idx);

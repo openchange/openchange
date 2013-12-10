@@ -724,7 +724,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
-						     const char *username, int systemIdx,
+						     const char *username,
+						     int systemIdx,
 						     uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);

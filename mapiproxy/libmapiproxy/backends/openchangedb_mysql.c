@@ -1310,7 +1310,54 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 				      const char *username, int systemIdx,
 				      uint64_t fid)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "create_mailbox");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	char *sql, *mailbox_guid, *replica_guid, *values_sql, *value;
+	const char **l;
+	struct GUID guid;
+	uint64_t change_number;
+	NTTIME now;
+
+	unix_to_nt_time(&now, time(NULL));
+
+	get_new_changeNumber(self, &change_number);
+
+	// Insert row in mailboxes
+	guid = GUID_random();
+	mailbox_guid = GUID_string(mem_ctx, &guid);
+	guid = GUID_random();
+	replica_guid = GUID_string(mem_ctx, &guid);
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+		"INSERT INTO mailboxes SET folder_id = %"PRIu64", name = '%s', "
+		"MailboxGUID = '%s', ReplicaGUID = '%s', ReplicaID = %d, "
+		"SystemIdx = %d, ou_id = (SELECT id FROM organizational_units LIMIT 1)",
+		fid, username, mailbox_guid, replica_guid, 1, systemIdx);
+	ret = execute_query(conn, sql);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	// Insert mailboxes properties
+	l = (const char **) str_list_make_empty(mem_ctx);
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAccess', '63')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagRights', '2043')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagFolderType', '1')");
+	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE')");
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagCreationTime', '%"PRId64"')", now);
+	l = str_list_add(l, value);
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagLastModificationTime', '%"PRId64"')", now);
+	l = str_list_add(l, value);
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')", change_number);
+	l = str_list_add(l, value);
+	values_sql = str_list_join(mem_ctx, l, ',');
+	sql = talloc_asprintf(mem_ctx,
+		"INSERT INTO mailboxes_properties VALUES %s", values_sql);
+	ret = execute_query(conn, sql);
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,
@@ -1387,6 +1434,7 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	ret = select_first_uint(conn, sql, &system_idx);
 	*system_idx_p = (int)system_idx;
 
+	talloc_free(mem_ctx);
 	return ret;
 }
 

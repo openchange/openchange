@@ -1371,7 +1371,7 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "create_folder");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
-	char *sql, *mailbox_guid, *replica_guid, *values_sql, *value;
+	char *sql, *values_sql, *value;
 	const char **l;
 	uint64_t change_number;
 	NTTIME now;

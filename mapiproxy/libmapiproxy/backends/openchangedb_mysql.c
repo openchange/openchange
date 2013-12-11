@@ -567,8 +567,12 @@ static enum MAPISTATUS get_mailbox_ids_by_name(MYSQL *conn,
 		goto end;
 	}
 
-	*mailbox_id = strtoul(row[0], NULL, 10);
-	*mailbox_folder_id = strtoul(row[1], NULL, 10);
+	if (mailbox_id) {
+		*mailbox_id = strtoul(row[0], NULL, 10);
+	}
+	if (mailbox_folder_id) {
+		*mailbox_folder_id = strtoul(row[1], NULL, 10);
+	}
 end:
 	mysql_free_result(res);
 	talloc_free(mem_ctx);
@@ -1572,60 +1576,413 @@ enum openchangedb_message_type {
 };
 
 struct openchangedb_message_properties {
-	char		**names;
-	char 		**values;
-	uint64_t	size;
+	const char 	**names;
+	const char 	**values;
+	size_t 		size;
 };
 
 struct openchangedb_message {
-	uint64_t				id;
+	uint64_t				id; // id from database
+	uint64_t				ou_id;
 	uint64_t				message_id;
 	enum openchangedb_message_type		message_type;
-	uint64_t				folder_id;
+	uint64_t				folder_id; // id from database
 	uint64_t				mailbox_id;
 	char					*normalized_subject;
 	struct openchangedb_message_properties	properties;
 };
 
+/**
+ * Return the database id field of a folder identified by folder_id and
+ * mailbox's name
+ */
+static enum MAPISTATUS get_folder_id_from_fid(MYSQL *conn, const char *username,
+					      uint64_t fid, uint64_t *folder_id)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_id_from_fid");
+	enum MAPISTATUS ret;
+	char *sql;
+
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+		"SELECT f.id FROM folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"WHERE f.folder_id = %"PRIu64,
+		username, fid);
+
+	ret = select_first_uint(conn, sql, folder_id);
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 				      struct openchangedb_context *self,
-				      uint64_t message_id, uint64_t folder_id,
+				      const char *username,
+				      uint64_t message_id, uint64_t fid,
 				      bool fai, void **message_object)
-{ // TODO
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	uint64_t mailbox_id = 0, mailbox_folder_id, folder_id;
+	struct openchangedb_message *msg;
+	enum MAPISTATUS ret;
+	MYSQL *conn = self->data;
+	bool parent_is_mailbox = false;
+
+	ret = get_mailbox_ids_by_name(conn, username, &mailbox_id,
+				      &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	parent_is_mailbox = mailbox_folder_id == fid;
+	if (!parent_is_mailbox) {
+		ret = get_folder_id_from_fid(conn, username, fid, &folder_id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	}
+
+	msg = talloc_zero(mem_ctx, struct openchangedb_message);
+	OPENCHANGE_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	msg->id = 0; // Only new records will have id equal to 0
+	// TODO ou_id
+	msg->message_id = message_id;
+	msg->message_type = fai ? OPENCHANGEDB_MESSAGE_FAI : OPENCHANGEDB_MESSAGE_SYSTEM;
+	if (!parent_is_mailbox)
+		msg->folder_id = folder_id;
+	msg->mailbox_id = mailbox_id;
+
+	msg->properties.size = 4;
+	msg->properties.names = (const char **)talloc_zero_array(msg, char *, msg->properties.size);
+	msg->properties.values = (const char **)talloc_zero_array(msg, char *, msg->properties.size);
+	// Add required properties as described in [MS_OXCMSG] 3.2.5.2
+	msg->properties.names[0] = talloc_strdup(msg, "PidTagDisplayBcc");
+	msg->properties.names[1] = talloc_strdup(msg, "PidTagDisplayCc");
+	msg->properties.names[2] = talloc_strdup(msg, "PidTagDisplayTo");
+	msg->properties.names[3] = talloc_strdup(msg, "PidTagHasNamedProperties");
+	msg->properties.values[0] = talloc_strdup(msg, "");
+	msg->properties.values[1] = talloc_strdup(msg, "");
+	msg->properties.values[2] = talloc_strdup(msg, "");
+	msg->properties.values[3] = talloc_strdup(msg, "0");
+
+	*message_object = (void *)msg;
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS message_save(struct openchangedb_context *self,
 				    void *_msg, uint8_t save_flags)
-{ // TODO
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_save");
+	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
+	char *sql;
+	uint64_t i;
+	enum MAPISTATUS ret;
+	const char **fields = (const char **)str_list_make_empty(mem_ctx);
+
+	transaction_start(self);
+
+	if (msg->id) {
+		// Update, we don't need to update the properties, that's done
+		// with another function
+		// TODO ou_id
+		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+			"message_id=%"PRIu64, msg->message_id));
+		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+			"message_type=%d", msg->message_type));
+		if (msg->folder_id) {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"folder_id=%"PRIu64, msg->folder_id));
+		} else {
+			fields = str_list_add(fields, talloc_strdup(mem_ctx,
+				"folder_id=NULL"));
+		}
+		if (msg->mailbox_id) {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"mailbox_id=%"PRIu64, msg->mailbox_id));
+		} else {
+			fields = str_list_add(fields, talloc_strdup(mem_ctx,
+				"mailbox_id=NULL"));
+		}
+		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+			"normalized_subject='%s'", msg->normalized_subject));
+		sql = talloc_asprintf(mem_ctx,
+			"UPDATE messages SET %s WHERE id=%"PRIu64,
+			str_list_join(mem_ctx, fields, ','), msg->id);
+		ret = execute_query(conn, sql);
+	} else {
+		// Create message row and all its properties
+		// TODO ou_id
+		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+			"message_id=%"PRIu64, msg->message_id));
+		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+			"message_type=%d", msg->message_type));
+		if (msg->folder_id) {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"folder_id=%"PRIu64, msg->folder_id));
+		} else {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"folder_id=NULL"));
+		}
+		if (msg->mailbox_id) {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"mailbox_id=%"PRIu64, msg->mailbox_id));
+		} else {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"mailbox_id=NULL"));
+		}
+		if (msg->normalized_subject) {
+			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
+				"normalized_subject='%s'", msg->normalized_subject));
+		}
+		sql = talloc_asprintf(mem_ctx, "INSERT INTO messages SET %s",
+				      str_list_join(mem_ctx, fields, ','));
+		ret = execute_query(conn, sql);
+		if (ret != MAPI_E_SUCCESS)
+			goto end;
+		msg->id = mysql_insert_id(conn);
+	}
+
+	// Delete all properties, we are gonna insert now so...
+	sql = talloc_asprintf(mem_ctx,
+		"DELETE FROM messages_properties WHERE message_id = %"PRIu64,
+		msg->id);
+	ret = execute_query(conn, sql);
+	if (ret != MAPI_E_SUCCESS)
+		goto end;
+
+	// Insert properties
+	for (i = 0; i < msg->properties.size; i++) {
+		sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO messages_properties (message_id, name, value) "
+			"VALUES (%"PRIu64", '%s', '%s')", msg->id,
+			msg->properties.names[i], msg->properties.values[i]);
+		ret = execute_query(conn, sql);
+		if (ret != MAPI_E_SUCCESS)
+			goto end;
+	}
+end:
+	if (ret == MAPI_E_SUCCESS) {
+		transaction_commit(self);
+	} else {
+		transaction_rollback(self);
+	}
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
-static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 				    struct openchangedb_context *self,
+				    const char *username,
 				    uint64_t messageID, uint64_t folderID,
 				    void **message_object, void **msgp)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_open");
+	struct openchangedb_message *msg;
+	struct mapistore_message *mmsg;
+	char *sql;
+	MYSQL *conn = self->data;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	enum MAPISTATUS ret;
+	size_t i;
+	uint64_t mailbox_id = 0, mailbox_folder_id;
+
+	msg = talloc_zero(parent_ctx, struct openchangedb_message);
+	msg->message_id = messageID;
+
+	ret = get_mailbox_ids_by_name(conn, username, &mailbox_id,
+				      &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	if (folderID == mailbox_folder_id) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m.id, m.ou_id, m.message_type, m.mailbox_id, "
+			       "m.normalized_subject FROM messages m "
+			"WHERE m.message_id = %"PRIu64
+			"  AND m.mailbox_id = %"PRIu64
+			"  AND m.folder_id IS NULL",
+			messageID, mailbox_id);
+	} else {
+		// FIXME message from public folder without mailbox associated
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m.id, m.ou_id, m.message_type, m.mailbox_id, "
+			       "m.normalized_subject FROM messages m "
+			"WHERE m.message_id = %"PRIu64
+			"  AND m.mailbox_id = %"PRIu64
+			"  AND m.folder_id = %"PRIu64,
+			messageID, folderID, mailbox_id);
+		msg->folder_id = folderID;
+	}
+	ret = select_without_fetch(conn, sql, &res);
+	if (ret != MAPI_E_SUCCESS) {
+		talloc_free(msg);
+		OPENCHANGE_RETVAL_ERR(ret, mem_ctx);
+	}
+	row = mysql_fetch_row(res);
+	msg->id = strtoull(row[0], NULL, 10);
+	//msg->ou_id = strtoull(row[1], NULL, 10);
+	if (row[2] && strncmp(row[2], "fai", 3) == 0 && strlen(row[2]) == 3) {
+		msg->message_type = OPENCHANGEDB_MESSAGE_FAI;
+	} else {
+		msg->message_type = OPENCHANGEDB_MESSAGE_SYSTEM;
+	}
+	msg->mailbox_id = strtoull(row[3], NULL, 10);
+	msg->normalized_subject = talloc_strdup(msg, row[4]);
+	mysql_free_result(res);
+
+	// Now fetch all properties
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT name, value FROM messages_properties "
+		"WHERE message_id = %"PRIu64, msg->id);
+	ret = select_without_fetch(conn, sql, &res);
+	if (ret != MAPI_E_SUCCESS) {
+		talloc_free(msg);
+		OPENCHANGE_RETVAL_ERR(ret, mem_ctx);
+	}
+	msg->properties.size = mysql_num_rows(res);
+	msg->properties.names = (const char **)talloc_zero_array(msg, char *, msg->properties.size);
+	msg->properties.values = (const char **)talloc_zero_array(msg, char *, msg->properties.size);
+	for (i = 0; i < msg->properties.size; i++) {
+		row = mysql_fetch_row(res);
+		msg->properties.names[i] = talloc_strdup(msg, row[0]);
+		msg->properties.values[i] = talloc_strdup(msg, row[1]);
+	}
+	mysql_free_result(res);
+	*message_object = (void *)msg;
+
+	if (msgp) {
+		mmsg = talloc_zero(parent_ctx, struct mapistore_message);
+		mmsg->subject_prefix = NULL;
+		mmsg->normalized_subject = talloc_strdup(mmsg, msg->normalized_subject);
+		mmsg->columns = NULL;
+		mmsg->recipients_count = 0;
+		mmsg->recipients = NULL;
+		*msgp = (void *)mmsg;
+	}
+
+	talloc_free(mem_ctx);
+	return ret;
 }
 
-static enum MAPISTATUS message_get_property(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 					    struct openchangedb_context *self,
-					    void *message_object,
-					    uint32_t proptag, void **data)
+					    void *_msg, uint32_t proptag,
+					    void **data)
 {
-	// PidTagParentFolderId -> folder_id
-	// PidTagMessageId -> message_id
-	// PidTagNormalizedSubject -> normalized_subject
-	return MAPI_E_NOT_IMPLEMENTED;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_get_property");
+	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
+	char *sql;
+	const char *attr, *value;
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+	uint64_t *id;
+	size_t i;
+
+	// Special properties (they are on messages table instead of
+	// messages_properties table):
+	//     PidTagParentFolderId -> folder_id
+	//     PidTagMessageId -> message_id
+	//     PidTagNormalizedSubject -> normalized_subject
+	if (proptag == PidTagParentFolderId) {
+		if (msg->folder_id) {
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT f.folder_id FROM folders f "
+				"WHERE f.id = %"PRIu64,
+				msg->folder_id);
+		} else if (msg->mailbox_id) {
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT m.folder_id FROM mailboxes m "
+				"WHERE m.id = %"PRIu64,
+				msg->mailbox_id);
+		} else {
+			DEBUG(5, ("Message without neither folder_id nor "
+				  "mailbox_id"));
+			ret = MAPI_E_CORRUPT_DATA;
+			goto end;
+		}
+		id = talloc_zero(parent_ctx, uint64_t);
+		ret = select_first_uint(conn, sql, id);
+		if (ret == MAPI_E_SUCCESS)
+			*data = id;
+		goto end;
+	} else if (proptag == PidTagMid) {
+		id = talloc_zero(parent_ctx, uint64_t);
+		*id = msg->message_id;
+		*data = id;
+		goto end;
+	} else if (proptag == PidTagNormalizedSubject) {
+		*data = talloc_strdup(parent_ctx, msg->normalized_subject);
+		goto end;
+	}
+
+	ret = MAPI_E_NOT_FOUND;
+	// Look for property in properties struct
+	attr = openchangedb_property_get_attribute(proptag);
+	if (!attr) {
+		attr = _unknown_property(mem_ctx, proptag);
+	}
+	for (i = 0; i < msg->properties.size; i++) {
+		if (strncmp(msg->properties.names[i], attr, strlen(attr)) == 0) {
+			value = msg->properties.values[i];
+			ret = MAPI_E_SUCCESS;
+			break;
+		}
+	}
+	// Transform string into the expected data type
+	*data = get_property_data(parent_ctx, proptag, value);
+end:
+	talloc_free(mem_ctx);
+	return ret;
 }
 
-static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 					      struct openchangedb_context *self,
-					      void *message_object,
-					      struct SRow *row)
+					      void *_msg, struct SRow *row)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_set_properties");
+	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
+	const char *attr;
+	char *str_value;
+	enum MAPITAGS tag;
+	struct SPropValue *value;
+	size_t i, j;
+	bool found;
+
+	for (i = 0; i < row->cValues; i++) {
+		value = row->lpProps + i;
+		tag = value->ulPropTag;
+		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY ||
+		    tag == PR_PARENT_SOURCE_KEY || tag == PR_CHANGE_KEY) {
+			DEBUG(5, ("Ignored attempt to set handled property %.8x\n",
+				  tag));
+			break;
+		}
+		attr = openchangedb_property_get_attribute(tag);
+		if (!attr) {
+			attr = _unknown_property(mem_ctx, tag);
+		}
+
+		str_value = openchangedb_set_folder_property_data(mem_ctx, value);
+		if (!str_value) {
+			DEBUG(5, ("Ignored property of unhandled type %.4x\n",
+				  (tag & 0xffff)));
+			continue;
+		}
+		found = false;
+		for (j = 0; j < msg->properties.size; j++) {
+			if (strncmp(attr, msg->properties.names[j], strlen(attr)) == 0) {
+				found = true;
+				msg->properties.values[j] = talloc_strdup(msg, str_value);
+			}
+		}
+
+		if (!found) {
+			msg->properties.size++;
+			msg->properties.names = (const char **)talloc_realloc(msg, msg->properties.names, char *, msg->properties.size);
+			msg->properties.values = (const char **)talloc_realloc(msg, msg->properties.values, char *, msg->properties.size);
+			msg->properties.names[msg->properties.size-1] = talloc_strdup(msg, attr);
+			msg->properties.values[msg->properties.size-1] = talloc_strdup(msg, str_value);
+		}
+	}
+
+	return MAPI_E_SUCCESS;
 }
 
 // ^ openchangedb message -----------------------------------------------------
@@ -1784,9 +2141,10 @@ end:
 
 }
 
-_PUBLIC_ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
-					 	       const char *connection_string,
-						       struct openchangedb_context **ctx)
+_PUBLIC_
+enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
+					      const char *connection_string,
+					      struct openchangedb_context **ctx)
 {
 	struct openchangedb_context *oc_ctx;
 
@@ -1844,10 +2202,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = create_connection(connection_string);
 	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
 	if (!is_schema_created(oc_ctx->data)) {
+		bool schema_created;
 		DEBUG(0, ("Creating schema for openchangedb on mysql %s",
 			  connection_string));
-		bool schema_created = create_schema(oc_ctx->data);
-		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED, oc_ctx);
+		schema_created = create_schema(oc_ctx->data);
+		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED,
+				     oc_ctx);
 	}
 
 	*ctx = oc_ctx;

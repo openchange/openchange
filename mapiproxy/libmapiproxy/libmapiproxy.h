@@ -243,8 +243,8 @@ enum MAPISTATUS openchangedb_table_set_restrictions(struct openchangedb_context 
 enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);
 
 /* definitions from openchangedb_message.c */
-enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct openchangedb_context *, uint64_t, uint64_t, void **, void **);
-enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct openchangedb_context *, uint64_t, uint64_t, bool, void **);
+enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, void **, void **);
+enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, bool, void **);
 enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *, void *, uint8_t);
 enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, uint32_t, void **);
 enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *, struct openchangedb_context *, void *, struct SRow *);

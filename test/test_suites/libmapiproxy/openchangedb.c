@@ -513,13 +513,15 @@ START_TEST (test_create_and_edit_message) {
 
 	fid = 720575940379279361ul;
 	mid = 10;
-	ret = openchangedb_message_create(mem_ctx, oc_ctx, mid, fid, false, &msg);
+	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
+					  false, &msg);
 	CHECK_SUCCESS;
 
 	ret = openchangedb_message_save(oc_ctx, msg, 0);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_message_open(mem_ctx, oc_ctx, mid, fid, &msg, 0);
+	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+					&msg, 0);
 	CHECK_SUCCESS;
 
 	prop = PidTagParentFolderId;
@@ -677,7 +679,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_system_idx);
 
-//	tcase_add_test(tc, test_create_and_edit_message);
+	tcase_add_test(tc, test_create_and_edit_message);
 
 //	tcase_add_test(tc, test_build_table);
 

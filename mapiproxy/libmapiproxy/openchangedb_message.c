@@ -37,24 +37,29 @@
    \details Initialize and create a message object
 
    \param mem_ctx pointer to the memory context to use for allocation
-   \param ldb_ctx pointer to the ldb context
+   \param oc_ctx pointer to the openchangedb context
+   \param username The name of the mailbox where the parent folder of the
+   message is.
    \param messageID the identifier of the message to create
    \param folderID the identifier of the folder where the message is created
    \param message_object pointer on pointer to the message object to return
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx,
-						     struct openchangedb_context *oc_ctx,
-						     uint64_t messageID,
-						     uint64_t folderID,
-						     bool fai,
-						     void **message_object)
+_PUBLIC_
+enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx,
+					    struct openchangedb_context *oc_ctx,
+					    const char *username,
+					    uint64_t messageID,
+					    uint64_t folderID,
+					    bool fai,
+					    void **message_object)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!message_object, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return oc_ctx->message_create(mem_ctx, oc_ctx, messageID, folderID, fai, message_object);
+	return oc_ctx->message_create(mem_ctx, oc_ctx, username, messageID,
+				      folderID, fai, message_object);
 }
 
 /**
@@ -65,8 +70,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *oc_ctx,
-						   void *msg, uint8_t SaveFlags)
+_PUBLIC_
+enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *oc_ctx,
+					  void *msg, uint8_t SaveFlags)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!msg, MAPI_E_NOT_INITIALIZED, NULL);
@@ -78,7 +84,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *
    \details Initialize and open a message object
 
    \param mem_ctx pointer to the memory context to use for allocation
-   \param ldb_ctx pointer to the ldb context
+   \param oc_ctx pointer to the openchangedb context
+   \param username the name of the mailbox where the parent folder of the
+   message is.
    \param messageID the identifier of the message to open
    \param folderID the identifier of the folder where the message is stored
    \param message_object pointer on pointer to the message object to return
@@ -86,15 +94,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *
 
    \return MAPI_E_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx,
-						   struct openchangedb_context *oc_ctx,
-						   uint64_t messageID, uint64_t folderID, 
-						   void **message_object, void **msgp)
+_PUBLIC_
+enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx,
+					  struct openchangedb_context *oc_ctx,
+					  const char *username,
+					  uint64_t messageID, uint64_t folderID,
+					  void **message_object, void **msgp)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!message_object, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return oc_ctx->message_open(mem_ctx, oc_ctx, messageID, folderID, message_object, msgp);
+	return oc_ctx->message_open(mem_ctx, oc_ctx, username, messageID,
+				    folderID, message_object, msgp);
 }
 
 
@@ -108,17 +119,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *mem_ctx, 
-		   	   	   	   	   	   struct openchangedb_context *oc_ctx,
-							   void *message_object, 
-							   uint32_t proptag,
-							   void **data)
+_PUBLIC_
+enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *mem_ctx,
+						  struct openchangedb_context *oc_ctx,
+						  void *message_object,
+						  uint32_t proptag, void **data)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!message_object, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return oc_ctx->message_get_property(mem_ctx, oc_ctx, message_object, proptag, data);
+	return oc_ctx->message_get_property(mem_ctx, oc_ctx, message_object,
+					    proptag, data);
 }
 
 /**
@@ -131,14 +143,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *mem_ctx,
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI errors.
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *mem_ctx,
-							     struct openchangedb_context *oc_ctx,
-							     void *message_object,
-							     struct SRow *row)
+_PUBLIC_
+enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *mem_ctx,
+						    struct openchangedb_context *oc_ctx,
+						    void *message_object,
+						    struct SRow *row)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!message_object, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return oc_ctx->message_set_properties(mem_ctx, oc_ctx, message_object, row);
+	return oc_ctx->message_set_properties(mem_ctx, oc_ctx, message_object,
+					      row);
 }

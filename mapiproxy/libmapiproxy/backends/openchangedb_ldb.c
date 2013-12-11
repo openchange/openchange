@@ -1860,6 +1860,7 @@ struct openchangedb_message {
 
 static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 				      struct openchangedb_context *self,
+				      const char *username,
 				      uint64_t messageID, uint64_t folderID,
 				      bool fai, void **message_object)
 {
@@ -1966,6 +1967,7 @@ static enum MAPISTATUS message_save(struct openchangedb_context *self,
 
 static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 				    struct openchangedb_context *self,
+				    const char *username,
 				    uint64_t messageID, uint64_t folderID,
 				    void **message_object, void **msgp)
 {

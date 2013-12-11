@@ -85,7 +85,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fb_mid);
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
-		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, fb_mid, group_fid, false, &message_object);
+		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
 		property_row.cValues = 1;
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;

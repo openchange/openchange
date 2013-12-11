@@ -44,9 +44,9 @@ struct openchangedb_context {
 	enum MAPISTATUS (*table_set_restrictions)(struct openchangedb_context *, void *, struct mapi_SRestriction *);
 	enum MAPISTATUS (*table_get_property)(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);
 
-	enum MAPISTATUS (*message_create)(TALLOC_CTX *, struct openchangedb_context *, uint64_t, uint64_t, bool, void **);
+	enum MAPISTATUS (*message_create)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, bool, void **);
 	enum MAPISTATUS (*message_save)(struct openchangedb_context *, void *, uint8_t);
-	enum MAPISTATUS (*message_open)(TALLOC_CTX *, struct openchangedb_context *, uint64_t, uint64_t, void **, void **);
+	enum MAPISTATUS (*message_open)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, void **, void **);
 	enum MAPISTATUS (*message_get_property)(TALLOC_CTX *, struct openchangedb_context *, void *, uint32_t, void **);
 	enum MAPISTATUS (*message_set_properties)(TALLOC_CTX *, struct openchangedb_context *, void *, struct SRow *);
 

@@ -1524,45 +1524,675 @@ static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
-// TODO types
+
+struct openchangedb_table_message_row {
+	uint64_t id;
+	uint64_t mid;
+	char *normalized_subject;
+};
+
+struct openchangedb_table_folder_row {
+	uint64_t id;
+	uint64_t fid;
+};
+
+struct openchangedb_table_results {
+	size_t count;
+	union {
+		struct openchangedb_table_folder_row **folders;
+		struct openchangedb_table_message_row **messages;
+	};
+};
+
 struct openchangedb_table {
-	uint64_t			folderID;
-	uint8_t				table_type;
-	struct SSortOrderSet		*lpSortCriteria;
-	struct mapi_SRestriction	*restrictions;
-	struct ldb_result		*res;
+	uint64_t				folder_id;
+	const char 				*username;
+	uint8_t					table_type;
+	struct SSortOrderSet			*lpSortCriteria;
+	struct mapi_SRestriction		*restrictions;
+	struct openchangedb_table_results	*res;
 };
 
 
 static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
 				  struct openchangedb_context *self,
-				  uint8_t table_type, uint64_t folderID,
+				  const char *username,
+				  uint8_t table_type, uint64_t folder_id,
 				  void **table_object)
-{//TODO NEEDS USER
-	return MAPI_E_NOT_IMPLEMENTED;
+{
+	struct openchangedb_table *table = talloc_zero(mem_ctx, struct openchangedb_table);
+
+	if (!table) {
+		return MAPI_E_NOT_ENOUGH_MEMORY;
+	}
+
+	table->folder_id = folder_id;
+	table->username = talloc_strdup(table, username);
+	table->table_type = table_type;
+	table->lpSortCriteria = NULL;
+	table->restrictions = NULL;
+	table->res = NULL;
+
+	*table_object = (void *)table;
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS table_set_sort_order(struct openchangedb_context *self,
-					    void *table_object,
+					    void *_table,
 					    struct SSortOrderSet *lpSortCriteria)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	struct openchangedb_table *table = (struct openchangedb_table *)_table;
+
+	if (table->res) {
+		talloc_free(table->res);
+		table->res = NULL;
+	}
+
+	if (table->lpSortCriteria) {
+		talloc_free(table->lpSortCriteria);
+	}
+
+	if (lpSortCriteria) {
+		table->lpSortCriteria = talloc_memdup(table, lpSortCriteria,
+						      sizeof(struct SSortOrderSet));
+		if (!table->lpSortCriteria)
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+
+		table->lpSortCriteria->aSort = talloc_memdup(
+			table->lpSortCriteria, lpSortCriteria->aSort,
+			lpSortCriteria->cSorts * sizeof(struct SSortOrder));
+
+		if (!table->lpSortCriteria->aSort)
+			return MAPI_E_NOT_ENOUGH_MEMORY;
+	} else {
+		table->lpSortCriteria = NULL;
+	}
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS table_set_restrictions(struct openchangedb_context *self,
-					      void *table_object,
+					      void *_table,
 					      struct mapi_SRestriction *res)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	struct openchangedb_table *table = (struct openchangedb_table *)_table;
+
+	if (table->res) {
+		talloc_free(table->res);
+		table->res = NULL;
+	}
+
+	if (table->restrictions) {
+		talloc_free(table->restrictions);
+		table->restrictions = NULL;
+	}
+
+	table->restrictions = talloc_zero(table, struct mapi_SRestriction);
+
+	if (res->rt != RES_PROPERTY) {
+		DEBUG(5, ("Unsupported restriction type: 0x%x\n", res->rt));
+		return MAPI_E_INVALID_PARAMETER;
+	}
+
+	table->restrictions->rt = res->rt;
+	table->restrictions->res.resProperty.relop = res->res.resProperty.relop;
+	table->restrictions->res.resProperty.ulPropTag = res->res.resProperty.ulPropTag;
+	table->restrictions->res.resProperty.lpProp.ulPropTag = res->res.resProperty.lpProp.ulPropTag;
+
+	switch (table->restrictions->res.resProperty.lpProp.ulPropTag & 0xFFFF) {
+	case PT_STRING8:
+		table->restrictions->res.resProperty.lpProp.value.lpszA =
+			talloc_strdup(table->restrictions, res->res.resProperty.lpProp.value.lpszA);
+		break;
+	case PT_UNICODE:
+		table->restrictions->res.resProperty.lpProp.value.lpszW =
+			talloc_strdup(table->restrictions, res->res.resProperty.lpProp.value.lpszW);
+		break;
+	default:
+		DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
+		return MAPI_E_INVALID_PARAMETER;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
+					     struct openchangedb_table *table,
+					     bool fai, bool live_filtered)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "_table_fetch_messages");
+	char *sql, *msg_type;
+	const char *attr, *value;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	enum MAPISTATUS ret;
+	uint64_t id;
+	size_t i;
+	struct openchangedb_table_results *results;
+	struct openchangedb_table_message_row *msg_row;
+	struct mapi_SRestriction *restrictions = table->restrictions;
+
+	msg_type = talloc_strdup(mem_ctx, fai ? "faiMessage" : "systemMessage");
+
+	if (restrictions) {
+		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
+		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			value = restrictions->res.resProperty.lpProp.value.lpszA;
+			break;
+		case PT_UNICODE:
+			value = restrictions->res.resProperty.lpProp.value.lpszW;
+			break;
+		default:
+			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			return MAPI_E_TOO_COMPLEX;
+		}
+	}
+
+	if (live_filtered || !restrictions) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m1.id, m1.message_id, m1.normalized_subject "
+			"FROM messages m1 "
+			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
+			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
+			"WHERE m1.message_type = '%s' "
+			"UNION "
+			"SELECT m2.id, m2.message_id, m2.normalized_subject "
+			"FROM messages m2 "
+			"JOIN folders f ON f.id = m2.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
+			"WHERE m2.message_type = '%s'",
+			table->folder_id, table->username, msg_type,
+			table->folder_id, table->username, msg_type);
+	} else if (restrictions->res.resProperty.ulPropTag == PidTagMid) {
+		id = strtoull(value, NULL, 10);
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m1.id, m1.message_id, m1.normalized_subject "
+			"FROM messages m1 "
+			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
+			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
+			"WHERE m1.message_type = '%s' "
+			"  AND m1.message_id = %"PRIu64
+			"UNION "
+			"SELECT m2.id, m2.message_id, m2.normalized_subject "
+			"FROM messages m2 "
+			"JOIN folders f ON f.id = m2.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
+			"WHERE m2.message_type = '%s'"
+			"  AND m2.message_id = %"PRIu64,
+			table->folder_id, table->username, msg_type, id,
+			table->folder_id, table->username, msg_type, id);
+	} else if (restrictions->res.resProperty.ulPropTag == PidTagNormalizedSubject) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m1.id, m1.message_id, m1.normalized_subject "
+			"FROM messages m1 "
+			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
+			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
+			"WHERE m1.message_type = '%s' "
+			"  AND m1.normalized_subject = '%s'"
+			"UNION "
+			"SELECT m2.id, m2.message_id, m2.normalized_subject "
+			"FROM messages m2 "
+			"JOIN folders f ON f.id = m2.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
+			"WHERE m2.message_type = '%s'"
+			"  AND m2.normalized_subject = '%s'",
+			table->folder_id, table->username, msg_type, value,
+			table->folder_id, table->username, msg_type, value);
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT m1.id, m1.message_id, m1.normalized_subject "
+			"FROM messages m1 "
+			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
+			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
+			"WHERE m1.message_type = '%s' "
+			"  AND EXISTS ("
+			"     SELECT mp.message_id FROM messages_properties mp "
+			"     WHERE mp.message_id = m1.id "
+			"       AND mp.name = '%s' AND mp.value = '%s')"
+			"UNION "
+			"SELECT m2.id, m2.message_id, m2.normalized_subject "
+			"FROM messages m2 "
+			"JOIN folders f ON f.id = m2.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
+			"WHERE m2.message_type = '%s'"
+			"  AND EXISTS ("
+			"     SELECT mp.message_id FROM messages_properties mp "
+			"     WHERE mp.message_id = m2.id "
+			"       AND mp.name = '%s' AND mp.value = '%s')",
+			table->folder_id, table->username, msg_type, attr, value,
+			table->folder_id, table->username, msg_type, attr, value);
+	}
+
+	ret = select_without_fetch(conn, sql, &res);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	results = talloc_zero(table, struct openchangedb_table_results);
+	table->res = results;
+	results->count = mysql_num_rows(res);
+	results->messages = talloc_array(results,
+					 struct openchangedb_table_message_row *,
+					 results->count);
+	for (i = 0; i < results->count; i++) {
+		msg_row = talloc_zero(results,
+				      struct openchangedb_table_message_row);
+		row = mysql_fetch_row(res);
+
+		msg_row->id = strtoull(row[0], NULL, 0);
+		msg_row->mid = strtoull(row[1], NULL, 0);
+		msg_row->normalized_subject = talloc_strdup(results, row[2]);
+
+		results->messages[i] = msg_row;
+	}
+	mysql_free_result(res);
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
+					    struct openchangedb_table *table,
+					    bool live_filtered)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "_table_fetch_folders");
+	char *sql;
+	const char *attr, *value;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	enum MAPISTATUS ret;
+	uint64_t id;
+	size_t i;
+	struct openchangedb_table_results *results;
+	struct openchangedb_table_folder_row *folder_row;
+	struct mapi_SRestriction *restrictions = table->restrictions;
+
+	if (restrictions) {
+		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
+		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			value = restrictions->res.resProperty.lpProp.value.lpszA;
+			break;
+		case PT_UNICODE:
+			value = restrictions->res.resProperty.lpProp.value.lpszW;
+			break;
+		default:
+			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			return MAPI_E_TOO_COMPLEX;
+		}
+	}
+
+	if (live_filtered || !restrictions) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"UNION "
+			"SELECT f3.id, f3.folder_id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE f3.parent_folder_id IS NULL",
+			table->folder_id, table->username,
+			table->folder_id, table->username);
+	} else if (restrictions->res.resProperty.ulPropTag == PidTagFolderId) {
+		id = strtoull(value, NULL, 10);
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"WHERE f1.folder_id = %"PRIu64" "
+			"UNION "
+			"SELECT f3.id, f3.folder_id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE f3.parent_folder_id IS NULL"
+			"   AND f3.folder_id = %"PRIu64" ",
+			table->folder_id, table->username, id,
+			table->folder_id, table->username, id);
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"WHERE EXISTS ("
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.folder_id = f1.id "
+			"       AND fp.name = '%s' AND fp.value = '%s')"
+			"UNION "
+			"SELECT f3.id, f3.folder_id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE f3.parent_folder_id IS NULL"
+			"  AND EXISTS ("
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.message_id = f3.id "
+			"       AND fp.name = '%s' AND fp.value = '%s')",
+			table->folder_id, table->username, attr, value,
+			table->folder_id, table->username, attr, value);
+	}
+
+	ret = select_without_fetch(conn, sql, &res);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	results = talloc_zero(table, struct openchangedb_table_results);
+	table->res = results;
+	results->count = mysql_num_rows(res);
+	results->folders = talloc_array(results,
+					struct openchangedb_table_folder_row *,
+					results->count);
+	for (i = 0; i < results->count; i++) {
+		folder_row = talloc_zero(results,
+					 struct openchangedb_table_folder_row);
+		row = mysql_fetch_row(res);
+
+		folder_row->id = strtoull(row[0], NULL, 0);
+		folder_row->fid = strtoull(row[1], NULL, 0);
+
+		results->folders[i] = folder_row;
+	}
+	mysql_free_result(res);
+	talloc_free(mem_ctx);
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS _table_fetch_results(MYSQL *conn,
+					    struct openchangedb_table *table,
+					    bool live_filtered)
+{
+	bool is_message = table->table_type == 0x3 || table->table_type == 0x2;
+
+	if (is_message) {
+		bool fai = table->table_type == 0x3;
+		return _table_fetch_messages(conn, table, fai, live_filtered);
+	} else {
+		return _table_fetch_folders(conn, table, live_filtered);
+	}
+}
+
+static bool _table_check_message_match_restrictions(MYSQL *conn,
+						    struct openchangedb_table *table,
+						    bool fai,
+						    struct openchangedb_table_message_row *row)
+{
+	TALLOC_CTX *mem_ctx;
+	char *sql, *msg_type;
+	const char *attr, *value;
+	struct mapi_SRestriction *restrictions = table->restrictions;
+	uint64_t id;
+	enum MAPISTATUS ret;
+
+	if (restrictions) {
+		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
+		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			value = restrictions->res.resProperty.lpProp.value.lpszA;
+			break;
+		case PT_UNICODE:
+			value = restrictions->res.resProperty.lpProp.value.lpszW;
+			break;
+		default:
+			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			return MAPI_E_TOO_COMPLEX;
+		}
+	}
+
+	if (restrictions->res.resProperty.ulPropTag == PidTagMid) {
+		return row->mid == strtoull(value, NULL, 10);
+	} else if (restrictions->res.resProperty.ulPropTag == PidTagNormalizedSubject) {
+		return strcmp(row->normalized_subject, value) == 0;
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "_table_check_message_match_restrictions");
+	msg_type = talloc_strdup(mem_ctx, fai ? "faiMessage" : "systemMessage");
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT m1.id FROM messages m1 "
+		"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
+		"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
+		"WHERE m1.message_type = '%s' "
+		"  AND EXISTS ("
+		"     SELECT mp.message_id FROM messages_properties mp "
+		"     WHERE mp.message_id = m1.id "
+		"       AND mp.name = '%s' AND mp.value = '%s') "
+		"  AND m1.id = %"PRIu64" "
+		"UNION "
+		"SELECT m2.id FROM messages m2 "
+		"JOIN folders f ON f.id = m2.folder_id "
+		"  AND f.folder_id = %"PRIu64" "
+		"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
+		"WHERE m2.message_type = '%s'"
+		"  AND EXISTS ("
+		"     SELECT mp.message_id FROM messages_properties mp "
+		"     WHERE mp.message_id = m2.id "
+		"       AND mp.name = '%s' AND mp.value = '%s') "
+		"  AND m2.id = %"PRIu64,
+		table->folder_id, table->username, msg_type, attr, value, row->id,
+		table->folder_id, table->username, msg_type, attr, value, row->id);
+
+	ret = select_first_uint(conn, sql, &id);
+
+	talloc_free(mem_ctx);
+	return ret == MAPI_E_SUCCESS;
+}
+
+static bool _table_check_folder_match_restrictions(MYSQL *conn,
+						   struct openchangedb_table *table,
+						   struct openchangedb_table_folder_row *row)
+{
+	TALLOC_CTX *mem_ctx;
+	char *sql;
+	const char *attr, *value;
+	struct mapi_SRestriction *restrictions = table->restrictions;
+	uint64_t id;
+	enum MAPISTATUS ret;
+
+	if (restrictions) {
+		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
+		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			value = restrictions->res.resProperty.lpProp.value.lpszA;
+			break;
+		case PT_UNICODE:
+			value = restrictions->res.resProperty.lpProp.value.lpszW;
+			break;
+		default:
+			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			return MAPI_E_TOO_COMPLEX;
+		}
+	}
+
+	if (restrictions->res.resProperty.ulPropTag == PidTagFolderId) {
+		return row->fid == strtoull(value, NULL, 10);
+	}
+
+	mem_ctx = talloc_named(NULL, 0, "_table_check_folder_match_restrictions");
+
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT f1.id FROM folders f1 "
+		"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+		"   AND f2.folder_id = %"PRIu64" "
+		"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+		"   AND mb1.name = '%s' "
+		"WHERE EXISTS ("
+		"     SELECT mp.folder_id FROM folders_properties mp "
+		"     WHERE mp.folder_id = f1.id "
+		"       AND mp.name = '%s' AND mp.value = '%s') "
+		"   AND f1.id = %"PRIu64
+		"UNION "
+		"SELECT f3.id, f3.folder_id FROM folders f3 "
+		"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+		"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+		"WHERE f3.parent_folder_id IS NULL"
+		"  AND EXISTS ("
+		"     SELECT mp.folder_id FROM messages_properties mp "
+		"     WHERE mp.message_id = f3.id "
+		"       AND mp.name = '%s' AND mp.value = '%s') "
+		"   AND f3.id = %"PRIu64,
+		table->folder_id, table->username, attr, value, row->id,
+		table->folder_id, table->username, attr, value, row->id);
+
+	ret = select_first_uint(conn, sql, &id);
+
+	talloc_free(mem_ctx);
+	return ret == MAPI_E_SUCCESS;
+}
+
+static bool _table_check_match_restrictions(MYSQL *conn,
+					    struct openchangedb_table *table,
+					    uint32_t pos)
+{
+	bool is_message = table->table_type == 0x3 || table->table_type == 0x2;
+
+	if (!table->restrictions) return true;
+
+	if (is_message) {
+		bool fai = table->table_type == 0x3;
+		return _table_check_message_match_restrictions(conn, table, fai, table->res->messages[pos]);
+	} else {
+		return _table_check_folder_match_restrictions(conn, table, table->res->folders[pos]);
+	}
+}
+
+static const char *_table_fetch_message_attribute(MYSQL *conn,
+						  struct openchangedb_table *table,
+						  uint32_t pos,
+						  enum MAPITAGS proptag)
+{
+	const char *value;
+	struct openchangedb_table_message_row *row = table->res->messages[pos];
+
+	if (proptag == PidTagMid) {
+		value = talloc_asprintf(table->res, "%"PRIu64, row->mid);
+	} else if (proptag == PidTagNormalizedSubject) {
+		value = talloc_strdup(table->res, row->normalized_subject);
+	} else {
+		const char *attr = openchangedb_property_get_attribute(proptag);
+		char *sql = talloc_asprintf(NULL,
+			"SELECT mp.value FROM messages_properties mp "
+			"WHERE mp.message_id = %"PRIu64" AND mp.name = '%s'",
+			row->id, attr);
+		if (!attr) return NULL;
+		select_first_string(table->res, conn, sql, &value);
+		talloc_free(sql);
+	}
+
+	return (const char *)talloc_strdup(table->res, value);
+}
+
+static const char *_table_fetch_folder_attribute(MYSQL *conn,
+						 struct openchangedb_table *table,
+						 uint32_t pos,
+						 enum MAPITAGS proptag)
+{
+	const char *value;
+	struct openchangedb_table_folder_row *row = table->res->folders[pos];
+
+	if (proptag == PidTagFolderId) {
+		value = talloc_asprintf(table->res, "%"PRIu64, row->fid);
+	} else if (proptag == PidTagDisplayName) {
+		char *sql = talloc_asprintf(NULL,
+			"SELECT n.display_name FROM folders_names n "
+			"WHERE n.folder_id = %"PRIu64" "
+			"   AND n.locale = 'en_US'", row->id);
+		select_first_string(table->res, conn, sql, &value);
+		talloc_free(sql);
+	} else {
+		const char *attr = openchangedb_property_get_attribute(proptag);
+		char *sql = talloc_asprintf(NULL,
+			"SELECT fp.value FROM folders_properties fp "
+			"WHERE fp.folder_id = %"PRIu64" AND fp.name = '%s'",
+			row->id, attr);
+		if (!attr) return NULL;
+		select_first_string(table->res, conn, sql, &value);
+		talloc_free(sql);
+	}
+
+	return (const char *)talloc_strdup(table->res, value);
+}
+
+static const char *_table_fetch_attribute(MYSQL *conn,
+					  struct openchangedb_table *table,
+					  uint32_t pos, enum MAPITAGS proptag)
+{
+	bool is_message = table->table_type == 0x3 || table->table_type == 0x2;
+
+	if (is_message) {
+		return _table_fetch_message_attribute(conn, table, pos, proptag);
+	} else {
+		return _table_fetch_folder_attribute(conn, table, pos, proptag);
+	}
 }
 
 static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 					  struct openchangedb_context *self,
-					  void *table_object,
+					  void *_table,
 					  enum MAPITAGS proptag, uint32_t pos,
 					  bool live_filtered, void **data)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	struct openchangedb_table *table = (struct openchangedb_table *)_table;
+	const char *value;
+	enum MAPISTATUS ret;
+	MYSQL *conn = self->data;
+	struct openchangedb_table_results *res;
+	uint32_t *id;
+
+	/* Fetch results */
+	if (!table->res) {
+		ret = _table_fetch_results(conn, table, live_filtered);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
+	}
+	res = table->res;
+
+	// Ensure position is within search results range
+	OPENCHANGE_RETVAL_IF(pos >= res->count, MAPI_E_INVALID_OBJECT, NULL);
+
+	/* If live filtering, make sure the specified row match the restrictions */
+	if (live_filtered) {
+		if (!_table_check_match_restrictions(conn, table, pos)) {
+			return MAPI_E_INVALID_OBJECT;
+		}
+	}
+
+	// workarounds for some specific attributes
+	if (proptag == PR_INST_ID) {
+		proptag = table->table_type == 1 ? PR_FID : PR_MID;
+	} else if (proptag == PR_INSTANCE_NUM) {
+		id = talloc_zero(mem_ctx, uint32_t);
+		*data = id;
+		goto end;
+	}
+
+	if ((table->table_type != 0x1) && proptag == PR_FID) {
+		id = talloc_zero(mem_ctx, uint32_t);
+		*id = table->folder_id;
+		*data = id;
+		goto end;
+	}
+
+	// Check if this is a "special property"
+	*data = _get_special_property(mem_ctx, proptag);
+	if (*data) goto end;
+
+	value = _table_fetch_attribute(conn, table, pos, proptag);
+	OPENCHANGE_RETVAL_IF(value == NULL, MAPI_E_NOT_FOUND, NULL);
+
+	*data = get_property_data(mem_ctx, proptag, value);
+	OPENCHANGE_RETVAL_IF(*data == NULL, MAPI_E_NOT_FOUND, NULL);
+end:
+	return MAPI_E_SUCCESS;
 }
 
 // ^ openchangedb table -------------------------------------------------------

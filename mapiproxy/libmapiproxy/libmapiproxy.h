@@ -237,7 +237,7 @@ enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *);
 enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *);
 
 /* definitions from openchangedb_table.c */
-enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, uint8_t, uint64_t, void **);
+enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(struct openchangedb_context *, void *, struct SSortOrderSet *);
 enum MAPISTATUS openchangedb_table_set_restrictions(struct openchangedb_context *, void *, struct mapi_SRestriction *);
 enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);

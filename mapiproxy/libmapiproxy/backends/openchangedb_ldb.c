@@ -1587,6 +1587,7 @@ struct openchangedb_table {
 
 static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
 				  struct openchangedb_context *self,
+				  const char *username,
 				  uint8_t table_type, uint64_t folderID,
 				  void **table_object)
 {

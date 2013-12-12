@@ -39,7 +39,7 @@ struct openchangedb_context {
 	enum MAPISTATUS (*get_fid_from_partial_uri)(struct openchangedb_context *, const char *, uint64_t *);
 	enum MAPISTATUS (*get_users_from_partial_uri)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t *, char ***, char ***);
 
-	enum MAPISTATUS (*table_init)(TALLOC_CTX *, struct openchangedb_context *, uint8_t, uint64_t, void **);
+	enum MAPISTATUS (*table_init)(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);
 	enum MAPISTATUS (*table_set_sort_order)(struct openchangedb_context *, void *, struct SSortOrderSet *);
 	enum MAPISTATUS (*table_set_restrictions)(struct openchangedb_context *, void *, struct mapi_SRestriction *);
 	enum MAPISTATUS (*table_get_property)(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);

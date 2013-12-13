@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
@@ -86,7 +86,7 @@ static void sam_ldb_init(const char *syspath)
 	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "rootDomainNamingContext", tmp_dn);
-	
+
 	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "defaultNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "defaultNamingContext", tmp_dn);
@@ -124,6 +124,8 @@ static void openchange_ldb_init(const char *syspath)
 	/* Step 1. Retrieve a LDB context pointer on openchange.ldb database */
 	ldb_ctx = ldb_init(mem_ctx, ev);
 	if (!ldb_ctx) {
+		PyErr_SetString(PyExc_SystemError,
+				"Cannot create a LDB context pointer");
 		goto end;
 	}
 
@@ -131,6 +133,8 @@ static void openchange_ldb_init(const char *syspath)
 	ldb_path = talloc_asprintf(mem_ctx, "%s/openchange.ldb", syspath);
 	ret = ldb_connect(ldb_ctx, ldb_path, 0, NULL);
 	if (ret != LDB_SUCCESS) {
+		char *err_str  = talloc_asprintf(mem_ctx, "Cannot conect to LDB database at %s", ldb_path);
+		PyErr_SetString(PyExc_SystemError, err_str);
 		goto end;
 	}
 
@@ -138,21 +142,23 @@ static void openchange_ldb_init(const char *syspath)
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, ldb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS || res->count != 1) {
+		char *err_str  = talloc_asprintf(mem_ctx, "Cannot find rootDSE record in LDB database at %s", ldb_path);
+		PyErr_SetString(PyExc_SystemError, err_str);
 		goto end;
 	}
 
 	/* Step 4. Set opaque naming */
-	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx, 
+	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
 	ldb_set_opaque(ldb_ctx, "rootDomainNamingContext", tmp_dn);
-	
+
 	tmp_dn = ldb_msg_find_attr_as_dn(ldb_ctx, ldb_ctx,
 					 res->msgs[0], "defaultNamingContext");
 	ldb_set_opaque(ldb_ctx, "defaultNamingContext", tmp_dn);
 
 	globals.ocdb_ctx = ldb_ctx;
 	(void) talloc_reference(NULL, globals.ocdb_ctx);
-	
+
 end:
 	talloc_free(mem_ctx);
 }
@@ -188,8 +194,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize ldb context on openchange.ldb */
 	openchange_ldb_init(syspath);
 	if (globals.ocdb_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in openchange_ldb_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -469,14 +473,14 @@ PyTypeObject PyMAPIStore = {
 	.tp_methods = mapistore_methods,
 	/* .tp_getset = mapistore_getsetters, */
 	.tp_new = py_MAPIStore_new,
-	.tp_dealloc = (destructor)py_MAPIStore_dealloc, 
+	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 {
 	const char	*mapping_path;
-	
+
 	if (!PyArg_ParseTuple(args, "s", &mapping_path)) {
 		return NULL;
 	}

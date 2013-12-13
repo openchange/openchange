@@ -1545,12 +1545,12 @@ struct openchangedb_table_results {
 };
 
 struct openchangedb_table {
-	uint64_t				folder_id;
-	const char 				*username;
-	uint8_t					table_type;
-	struct SSortOrderSet			*lpSortCriteria;
-	struct mapi_SRestriction		*restrictions;
-	struct openchangedb_table_results	*res;
+	uint64_t folder_id;
+	const char *username;
+	uint8_t	table_type;
+	struct SSortOrderSet *lpSortCriteria;
+	struct mapi_SRestriction *restrictions;
+	struct openchangedb_table_results *res;
 };
 
 
@@ -1715,7 +1715,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
 			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
 			"WHERE m1.message_type = '%s' "
-			"  AND m1.message_id = %"PRIu64
+			"  AND m1.message_id = %"PRIu64" "
 			"UNION "
 			"SELECT m2.id, m2.message_id, m2.normalized_subject "
 			"FROM messages m2 "
@@ -1733,7 +1733,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"JOIN mailboxes mb1 ON mb1.id = m1.mailbox_id "
 			"  AND mb1.folder_id = %"PRIu64" AND mb1.name = '%s' "
 			"WHERE m1.message_type = '%s' "
-			"  AND m1.normalized_subject = '%s'"
+			"  AND m1.normalized_subject = '%s' "
 			"UNION "
 			"SELECT m2.id, m2.message_id, m2.normalized_subject "
 			"FROM messages m2 "
@@ -1754,7 +1754,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND EXISTS ("
 			"     SELECT mp.message_id FROM messages_properties mp "
 			"     WHERE mp.message_id = m1.id "
-			"       AND mp.name = '%s' AND mp.value = '%s')"
+			"       AND mp.name = '%s' AND mp.value = '%s') "
 			"UNION "
 			"SELECT m2.id, m2.message_id, m2.normalized_subject "
 			"FROM messages m2 "
@@ -1858,6 +1858,29 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"   AND f3.folder_id = %"PRIu64" ",
 			table->folder_id, table->username, id,
 			table->folder_id, table->username, id);
+	} else if (restrictions->res.resProperty.ulPropTag == PidTagDisplayName) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"WHERE EXISTS ("
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f1.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US') "
+			"UNION "
+			"SELECT f3.id, f3.folder_id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE EXISTS ("
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f3.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US')",
+			table->folder_id, table->username, value,
+			table->folder_id, table->username, value);
 	} else {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.id, f1.folder_id FROM folders f1 "
@@ -1868,7 +1891,7 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"WHERE EXISTS ("
 			"     SELECT fp.folder_id FROM folders_properties fp "
 			"     WHERE fp.folder_id = f1.id "
-			"       AND fp.name = '%s' AND fp.value = '%s')"
+			"       AND fp.name = '%s' AND fp.value = '%s') "
 			"UNION "
 			"SELECT f3.id, f3.folder_id FROM folders f3 "
 			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
@@ -2020,30 +2043,57 @@ static bool _table_check_folder_match_restrictions(MYSQL *conn,
 
 	mem_ctx = talloc_named(NULL, 0, "_table_check_folder_match_restrictions");
 
-	sql = talloc_asprintf(mem_ctx,
-		"SELECT f1.id FROM folders f1 "
-		"JOIN folders f2 ON f2.id = f1.parent_folder_id "
-		"   AND f2.folder_id = %"PRIu64" "
-		"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
-		"   AND mb1.name = '%s' "
-		"WHERE EXISTS ("
-		"     SELECT mp.folder_id FROM folders_properties mp "
-		"     WHERE mp.folder_id = f1.id "
-		"       AND mp.name = '%s' AND mp.value = '%s') "
-		"   AND f1.id = %"PRIu64
-		"UNION "
-		"SELECT f3.id, f3.folder_id FROM folders f3 "
-		"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
-		"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
-		"WHERE f3.parent_folder_id IS NULL"
-		"  AND EXISTS ("
-		"     SELECT mp.folder_id FROM messages_properties mp "
-		"     WHERE mp.message_id = f3.id "
-		"       AND mp.name = '%s' AND mp.value = '%s') "
-		"   AND f3.id = %"PRIu64,
-		table->folder_id, table->username, attr, value, row->id,
-		table->folder_id, table->username, attr, value, row->id);
-
+	if (restrictions->res.resProperty.ulPropTag == PidTagDisplayName) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"WHERE EXISTS ("
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f1.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US') "
+			"   AND f1.id = %"PRIu64" "
+			"UNION "
+			"SELECT f3.id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE f3.parent_folder_id IS NULL"
+			"  AND EXISTS ("
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f3.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US') "
+			"   AND f3.id = %"PRIu64,
+			table->folder_id, table->username, value, row->id,
+			table->folder_id, table->username, value, row->id);
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"JOIN mailboxes mb1 ON mb1.id = f1.mailbox_id "
+			"   AND mb1.name = '%s' "
+			"WHERE EXISTS ("
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.folder_id = f1.id "
+			"       AND fp.name = '%s' AND fp.value = '%s') "
+			"   AND f1.id = %"PRIu64" "
+			"UNION "
+			"SELECT f3.id FROM folders f3 "
+			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
+			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
+			"WHERE f3.parent_folder_id IS NULL"
+			"  AND EXISTS ("
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.folder_id = f3.id "
+			"       AND fp.name = '%s' AND fp.value = '%s') "
+			"   AND f3.id = %"PRIu64,
+			table->folder_id, table->username, attr, value, row->id,
+			table->folder_id, table->username, attr, value, row->id);
+	}
 	ret = select_first_uint(conn, sql, &id);
 
 	talloc_free(mem_ctx);

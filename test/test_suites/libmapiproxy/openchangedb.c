@@ -541,7 +541,7 @@ START_TEST (test_create_and_edit_message) {
 	ck_assert_str_eq("foobar", (char *)data);
 } END_TEST
 
-START_TEST (test_build_table) {
+START_TEST (test_build_table_folders) {
 	void *table, *data;
 	uint64_t fid;
 	enum MAPITAGS prop;
@@ -554,9 +554,90 @@ START_TEST (test_build_table) {
 	for (i = 0; i < 13; i++) {
 		CHECK_SUCCESS;
 		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
-						      prop, i, true, &data);
+						      prop, i, false, &data);
 	}
 	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+
+	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	CHECK_SUCCESS;
+	prop = PidTagRights;
+	for (i = 0; i < 13; i++) {
+		CHECK_SUCCESS;
+		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+						      prop, i, false, &data);
+	}
+	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+
+	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	CHECK_SUCCESS;
+	prop = PidTagDisplayName;
+	for (i = 0; i < 13; i++) {
+		CHECK_SUCCESS;
+		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+						      prop, i, false, &data);
+	}
+	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+} END_TEST
+
+START_TEST (test_build_table_folders_with_restrictions) {
+	void *table, *data;
+	uint64_t fid;
+	enum MAPITAGS prop;
+	struct mapi_SRestriction res;
+
+	fid = 720575940379279361ul;
+	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	CHECK_SUCCESS;
+
+	res.rt = RES_PROPERTY;
+	res.res.resProperty.ulPropTag = PidTagDisplayName;
+	res.res.resProperty.lpProp.ulPropTag = PidTagDisplayName;
+	res.res.resProperty.lpProp.value.lpszW = "Schedule";
+	openchangedb_table_set_restrictions(oc_ctx, table, &res);
+	CHECK_SUCCESS;
+
+	prop = PidTagDisplayName;
+	ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+					      prop, 0, false, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("Schedule", (char *)data);
+} END_TEST
+
+START_TEST (test_build_table_folders_live_filtering) {
+	void *table, *data;
+	uint64_t fid;
+	enum MAPITAGS prop;
+	uint32_t i;
+	struct mapi_SRestriction res;
+	int ok = 0, bad = 0, idx;
+
+	fid = 720575940379279361ul;
+	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	CHECK_SUCCESS;
+
+	res.rt = RES_PROPERTY;
+	res.res.resProperty.ulPropTag = PidTagDisplayName;
+	res.res.resProperty.lpProp.ulPropTag = PidTagDisplayName;
+	res.res.resProperty.lpProp.value.lpszW = "Schedule";
+	openchangedb_table_set_restrictions(oc_ctx, table, &res);
+	CHECK_SUCCESS;
+
+	prop = PidTagDisplayName;
+	for (i = 0; i < 13; i++) {
+		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+						      prop, i, true, &data);
+		if (ret == MAPI_E_SUCCESS) {
+			ok++;
+			idx = i;
+		} else {
+			bad++;
+		}
+	}
+	ck_assert_int_eq(1, ok);
+	ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+					      prop, idx, true, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("Schedule", (char *)data);
 } END_TEST
 
 // ^ Unit test ----------------------------------------------------------------
@@ -681,7 +762,9 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 
 	tcase_add_test(tc, test_create_and_edit_message);
 
-	tcase_add_test(tc, test_build_table);
+	tcase_add_test(tc, test_build_table_folders);
+	tcase_add_test(tc, test_build_table_folders_with_restrictions);
+	tcase_add_test(tc, test_build_table_folders_live_filtering);
 
 	suite_add_tcase(s, tc);
 	return s;

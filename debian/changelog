@@ -1,3 +1,9 @@
+openchange (1:2.0-QUADRANT-386-g3fe05f0-0zentyal1) precise; urgency=low
+
+  * Built GIT snapshot.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Fri, 13 Dec 2013 16:19:07 +0100
+
 openchange (1:2.0-QUADRANT-385-g1dd55ee-0zentyal0) precise; urgency=low
 
   * Built GIT snapshot.

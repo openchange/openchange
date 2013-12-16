@@ -465,7 +465,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb",
 				 mapistore_get_mapping_path(), username);
 
-	ictx->data = mapistore_tdb_wrap_open(*ictxp, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
+	ictx->data = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(dbpath);
 	if (!TDB_WRAP(ictx)) {
 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));

@@ -36,6 +36,7 @@
    /details Initialize an openchangedb table
 
    \param mem_ctx pointer to the memory context to use for allocation
+   \param username The name of the mailbox where the folder is
    \param table_type the type of table this object represents
    \param folderID the identifier of the folder this table represents
    \param table_object pointer on pointer to the table object to return
@@ -44,6 +45,7 @@
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *mem_ctx,
 						 struct openchangedb_context *self,
+						 const char *username,
 						 uint8_t table_type,
 						 uint64_t folderID,
 						 void **table_object)
@@ -51,7 +53,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *mem_ctx,
 	MAPI_RETVAL_IF(!self, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!table_object, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return self->table_init(mem_ctx, self, table_type, folderID, table_object);
+	return self->table_init(mem_ctx, self, username, table_type, folderID,
+				table_object);
 }
 
 

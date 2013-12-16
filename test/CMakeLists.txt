@@ -3,6 +3,7 @@ CMAKE_MINIMUM_REQUIRED(VERSION 2.6)
 
 SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/openchange_test_suite.c
+    ${CMAKE_SOURCE_DIR}/test_common.c
     # =========================================================================
     # Libmapistore
     # -------------------------------------------------------------------------
@@ -16,13 +17,26 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_namedprops.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_notification.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/backends/indexing_tdb.c
+    # -------------------------------------------------------------------------
     # Test suites
     # -------------------------------------------------------------------------
-    ${CMAKE_SOURCE_DIR}/test_suites/indexing.c
-    ${CMAKE_SOURCE_DIR}/test_suites/namedprops_mysql.c
-    ${CMAKE_SOURCE_DIR}/test_suites/namedprops_ldb.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/indexing.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/namedprops_mysql.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapistore/namedprops_ldb.c
     # =========================================================================
-
+    # Libmapiproxy
+    # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb_table.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb_message.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/openchangedb_property.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_ldb.c
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_mysql.c
+    # -------------------------------------------------------------------------
+    # Test suites
+    # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb.c
+    # =========================================================================
 )
 
 IF(DEFINED ENV{SAMBA_PREFIX})
@@ -39,6 +53,8 @@ ADD_DEFINITIONS(
     -g -rdynamic -static
     -DMAPISTORE_LDIF="${CMAKE_SOURCE_DIR}/../setup/mapistore"
     -DMAPISTORE_BACKEND_INSTALLDIR="/not/used/for/now/on/this/test"
+    -DOPENCHANGEDB_DATA_DIR="${CMAKE_SOURCE_DIR}/../setup/openchangedb"
+    -DRESOURCES_DIR="${CMAKE_SOURCE_DIR}/resources"
 )
 
 INCLUDE_DIRECTORIES(

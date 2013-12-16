@@ -75,6 +75,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_con
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Retrieve the distinguishedName associated to a mailbox
    system folder.
 
@@ -94,28 +95,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *parent_c
 	OPENCHANGE_RETVAL_IF(!distinguishedName, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_distinguishedName(parent_ctx, oc_ctx, fid, distinguishedName);
-}
-
-/**
-   \details Retrieve the mailboxDN associated to a mailbox system
-   folder.
-
-   \param parent_ctx pointer to the parent memory context
-   \param oc_ctx pointer to the openchange DB context
-   \param fid the folder identifier to search for
-   \param mailboxDN pointer on pointer to the mailboxDN string the
-   function returns
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
- */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *parent_ctx,
-						    struct openchangedb_context *oc_ctx,
-						    uint64_t fid, char **mailboxDN)
-{
-	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	OPENCHANGE_RETVAL_IF(!mailboxDN, MAPI_E_INVALID_PARAMETER, NULL);
-
-	return oc_ctx->get_mailboxDN(parent_ctx, oc_ctx, fid, mailboxDN);
 }
 
 /**
@@ -178,51 +157,53 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchanged
 }
 
 /**
-   \details Retrieve the mapistore URI associated to a mailbox system
-   folder.
+   \details Retrieve the mapistore URI associated to a mailbox system folder.
 
    \param parent_ctx pointer to the memory context
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param fid the Folder identifier to search for
    \param mapistoreURL pointer on pointer to the mapistore URI the
    function returns
    \param mailboxstore boolean value which defines whether the record
    has to be searched within Public folders hierarchy or not
+   FIXME mailboxstore always true? remove it?
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 						       struct openchangedb_context *oc_ctx,
-						       uint64_t fid, char **mapistoreURL,
+						       const char *username,
+						       uint64_t fid,
+						       char **mapistoreURL,
 						       bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_mapistoreURI(parent_ctx, oc_ctx, fid, mapistoreURL, mailboxstore);
+	return oc_ctx->get_mapistoreURI(parent_ctx, oc_ctx, username, fid,
+					mapistoreURL, mailboxstore);
 }
 
 /**
-   \details Store the mapistore URI associated to a mailbox system
-   folder.
+   \details Store the mapistore URI associated to a mailbox system folder.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param fid the Folder identifier to search for
-   \param mapistoreURL pointer on pointer to the mapistore URI the
-   function returns
-   \param mailboxstore boolean value which defines whether the record
-   has to be searched within Public folders hierarchy or not
+   \param mapistoreURL The mapistore URI to set
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_context *oc_ctx,
-						       uint64_t fid, const char *mapistoreURL,
-						       bool mailboxstore)
+						       const char *username,
+						       uint64_t fid,
+						       const char *mapistoreURL)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->set_mapistoreURI(oc_ctx, fid, mapistoreURL, mailboxstore);
+	return oc_ctx->set_mapistoreURI(oc_ctx, username, fid, mapistoreURL);
 }
 
 /**
@@ -230,6 +211,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
    folder.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username the mailbox name
    \param fid the Folder identifier to search for
    \param parent_fidp pointer to the parent_fid the function returns
    \param mailboxstore boolean value which defines whether the record
@@ -238,13 +220,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *oc_ctx,
-						     uint64_t fid, uint64_t *parent_fidp,
+						     const char *username,
+						     uint64_t fid,
+						     uint64_t *parent_fidp,
 						     bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!parent_fidp, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_parent_fid(oc_ctx, fid, parent_fidp, mailboxstore);
+	return oc_ctx->get_parent_fid(oc_ctx, username, fid, parent_fidp,
+				      mailboxstore);
 }
 
 /**
@@ -257,7 +242,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_fid(struct openchangedb_context *oc_ctx,
-					      const char *mapistoreURL, uint64_t *fidp)
+					      const char *mapistoreURL,
+					      uint64_t *fidp)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
@@ -342,21 +328,25 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_TransportFolder(struct openchangedb_co
    \details Retrieve the number of sub folders for a given fid
 
    \param oc_ctx pointer to the openchange DB context
+   \param username name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param RowCount pointer to the returned number of results
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *oc_ctx,
-						       uint64_t fid, uint32_t *RowCount)
+						       const char *username,
+						       uint64_t fid,
+						       uint32_t *RowCount)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_folder_count(oc_ctx, fid, RowCount);
+	return oc_ctx->get_folder_count(oc_ctx, username, fid, RowCount);
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Check if a property exists within an openchange dispatcher
    database record
 
@@ -463,6 +453,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
 }
 
 /**
+   FIXME Not used anywhere. Remove it?
    \details Allocates a batch of new change numbers and returns them
    
    \param oc_ctx pointer to the openchange DB context
@@ -505,6 +496,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_
 
    \param parent_ctx pointer to the memory context
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param proptag the MAPI property tag to retrieve value for
    \param fid the record folder identifier
    \param data pointer on pointer to the data the function returns
@@ -513,35 +505,41 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx, 
 							  struct openchangedb_context *oc_ctx,
-							  uint32_t proptag, uint64_t fid,
+							  const char *username,
+							  uint32_t proptag,
+							  uint64_t fid,
 							  void **data)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_folder_property(parent_ctx, oc_ctx, proptag, fid, data);
-
+	return oc_ctx->get_folder_property(parent_ctx, oc_ctx, username,
+					   proptag, fid, data);
 }
 
 /**
    \details Set a MAPI property value from a folder record
 
    \param oc_ctx pointer to the openchange DB context
+   \param username name of the mailbox where the folder is
    \param fid the record folder identifier
    \param row the MAPI property to set
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_context *oc_ctx,
-							    uint64_t fid, struct SRow *row)
+							    const char *username,
+							    uint64_t fid,
+							    struct SRow *row)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->set_folder_properties(oc_ctx, fid, row);
+	return oc_ctx->set_folder_properties(oc_ctx, username, fid, row);
 }
 
 /**
+   FIXME Not used anywhere, remove it? see mapiproxy/servers/default/emsmdb/emsmdbp_object.c +1712
    \details Retrieve a MAPI property from a table (ldb search results)
 
    \param parent_ctx pointer to the memory context
@@ -560,7 +558,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
 							 uint32_t pos,
 							 void **data)
 {
-	// FIXME NOT USED
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_INVALID_PARAMETER, NULL);
@@ -577,6 +574,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
    be provided.
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param parent_fid the folder ID of the parent folder 
    \param foldername the name to look up
    \param fid the folder ID for the folder with the specified name (0 if not found)
@@ -584,6 +582,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *parent_ctx,
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_context *oc_ctx,
+						      const char *username,
 						      uint64_t parent_fid,
 						      const char* foldername,
 						      uint64_t *fid)
@@ -592,13 +591,14 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
 	OPENCHANGE_RETVAL_IF(!foldername, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	
-	return oc_ctx->get_fid_by_name(oc_ctx, parent_fid, foldername, fid);
+	return oc_ctx->get_fid_by_name(oc_ctx, username, parent_fid, foldername, fid);
 }
 
 /**
    \details Retrieve the message ID associated with a given subject (normalized)
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the parent folder is
    \param parent_fid the folder ID of the parent folder 
    \param subject the normalized subject to look up
    \param mailboxstore whether the folder is under a mailbox or not
@@ -607,29 +607,36 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_context *oc_ctx,
-							 uint64_t parent_fid, const char *subject,
-							 bool mailboxstore, uint64_t *mid)
+							 const char *username,
+							 uint64_t parent_fid,
+							 const char *subject,
+							 bool mailboxstore,
+							 uint64_t *mid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!subject, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!mid, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_mid_by_subject(oc_ctx, parent_fid, subject, mailboxstore, mid);
+	return oc_ctx->get_mid_by_subject(oc_ctx, username, parent_fid, subject,
+					  mailboxstore, mid);
 }
 
 /**
    \details Delete a folder
 
    \param oc_ctx pointer to the openchange DB context
+   \param username mailbox name where the folder is
    \param fid the record folder identifier to be deleted
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *oc_ctx, uint64_t fid)
+_PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *oc_ctx,
+						    const char *username,
+						    uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	
-	return oc_ctx->delete_folder(oc_ctx, fid);
+	return oc_ctx->delete_folder(oc_ctx, username, fid);
 }
 
 /**
@@ -654,6 +661,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_ReceiveFolder(struct openchangedb_cont
 }
 
 /**
+   FIXME Not used anywhere, remove it?
    \details Get fid given a partial MAPIStoreURI
 
    \param oc_ctx pointer to the openchange DB context
@@ -674,6 +682,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchange
 }
 
 /**
+   FIXME broken? mailboxDN not saved?
    \details Get users given a partial MAPIStoreURI
 
    \param parent_ctx memory context
@@ -715,7 +724,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
-						     const char *username, int systemIdx,
+						     const char *username,
+						     int systemIdx,
 						     uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -728,6 +738,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context
    \details Create a folder in openchangedb
 
    \param oc_ctx pointer to the openchange DB context
+   \param username The name of the mailbox where the parent folder is
    \param parentFolderID the FID of the parent folder
    \param fid the FID of the folder to create
    \param changeNumber the change number
@@ -737,23 +748,27 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *oc_ctx,
-						    uint64_t parentFolderID, uint64_t fid,
+						    const char *username,
+						    uint64_t parentFolderID,
+						    uint64_t fid,
 						    uint64_t changeNumber,
-						    const char *MAPIStoreURI, int systemIdx)
+						    const char *MAPIStoreURI,
+						    int systemIdx)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!parentFolderID, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	MAPI_RETVAL_IF(!changeNumber, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->create_folder(oc_ctx, parentFolderID, fid, changeNumber,
-				     MAPIStoreURI, systemIdx);
+	return oc_ctx->create_folder(oc_ctx, username, parentFolderID, fid,
+				     changeNumber, MAPIStoreURI, systemIdx);
 }
 
 /**
    \details Retrieve the number of messages within the specified folder
 
    \param oc_ctx pointer to the openchange DB context
+   \param username Name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param RowCount pointer to the returned number of results
    \param fai whether we want to count fai messages or system messages
@@ -761,31 +776,36 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_context *oc_ctx,
-							uint64_t fid, uint32_t *RowCount,
+							const char *username,
+							uint64_t fid,
+							uint32_t *RowCount,
 							bool fai)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_message_count(oc_ctx, fid, RowCount, fai);
+	return oc_ctx->get_message_count(oc_ctx, username, fid, RowCount, fai);
 }
 
 /**
    \details Retrieve the system idx associated with a folder record
 
    \param oc_ctx pointer to the openchange DB context
+   \param username the name of the mailbox where the folder is
    \param fid the folder identifier to use for the search
    \param system_idx_p pointer to the returned value
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context *oc_ctx,
-						     uint64_t fid, int *system_idx_p)
+						     const char *username,
+						     uint64_t fid,
+						     int *system_idx_p)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!system_idx_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_system_idx(oc_ctx, fid, system_idx_p);
+	return oc_ctx->get_system_idx(oc_ctx, username, fid, system_idx_p);
 }
 
 _PUBLIC_ enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *oc_ctx)
@@ -800,4 +820,40 @@ _PUBLIC_ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_con
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	return oc_ctx->transaction_commit(oc_ctx);
+}
+
+/**
+   \details Retrieve a new folder id for a public folder, only used on cases
+   where the openchangedb backend uses folder ids per user. In that case the
+   public folder ids will still be global, per organization
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username The name of the current login user so we can now the current
+   organization where the public folder will be created
+   \param fid pointer to the returned value
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context *oc_ctx,
+							      const char *username,
+							      uint64_t *fid)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->get_new_public_folderID(oc_ctx, username, fid);
+}
+
+/**
+   \details Whether the current openchangedb backend uses folder ids per user
+   and the given folder id as parameter belongs to a public folder id (which
+   have global folder ids in an organization)
+
+   \param oc_ctx pointer to the openchange DB context
+   \param fid folder id to identify if belongs to a either public or system
+   folder
+ */
+_PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_ctx,
+					       uint64_t fid)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->is_public_folder_id(oc_ctx, fid);
 }

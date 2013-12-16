@@ -415,9 +415,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	struct tevent_context *ev = tevent_context_init(mem_ctx);
-	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
-	struct ldb_context *ldb_ctx = ldb_init(mem_ctx, ev);
+	struct ldb_context *ldb_ctx = ldb_init(mem_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
 
 	char *filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",

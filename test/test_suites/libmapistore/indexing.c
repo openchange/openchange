@@ -1,28 +1,15 @@
 #include "indexing.h"
-#include "../test_common.h"
+#include "test_common.h"
 
-#include "../../mapiproxy/libmapistore/mapistore.h"
-#include "../../mapiproxy/libmapistore/mapistore_errors.h"
-#include "../../mapiproxy/libmapistore/mapistore_private.h"
-#include "../../mapiproxy/libmapistore/backends/indexing_tdb.h"
+#include "mapiproxy/libmapistore/mapistore.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
+#include "mapiproxy/libmapistore/backends/indexing_tdb.h"
 
 /* Global test variables */
-struct mapistore_context *mstore_ctx = NULL;
-struct indexing_context *ictx = NULL;
-const char *USERNAME = "testuser";
-
-START_TEST (test_backend_initialized) {
-	ck_assert(ictx != NULL);
-} END_TEST
-
-/* common test for mid / fid */
-
-typedef enum mapistore_error add_fmidp(struct indexing_context *,
-				       const char *, uint64_t,
-				       const char *);
-
-typedef enum mapistore_error del_fmidp(struct indexing_context *,
-				       const char *, uint64_t, uint8_t);
+static struct mapistore_context *mstore_ctx = NULL;
+static struct indexing_context *ictx = NULL;
+static const char *USERNAME = "testuser";
 
 /* add_fmid */
 
@@ -187,9 +174,9 @@ START_TEST (test_backend_allocate_fmid)
 	ck_assert(fmid1 != fmid2);
 } END_TEST
 
+// ^ unit tests ---------------------------------------------------------------
 
-
-/* TDB backend */
+// v suite definition ---------------------------------------------------------
 
 static void tdb_setup(void)
 {
@@ -197,59 +184,53 @@ static void tdb_setup(void)
 	enum mapistore_error	ret;
 
 	ret = mapistore_set_mapping_path("/tmp/");
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 
 	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
 
 	mapistore_indexing_tdb_init(mstore_ctx, USERNAME, &ictx);
+	fail_if(!ictx);
 }
 
 static void tdb_teardown(void)
 {
 	char *indexing_file = NULL;
 
-	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	indexing_file = talloc_asprintf(mstore_ctx, "%s/%s/indexing.tdb",
+	indexing_file = talloc_asprintf(mstore_ctx, "%s%s/indexing.tdb",
 					mapistore_get_mapping_path(),
 					USERNAME);
 	unlink(indexing_file);
 	talloc_free(mstore_ctx);
-
-	mstore_ctx = NULL;
-	ictx = NULL;
 }
 
-static void indexing_backend_add_case(Suite *s, char *name, void setup(void),
-			       void teardown(void))
+static Suite *indexing_create_suite(const char *backend_name, SFun setup,
+				    SFun teardown)
 {
-	TCase *tc = tcase_create(name);
-	tcase_add_checked_fixture(tc, setup, teardown);
+	char *suite_name = talloc_asprintf(talloc_autofree_context(),
+					   "Indexing %s backend",
+					   backend_name);
+	Suite *s = suite_create(suite_name);
 
-	tcase_add_test(tc, test_backend_initialized);
+	TCase *tc = tcase_create(backend_name);
+	tcase_add_checked_fixture(tc, tdb_setup, tdb_teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);
 	tcase_add_test(tc, test_backend_repeated_add_fails);
-
 	tcase_add_test(tc, test_backend_update_fmid);
-
 	tcase_add_test(tc, test_backend_del_unkown_fmid);
 	tcase_add_test(tc, test_backend_del_fmid_soft);
 	tcase_add_test(tc, test_backend_del_fmid_permanent);
-
 	tcase_add_test(tc, test_backend_get_uri_unknown);
-
 	tcase_add_test(tc, test_backend_get_fmid);
-
 	tcase_add_test(tc, test_backend_allocate_fmid);
 
 	suite_add_tcase(s, tc);
-}
-
-Suite *indexing_suite (void)
-{
-	Suite *s = suite_create ("Indexing backends tests");
-
-	indexing_backend_add_case(s, "tdb", tdb_setup, tdb_teardown);
 
 	return s;
+}
+
+Suite *indexing_tdb_suite(void)
+{
+	return indexing_create_suite("TDB", tdb_setup, tdb_teardown);
 }

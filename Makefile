@@ -1018,6 +1018,7 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
+	$(INSTALL) -m 0644 setup/openchangedb/openchangedb_schema.sql $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif
@@ -1368,18 +1369,27 @@ unittest: bin/unittest
 
 unittest: CFLAGS += -Itest -fprofile-arcs -ftest-coverage -g -rdynamic
 
-bin/unittest: test/test_suites/indexing.o \
-	test/test_suites/namedprops_mysql.o \
-	test/test_suites/namedprops_ldb.o \
+bin/unittest: test/test_suites/libmapistore/indexing.o \
+	test/test_suites/libmapistore/namedprops_mysql.o \
+	test/test_suites/libmapistore/namedprops_ldb.o \
+	test/test_suites/libmapiproxy/openchangedb.o \
 	test/openchange_test_suite.o \
-	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@ $^"
+	test/test_common.c \
+    mapiproxy/libmapiproxy/openchangedb.o \
+	mapiproxy/libmapiproxy/openchangedb_table.o \
+	mapiproxy/libmapiproxy/openchangedb_message.o \
+    mapiproxy/libmapiproxy/openchangedb_property.o \
+	mapiproxy/libmapiproxy/backends/openchangedb_ldb.o \
+	mapiproxy/libmapiproxy/backends/openchangedb_mysql.o \
+	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)"
 	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
 
 
 unittest-clean:
 	rm -f bin/unittest
-	rm -f test/test_suites/*.o
+	find test -name *.o | xargs rm
 
 clean:: unittest-clean
 

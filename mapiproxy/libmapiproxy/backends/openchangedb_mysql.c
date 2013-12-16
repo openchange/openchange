@@ -1521,6 +1521,46 @@ static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self,
+					       const char *username,
+					       uint64_t *fid)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(0, NULL, "get_new_public_folderID");
+	MYSQL *conn = self->data;
+	char *sql;
+	enum MAPISTATUS ret;
+
+	sql = talloc_asprintf(mem_ctx, // TODO ou_id
+		"SELECT count(f.folder_id) FROM folders f "
+		"WHERE folder_class = '%s'", PUBLIC_FOLDER);
+	ret = select_first_uint(conn, sql, fid);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	if (*fid > 0) {
+		sql = talloc_asprintf(mem_ctx, // TODO ou_id
+			"SELECT max(f.folder_id) FROM folders f "
+			"WHERE folder_class = '%s'", PUBLIC_FOLDER);
+		ret = select_first_uint(conn, sql, fid);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	}
+
+	if (*fid >= MAX_PUBLIC_FOLDER_ID) {
+		// FIXME search for free ids, but in theory public folders are
+		// only created on provisioning so this should not be needed
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
+	}
+
+	(*fid)++;
+
+	talloc_free(mem_ctx);
+	return ret;
+}
+
+static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
+{
+	return fid <= MAX_PUBLIC_FOLDER_ID;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2877,6 +2917,9 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 
 	oc_ctx->transaction_start = transaction_start;
 	oc_ctx->transaction_commit = transaction_commit;
+
+	oc_ctx->get_new_public_folderID = get_new_public_folderID;
+	oc_ctx->is_public_folder_id = is_public_folder_id;
 
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string);

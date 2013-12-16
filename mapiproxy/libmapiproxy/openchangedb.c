@@ -821,3 +821,39 @@ _PUBLIC_ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_con
 
 	return oc_ctx->transaction_commit(oc_ctx);
 }
+
+/**
+   \details Retrieve a new folder id for a public folder, only used on cases
+   where the openchangedb backend uses folder ids per user. In that case the
+   public folder ids will still be global, per organization
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username The name of the current login user so we can now the current
+   organization where the public folder will be created
+   \param fid pointer to the returned value
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context *oc_ctx,
+							      const char *username,
+							      uint64_t *fid)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->get_new_public_folderID(oc_ctx, username, fid);
+}
+
+/**
+   \details Whether the current openchangedb backend uses folder ids per user
+   and the given folder id as parameter belongs to a public folder id (which
+   have global folder ids in an organization)
+
+   \param oc_ctx pointer to the openchange DB context
+   \param fid folder id to identify if belongs to a either public or system
+   folder
+ */
+_PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_ctx,
+					       uint64_t fid)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+
+	return oc_ctx->is_public_folder_id(oc_ctx, fid);
+}

@@ -1572,6 +1572,19 @@ static enum MAPISTATUS transaction_commit(struct openchangedb_context *self)
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self,
+					       const char *username,
+					       uint64_t *fid)
+{
+	DEBUG(5, ("get_new_public_folderID called on openchangedb ldb backend. "
+		  "This should never happen because the folder ids are global"));
+	return MAPI_E_NOT_IMPLEMENTED;
+}
+
+static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
+{
+	return false;
+}
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2245,6 +2258,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 
 	oc_ctx->transaction_start = transaction_start;
 	oc_ctx->transaction_commit = transaction_commit;
+
+	oc_ctx->get_new_public_folderID = get_new_public_folderID;
+	oc_ctx->is_public_folder_id = is_public_folder_id;
 
 	*ctx = oc_ctx;
 

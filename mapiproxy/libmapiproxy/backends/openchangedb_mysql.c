@@ -32,7 +32,7 @@ static enum MAPISTATUS _not_implemented(const char *caller) {
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
 
 
-float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
+static float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
 {
 	return ((float)((end->tv_sec * 1000000000 + end->tv_nsec) -
 			(start->tv_sec * 1000000000 + start->tv_nsec)))
@@ -1179,7 +1179,7 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 			"  AND fn.locale = 'en_US'"
 			"  AND fn.display_name = '%s' "
 			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
-			" AND f2.folder_id = %"PRIu64,
+			"  AND f2.folder_id = %"PRIu64,
 			foldername, parent_fid);
 	}
 

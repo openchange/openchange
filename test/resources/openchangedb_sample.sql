@@ -4,8 +4,7 @@ INSERT servers VALUES (1, 1, 1, 402);
 INSERT public_folders VALUES (1, 1, 'c4898b91-da9d-4f3e-9ae4-8a8bd5051b89');
 INSERT mailboxes VALUES (1, 1, 720575940379279361, 'paco', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1);
 INSERT mailboxes_properties VALUES (1, 'PidTagAccess', '63'), (1, 'PidTagCreationTime', '130268260180000000'),(1, 'PidTagFolderType', '1'),(1, 'PidTagLastModificationTime', '130268260180000000'),(1, 'PidTagRights', '2043'),(1, 'PidTagSubFolders', 'TRUE'),(1, 'PidTagMessageClass', 'IPC'),(1, 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA=='),(1, 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA=='),(1, 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA=='),(1, 'PidTagIpmTaskEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB0AAA=='),(1, 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA=='),(1, 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA=='),(1, 'PidTagRemindersOnlineEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABIAAA=='),(1, 'PidTagChangeNumber', '4683743612465315841');
-
-INSERT INTO folders VALUES (0, 1, 72057594037927937, 'publicfolder', NULL, NULL, NULL, 1, NULL);
+INSERT INTO folders VALUES (0, 1, 1, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 2) as t), NULL, 1, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Public Folder Root');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '2');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagCreationTime', '130264095410000000');
@@ -197,7 +196,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Finder');
 
-INSERT INTO folders VALUES (0, 1, 216172782113783809, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 72057594037927937) as t), 1, 3, NULL);
+INSERT INTO folders VALUES (0, 1, 3, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1) as t), 1, 3, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'NON_IPM_SUBTREE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '4');
@@ -226,7 +225,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '41793
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Notes');
 
-INSERT INTO folders VALUES (0, 1, 648518346341351425, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 216172782113783809) as t), 1, -1, NULL);
+INSERT INTO folders VALUES (0, 1, 4, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 3) as t), 1, -1, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Events Root');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -239,7 +238,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE')
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Events Root');
 
-INSERT INTO folders VALUES (0, 1, 288230376151711745, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 216172782113783809) as t), 1, 4, NULL);
+INSERT INTO folders VALUES (0, 1, 5, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 3) as t), 1, 4, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'EFORMS REGISTRY');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -283,7 +282,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '36028
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Personal Address Book');
 
-INSERT INTO folders VALUES (0, 1, 144115188075855873, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 72057594037927937) as t), 1, 2, NULL);
+INSERT INTO folders VALUES (0, 1, 6, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1) as t), 1, 2, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'IPM_SUBTREE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -487,7 +486,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '30264
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Drafts');
 
-INSERT INTO folders VALUES (0, 1, 504403158265495553, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 216172782113783809) as t), 1, 5, NULL);
+INSERT INTO folders VALUES (0, 1, 7, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 3) as t), 1, 5, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'SCHEDULE+ FREE BUSY');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '1');
@@ -516,7 +515,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '33146
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'Personal Calendar (c)');
 
-INSERT INTO folders VALUES (0, 1, 360287970189639681, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 216172782113783809) as t), 1, 6, NULL);
+INSERT INTO folders VALUES (0, 1, 8, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 3) as t), 1, 6, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'OFFLINE ADDRESS BOOK');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '1');
@@ -529,7 +528,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'OFFLINE ADDRESS BOOK');
 
-INSERT INTO folders VALUES (0, 1, 576460752303423489, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 504403158265495553) as t), 1, 8, NULL);
+INSERT INTO folders VALUES (0, 1, 9, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 7) as t), 1, 8, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'EX:/o=first organization/ou=first administrative group');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -542,7 +541,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE')
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
 INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', 'EX:/o=first organization/ou=first administrative group');
 
-INSERT INTO folders VALUES (0, 1, 432345564227567617, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 360287970189639681) as t), 1, 9, NULL);
+INSERT INTO folders VALUES (0, 1, 10, 'publicfolder', NULL, (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 8) as t), 1, 9, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', '/o=First Organization/cn=addrlists/cn=oabs/cn=Default Offline Address Book');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -558,6 +557,6 @@ INSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', '/o=First Organization/c
 INSERT INTO messages VALUES (0, 1, 2522015791327477762, 'systemMessage', (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 1873497444986126337) as t), 1, 'Sample message on system folder');
 INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
 
-INSERT INTO messages VALUES (0, 1, 2522015791327477761, 'systemMessage', (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 576460752303423489) as t), 1, 'USER-/CN=RECIPIENTS/CN=PACO');
+INSERT INTO messages VALUES (0, 1, 2522015791327477761, 'systemMessage', (SELECT id FROM (SELECT id FROM folders WHERE folder_id = 9) as t), 1, 'USER-/CN=RECIPIENTS/CN=PACO');
 INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
 

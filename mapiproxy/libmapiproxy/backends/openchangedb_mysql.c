@@ -234,7 +234,7 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 {
 	char *sql;
 	const char *guid;
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_MailboxGuid");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 
@@ -261,7 +261,7 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 	char *sql;
 	const char *guid;
 	uint64_t n;
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_PublicFolderID");
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_MailboxReplica");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 
@@ -342,7 +342,8 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	char *sql;
 	MYSQL *conn = self->data;
 
-	if (!mailboxstore) { // FIXME is it possible?
+	if (!mailboxstore) {
+		// TODO is it possible?
 		return _not_implemented("get_mapistoreURI with mailboxstore=false");
 	}
 
@@ -397,7 +398,7 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 			"  AND m.name = '%s'",
 			fid, username);
 	} else {
-		sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 			"SELECT f1.folder_id FROM folders f1 "
 			"JOIN folders f2 ON f1.id = f2.parent_folder_id"
 			"  AND f2.folder_id = %"PRIu64" "
@@ -425,7 +426,7 @@ static enum MAPISTATUS get_fid(struct openchangedb_context *self,
 						  mapistore_uri_2);
 	}
 
-	sql = talloc_asprintf(mem_ctx,
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 		"SELECT folder_id FROM folders "
 		"WHERE MAPIStoreURI = '%s' OR MAPIStoreURI = '%s'",
 		mapistore_uri, mapistore_uri_2);
@@ -444,7 +445,7 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 
-	// TODO ou_id
+	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT MAPIStoreURI FROM folders f JOIN mailboxes m "
 		"ON f.mailbox_id = m.id AND m.name = '%s' "
@@ -579,36 +580,47 @@ end:
 	return ret;
 }
 
+static bool is_public_folder(uint64_t fid)
+{
+	return fid <= MAX_PUBLIC_FOLDER_ID;
+}
+
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 					const char *username, uint64_t fid,
 					uint32_t *RowCount)
 {
-	// FIXME always a folder from a mailbox?
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_count");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	char *sql;
 	uint64_t count = 0, mailbox_id = 0, mailbox_folder_id = 0;
 
-	// The fid could be from either the mailbox or a folder from user's
-	// mailbox
-	ret = get_mailbox_ids_by_name(conn, username,
-				      &mailbox_id, &mailbox_folder_id);
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
-
-	if (mailbox_folder_id == fid) {
-		sql = talloc_asprintf(mem_ctx,
-			"SELECT count(f.id) FROM folders f "
-			"WHERE f.mailbox_id = %"PRIu64" "
-			"  AND f.parent_folder_id IS NULL",
-			mailbox_id);
-	} else {
+	if (is_public_folder(fid)) {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT count(f1.id) FROM folders f1 "
 			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
 			"  AND f2.folder_id = %"PRIu64" "
-			"WHERE f1.mailbox_id = %"PRIu64,
-			fid, mailbox_id);
+			"WHERE f1.folder_class = '%s'", fid, PUBLIC_FOLDER);
+	} else {
+		// The fid could be from either the mailbox or a system folder
+		ret = get_mailbox_ids_by_name(conn, username,
+					      &mailbox_id, &mailbox_folder_id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		if (mailbox_folder_id == fid) {
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT count(f.id) FROM folders f "
+				"WHERE f.mailbox_id = %"PRIu64" "
+				"  AND f.parent_folder_id IS NULL",
+				mailbox_id);
+		} else {
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT count(f1.id) FROM folders f1 "
+				"JOIN folders f2 ON f2.id = f1.parent_folder_id"
+				"  AND f2.folder_id = %"PRIu64" "
+				"WHERE f1.mailbox_id = %"PRIu64,
+				fid, mailbox_id);
+		}
 	}
 
 	ret = select_first_uint(conn, sql, &count);
@@ -625,20 +637,19 @@ static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,
 }
 
 /**
- * Get the current change number field
- * TODO ou_id
+   \details Get the current change number field
  */
-static enum MAPISTATUS get_server_change_number(MYSQL *conn, uint64_t *change_number)
+static enum MAPISTATUS get_server_change_number(MYSQL *conn,
+						uint64_t *change_number)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_server_change_number");
 	char *sql;
 	enum MAPISTATUS ret;
 
-	sql = talloc_asprintf(mem_ctx,
+	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 		"SELECT change_number FROM servers s "
 		"JOIN company c ON c.id = s.company_id "
 		"JOIN organizational_units ou ON ou.company_id = c.id "
-		//FIXME restrictions
 		);
 	ret = select_first_uint(conn, sql, change_number);
 	talloc_free(mem_ctx);
@@ -646,22 +657,21 @@ static enum MAPISTATUS get_server_change_number(MYSQL *conn, uint64_t *change_nu
 }
 
 /**
- * Set the current change number field
- * TODO ou_id
+   \details Set the current change number field
  */
-static enum MAPISTATUS set_server_change_number(MYSQL *conn, uint64_t change_number)
+static enum MAPISTATUS set_server_change_number(MYSQL *conn,
+						uint64_t change_number)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_server_change_number");
 	char *sql;
 	enum MAPISTATUS ret;
 
-	sql = talloc_asprintf(mem_ctx,
+	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
 		"UPDATE servers s "
 		"JOIN company c ON c.id = s.company_id "
 		"JOIN organizational_units ou ON ou.company_id = c.id "
-		"SET s.change_number=%"PRIu64""
-		//FIXME ou_id
-		, change_number);
+		"SET s.change_number=%"PRIu64"",
+		change_number);
 	ret = execute_query(conn, sql);
 	talloc_free(mem_ctx);
 	return ret;
@@ -911,10 +921,6 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 	uint64_t *n;
 	const char *attr, *value;
 
-	ret = get_mailbox_ids_by_name(conn, username,
-				      &mailbox_id, &mailbox_folder_id);
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
-
 	attr = openchangedb_property_get_attribute(proptag);
 	if (!attr) {
 		attr = _unknown_property(parent_ctx, proptag);
@@ -930,20 +936,7 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 		goto end;
 	}
 
-	if (mailbox_folder_id == fid) {
-		if (proptag == PidTagDisplayName) {
-			// FIXME i18n
-			*data = talloc_asprintf(parent_ctx,
-						"OpenChange Mailbox: %s",
-						username);
-			goto end;
-		}
-
-		sql = talloc_asprintf(mem_ctx,
-			"SELECT mp.value FROM mailboxes_properties mp "
-			"WHERE mp.mailbox_id = %"PRIu64" AND mp.name = '%s'",
-			mailbox_id, attr);
-	} else {
+	if (is_public_folder(fid)) {
 		if (proptag == PidTagParentFolderId) {
 			n = talloc_zero(parent_ctx, uint64_t);
 			ret = get_parent_fid(self, username, fid, n, true);
@@ -952,13 +945,49 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 			goto end;
 		}
 
-		sql = talloc_asprintf(mem_ctx,
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 			"SELECT fp.value FROM folders_properties fp "
 			"JOIN folders f ON f.id = fp.folder_id "
-			"  AND f.mailbox_id = %"PRIu64" "
+			"  AND f.folder_class = '%s'"
 			"  AND f.folder_id = %"PRIu64" "
 			"WHERE fp.name = '%s'",
-			mailbox_id, fid, attr);
+			PUBLIC_FOLDER, fid, attr);
+	} else {
+		// system folder
+		ret = get_mailbox_ids_by_name(conn, username,
+					      &mailbox_id, &mailbox_folder_id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		if (mailbox_folder_id == fid) {
+			if (proptag == PidTagDisplayName) {
+				// FIXME i18n
+				*data = talloc_asprintf(parent_ctx,
+							"OpenChange Mailbox: %s",
+							username);
+				goto end;
+			}
+
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT mp.value FROM mailboxes_properties mp "
+				"WHERE mp.mailbox_id = %"PRIu64" AND mp.name = '%s'",
+				mailbox_id, attr);
+		} else {
+			if (proptag == PidTagParentFolderId) {
+				n = talloc_zero(parent_ctx, uint64_t);
+				ret = get_parent_fid(self, username, fid, n, true);
+				OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+				*data = (void *) n;
+				goto end;
+			}
+
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT fp.value FROM folders_properties fp "
+				"JOIN folders f ON f.id = fp.folder_id "
+				"  AND f.mailbox_id = %"PRIu64" "
+				"  AND f.folder_id = %"PRIu64" "
+				"WHERE fp.name = '%s'",
+				mailbox_id, fid, attr);
+		}
 	}
 
 	ret = select_first_string(mem_ctx, conn, sql, &value);
@@ -992,8 +1021,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 					     const char *username, uint64_t fid,
 					     struct SRow *row)
 {
-	// FIXME always a folder from a mailbox?
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_property");
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_folder_property");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	char *sql;
@@ -1007,23 +1035,35 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	time_t unix_time = time(NULL);
 	NTTIME nt_time;
 
-	ret = get_mailbox_ids_by_name(conn, username,
-				      &mailbox_id, &mailbox_folder_id);
-	if (mailbox_folder_id == fid) {
-		// Updating mailbox properties
-		table = talloc_strdup(mem_ctx, "mailboxes_properties");
-		column_id = talloc_strdup(mem_ctx, "mailbox_id");
-		id = fid;
-	} else {
-		// Updating folder
+	if (is_public_folder(fid)) {
+		// Updating public folder
 		table = talloc_strdup(mem_ctx, "folders_properties");
 		column_id = talloc_strdup(mem_ctx, "folder_id");
-		sql = talloc_asprintf(mem_ctx,
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 			"SELECT f.id FROM folders f "
-			"WHERE f.folder_id = %"PRIu64" "
-			"  AND f.mailbox_id = %"PRIu64, fid, mailbox_id);
+			"WHERE f.folder_id = %"PRIu64
+			"  AND f.folder_class = '%s'", fid, PUBLIC_FOLDER);
 		ret = select_first_uint(conn, sql, &id);
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	} else {
+		ret = get_mailbox_ids_by_name(conn, username,
+					      &mailbox_id, &mailbox_folder_id);
+		if (mailbox_folder_id == fid) {
+			// Updating mailbox properties
+			table = talloc_strdup(mem_ctx, "mailboxes_properties");
+			column_id = talloc_strdup(mem_ctx, "mailbox_id");
+			id = fid;
+		} else {
+			// Updating folder
+			table = talloc_strdup(mem_ctx, "folders_properties");
+			column_id = talloc_strdup(mem_ctx, "folder_id");
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT f.id FROM folders f "
+				"WHERE f.folder_id = %"PRIu64" "
+				"  AND f.mailbox_id = %"PRIu64, fid, mailbox_id);
+			ret = select_first_uint(conn, sql, &id);
+			OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+		}
 	}
 
 	names = (const char **)str_list_make_empty(mem_ctx);
@@ -1111,7 +1151,6 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 				       uint64_t parent_fid,
 				       const char *foldername, uint64_t *fid)
 {
-	// FIXME public folders
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_fid_by_name");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
@@ -1133,6 +1172,7 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 			"WHERE f.mailbox_id = %"PRIu64,
 			foldername, mailbox_id);
 	} else {
+		// Either public or system folder
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.folder_id FROM folders f1 "
 			"JOIN folders_names fn ON fn.folder_id = f1.id"
@@ -1244,13 +1284,20 @@ static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 
-	// Parent folder is a public folder
-	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
-		"DELETE f FROM folders f "
-		"JOIN mailboxes m ON m.id = f.mailbox_id"
-		"  AND m.name = '%s' "
-		"WHERE f.folder_id = %"PRIu64,
-		username, fid);
+	if (is_public_folder(fid)) {
+		sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+			"DELETE f FROM folders f "
+			"WHERE f.folder_id = %"PRIu64,
+			fid);
+	} else {
+		// Parent folder is a public folder
+		sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+			"DELETE f FROM folders f "
+			"JOIN mailboxes m ON m.id = f.mailbox_id"
+			"  AND m.name = '%s' "
+			"WHERE f.folder_id = %"PRIu64,
+			username, fid);
+	}
 
 	ret = execute_query(conn, sql);
 
@@ -1384,19 +1431,38 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 
 	get_new_changeNumber(self, &change_number);
 
-	// Insert row in folders
-	sql = talloc_asprintf(mem_ctx,
-		"INSERT INTO folders SET ou_id = (SELECT ou_id FROM mailboxes "
-						 "WHERE name = '%s'),"
-		"folder_id = %"PRIu64", folder_class = '%s', "
-		"mailbox_id = (SELECT id FROM mailboxes WHERE name = '%s'), "
-		"parent_folder_id = (SELECT f.id FROM folders f "
-				    "JOIN mailboxes m ON m.id = f.mailbox_id "
-				    "WHERE m.name = '%s' "
-				    "  AND f.folder_id = %"PRIu64"), "
-		"FolderType = %d, SystemIdx = %d, MAPIStoreURI = '%s'",
-		username, fid, SYSTEM_FOLDER, username, username, pfid, 1,
-		systemIdx, MAPIStoreURI);
+	if (is_public_folder(fid)) {
+		// Insert row in folders
+		sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO folders SET ou_id = ("
+			"  SELECT ou_id FROM mailboxes WHERE name = '%s'),"
+			"folder_id = %"PRIu64", folder_class = '%s', "
+			"parent_folder_id = ("
+			"  SELECT f.id FROM folders f"
+			"  WHERE f.ou_id = (SELECT ou_id FROM mailboxes WHERE name = '%s')"
+			"    AND f.folder_id = %"PRIu64"), "
+			"FolderType = %d, SystemIdx = %d",
+			username, fid, PUBLIC_FOLDER, username, pfid, 1,
+			systemIdx);
+		if (MAPIStoreURI) {
+			talloc_asprintf_append(sql, ",MAPIStoreURI = '%s'",
+					       MAPIStoreURI);
+		}
+	} else {
+		// Insert row in folders
+		sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO folders SET ou_id = (SELECT ou_id FROM mailboxes "
+							 "WHERE name = '%s'),"
+			"folder_id = %"PRIu64", folder_class = '%s', "
+			"mailbox_id = (SELECT id FROM mailboxes WHERE name = '%s'), "
+			"parent_folder_id = (SELECT f.id FROM folders f "
+					    "JOIN mailboxes m ON m.id = f.mailbox_id "
+					    "WHERE m.name = '%s' "
+					    "  AND f.folder_id = %"PRIu64"), "
+			"FolderType = %d, SystemIdx = %d, MAPIStoreURI = '%s'",
+			username, fid, SYSTEM_FOLDER, username, username, pfid, 1,
+			systemIdx, MAPIStoreURI);
+	}
 	ret = execute_query(conn, sql);
 	// FIXME return MAPI_E_COLLISION if applies
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
@@ -1437,34 +1503,44 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 	char *sql, *message_type;
 	uint64_t mailbox_id, mailbox_folder_id, count;
 
-	ret = get_mailbox_ids_by_name(conn, username,
-				      &mailbox_id, &mailbox_folder_id);
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
-
 	if (fai) {
 		message_type = talloc_strdup(mem_ctx, "faiMessage");
 	} else {
 		message_type = talloc_strdup(mem_ctx, "systemMessage");
 	}
 
-	if (mailbox_folder_id == fid) {
-		// The parent folder is the mailbox itself
-		sql = talloc_asprintf(mem_ctx,
-			"SELECT count(*) FROM messages m "
-			"WHERE m.mailbox_id = %"PRIu64
-			"  AND m.folder_id IS NULL"
-			"  AND m.message_type = '%s'",
-			mailbox_id, message_type);
-	} else {
-		// Parent folder is a system folder
-		sql = talloc_asprintf(mem_ctx,
+	if (is_public_folder(fid)) {
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 			"SELECT count(*) FROM messages m "
 			"JOIN folders f1 ON f1.id = m.folder_id "
 			"  AND f1.folder_class = '%s'"
 			"  AND f1.folder_id = %"PRIu64" "
-			"  AND f1.mailbox_id = %"PRIu64" "
 			"WHERE m.message_type = '%s'",
-			SYSTEM_FOLDER, fid, mailbox_id, message_type);
+			SYSTEM_FOLDER, fid, message_type);
+	} else {
+		ret = get_mailbox_ids_by_name(conn, username,
+					      &mailbox_id, &mailbox_folder_id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+		if (mailbox_folder_id == fid) {
+			// The parent folder is the mailbox itself
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT count(*) FROM messages m "
+				"WHERE m.mailbox_id = %"PRIu64
+				"  AND m.folder_id IS NULL"
+				"  AND m.message_type = '%s'",
+				mailbox_id, message_type);
+		} else {
+			// Parent folder is a system folder
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT count(*) FROM messages m "
+				"JOIN folders f1 ON f1.id = m.folder_id "
+				"  AND f1.folder_class = '%s'"
+				"  AND f1.folder_id = %"PRIu64" "
+				"  AND f1.mailbox_id = %"PRIu64" "
+				"WHERE m.message_type = '%s'",
+				SYSTEM_FOLDER, fid, mailbox_id, message_type);
+		}
 	}
 
 	ret = select_first_uint(conn, sql, &count);
@@ -1484,11 +1560,19 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	char *sql;
 	uint64_t system_idx = 0;
 
-	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
-		"SELECT f.SystemIdx FROM folders f "
-		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
-		"WHERE f.folder_id = %"PRIu64,
-		username, fid);
+	if (is_public_folder(fid)) {
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+			"SELECT f.SystemIdx FROM folders f "
+			"WHERE f.folder_id = %"PRIu64" "
+			"  AND f.folder_class = '%s'",
+			fid, PUBLIC_FOLDER);
+	} else {
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+			"SELECT f.SystemIdx FROM folders f "
+			"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+			"WHERE f.folder_id = %"PRIu64,
+			username, fid);
+	}
 
 	ret = select_first_uint(conn, sql, &system_idx);
 	*system_idx_p = (int)system_idx;
@@ -1525,7 +1609,7 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 					       const char *username,
 					       uint64_t *fid)
 {
-	TALLOC_CTX *mem_ctx = talloc_named(0, NULL, "get_new_public_folderID");
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_new_public_folderID");
 	MYSQL *conn = self->data;
 	char *sql;
 	enum MAPISTATUS ret;
@@ -1744,9 +1828,17 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"JOIN folders f ON f.id = m2.folder_id "
 			"  AND f.folder_id = %"PRIu64" "
 			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
-			"WHERE m2.message_type = '%s'",
+			"WHERE m2.message_type = '%s' "
+			"UNION "
+			"SELECT m.id, m.message_id, m.normalized_subject "
+			"FROM messages m "
+			"JOIN folders f ON f.id = m.folder_id "
+			"  AND f.folder_id = %"PRIu64
+			"  AND f.folder_class = '%s' " // FIXME ou_id
+			"WHERE m2.message_type = '%s' ",
 			table->folder_id, table->username, msg_type,
-			table->folder_id, table->username, msg_type);
+			table->folder_id, table->username, msg_type,
+			table->folder_id, PUBLIC_FOLDER, msg_type);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagMid) {
 		id = strtoull(value, NULL, 10);
 		sql = talloc_asprintf(mem_ctx,
@@ -1763,9 +1855,18 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND f.folder_id = %"PRIu64" "
 			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
 			"WHERE m2.message_type = '%s'"
-			"  AND m2.message_id = %"PRIu64,
+			"  AND m2.message_id = %"PRIu64" "
+			"UNION "
+			"SELECT m.id, m.message_id, m.normalized_subject "
+			"FROM messages m "
+			"JOIN folders f ON f.id = m.folder_id " // FIXME ou_id
+			"  AND f.folder_id = %"PRIu64" "
+			"  AND f.folder_class = '%s' "
+			"WHERE m.message_type = '%s'"
+			"  AND m.message_id = %"PRIu64,
 			table->folder_id, table->username, msg_type, id,
-			table->folder_id, table->username, msg_type, id);
+			table->folder_id, table->username, msg_type, id,
+			table->folder_id, PUBLIC_FOLDER, msg_type, id);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagNormalizedSubject) {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT m1.id, m1.message_id, m1.normalized_subject "
@@ -1781,9 +1882,18 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND f.folder_id = %"PRIu64" "
 			"JOIN mailboxes mb2 ON mb2.id = f.mailbox_id AND mb2.name = '%s' "
 			"WHERE m2.message_type = '%s'"
-			"  AND m2.normalized_subject = '%s'",
+			"  AND m2.normalized_subject = '%s' "
+			"UNION "
+			"SELECT m.id, m.message_id, m.normalized_subject "
+			"FROM messages m "
+			"JOIN folders f ON f.id = m.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"  AND f.folder_class = '%s' " // FIXME ou_id
+			"WHERE m.message_type = '%s'"
+			"  AND m.normalized_subject = '%s'",
 			table->folder_id, table->username, msg_type, value,
-			table->folder_id, table->username, msg_type, value);
+			table->folder_id, table->username, msg_type, value,
+			table->folder_id, PUBLIC_FOLDER, msg_type, value);
 	} else {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT m1.id, m1.message_id, m1.normalized_subject "
@@ -1805,9 +1915,21 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			"  AND EXISTS ("
 			"     SELECT mp.message_id FROM messages_properties mp "
 			"     WHERE mp.message_id = m2.id "
+			"       AND mp.name = '%s' AND mp.value = '%s') "
+			"UNION "
+			"SELECT m.id, m.message_id, m.normalized_subject "
+			"FROM messages m "
+			"JOIN folders f ON f.id = m.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"  AND f.folder_class = '%s' " // FIXME ou_id
+			"WHERE m.message_type = '%s'"
+			"  AND EXISTS ("
+			"     SELECT mp.message_id FROM messages_properties mp "
+			"     WHERE mp.message_id = m.id "
 			"       AND mp.name = '%s' AND mp.value = '%s')",
 			table->folder_id, table->username, msg_type, attr, value,
-			table->folder_id, table->username, msg_type, attr, value);
+			table->folder_id, table->username, msg_type, attr, value,
+			table->folder_id, PUBLIC_FOLDER, msg_type, attr, value);
 	}
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -1878,9 +2000,15 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"SELECT f3.id, f3.folder_id FROM folders f3 "
 			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
 			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
-			"WHERE f3.parent_folder_id IS NULL",
+			"WHERE f3.parent_folder_id IS NULL "
+			"UNION "
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s'", // FIXME ou_id
 			table->folder_id, table->username,
-			table->folder_id, table->username);
+			table->folder_id, table->username,
+			table->folder_id, PUBLIC_FOLDER);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagFolderId) {
 		id = strtoull(value, NULL, 10);
 		sql = talloc_asprintf(mem_ctx,
@@ -1895,9 +2023,16 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"JOIN mailboxes mb2 ON mb2.id = f3.mailbox_id "
 			"   AND mb2.folder_id = %"PRIu64" AND mb2.name = '%s' "
 			"WHERE f3.parent_folder_id IS NULL"
-			"   AND f3.folder_id = %"PRIu64" ",
+			"   AND f3.folder_id = %"PRIu64" "
+			"UNION "
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id " // FIXME ou_id
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_id = %"PRIu64" "
+			"  AND f1.folder_class = '%s'",
 			table->folder_id, table->username, id,
-			table->folder_id, table->username, id);
+			table->folder_id, table->username, id,
+			table->folder_id, id, PUBLIC_FOLDER);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagDisplayName) {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.id, f1.folder_id FROM folders f1 "
@@ -1918,9 +2053,19 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"     SELECT n.folder_id FROM folders_names n "
 			"     WHERE n.folder_id = f3.id "
 			"       AND n.display_name = '%s' "
-			"       AND n.locale = 'en_US')",
+			"       AND n.locale = 'en_US') "
+			"UNION "
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s' AND EXISTS (" // FIXME ou_id
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f1.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US') ",
 			table->folder_id, table->username, value,
-			table->folder_id, table->username, value);
+			table->folder_id, table->username, value,
+			table->folder_id, PUBLIC_FOLDER, value);
 	} else {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.id, f1.folder_id FROM folders f1 "
@@ -1940,9 +2085,18 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			"  AND EXISTS ("
 			"     SELECT fp.folder_id FROM folders_properties fp "
 			"     WHERE fp.message_id = f3.id "
-			"       AND fp.name = '%s' AND fp.value = '%s')",
+			"       AND fp.name = '%s' AND fp.value = '%s') "
+			"UNION "
+			"SELECT f1.id, f1.folder_id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s' AND EXISTS (" // FIXME ou_id
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.folder_id = f1.id "
+			"       AND fp.name = '%s' AND fp.value = '%s') ",
 			table->folder_id, table->username, attr, value,
-			table->folder_id, table->username, attr, value);
+			table->folder_id, table->username, attr, value,
+			table->folder_id, PUBLIC_FOLDER, attr, value);
 	}
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -2040,9 +2194,21 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 		"     SELECT mp.message_id FROM messages_properties mp "
 		"     WHERE mp.message_id = m2.id "
 		"       AND mp.name = '%s' AND mp.value = '%s') "
+		"  AND m2.id = %"PRIu64" "
+		"UNION "
+		"SELECT m.id FROM messages m "
+		"JOIN folders f ON f.id = m.folder_id "
+		"  AND f.folder_id = %"PRIu64" "
+		"  AND f.folder_class = '%s' " // FIXME ou_id
+		"WHERE m2.message_type = '%s'"
+		"  AND EXISTS ("
+		"     SELECT mp.message_id FROM messages_properties mp "
+		"     WHERE mp.message_id = m2.id "
+		"       AND mp.name = '%s' AND mp.value = '%s') "
 		"  AND m2.id = %"PRIu64,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
-		table->folder_id, table->username, msg_type, attr, value, row->id);
+		table->folder_id, table->username, msg_type, attr, value, row->id,
+		table->folder_id, PUBLIC_FOLDER, msg_type, attr, value, row->id);
 
 	ret = select_first_uint(conn, sql, &id);
 
@@ -2106,9 +2272,20 @@ static bool _table_check_folder_match_restrictions(MYSQL *conn,
 			"     WHERE n.folder_id = f3.id "
 			"       AND n.display_name = '%s' "
 			"       AND n.locale = 'en_US') "
-			"   AND f3.id = %"PRIu64,
+			"   AND f3.id = %"PRIu64" "
+			"UNION "
+			"SELECT f1.id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s' AND EXISTS (" // FIXME ou_id
+			"     SELECT n.folder_id FROM folders_names n "
+			"     WHERE n.folder_id = f1.id "
+			"       AND n.display_name = '%s' "
+			"       AND n.locale = 'en_US') "
+			"   AND f1.id = %"PRIu64" ",
 			table->folder_id, table->username, value, row->id,
-			table->folder_id, table->username, value, row->id);
+			table->folder_id, table->username, value, row->id,
+			table->folder_id, PUBLIC_FOLDER, value, row->id);
 	} else {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.id FROM folders f1 "
@@ -2130,9 +2307,19 @@ static bool _table_check_folder_match_restrictions(MYSQL *conn,
 			"     SELECT fp.folder_id FROM folders_properties fp "
 			"     WHERE fp.folder_id = f3.id "
 			"       AND fp.name = '%s' AND fp.value = '%s') "
-			"   AND f3.id = %"PRIu64,
+			"   AND f3.id = %"PRIu64" "
+			"UNION "
+			"SELECT f1.id FROM folders f1 "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id "
+			"   AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.folder_class = '%s' AND EXISTS (" // FIXME ou_id
+			"     SELECT fp.folder_id FROM folders_properties fp "
+			"     WHERE fp.folder_id = f1.id "
+			"       AND fp.name = '%s' AND fp.value = '%s') "
+			"   AND f1.id = %"PRIu64" ",
 			table->folder_id, table->username, attr, value, row->id,
-			table->folder_id, table->username, attr, value, row->id);
+			table->folder_id, table->username, attr, value, row->id,
+			table->folder_id, PUBLIC_FOLDER, attr, value, row->id);
 	}
 	ret = select_first_uint(conn, sql, &id);
 
@@ -2316,18 +2503,26 @@ struct openchangedb_message {
  * Return the database id field of a folder identified by folder_id and
  * mailbox's name
  */
-static enum MAPISTATUS get_folder_id_from_fid(MYSQL *conn, const char *username,
+static enum MAPISTATUS get_id_from_folder_id(MYSQL *conn, const char *username,
 					      uint64_t fid, uint64_t *folder_id)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_folder_id_from_fid");
 	enum MAPISTATUS ret;
 	char *sql;
 
-	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
-		"SELECT f.id FROM folders f "
-		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
-		"WHERE f.folder_id = %"PRIu64,
-		username, fid);
+	if (is_public_folder(fid)) {
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f.id FROM folders f "
+			"WHERE f.folder_id = %"PRIu64" " // FIXME ou_id
+			"  AND f.folder_class = '%s'",
+			fid, PUBLIC_FOLDER);
+	} else {
+		sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+			"SELECT f.id FROM folders f "
+			"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+			"WHERE f.folder_id = %"PRIu64,
+			username, fid);
+	}
 
 	ret = select_first_uint(conn, sql, folder_id);
 
@@ -2353,7 +2548,7 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 
 	parent_is_mailbox = mailbox_folder_id == fid;
 	if (!parent_is_mailbox) {
-		ret = get_folder_id_from_fid(conn, username, fid, &folder_id);
+		ret = get_id_from_folder_id(conn, username, fid, &folder_id);
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 	}
 
@@ -2365,7 +2560,8 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 	msg->message_type = fai ? OPENCHANGEDB_MESSAGE_FAI : OPENCHANGEDB_MESSAGE_SYSTEM;
 	if (!parent_is_mailbox)
 		msg->folder_id = folder_id;
-	msg->mailbox_id = mailbox_id;
+	if (mailbox_id)
+		msg->mailbox_id = mailbox_id;
 
 	msg->properties.size = 4;
 	msg->properties.names = (const char **)talloc_zero_array(msg, char *, msg->properties.size);
@@ -2490,7 +2686,7 @@ end:
 static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 				    struct openchangedb_context *self,
 				    const char *username,
-				    uint64_t messageID, uint64_t folderID,
+				    uint64_t message_id, uint64_t folder_id,
 				    void **message_object, void **msgp)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_open");
@@ -2505,30 +2701,30 @@ static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 	uint64_t mailbox_id = 0, mailbox_folder_id;
 
 	msg = talloc_zero(parent_ctx, struct openchangedb_message);
-	msg->message_id = messageID;
+	msg->message_id = message_id;
 
 	ret = get_mailbox_ids_by_name(conn, username, &mailbox_id,
 				      &mailbox_folder_id);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
-	if (folderID == mailbox_folder_id) {
+	if (folder_id == mailbox_folder_id) {
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT m.id, m.ou_id, m.message_type, m.mailbox_id, "
-			       "m.normalized_subject FROM messages m "
+			       "m.folder_id, m.normalized_subject "
+			"FROM messages m "
 			"WHERE m.message_id = %"PRIu64
 			"  AND m.mailbox_id = %"PRIu64
-			"  AND m.folder_id IS NULL",
-			messageID, mailbox_id);
+			"  AND m.folder_id IS NULL", // FIXME ou_id
+			message_id, mailbox_id);
 	} else {
-		// FIXME message from public folder without mailbox associated
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT m.id, m.ou_id, m.message_type, m.mailbox_id, "
-			       "m.normalized_subject FROM messages m "
-			"WHERE m.message_id = %"PRIu64
-			"  AND m.mailbox_id = %"PRIu64
-			"  AND m.folder_id = %"PRIu64,
-			messageID, folderID, mailbox_id);
-		msg->folder_id = folderID;
+			       "m.folder_id, m.normalized_subject "
+			"FROM messages m "
+			"JOIN folders f ON f.id = m.folder_id "
+			"  AND f.folder_id = %"PRIu64" "
+			"WHERE m.message_id = %"PRIu64, // FIXME ou_id
+			folder_id, message_id);
 	}
 	ret = select_without_fetch(conn, sql, &res);
 	if (ret != MAPI_E_SUCCESS) {
@@ -2543,8 +2739,13 @@ static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 	} else {
 		msg->message_type = OPENCHANGEDB_MESSAGE_SYSTEM;
 	}
-	msg->mailbox_id = strtoull(row[3], NULL, 10);
-	msg->normalized_subject = talloc_strdup(msg, row[4]);
+	if (row[3]) {
+		msg->mailbox_id = strtoull(row[3], NULL, 10);
+	}
+	if (row[4]) {
+		msg->folder_id = strtoull(row[4], NULL, 10);
+	}
+	msg->normalized_subject = talloc_strdup(msg, row[5]);
 	mysql_free_result(res);
 
 	// Now fetch all properties

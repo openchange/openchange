@@ -49,11 +49,11 @@ START_TEST (test_get_PublicFolderID) {
 
 	ret = openchangedb_get_PublicFolderID(oc_ctx, 5, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 504403158265495553);
+	ck_assert_int_eq(folder_id, 7);
 
 	ret = openchangedb_get_PublicFolderID(oc_ctx, 6, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 360287970189639681);
+	ck_assert_int_eq(folder_id, 8);
 } END_TEST
 
 START_TEST (test_get_MailboxGuid) {
@@ -152,17 +152,17 @@ START_TEST (test_get_parent_fid) {
 	CHECK_SUCCESS;
 	ck_assert_int_eq(1513209474796486657ul, pfid);
 
-	fid = 216172782113783809ul;
+	fid = 3;
 	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(72057594037927937ul, pfid);
+	ck_assert_int_eq(1, pfid);
 
-	fid = 504403158265495553ul;
+	fid = 7;
 	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(216172782113783809ul, pfid);
+	ck_assert_int_eq(3ul, pfid);
 } END_TEST
 
 START_TEST (test_get_fid) {
@@ -375,7 +375,7 @@ START_TEST (test_get_fid_by_name) {
 
 START_TEST (test_get_mid_by_subject) {
 	uint64_t pfid, mid = 0;
-	pfid = 576460752303423489ul;
+	pfid = 9;
 	ret = openchangedb_get_mid_by_subject(oc_ctx, NULL, pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
 					      false, &mid);
@@ -436,24 +436,25 @@ START_TEST (test_get_users_from_partial_uri) {
 START_TEST (test_create_mailbox) {
 	char *data;
 	uint32_t *data_int;
+	uint64_t fid = 1234567890ul;
 
-	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, 11);
+	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid);
 	CHECK_SUCCESS;
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
-					       PidTagDisplayName, 11,
+					       PidTagDisplayName, fid,
 					       (void **)&data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("OpenChange Mailbox: chuck", (char *)data);
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
-					       PidTagAccess, 11,
+					       PidTagAccess, fid,
 					       (void **)&data_int);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(63, *data_int);
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
-					       PidTagRights, 11,
+					       PidTagRights, fid,
 					       (void **)&data_int);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(2043, *data_int);

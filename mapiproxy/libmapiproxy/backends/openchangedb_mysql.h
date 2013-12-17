@@ -3,7 +3,7 @@
 
 #include "openchangedb_backends.h"
 
-#define MAX_PUBLIC_FOLDER_ID 10000
+#define MAX_PUBLIC_FOLDER_ID 1000
 
 enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *, const char *, struct openchangedb_context **);
 

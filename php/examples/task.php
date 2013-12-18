@@ -60,7 +60,7 @@ echo "\nPidLidPercentComplete:" . $message->get(PidLidPercentComplete) . "\n";
 diag("-- Reverting changes");
 
 
-$message->set(PidLidPercentComplete, 0.0);
+$message->set(PidLidPercentComplete, 0);
 $message->save();
 unset($message);
 

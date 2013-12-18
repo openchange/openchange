@@ -327,6 +327,7 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 		switch (mapi_type) {
 		case PT_LONG:
 		case PT_SYSTIME:
+		case PT_DOUBLE:
 			return true;
 		default:
 			return false;
@@ -392,14 +393,20 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 	void* data = NULL;
 	int type = Z_TYPE_P(val);
 	if (type == IS_NULL) {
-		// XXX TO CHECK
 		data = NULL;
 	} else if (type == IS_LONG) {
-		// XXX TO CHECK
 		if (mapi_type == PT_LONG) {
 			long *ldata = talloc_ptrtype(mem_ctx, ldata);
 			*ldata = Z_LVAL_P(val);
 			data = (void*) ldata;
+		} else if (mapi_type == PT_DOUBLE) {
+			long value = Z_LVAL_P(val);
+			if ((value > DBL_MAX) || (value < DBL_MIN_EXP)) {
+				php_error(E_ERROR, "Value out of bonds for property of type double: %ld", value);
+			}
+			double *ddata =  talloc_ptrtype(mem_ctx, ddata);
+			*ddata = value;
+			data = (void*) ddata;
 		} else if (mapi_type == PT_SYSTIME) {
 			struct FILETIME		*date;
 			long 			*ldata;

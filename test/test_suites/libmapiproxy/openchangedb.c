@@ -479,8 +479,18 @@ START_TEST (test_get_fid_by_name) {
 
 START_TEST (test_get_mid_by_subject) {
 	uint64_t pfid, mid = 0;
+	pfid = 1873497444986126337ul;
+	ret = openchangedb_get_mid_by_subject(oc_ctx, "paco", pfid,
+					      "Sample message on system folder",
+					      true, &mid);
+	CHECK_SUCCESS;
+	ck_assert(mid == 2522015791327477762ul);
+} END_TEST
+
+START_TEST (test_get_mid_by_subject_on_public_folder) {
+	uint64_t pfid, mid = 0;
 	pfid = 9;
-	ret = openchangedb_get_mid_by_subject(oc_ctx, NULL, pfid,
+	ret = openchangedb_get_mid_by_subject(oc_ctx, "does not matter", pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
 					      false, &mid);
 	CHECK_SUCCESS;
@@ -503,6 +513,26 @@ START_TEST (test_delete_folder) {
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 14);
+} END_TEST
+
+START_TEST (test_delete_public_folder) {
+	uint64_t fid, pfid;
+	uint32_t count = 0;
+	size_t n;
+
+	fid = 5;
+	pfid = 3;
+	n = 4;
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count, n);
+
+	ret = openchangedb_delete_folder(oc_ctx, "paco", fid);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count, n - 1);
 } END_TEST
 
 START_TEST (test_set_ReceiveFolder) {
@@ -584,12 +614,48 @@ START_TEST (test_create_folder) {
 	ck_assert_int_eq(count + 1, count_after);
 } END_TEST
 
+START_TEST (test_create_public_folder) {
+	uint64_t pfid, fid, changenumber;
+	uint32_t count, count_after;
+
+	pfid = 3;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	CHECK_SUCCESS;
+
+	fid = 42;
+	changenumber = 4242;
+	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+					 NULL, 2);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count + 1, count_after);
+} END_TEST
+
 START_TEST (test_get_message_count) {
 	uint32_t count = 0;
 	uint64_t fid = 1873497444986126337ul;
 	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
+
+	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, true);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count, 0);
+} END_TEST
+
+START_TEST (test_get_message_count_from_public_folder) {
+	uint32_t count = 0;
+	uint64_t fid = 9;
+	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count, 1);
+
+	ret = openchangedb_get_message_count(oc_ctx, "paco", 1, &count, false);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count, 0);
 
 	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, true);
 	CHECK_SUCCESS;
@@ -607,6 +673,19 @@ START_TEST (test_get_system_idx) {
 	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(15, system_idx);
+} END_TEST
+
+START_TEST (test_get_system_idx_from_public_folder) {
+	int system_idx = 0;
+	uint64_t fid = 7;
+	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(5, system_idx);
+
+	fid = 3;
+	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(3, system_idx);
 } END_TEST
 
 START_TEST (test_create_and_edit_message) {
@@ -634,16 +713,91 @@ START_TEST (test_create_and_edit_message) {
 	CHECK_SUCCESS;
 	ck_assert(fid == *(uint64_t *)data);
 
-	row.cValues = 1;
-	row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row.cValues = 2;
+	row.lpProps = talloc_zero_array(mem_ctx, struct SPropValue, 2);
 	row.lpProps[0].ulPropTag = PidTagDisplayName;
 	row.lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foobar");
+	row.lpProps[1].ulPropTag = PidTagNormalizedSubject;
+	row.lpProps[1].value.lpszW = talloc_strdup(mem_ctx, "subject foo'foo");
 	ret = openchangedb_message_set_properties(mem_ctx, oc_ctx, msg, &row);
+	CHECK_SUCCESS;
 
 	prop = PidTagDisplayName;
 	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar", (char *)data);
+
+	prop = PidTagNormalizedSubject;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("subject foo'foo", (char *)data);
+
+	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	CHECK_SUCCESS;
+
+	// Now reopen message and read again the property
+	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+					&msg, 0);
+	CHECK_SUCCESS;
+	prop = PidTagDisplayName;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("foobar", (char *)data);
+
+	prop = PidTagNormalizedSubject;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("subject foo'foo", (char *)data);
+} END_TEST
+
+START_TEST (test_create_and_edit_message_on_public_folder) {
+	void *msg;
+	uint64_t mid, fid;
+	uint32_t prop;
+	void *data;
+	struct SRow row;
+
+	fid = 4;
+	mid = 1234512345ul;
+	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
+					  true, &msg);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+					&msg, 0);
+	CHECK_SUCCESS;
+
+	prop = PidTagParentFolderId;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert(fid == *(uint64_t *)data);
+
+	row.cValues = 1;
+	row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row.lpProps[0].ulPropTag = PidTagDisplayName;
+	row.lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foobar 'foo'");
+	ret = openchangedb_message_set_properties(mem_ctx, oc_ctx, msg, &row);
+	CHECK_SUCCESS;
+
+	prop = PidTagDisplayName;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("foobar 'foo'", (char *)data);
+
+	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	CHECK_SUCCESS;
+
+	// Now reopen message and read again the property
+	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+					&msg, 0);
+	CHECK_SUCCESS;
+	prop = PidTagDisplayName;
+	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("foobar 'foo'", (char *)data);
 } END_TEST
 
 START_TEST (test_build_table_folders) {
@@ -860,15 +1014,21 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_set_public_folder_properties);
 	tcase_add_test(tc, test_get_fid_by_name);
 	tcase_add_test(tc, test_get_mid_by_subject);
+	tcase_add_test(tc, test_get_mid_by_subject_on_public_folder);
 	tcase_add_test(tc, test_delete_folder);
+	tcase_add_test(tc, test_delete_public_folder);
 	tcase_add_test(tc, test_set_ReceiveFolder);
 	tcase_add_test(tc, test_get_users_from_partial_uri);
 	tcase_add_test(tc, test_create_mailbox);
 	tcase_add_test(tc, test_create_folder);
+	tcase_add_test(tc, test_create_public_folder);
 	tcase_add_test(tc, test_get_message_count);
+	tcase_add_test(tc, test_get_message_count_from_public_folder);
 	tcase_add_test(tc, test_get_system_idx);
+	tcase_add_test(tc, test_get_system_idx_from_public_folder);
 
 	tcase_add_test(tc, test_create_and_edit_message);
+	tcase_add_test(tc, test_create_and_edit_message_on_public_folder);
 
 	tcase_add_test(tc, test_build_table_folders);
 	tcase_add_test(tc, test_build_table_folders_with_restrictions);

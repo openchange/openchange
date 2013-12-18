@@ -1156,13 +1156,18 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 	enum MAPISTATUS ret;
 	char *sql;
 	uint64_t mailbox_id, mailbox_folder_id;
+	bool is_public;
 
-	ret = get_mailbox_ids_by_name(conn, username,
-				      &mailbox_id, &mailbox_folder_id);
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	is_public = is_public_folder(parent_fid);
+
+	if (!is_public) {
+		ret = get_mailbox_ids_by_name(conn, username,
+					      &mailbox_id, &mailbox_folder_id);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	}
 
 	// FIXME i18n
-	if (mailbox_folder_id == parent_fid) {
+	if (!is_public && mailbox_folder_id == parent_fid) {
 		// The parent folder is the mailbox itself
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f.folder_id FROM folders f "
@@ -1516,7 +1521,7 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 			"  AND f1.folder_class = '%s'"
 			"  AND f1.folder_id = %"PRIu64" "
 			"WHERE m.message_type = '%s'",
-			SYSTEM_FOLDER, fid, message_type);
+			PUBLIC_FOLDER, fid, message_type);
 	} else {
 		ret = get_mailbox_ids_by_name(conn, username,
 					      &mailbox_id, &mailbox_folder_id);

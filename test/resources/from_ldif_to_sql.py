@@ -6,12 +6,6 @@ MAILBOX_ID = 1
 OU_ID = 1
 MAILBOX_FID = 720575940379279361
 
-public_folders_ids = {}
-def public_folder_id(fid):
-    if fid not in public_folders_ids:
-        public_folders_ids[fid] = len(public_folders_ids) + 1
-    return public_folders_ids[fid]
-
 class BaseDict(object):
     def __init__(self, values):
         self.values = values
@@ -45,8 +39,6 @@ class BaseDict(object):
 
     def pop_folder_id(self, field='PidTagParentFolderId'):
         pfid = self.pop(field)
-        if pfid in public_folders_ids:
-            pfid = public_folders_ids[pfid]
         if pfid == MAILBOX_FID or pfid == 'NULL':
             return 'NULL'
         else:
@@ -57,7 +49,7 @@ class Message(BaseDict):
     def to_sql(self):
         message_id = self.pop('PidTagMessageId')
         message_type = self.pop('objectClass', varchar=True)
-        folder_id = self.pop_folder_id()        
+        folder_id = self.pop_folder_id()
         normalized_subject = self.pop('PidTagNormalizedSubject', varchar=True)
 
         sql = ("INSERT INTO messages VALUES (0, %s, %s, %s, %s, %s, %s);\n" %
@@ -75,7 +67,7 @@ class Folder(BaseDict):
                 "'%s');" % self.values['PidTagDisplayName'])
 
     def is_mailbox(self):
-        return ('PidTagDisplayName' in self.values and 
+        return ('PidTagDisplayName' in self.values and
                 self.values['PidTagDisplayName'].startswith('OpenChange Mailbox'))
 
     def to_sql(self):
@@ -95,14 +87,6 @@ class Folder(BaseDict):
                 folder_type, system_idx, mapi_uri))
 
         return sql + self.properties('folders_properties') + self.display_name()
-
-
-class PublicFolder(Folder):
-    def pop(self, name, varchar=False):
-        ret = super(PublicFolder, self).pop(name, varchar)
-        if name in ('PidTagFolderId', 'PidTagParentFolderId'):
-            ret = public_folder_id(ret)
-        return ret 
 
 
 valid_classes = ['systemfolder', 'publicfolder', 'paiMessage', 'systemMessage']
@@ -138,10 +122,8 @@ def parse_file(file_path):
         try:
             if len(l) == 0:
                 if 'objectClass' in values:
-                    if values['objectClass'] == 'systemfolder':
+                    if values['objectClass'] in ('systemfolder', 'publicfolder'):
                         folders.append(Folder(values))
-                    elif values['objectClass'] == 'publicfolder':
-                        folders.append(PublicFolder(values))
                     elif values['objectClass'] in ('paiMessage', 'systemMessage'):
                         messages.append(Message(values))
                 values = {}
@@ -176,3 +158,4 @@ if __name__ == "__main__":
     for entry in entries:
         print >>f, entry
         print >>f
+

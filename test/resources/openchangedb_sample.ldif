@@ -367,37 +367,37 @@ distinguishedName: CN=864691128455135233,CN=paco,CN=First Administrative Group
  ,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 16
-dn: CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 504403158265495553
+dn: CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 7
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 504403158265495553
+PidTagChangeNumber: 7
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: SCHEDULE+ FREE BUSY
 PidTagFolderChildCount: 1
-PidTagFolderId: 504403158265495553
+PidTagFolderId: 7
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 216172782113783809
+PidTagParentFolderId: 3
 PidTagSubFolders: TRUE
 SystemIdx: 5
-distinguishedName: CN=504403158265495553,CN=216172782113783809,CN=720575940379
+distinguishedName: CN=7,CN=3,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 17
-dn: CN=2522015791327477761,CN=576460752303423489,CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+dn: CN=2522015791327477761,CN=9,CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 cn: 2522015791327477761
 objectClass: systemMessage
 PidTagHasNamedProperties: 0
 PidTagMessageId: 2522015791327477761
 PidTagNormalizedSubject: USER-/CN=RECIPIENTS/CN=PACO
-PidTagParentFolderId: 576460752303423489
-distinguishedName: CN=2522015791327477761,CN=576460752303423489,CN=50440315826
- 5495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First 
+PidTagParentFolderId: 9
+distinguishedName: CN=2522015791327477761,CN=9,CN=50440315826
+ 5495553,CN=3,CN=1,CN=publicfolders,CN=First 
  Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=la
  n
 
@@ -575,46 +575,46 @@ distinguishedName: CN=1080863910568919041,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 25
-dn: CN=360287970189639681,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 360287970189639681
+dn: CN=8,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 8
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 360287970189639681
+PidTagChangeNumber: 8
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: OFFLINE ADDRESS BOOK
 PidTagFolderChildCount: 1
-PidTagFolderId: 360287970189639681
+PidTagFolderId: 8
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 216172782113783809
+PidTagParentFolderId: 3
 PidTagSubFolders: TRUE
 SystemIdx: 6
-distinguishedName: CN=360287970189639681,CN=216172782113783809,CN=720575940379
+distinguishedName: CN=8,CN=3,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 26
-dn: CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 216172782113783809
+dn: CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 3
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 216172782113783809
+PidTagChangeNumber: 3
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: NON_IPM_SUBTREE
 PidTagFolderChildCount: 4
-PidTagFolderId: 216172782113783809
+PidTagFolderId: 3
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 72057594037927937
+PidTagParentFolderId: 1
 PidTagSubFolders: TRUE
 SystemIdx: 3
-distinguishedName: CN=216172782113783809,CN=72057594037927937,CN=publicfolders
+distinguishedName: CN=3,CN=1,CN=publicfolders
  ,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-do
  main,DC=lan
 
@@ -645,84 +645,84 @@ distinguishedName: CN=2161727821137838081,CN=1513209474796486657,CN=paco,CN=Fi
  C=lan
 
 # record 28
-dn: CN=576460752303423489,CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 576460752303423489
+dn: CN=9,CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 9
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 576460752303423489
+PidTagChangeNumber: 9
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: EX:/o=first organization/ou=first administrative group
 PidTagFolderChildCount: 0
-PidTagFolderId: 576460752303423489
+PidTagFolderId: 9
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 504403158265495553
+PidTagParentFolderId: 7
 PidTagSubFolders: FALSE
 SystemIdx: 8
-distinguishedName: CN=576460752303423489,CN=504403158265495553,CN=216172782113
- 783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN
+distinguishedName: CN=9,CN=7,CN=216172782113
+ 783809,CN=1,CN=publicfolders,CN=First Administrative Group,CN
  =First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 29
-dn: CN=648518346341351425,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 648518346341351425
+dn: CN=4,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 4
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 648518346341351425
+PidTagChangeNumber: 4
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: Events Root
 PidTagFolderChildCount: 0
-PidTagFolderId: 648518346341351425
+PidTagFolderId: 4
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 216172782113783809
+PidTagParentFolderId: 3
 PidTagSubFolders: FALSE
 SystemIdx: -1
-distinguishedName: CN=648518346341351425,CN=216172782113783809,CN=720575940379
+distinguishedName: CN=4,CN=3,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 30
-dn: CN=288230376151711745,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 288230376151711745
+dn: CN=5,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 5
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 288230376151711745
+PidTagChangeNumber: 5
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: EFORMS REGISTRY
 PidTagFolderChildCount: 0
-PidTagFolderId: 288230376151711745
+PidTagFolderId: 5
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 216172782113783809
+PidTagParentFolderId: 3
 PidTagSubFolders: FALSE
 SystemIdx: 4
-distinguishedName: CN=288230376151711745,CN=216172782113783809,CN=720575940379
+distinguishedName: CN=5,CN=3,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 31
-dn: CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 72057594037927937
+dn: CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 1
 objectClass: publicfolder
-PidTagChangeNumber: 72057594037927937
+PidTagChangeNumber: 1
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: Public Folder Root
 PidTagFolderChildCount: 2
-PidTagFolderId: 72057594037927937
+PidTagFolderId: 1
 PidTagLastModificationTime: 130264095410000000
 PidTagSubFolders: TRUE
 SystemIdx: 1
-distinguishedName: CN=72057594037927937,CN=publicfolders,CN=First Administrati
+distinguishedName: CN=1,CN=publicfolders,CN=First Administrati
  ve Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 32
@@ -776,24 +776,24 @@ distinguishedName: CN=2017612633061982209,CN=1513209474796486657,CN=paco,CN=Fi
  C=lan
 
 # record 34
-dn: CN=144115188075855873,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 144115188075855873
+dn: CN=6,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 6
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 144115188075855873
+PidTagChangeNumber: 6
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: IPM_SUBTREE
 PidTagFolderChildCount: 0
-PidTagFolderId: 144115188075855873
+PidTagFolderId: 6
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 72057594037927937
+PidTagParentFolderId: 1
 PidTagSubFolders: FALSE
 SystemIdx: 2
-distinguishedName: CN=144115188075855873,CN=72057594037927937,CN=publicfolders
+distinguishedName: CN=6,CN=1,CN=publicfolders
  ,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-do
  main,DC=lan
 
@@ -858,26 +858,26 @@ distinguishedName: CN=paco,CN=First Administrative Group,CN=First Organization
  ,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 37
-dn: CN=432345564227567617,CN=360287970189639681,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 432345564227567617
+dn: CN=10,CN=8,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 10
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 432345564227567617
+PidTagChangeNumber: 10
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: /o=First Organization/cn=addrlists/cn=oabs/cn=Default Offli
  ne Address Book
 PidTagFolderChildCount: 0
-PidTagFolderId: 432345564227567617
+PidTagFolderId: 10
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 360287970189639681
+PidTagParentFolderId: 8
 PidTagSubFolders: FALSE
 SystemIdx: 9
-distinguishedName: CN=432345564227567617,CN=360287970189639681,CN=216172782113
- 783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN
+distinguishedName: CN=10,CN=8,CN=216172782113
+ 783809,CN=1,CN=publicfolders,CN=First Administrative Group,CN
  =First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 38

@@ -1959,18 +1959,35 @@ static enum MAPISTATUS message_save(struct openchangedb_context *self,
 				    void *_msg, uint8_t SaveFlags)
 {
 	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
+	struct ldb_message *message_to_save;
+	struct ldb_message_element *el;
+	int i;
+	TALLOC_CTX *mem_ctx;
 
 	switch (msg->status) {
 	case OPENCHANGEDB_MESSAGE_CREATE:
 		OPENCHANGE_RETVAL_IF(!msg->msg, MAPI_E_NOT_INITIALIZED, NULL);
 		if (ldb_add(msg->ldb_ctx, msg->msg) != LDB_SUCCESS) {
+			printf("Create: %s\n", ldb_errstring(msg->ldb_ctx));
 			return MAPI_E_CALL_FAILED;
 		}
 		break;
 	case OPENCHANGEDB_MESSAGE_OPEN:
-		if (ldb_modify(msg->ldb_ctx, msg->res->msgs[0]) != LDB_SUCCESS) {
+		mem_ctx = talloc_named(NULL, 0, "message_save");
+		el = msg->res->msgs[0]->elements;
+		message_to_save = ldb_msg_new(mem_ctx);
+		message_to_save->dn = ldb_dn_copy(mem_ctx, msg->res->msgs[0]->dn);
+		for (i = 0; i < msg->res->msgs[0]->num_elements; i++) {
+			if (el[i].flags) {
+				ldb_msg_add(message_to_save, &el[i], el[i].flags);
+			}
+		}
+		if (ldb_modify(msg->ldb_ctx, message_to_save) != LDB_SUCCESS) {
+			printf("Modify: %s\n", ldb_errstring(msg->ldb_ctx));
+			talloc_free(mem_ctx);
 			return MAPI_E_CALL_FAILED;
 		}
+		talloc_free(mem_ctx);
 		break;
 	}
 
@@ -2125,7 +2142,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 			} else {
 				element = ldb_msg_find_element(message, PidTagAttr);
 				if (!element) {
-				/* Case where the element doesn't exist */
+					/* Case where the element doesn't exist */
 					ldb_msg_add_string(message, PidTagAttr, str_value);
 					message->elements[message->num_elements - 1].flags = LDB_FLAG_MOD_ADD;
 				} else {

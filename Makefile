@@ -10,7 +10,7 @@ endif
 default: all
 
 # TODO move to configure.ac
-LIBS+=-lmysqlclient -lm -lcheck
+LIBS+=-lmysqlclient -lgcov
 
 # Until we add proper dependencies for all the C files:
 .NOTPARALLEL:
@@ -1367,7 +1367,8 @@ utils/mapitest/proto.h:					\
 
 unittest: bin/unittest
 
-unittest: CFLAGS += -Itest -fprofile-arcs -ftest-coverage -g -rdynamic
+unittest: CFLAGS += -fprofile-arcs -ftest-coverage -Itest
+unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm
 
 bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapistore/namedprops_mysql.o \
@@ -1389,7 +1390,7 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 
 unittest-clean:
 	rm -f bin/unittest
-	find test -name *.o | xargs rm
+	find test -name *.o | xargs -r rm
 
 clean:: unittest-clean
 

@@ -705,7 +705,7 @@ START_TEST (test_create_and_edit_message) {
 	CHECK_SUCCESS;
 
 	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
-					&msg, 0);
+					&msg, NULL);
 	CHECK_SUCCESS;
 
 	prop = PidTagParentFolderId;

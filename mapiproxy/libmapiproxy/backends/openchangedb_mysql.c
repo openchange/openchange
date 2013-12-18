@@ -1819,6 +1819,29 @@ static enum MAPISTATUS table_set_restrictions(struct openchangedb_context *self,
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS _table_get_attr_and_value_from_restrictions(
+	TALLOC_CTX *mem_ctx, struct mapi_SRestriction *restrictions,
+	const char **attr, const char **value)
+{
+	if (restrictions) {
+		*attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
+		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
+		case PT_STRING8:
+			*value = _sql(mem_ctx, restrictions->res.resProperty.lpProp.value.lpszA);
+			break;
+		case PT_UNICODE:
+			*value = _sql(mem_ctx, restrictions->res.resProperty.lpProp.value.lpszW);
+			break;
+		default:
+			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			return MAPI_E_TOO_COMPLEX;
+		}
+	}
+	return MAPI_E_SUCCESS;
+
+}
+
 static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 					     struct openchangedb_table *table,
 					     bool fai, bool live_filtered)
@@ -1837,21 +1860,8 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 
 	msg_type = talloc_strdup(mem_ctx, fai ? "faiMessage" : "systemMessage");
 
-	if (restrictions) {
-		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
-		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
-		case PT_STRING8:
-			value = restrictions->res.resProperty.lpProp.value.lpszA;
-			break;
-		case PT_UNICODE:
-			value = restrictions->res.resProperty.lpProp.value.lpszW;
-			break;
-		default:
-			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
-				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
-			return MAPI_E_TOO_COMPLEX;
-		}
-	}
+	ret = _table_get_attr_and_value_from_restrictions(mem_ctx, restrictions, &attr, &value);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	if (live_filtered || !restrictions) {
 		sql = talloc_asprintf(mem_ctx,
@@ -2011,21 +2021,8 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 	struct openchangedb_table_folder_row *folder_row;
 	struct mapi_SRestriction *restrictions = table->restrictions;
 
-	if (restrictions) {
-		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
-		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
-		case PT_STRING8:
-			value = restrictions->res.resProperty.lpProp.value.lpszA;
-			break;
-		case PT_UNICODE:
-			value = restrictions->res.resProperty.lpProp.value.lpszW;
-			break;
-		default:
-			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
-				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
-			return MAPI_E_TOO_COMPLEX;
-		}
-	}
+	ret = _table_get_attr_and_value_from_restrictions(mem_ctx, restrictions, &attr, &value);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	if (live_filtered || !restrictions) {
 		sql = talloc_asprintf(mem_ctx,
@@ -2180,36 +2177,24 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 						    bool fai,
 						    struct openchangedb_table_message_row *row)
 {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "_table_check_message_match_restrictions");
 	char *sql, *msg_type;
 	const char *attr, *value;
 	struct mapi_SRestriction *restrictions = table->restrictions;
 	uint64_t id;
-	enum MAPISTATUS ret;
+	bool ret;
 
-	if (restrictions) {
-		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
-		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
-		case PT_STRING8:
-			value = restrictions->res.resProperty.lpProp.value.lpszA;
-			break;
-		case PT_UNICODE:
-			value = restrictions->res.resProperty.lpProp.value.lpszW;
-			break;
-		default:
-			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
-				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
-			return MAPI_E_TOO_COMPLEX;
-		}
-	}
+	ret = _table_get_attr_and_value_from_restrictions(mem_ctx, restrictions, &attr, &value);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	if (restrictions->res.resProperty.ulPropTag == PidTagMid) {
-		return row->mid == strtoull(value, NULL, 10);
+		ret = row->mid == strtoull(value, NULL, 10);
+		goto end;
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagNormalizedSubject) {
-		return strcmp(row->normalized_subject, value) == 0;
+		ret = strcmp(row->normalized_subject, value) == 0;
+		goto end;
 	}
 
-	mem_ctx = talloc_named(NULL, 0, "_table_check_message_match_restrictions");
 	msg_type = talloc_strdup(mem_ctx, fai ? "faiMessage" : "systemMessage");
 
 	sql = talloc_asprintf(mem_ctx,
@@ -2248,44 +2233,30 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 		table->folder_id, table->username, msg_type, attr, value, row->id,
 		table->folder_id, PUBLIC_FOLDER, msg_type, attr, value, row->id);
 
-	ret = select_first_uint(conn, sql, &id);
-
+	ret = select_first_uint(conn, sql, &id) == MAPI_E_SUCCESS;
+end:
 	talloc_free(mem_ctx);
-	return ret == MAPI_E_SUCCESS;
+	return ret;
 }
 
 static bool _table_check_folder_match_restrictions(MYSQL *conn,
 						   struct openchangedb_table *table,
 						   struct openchangedb_table_folder_row *row)
 {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "_table_check_folder_match_restrictions");
 	char *sql;
 	const char *attr, *value;
 	struct mapi_SRestriction *restrictions = table->restrictions;
 	uint64_t id;
-	enum MAPISTATUS ret;
+	bool ret;
 
-	if (restrictions) {
-		attr = openchangedb_property_get_attribute(restrictions->res.resProperty.ulPropTag);
-		switch (restrictions->res.resProperty.ulPropTag & 0xFFFF) {
-		case PT_STRING8:
-			value = restrictions->res.resProperty.lpProp.value.lpszA;
-			break;
-		case PT_UNICODE:
-			value = restrictions->res.resProperty.lpProp.value.lpszW;
-			break;
-		default:
-			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
-				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
-			return MAPI_E_TOO_COMPLEX;
-		}
-	}
+	ret = _table_get_attr_and_value_from_restrictions(mem_ctx, restrictions, &attr, &value);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	if (restrictions->res.resProperty.ulPropTag == PidTagFolderId) {
-		return row->fid == strtoull(value, NULL, 10);
+		ret = row->fid == strtoull(value, NULL, 10);
+		goto end;
 	}
-
-	mem_ctx = talloc_named(NULL, 0, "_table_check_folder_match_restrictions");
 
 	if (restrictions->res.resProperty.ulPropTag == PidTagDisplayName) {
 		sql = talloc_asprintf(mem_ctx,
@@ -2359,10 +2330,10 @@ static bool _table_check_folder_match_restrictions(MYSQL *conn,
 			table->folder_id, table->username, attr, value, row->id,
 			table->folder_id, PUBLIC_FOLDER, attr, value, row->id);
 	}
-	ret = select_first_uint(conn, sql, &id);
-
+	ret = select_first_uint(conn, sql, &id) == MAPI_E_SUCCESS;
+end:
 	talloc_free(mem_ctx);
-	return ret == MAPI_E_SUCCESS;
+	return ret;
 }
 
 static bool _table_check_match_restrictions(MYSQL *conn,

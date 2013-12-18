@@ -262,6 +262,10 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		mapi_id_t id = *((mapi_id_t*) prop_value);
 		char *str_id = mapi_id_to_str(id);
 		ZVAL_STRING(zprop, str_id, 0);
+	} else if (prop_type == PT_DOUBLE) {
+		ZVAL_DOUBLE(zprop, *((double*) prop_value));
+	} else if ((prop_type == PT_MV_UNICODE) || (prop_type == PT_MV_STRING8)) {
+		php_error(E_ERROR, "Not implemented PT_MV_UNICODE PT_MV_STRING8");
 	} else if (prop_type == PT_BINARY) {
 		int i;
 		struct Binary_r *bin = ((struct Binary_r*) prop_value);
@@ -416,7 +420,6 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 //		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data)); //DDD
 	} else if (type == IS_DOUBLE) {
 		if (mapi_type == PT_DOUBLE) {
-			// XXX TO CHECK
 			double *ddata =  talloc_ptrtype(mem_ctx, ddata);
 			*ddata = Z_DVAL_P(val);
 			data = (void*) ddata;
@@ -506,7 +509,7 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx,	mapi_object_t *message, mapi_id_t id, void *data)
+void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx, mapi_object_t *message, mapi_id_t id, void *data)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps = NULL;

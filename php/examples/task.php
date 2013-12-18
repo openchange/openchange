@@ -1,6 +1,15 @@
 <?php
 include('./test-helpers.php');
 
+function dumpTask($message) {
+  echo "\n";
+  echo "PidTagBody: " . $message->get(PidTagBody) . "\n";
+  echo "PidLidTaskStatus: " . $message->get(PidLidTaskStatus) . "\n";
+  echo "PidLidTaskComplete: " . ($message->get(PidLidTaskComplete) ? 'true' : 'false') . "\n";
+  echo "PidLidTaskDateCompleted: " . $message->get(PidLidTaskDateCompleted) . "\n";
+  echo "PidLidPercentComplete:" . $message->get(PidLidPercentComplete) . "\n";
+}
+
 $dbPath = "/home/jag/.openchange/profiles.ldb";
 $profileName = 'u2';
 #$id = "0xC1E000000000001";
@@ -14,6 +23,12 @@ $status = 2;
 $dateFinished = 1380204166;
 $percent = 0.12;
 
+# values for undo
+$undoTagBody1 = "notSet";
+$undoTagComplete = false;
+$undoStatus = 0;
+$undoDateFinished = 1380204166;
+$undoPercent = 0; # LONG NOT FLOAT!
 
 $mapi = new MAPIProfileDB($dbPath);
 ok($mapi, "MAPIProfileDB open");
@@ -29,13 +44,9 @@ $ocFolder = $mailbox->$folder();
 $message = $ocFolder->openMessage($id, MAPIMessage::RW);
 ok($message, "Appointment $id opened in RW mode");
 is($message->getID(), $id, "Check opened message Id (must be $id)");
+dumpTask($message);
 
-var_dump($message->get(PidTagBody));
 
-var_dump($message->get(PidLidTaskComplete));
-
-var_dump($message->get(PidLidTaskDateCompleted));
-echo "\nPidLidPercentComplete:" . $message->get(PidLidPercentComplete) . "\n";
 diag("Changing PidTagBody to '$tagBody1'");
 diag("Changing PidLidTaskComplete to '$tagComplete'");
 diag("Changing PidLidTaskComplete to '$dateFinished'");
@@ -52,15 +63,17 @@ unset($message);
 diag("--After saving changes:");
 $message = $ocFolder->openMessage($id, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
-var_dump($message->get(PidTagBody));
-var_dump($message->get(PidLidTaskComplete));
-var_dump($message->get(PidLidTaskDateCompleted));
-var_dump($message->get(PidLidTaskStatus));
-echo "\nPidLidPercentComplete:" . $message->get(PidLidPercentComplete) . "\n";
+
+is($message->get(PidTagBody), $tagBody1, "Checking change in PidTagBody");
+is($message->get(PidLidTaskStatus), $status, "Checking change in PidLidTaskStatus");
+is($message->get(PidLidTaskComplete), $tagComplete, "Checking change in PidLidTaskComplete");
+echo "PidLidTaskDateCompleted: " . $message->get(PidLidTaskDateCompleted) . " NOT WORKING PROPERLY. USING WORKAROUND IN ROUNDCUBE " . "\n";
+is($message->get(PidLidPercentComplete), $percent, "Checking change in PidLidPercentComplete");
+
 diag("-- Reverting changes");
 
-
-$message->set(PidLidPercentComplete, 0);
+$message->set(PidTagBody, $undoTagBody1, PidLidTaskStatus, $undoStatus, PidLidTaskDateCompleted, $undoDateFinished, PidLidTaskComplete, $undoTagComplete);
+$message->set(PidLidPercentComplete, $undoPercent);
 $message->save();
 unset($message);
 

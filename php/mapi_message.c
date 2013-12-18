@@ -100,7 +100,6 @@ void mapi_message_so_request_properties(mapi_message_object_t *obj, struct SProp
 
 	retval = GetProps(obj->message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
         CHECK_MAPI_RETVAL(retval, "Getting appointment properties");
-	php_printf("COUNT %i\n", count);
 
 	obj->properties.cValues = count;
 	obj->properties.lpProps =  talloc_array(obj->talloc_ctx, struct mapi_SPropValue, count);
@@ -264,8 +263,15 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		ZVAL_STRING(zprop, str_id, 0);
 	} else if (prop_type == PT_DOUBLE) {
 		ZVAL_DOUBLE(zprop, *((double*) prop_value));
-	} else if ((prop_type == PT_MV_UNICODE) || (prop_type == PT_MV_STRING8)) {
-		php_error(E_ERROR, "Not implemented PT_MV_UNICODE PT_MV_STRING8");
+	} else if (prop_type == PT_MV_UNICODE) {
+		int i;
+		struct StringArrayW_r *data = (struct StringArrayW_r*) prop_value;
+		array_init(zprop);
+		for (i=0; i < data->cValues; i++) {
+			add_next_index_string(zprop, data->lppszW[i], 1);
+		}
+	} else if (prop_type == PT_MV_STRING8) {
+		php_error(E_ERROR, "Not implemented PT_MV_STRING8");
 	} else if (prop_type == PT_BINARY) {
 		int i;
 		struct Binary_r *bin = ((struct Binary_r*) prop_value);
@@ -288,13 +294,14 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 		}
 		ZVAL_LONG(zprop, unix_time);
 	} else {
-// TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8  PT_MV_UNICODE   PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
+// TODO : PT_ERROR PT_MV_BINARY PT_OBJECT PT_BINARY	  PT_STRING8    PT_CLSID PT_SYSTIME  PT_SVREID  PT_I8
 		php_error(E_ERROR, "Property 0x%" PRIX64 " has a type unknow or unsupported", prop_id);
 	}
 
 	return zprop;
 }
 
+// XXX mapi_message_check_*_array should be inside fill_array function
 void mapi_message_check_binary_array_zval(zval *zv)
 {
 	int       arrayLen;
@@ -313,6 +320,26 @@ void mapi_message_check_binary_array_zval(zval *zv)
 		long bval = **value;
 		if ((bval < 0) || (bval > 255)) {
 			php_error(E_ERROR, "Binary array has bad value %ld at position %i", bval, i);
+		}
+	}
+}
+
+void mapi_message_check_string_array_zval(zval *zv)
+{
+	int       arrayLen;
+	int	  i;
+	HashTable *ht = zv->value.ht;
+	arrayLen = zend_hash_num_elements(ht);
+	for (i=0; i < arrayLen; i++) {
+		int found;
+		zval **value;
+		found = zend_hash_index_find(ht, i, (void**) &value);
+		if (found != SUCCESS) {
+			php_error(E_ERROR, "String array has not element in position %i", i);
+
+		}
+		if (Z_TYPE_PP(value) != IS_STRING) {
+			php_error(E_ERROR, "String array has bad value at position %i", i);
 		}
 	}
 }
@@ -350,9 +377,10 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 		if (mapi_type == PT_BINARY) {
 			mapi_message_check_binary_array_zval(zv);
 			return true;
-
+		} else if (mapi_type == PT_MV_UNICODE) {
+			mapi_message_check_string_array_zval(zv);
+			return true;
 		}
-
 		return false;
 	case IS_OBJECT:
 		return false;
@@ -381,10 +409,32 @@ void mapi_message_fill_binary_array(TALLOC_CTX *mem_ctx, zval *src, struct Binar
 		long **value;
 		found = zend_hash_index_find(ht, i, (void**) &value);
 		if (found != SUCCESS) {
-			php_error(E_ERROR, "Cannot found byte in array position %i", i);
+			php_error(E_ERROR, "Cannot find byte in array position %i", i);
 		}
 
 		bi->lpb[i] = **value;
+	}
+}
+
+void *mapi_message_fill_unicode_array(TALLOC_CTX *mem_ctx, zval *src, struct StringArrayW_r *string_array)
+{
+	int 		i;
+	HashTable 	*ht;
+	int             nStrs;
+	ht = src->value.ht;
+	nStrs = zend_hash_num_elements(ht);
+	string_array->cValues = nStrs;
+	string_array->lppszW = talloc_named(mem_ctx, nStrs*sizeof(const char*), "mapi_message_fill_unicode_array");
+
+	for (i=0; i < nStrs; i++) {
+		int found;
+		zval **value;
+		found = zend_hash_index_find(ht, i, (void**) &value);
+		if (found != SUCCESS) {
+			php_error(E_ERROR, "Cannot find string in array position %i", i);
+		}
+//		php_printf("Fill pos %i with %s\n", i, Z_STRVAL_PP(value));
+		string_array->lppszW[i] = talloc_strdup(mem_ctx, Z_STRVAL_PP(value));
 	}
 }
 
@@ -444,6 +494,10 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 		struct Binary_r *bidata = talloc_ptrtype(mem_ctx, bidata);
 		mapi_message_fill_binary_array(mem_ctx, val, bidata);
 		data = (void*) bidata;
+	} else if ((type == IS_ARRAY) && (mapi_type == PT_MV_UNICODE)) {
+		struct StringArrayW_r *sawdata =talloc_ptrtype(mem_ctx, sawdata);
+		mapi_message_fill_unicode_array(mem_ctx, val, sawdata);
+		data = (void *) sawdata;
 	} else {
 		php_error(E_ERROR, "ZVAL type %i for MAPI ID type 0x%" PRIX64 "  not expected. Skipped\n", type, mapi_type);
 	}
@@ -554,7 +608,7 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
 
-		mapi_message_so_set_prop(message_obj->talloc_ctx,	message_obj->message, id, data);
+		mapi_message_so_set_prop(message_obj->talloc_ctx, message_obj->message, id, data);
 	}
 
 }

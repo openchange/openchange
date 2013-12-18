@@ -1,13 +1,17 @@
 <?php
 include('./test-helpers.php');
 
+$PidNameKeywords = 0xa064101f;
+
 function dumpTask($message) {
+  $PidNameKeywords = 0xa064101f;
   echo "\n";
   echo "PidTagBody: " . $message->get(PidTagBody) . "\n";
   echo "PidLidTaskStatus: " . $message->get(PidLidTaskStatus) . "\n";
   echo "PidLidTaskComplete: " . ($message->get(PidLidTaskComplete) ? 'true' : 'false') . "\n";
   echo "PidLidTaskDateCompleted: " . $message->get(PidLidTaskDateCompleted) . "\n";
   echo "PidLidPercentComplete:" . $message->get(PidLidPercentComplete) . "\n";
+  echo "PidNameKeywords" . var_dump($message->get($PidNameKeywords)) . "\n";
 }
 
 $dbPath = "/home/jag/.openchange/profiles.ldb";
@@ -22,6 +26,7 @@ $tagComplete = true;
 $status = 2;
 $dateFinished = 1380204166;
 $percent = 0.12;
+$keywords = array('key1', 'key2');
 
 # values for undo
 $undoTagBody1 = "notSet";
@@ -29,6 +34,7 @@ $undoTagComplete = false;
 $undoStatus = 0;
 $undoDateFinished = 1380204166;
 $undoPercent = 0; # LONG NOT FLOAT!
+$undoKeywords = array();
 
 $mapi = new MAPIProfileDB($dbPath);
 ok($mapi, "MAPIProfileDB open");
@@ -56,6 +62,7 @@ $message->set(PidTagBody, $tagBody1, PidLidTaskStatus, $status, PidLidTaskDateCo
 echo "\n";
 diag("Changing PidLidPercentComplete to $percent\n");
 $message->set(PidLidPercentComplete, $percent);
+$message->set($PidNameKeywords, $keywords);
 
 $message->save();
 unset($message);
@@ -69,11 +76,13 @@ is($message->get(PidLidTaskStatus), $status, "Checking change in PidLidTaskStatu
 is($message->get(PidLidTaskComplete), $tagComplete, "Checking change in PidLidTaskComplete");
 echo "PidLidTaskDateCompleted: " . $message->get(PidLidTaskDateCompleted) . " NOT WORKING PROPERLY. USING WORKAROUND IN ROUNDCUBE " . "\n";
 is($message->get(PidLidPercentComplete), $percent, "Checking change in PidLidPercentComplete");
+var_dump($message->get($PidNameKeywords));
 
 diag("-- Reverting changes");
 
 $message->set(PidTagBody, $undoTagBody1, PidLidTaskStatus, $undoStatus, PidLidTaskDateCompleted, $undoDateFinished, PidLidTaskComplete, $undoTagComplete);
 $message->set(PidLidPercentComplete, $undoPercent);
+$message->set($PidNameKeywords, $undoKeywords);
 $message->save();
 unset($message);
 

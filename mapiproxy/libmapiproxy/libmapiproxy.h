@@ -186,7 +186,7 @@ const struct mapiproxy_module *mapiproxy_server_bystatus(const char *, enum mapi
 const struct mapiproxy_module *mapiproxy_server_byname(const char *);
 
 TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *);
-void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *);
+void *mapiproxy_server_openchangedb_init(struct loadparm_context *);
 
 /* definitions from dcesrv_mapiproxy_session. c */
 struct mpm_session *mpm_session_new(TALLOC_CTX *, struct server_id, uint32_t);
@@ -199,7 +199,7 @@ bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
 
 /* definitions from openchangedb.c */
-enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *, struct openchangedb_context **oc_ctx);
+enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *, struct loadparm_context *, struct openchangedb_context **oc_ctx);
 enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *, uint64_t *);
 enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *, TALLOC_CTX *, uint64_t, struct UI8Array_r **);
 enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *, uint64_t *);

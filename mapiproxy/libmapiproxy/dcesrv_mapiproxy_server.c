@@ -320,8 +320,8 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 
 
 /**
-   \details Initialize an openchange LDB context available to all
-   mapiproxy instances. This LDB context points on the OpenChange
+   \details Initialize an openchangedb context available to all
+   mapiproxy instances. This context points on the OpenChange
    dispatcher database used within emsmdb default provider.
 
    \param lp_ctx pointer to the loadparm context
@@ -329,9 +329,9 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
    \note The memory context is not free'd leading and causes a loss
    record.
 
-   \return Allocated LDB context on success, otherwise NULL
+   \return Allocated openchangedb context on success, otherwise NULL
  */
-_PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ void *mapiproxy_server_openchangedb_init(struct loadparm_context *lp_ctx)
 {
 	TALLOC_CTX *mem_ctx;
 	enum MAPISTATUS ret;
@@ -339,11 +339,12 @@ _PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_
 	/* Sanity checks */
 	if (openchange_ldb_ctx) return openchange_ldb_ctx;
 
-	mem_ctx = talloc_named(NULL, 0, "mapiproxy_server_openchange_ldb_init");
+	mem_ctx = talloc_named(NULL, 0, "mapiproxy_server_openchangedb_init");
 	if (!mem_ctx) return NULL;
 
-	ret = openchangedb_ldb_initialize(mem_ctx, lpcfg_private_dir(lp_ctx),
-					  (struct openchangedb_context **)&openchange_ldb_ctx);
+	ret = openchangedb_initialize(mem_ctx, lp_ctx,
+		(struct openchangedb_context **)&openchange_ldb_ctx);
+
 	if (ret != MAPI_E_SUCCESS) return NULL;
 
 	return openchange_ldb_ctx;

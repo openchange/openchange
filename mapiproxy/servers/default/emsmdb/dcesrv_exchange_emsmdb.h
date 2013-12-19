@@ -294,7 +294,7 @@ struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct 
 
 /* definitions from emsmdbp.c */
 struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, const char *, void *);
-void			*emsmdbp_openchange_ldb_init(struct loadparm_context *);
+void			*emsmdbp_openchangedb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);

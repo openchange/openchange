@@ -170,14 +170,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
    \note This function is just a wrapper over
    mapiproxy_server_openchange_ldb_init
 
-   \return Allocated LDB context on success, otherwise NULL
+   \return Allocated openchangedb context on success, otherwise NULL
  */
-_PUBLIC_ void *emsmdbp_openchange_ldb_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ void *emsmdbp_openchangedb_init(struct loadparm_context *lp_ctx)
 {
 	/* Sanity checks */
 	if (!lp_ctx) return NULL;
 
-	return mapiproxy_server_openchange_ldb_init(lp_ctx);
+	return mapiproxy_server_openchangedb_init(lp_ctx);
 }
 
 

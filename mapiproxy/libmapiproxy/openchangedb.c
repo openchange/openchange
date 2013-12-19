@@ -32,7 +32,31 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
+#include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
+
 const char *nil_string = "<nil>";
+
+
+_PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
+						 struct loadparm_context *lp_ctx,
+						 struct openchangedb_context **oc_ctx)
+{
+	const char *openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
+							     "openchangedb");
+	if (openchangedb_backend) {
+		DEBUG(0, ("Using MySQL backend for openchangedb: %s",
+			  openchangedb_backend));
+		return openchangedb_mysql_initialize(mem_ctx,
+						     openchangedb_backend,
+						     oc_ctx);
+	} else {
+		DEBUG(0, ("Using default backend for openchangedb"));
+		return openchangedb_ldb_initialize(mem_ctx,
+						   lpcfg_private_dir(lp_ctx),
+						   oc_ctx);
+	}
+}
 
 /**
    \details Retrieve the mailbox FolderID for given recipient from

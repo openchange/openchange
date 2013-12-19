@@ -1949,7 +1949,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	emsmdb_session->session = NULL;
 
 	/* Open read/write context on OpenChange dispatcher database */
-	openchange_db_ctx = emsmdbp_openchange_ldb_init(dce_ctx->lp_ctx);
+	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
 	if (!openchange_db_ctx) {
 		smb_panic("unable to initialize 'openchange db' context");
 	}

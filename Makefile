@@ -769,6 +769,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
+							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
 							mapiproxy/libmapiproxy/mapi_handles.po				\
 							mapiproxy/libmapiproxy/entryid.po					\
 							mapiproxy/libmapiproxy/modules.po					\

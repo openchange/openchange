@@ -34,9 +34,7 @@
 #include <errno.h>
 
 #include <gen_ndr/server_id.h>
-
-#include "backends/openchangedb_backends.h"
-#include "backends/openchangedb_ldb.h"
+#include <gen_ndr/exchange.h>
 
 struct mapiproxy {
 	bool			norelay;
@@ -197,6 +195,8 @@ bool mpm_session_set_private_data(struct mpm_session *, void *);
 bool mpm_session_release(struct mpm_session *);
 bool mpm_session_cmp_sub(struct mpm_session *, struct server_id, uint32_t);
 bool mpm_session_cmp(struct mpm_session *, struct dcesrv_call_state *);
+
+struct openchangedb_context;
 
 /* definitions from openchangedb.c */
 enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *, struct loadparm_context *, struct openchangedb_context **oc_ctx);

@@ -27,6 +27,7 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
 #include <tevent.h>
 
 typedef struct {

@@ -31,6 +31,7 @@
 #include "libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_backends.h"
 
 /**
    /details Initialize an openchangedb table

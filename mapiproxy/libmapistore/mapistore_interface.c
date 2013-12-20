@@ -95,7 +95,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->nprops_ctx = NULL;
 	const char *nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");
 	if (nprops_backend) {
-		DEBUG(0, ("Using custom backend for named properties: %s",
+		DEBUG(0, ("Using custom backend for named properties: %s\n",
 			  nprops_backend));
 		retval = mapistore_namedprops_init(mstore_ctx, nprops_backend,
 						   &(mstore_ctx->nprops_ctx));
@@ -103,7 +103,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		// Use default ldb backend
 		char *nprops_default_db = talloc_asprintf(mstore_ctx, "ldb://%s/%s",
 				mapistore_get_mapping_path(), MAPISTORE_DB_NAMED);
-		DEBUG(0, ("Using default backend for named properties: %s",
+		DEBUG(0, ("Using default backend for named properties: %s\n",
 			  nprops_default_db));
 		retval = mapistore_namedprops_init(mstore_ctx, nprops_default_db,
 						   &(mstore_ctx->nprops_ctx));

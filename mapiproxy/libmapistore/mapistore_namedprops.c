@@ -24,6 +24,7 @@
 #include "mapistore.h"
 // available named_properties backend implementations
 #include "backends/namedprops_ldb.h"
+#include "backends/namedprops_mysql.h"
 
 
 // Known prefixes for connection strings
@@ -68,9 +69,9 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 		char *database = talloc_strdup(mem_ctx, conn_info + strlen(LDB_PREFIX));
 		return mapistore_namedprops_ldb_init(mem_ctx, database, nprops);
 	} else if (starts_with(conn_info, MYSQL_PREFIX)) {
-		return MAPISTORE_ERR_NOT_IMPLEMENTED;
+		return mapistore_namedprops_mysql_init(mem_ctx, conn_info, nprops);
 	} else {
-		DEBUG(5, ("Unknown type of named_properties backend for %s\n",
+		DEBUG(0, ("Unknown type of named_properties backend for %s\n",
 			  conn_info));
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}

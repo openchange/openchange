@@ -165,6 +165,15 @@ START_TEST (test_get_parent_fid) {
 	ck_assert_int_eq(3ul, pfid);
 } END_TEST
 
+START_TEST (test_get_parent_fid_which_is_the_mailbox) {
+	uint64_t pfid = 0ul, fid = 0ul;
+
+	fid = 1441151880758558721ul;
+	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(720575940379279361ul, pfid);
+} END_TEST
+
 START_TEST (test_get_fid) {
 	uint64_t fid;
 	char *uri;
@@ -1030,6 +1039,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_mapistoreURI);
 	tcase_add_test(tc, test_set_mapistoreURI);
 	tcase_add_test(tc, test_get_parent_fid);
+	tcase_add_test(tc, test_get_parent_fid_which_is_the_mailbox);
 	tcase_add_test(tc, test_get_fid);
 	tcase_add_test(tc, test_get_MAPIStoreURIs);
 	tcase_add_test(tc, test_get_ReceiveFolder);

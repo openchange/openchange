@@ -422,7 +422,14 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 			"JOIN folders f2 ON f1.id = f2.parent_folder_id"
 			"  AND f2.folder_id = %"PRIu64" "
 			"JOIN mailboxes m ON m.id = f2.mailbox_id"
-			"  AND m.name = '%s'",
+			"  AND m.name = '%s' "
+			"UNION "
+			"SELECT m.folder_id FROM mailboxes m "
+			"JOIN folders f1 ON f1.mailbox_id = m.id"
+			"  AND f1.parent_folder_id IS NULL "
+			"  AND f1.folder_id = %"PRIu64" "
+			"WHERE m.name = '%s'",
+			fid, _sql(mem_ctx, username),
 			fid, _sql(mem_ctx, username));
 	} else {
 		sql = talloc_asprintf(mem_ctx, // FIXME ou_id

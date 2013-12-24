@@ -614,6 +614,36 @@ START_TEST (test_create_folder) {
 	ck_assert_int_eq(count + 1, count_after);
 } END_TEST
 
+START_TEST (test_create_folder_without_mapistore_uri) {
+	uint64_t pfid, fid, changenumber;
+	uint32_t count, count_after;
+	struct StringArrayW_r *uris = talloc_zero(mem_ctx, struct StringArrayW_r);
+	int uris_before;
+
+	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	CHECK_SUCCESS;
+	uris_before = uris->cValues;
+
+	pfid = 1513209474796486657ul;
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	CHECK_SUCCESS;
+
+	fid = 4243;
+	changenumber = 424243;
+	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+					 NULL, 100);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count + 1, count_after);
+
+	// Check this has not changed
+	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(uris->cValues, uris_before);
+} END_TEST
+
 START_TEST (test_create_public_folder) {
 	uint64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
@@ -1021,6 +1051,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_users_from_partial_uri);
 	tcase_add_test(tc, test_create_mailbox);
 	tcase_add_test(tc, test_create_folder);
+	tcase_add_test(tc, test_create_folder_without_mapistore_uri);
 	tcase_add_test(tc, test_create_public_folder);
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_message_count_from_public_folder);

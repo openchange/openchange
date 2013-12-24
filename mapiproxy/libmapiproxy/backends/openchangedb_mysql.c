@@ -1496,10 +1496,15 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 					    "JOIN mailboxes m ON m.id = f.mailbox_id "
 					    "WHERE m.name = '%s' "
 					    "  AND f.folder_id = %"PRIu64"), "
-			"FolderType = %d, SystemIdx = %d, MAPIStoreURI = '%s'",
+			"FolderType = %d, SystemIdx = %d",
 			_sql(mem_ctx, username), fid, SYSTEM_FOLDER,
 			_sql(mem_ctx, username), _sql(mem_ctx, username), pfid,
-			1, systemIdx, _sql(mem_ctx, MAPIStoreURI));
+			1, systemIdx);
+		if (MAPIStoreURI) {
+			talloc_asprintf_append(sql, ", MAPIStoreURI = '%s'", MAPIStoreURI);
+		} else {
+			talloc_asprintf_append(sql, ", MAPIStoreURI = NULL");
+		}
 	}
 	ret = execute_query(conn, sql);
 	// FIXME return MAPI_E_COLLISION if applies
@@ -2590,6 +2595,18 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+static char *_message_type(TALLOC_CTX *mem_ctx, enum openchangedb_message_type msg_type)
+{
+	if (msg_type == OPENCHANGEDB_MESSAGE_SYSTEM) {
+		return talloc_strdup(mem_ctx, "systemMessage");
+	} else if (msg_type == OPENCHANGEDB_MESSAGE_FAI) {
+		return talloc_strdup(mem_ctx, "faiMessage");
+	} else {
+		DEBUG(0, ("Bug: Unknown message_type"));
+		return NULL;
+	}
+}
+
 static enum MAPISTATUS message_save(struct openchangedb_context *self,
 				    void *_msg, uint8_t save_flags)
 {
@@ -2609,7 +2626,8 @@ static enum MAPISTATUS message_save(struct openchangedb_context *self,
 		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
 			"message_id=%"PRIu64, msg->message_id));
 		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
-			"message_type=%d", msg->message_type));
+			"message_type='%s'",
+			_message_type(mem_ctx, msg->message_type)));
 		if (msg->folder_id) {
 			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
 				"folder_id=%"PRIu64, msg->folder_id));
@@ -2639,7 +2657,8 @@ static enum MAPISTATUS message_save(struct openchangedb_context *self,
 		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
 			"message_id=%"PRIu64, msg->message_id));
 		fields = str_list_add(fields, talloc_asprintf(mem_ctx,
-			"message_type=%d", msg->message_type));
+			"message_type='%s'",
+			_message_type(mem_ctx, msg->message_type)));
 		if (msg->folder_id) {
 			fields = str_list_add(fields, talloc_asprintf(mem_ctx,
 				"folder_id=%"PRIu64, msg->folder_id));

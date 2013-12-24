@@ -1489,8 +1489,8 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 			_sql(mem_ctx, username), fid, PUBLIC_FOLDER,
 			_sql(mem_ctx, username), pfid, 1, systemIdx);
 		if (MAPIStoreURI) {
-			talloc_asprintf_append(sql, ",MAPIStoreURI = '%s'",
-					       _sql(mem_ctx, MAPIStoreURI));
+			sql = talloc_asprintf_append(sql, ",MAPIStoreURI = '%s'",
+						     _sql(mem_ctx, MAPIStoreURI));
 		}
 	} else {
 		// Insert row in folders
@@ -1508,9 +1508,10 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 			_sql(mem_ctx, username), _sql(mem_ctx, username), pfid,
 			1, systemIdx);
 		if (MAPIStoreURI) {
-			talloc_asprintf_append(sql, ", MAPIStoreURI = '%s'", MAPIStoreURI);
+			sql = talloc_asprintf_append(sql, ", MAPIStoreURI = '%s'",
+						     MAPIStoreURI);
 		} else {
-			talloc_asprintf_append(sql, ", MAPIStoreURI = NULL");
+			sql = talloc_asprintf_append(sql, ", MAPIStoreURI = NULL");
 		}
 	}
 	ret = execute_query(conn, sql);

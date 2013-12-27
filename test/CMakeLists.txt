@@ -33,6 +33,10 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_ldb.c
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapiproxy/backends/openchangedb_mysql.c
     # -------------------------------------------------------------------------
+    # Util
+    # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/../mapiproxy/util/mysql.c
+    # -------------------------------------------------------------------------
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb.c

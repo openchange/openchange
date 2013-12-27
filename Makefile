@@ -769,10 +769,11 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
-							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
+                            mapiproxy/libmapiproxy/backends/openchangedb_mysql.po \
 							mapiproxy/libmapiproxy/mapi_handles.po				\
 							mapiproxy/libmapiproxy/entryid.po					\
 							mapiproxy/libmapiproxy/modules.po					\
+							mapiproxy/util/mysql.po								\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS)
@@ -1377,6 +1378,7 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapiproxy/openchangedb.o \
 	test/openchange_test_suite.o \
 	test/test_common.c \
+    mapiproxy/util/mysql.o \
     mapiproxy/libmapiproxy/openchangedb.o \
 	mapiproxy/libmapiproxy/openchangedb_table.o \
 	mapiproxy/libmapiproxy/openchangedb_message.o \

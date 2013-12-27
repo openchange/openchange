@@ -231,3 +231,59 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 
 	return MYSQL_SUCCESS;
 }
+
+
+
+bool table_exists(MYSQL *conn, char *table_name)
+{
+	MYSQL_RES *res;
+	bool created;
+
+	res = mysql_list_tables(conn, table_name);
+	if (res == NULL) return false;
+	created = mysql_num_rows(res) == 1;
+	mysql_free_result(res);
+
+	return created;
+}
+
+bool create_schema(MYSQL *conn, char *schema_file)
+{
+	TALLOC_CTX *mem_ctx;
+	FILE *f;
+	int sql_size, bytes_read;
+	char *schema, *query;
+	bool ret, queries_to_execute;
+
+	f = fopen(schema_file, "r");
+	if (!f) {
+		DEBUG(0, ("schema file %s not found", schema_file));
+		ret = false;
+		goto end;
+	}
+	fseek(f, 0, SEEK_END);
+	sql_size = ftell(f);
+	rewind(f);
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	schema = talloc_zero_array(mem_ctx, char, sql_size + 1);
+	bytes_read = fread(schema, sizeof(char), sql_size, f);
+	if (bytes_read != sql_size) {
+		DEBUG(0, ("error reading schema file %s", schema_file));
+		ret = false;
+		goto end;
+	}
+	// schema is a series of create table/index queries separated by ';'
+	query = strtok (schema, ";");
+	queries_to_execute = query != NULL;
+	while (queries_to_execute) {
+		ret = mysql_query(conn, query) ? false : true;
+		if (!ret) break;
+		query = strtok(NULL, ";");
+		queries_to_execute = ret && query && strlen(query) > 10;
+	}
+end:
+	talloc_free(mem_ctx);
+	if (f) fclose(f);
+
+	return ret;
+}

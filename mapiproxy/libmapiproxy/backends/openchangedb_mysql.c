@@ -2840,68 +2840,13 @@ static const char *openchangedb_data_dir(void)
 	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
 }
 
-static bool is_schema_created(MYSQL *conn)
-{
-	MYSQL_RES *res;
-	bool created;
-
-	res = mysql_list_tables(conn, "folders");
-	if (res == NULL) return false;
-	created = mysql_num_rows(res) == 1;
-	mysql_free_result(res);
-
-	return created;
-}
-
-static bool create_schema(MYSQL *conn)
-{
-	TALLOC_CTX *mem_ctx;
-	FILE *f;
-	int sql_size, bytes_read;
-	char *schema, *schema_file, *query;
-	bool ret, queries_to_execute;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
-				      openchangedb_data_dir());
-	f = fopen(schema_file, "r");
-	if (!f) {
-		DEBUG(0, ("schema file %s not found", schema_file));
-		ret = false;
-		goto end;
-	}
-	fseek(f, 0, SEEK_END);
-	sql_size = ftell(f);
-	rewind(f);
-	schema = talloc_zero_array(mem_ctx, char, sql_size + 1);
-	bytes_read = fread(schema, sizeof(char), sql_size, f);
-	if (bytes_read != sql_size) {
-		DEBUG(0, ("error reading schema file %s", schema_file));
-		ret = false;
-		goto end;
-	}
-	// schema is a series of create table/index queries separated by ';'
-	query = strtok (schema, ";");
-	queries_to_execute = query != NULL;
-	while (queries_to_execute) {
-		ret = mysql_query(conn, query) ? false : true;
-		if (!ret) break;
-		query = strtok(NULL, ";");
-		queries_to_execute = ret && query && strlen(query) > 10;
-	}
-end:
-	talloc_free(mem_ctx);
-	if (f) fclose(f);
-
-	return ret;
-}
-
 _PUBLIC_
 enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 					      const char *connection_string,
 					      struct openchangedb_context **ctx)
 {
 	struct openchangedb_context *oc_ctx;
+	char *schema_file;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
 	// Initialize context with function pointers
@@ -2959,11 +2904,16 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);
 	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
-	if (!is_schema_created(oc_ctx->data)) {
+	if (!table_exists(oc_ctx->data, "folders")) {
 		bool schema_created;
 		DEBUG(0, ("Creating schema for openchangedb on mysql %s",
 			  connection_string));
-		schema_created = create_schema(oc_ctx->data);
+
+		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
+					      openchangedb_data_dir());
+		schema_created = create_schema(oc_ctx->data, schema_file);
+		talloc_free(schema_file);
+
 		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED,
 				     oc_ctx);
 	}

@@ -14,6 +14,9 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *, MYSQL *, const char *, struct 
 enum MYSQLRESULT select_first_string(TALLOC_CTX *, MYSQL *, const char *, const char **);
 enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql, uint64_t *n);
 
+bool table_exists(MYSQL *, char *);
+bool create_schema(MYSQL *, char *);
+
 MYSQL* create_connection(const char *, MYSQL **);
 
 enum MYSQLRESULT { MYSQL_SUCCESS, MYSQL_NOT_FOUND, MYSQL_ERROR };

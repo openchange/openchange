@@ -5,6 +5,8 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/backends/indexing_tdb.h"
+#include "mapiproxy/libmapistore/backends/indexing_mysql.h"
+#include "mapiproxy/util/mysql.h"
 
 /* Global test variables */
 static struct mapistore_context *mstore_ctx = NULL;
@@ -203,6 +205,22 @@ static void tdb_teardown(void)
 	unlink(indexing_file);
 	talloc_free(mstore_ctx);
 }
+static void mysql_setup(void)
+{
+	TALLOC_CTX		*mem_ctx;
+
+	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
+	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+
+	mapistore_indexing_mysql_init(mstore_ctx, USERNAME, &ictx);
+	fail_if(!ictx);
+}
+
+static void mysql_teardown(void)
+{
+	mysql_query(mstore_ctx->indexing_list->ctx->data, "DROP DATABASE " MYSQL_DB);
+	talloc_free(mstore_ctx);
+}
 
 static Suite *indexing_create_suite(const char *backend_name, SFun setup,
 				    SFun teardown)
@@ -233,4 +251,9 @@ static Suite *indexing_create_suite(const char *backend_name, SFun setup,
 Suite *indexing_tdb_suite(void)
 {
 	return indexing_create_suite("TDB", tdb_setup, tdb_teardown);
+}
+
+Suite *indexing_mysql_suite(void)
+{
+	return indexing_create_suite("MySQL", mysql_setup, mysql_teardown);
 }

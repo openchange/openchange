@@ -14,6 +14,7 @@ int main(void)
 	srunner_add_suite(sr, openchangedb_ldb_suite());
 
 	srunner_add_suite(sr, indexing_tdb_suite());
+	srunner_add_suite(sr, indexing_mysql_suite());
 
 	srunner_add_suite(sr, namedprops_ldb_suite());
 	srunner_add_suite(sr, namedprops_mysql_suite());

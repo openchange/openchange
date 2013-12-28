@@ -287,3 +287,29 @@ end:
 
 	return ret;
 }
+
+
+
+const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)
+{
+	size_t len, c_count, i, j;
+	char *ret;
+
+	if (!s) return "";
+
+	len = strlen(s);
+	c_count = 0;
+	for (i = 0; i < len; i++) {
+		if (s[i] == c) c_count++;
+	}
+
+	if (c_count == 0) return s;
+
+	ret = talloc_zero_array(mem_ctx, char, len + c_count + 1);
+	for (i = 0, j = 0; i < len; i++) {
+		if (s[i] == c) ret[i + j++] = '\\';
+		ret[i + j] = s[i];
+	}
+
+	return ret;
+}

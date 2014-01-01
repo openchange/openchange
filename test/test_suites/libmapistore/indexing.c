@@ -231,7 +231,7 @@ static Suite *indexing_create_suite(const char *backend_name, SFun setup,
 	Suite *s = suite_create(suite_name);
 
 	TCase *tc = tcase_create(backend_name);
-	tcase_add_checked_fixture(tc, tdb_setup, tdb_teardown);
+	tcase_add_checked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);
 	tcase_add_test(tc, test_backend_repeated_add_fails);

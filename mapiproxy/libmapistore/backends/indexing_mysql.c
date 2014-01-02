@@ -60,14 +60,15 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 
 	/* Check if the fid/mid doesn't already exist within the database */
 	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
-	MAPISTORE_RETVAL_IF(ret, ret, NULL);
+	MAPISTORE_RETVAL_IF(ret == MAPISTORE_SUCCESS, MAPISTORE_ERR_EXIST, NULL);
 
 	mem_ctx = talloc_new(NULL);
 	sql = talloc_asprintf(mem_ctx,
 		"INSERT INTO %s "
 		"(username, fmid, url, soft_deleted) "
-		"VALUES ('%s', %"PRIu64", '%s')",
-		INDEXING_TABLE, _sql(mem_ctx, username), fmid, _sql(mem_ctx, mapistore_URI));
+		"VALUES ('%s', %"PRIu64", '%s', '%d')",
+		INDEXING_TABLE, _sql(mem_ctx, username), fmid,
+		_sql(mem_ctx, mapistore_URI), 0);
 
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
@@ -120,7 +121,7 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 
 	/* Check if the fid/mid still exists within the database */
 	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
-	MAPISTORE_RETVAL_IF(!ret, ret, NULL);
+	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_SUCCESS, NULL);
 
 	mem_ctx = talloc_new(NULL);
 	switch (flags) {
@@ -173,8 +174,8 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 
 	ret = select_without_fetch(MYSQL(ictx), sql, &res);
+	MAPISTORE_RETVAL_IF(ret == MYSQL_NOT_FOUND, MAPISTORE_ERR_NOT_FOUND, sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, sql);
-	MAPISTORE_RETVAL_IF(!mysql_num_rows(res), MAPISTORE_ERR_NOT_FOUND, sql);
 
 	row = mysql_fetch_row(res);
 
@@ -255,7 +256,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 	case MYSQL_SUCCESS:
 		// Update next fmid
 		sql = talloc_asprintf(mem_ctx,
-			"UPDATE %s SET last_fmid = %"PRIu64
+			"UPDATE %s SET next_fmid = %"PRIu64
 			" WHERE username='%s'",
 			INDEXING_ALLOC_TABLE,
 			next_fmid + count,
@@ -265,8 +266,8 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 		// First allocation, insert in the database
 		next_fmid = 1;
 		sql = talloc_asprintf(mem_ctx,
-			"INSERT INTO %s (username, last_fmid) "
-			"VALUES('%s', %"PRIu64,
+			"INSERT INTO %s (username, next_fmid) "
+			"VALUES('%s', %"PRIu64")",
 			INDEXING_ALLOC_TABLE,
 			_sql(mem_ctx, username),
 			next_fmid + count);
@@ -282,6 +283,8 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 
 	ret = execute_query(MYSQL(ictx), "COMMIT");
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	*fmidp = next_fmid;
 
 	return MAPISTORE_SUCCESS;
 }

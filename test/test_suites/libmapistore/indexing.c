@@ -218,7 +218,7 @@ static void mysql_setup(void)
 
 static void mysql_teardown(void)
 {
-	mysql_query(mstore_ctx->indexing_list->ctx->data, "DROP DATABASE " MYSQL_DB);
+	mysql_query((MYSQL*)ictx->data, "DROP DATABASE " MYSQL_DB);
 	talloc_free(mstore_ctx);
 }
 

@@ -7,6 +7,9 @@
 #include <gen_ndr/exchange.h>
 
 #define THRESHOLD_SLOW_QUERIES 0.25
+#define _sql(A, B) _sql_escape(A, B, '\'')
+
+const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c);
 
 enum MYSQLRESULT execute_query(MYSQL *, const char *);
 enum MYSQLRESULT select_without_fetch(MYSQL *, const char *, MYSQL_RES **);

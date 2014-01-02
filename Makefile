@@ -856,7 +856,7 @@ libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
 		setup/mapistore/named_properties_schema.sql \
-		setup/indexing/indexing_schema.sql		\
+		setup/mapistore/indexing_schema.sql		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
@@ -886,7 +886,6 @@ endif
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
 	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
 	$(INSTALL) -m 0644 setup/mapistore/*.sql $(DESTDIR)$(datadir)/setup/mapistore/
-	$(INSTALL) -m 0644 setup/indexing/*.sql $(DESTDIR)$(datadir)/setup/mapistore/
 	@$(SED) $(DESTDIR)$(includedir)/mapistore/*.h
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)

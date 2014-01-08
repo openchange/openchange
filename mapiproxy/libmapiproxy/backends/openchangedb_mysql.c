@@ -2221,7 +2221,7 @@ static const char *_table_fetch_message_attribute(MYSQL *conn,
 						  uint32_t pos,
 						  enum MAPITAGS proptag)
 {
-	const char *value;
+	const char *value = NULL;
 	struct openchangedb_table_message_row *row = table->res->messages[pos];
 
 	if (proptag == PidTagMid) {
@@ -2247,7 +2247,7 @@ static const char *_table_fetch_folder_attribute(MYSQL *conn,
 						 uint32_t pos,
 						 enum MAPITAGS proptag)
 {
-	const char *value;
+	const char *value = NULL;
 	struct openchangedb_table_folder_row *row = table->res->folders[pos];
 
 	if (proptag == PidTagFolderId) {

@@ -220,7 +220,7 @@ CREATE INDEX `fk_servers_company_id_idx` ON `servers` (`company_id` ASC);
 CREATE TABLE IF NOT EXISTS `folders_names` (
   `folder_id` BIGINT UNSIGNED NOT NULL,
   `locale` VARCHAR(15) NOT NULL,
-  `display_name` VARCHAR(45) NOT NULL,
+  `display_name` VARCHAR(512) NOT NULL,
   PRIMARY KEY (`folder_id`, `locale`),
   CONSTRAINT `fk_folders_names_folder_id`
     FOREIGN KEY (`folder_id`)

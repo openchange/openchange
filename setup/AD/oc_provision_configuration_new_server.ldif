@@ -1,0 +1,125 @@
+#
+# The OpenChange Server object
+#
+dn: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: server
+objectClass: msExchExchangeServer
+cn: ${NETBIOSNAME}
+serialNumber: Version 6.5 (Build 6944.4)
+distinguishedName: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ${NETBIOSNAME}
+messageTrackingEnabled: FALSE
+networkAddress: ncacn_vns_spp:${NETBIOSNAME}
+networkAddress: netbios:${NETBIOSNAME}
+networkAddress: ncacn_np:${NETBIOSNAME}
+networkAddress: ncacn_spx:${NETBIOSNAME}
+networkAddress: ncacn_ip_tcp:${HOSTNAME}.${DNSDOMAIN}
+networkAddress: ncalrpc:${NETBIOSNAME}
+name: ${NETBIOSNAME}
+versionNumber: 6944
+serverRole: 0
+legacyExchangeDN: /o=${FIRSTORG}/ou=${FIRSTOU}/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}
+objectCategory: CN=ms-Exch-Exchange-Server,${SCHEMADN}
+#msExchHomeRoutingGroup: CN=First Routing Group,CN=Routing Groups,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+msExchMessageTrackLogFilter: -262145
+msExchTrkLogCleaningInterval: 7
+#msExchResponsibleMTAServer: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+msExchMailboxManagerActivationStyle: 0
+msExchMailboxManagerAdminMode: 2
+
+#
+# Information Store
+#
+dn: CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchInformationStore
+cn: InformationStore
+distinguishedName: CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+adminDisplayName: InformationStore
+name: InformationStore
+objectCategory: CN=ms-Exch-Information-Store,${SCHEMADN}
+
+
+#
+# First Storage Group
+#
+dn: CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchStorageGroup
+cn: First Storage Group
+distinguishedName: CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+adminDisplayName: First Storage Group
+name: First Storage Group
+systemFlags: 1610612736
+objectCategory: CN=ms-Exch-Storage-Group,${SCHEMADN}
+
+#
+# Public Folder Store (${NETBIOSNAME})
+#
+dn: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: msExchMDB
+objectClass: msExchPublicMDB
+cn: Public Folder Store (${NETBIOSNAME})
+distinguishedName: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+displayName: Public Folder Store (${NETBIOSNAME})
+activationStyle: 1
+messageSizeLimit: 10240
+showInAdvancedViewOnly: TRUE
+# finalize? homeMTA: CN=Microsoft MTA,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+adminDisplayName: Public Folder Store (${NETBIOSNAME})
+proxyAddresses: SMTP:${NETBIOSNAME}-IS@${DNSDOMAIN}
+proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=EXCH2K3-IS;
+deliveryMechanism: 1
+garbageCollPeriod: 604800
+quotaNotificationStyle: 1
+# TODO: determine if this needs to go back in, and overcome the linked attribute issue.
+# See http://tracker.openchange.org/issues/252
+# homeMDBBL: CN=SMTP (${NETBIOSNAME}-{E95EE010-3E8A-425B-806F-15ED60887F6B}),CN=Connections,${FIRSTORGDN}
+mailNickname: ${NETBIOSNAME}-IS
+name: Public Folder Store (${NETBIOSNAME})
+systemFlags: 1610612736
+legacyExchangeDN: /o=${FIRSTORG}/ou=${FIRSTOU}/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Public MDB
+objectCategory: CN=ms-Exch-Public-MDB,${SCHEMADN}
+textEncodedORAddress: c=US;a= ;p=First Organizati;o=Exchange;s=${NETBIOSNAME}-IS;
+mail: ${NETBIOSNAME}-IS@${DNSDOMAIN}
+msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+#msExchOwningPFTree: CN=Public Folders,CN=Folder Hierarchies,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+msExchMaxCachedViews: 11
+msExchDatabaseCreated: TRUE
+msExchPoliciesIncluded: {627410A4-E1A9-4DD0-9568-FA22DEACB6B8},{26491CFC-9E50-
+ 4857-861B-0CB8DF22B5D7}
+
+#
+# Mailbox Store (${NETBIOSNAME})
+#
+dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: msExchMDB
+objectClass: msExchPrivateMDB
+cn: Mailbox Store (${NETBIOSNAME})
+distinguishedName: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+displayName: Mailbox Store (${NETBIOSNAME})
+activationStyle: 1
+deletedItemFlags: 5
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Mailbox Store (${NETBIOSNAME})
+deliveryMechanism: 1
+garbageCollPeriod: 604800
+quotaNotificationStyle: 1
+name: Mailbox Store (${NETBIOSNAME})
+systemFlags: 1610612736
+legacyExchangeDN: /o=${FIRSTORG}/ou=${FIRSTOU}/cn=Configuration/cn=Servers/cn=${NETBIOSNAME}/cn=Microsoft Private MDB
+objectCategory: CN=ms-Exch-Private-MDB,${SCHEMADN}
+# (disabled, see previous ldif) msExchUseOAB: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+msExchMailboxRetentionPeriod: 2592000
+msExchMaxCachedViews: 11
+msExchDatabaseCreated: TRUE
+msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+msExchHomePublicMDB: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}

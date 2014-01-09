@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 
 ###################################################
-# package to parse the mapi-properties files and 
+# package to parse the mapi-properties files and
 # generate code for libmapi in OpenChange
 #
 # Perl code based on pidl one from Andrew Tridgell and the Samba team
@@ -153,7 +153,7 @@ sub FileSave($$)
     my($filename) = shift;
     my($v) = shift;
     local(*FILE);
-    open(FILE, ">$filename") || die "can't open $filename";    
+    open(FILE, ">$filename") || die "can't open $filename";
     print FILE $v;
     close(FILE);
 }
@@ -205,7 +205,7 @@ sub mapitags_header($)
     mparse "#endif /* !__MAPITAGS_H__ */";
 
     return $ret;
-    
+
 }
 
 
@@ -237,7 +237,7 @@ sub mapitags_interface($)
     mparse "";
     mparse "static struct mapi_proptags mapitags[] = {";
     indent;
-    
+
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
 	$line =~ s/^\#+.*$//;
@@ -348,7 +348,7 @@ sub mapitags_enum($)
 
     mparse "typedef [v1_enum, flag(NDR_PAHEX)] enum {";
     indent;
-    
+
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
 	$line =~ s/^\#+.*$//;
@@ -374,9 +374,9 @@ sub mapitags_enum($)
     }
     mparse sprintf "%-51s = %s", "MAPI_PROP_RESERVED", "0xFFFFFFFF";
     deindent;
-    mparse "} MAPITAGS;";    
+    mparse "} MAPITAGS;";
     mparse "";
-    
+
     return $ret;
 }
 
@@ -402,7 +402,7 @@ sub mapi_nameid_private_header($)
     mparse "";
     mparse "static struct mapi_nameid_tags mapi_nameid_tags[] = {";
     indent;
-    
+
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
 	$line =~ s/^\#+.*$//;
@@ -418,7 +418,7 @@ sub mapi_nameid_private_header($)
 	    if ($prop[0] eq "NULL") {
 		$prop[0] = "0x00000000";
 	    }
-	    mparse sprintf "{ %-51s, %-40s, %-15s, %-30s, %-30s, %-15s, %-20s, 0x0 },", 
+	    mparse sprintf "{ %-51s, %-40s, %-15s, %-30s, %-30s, %-15s, %-20s, 0x0 },",
 	    $prop[0], $prop[1], $prop[2], $prop[3], $prop[4], $prop[5], $prop[6];
 	}
     }
@@ -492,7 +492,7 @@ sub mapi_nameid_header($)
 		    $counter++;
 		}
 		$property = sprintf "0x%.8x", ($propID << 16) | $proptype;
-		mparse sprintf "#define %-51s %s", $prop[0], $property; 
+		mparse sprintf "#define %-51s %s", $prop[0], $property;
 	    }
 	}
     }
@@ -596,7 +596,7 @@ sub mapicodes_enum($)
 
     mparse "typedef [public, v1_enum, flag(NDR_PAHEX)] enum {";
     indent;
-    
+
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
 	$line =~ s/^\#+.*$//;
@@ -607,9 +607,9 @@ sub mapicodes_enum($)
     }
     mparse sprintf "%-51s = %s", "MAPI_E_RESERVED", "0xFFFFFFFF";
     deindent;
-    mparse "} MAPISTATUS;";    
+    mparse "} MAPISTATUS;";
     mparse "";
-    
+
     return $ret;
 }
 
@@ -638,7 +638,7 @@ sub openchangedb_property($)
     mparse "";
     mparse "static struct pidtags pidtags[] = {";
     indent;
-    
+
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
 	$line =~ s/^\#+.*$//;
@@ -767,12 +767,12 @@ sub codepage_lcid_interface($)
 	    @params = split(/\s+/, $line);
 	    if ($params[0] ne "DEFINE") {
 
-		$params[0] = ($params[1] eq "NULL") ? (sprintf "\"%s\",", $params[0]) : 
+		$params[0] = ($params[1] eq "NULL") ? (sprintf "\"%s\",", $params[0]) :
 		    (sprintf "\"%s (%s)\",", $params[0], $params[1]);
 		$params[0] =~ s/_/ /g;
 		$params[2] = sprintf "\"%s\",", $params[2];
-		mparse sprintf "{ %-32s %-18s %-6s, %-4s, %-24s },", 
-		$params[0], $params[2], $params[3], $params[4], $params[5];		    
+		mparse sprintf "{ %-32s %-18s %-6s, %-4s, %-24s },",
+		$params[0], $params[2], $params[3], $params[4], $params[5];
 	    }
 	}
     }
@@ -798,7 +798,7 @@ sub codepage_lcid_interface($)
     mparse "return locale;";
     deindent;
     mparse "}";
-    mparse "";   
+    mparse "";
 
     # mapi_verify_cpid
     mparse "/**";
@@ -826,7 +826,7 @@ sub codepage_lcid_interface($)
     mparse "return false;";
     deindent;
     mparse "}";
-    mparse "";   
+    mparse "";
 
     # mapi_get_cpid_from_lcid
     mparse "/**";
@@ -1070,7 +1070,7 @@ sub codepage_lcid_interface($)
     deindent;
     mparse "}";
     mparse "";
- 
+
     # mapi_get_language_from_lcid
     mparse "/**";
     mparse "  \\details Returns Language for a given Locale ID";
@@ -1253,7 +1253,7 @@ sub mapistore_nameid_header($)
 		$proptype = $prop_names{$prop[4]};
 		my $propID = hex $prop[7];
 		$property = sprintf "0x%.8x", ($propID << 16) | $proptype;
-		mparse sprintf "#define %-51s %s", $prop[0], $property; 
+		mparse sprintf "#define %-51s %s", $prop[0], $property;
 	    }
 	}
     }
@@ -1273,17 +1273,17 @@ sub process_file($)
     my $contents = FileLoad($mapi_file);
     defined $contents || return undef;
 
-    
+
     if ($opt_parser eq "mapitags") {
 	print "Generating $outputdir" . "mapitags.h\n";
 	my $parser = ("$outputdir/mapitags.h");
 	FileSave($parser, mapitags_header($contents));
-	
+
 	print "Generating $outputdir" . "mapitags.c\n";
 	$ret = '';
 	my $code_parser = ("$outputdir/mapitags.c");
 	FileSave($code_parser, mapitags_interface($contents));
-	
+
 	print "Generating mapitags_enum.h\n";
 	$ret = '';
 	my $enum_parser = ("mapitags_enum.h");

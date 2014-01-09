@@ -1,5 +1,3 @@
-#!/usr/bin/python
-
 # OpenChange provisioning
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008-2009
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
@@ -8,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -35,8 +33,6 @@ from openchange.urlutils import openchangedb_url
 __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
-FIRST_ORGANIZATION = "First Organization"
-FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
@@ -82,12 +78,12 @@ class ProvisionNames(object):
         self.ocfirstorgdn = None
         self.ocserverdn = None
 
-def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
+def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
-    
+
     :param lp: Loadparm context.
-    :param firstorg: First Organization
-    :param firstou: First Organization Unit
+    :param firstorg: OpenChange Organization Name
+    :param firstou: OpenChange Administrative Group
     """
 
     netbiosname = lp.get("netbios name")
@@ -124,15 +120,26 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     names.hostname = hostname
     names.sitename = sitename
 
-    if firstorg is None:
-        firstorg = FIRST_ORGANIZATION
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
+             credentials=creds, lp=lp)
+    exchangedn = 'CN=Microsoft Exchange,CN=Services,%s' % configdn
+    if not firstorg:
+        firstorg = db.searchone(
+            'name', exchangedn, '(objectclass=msExchOrganizationContainer)',
+            ldb.SCOPE_SUBTREE)
+    assert(firstorg)
+    firstorgdn = "CN=%s,%s" % (firstorg, exchangedn)
 
-    if firstou is None:
-        firstou = FIRST_ORGANIZATION_UNIT
+    if not firstou:
+        firstou = db.searchone(
+            'name', firstorgdn,
+            '(&(objectclass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))',
+            ldb.SCOPE_SUBTREE)
+    assert(firstou)
 
     names.firstorg = firstorg
     names.firstou = firstou
-    names.firstorgdn = "CN=%s,CN=Microsoft Exchange,CN=Services,%s" % (firstorg, configdn)
+    names.firstorgdn = firstorgdn
     names.serverdn = "CN=%s,CN=Servers,CN=%s,CN=Sites,%s" % (netbiosname, sitename, configdn)
 
     # OpenChange dispatcher DB names
@@ -169,6 +176,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
         ldif_function(db, setup_path(ldif), {
                 "FIRSTORG": names.firstorg,
                 "FIRSTORGDN": names.firstorgdn,
+                "FIRSTOU": names.firstou,
                 "CONFIGDN": names.configdn,
                 "SCHEMADN": names.schemadn,
                 "DOMAINDN": names.domaindn,
@@ -224,6 +232,7 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
         ldif_content = read_and_sub_file(setup_path(ldif),
                                          {"FIRSTORG": names.firstorg,
                                           "FIRSTORGDN": names.firstorgdn,
+                                          "FIRSTOU": names.firstou,
                                           "CONFIGDN": names.configdn,
                                           "SCHEMADN": names.schemadn,
                                           "DOMAINDN": names.domaindn,
@@ -259,17 +268,25 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
             entries.reverse()
             for entry in entries:
                 ldif_content = "\n".join(entry)
-                print ldif_content
                 try:
                     db.modify_ldif(ldif_content)
-                except:
-                    pass
+                except err:
+                    print ("[!] error: %s" % str(err))
         else:
             lines = ldif_content.splitlines()
             lines.reverse()
             for line in lines:
                 if line.startswith("dn:"):
-                    db.delete(line[4:])
+                    try:
+                        dn = line[4:]
+                        ret = db.search(dn, scope=ldb.SCOPE_BASE)
+                        if len(ret) != 0:
+                            db.delete(line[4:], ["tree_delete:0"])
+                    except ldb.LdbError, (enum, estr):
+                        if enum == ldb.ERR_NO_SUCH_OBJECT:
+                            pass
+                        else:
+                            print "[!] error: %s" % estr
 
     except:
         db.transaction_cancel()
@@ -293,8 +310,8 @@ def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
 
 def install_schemas(setup_path, names, lp, creds, reporter):
-    """Install the OpenChange-specific schemas in the SAM LDAP database. 
-    
+    """Install the OpenChange-specific schemas in the SAM LDAP database.
+
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
@@ -306,7 +323,6 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     lp.set("dsdb:schema update allowed", "yes")
 
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    names = guess_names_from_smbconf(lp, None, None)
     samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                   credentials=creds, lp=lp)
 
@@ -352,8 +368,8 @@ def install_schemas(setup_path, names, lp, creds, reporter):
                % ldb_error.args)
 
     try:
-        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize Exchange configuration objects")
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize generic Exchange configuration objects")
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
@@ -381,16 +397,16 @@ def get_user_dn(ldb, basedn, username):
 
     return user_dn
 
-def newuser(lp, creds, username=None):
+def newuser(names, lp, creds, username=None):
     """extend user record with OpenChange settings.
-    
+
     :param lp: Loadparm context
     :param creds: Credentials context
+    :param names: provision names object.
     :param username: Name of user to extend
     """
 
-    names = guess_names_from_smbconf(lp, None, None)
-    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
@@ -400,13 +416,13 @@ changetype: modify
 add: mailNickName
 mailNickname: %(username)s
 add: homeMDB
-homeMDB: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
+homeMDB: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=%(firstou)s,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
 add: homeMTA
-homeMTA: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=First Administrative Group,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
+homeMTA: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=InformationStore,CN=%(netbiosname)s,CN=Servers,CN=%(firstou)s,CN=Administrative Groups,CN=%(firstorg)s,CN=Microsoft Exchange,CN=Services,CN=Configuration,%(domaindn)s
 add: legacyExchangeDN
-legacyExchangeDN: /o=%(firstorg)s/ou=First Administrative Group/cn=Recipients/cn=%(username)s
+legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
-proxyAddresses: =EX:/o=%(firstorg)s/ou=First Administrative Group/cn=Recipients/cn=%(username)s
+proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: smtp:postmaster@%(dnsdomain)s
 proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%(username)s
 proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
@@ -417,6 +433,7 @@ msExchUserAccountControl: 0
                                       "username": username,
                                       "netbiosname": names.netbiosname,
                                       "firstorg": names.firstorg,
+                                      "firstou": names.firstou,
                                       "domaindn": names.domaindn,
                                       "dnsdomain": names.dnsdomain}
         db.modify_ldif(ldif_value)
@@ -442,16 +459,16 @@ msExchUserAccountControl: 0
         print "[!] User '%s' not found" % username
 
 
-def accountcontrol(lp, creds, username=None, value=0):
+def accountcontrol(names, lp, creds, username=None, value=0):
     """enable/disable an OpenChange user account.
 
     :param lp: Loadparm context
     :param creds: Credentials context
+    :param names: Provision Names object
     :param username: Name of user to disable
     :param value: the control value
     """
 
-    names = guess_names_from_smbconf(lp, None, None)
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
@@ -468,19 +485,17 @@ msExchUserAccountControl: %d
         print "[+] Account %s enabled" % username
 
 
-def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
+def provision(setup_path, names, lp, creds, reporter=None):
     """Extend Samba4 with OpenChange data.
-    
+
     :param setup_path: Path to the setup directory
     :param lp: Loadparm context
     :param creds: Credentials context
-    :param firstorg: First Organization
-    :param firstou: First Organization Unit
+    :param names: Provision Names object
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
 
     If a progress reporter is not provided, a text output reporter is provided
     """
-    names = guess_names_from_smbconf(lp, firstorg, firstou)
 
     print "NOTE: This operation can take several minutes"
 
@@ -491,8 +506,8 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None)
     install_schemas(setup_path, names, lp, creds, reporter)
 
 
-def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
-    """Remote all configuration entries added by the OpenChange
+def deprovision(setup_path, names, lp, creds, reporter=None):
+    """Remove all configuration entries added by the OpenChange
     installation.
 
     :param setup_path: Path to the setup directory.
@@ -501,7 +516,6 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
-
     if reporter is None:
         reporter = TextProgressReporter()
 
@@ -509,19 +523,45 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
 
     lp.set("dsdb:schema update allowed", "yes")
 
-    names = guess_names_from_smbconf(lp, None, None)
-
     samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
                   credentials=creds, lp=lp)
 
     try:
-        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+        config_dn = samdb.get_config_basedn()
+        ret = samdb.search(base=config_dn, scope=ldb.SCOPE_SUBTREE, expression="(objectClass=msExchExchangeServer)")
+        if len(ret) > 1:
+            # If we are the primary folder store server, raise exception
+            # The user has to set another server as primary before unregister
+            # this one
+            our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+            dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+                                                        names.firstorgdn)
+            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+            assert len(ret) == 1
+            siteFolderName = ret[0]["siteFolderServer"][0]
+            if our_siteFolderName.lower() == siteFolderName.lower():
+                raise Exception("This server is the primary folder store server")
+
+            # If we are the primary receipt update service, raise exception
+            our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+            dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+            assert len(ret) == 1
+            addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+            if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+                raise Exception("This server is the primary receipt update service server")
+
+            # Unregister the server
+            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Remove Exchange samba registration")
+        else:
+            # This is the unique server, remove full schema
+            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
     except RuntimeError as err:
         print ("[!] error while deprovisioning the Exchange configuration"
-               " objects (%d): %s" % ldb_error.args)
+               " objects: %s" % err)
 
     ## NOTE: AD schema objects cannot be deleted (it's a feature!)
     # try:
@@ -542,16 +582,60 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
                # % ldb_error.args)
 
 
-def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
+def register(setup_path, names, lp, creds, reporter=None):
+    """Register an OpenChange server as a valid Exchange server.
+
+    :param setup_path: Path to the setup directory
+    :param names: Provision Names object
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    If a progress reporter is not provided, a text output reporter is provided
+    """
+
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    try:
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Exchange Samba registration")
+        print "[SUCCESS] Done!"
+    except LdbError, ldb_error:
+        print ("[!] error while registering Openchange Samba configuration"
+               " objects (%d): %s" % ldb_error.args)
+
+
+def registerasmain(setup_path, names, lp, creds, reporter=None):
+    """Register an OpenChange server as the main Exchange server.
+
+    :param setup_path: Path to the setup directory
+    :param names: Provision Names object
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    If a progress reporter is not provided, a text output reporter is provided
+    """
+
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    try:
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_as_main.ldif", "Register Exchange Samba as the main server")
+        print "[SUCCESS] Done!"
+    except LdbError, ldb_error:
+        print ("[!] error while registering Openchange Samba configuration"
+               " objects (%d): %s" % ldb_error.args)
+
+
+def openchangedb_provision(names, lp, mapistore=None):
     """Create the OpenChange database.
 
+    :param names: Provision names object
     :param lp: Loadparm context
-    :param firstorg: First Organization
-    :param firstou: First Organization Unit
     :param mapistore: The public folder store type (fsocpf, sqlite, etc)
     """
-    names = guess_names_from_smbconf(lp, firstorg, firstou)
-    
+
     print "Setting up openchange db"
     openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
     openchange_ldb.setup()

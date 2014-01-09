@@ -39,6 +39,8 @@ def _load_samba_environment():
 
     rootdn = domaindn
     configdn = "CN=Configuration," + rootdn
+    # FIXME: Hardcoded strings, those should be queried to LDB, just like
+    # openchange.provision.guess_names_from_smbconf does.
     firstorg = FIRST_ORGANIZATION
     firstou = FIRST_ORGANIZATION_UNIT
 

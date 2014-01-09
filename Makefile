@@ -769,7 +769,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
-                            mapiproxy/libmapiproxy/backends/openchangedb_mysql.po \
+							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po \
 							mapiproxy/libmapiproxy/mapi_handles.po				\
 							mapiproxy/libmapiproxy/entryid.po					\
 							mapiproxy/libmapiproxy/modules.po					\
@@ -911,11 +911,11 @@ distclean:: libmapistore-distclean
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
 							mapiproxy/libmapistore/mapistore_interface.po			\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\
-							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po	\
+							mapiproxy/libmapistore/mgmt/mapistore_mgmt_messages.po		\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt_send.po		\
 							mapiproxy/libmapistore/mapistore_processing.po			\
-							mapiproxy/libmapistore/mapistore_backend.po				\
-							mapiproxy/libmapistore/mapistore_backend_defaults.po	\
+							mapiproxy/libmapistore/mapistore_backend.po			\
+							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
@@ -925,7 +925,8 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
 							mapiproxy/libmapistore/backends/indexing_tdb.po			\
 							mapiproxy/libmapistore/backends/indexing_mysql.po		\
-							mapiproxy/util/mysql.po									\
+							mapiproxy/util/mysql.po						\
+							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
@@ -946,7 +947,8 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SH
 mapistore_test: bin/mapistore_test
 
 bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
@@ -1480,7 +1482,8 @@ clean:: check_fasttransfer-clean
 
 bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
 

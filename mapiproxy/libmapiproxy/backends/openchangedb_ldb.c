@@ -1585,6 +1585,12 @@ static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 {
 	return false;
 }
+
+static const char *get_indexing_url(struct openchangedb_context *self, const char *username)
+{
+	return NULL;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2278,6 +2284,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 
 	oc_ctx->get_new_public_folderID = get_new_public_folderID;
 	oc_ctx->is_public_folder_id = is_public_folder_id;
+
+	oc_ctx->get_indexing_url = get_indexing_url;
 
 	*ctx = oc_ctx;
 

@@ -3,7 +3,7 @@
 
 
 enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *,
-						   const char *,
+						   const char *, const char *,
 						   struct indexing_context **);
 
 

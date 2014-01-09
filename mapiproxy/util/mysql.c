@@ -2,8 +2,10 @@
 
 #include <time.h>
 #include <util/debug.h>
-#include <libmapi/mapicode.h>
-#include <string.h>
+#include "libmapi/mapicode.h"
+#include "libmapi/libmapi.h"
+#include "libmapi/libmapi_private.h"
+
 
 static float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
 {

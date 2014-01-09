@@ -57,6 +57,7 @@ CREATE TABLE IF NOT EXISTS `mailboxes` (
   `ReplicaGUID` VARCHAR(36) NOT NULL,
   `ReplicaID` INT NOT NULL,
   `SystemIdx` INT NOT NULL,
+  `indexing_url` VARCHAR(1024) NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_mailboxes_ou_id`
     FOREIGN KEY (`ou_id`)

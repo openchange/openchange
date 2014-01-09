@@ -7,6 +7,7 @@
 #include "libmapi/libmapi_private.h"
 #include <mysql/mysql.h>
 #include "../../util/mysql.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
 #include <talloc.h>
 
@@ -306,16 +307,18 @@ static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *
    \param mstore_ctx pointer to the mapistore context
    \param username name for which the indexing database has to be
    created
+   \param connection_string mysql connection string
+   \param ictxp returned value with the indexing context created
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 
 _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *mstore_ctx,
 							    const char *username,
+							    const char *connection_string,
 							    struct indexing_context **ictxp)
 {
 	struct indexing_context	*ictx;
-	char			*connection_string = "mysql://root@localhost/openchange_test";
 	bool			schema_created;
 	char			*schema_file;
 	MYSQL			*conn = NULL;

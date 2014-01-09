@@ -27,17 +27,12 @@
    This file contains functionality to map between folder / message
    identifiers and backend URI strings.
  */
-
-#include <string.h>
-
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
 #include "backends/indexing_tdb.h"
-
-#include <dlinklist.h>
-#include "libmapi/libmapi_private.h"
-#include <tdb.h>
+#include "backends/indexing_mysql.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 
 /**
    \details Search the indexing record matching the username
@@ -80,7 +75,8 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 						     const char *username,
 						     struct indexing_context **ictxp)
 {
-	struct indexing_context_list	*ictx;
+	struct indexing_context_list *ictx;
+	const char *indexing_url;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -90,8 +86,22 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	*ictxp = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(*ictxp, MAPISTORE_SUCCESS, NULL);
 
-	ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
-	mapistore_indexing_tdb_init(mstore_ctx, username, &ictx->ctx);
+	// indexing context has not been found, let's create it.
+	indexing_url = openchangedb_get_indexing_url(mstore_ctx->conn_info->oc_ctx,
+						     username);
+
+	// indexing_url NULL means to use the default backend: tdb
+	if (indexing_url == NULL) {
+		ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
+		mapistore_indexing_tdb_init(mstore_ctx, username, &ictx->ctx);
+	} else if (strncmp(indexing_url, "mysql://", strlen("mysql://")) == 0) {
+		ictx = talloc_zero(mstore_ctx, struct indexing_context_list);
+		mapistore_indexing_mysql_init(mstore_ctx, username, indexing_url,
+					      &ictx->ctx);
+	} else {
+		DEBUG(0, ("ERROR unknown indexing url %s\n", indexing_url));
+		return MAPISTORE_ERROR;
+	}
 
 	/* ictx->ref_count = 0; */
 	DLIST_ADD_END(mstore_ctx->indexing_list, ictx, struct indexing_context_list *);

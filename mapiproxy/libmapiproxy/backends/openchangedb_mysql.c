@@ -1547,6 +1547,25 @@ static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 	return fid <= MAX_PUBLIC_FOLDER_ID;
 }
 
+static const char *get_indexing_url(struct openchangedb_context *self, const char *username)
+{
+	const char *indexing_url = NULL, *sql;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_indexing_url");
+	MYSQL *conn = self->data;
+
+	// FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT indexing_url FROM mailboxes WHERE name = '%s'",
+		_sql(mem_ctx, username));
+
+	select_first_string(self, conn, sql, &indexing_url);
+	// TODO if not result, get default backend and save it to database
+
+	talloc_free(mem_ctx);
+
+	return indexing_url;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2874,6 +2893,8 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 
 	oc_ctx->get_new_public_folderID = get_new_public_folderID;
 	oc_ctx->is_public_folder_id = is_public_folder_id;
+
+	oc_ctx->get_indexing_url = get_indexing_url;
 
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);

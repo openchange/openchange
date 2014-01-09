@@ -205,14 +205,26 @@ static void tdb_teardown(void)
 	unlink(indexing_file);
 	talloc_free(mstore_ctx);
 }
+
 static void mysql_setup(void)
 {
-	TALLOC_CTX		*mem_ctx;
+	TALLOC_CTX *mem_ctx;
+	char *database;
 
-	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
+	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
 	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
 
-	mapistore_indexing_mysql_init(mstore_ctx, USERNAME, &ictx);
+	if (strlen(MYSQL_PASS) == 0) {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
+					   MYSQL_HOST "/" MYSQL_DB);
+	} else {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER ":"
+					   MYSQL_PASS "@" MYSQL_HOST "/"
+					   MYSQL_DB);
+	}
+
+	mapistore_indexing_mysql_init(mstore_ctx, USERNAME, database, &ictx);
+	talloc_free(database);
 	fail_if(!ictx);
 }
 

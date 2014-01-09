@@ -284,8 +284,10 @@ bool create_schema(MYSQL *conn, char *schema_file)
 		queries_to_execute = ret && query && strlen(query) > 10;
 	}
 end:
-	talloc_free(mem_ctx);
-	if (f) fclose(f);
+	if (f) {
+		talloc_free(mem_ctx);
+		fclose(f);
+	}
 
 	return ret;
 }

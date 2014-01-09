@@ -1375,7 +1375,7 @@ utils/mapitest/proto.h:					\
 unittest: bin/unittest
 
 unittest: CFLAGS += -fprofile-arcs -ftest-coverage -Itest
-unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm
+unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm -ldl -ltdb
 
 bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapistore/namedprops_mysql.o \
@@ -1383,14 +1383,24 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapiproxy/openchangedb.o \
 	test/openchange_test_suite.o \
 	test/test_common.c \
-    mapiproxy/util/mysql.o \
-    mapiproxy/libmapiproxy/openchangedb.o \
+	mapiproxy/util/mysql.o \
+	mapiproxy/libmapiproxy/openchangedb.o \
 	mapiproxy/libmapiproxy/openchangedb_table.o \
 	mapiproxy/libmapiproxy/openchangedb_message.o \
-    mapiproxy/libmapiproxy/openchangedb_property.o \
+	mapiproxy/libmapiproxy/openchangedb_property.o \
 	mapiproxy/libmapiproxy/backends/openchangedb_ldb.o \
 	mapiproxy/libmapiproxy/backends/openchangedb_mysql.o \
-	mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
+	mapiproxy/libmapistore/mapistore_interface.o \
+	mapiproxy/libmapistore/mapistore_processing.o \
+	mapiproxy/libmapistore/mapistore_backend.o \
+	mapiproxy/libmapistore/mapistore_backend_defaults.o \
+	mapiproxy/libmapistore/mapistore_tdb_wrap.o \
+	mapiproxy/libmapistore/mapistore_indexing.o \
+	mapiproxy/libmapistore/mapistore_replica_mapping.o \
+	mapiproxy/libmapistore/mapistore_namedprops.o \
+	mapiproxy/libmapistore/mapistore_notification.o \
+	mapiproxy/libmapistore/backends/indexing_tdb.o \
+	mapiproxy/libmapistore/backends/indexing_mysql.o \
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)"
 	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)

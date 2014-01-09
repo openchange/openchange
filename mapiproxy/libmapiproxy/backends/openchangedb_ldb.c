@@ -1576,7 +1576,7 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 					       const char *username,
 					       uint64_t *fid)
 {
-	DEBUG(5, ("get_new_public_folderID called on openchangedb ldb backend. "
+	DEBUG(0, ("get_new_public_folderID called on openchangedb ldb backend. "
 		  "This should never happen because the folder ids are global"));
 	return MAPI_E_NOT_IMPLEMENTED;
 }

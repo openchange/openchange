@@ -254,6 +254,9 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 	ret = select_first_uint(MYSQL(ictx), sql, &next_fmid);
 	switch (ret) {
 	case MYSQL_SUCCESS:
+		if (next_fmid <= MAX_PUBLIC_FOLDER_ID) {
+			next_fmid = MAX_PUBLIC_FOLDER_ID + 1;
+		}
 		// Update next fmid
 		sql = talloc_asprintf(mem_ctx,
 			"UPDATE %s SET next_fmid = %"PRIu64
@@ -264,7 +267,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 		break;
 	case MYSQL_NOT_FOUND:
 		// First allocation, insert in the database
-		next_fmid = 1;
+		next_fmid = MAX_PUBLIC_FOLDER_ID + 1;
 		sql = talloc_asprintf(mem_ctx,
 			"INSERT INTO %s (username, next_fmid) "
 			"VALUES('%s', %"PRIu64")",

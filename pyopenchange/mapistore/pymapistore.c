@@ -105,7 +105,13 @@ static void openchange_ldb_init(const char *syspath)
 
 	openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
 
+	if (!globals.ocdb_ctx) {
+		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");
+		goto end;
+	}
 	(void) talloc_reference(NULL, globals.ocdb_ctx);
+end:
+	talloc_free(mem_ctx);
 }
 
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -420,14 +426,14 @@ PyTypeObject PyMAPIStore = {
 	.tp_methods = mapistore_methods,
 	/* .tp_getset = mapistore_getsetters, */
 	.tp_new = py_MAPIStore_new,
-	.tp_dealloc = (destructor)py_MAPIStore_dealloc, 
+	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
 static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 {
 	const char	*mapping_path;
-	
+
 	if (!PyArg_ParseTuple(args, "s", &mapping_path)) {
 		return NULL;
 	}

@@ -1,3 +1,27 @@
+openchange (1:2.0-QUADRANT-386-g3fe05f0-0zentyal1) precise; urgency=low
+
+  * Built GIT snapshot.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Fri, 13 Dec 2013 16:19:07 +0100
+
+openchange (1:2.0-QUADRANT-385-g1dd55ee-0zentyal0) precise; urgency=low
+
+  * Built GIT snapshot.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Fri, 13 Dec 2013 12:47:36 +0100
+
+openchange (1:2.0-QUADRANT-371-g4dd336c-0zentyal1) precise; urgency=low
+
+  * Added some fixes to the import / export code.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Thu, 12 Dec 2013 19:06:07 +0100
+
+openchange (1:2.0-QUADRANT-371-g4dd336c-0zentyal0) precise; urgency=low
+
+  * Built GIT snapshot.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Wed, 06 Nov 2013 16:58:58 +0100
+
 openchange (1:2.0-QUADRANT-66-g403062e-zentyal1) precise; urgency=low
 
   * New upstream release

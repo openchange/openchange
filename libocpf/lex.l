@@ -83,7 +83,7 @@ PT_DOUBLE	{ return kw_PT_DOUBLE; }
 PT_I8		{ return kw_PT_I8; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
-PT_MV_LONG	{ return kw_PT_LONG; }
+PT_MV_LONG	{ return kw_PT_MV_LONG; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
 PT_MV_UNICODE	{ return kw_PT_MV_UNICODE; }
 PT_BINARY	{ return kw_PT_BINARY; }
@@ -295,7 +295,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 				return INTEGER;
 			
 			}
-S0x[0-9A-Fa-f]+|-S[0-9]+ {
+S0x[0-9A-Fa-f]+|-?S[0-9]+ {
 			   struct ocpf_context *ctx = yyextra;
 			   char *e, *y;
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;

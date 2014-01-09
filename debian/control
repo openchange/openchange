@@ -133,8 +133,6 @@ Depends: samba4 (>= 4.1.0rc2-zentyal6),
 Description: Experimental MAPI (Exchange/Outlook) server
  This is a plugin for Samba 4 that adds server-side support for the MAPI
  protocol that is used by Microsoft Outlook and Exchange.
- .
- This package is alpha software.
 
 Package: openchangeserver-dev
 Architecture: any
@@ -154,8 +152,6 @@ Depends: samba4 (>= 4.1.0rc2-zentyal6),
          ${shlibs:Depends}
 Description: Experimental MAPI (Exchange/Outlook) proxy
  This is a plugin for Samba 4 that provides a proxy for the MAPI protocol.
- .
- This package is alpha software.
 
 Package: libmapiadmin0
 Architecture: any
@@ -250,8 +246,6 @@ Description: Python library providing various web services for OpenChange
   * autodiscovery
   * Exchange Web Services
   * RPC-over-HTTP
- .
- This package is alpha software.
 
 Package: openchange-ocsmanager
 Section: web
@@ -263,8 +257,6 @@ Depends: python-ocsmanager (= ${binary:Version}),
 Description: Working instance of python-ocsmanager
  Ready-to-run service for python-ocsmanager with configuration files for
  Apache 2.
- .
- This package is alpha software.
 
 Package: openchange-rpcproxy
 Architecture: all

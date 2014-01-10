@@ -39,7 +39,7 @@ class OpenChangeDB(object):
     def __init__(self, url):
         self.url = url
         self.ldb = Ldb(self.url)
-	self.nttime = samba.unix2nttime(int(time.time()))
+        self.nttime = samba.unix2nttime(int(time.time()))
 
     def reopen(self):
         self.ldb = Ldb(self.url)
@@ -159,7 +159,7 @@ dn: CASE_INSENSITIVE
                 }, 1)
 
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names)
-        
+
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn

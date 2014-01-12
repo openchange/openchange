@@ -70,9 +70,11 @@ provisionnames = openchange.guess_names_from_smbconf(
 if not opts.openchangedb:
     if opts.deprovision:
         openchange.unregister(setup_path, provisionnames, lp, creds)
+        openchange.openchangedb_deprovision(provisionnames, lp)
     elif opts.full_deprovision:
         openchange.unregister(setup_path, provisionnames, lp, creds)
         openchange.deprovision(setup_path, provisionnames, lp, creds)
+        openchange.openchangedb_deprovision(provisionnames, lp)
     elif opts.additional and opts.primary_server:
         openchange.register(setup_path, provisionnames, lp, creds)
         openchange.registerasmain(setup_path, provisionnames, lp, creds)

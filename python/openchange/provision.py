@@ -714,6 +714,19 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
+def openchangedb_deprovision(names, lp, mapistore=None):
+    """Removed the OpenChange database.
+
+    :param names: Provision names object
+    :param lp: Loadparm context
+    :param mapistore: The public folder store type (fsocpf, sqlite, etc)
+    """
+
+    print "Removing openchange db"
+    openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
+    openchange_ldb.remove()
+
+
 def openchangedb_provision(names, lp, mapistore=None):
     """Create the OpenChange database.
 

@@ -106,3 +106,11 @@ mapi_id_t str_to_mapi_id(const char *str)
 	return res;
 }
 
+void exception_from_status(enum MAPISTATUS status, const char *failed_action TSRMLS_DC)
+{
+	if (status == MAPI_E_SUCCESS) {
+		return;
+	}
+
+	zend_throw_exception_ex(zend_exception_get_default(), (long) status TSRMLS_CC, "%s: %s",  failed_action, mapi_get_errstr(status));
+}

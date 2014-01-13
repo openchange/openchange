@@ -7,7 +7,7 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
@@ -39,8 +39,9 @@ class ExtendedSamDBTestCase(SamDBTestCase):
         creds = Credentials()
         creds.set_anonymous()
         self.lp.set("sam database", os.path.join(self.tempdir, "samdb.ldb"))
-        install_schemas(setup_path, names, self.lp, creds)        
+        install_schemas(setup_path, names, self.lp, creds)
 """
+
 
 class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
 

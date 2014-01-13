@@ -7,20 +7,21 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 from openchange.mailbox import NoSuchServer, OpenChangeDB, gen_mailbox_folder_fid
-
+from openchange.provision import ProvisionNames
 import os
 import unittest
+
 
 class OpenChangeDBTests(unittest.TestCase):
     """Tests for OpenChangeDB."""
@@ -28,33 +29,39 @@ class OpenChangeDBTests(unittest.TestCase):
     def setUp(self):
         if os.path.exists("openchange.ldb"):
             os.unlink("openchange.ldb")
-        self.db = OpenChangeDB("openchange.ldb") 
+        self.db = OpenChangeDB("openchange.ldb")
         self.db.setup()
+        self.names = ProvisionNames()
+        self.names.firstorg = 'firstorg'
+        self.names.firstou = 'firstou'
+        self.names.ocserverdn = 'dc=myserver'
+        self.names.netbiosname = 'myserver'
 
     def test_user_exists_no_server(self):
-        self.assertRaises(NoSuchServer, self.db.lookup_mailbox_user, 
+        self.assertRaises(NoSuchServer, self.db.lookup_mailbox_user,
                           "someserver", "foo")
 
     def test_server_lookup_doesnt_exist(self):
-        self.assertRaises(NoSuchServer, self.db.lookup_server, 
+        self.assertRaises(NoSuchServer, self.db.lookup_server,
                           "nonexistantserver")
 
     def test_server_lookup(self):
-        self.db.add_server("dc=blaserver", "blaserver", "firstorg", "firstou")
-        self.assertEquals("dc=blaserver", str(self.db.lookup_server("blaserver")['dn']))
+        self.db.add_server(self.names)
+        self.assertEquals(self.names.ocserverdn,
+                          str(self.db.lookup_server(self.names.netbiosname)['dn']))
 
     def test_msg_globalcount_initial(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.assertEquals(1, self.db.get_message_GlobalCount("myserver"))
+        self.db.add_server(self.names)
+        self.assertEquals(1, self.db.get_message_GlobalCount(self.names.netbiosname))
 
     def test_set_msg_globalcount(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.db.set_message_GlobalCount("myserver", 42)
-        self.assertEquals(42, self.db.get_message_GlobalCount("myserver"))
+        self.db.add_server(self.names)
+        self.db.set_message_GlobalCount(self.names.netbiosname, 42)
+        self.assertEquals(42, self.db.get_message_GlobalCount(self.names.netbiosname))
 
     def test_msg_replicaid_initial(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.assertEquals(1, self.db.get_message_ReplicaID("myserver"))
+        self.db.add_server(self.names)
+        self.assertEquals(1, self.db.get_message_ReplicaID(self.names.netbiosname))
 
 
 class MailboxFIDTests(unittest.TestCase):

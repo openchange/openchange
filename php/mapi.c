@@ -52,6 +52,8 @@ void register_constants(int module_number TSRMLS_DC);
 
 static void register_classes(TSRMLS_D)
 {
+	MAPIExceptionRegisterClasss(TSRMLS_C);
+
 	MAPIProfileDBRegisterClass(TSRMLS_C);
 	MAPIProfileRegisterClass(TSRMLS_C);
 	MAPISessionRegisterClass(TSRMLS_C);
@@ -112,5 +114,5 @@ void exception_from_status(enum MAPISTATUS status, const char *failed_action TSR
 		return;
 	}
 
-	zend_throw_exception_ex(zend_exception_get_default(), (long) status TSRMLS_CC, "%s: %s",  failed_action, mapi_get_errstr(status));
+	zend_throw_exception_ex(mapi_exception_get_default(), (long) status TSRMLS_CC, "%s: %s",  failed_action, mapi_get_errstr(status));
 }

@@ -44,6 +44,7 @@
 #include <mapi_message_table.h>
 #include <mapi_folder_table.h>
 #include <mapi_attachment_table.h>
+#include <mapi_exception.h>
 
 #define PHP_OPENCHANGE_VERSION "1.0"
 #define PHP_OPENCHANGE_EXTNAME "openchange"

@@ -3,6 +3,7 @@ import string
 
 sievePathBase = '/var/vmail/sieve'
 bakExtension = '.old.sieve'
+vacationScriptHeader = "# Zentyal vacation script\n"
 
 # TODO dont make backup if the script is already our vacation script
 # start and end date should be in the form YYYY-MM-DD trailing zeroes must be included
@@ -10,11 +11,12 @@ def setOOF(vdomain, user, start, end, subject, message):
     path = _sievePath(vdomain, user)
     include = None
     if os.path.isfile(path):
-        bak = path + bakExtension
-        if not os.path.isfile(bak):
-            shutil.copyfile(path, bak)
-            shutil.copystat(path, bak)
-        include = os.path.basename(path) + '.old'
+        if not _isVacationScript(path):
+            bak = path + bakExtension
+            if not os.path.isfile(bak):
+                shutil.copyfile(path, bak)
+                shutil.copystat(path, bak)
+            include = os.path.basename(path) + '.old'
     elif os.path.exists(path):
         raise Exception(path + "exists and it is not a regular file")
     else:
@@ -53,10 +55,15 @@ def unsetOOF(vdomain, user):
     else:
         os.unlink(path)
 
+def _isVacationScript(path):
+    f = open(path, 'r')
+    line = f.readline(200)
+    return line == vacationScriptHeader
+
+
 # TODO: check if message has  " or '
 def _scriptForOOF(start, end, subject, message, include):
-    scriptTemplate = string.Template("""
-# Zentyal vacation script
+    scriptTemplate = string.Template("""$header
 require ["date","relational","vacation"$extraIncludes];
 
 if allof(currentdate :value "ge" "date" "$start",
@@ -71,7 +78,11 @@ if allof(currentdate :value "ge" "date" "$start",
     else:
         extraIncludes = ''
 
-    script = scriptTemplate.substitute(extraIncludes=extraIncludes, start=start, end=end, subject=subject, message=message)
+    script = scriptTemplate.substitute(
+        header=vacationScriptHeader,
+        extraIncludes=extraIncludes,
+        start=start, end=end, subject=subject, message=message
+        )
     if (include):
         script += "\n" + 'include :personal "' + include + '";'
         script += "\n"

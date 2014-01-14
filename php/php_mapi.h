@@ -73,8 +73,9 @@ extern zend_module_entry openchange_module_entry;
 #define EXPECTED_MAPI_OBJECTS 32
 #define OBJ_GET_TALLOC_CTX(objType, obj) ((objType) zend_object_store_get_object(obj TSRMLS_CC))->talloc_ctx;
 #define add_assoc_mapi_id_t(zv, name, value) add_assoc_long(zv, name, (long) value)
-#define CHECK_MAPI_RETVAL(status, action)  if (status != MAPI_E_SUCCESS)			\
-		                          exception_from_status(status, action TSRMLS_CC);
+#define CHECK_MAPI_RETVAL(rv, desc)		\
+  if (rv != MAPI_E_SUCCESS)			\
+	  php_error(E_ERROR, "%s: %s", desc, mapi_get_errstr(rv))
 
 #define STORE_OBJECT(type, zv) (type) zend_object_store_get_object(zv TSRMLS_CC)
 #define THIS_STORE_OBJECT(type) STORE_OBJECT(type, getThis())

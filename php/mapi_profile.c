@@ -191,7 +191,9 @@ zval* mapi_profile_logon(zval *z_profile TSRMLS_DC)
 	profile = mapi_profile_get_profile(z_profile TSRMLS_CC);
 
 	status = MapiLogonEx(mapi_ctx, &session, profile->profname, profile->password);
-	CHECK_MAPI_RETVAL(status, "MapiLogonEx");
+        if (status != MAPI_E_SUCCESS) {
+		exception_from_status(status, "MapiLogonEx" TSRMLS_CC);
+        }
 
 	talloc_ctx = talloc_named(NULL, 0, "session");
 	new_session = create_session_object(session, z_profile, talloc_ctx TSRMLS_CC);

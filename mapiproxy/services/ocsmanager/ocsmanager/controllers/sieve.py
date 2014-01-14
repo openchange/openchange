@@ -1,13 +1,16 @@
-import os, os.path
+import os, os.path, shutil
 import string
 
 sievePathBase = '/var/vmail/sieve'
 
 # TODO unset OOF
+# start and end date should be in the form YYYY-MM-DD trailing zeroes must be included
 def setOOF(vdomain, user, start, end, subject, message):
     path = _sievePath(vdomain, user)
     if os.path.isfile(path):
-        raise Exception('TODO save old file')
+        bak = path + '.old'
+        shutil.copyfile(path, bak)
+        shutil.copystat(path, bak)
     elif os.path.exists(path):
         raise Exception(path + "exists and it is not a regular file")
     else:

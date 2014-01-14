@@ -2,14 +2,15 @@ import os, os.path, shutil
 import string
 
 sievePathBase = '/var/vmail/sieve'
+bakExtension = '.old.sieve'
 
-# TODO unset OOF
+# TODO dont make backup if the script is already our vacation script
 # start and end date should be in the form YYYY-MM-DD trailing zeroes must be included
 def setOOF(vdomain, user, start, end, subject, message):
     path = _sievePath(vdomain, user)
     include = None
     if os.path.isfile(path):
-        bak = path + '.old.sieve'
+        bak = path + bakExtension
         if not os.path.isfile(bak):
             shutil.copyfile(path, bak)
             shutil.copystat(path, bak)
@@ -38,9 +39,24 @@ def setOOF(vdomain, user, start, end, subject, message):
     f.close()
     os.chmod(path, 0600)
 
+def unsetOOF(vdomain, user):
+    path = _sievePath(vdomain, user)
+    if not os.path.isfile(path):
+        # nothing to do
+        return
+
+    bak = path + bakExtension
+    if os.path.isfile(bak):
+        shutil.copyfile(bak, path)
+        shutil.copystat(bak, path)
+        os.unlink(bak)
+    else:
+        os.unlink(path)
+
 # TODO: check if message has  " or '
 def _scriptForOOF(start, end, subject, message, include):
     scriptTemplate = string.Template("""
+# Zentyal vacation script
 require ["date","relational","vacation"$extraIncludes];
 
 if allof(currentdate :value "ge" "date" "$start",

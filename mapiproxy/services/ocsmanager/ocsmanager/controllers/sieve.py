@@ -9,6 +9,7 @@ def setOOF(vdomain, user, start, end, subject, message):
     path = _sievePath(vdomain, user)
     if os.path.isfile(path):
         bak = path + '.old'
+        print "Copyng " + path + " to " + bak + "\n"
         shutil.copyfile(path, bak)
         shutil.copystat(path, bak)
     elif os.path.exists(path):

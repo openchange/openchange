@@ -36,16 +36,16 @@ def setOOF(vdomain, user, start, end, subject, message):
 # TODO: check if message has  " or '
 def _scriptForOOF(start, end, subject, message):
     scriptTemplate = string.Template("""
-require ["fileinto","vacation"];
+require ["date","relational","vacation"];
 
-vacation
-:days 7
-:subject $subject
-"$message"
-;
+if allof(currentdate :value "ge" "date" "$start",
+         currentdate :value "le" "date" "$end")
+{
+   vacation  :days 7 :subject "$subject" "$message" ;
+}
     """)
 
-    return scriptTemplate.substitute(subject=subject, message=message)
+    return scriptTemplate.substitute(start=start, end=end, subject=subject, message=message)
 
 def _sievePath(vdomain, user):
     return sievePathBase + '/' + vdomain + '/' + user + '/script'

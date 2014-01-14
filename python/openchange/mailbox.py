@@ -33,7 +33,7 @@ class NoSuchServer(Exception):
     """Raised when a server could not be found."""
 
 
-def _public_folders_meta():
+def _public_folders_meta(names):
     return ({"IPM_SUBTREE": ({}, 2),
              "NON_IPM_SUBTREE": ({
                  "EFORMS REGISTRY": ({}, 4),
@@ -161,7 +161,7 @@ dn: CASE_INSENSITIVE
                       "cn": "publicfolders",
                       "StoreGUID": pfstoreGUID,
                       "ReplicaID": str(1)})
-        public_folders = _public_folders_meta()
+        public_folders = _public_folders_meta(names)
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names)
 
     def lookup_server(self, cn, attributes=[]):
@@ -419,7 +419,7 @@ class OpenChangeDBWithMysqlBackend(object):
         self._execute("INSERT public_folders VALUES (%s, %s, %s)", 
                       (self.ou_id, self.replica_id, store_guid))
 
-        public_folders = _public_folders_meta()
+        public_folders = _public_folders_meta(names)
 
         print "[+] Public Folders"
         print "==================="

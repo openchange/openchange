@@ -657,12 +657,13 @@ def openchangedb_provision(names, lp, uri=None):
     mysql://user:passwd@host/db_name to use openchangedb with mysql backend
     """
     print "Setting up openchange db"
-    if uri is None or uri.startswith('ldb'):  # LDB backend
+    if uri is None or len(uri) == 0 or uri.startswith('ldb'):  # LDB backend
         openchangedb = mailbox.OpenChangeDB(openchangedb_url(lp))
     elif uri.startswith('mysql'):  # MySQL backend
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
     else:
-        print "[!] error provisioning openchangedb: Unkown uri"
+        print "[!] error provisioning openchangedb: Unknown uri `%s`" % uri
+        return
     openchangedb.setup(names)
     openchangedb.add_server(names)
     openchangedb.add_public_folders(names)
@@ -673,12 +674,12 @@ def find_setup_dir():
     dirname = os.path.dirname(__file__)
     if "/site-packages/" in dirname:
         prefix = dirname[:dirname.index("/site-packages/")]
-        for suffix in ["share/openchange/setup", "share/setup", "share/samba/setup", "setup"]:
-            ret = os.path.join(prefix, suffix)
+        for suffix in ["share/setup", "share/openchange/setup", "share/samba/setup", "setup"]:
+            ret = os.path.join(prefix, "../..", suffix)
             if os.path.isdir(ret):
-                return ret
+                return os.path.abspath(ret)
     # In source tree
     ret = os.path.join(dirname, "../../setup")
     if os.path.isdir(ret):
-        return ret
+        return os.path.abspath(ret)
     raise Exception("Unable to find setup directory.")

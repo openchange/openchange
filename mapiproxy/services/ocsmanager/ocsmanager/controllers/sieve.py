@@ -7,10 +7,13 @@ sievePathBase = '/var/vmail/sieve'
 # start and end date should be in the form YYYY-MM-DD trailing zeroes must be included
 def setOOF(vdomain, user, start, end, subject, message):
     path = _sievePath(vdomain, user)
+    include = None
     if os.path.isfile(path):
-        bak = path + '.old'
-        shutil.copyfile(path, bak)
-        shutil.copystat(path, bak)
+        bak = path + '.old.sieve'
+        if not os.path.isfile(bak):
+            shutil.copyfile(path, bak)
+            shutil.copystat(path, bak)
+        include = os.path.basename(path) + '.old'
     elif os.path.exists(path):
         raise Exception(path + "exists and it is not a regular file")
     else:
@@ -29,16 +32,16 @@ def setOOF(vdomain, user, start, end, subject, message):
 
             os.mkdir(userSieveDir, 0700)
 
-    script = _scriptForOOF(start, end, subject, message)
+    script = _scriptForOOF(start, end, subject, message, include)
     f = open(path, 'w')
     f.write(script)
     f.close()
     os.chmod(path, 0600)
 
 # TODO: check if message has  " or '
-def _scriptForOOF(start, end, subject, message):
+def _scriptForOOF(start, end, subject, message, include):
     scriptTemplate = string.Template("""
-require ["date","relational","vacation"];
+require ["date","relational","vacation"$extraIncludes];
 
 if allof(currentdate :value "ge" "date" "$start",
          currentdate :value "le" "date" "$end")
@@ -47,7 +50,17 @@ if allof(currentdate :value "ge" "date" "$start",
 }
     """)
 
-    return scriptTemplate.substitute(start=start, end=end, subject=subject, message=message)
+    if (include):
+        extraIncludes = ',"include"'
+    else:
+        extraIncludes = ''
+
+    script = scriptTemplate.substitute(extraIncludes=extraIncludes, start=start, end=end, subject=subject, message=message)
+    if (include):
+        script += "\n" + 'include :personal "' + include + '";'
+        script += "\n"
+
+    return script
 
 def _sievePath(vdomain, user):
     return sievePathBase + '/' + vdomain + '/' + user + '/script'

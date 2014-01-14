@@ -11,7 +11,7 @@
 #endif
 #endif
 
-void MAPIExceptionRegisterClasss(TSRMLS_D);
+void MAPIExceptionRegisterClass(TSRMLS_D);
 zend_class_entry *mapi_exception_get_default();
 
 __BEGIN_DECLS

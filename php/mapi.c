@@ -52,7 +52,7 @@ void register_constants(int module_number TSRMLS_DC);
 
 static void register_classes(TSRMLS_D)
 {
-	MAPIExceptionRegisterClasss(TSRMLS_C);
+	MAPIExceptionRegisterClass(TSRMLS_C);
 
 	MAPIProfileDBRegisterClass(TSRMLS_C);
 	MAPIProfileRegisterClass(TSRMLS_C);

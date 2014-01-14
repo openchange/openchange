@@ -2,7 +2,7 @@
 
 static zend_class_entry *mapi_exception_ce;
 
-void MAPIExceptionRegisterClasss(TSRMLS_D) {
+void MAPIExceptionRegisterClass(TSRMLS_D) {
 	zend_class_entry e;
 
 	INIT_CLASS_ENTRY(e, "MAPIException", NULL);

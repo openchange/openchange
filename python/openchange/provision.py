@@ -17,7 +17,7 @@
 #
 
 from base64 import b64encode
-import os
+import os, sys
 from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
@@ -555,10 +555,10 @@ def checkusage(names, lp, creds):
 
         return server_uses
     except LdbError, ldb_error:
-        print ("[!] error while checking whether this server is being used (%d): %s" % ldb_error.args)
+        print >> sys.stderr, "[!] error while checking whether this server is being used (%d): %s" % ldb_error.args
         raise ldb_error
     except RuntimeError as err:
-        print ("[!] error while checking whether this server is being used: %s" % err)
+        print >> sys.stderr, "[!] error while checking whether this server is being used: %s" % err
         raise err
 
 

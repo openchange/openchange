@@ -17,7 +17,7 @@
 #
 
 from base64 import b64encode
-import os, sys
+import os
 from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
@@ -546,7 +546,8 @@ def checkusage(names, lp, creds):
             expression="(homeMDB=*)")
         mailboxes_handled = 0
         for user_mailbox in mailboxes:
-            if user_mailbox['homeMDB'][0] == our_mailbox_store:
+            if (user_mailbox['homeMDB'][0] == our_mailbox_store and
+                user_mailbox['msExchUserAccountControl'][0] != '2'):
                 mailboxes_handled += 1
 
         if mailboxes_handled > 0:

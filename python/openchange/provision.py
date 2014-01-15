@@ -510,40 +510,40 @@ def checkusage(names, lp, creds):
         config_dn = samdb.get_config_basedn()
         mapi_servers = samdb.search(
             base=config_dn, scope=ldb.SCOPE_SUBTREE,
-            expression="(objectClass=msExchExchangeServer)")
-        server_uses = None
-        for mapi_server in mapi_servers:
-            if mapi_server["cn"].lower() != names.netbiosname.lower():
-                # This entry is not related with us, jump to the next one.
-                continue
+            expression="(&(objectClass=msExchExchangeServer)(cn=%s))" % names.netbiosname)
+        if len(mapi_servers) != 1:
+            # The server is not provisioned.
+            raise NotProvisionedError
 
-            server_uses = []
-            # Check if we are the primary folder store server.
-            our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
-                                                        names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
-            assert len(ret) == 1
-            siteFolderName = ret[0]["siteFolderServer"][0]
-            if our_siteFolderName.lower() == siteFolderName.lower():
-                server_uses.append("This server is the primary folder store server")
+        server_uses = []
+        # Check if we are the primary folder store server.
+        our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou, names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+        assert len(ret) == 1
+        siteFolderName = ret[0]["siteFolderServer"][0]
+        if our_siteFolderName.lower() == siteFolderName.lower():
+            server_uses.append("This server is the primary folder store server")
 
-            # Check if we are the primary receipt update service
-            our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
-            assert len(ret) == 1
-            addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
-            if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-                server_uses.append("This server is the primary receipt update service server")
+        # Check if we are the primary receipt update service
+        our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+        assert len(ret) == 1
+        addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+        if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+            server_uses.append("This server is the primary receipt update service server")
 
-            # FIXME: Add a check for handled mailboxes.
+        # Check if we handle any mailbox.
+        our_mailbox_store = "CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        mailboxes = samdb.search(
+            base=dn, scope=ldb.SCOPE_SUBTREE,
+            expression="(homeMDB=%s)" % our_mailbox_store)
+        if len(mailboxes) > 0:
+            server_uses.append(
+                "This server is still handling %d mailboxes" % len(mailboxes))
 
-            return server_uses
-
-        # The server is not provisioned.
-        raise NotProvisionedError
-
+        return server_uses
     except LdbError, ldb_error:
         print ("[!] error while checking whether this server is being used (%d): %s" % ldb_error.args)
         raise ldb_error

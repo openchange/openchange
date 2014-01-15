@@ -536,13 +536,22 @@ def checkusage(names, lp, creds):
             server_uses.append("primary receipt update service server")
 
         # Check if we handle any mailbox.
+        db = Ldb(
+            url=get_ldb_url(lp, creds, names), session_info=system_session(),
+            credentials=creds, lp=lp)
+
         our_mailbox_store = "CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-        mailboxes = samdb.search(
-            base=dn, scope=ldb.SCOPE_SUBTREE,
-            expression="(homeMDB=%s)" % our_mailbox_store)
-        if len(mailboxes) > 0:
+        mailboxes = db.search(
+            base=names.domaindn, scope=ldb.SCOPE_SUBTREE,
+            expression="(homeMDB=*)")
+        mailboxes_handled = 0
+        for user_mailbox in mailboxes:
+            if user_mailbox['homeMDB'][0] == our_mailbox_store:
+                mailboxes_handled += 1
+
+        if mailboxes_handled > 0:
             server_uses.append(
-                "is still handling %d mailboxes" % len(mailboxes))
+                "handling %d mailboxes" % mailboxes_handled)
 
         return server_uses
     except LdbError, ldb_error:

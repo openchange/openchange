@@ -518,12 +518,13 @@ def checkusage(names, lp, creds):
         server_uses = []
         # Check if we are the primary folder store server.
         our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou, names.firstorgdn)
+        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+                                                        names.firstorgdn)
         ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
         assert len(ret) == 1
         siteFolderName = ret[0]["siteFolderServer"][0]
         if our_siteFolderName.lower() == siteFolderName.lower():
-            server_uses.append("This server is the primary folder store server")
+            server_uses.append("primary folder store server")
 
         # Check if we are the primary receipt update service
         our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
@@ -532,7 +533,7 @@ def checkusage(names, lp, creds):
         assert len(ret) == 1
         addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
         if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-            server_uses.append("This server is the primary receipt update service server")
+            server_uses.append("primary receipt update service server")
 
         # Check if we handle any mailbox.
         our_mailbox_store = "CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
@@ -541,7 +542,7 @@ def checkusage(names, lp, creds):
             expression="(homeMDB=%s)" % our_mailbox_store)
         if len(mailboxes) > 0:
             server_uses.append(
-                "This server is still handling %d mailboxes" % len(mailboxes))
+                "is still handling %d mailboxes" % len(mailboxes))
 
         return server_uses
     except LdbError, ldb_error:
@@ -587,7 +588,7 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     server_uses = checkusage(names, lp, creds)
-    if (len(server_uses) > 0)
+    if (len(server_uses) > 0):
         raise ServerInUseError(', '.join(server_uses))
 
     session_info = system_session()
@@ -673,7 +674,7 @@ def unregister(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     server_uses = checkusage(names, lp, creds)
-    if (len(server_uses) > 0)
+    if (len(server_uses) > 0):
         raise ServerInUseError(', '.join(server_uses))
 
     try:

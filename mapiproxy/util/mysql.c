@@ -190,7 +190,9 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 		results->lppszW[i] = talloc_strdup(results, row[0]);
 	}
 
-	mysql_free_result(res);
+	if (ret == MYSQL_SUCCESS) {
+		mysql_free_result(res);
+	}
 	*_results = results;
 
 	return MYSQL_SUCCESS;

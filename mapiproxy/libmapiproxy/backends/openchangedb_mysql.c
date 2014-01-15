@@ -939,7 +939,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 			// Updating mailbox properties
 			table = talloc_strdup(mem_ctx, "mailboxes_properties");
 			column_id = talloc_strdup(mem_ctx, "mailbox_id");
-			id = fid;
+			id = mailbox_id;
 		} else {
 			// Updating folder
 			table = talloc_strdup(mem_ctx, "folders_properties");

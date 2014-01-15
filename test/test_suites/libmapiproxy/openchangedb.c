@@ -416,6 +416,33 @@ START_TEST (test_set_folder_properties) {
 	ck_assert_str_eq(display_name, "foo");
 } END_TEST
 
+START_TEST (test_set_folder_properties_on_mailbox) {
+	uint64_t fid;
+	uint32_t proptag;
+	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct Binary_r *s1, *s2;
+
+	fid = 1585267068834414593ul;
+	proptag = PidTagIpmTaskEntryId;
+
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&s1);
+	CHECK_SUCCESS;
+	row->cValues = 1;
+	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps[0].ulPropTag = proptag;
+	row->lpProps[0].value.bin.lpb = talloc_strdup(mem_ctx, "foo");
+	row->lpProps[0].value.bin.cb = 3;
+	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, (void **)&s2);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(s2->cb, 3);
+	ck_assert_str_eq(s2->lpb, "foo");
+} END_TEST
+
 START_TEST (test_set_public_folder_properties) {
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
@@ -1051,6 +1078,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_folder_property);
 	tcase_add_test(tc, test_get_public_folder_property);
 	tcase_add_test(tc, test_set_folder_properties);
+	tcase_add_test(tc, test_set_folder_properties_on_mailbox);
 	tcase_add_test(tc, test_set_public_folder_properties);
 	tcase_add_test(tc, test_get_fid_by_name);
 	tcase_add_test(tc, test_get_mid_by_subject);

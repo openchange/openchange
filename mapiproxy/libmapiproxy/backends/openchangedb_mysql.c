@@ -326,19 +326,20 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 					 TALLOC_CTX *mem_ctx,
 					 struct StringArrayW_r **urisP)
 {
+	TALLOC_CTX *local_mem_ctx = talloc_named(NULL, 0, "get_MAPIStoreURIs");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	char *sql;
 
 	// FIXME ou_id
-	sql = talloc_asprintf(mem_ctx,
+	sql = talloc_asprintf(local_mem_ctx,
 		"SELECT MAPIStoreURI FROM folders f JOIN mailboxes m "
 		"ON f.mailbox_id = m.id AND m.name = '%s' "
-		"WHERE MAPIStoreURI IS NOT NULL", _sql(mem_ctx, username));
+		"WHERE MAPIStoreURI IS NOT NULL", _sql(local_mem_ctx, username));
 
 	ret = status(select_all_strings(mem_ctx, conn, sql, urisP));
 
-	talloc_free(sql);
+	talloc_free(local_mem_ctx);
 	return ret;
 }
 

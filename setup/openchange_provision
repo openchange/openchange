@@ -73,7 +73,7 @@ if not opts.openchangedb:
             openchange.unregister(setup_path, provisionnames, lp, creds)
             openchange.openchangedb_deprovision(provisionnames, lp)
         except openchange.ServerInUseError, e:
-            print ("[!] Unable to unregister this server, it's being used for: %s" % str(e))
+            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
             sys.exit(1)
     elif opts.full_deprovision:
         try:
@@ -81,7 +81,7 @@ if not opts.openchangedb:
             openchange.deprovision(setup_path, provisionnames, lp, creds)
             openchange.openchangedb_deprovision(provisionnames, lp)
         except openchange.ServerInUseError, e:
-            print ("[!] Unable to unregister this server, it's being used for: %s" % str(e))
+            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
             sys.exit(1)
     elif opts.additional and opts.primary_server:
         openchange.register(setup_path, provisionnames, lp, creds)

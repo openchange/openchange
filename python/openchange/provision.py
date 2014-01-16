@@ -34,6 +34,14 @@ __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
 
+class NotProvisionedError(Exception):
+    """Raised when an action expects the server to be provisioned and it's not."""
+
+
+class ServerInUseError(Exception):
+    """Raised when a server is still in use when requested to be removed."""
+
+
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
     import inspect
@@ -485,6 +493,76 @@ msExchUserAccountControl: %d
         print "[+] Account %s enabled" % username
 
 
+def checkusage(names, lp, creds):
+    """Checks whether this server is already provisioned and is being used.
+
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    """
+
+    session_info = system_session()
+
+    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
+                  credentials=creds, lp=lp)
+
+    try:
+        config_dn = samdb.get_config_basedn()
+        mapi_servers = samdb.search(
+            base=config_dn, scope=ldb.SCOPE_SUBTREE,
+            expression="(&(objectClass=msExchExchangeServer)(cn=%s))" % names.netbiosname)
+        if len(mapi_servers) != 1:
+            # The server is not provisioned.
+            raise NotProvisionedError
+
+        server_uses = []
+        # Check if we are the primary folder store server.
+        our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+                                                        names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+        assert len(ret) == 1
+        siteFolderName = ret[0]["siteFolderServer"][0]
+        if our_siteFolderName.lower() == siteFolderName.lower():
+            server_uses.append("primary folder store server")
+
+        # Check if we are the primary receipt update service
+        our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+        assert len(ret) == 1
+        addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+        if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+            server_uses.append("primary receipt update service server")
+
+        # Check if we handle any mailbox.
+        db = Ldb(
+            url=get_ldb_url(lp, creds, names), session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        our_mailbox_store = "CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        mailboxes = db.search(
+            base=names.domaindn, scope=ldb.SCOPE_SUBTREE,
+            expression="(homeMDB=*)")
+        mailboxes_handled = 0
+        for user_mailbox in mailboxes:
+            if (user_mailbox['homeMDB'][0] == our_mailbox_store and
+                user_mailbox['msExchUserAccountControl'][0] != '2'):
+                mailboxes_handled += 1
+
+        if mailboxes_handled > 0:
+            server_uses.append(
+                "handling %d mailboxes" % mailboxes_handled)
+
+        return server_uses
+    except LdbError, ldb_error:
+        print >> sys.stderr, "[!] error while checking whether this server is being used (%d): %s" % ldb_error.args
+        raise ldb_error
+    except RuntimeError as err:
+        print >> sys.stderr, "[!] error while checking whether this server is being used: %s" % err
+        raise err
+
+
 def provision(setup_path, names, lp, creds, reporter=None):
     """Extend Samba4 with OpenChange data.
 
@@ -519,6 +597,10 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     if reporter is None:
         reporter = TextProgressReporter()
 
+    server_uses = checkusage(names, lp, creds)
+    if (len(server_uses) > 0):
+        raise ServerInUseError(', '.join(server_uses))
+
     session_info = system_session()
 
     lp.set("dsdb:schema update allowed", "yes")
@@ -527,41 +609,16 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
                   credentials=creds, lp=lp)
 
     try:
-        config_dn = samdb.get_config_basedn()
-        ret = samdb.search(base=config_dn, scope=ldb.SCOPE_SUBTREE, expression="(objectClass=msExchExchangeServer)")
-        if len(ret) > 1:
-            # If we are the primary folder store server, raise exception
-            # The user has to set another server as primary before unregister
-            # this one
-            our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
-                                                        names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
-            assert len(ret) == 1
-            siteFolderName = ret[0]["siteFolderServer"][0]
-            if our_siteFolderName.lower() == siteFolderName.lower():
-                raise Exception("This server is the primary folder store server")
-
-            # If we are the primary receipt update service, raise exception
-            our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
-            assert len(ret) == 1
-            addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
-            if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-                raise Exception("This server is the primary receipt update service server")
-
-            # Unregister the server
-            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Remove Exchange samba registration")
-        else:
-            # This is the unique server, remove full schema
-            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+        # This is the unique server, remove full schema
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
+        raise ldb_error
     except RuntimeError as err:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects: %s" % err)
+        raise err
 
     ## NOTE: AD schema objects cannot be deleted (it's a feature!)
     # try:
@@ -605,6 +662,46 @@ def register(setup_path, names, lp, creds, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
+def unregister(setup_path, names, lp, creds, reporter=None):
+    """Unregisters an OpenChange server.
+
+    :param setup_path: Path to the setup directory
+    :param names: Provision Names object
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    :raise ServerInUseError: If the server being unregistered is still being
+                             used. The error string gives you the list of
+                             uses.
+    :raise NotProvisionedError: If we try to unregister a server which is not
+                                yet provisioned.
+
+    If a progress reporter is not provided, a text output reporter is provided
+    """
+
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    server_uses = checkusage(names, lp, creds)
+    if (len(server_uses) > 0):
+        raise ServerInUseError(', '.join(server_uses))
+
+    try:
+        # Unregister the server
+        deprovision_schema(setup_path, names, lp, creds, reporter,
+                           "AD/oc_provision_configuration_new_server.ldif",
+                           "Unregistering Openchange server")
+    except LdbError, ldb_error:
+        print ("[!] error while unregistering the Openchange configuration"
+               " objects (%d): %s" % ldb_error.args)
+        raise ldb_error
+    except RuntimeError as err:
+        print ("[!] error while deprovisioning the Openchange configuration"
+               " objects: %s" % err)
+        raise err
+
+
 def registerasmain(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as the main Exchange server.
 
@@ -626,6 +723,19 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
     except LdbError, ldb_error:
         print ("[!] error while registering Openchange Samba configuration"
                " objects (%d): %s" % ldb_error.args)
+
+
+def openchangedb_deprovision(names, lp, mapistore=None):
+    """Removed the OpenChange database.
+
+    :param names: Provision names object
+    :param lp: Loadparm context
+    :param mapistore: The public folder store type (fsocpf, sqlite, etc)
+    """
+
+    print "Removing openchange db"
+    openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
+    openchange_ldb.remove()
 
 
 def openchangedb_provision(names, lp, mapistore=None):

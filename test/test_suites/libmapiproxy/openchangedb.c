@@ -431,7 +431,7 @@ START_TEST (test_set_folder_properties_on_mailbox) {
 	row->cValues = 1;
 	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = proptag;
-	row->lpProps[0].value.bin.lpb = talloc_strdup(mem_ctx, "foo");
+	row->lpProps[0].value.bin.lpb = (uint8_t *)talloc_strdup(mem_ctx, "foo");
 	row->lpProps[0].value.bin.cb = 3;
 	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
@@ -440,7 +440,7 @@ START_TEST (test_set_folder_properties_on_mailbox) {
 					       fid, (void **)&s2);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(s2->cb, 3);
-	ck_assert_str_eq(s2->lpb, "foo");
+	ck_assert_str_eq((char *)s2->lpb, "foo");
 } END_TEST
 
 START_TEST (test_set_public_folder_properties) {
@@ -678,6 +678,39 @@ START_TEST (test_create_folder_without_mapistore_uri) {
 	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(uris->cValues, uris_before);
+} END_TEST
+
+START_TEST (test_create_folder_and_display_name) {
+	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	uint64_t pfid, fid, fid2, changenumber;
+	uint32_t count, count_after;
+
+	pfid = 1513209474796486657ul;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	CHECK_SUCCESS;
+
+	fid = 4244;
+	changenumber = 424244;
+	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+					 "sogo://paco@mail/folderOhlala", 100);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(count + 1, count_after);
+
+	row->cValues = 1;
+	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps[0].ulPropTag = PidTagDisplayName;
+	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "some name");
+	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_fid_by_name(oc_ctx, "paco", pfid, "some name",
+					   &fid2);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid2, fid);
 } END_TEST
 
 START_TEST (test_create_public_folder) {
@@ -1090,6 +1123,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_create_mailbox);
 	tcase_add_test(tc, test_create_folder);
 	tcase_add_test(tc, test_create_folder_without_mapistore_uri);
+	tcase_add_test(tc, test_create_folder_and_display_name);
 	tcase_add_test(tc, test_create_public_folder);
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_message_count_from_public_folder);

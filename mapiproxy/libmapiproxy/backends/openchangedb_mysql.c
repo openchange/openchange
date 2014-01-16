@@ -326,19 +326,20 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 					 TALLOC_CTX *mem_ctx,
 					 struct StringArrayW_r **urisP)
 {
+	TALLOC_CTX *local_mem_ctx = talloc_named(NULL, 0, "get_MAPIStoreURIs");
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	char *sql;
 
 	// FIXME ou_id
-	sql = talloc_asprintf(mem_ctx,
+	sql = talloc_asprintf(local_mem_ctx,
 		"SELECT MAPIStoreURI FROM folders f JOIN mailboxes m "
 		"ON f.mailbox_id = m.id AND m.name = '%s' "
-		"WHERE MAPIStoreURI IS NOT NULL", _sql(mem_ctx, username));
+		"WHERE MAPIStoreURI IS NOT NULL", _sql(local_mem_ctx, username));
 
 	ret = status(select_all_strings(mem_ctx, conn, sql, urisP));
 
-	talloc_free(sql);
+	talloc_free(local_mem_ctx);
 	return ret;
 }
 
@@ -857,15 +858,20 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 				"SELECT mp.value FROM mailboxes_properties mp "
 				"WHERE mp.mailbox_id = %"PRIu64" AND mp.name = '%s'",
 				mailbox_id, _sql(mem_ctx, attr));
+		} else if (proptag == PidTagParentFolderId) {
+			n = talloc_zero(parent_ctx, uint64_t);
+			ret = get_parent_fid(self, username, fid, n, true);
+			OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+			*data = (void *) n;
+			goto end;
+		} else if (proptag == PidTagDisplayName) {
+			sql = talloc_asprintf(mem_ctx,
+				"SELECT fn.display_name FROM folders_names fn "
+				"JOIN folders f ON f.id = fn.folder_id "
+				"  AND f.mailbox_id = %"PRIu64" "
+				"  AND f.folder_id = %"PRIu64,
+				mailbox_id, fid);
 		} else {
-			if (proptag == PidTagParentFolderId) {
-				n = talloc_zero(parent_ctx, uint64_t);
-				ret = get_parent_fid(self, username, fid, n, true);
-				OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
-				*data = (void *) n;
-				goto end;
-			}
-
 			sql = talloc_asprintf(mem_ctx,
 				"SELECT fp.value FROM folders_properties fp "
 				"JOIN folders f ON f.id = fp.folder_id "
@@ -939,7 +945,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 			// Updating mailbox properties
 			table = talloc_strdup(mem_ctx, "mailboxes_properties");
 			column_id = talloc_strdup(mem_ctx, "mailbox_id");
-			id = fid;
+			id = mailbox_id;
 		} else {
 			// Updating folder
 			table = talloc_strdup(mem_ctx, "folders_properties");
@@ -965,6 +971,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 				  tag));
 			continue;
 		}
+
 		attr = openchangedb_property_get_attribute(tag);
 		if (!attr) {
 			attr = _unknown_property(mem_ctx, tag);
@@ -975,6 +982,16 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 			DEBUG(5, ("Ignored property of unhandled type %.4x\n",
 				  (tag & 0xffff)));
 			continue;
+		}
+
+
+		if (tag == PidTagDisplayName && mailbox_folder_id != fid) {
+			sql = talloc_asprintf(mem_ctx,
+				"REPLACE INTO folders_names VALUES "
+				"(%"PRIu64", 'en_US', '%s')",
+				id, _sql(mem_ctx, str_value));
+			ret = status(execute_query(conn, sql));
+			OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 		}
 
 		names = str_list_add(names, attr);

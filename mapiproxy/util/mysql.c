@@ -14,6 +14,7 @@ static float timespec_diff_in_seconds(struct timespec *end, struct timespec *sta
 		/ 1000000000;
 }
 
+
 static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 				    const char *connection_string,
 				    char **host, char **user, char **passwd,
@@ -63,7 +64,6 @@ static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 }
 
 
-
 MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 {
 	TALLOC_CTX *mem_ctx;
@@ -109,6 +109,7 @@ end:
 
 }
 
+
 enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 {
 	struct timespec start, end;
@@ -124,13 +125,14 @@ enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 
 	seconds_spent = timespec_diff_in_seconds(&end, &start);
 	if (seconds_spent > THRESHOLD_SLOW_QUERIES) {
-		printf("Openchangedb mysql backend slow query!\n"
+		printf("MySQL slow query!\n"
 		       "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
-		DEBUG(5, ("Openchangedb mysql backend slow query!\n"
+		DEBUG(5, ("MySQL slow query!\n"
 			  "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent));
 	}
 	return MYSQL_SUCCESS;
 }
+
 
 enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 					    MYSQL_RES **res)
@@ -154,6 +156,7 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 
 	return MYSQL_SUCCESS;
 }
+
 
 enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 				   const char *sql,
@@ -190,11 +193,14 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 		results->lppszW[i] = talloc_strdup(results, row[0]);
 	}
 
-	mysql_free_result(res);
+	if (ret == MYSQL_SUCCESS) {
+		mysql_free_result(res);
+	}
 	*_results = results;
 
 	return MYSQL_SUCCESS;
 }
+
 
 enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 				    const char *sql, const char **s)
@@ -218,6 +224,7 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 	return MYSQL_SUCCESS;
 }
 
+
 enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 				  uint64_t *n)
 {
@@ -235,7 +242,6 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 }
 
 
-
 bool table_exists(MYSQL *conn, char *table_name)
 {
 	MYSQL_RES *res;
@@ -248,6 +254,7 @@ bool table_exists(MYSQL *conn, char *table_name)
 
 	return created;
 }
+
 
 bool create_schema(MYSQL *conn, char *schema_file)
 {
@@ -291,7 +298,6 @@ end:
 
 	return ret;
 }
-
 
 
 const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)

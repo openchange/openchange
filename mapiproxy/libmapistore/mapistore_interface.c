@@ -37,6 +37,7 @@
    \details Initialize the mapistore context
 
    \param mem_ctx pointer to the memory context
+   \param lp_ctx loadparm_context to get smb.conf options
    \param path the path to the location to load the backend providers from (NULL for default)
 
    \return allocate mapistore context on success, otherwise NULL
@@ -47,6 +48,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	struct mapistore_context	*mstore_ctx;
 	const char			*private_dir;
 	char				*mapping_path;
+	char				*indexing_url;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -91,6 +93,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
+
+	indexing_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_backend");
+	mapistore_set_default_indexing_url(indexing_url);
 
 	mstore_ctx->nprops_ctx = NULL;
 	const char *nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");

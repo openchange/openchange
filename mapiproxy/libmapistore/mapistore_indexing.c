@@ -34,6 +34,29 @@
 #include "backends/indexing_mysql.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 
+
+char *default_indexing_url = NULL;
+
+/**
+   \details Set the default backend url. If none is set, a tdb file per user
+   will be used.
+
+   \param url default backend url to be used
+ */
+_PUBLIC_ void mapistore_set_default_indexing_url(const char *url)
+{
+	TALLOC_CTX *mem_ctx;
+
+	if (default_indexing_url) talloc_free(default_indexing_url);
+
+	if (url == NULL) {
+		default_indexing_url = NULL;
+	} else {
+		mem_ctx = talloc_autofree_context();
+		default_indexing_url = talloc_strdup(mem_ctx, url);
+	}
+}
+
 /**
    \details Search the indexing record matching the username
 
@@ -89,6 +112,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	// indexing context has not been found, let's create it.
 	indexing_url = openchangedb_get_indexing_url(mstore_ctx->conn_info->oc_ctx,
 						     username);
+	if (indexing_url == NULL) {
+		indexing_url = default_indexing_url;
+	}
 
 	// indexing_url NULL means to use the default backend: tdb
 	if (indexing_url == NULL) {

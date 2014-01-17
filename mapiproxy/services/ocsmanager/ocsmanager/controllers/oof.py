@@ -156,13 +156,8 @@ class OofHandler(object):
 
         raise InvalidRequestException('No body in request')
 
-    def process_get_request(self, elem):
-        # Prepare the response
-        envelope_element = Element("{%s}Envelope" % namespaces['q'])
-
-        # Create the header
+    def _header_element(self):
         header_element = Element("{%s}Header" % namespaces['t'])
-        envelope_element.append(header_element)
 
         ServerVersionInfo = Element("{%s}ServerVersionInfo" % namespaces['t'])
         ServerVersionInfo.set('MajorVersion', '8')
@@ -170,25 +165,18 @@ class OofHandler(object):
         ServerVersionInfo.set('MajorBuildNumber', '240')
         ServerVersionInfo.set('MinorBuildNumber', '5')
         header_element.append(ServerVersionInfo)
+        return header_element
 
-        body_element = Element("{%s}Body" % namespaces['q'])
-        envelope_element.append(body_element)
+    def _body_element(self):
+        return Element("{%s}Body" % namespaces['q'])
 
-        # Check that the mailbox specified in the request belong to the user
-        # who is making the request
-        try:
-            mailbox_element = elem.find("t:Mailbox", namespaces=namespaces)
-            address_element = mailbox_element.find("t:Address", namespaces=namespaces)
-            self.check_mailbox(address_element.text)
-        except Exception as e:
-            fault_element = Element("{%s}Fault" % namespaces['q'])
-            body_element.append(fault_element)
-
-            fault_code_element = Element("FaultCode")
-            if isinstance(e, AccessDeniedException):
-                fault_code_element.text = "Client"
-            else:
-                fault_code_element.text = "Server"
+    def _fault_element_from_exception(self, e):
+        fault_element = Element("{%s}Fault" % namespaces['q'])
+        fault_code_element = Element("FaultCode")
+        if isinstance(e, AccessDeniedException):
+            fault_code_element.text = "Client"
+        else:
+            fault_code_element.text = "Server"
             fault_element.append(fault_code_element)
 
             fault_string_element = Element("FaultString")
@@ -205,10 +193,37 @@ class OofHandler(object):
                 error_code_element = Element("{%s}ErrorCode" % namespaces['m'])
                 error_code_element.text = "-2146233088"
                 fault_detail_element.append(error_code_element)
+        return fault_element
 
-            response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
-            response_string += tostring(envelope_element, encoding='utf-8', method='xml')
-            return response_string
+    def _address_from_request(self, elem):
+        mailbox_element = elem.find("t:Mailbox", namespaces=namespaces)
+        address_element = mailbox_element.find("t:Address", namespaces=namespaces)
+        return address_element.text
+
+    def _response_string(self,  envelope_element):
+        response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
+        response_string += tostring(envelope_element, encoding='utf-8', method='xml')
+        return response_string
+
+    def process_get_request(self, elem):
+        # Prepare the response
+        envelope_element = Element("{%s}Envelope" % namespaces['q'])
+
+        # Create the header
+        header_element = self._header_element()
+        envelope_element.append(header_element)
+
+        body_element = self._body_element()
+        envelope_element.append(body_element)
+
+        # Check that the mailbox specified in the request belong to the user
+        # who is making the request
+        try:
+            self.check_mailbox(self._address_from_request(elem))
+        except Exception as e:
+            fault_element = self._fault_element_from_exception(e)
+            body_element.append(fault_element)
+            return self._response_string(envelope_element)
 
         # Build the command response
         response_element = Element("{%s}GetUserOofSettingsResponse" % namespaces['m'])
@@ -265,11 +280,33 @@ class OofHandler(object):
         AllowExternalOof.text = "All"
         response_element.append(AllowExternalOof)
 
-        response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
-        response_string += tostring(envelope_element, encoding='utf-8', method='xml')
-        return response_string
+        return self._response_string(envelope_element)
 
     def process_set_request(self, elem):
+        # Prepare the response
+        envelope_element = Element("{%s}Envelope" % namespaces['q'])
+
+        body_element = Element("{%s}Body" % namespaces['q'])
+        envelope_element.append(body_element)
+
+        # Create the header
+        header_element = self._header_element()
+        envelope_element.append(header_element)
+
+        body_element = Element("{%s}Body" % namespaces['q'])
+        envelope_element.append(body_element)
+
+        # Check that the mailbox specified in the request belong to the user
+        # who is making the request
+        try:
+            self.check_mailbox(self._response_string(elem))
+        except Exception as e:
+            fault_element = self._fault_element_from_exception(e)
+            body_element.append(fault_element)
+            return self._response_string(envelope_element)
+
+
+
         raise ServerException('Not implemented')
 
 class OofController(BaseController):

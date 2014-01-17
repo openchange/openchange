@@ -21,5 +21,7 @@
 
 import os
 
+
 def openchangedb_url(lp):
-    return os.path.join(lp.get("private dir"), "openchange.ldb")
+    return (lp.get("mapiproxy:openchangedb") or
+            os.path.join(lp.get("private dir"), "openchange.ldb"))

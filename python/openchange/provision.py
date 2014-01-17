@@ -613,6 +613,7 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
+
     if reporter is None:
         reporter = TextProgressReporter()
 
@@ -753,8 +754,12 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     """
 
     print "Removing openchange db"
-    openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
-    openchange_ldb.remove()
+    uri = openchangedb_url(lp)
+    if uri.startswith('mysql'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
+    else:
+        openchangedb = mailbox.OpenChangeDB(uri)
+    openchangedb.remove()
 
 
 def openchangedb_provision(names, lp, uri=None):
@@ -766,6 +771,7 @@ def openchangedb_provision(names, lp, uri=None):
     private samba directory. You can specify a mysql connection string like
     mysql://user:passwd@host/db_name to use openchangedb with mysql backend
     """
+
     print "Setting up openchange db"
     if uri is None or len(uri) == 0 or uri.startswith('ldb'):  # LDB backend
         openchangedb = mailbox.OpenChangeDB(openchangedb_url(lp))

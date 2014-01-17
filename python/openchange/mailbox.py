@@ -286,7 +286,7 @@ class OpenChangeDBWithMysqlBackend(object):
 
     OPENCHANGEDB_SCHEMA = 'openchangedb/openchangedb_schema.sql'
 
-    def __init__(self, url, setup_dir):
+    def __init__(self, url, setup_dir=""):
         self.url = url
         self.schema = os.path.join(setup_dir, self.OPENCHANGEDB_SCHEMA)
         self._connect_to_mysql()
@@ -297,8 +297,17 @@ class OpenChangeDBWithMysqlBackend(object):
         self._change_number = None
 
     def _connect_to_mysql(self):
-        host, user, passwd, db = self._parse_mysql_url()
-        self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+        host, user, passwd, self.db_name = self._parse_mysql_url()
+        self.db = MySQLdb.connect(host=host, user=user, passwd=passwd)
+        try:
+            self.db.select_db(self.db_name)
+        except MySQLdb.OperationalError:
+            self._execute("CREATE DATABASE %s", self.db_name)
+            self.db.select_db(self.db_name)
+
+    def remove(self):
+        """Remove an existing OpenChangeDB."""
+        self._execute("DROP DATABASE %s", self.db_name)
 
     def _parse_mysql_url(self):
         # self.url should be mysql://user[:passwd]@some_host/some_db_name

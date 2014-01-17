@@ -240,6 +240,7 @@ enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context
 bool		openchangedb_is_public_folder_id(struct openchangedb_context *, uint64_t);
 
 const char *	openchangedb_get_indexing_url(struct openchangedb_context *, const char *);
+enum MAPISTATUS openchangedb_set_locale(struct openchangedb_context*, const char *, uint32_t);
 
 /* definitions from openchangedb_table.c */
 enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);

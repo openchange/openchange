@@ -1583,6 +1583,25 @@ static const char *get_indexing_url(struct openchangedb_context *self, const cha
 	return indexing_url;
 }
 
+static enum MAPISTATUS set_locale(struct openchangedb_context *self,
+				  const char *username, uint32_t lcid)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_locale");
+	MYSQL *conn = self->data;
+	char *sql;
+	const char *locale;
+	enum MAPISTATUS ret;
+
+	locale = mapi_get_locale_from_lcid(lcid);
+	// FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"UPDATE mailboxes SET locale='%s' WHERE name = '%s'",
+		locale, username);
+	ret = status(execute_query(conn, sql));
+	talloc_free(mem_ctx);
+	return ret;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2912,6 +2931,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->is_public_folder_id = is_public_folder_id;
 
 	oc_ctx->get_indexing_url = get_indexing_url;
+	oc_ctx->set_locale = set_locale;
 
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);

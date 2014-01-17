@@ -1591,6 +1591,11 @@ static const char *get_indexing_url(struct openchangedb_context *self, const cha
 	return NULL;
 }
 
+static enum MAPISTATUS set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)
+{
+	return MAPI_E_NOT_IMPLEMENTED;
+}
+
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2286,6 +2291,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->is_public_folder_id = is_public_folder_id;
 
 	oc_ctx->get_indexing_url = get_indexing_url;
+	oc_ctx->set_locale = set_locale;
 
 	*ctx = oc_ctx;
 

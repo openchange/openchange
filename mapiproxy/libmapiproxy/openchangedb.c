@@ -899,3 +899,20 @@ _PUBLIC_ const char *openchangedb_get_indexing_url(struct openchangedb_context *
 	}
 	return oc_ctx->get_indexing_url(oc_ctx, username);
 }
+
+/**
+   \details Set the current locale of the mailbox
+
+   \param oc_ctx pointer to the openchange DB context
+   \param username Name of the mailbox
+   \param lcid language id
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_set_locale(struct openchangedb_context *oc_ctx,
+						 const char *username,
+						 uint32_t lcid)
+{
+	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->set_locale(oc_ctx, username, lcid);
+}

@@ -143,7 +143,6 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 
 	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
 	emsmdbp_ctx->userLanguage = r->in.ulLcidString;
-	openchangedb_set_locale(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, emsmdbp_ctx->userLanguage);
 
 	/* Step 4. Retrieve the display name of the user */
 	*r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);
@@ -1612,7 +1611,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 
 	emsmdbp_ctx->szUserDN = talloc_strdup(emsmdbp_ctx, r->in.szUserDN);
 	emsmdbp_ctx->userLanguage = r->in.ulLcidString;
-	openchangedb_set_locale(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, emsmdbp_ctx->userLanguage);
 
 	/* Step 4. Retrieve the display name of the user */
 	*r->out.szDisplayName = ldb_msg_find_attr_as_string(msg, "displayName", NULL);

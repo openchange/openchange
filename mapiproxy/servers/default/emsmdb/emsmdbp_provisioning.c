@@ -642,6 +642,9 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 	}
 
+	// Update locale
+	openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
+
 	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
 
 

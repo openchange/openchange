@@ -48,7 +48,8 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	struct mapistore_context	*mstore_ctx;
 	const char			*private_dir;
 	char				*mapping_path;
-	char				*indexing_url;
+	const char			*indexing_url;
+	const char			*nprops_backend;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -98,7 +99,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mapistore_set_default_indexing_url(indexing_url);
 
 	mstore_ctx->nprops_ctx = NULL;
-	const char *nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");
+	nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");
 	if (nprops_backend) {
 		DEBUG(0, ("Using custom backend for named properties: %s\n",
 			  nprops_backend));

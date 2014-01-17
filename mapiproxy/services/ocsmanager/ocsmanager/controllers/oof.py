@@ -1,4 +1,5 @@
 import logging
+import codecs
 import traceback
 import urllib
 import base64
@@ -6,7 +7,7 @@ import struct
 import ldb
 import os, os.path, shutil
 import string
-import sievelib
+import json
 
 from sievelib.factory import FiltersSet
 from sievelib.parser import Parser
@@ -142,7 +143,6 @@ class OofHandler(object):
         """
         if request.body is not None and len(request.body) > 0:
             body = urllib.unquote_plus(request.body)
-            log.info(body)
             tree = ElementTree(file=StringIO(body))
             envelope = tree.getroot()
             if envelope is None:
@@ -226,8 +226,9 @@ class OofHandler(object):
 
         # Check that the mailbox specified in the request belong to the user
         # who is making the request
+        mailbox = self._address_from_request(elem)
         try:
-            self.check_mailbox(self._address_from_request(elem))
+            self.check_mailbox(mailbox)
         except Exception as e:
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
@@ -235,7 +236,7 @@ class OofHandler(object):
 
         # Retrieve settings
         oof = OofSettings()
-        oof.from_sieve(self.username)
+        oof.from_sieve(mailbox)
 
         # Build the command response
         response_element = Element("{%s}GetUserOofSettingsResponse" % namespaces['m'])
@@ -282,7 +283,7 @@ class OofHandler(object):
             return self._response_string(envelope_element)
 
         settings_element = elem.find("t:UserOofSettings", namespaces=namespaces)
-        allow_external_element = elem.find("AllowExternalOof")
+        allow_external_element = elem.find("t:AllowExternalOof", namespaces=namespaces)
 
         # Set settings
         oof = OofSettings()
@@ -307,13 +308,14 @@ class OofHandler(object):
 class OofSettings:
     def __init__(self):
         self._sieve_script_header = "# OpenChange OOF script\n"
-        self._state = None
-        self._external_audience = None
-        self._duration_start_time = None
-        self._duration_end_time = None
-        self._internal_reply_message = None
-        self._external_reply_message = None
-        self._allow_external_oof = None
+        self._config = {}
+        self._config['state'] = None
+        self._config['external_audience'] = None
+        self._config['duration_start_time'] = None
+        self._config['duration_end_time'] = None
+        self._config['internal_reply_message'] = None
+        self._config['external_reply_message'] = None
+        self._config['allow_external_oof'] = None
 
     def _sieve_path(self, mailbox):
         ebox_uid = 107
@@ -347,44 +349,59 @@ class OofSettings:
 
     def _isOofScript(self, path):
         f = open(path, 'r')
-        line = f.readline(200)
+        line = f.readline()
         return line == self._sieve_script_header
+
+    def _to_json(self):
+        return json.dumps(self._config)
 
     def from_sieve(self, mailbox):
         """
         Loads OOF settings for specified mailbox
         """
-        self._state = 'Disabled'
-        self._external_audience = 'All'
-        self._duration_start_time = '2014-01-13T18:00:00Z'
-        self._duration_end_time = '2014-01-14T18:00:00Z'
-        self._internal_reply_message = 'I am out of office. This is my internal response.'
-        self._external_reply_message = 'I am out of office. This is my external response.'
-        self._allow_external_oof = 'All'
+        (path, ignore) = self._sieve_path(mailbox)
+        if os.path.isfile(path):
+            f = open(path, 'r')
+            line = f.readline()
+            line = f.readline()
+            line = f.readline()
+            line = f.readline()
+            log.info(line)
+            self._config = json.loads(line)
+        else:
+            # Default settings
+            self._config['state'] = 'Disabled'
+            self._config['external_audience'] = 'All'
+            self._config['duration_start_time'] = '1970-01-01T00:00:00Z'
+            self._config['duration_end_time'] = '2099-12-12T00:00:00Z'
+            self._config['internal_reply_message'] = base64.b64encode('I am out of office.')
+            self._config['external_reply_message'] = base64.b64encode('I am out of office.')
+            self._config['allow_external_oof'] = 'All'
 
     def to_sieve(self, mailbox):
         (sieve_path_script, sieve_path_include) = self._sieve_path(mailbox)
-        template = u"""$header\n\n require ["date","relational","vacation"];\n\n"""
+        template = u"""$header\n/*\n$config\n*/\n\n require ["date","relational","vacation"];\n\n"""
 
-        if self._duration_start_time is not None and self._duration_end_time is not None:
+        if self._config['duration_start_time'] is not None and self._config['duration_end_time'] is not None:
             template += """if allof(currentdate :value "ge" "date" "$start", currentdate :value "le" "date" "$end")\n {"""
 
         template += """vacation  :days 1 :subject "$subject" "$message";\n"""
-        if self._duration_start_time is not None and self._duration_end_time is not None:
+        if self._config['duration_start_time'] is not None and self._config['duration_end_time'] is not None:
             template += """}\n\n"""
 
         message = ''
         message += '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">\n'
-        message += self._external_reply_message
+        message += base64.b64decode(self._config['external_reply_message'])
         message = message.replace('"', '\\"')
         message = message.replace(';', '\\;')
 
         script = string.Template(template).substitute(
-            header=self._sieve_script_header,
-            start=self._duration_start_time,
-            end=self._duration_end_time,
-            subject="Out of office automatic reply",
-            message=message
+            header = self._sieve_script_header,
+            config = self._to_json(),
+            start = self._config['duration_start_time'],
+            end = self._config['duration_end_time'],
+            subject = "Out of office automatic reply",
+            message = message
         )
 
         if sieve_path_include is not None:
@@ -392,7 +409,7 @@ class OofSettings:
             script += "\n"
 
         f = open(sieve_path_script, 'w')
-        f.write(script.encode("utf8"))
+        f.write(script.encode('utf8'))
         f.close()
         os.chmod(sieve_path_script, 0770)
 
@@ -400,85 +417,91 @@ class OofSettings:
         """
         Load settings from XML root element
         """
-        oof_state_element = settings_element.find('OofState')
+        oof_state_element = settings_element.find('t:OofState', namespaces=namespaces)
         if oof_state_element is not None:
-            self._state = oof_state_element.text
+            self._config['state'] = oof_state_element.text
 
-        external_audience_element = settings_element.find('ExternalAudience')
+        external_audience_element = settings_element.find('t:ExternalAudience', namespaces=namespaces)
         if external_audience_element is not None:
-            self._external_audience = external_audience_element.text
+            self._config['external_audience'] = external_audience_element.text
 
-        duration_element = settings_element.find('Duration')
+        duration_element = settings_element.find('t:Duration', namespaces=namespaces)
         if duration_element is not None:
-            start_time_element = duration_element.find('StartTime')
+            start_time_element = duration_element.find('t:StartTime', namespaces=namespaces)
             if start_time_element is not None:
-                self._duration_start_time = start_time_element.text.split('T')[0]
+                self._config['duration_start_time'] = start_time_element.text.split('T')[0]
 
-            end_time_element = duration_element.find('EndTime')
+            end_time_element = duration_element.find('t:EndTime', namespaces=namespaces)
             if end_time_element is not None:
-                self._duration_end_time = end_time_element.text.split('T')[0]
+                self._config['duration_end_time'] = end_time_element.text.split('T')[0]
 
         internal_reply_element = settings_element.find('t:InternalReply', namespaces=namespaces)
         if internal_reply_element is not None:
             message_element = internal_reply_element.find('t:Message', namespaces=namespaces)
             if message_element is not None:
-                self._internal_reply_message = message_element.text
+                # Strip the BOM from the beginning of the Unicode string
+                text = message_element.text
+                text = text.lstrip(unicode(codecs.BOM_UTF16_LE, "UTF-16LE"))
+                self._config['internal_reply_message'] = base64.b64encode(text)
 
         external_reply_element = settings_element.find('t:ExternalReply', namespaces=namespaces)
         if external_reply_element is not None:
             message_element = external_reply_element.find('t:Message', namespaces=namespaces)
             if message_element is not None:
-                self._external_reply_message = message_element.text
+                # Strip the BOM from the beginning of the Unicode string
+                text = message_element.text
+                text = text.lstrip(unicode(codecs.BOM_UTF16_LE, "UTF-16LE"))
+                self._config['external_reply_message'] = base64.b64encode(text)
 
         if allow_external_element is not None:
-            self._allow_external_oof = allow_external_element.text
+            self._config['allow_external_oof'] = allow_external_element.text
 
     def to_xml(self, oof_settings_element, response_element):
         """
         Fill the XML root element with OOF settings
         """
-        if self._state is not None:
+        if self._config['state'] is not None:
             oof_state_element = Element('OofState')
-            oof_state_element.text = self._state
+            oof_state_element.text = self._config['state']
             oof_settings_element.append(oof_state_element)
 
-        if self._external_audience is not None:
+        if self._config['external_audience'] is not None:
             external_audience_element = Element("ExternalAudience")
-            external_audience_element.text = self._external_audience
+            external_audience_element.text = self._config['external_audience']
             oof_settings_element.append(external_audience_element)
 
         duration_element = Element("Duration")
         oof_settings_element.append(duration_element)
 
-        if self._duration_start_time is not None:
+        if self._config['duration_start_time'] is not None:
             StartTime = Element("StartTime")
-            StartTime.text = self._duration_start_time
+            StartTime.text = self._config['duration_start_time']
             duration_element.append(StartTime)
 
-        if self._duration_end_time is not None:
+        if self._config['duration_end_time'] is not None:
             EndTime = Element("EndTime")
-            EndTime.text = self._duration_end_time
+            EndTime.text = self._config['duration_end_time']
             duration_element.append(EndTime)
 
         InternalReply = Element("InternalReply")
         oof_settings_element.append(InternalReply)
 
-        if self._internal_reply_message is not None:
+        if self._config['internal_reply_message'] is not None:
             MessageInternal = Element("Message")
-            MessageInternal.text = self._internal_reply_message
+            MessageInternal.text = base64.b64decode(self._config['internal_reply_message'])
             InternalReply.append(MessageInternal)
 
         ExternalReply = Element("ExternalReply")
         oof_settings_element.append(ExternalReply)
 
-        if self._external_reply_message is not None:
+        if self._config['external_reply_message'] is not None:
             MessageExternal = Element("Message")
-            MessageExternal.text = self._external_reply_message
+            MessageExternal.text = base64.b64decode(self._config['external_reply_message'])
             ExternalReply.append(MessageExternal)
 
-        if self._allow_external_oof is not None:
+        #if self._config['allow_external_oof'] is not None:
             AllowExternalOof = Element("AllowExternalOof")
-            AllowExternalOof.text = self._allow_external_oof
+            AllowExternalOof.text = 'All' #self._config['allow_external_oof']
             response_element.append(AllowExternalOof)
 
 class OofController(BaseController):

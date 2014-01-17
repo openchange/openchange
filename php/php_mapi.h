@@ -23,6 +23,7 @@
 
 #define __STDC_FORMAT_MACROS
 #include <inttypes.h>
+#include <float.h>
 
 #include <php.h>
 

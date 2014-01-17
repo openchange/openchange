@@ -2,17 +2,17 @@
 # OpenChange provision script
 #
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008
-#   
+#
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -51,6 +51,7 @@ parser.add_option("--openchangedb-uri", type="string", default="",
                        "inside samba private directory is used but you can use mysql as backend "
                        "specifying a connection string like mysql://user:passwd@host/db_name")
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
+parser.add_option("--full-deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 opts,args = parser.parse_args()
 if len(args) != 0:
     parser.print_help()
@@ -72,7 +73,20 @@ provisionnames = openchange.guess_names_from_smbconf(
 
 if not opts.openchangedb:
     if opts.deprovision:
-        openchange.deprovision(setup_path, provisionnames, lp, creds)
+        try:
+            openchange.unregister(setup_path, provisionnames, lp, creds)
+            openchange.openchangedb_deprovision(provisionnames, lp)
+        except openchange.ServerInUseError, e:
+            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
+            sys.exit(1)
+    elif opts.full_deprovision:
+        try:
+            openchange.unregister(setup_path, provisionnames, lp, creds)
+            openchange.deprovision(setup_path, provisionnames, lp, creds)
+            openchange.openchangedb_deprovision(provisionnames, lp)
+        except openchange.ServerInUseError, e:
+            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
+            sys.exit(1)
     elif opts.additional and opts.primary_server:
         openchange.register(setup_path, provisionnames, lp, creds)
         openchange.registerasmain(setup_path, provisionnames, lp, creds)

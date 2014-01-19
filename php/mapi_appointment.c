@@ -357,7 +357,7 @@ PHP_METHOD(MAPIAppointment, setRecurrence)
 	mem_ctx = message_obj->talloc_ctx;
 
 	bin_pattern = set_AppointmentRecurrencePattern(mem_ctx, &recurrence);
-	mapi_message_so_set_prop(mem_ctx, message_obj->message, id, (void*) bin_pattern);
+	mapi_message_so_set_prop(mem_ctx, message_obj->message, id, (void*) bin_pattern TSRMLS_CC);
 }
 
 PHP_METHOD(MAPIAppointment, getRecurrence)

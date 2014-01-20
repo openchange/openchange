@@ -34,6 +34,27 @@
 
 #include <gen_ndr/ndr_property.h>
 
+
+static struct emsmdbp_special_folder *get_special_folders(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx)
+{
+	static struct emsmdbp_special_folder default_values[] = {
+		{MAPISTORE_DRAFTS_ROLE, 	PR_IPM_DRAFTS_ENTRYID, 		NULL},
+		{MAPISTORE_CALENDAR_ROLE, 	PR_IPM_APPOINTMENT_ENTRYID, 	NULL},
+		{MAPISTORE_CONTACTS_ROLE, 	PR_IPM_CONTACT_ENTRYID, 	NULL},
+		{MAPISTORE_TASKS_ROLE, 		PR_IPM_TASK_ENTRYID, 		NULL},
+		{MAPISTORE_NOTES_ROLE, 		PR_IPM_NOTE_ENTRYID, 		NULL},
+		{MAPISTORE_JOURNAL_ROLE, 	PR_IPM_JOURNAL_ENTRYID, 	NULL}
+	};
+	size_t i, total_special_folders = sizeof(default_values) / sizeof(struct emsmdbp_special_folder);
+	const char **names = emsmdbp_get_special_folders(emsmdbp_ctx);
+
+	struct emsmdbp_special_folder *ret = talloc_memdup(mem_ctx, default_values, sizeof(struct emsmdbp_special_folder) * total_special_folders);
+	for (i = 0; i < total_special_folders; i++) {
+		ret[i].name = names[i];
+	};
+	return ret;
+}
+
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *emsmdbp_ctx, const char *EssDN)
 {
 	enum MAPISTATUS		ret;
@@ -195,13 +216,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	struct mapistore_contexts_list		*contexts_list;
 	struct StringArrayW_r			*existing_uris;
 	struct mapistore_contexts_list		*main_entries[MAPISTORE_MAX_ROLES], *secondary_entries[MAPISTORE_MAX_ROLES], *next_entry, *current_entry;
-	static const char			*folder_names[] = {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"};
-	static struct emsmdbp_special_folder	special_folders[] = {{MAPISTORE_DRAFTS_ROLE, PR_IPM_DRAFTS_ENTRYID, "Drafts"},
-								     {MAPISTORE_CALENDAR_ROLE, PR_IPM_APPOINTMENT_ENTRYID, "Calendar"},
-								     {MAPISTORE_CONTACTS_ROLE, PR_IPM_CONTACT_ENTRYID, "Contacts"},
-								     {MAPISTORE_TASKS_ROLE, PR_IPM_TASK_ENTRYID, "Tasks"},
-								     {MAPISTORE_NOTES_ROLE, PR_IPM_NOTE_ENTRYID, "Notes"},
-								     {MAPISTORE_JOURNAL_ROLE, PR_IPM_JOURNAL_ENTRYID, "Journal"}};
+	const char				**folder_names;
+	struct emsmdbp_special_folder		*special_folders;
 	const char				**container_classes;
 	const char				*search_container_classes[] = {"Outlook.Reminder", "IPF.Task", "IPF.Note"};
 	uint32_t				context_id, row_count;
@@ -210,7 +226,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	const char				*mapistore_url, *current_name, *base_name;
 	struct emsmdbp_special_folder		*current_folder;
 	struct SRow				property_row;
-	int					i, j, nbr_special_folders = sizeof(special_folders) / sizeof(struct emsmdbp_special_folder);
+	int					i, j;
 	DATA_BLOB				entryid_data;
 	struct FolderEntryId			folder_entryid;
 	struct Binary_r				*entryId;
@@ -323,7 +339,10 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &mailbox_fid);
 		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid);
+		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}
+
+	folder_names = emsmdbp_get_folders_names(emsmdbp_ctx);
 	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;
 	property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;
@@ -457,7 +476,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	folder_entryid.FolderType = eitLTPrivateFolder;
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username, NULL, &folder_entryid.FolderDatabaseGuid);
 
-	for (i = 0; i < nbr_special_folders; i++) {
+	special_folders = get_special_folders(mem_ctx, emsmdbp_ctx);
+	for (i = 0; i < SPECIAL_FOLDERS_SIZE; i++) {
 		current_folder = special_folders + i;
 		ret = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, username, current_folder->entryid_property, mailbox_fid, (void **) &entryId);
 		if (ret != MAPI_E_SUCCESS) {
@@ -595,11 +615,11 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.lpProps[1].value.d = mailbox_fid;
 			property_row.lpProps[2].ulPropTag = PidTagChangeNumber;
 			property_row.lpProps[2].value.d = current_cn;
-			
+
 			mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
 			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, mailbox_fid, current_fid, current_cn, mapistore_url, -1);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
-			
+
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
 			mapistore_add_context(emsmdbp_ctx->mstore_ctx, username, mapistore_url, current_fid, &context_id, &backend_object);
 			mapistore_indexing_record_add_fid(emsmdbp_ctx->mstore_ctx, context_id, username, current_fid);
@@ -638,12 +658,16 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			mapistore_properties_set_properties(emsmdbp_ctx->mstore_ctx, context_id, backend_message, &property_row);
 			mapistore_message_save(emsmdbp_ctx->mstore_ctx, context_id, backend_message, mem_ctx);
 		}
-	
+
 		mapistore_del_context(emsmdbp_ctx->mstore_ctx, context_id);
 	}
 
-	// Update locale
-	openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
+	// Update mailbox's locale
+	if (openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage)) {
+		// Locale has changed from previous session, we have to update
+		// folder's names created when provisioning the first time
+		//TODO
+	}
 
 	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
 

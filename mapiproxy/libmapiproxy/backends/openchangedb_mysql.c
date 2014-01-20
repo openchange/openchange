@@ -1576,23 +1576,46 @@ static const char *get_indexing_url(struct openchangedb_context *self, const cha
 	return indexing_url;
 }
 
-static enum MAPISTATUS set_locale(struct openchangedb_context *self,
-				  const char *username, uint32_t lcid)
+static bool set_locale(struct openchangedb_context *self, const char *username,
+		       uint32_t lcid)
 {
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_locale");
+	TALLOC_CTX *mem_ctx;
 	MYSQL *conn = self->data;
 	char *sql;
-	const char *locale;
-	enum MAPISTATUS ret;
+	const char *locale, *current_locale;
+	enum MYSQLRESULT ret;
 
 	locale = mapi_get_locale_from_lcid(lcid);
+	if (locale == NULL) {
+		DEBUG(0, ("Unknown locale (lcid) %"PRIu32" for mailbox %s\n",
+			  lcid, username));
+		return false;
+	}
+	mem_ctx = talloc_named(NULL, 0, "set_locale");
+	// FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT locale FROM mailboxes WHERE name = '%s'", username);
+	ret = select_first_string(mem_ctx, conn, sql, &current_locale);
+	if (ret != MYSQL_SUCCESS) {
+		DEBUG(0, ("Error getting locale of mailbox %s\n", username));
+		talloc_free(mem_ctx);
+		return false;
+	}
+	if (current_locale && strncmp(locale, current_locale, strlen(locale)) == 0) {
+		talloc_free(mem_ctx);
+		return false;
+	}
 	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
 		"UPDATE mailboxes SET locale='%s' WHERE name = '%s'",
 		locale, username);
-	ret = status(execute_query(conn, sql));
+	ret = execute_query(conn, sql);
+	if (ret != MYSQL_SUCCESS) {
+		DEBUG(0, ("Error updating locale %s of mailbox %s\n",
+			  locale, username));
+	}
 	talloc_free(mem_ctx);
-	return ret;
+	return true;
 }
 
 // ^ openchangedb -------------------------------------------------------------

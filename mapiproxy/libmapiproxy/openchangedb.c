@@ -906,10 +906,11 @@ _PUBLIC_ const char *openchangedb_get_indexing_url(struct openchangedb_context *
    \param oc_ctx pointer to the openchange DB context
    \param username Name of the mailbox
    \param lcid language id
+
+   \return Whether the locale has been changed or not
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_set_locale(struct openchangedb_context *oc_ctx,
-						 const char *username,
-						 uint32_t lcid)
+_PUBLIC_ bool openchangedb_set_locale(struct openchangedb_context *oc_ctx,
+				      const char *username, uint32_t lcid)
 {
 	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);

@@ -58,7 +58,7 @@ struct openchangedb_context {
 
 	const char * (*get_indexing_url)(struct openchangedb_context *, const char *);
 
-	enum MAPISTATUS (*set_locale)(struct openchangedb_context *, const char *, uint32_t);
+	bool (*set_locale)(struct openchangedb_context *, const char *, uint32_t);
 
 	const char *backend_type;
 	void *data;

@@ -1591,9 +1591,9 @@ static const char *get_indexing_url(struct openchangedb_context *self, const cha
 	return NULL;
 }
 
-static enum MAPISTATUS set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)
+static bool set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)
 {
-	return MAPI_E_NOT_IMPLEMENTED;
+	return false;
 }
 
 // ^ openchangedb -------------------------------------------------------------

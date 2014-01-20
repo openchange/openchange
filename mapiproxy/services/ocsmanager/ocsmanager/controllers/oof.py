@@ -257,11 +257,9 @@ class OofHandler(object):
         # Prepare the response
         envelope_element = Element("{%s}Envelope" % namespaces['q'])
 
-        # Create the header
         header_element = self._header_element()
         envelope_element.append(header_element)
 
-        # Body
         body_element = self._body_element()
         envelope_element.append(body_element)
 
@@ -293,10 +291,8 @@ class OofHandler(object):
         response_code_element = Element("ResponseCode")
         response_code_element.text = "NoError"
         response_message_element.append(response_code_element)
+        return self._response_string(envelope_element)
 
-        response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
-        response_string += tostring(envelope_element, encoding='utf-8', method='xml')
-        return response_string
 
 class OofSettings:
     def __init__(self):
@@ -332,7 +328,7 @@ class OofSettings:
 
         if os.path.isfile(sieve_path_script):
             if not self._isOofScript(sieve_path_script):
-                sieve_path_bakup = sieve_path_script + '.user'
+                sieve_path_backup = sieve_path_script + '.user'
                 shutil.copyfile(sieve_path_script, bakup)
                 shutil.copystat(sieve_path_script, bakup)
         elif os.path.exists(sieve_path_script):

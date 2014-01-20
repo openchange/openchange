@@ -1,3 +1,10 @@
+openchange (2:2.0+zentyal1) precise; urgency=low
+
+  * Built GIT snapshot.
+  * Simplified the version number format.
+
+ -- Carlos Perelló Marín <cperello@zentyal.com>  Mon, 20 Jan 2014 17:00:41 +0100
+
 openchange (1:2.0-QUADRANT-386-g3fe05f0-0zentyal1) precise; urgency=low
 
   * Built GIT snapshot.

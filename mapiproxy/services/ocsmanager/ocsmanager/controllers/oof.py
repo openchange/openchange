@@ -313,6 +313,7 @@ class OofSettings:
         sieve_path_vdomain = os.path.join(sieve_path_base, mailbox.split('@')[1])
         sieve_path_mailbox = os.path.join(sieve_path_vdomain, mailbox)
         sieve_path_script = os.path.join(sieve_path_mailbox, 'sieve-script')
+        sieve_path_config = os.path.join(sieve_path_mailbox, 'oof-settings')
         sieve_path_backup = None
 
         if not os.path.isdir(sieve_path_base):
@@ -334,30 +335,35 @@ class OofSettings:
         elif os.path.exists(sieve_path_script):
             raise Exception(sieve_path_script + " exists and it is not a regular file")
 
-        return (sieve_path_script, sieve_path_backup)
+        return (sieve_path_script, sieve_path_backup, sieve_path_config)
 
     def _isOofScript(self, path):
+        """
+        Checks if the sieve script is the Zentyal OOF script, looking for the
+        header
+        """
         f = open(path, 'r')
         line = f.readline()
         return line == self._sieve_script_header
 
     def _to_json(self):
+        """
+        Dump the OOF settings to a JSON string
+        """
         return json.dumps(self._config)
 
     def from_sieve(self, mailbox):
         """
         Loads OOF settings for specified mailbox
         """
-        (path, ignore) = self._sieve_path(mailbox)
-        if os.path.isfile(path):
-            f = open(path, 'r')
-            line = f.readline()
-            line = f.readline()
-            line = f.readline()
+        (script_path, user_path, settings_path) = self._sieve_path(mailbox)
+        if os.path.isfile(settings_path):
+            f = open(settings_path, 'r')
             line = f.readline()
             self._config = json.loads(line)
+            f.close()
         else:
-            # Default settings
+            # Load default settings
             self._config['state'] = 'Disabled'
             self._config['external_audience'] = 'All'
             self._config['duration_start_time'] = '1970-01-01T00:00:00Z'
@@ -367,25 +373,36 @@ class OofSettings:
             self._config['allow_external_oof'] = 'All'
 
     def to_sieve(self, mailbox):
-        (sieve_path_script, sieve_path_include) = self._sieve_path(mailbox)
-        template = u"""$header\n/*\n$config\n*/\n\n require ["date","relational","vacation"];\n\n"""
+        (sieve_path_script, sieve_path_include, sieve_path_config) = self._sieve_path(mailbox)
 
+        date_restriction = False
         if self._config['duration_start_time'] is not None and self._config['duration_end_time'] is not None:
-            template += """if allof(currentdate :value "ge" "date" "$start", currentdate :value "le" "date" "$end")\n {"""
+            date_restriction = True
 
-        template += """vacation  :days 1 :subject "$subject" "$message";\n"""
-        if self._config['duration_start_time'] is not None and self._config['duration_end_time'] is not None:
-            template += """}\n\n"""
+        template = """$header\n\n"""
+        template += """require ["date","relational","vacation"];\n\n"""
+
+        if date_restriction:
+            template += """if allof(currentdate :value "ge" "date" "$start", currentdate :value "le" "date" "$end") {\n"""
 
         message = ''
-        message += '<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN">\n'
         message += base64.b64decode(self._config['external_reply_message'])
         message = message.replace('"', '\\"')
         message = message.replace(';', '\\;')
 
+        template += """vacation\n"""
+        template += """    :subject "$subject"\n"""
+        template += """    :days    0\n"""
+        template += """    :mime    "MIME-Version: 1.0\r\n"""
+        template += """Content-Type: text/html; charset=UTF-8\r\n"""
+        template += """<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\">\r\n"""
+        template += """$message";\n"""
+
+        if date_restriction:
+            template += """}\n\n"""
+
         script = string.Template(template).substitute(
             header = self._sieve_script_header,
-            config = self._to_json(),
             start = self._config['duration_start_time'],
             end = self._config['duration_end_time'],
             subject = "Out of office automatic reply",
@@ -393,8 +410,13 @@ class OofSettings:
         )
 
         if sieve_path_include is not None:
-            script += "\n" + 'include :personal "' + include + '";'
-            script += "\n"
+            script += "\n" + 'include :personal "' + include + '";\n'
+
+        if sieve_path_config is not None:
+            f = open(sieve_path_config, 'w')
+            f.write(self._to_json())
+            f.close()
+            os.chmod(sieve_path_config, 0660)
 
         f = open(sieve_path_script, 'w')
         f.write(script.encode('utf8'))
@@ -427,18 +449,22 @@ class OofSettings:
         if internal_reply_element is not None:
             message_element = internal_reply_element.find('t:Message', namespaces=namespaces)
             if message_element is not None:
-                # Strip the BOM from the beginning of the Unicode string
                 text = message_element.text
-                text = text.lstrip(unicode(codecs.BOM_UTF16_LE, "UTF-16LE"))
+                bom = unicode(codecs.BOM_UTF16_LE, "UTF-16LE")
+                if text.startswith(bom):
+                    text = text.lstrip(bom)
+                text = text.encode('UTF-8')
                 self._config['internal_reply_message'] = base64.b64encode(text)
 
         external_reply_element = settings_element.find('t:ExternalReply', namespaces=namespaces)
         if external_reply_element is not None:
             message_element = external_reply_element.find('t:Message', namespaces=namespaces)
             if message_element is not None:
-                # Strip the BOM from the beginning of the Unicode string
                 text = message_element.text
-                text = text.lstrip(unicode(codecs.BOM_UTF16_LE, "UTF-16LE"))
+                bom = unicode(codecs.BOM_UTF16_LE, "UTF-16LE")
+                if text.startswith(bom):
+                    text = text.lstrip(bom)
+                text = text.encode('UTF-8')
                 self._config['external_reply_message'] = base64.b64encode(text)
 
         if allow_external_element is not None:

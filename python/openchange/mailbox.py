@@ -381,8 +381,6 @@ class OpenChangeDBWithMysqlBackend(object):
         folder_id = cur.lastrowid
         self._execute("INSERT folders_properties VALUES (%s, %s, %s)", 
                       [(folder_id,) + p for p in properties])
-        self._execute("INSERT folders_names VALUES (%s, 'en_US', %s)",
-                      (folder_id, display_name))
 
     def _add_sub_public_folder(self, parentfid, fid, change_num, display_name,
                                SystemIdx, childcount):
@@ -404,8 +402,6 @@ class OpenChangeDBWithMysqlBackend(object):
         folder_id = cur.lastrowid
         self._execute("INSERT folders_properties VALUES (%s, %s, %s)",
                       [(folder_id,) + p for p in properties])
-        self._execute("INSERT folders_names VALUES (%s, 'en_US', %s)", 
-                      (folder_id, display_name))
 
     def _add_one_public_folder(self, parent_fid, path, children, system_index,
                                names):

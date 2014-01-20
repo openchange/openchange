@@ -60,12 +60,6 @@ class Message(BaseDict):
 
 
 class Folder(BaseDict):
-    def display_name(self):
-        if 'PidTagDisplayName' not in self.values:
-            return ''
-        return ("\nINSERT folders_names VALUES (LAST_INSERT_ID(), 'en_US', "
-                "'%s');" % self.values['PidTagDisplayName'])
-
     def is_mailbox(self):
         return ('PidTagDisplayName' in self.values and
                 self.values['PidTagDisplayName'].startswith('OpenChange Mailbox'))
@@ -86,7 +80,7 @@ class Folder(BaseDict):
                (OU_ID, folder_id, folder_class, mailbox_id, parent_folder,
                 folder_type, system_idx, mapi_uri))
 
-        return sql + self.properties('folders_properties') + self.display_name()
+        return sql + self.properties('folders_properties')
 
 
 valid_classes = ['systemfolder', 'publicfolder', 'paiMessage', 'systemMessage']

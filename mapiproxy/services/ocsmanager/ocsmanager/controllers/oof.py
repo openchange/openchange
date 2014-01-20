@@ -9,9 +9,6 @@ import os, os.path, shutil
 import string
 import json
 
-from sievelib.factory import FiltersSet
-from sievelib.parser import Parser
-
 from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 from pylons.decorators.rest import restrict
@@ -82,18 +79,18 @@ class OofHandler(object):
                 (tgt_len, tgt_alloc, tgt_offset) = struct.unpack('@h h I', blob[28:36])
                 if tgt_len > 0:
                     self.target = blob[tgt_offset:tgt_offset + tgt_len]
-                    self.target = self.target.replace('\0', '')
+                    self.target = self.target.decode('UTF-16')
 
                 (user_len, user_alloc, user_offset) = struct.unpack('@h h I', blob[36:44])
                 if user_len > 0:
                     self.username = blob[user_offset:user_offset + user_len]
-                    self.username = self.username.replace('\0', '')
+                    self.username = self.username.decode('UTF-16')
                     self.username = self.username.split('@')[0]
 
                 (wks_len, wks_alloc, wks_offset) = struct.unpack('@h h I', blob[44:52])
                 if wks_len > 0:
                     self.workstation = blob[wks_offset:wks_offset + wks_len]
-                    self.workstation = self.workstation.replace('\0', '')
+                    self.workstation = self.workstation.decode('UTF-16')
 
         if self.username is None:
             raise ServerException('User name not found in request NTLM authorization token')
@@ -216,11 +213,9 @@ class OofHandler(object):
         # Prepare the response
         envelope_element = Element("{%s}Envelope" % namespaces['q'])
 
-        # Create the header
         header_element = self._header_element()
         envelope_element.append(header_element)
 
-        # Body
         body_element = self._body_element()
         envelope_element.append(body_element)
 
@@ -234,7 +229,7 @@ class OofHandler(object):
             body_element.append(fault_element)
             return self._response_string(envelope_element)
 
-        # Retrieve settings
+        # Retrieve OOF settings
         oof = OofSettings()
         oof.from_sieve(mailbox)
 
@@ -256,9 +251,7 @@ class OofHandler(object):
 
         oof.to_xml(oof_settings_element, response_element)
 
-        response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
-        response_string += tostring(envelope_element, encoding='utf-8', method='xml')
-        return response_string
+        return self._response_string(envelope_element)
 
     def process_set_request(self, elem):
         # Prepare the response
@@ -366,7 +359,6 @@ class OofSettings:
             line = f.readline()
             line = f.readline()
             line = f.readline()
-            log.info(line)
             self._config = json.loads(line)
         else:
             # Default settings

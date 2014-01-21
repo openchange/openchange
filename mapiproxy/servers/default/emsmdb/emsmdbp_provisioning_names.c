@@ -5,19 +5,19 @@
 
 struct locale_names {
 	const char *locale;
-	const char *names[17];
+	const char *names[PROVISIONING_FOLDERS_SIZE];
 };
 
 static const struct locale_names folders_names[] =
 {
-	{"en", {NULL, "Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"}},
-	{"es", {NULL, "Raíz", "Deferred Action", "Spooler Queue", "Common Views", "Programación", "Buscador", "Vistas", "Accesos directos", "Recordatorios", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Carpeta de entrada", "Carpeta de salida", "Elementos enviados", "Elementos Borrados"}},
+	{"en", {"Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"}},
+	{"es", {"Raíz", "Deferred Action", "Spooler Queue", "Common Views", "Programación", "Buscador", "Vistas", "Accesos directos", "Recordatorios", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Carpeta de entrada", "Carpeta de salida", "Elementos enviados", "Elementos Borrados"}},
 	{NULL}
 };
 
 struct locale_special_names {
 	const char *locale;
-	const char *names[SPECIAL_FOLDERS_SIZE];
+	const char *names[PROVISIONING_SPECIAL_FOLDERS_SIZE];
 };
 
 static const struct locale_special_names special_folders[] =
@@ -27,13 +27,20 @@ static const struct locale_special_names special_folders[] =
 	{NULL}
 };
 
-const char **emsmdbp_get_folders_names(struct emsmdbp_context *emsmdbp_ctx)
+const char **emsmdbp_get_folders_names(TALLOC_CTX *mem_ctx,
+				       struct emsmdbp_context *emsmdbp_ctx)
 {
 	uint32_t i, locale_len;
 	const char *locale = mapi_get_locale_from_lcid(emsmdbp_ctx->userLanguage);
-	if (locale == NULL) {
-		return (const char **)folders_names[0].names;
-	}
+	const char **default_ret = (const char **)folders_names[0].names;
+	const char **ret;
+
+	if (locale == NULL) return default_ret;
+
+	ret = openchangedb_get_folders_names(mem_ctx, emsmdbp_ctx->oc_ctx,
+					     locale, "folders");
+	if (ret) return ret;
+
 	locale_len = strlen(locale);
 	for (i = 0; folders_names[i].locale; i++) {
 		if (strlen(folders_names[i].locale) == locale_len &&
@@ -41,6 +48,7 @@ const char **emsmdbp_get_folders_names(struct emsmdbp_context *emsmdbp_ctx)
 			return (const char **)folders_names[i].names;
 		}
 	}
+
 	if (locale_len > 2 && locale[2] == '_') {
 		// Search only for the first chars of the locale.
 		// e.g. en_UK will match against en_US
@@ -50,16 +58,24 @@ const char **emsmdbp_get_folders_names(struct emsmdbp_context *emsmdbp_ctx)
 			}
 		}
 	}
-	return (const char **)folders_names[0].names;
+
+	return default_ret;
 }
 
-const char **emsmdbp_get_special_folders(struct emsmdbp_context *emsmdbp_ctx)
+const char **emsmdbp_get_special_folders(TALLOC_CTX *mem_ctx,
+					 struct emsmdbp_context *emsmdbp_ctx)
 {
 	uint32_t i, locale_len;
 	const char *locale = mapi_get_locale_from_lcid(emsmdbp_ctx->userLanguage);
-	if (locale == NULL) {
-		return (const char **)special_folders[0].names;
-	}
+	const char **default_ret = (const char **)special_folders[0].names;
+	const char **ret;
+
+	if (locale == NULL) return default_ret;
+
+	ret = openchangedb_get_folders_names(mem_ctx, emsmdbp_ctx->oc_ctx,
+					     locale, "special_folders");
+	if (ret) return ret;
+
 	locale_len = strlen(locale);
 	for (i = 0; special_folders[i].locale; i++) {
 		if (strlen(special_folders[i].locale) == locale_len &&
@@ -67,6 +83,7 @@ const char **emsmdbp_get_special_folders(struct emsmdbp_context *emsmdbp_ctx)
 			return (const char **)special_folders[i].names;
 		}
 	}
+
 	if (locale_len > 2 && locale[2] == '_') {
 		// Search only for the first chars of the locale.
 		// e.g. en_UK will match against en_US
@@ -76,5 +93,6 @@ const char **emsmdbp_get_special_folders(struct emsmdbp_context *emsmdbp_ctx)
 			}
 		}
 	}
-	return (const char **)special_folders[0].names;
+
+	return default_ret;
 }

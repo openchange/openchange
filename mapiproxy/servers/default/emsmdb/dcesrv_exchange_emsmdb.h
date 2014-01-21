@@ -287,7 +287,8 @@ struct emsmdbp_special_folder {
 	const char			*name;
 };
 
-#define SPECIAL_FOLDERS_SIZE 6
+#define PROVISIONING_SPECIAL_FOLDERS_SIZE 6
+#define PROVISIONING_FOLDERS_SIZE EMSMDBP_DELETED_ITEMS
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
@@ -321,8 +322,8 @@ enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const 
 enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
 
 /* definitions from emsmdbp_provisioning_names.c */
-const char **emsmdbp_get_folders_names(struct emsmdbp_context *);
-const char **emsmdbp_get_special_folders(struct emsmdbp_context *);
+const char **emsmdbp_get_folders_names(TALLOC_CTX *, struct emsmdbp_context *);
+const char **emsmdbp_get_special_folders(TALLOC_CTX *, struct emsmdbp_context *);
 
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
 enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);

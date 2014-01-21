@@ -1618,6 +1618,30 @@ static bool set_locale(struct openchangedb_context *self, const char *username,
 	return true;
 }
 
+static const char **get_folders_names(TALLOC_CTX *mem_ctx,
+				      struct openchangedb_context *self,
+				      const char *locale, const char *type)
+{
+	TALLOC_CTX *local_mem_ctx = talloc_named(NULL, 0, "get_folders_name");
+	char *table = talloc_asprintf(local_mem_ctx, "provisioning_%s", type);
+	char *sql, *short_locale;
+	const char **ret = NULL;
+	struct StringArrayW_r *results;
+
+	short_locale = talloc_memdup(local_mem_ctx, locale, sizeof(char) * 3);
+	short_locale[2] = '\0';
+	sql = talloc_asprintf(local_mem_ctx,
+		"SELECT * FROM %s WHERE locale = '%s' "
+		"UNION "
+		"SELECT * FROM %s WHERE locale LIKE '%s%%' "
+		"LIMIT 1", table, locale, table, short_locale);
+
+	if (select_all_strings(mem_ctx, conn, sql, &results) == MYSQL_SUCCESS) {
+		ret = results->cValues ? results->lppszW : NULL;
+	}
+	talloc_free(local_mem_ctx);
+	return ret;
+}
 // ^ openchangedb -------------------------------------------------------------
 
 // v openchangedb table -------------------------------------------------------
@@ -2870,6 +2894,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 
 	oc_ctx->get_indexing_url = get_indexing_url;
 	oc_ctx->set_locale = set_locale;
+	oc_ctx->get_folders_names = get_folders_names;
 
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);

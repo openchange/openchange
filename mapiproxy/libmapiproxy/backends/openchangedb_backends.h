@@ -60,6 +60,7 @@ struct openchangedb_context {
 
 	bool (*set_locale)(struct openchangedb_context *, const char *, uint32_t);
 
+	const char **(*get_folders_names)(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
 	const char *backend_type;
 	void *data;
 };

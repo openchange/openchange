@@ -46,12 +46,20 @@ static struct emsmdbp_special_folder *get_special_folders(TALLOC_CTX *mem_ctx, s
 		{MAPISTORE_JOURNAL_ROLE, 	PR_IPM_JOURNAL_ENTRYID, 	NULL}
 	};
 	size_t i, total_special_folders = sizeof(default_values) / sizeof(struct emsmdbp_special_folder);
-	const char **names = emsmdbp_get_special_folders(emsmdbp_ctx);
+	const char **names = emsmdbp_get_special_folders(mem_ctx, emsmdbp_ctx);
 
 	struct emsmdbp_special_folder *ret = talloc_memdup(mem_ctx, default_values, sizeof(struct emsmdbp_special_folder) * total_special_folders);
 	for (i = 0; i < total_special_folders; i++) {
 		ret[i].name = names[i];
-	};
+	}
+	return ret;
+}
+
+static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx)
+{
+	const char **names = emsmdbp_get_folders_names(mem_ctx, emsmdbp_ctx);
+	const char **ret = (const char **)talloc_zero_array(mem_ctx, char *, PROVISIONING_FOLDERS_SIZE + 1);
+	memcpy(ret+1, names, sizeof(char *) * PROVISIONING_FOLDERS_SIZE);
 	return ret;
 }
 
@@ -342,7 +350,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}
 
-	folder_names = emsmdbp_get_folders_names(emsmdbp_ctx);
+	folder_names = get_folders_names(mem_ctx, emsmdbp_ctx);
 	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;
 	property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;
@@ -477,7 +485,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, username, NULL, &folder_entryid.FolderDatabaseGuid);
 
 	special_folders = get_special_folders(mem_ctx, emsmdbp_ctx);
-	for (i = 0; i < SPECIAL_FOLDERS_SIZE; i++) {
+	for (i = 0; i < PROVISIONING_SPECIAL_FOLDERS_SIZE; i++) {
 		current_folder = special_folders + i;
 		ret = openchangedb_get_folder_property(mem_ctx, emsmdbp_ctx->oc_ctx, username, current_folder->entryid_property, mailbox_fid, (void **) &entryId);
 		if (ret != MAPI_E_SUCCESS) {

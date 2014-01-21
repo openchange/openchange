@@ -877,8 +877,10 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchanged
 _PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_ctx,
 					       uint64_t fid)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-
+	if (!oc_ctx) {
+		DEBUG(0, ("Bad parameters when calling openchangedb_is_public_folder_id\n"));
+		return false;
+	}
 	return oc_ctx->is_public_folder_id(oc_ctx, fid);
 }
 
@@ -912,8 +914,37 @@ _PUBLIC_ const char *openchangedb_get_indexing_url(struct openchangedb_context *
 _PUBLIC_ bool openchangedb_set_locale(struct openchangedb_context *oc_ctx,
 				      const char *username, uint32_t lcid)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-
+	if (!oc_ctx || !username) {
+		DEBUG(0, ("Bad parameters when calling openchangedb_set_locale\n"));
+		return false;
+	}
 	return oc_ctx->set_locale(oc_ctx, username, lcid);
+}
+
+/**
+   \details Get a list of names depending of the locale given as parameter
+
+   \param mem_ctx context memory where the return value will be allocated
+   \param oc_ctx pointer to the openchange DB context
+   \param locale something like en_UK or just en (in that case will be look
+   for any en_* entries)
+   \param type the table to look for values, it must be either "special_folders"
+   or "folders"
+
+   \return array of strings with i18n folders names
+ */
+_PUBLIC_ const char **openchangedb_get_folders_names(TALLOC_CTX *mem_ctx,
+						     struct openchangedb_context *oc_ctx,
+						     const char *locale,
+						     const char *type)
+{
+	if (!oc_ctx || !locale || !type) {
+		DEBUG(0, ("Bad parameters when calling openchangedb_get_folders_names\n"));
+		return NULL;
+	}
+	if (strcmp("special_folders", type) != 0 && strcmp("folders", type) != 0) {
+		DEBUG(0, ("Bad type parameter (%s) for openchangedb_get_folders_names\n", type));
+		return NULL;
+	}
+	return oc_ctx->get_folders_names(mem_ctx, oc_ctx, locale, type);
 }

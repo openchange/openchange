@@ -998,6 +998,30 @@ START_TEST (test_build_table_folders_live_filtering) {
 	ck_assert_str_eq("Schedule", (char *)data);
 } END_TEST
 
+START_TEST (test_set_locale) {
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x1001));
+	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x1001));
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x040c));
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x0422));
+	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x0422));
+} END_TEST
+
+START_TEST (test_get_folders_names) {
+	const char **names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "folders");
+	ck_assert(names != NULL);
+	ck_assert_str_eq(names[0], "Root");
+	ck_assert_str_eq(names[15], "Deleted Items");
+
+	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "special_folders");
+	ck_assert(names != NULL);
+	ck_assert_str_eq(names[0], "Drafts");
+	ck_assert_str_eq(names[4], "Notes");
+	ck_assert_str_eq(names[5], "Journal");
+
+	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "fr", "special_folders");
+	ck_assert(names == NULL);
+} END_TEST
+
 // ^ Unit test ----------------------------------------------------------------
 
 // v Suite definition ---------------------------------------------------------
@@ -1136,6 +1160,12 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_build_table_folders);
 	tcase_add_test(tc, test_build_table_folders_with_restrictions);
 	tcase_add_test(tc, test_build_table_folders_live_filtering);
+
+	if (strcmp(backend_name, "MySQL") == 0) {
+		// Ugly workaround to test mysql only functions
+		tcase_add_test(tc, test_set_locale);
+		tcase_add_test(tc, test_get_folders_names);
+	}
 
 	suite_add_tcase(s, tc);
 	return s;

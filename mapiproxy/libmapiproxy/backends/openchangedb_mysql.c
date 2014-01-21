@@ -1064,16 +1064,27 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 			"  AND p.value = '%s' "
 			"WHERE f.mailbox_id = %"PRIu64,
 			_sql(mem_ctx, foldername), mailbox_id);
-	} else {
-		// Either public or system folder
+	} else if (is_public) {
+		// system folder
 		sql = talloc_asprintf(mem_ctx,
 			"SELECT f1.folder_id FROM folders f1 "
 			"JOIN folders_properties p ON p.folder_id = f1.id"
 			"  AND p.name = 'PidTagDisplayName'"
 			"  AND p.value = '%s' "
 			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
-			"  AND f2.folder_id = %"PRIu64,
+			"  AND f2.folder_id = %"PRIu64" ",
 			_sql(mem_ctx, foldername), parent_fid);
+	} else {
+		// system folder
+		sql = talloc_asprintf(mem_ctx,
+			"SELECT f1.folder_id FROM folders f1 "
+			"JOIN folders_properties p ON p.folder_id = f1.id"
+			"  AND p.name = 'PidTagDisplayName'"
+			"  AND p.value = '%s' "
+			"JOIN folders f2 ON f2.id = f1.parent_folder_id"
+			"  AND f2.folder_id = %"PRIu64" "
+			"WHERE f1.mailbox_id = %"PRIu64,
+			_sql(mem_ctx, foldername), parent_fid, mailbox_id);
 	}
 
 	ret = status(select_first_uint(conn, sql, fid));

@@ -37,7 +37,7 @@
 
 static struct emsmdbp_special_folder *get_special_folders(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx)
 {
-	static struct emsmdbp_special_folder default_values[] = {
+	static struct emsmdbp_special_folder default_values[PROVISIONING_SPECIAL_FOLDERS_SIZE] = {
 		{MAPISTORE_DRAFTS_ROLE, 	PR_IPM_DRAFTS_ENTRYID, 		NULL},
 		{MAPISTORE_CALENDAR_ROLE, 	PR_IPM_APPOINTMENT_ENTRYID, 	NULL},
 		{MAPISTORE_CONTACTS_ROLE, 	PR_IPM_CONTACT_ENTRYID, 	NULL},
@@ -45,7 +45,7 @@ static struct emsmdbp_special_folder *get_special_folders(TALLOC_CTX *mem_ctx, s
 		{MAPISTORE_NOTES_ROLE, 		PR_IPM_NOTE_ENTRYID, 		NULL},
 		{MAPISTORE_JOURNAL_ROLE, 	PR_IPM_JOURNAL_ENTRYID, 	NULL}
 	};
-	size_t i, total_special_folders = sizeof(default_values) / sizeof(struct emsmdbp_special_folder);
+	size_t i, total_special_folders = PROVISIONING_SPECIAL_FOLDERS_SIZE;
 	const char **names = emsmdbp_get_special_folders(mem_ctx, emsmdbp_ctx);
 
 	struct emsmdbp_special_folder *ret = talloc_memdup(mem_ctx, default_values, sizeof(struct emsmdbp_special_folder) * total_special_folders);
@@ -674,7 +674,28 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	if (openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage)) {
 		// Locale has changed from previous session, we have to update
 		// folder's names created when provisioning the first time
-		//TODO
+		property_row.cValues = 1;
+		property_row.lpProps[0].ulPropTag = PidTagDisplayName;
+		for (i = EMSMDBP_DEFERRED_ACTION; i < EMSMDBP_MAX_MAILBOX_SYSTEMIDX; i++) {
+			openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, i, &current_fid);
+			property_row.lpProps[0].value.lpszW = folder_names[i];
+			DEBUG(3, ("Changing name of system folder to %s\n", folder_names[i]));
+			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
+		}
+		for (i = 0; i < PROVISIONING_SPECIAL_FOLDERS_SIZE; i++) {
+			current_folder = special_folders + i;
+			current_name = current_folder->name;
+			current_entry = main_entries[current_folder->role];
+			if (!current_entry || !current_entry->url) {
+				DEBUG(0, ("Cannot change special folder `%s` (%d) name because we don't know its url",
+					  current_name, i));
+				continue;
+			}
+			openchangedb_get_fid(emsmdbp_ctx->oc_ctx, current_entry->url, &current_fid);
+			property_row.lpProps[0].value.lpszW = current_name;
+			DEBUG(3, ("Changing name of special folder to %s\n", current_name));
+			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
+		}
 	}
 
 	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);

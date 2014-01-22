@@ -60,9 +60,12 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 	} else {
 		// FIXME ou_id
 		sql = talloc_asprintf(mem_ctx,
-			"SELECT f.folder_id FROM folders f JOIN mailboxes m ON "
-			"f.mailbox_id = m.id AND m.name = '%s' "
-			"WHERE f.SystemIdx = %"PRIu32" AND f.folder_class = '%s'",
+			"SELECT f.folder_id FROM folders f "
+			"JOIN mailboxes m ON f.mailbox_id = m.id "
+			"  AND m.name = '%s' "
+			"WHERE f.SystemIdx = %"PRIu32
+			"  AND f.folder_class = '%s' "
+			"ORDER BY parent_folder_id",
 			_sql(mem_ctx, recipient), SystemIdx, SYSTEM_FOLDER);
 	}
 

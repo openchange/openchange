@@ -299,11 +299,13 @@ class OpenChangeDBWithMysqlBackend(object):
     def _connect_to_mysql(self):
         host, user, passwd, self.db_name = self._parse_mysql_url()
         self.db = MySQLdb.connect(host=host, user=user, passwd=passwd)
-        try:
-            self.db.select_db(self.db_name)
-        except MySQLdb.OperationalError:
-            self._execute("CREATE DATABASE %s", self.db_name)
-            self.db.select_db(self.db_name)
+
+    def _create_database(self):
+        if '`' in self.db_name:
+            raise Exception("Database name must not have '`' on its name")
+        self._execute("DROP DATABASE IF EXISTS `%s`" % self.db_name)
+        self._execute("CREATE DATABASE `%s`" % self.db_name)
+        self.db.select_db(self.db_name)
 
     def remove(self):
         """Remove an existing OpenChangeDB."""
@@ -337,9 +339,10 @@ class OpenChangeDBWithMysqlBackend(object):
             raise Exception("File %s does not exist" % self.schema)
         with open(self.schema) as f:
             schema = f.read()
+        self._create_database()
         for sql in schema.split(';'):
             if len(sql) > 1:
-                self._execute(sql)
+                self._execute(sql.replace('%s', '%%s'))
 
     def _execute(self, sql, params=()):
         cur = self.db.cursor()

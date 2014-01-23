@@ -343,14 +343,15 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	}
 
 	/* Mailbox and subfolders */
+	folder_names = get_folders_names(mem_ctx, emsmdbp_ctx);
 	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &mailbox_fid);
-		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid);
+		current_name = talloc_asprintf(mem_ctx, folder_names[EMSMDBP_MAILBOX_ROOT], username);
+		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid, current_name);
 		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}
 
-	folder_names = get_folders_names(mem_ctx, emsmdbp_ctx);
 	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;
 	property_row.lpProps[0].ulPropTag = PR_DISPLAY_NAME_UNICODE;

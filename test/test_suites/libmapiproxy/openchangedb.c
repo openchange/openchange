@@ -608,7 +608,7 @@ START_TEST (test_create_mailbox) {
 	uint32_t *data_int;
 	uint64_t fid = 1234567890ul;
 
-	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid);
+	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
@@ -1009,7 +1009,6 @@ START_TEST (test_set_locale) {
 START_TEST (test_get_folders_names) {
 	const char **names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "folders");
 	ck_assert(names != NULL);
-	ck_assert_str_eq(names[0], "Root");
 	ck_assert_str_eq(names[15], "Deleted Items");
 
 	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "special_folders");

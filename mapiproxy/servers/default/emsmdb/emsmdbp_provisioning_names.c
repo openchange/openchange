@@ -10,8 +10,8 @@ struct locale_names {
 
 static const struct locale_names folders_names[] =
 {
-	{"en", {"Root", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"}},
-	{"es", {"Raíz", "Deferred Action", "Spooler Queue", "Common Views", "Programación", "Buscador", "Vistas", "Accesos directos", "Recordatorios", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Carpeta de entrada", "Carpeta de salida", "Elementos enviados", "Elementos Borrados"}},
+	{"en", {"OpenChange Mailbox: %s", "Deferred Action", "Spooler Queue", "Common Views", "Schedule", "Finder", "Views", "Shortcuts", "Reminders", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Inbox", "Outbox", "Sent Items", "Deleted Items"}},
+	{"es", {"Bandeja de entrada OpenChange: %s", "Deferred Action", "Spooler Queue", "Common Views", "Programación", "Buscador", "Vistas", "Accesos directos", "Recordatorios", "To-Do", "Tracked Mail Processing", "Top of Information Store", "Carpeta de entrada", "Carpeta de salida", "Elementos enviados", "Elementos Borrados"}},
 	{NULL}
 };
 

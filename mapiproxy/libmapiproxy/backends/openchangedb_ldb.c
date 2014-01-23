@@ -1357,7 +1357,7 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 				      const char *username, int systemIdx,
-				      uint64_t fid)
+				      uint64_t fid, const char *display_name)
 {
 	int			ret;
 	TALLOC_CTX		*mem_ctx;
@@ -1397,7 +1397,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	ldb_msg_add_string(msg, "PidTagAccess", "63");
 	ldb_msg_add_string(msg, "PidTagRights", "2043");
-	ldb_msg_add_fmt(msg, "PidTagDisplayName", "OpenChange Mailbox: %s", username);
+	ldb_msg_add_string(msg, "PidTagDisplayName", display_name);
 	ldb_msg_add_fmt(msg, "PidTagCreationTime", "%"PRId64, now);
 	ldb_msg_add_fmt(msg, "PidTagLastModificationTime", "%"PRId64, now);
 	ldb_msg_add_string(msg, "PidTagSubFolders", "TRUE");

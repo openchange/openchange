@@ -848,14 +848,6 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 		if (mailbox_folder_id == fid) {
-			if (proptag == PidTagDisplayName) {
-				// FIXME i18n
-				*data = talloc_asprintf(parent_ctx,
-							"OpenChange Mailbox: %s",
-							username);
-				goto end;
-			}
-
 			sql = talloc_asprintf(mem_ctx,
 				"SELECT mp.value FROM mailboxes_properties mp "
 				"WHERE mp.mailbox_id = %"PRIu64" AND mp.name = '%s'",
@@ -1267,7 +1259,7 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 				      const char *username, int systemIdx,
-				      uint64_t fid)
+				      uint64_t fid, const char *display_name)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "create_mailbox");
 	MYSQL *conn = self->data;
@@ -1301,6 +1293,9 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagRights', '2043')");
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagFolderType', '1')");
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE')");
+	value = talloc_asprintf(mem_ctx,
+		"(LAST_INSERT_ID(), 'PidTagDisplayName', '%s')", display_name);
+	l = str_list_add(l, value);
 	value = talloc_asprintf(mem_ctx,
 		"(LAST_INSERT_ID(), 'PidTagCreationTime', '%"PRId64"')", now);
 	l = str_list_add(l, value);

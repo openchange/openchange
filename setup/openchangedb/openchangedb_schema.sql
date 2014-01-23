@@ -221,7 +221,7 @@ CREATE INDEX `fk_servers_company_id_idx` ON `servers` (`company_id` ASC);
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `provisioning_folders` (
   `locale` VARCHAR(15) NOT NULL,
-  `root` VARCHAR(128) NOT NULL DEFAULT "Root",
+  `mailbox` VARCHAR(128) NOT NULL DEFAULT "OpenChange Mailbox: %s",
   `deferred_action` VARCHAR(128) NOT NULL DEFAULT "Deferred Action",
   `spooler_queue` VARCHAR(128) NOT NULL DEFAULT "Spooler Queue",
   `common_views` VARCHAR(128) NOT NULL DEFAULT "Common Views",

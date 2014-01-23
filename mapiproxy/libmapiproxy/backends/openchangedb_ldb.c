@@ -11,6 +11,55 @@
 extern struct ldb_val ldb_binary_decode(TALLOC_CTX *, const char *);
 
 
+static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
+					  const char *recipient, uint32_t system_idx,
+					  uint64_t *folder_id)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct ldb_result		*res = NULL;
+	const char * const		attrs[] = { "*", NULL };
+	int				ret;
+	const char			*dn;
+	struct ldb_dn			*ldb_dn = NULL;
+	struct ldb_context		*ldb_ctx = self->data;
+
+	mem_ctx = talloc_named(NULL, 0, "get_SpecialFolderID");
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	dn = ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL);
+	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	OPENCHANGE_RETVAL_IF(!ldb_dn, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(objectClass=systemfolder)(SystemIdx=12))");
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	dn = ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL);
+	OPENCHANGE_RETVAL_IF(!dn, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dn);
+	OPENCHANGE_RETVAL_IF(!ldb_dn, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs,
+				 "(&(objectClass=systemfolder)(SystemIdx=%d))", system_idx);
+
+	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
+	*folder_id = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
+	OPENCHANGE_RETVAL_IF(!*folder_id, MAPI_E_CORRUPT_STORE, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
 static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 					  const char *recipient, uint32_t SystemIdx,
 					  uint64_t *FolderId)
@@ -1593,7 +1642,7 @@ static const char *get_indexing_url(struct openchangedb_context *self, const cha
 
 static bool set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)
 {
-	return false;
+	return true;
 }
 
 static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct openchangedb_context *self, const char *locale, const char *type)
@@ -2249,6 +2298,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_ldb_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_new_changeNumbers = get_new_changeNumbers;
 	oc_ctx->get_next_changeNumber = get_next_changeNumber;
 	oc_ctx->get_SystemFolderID = get_SystemFolderID;
+	oc_ctx->get_SpecialFolderID = get_SpecialFolderID;
 	oc_ctx->get_PublicFolderID = get_PublicFolderID;
 	oc_ctx->get_distinguishedName = get_distinguishedName;
 	oc_ctx->get_MailboxGuid = get_MailboxGuid;

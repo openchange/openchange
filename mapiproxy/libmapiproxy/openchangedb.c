@@ -59,6 +59,28 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 }
 
 /**
+   \details Retrieve the folder id of a special folder with the specific
+   SystemIdx for given recipient from openchange dispatcher database.
+
+   \param oc_ctx pointer to the OpenChangeDB context
+   \param recipient the mailbox username
+   \param SystemIdx the system folder index
+   \param FolderId pointer to the folder identifier the function returns
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_SpecialFolderID(struct openchangedb_context *oc_ctx,
+							  const char *recipient, uint32_t SystemIdx,
+							  uint64_t *FolderId)
+{
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->get_SpecialFolderID(oc_ctx, recipient, SystemIdx, FolderId);
+}
+
+/**
    \details Retrieve the mailbox FolderID for given recipient from
    openchange dispatcher database
 

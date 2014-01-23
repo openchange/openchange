@@ -41,6 +41,33 @@ static enum MAPISTATUS status(enum MYSQLRESULT ret) {
 };
 
 // v openchangedb -------------------------------------------------------------
+static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
+					   const char *recipient,
+					   uint32_t system_idx,
+					   uint64_t *folder_id)
+{
+	char *sql;
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_SpecialFolderId");
+	MYSQL *conn = self->data;
+	enum MAPISTATUS ret;
+
+	// FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT f.folder_id FROM folders f "
+		"JOIN mailboxes m ON f.mailbox_id = m.id "
+		"  AND m.name = '%s' "
+		"WHERE f.SystemIdx = %"PRIu32
+		"  AND f.folder_class = '"SYSTEM_FOLDER"' "
+		"  AND f.parent_folder_id IS NOT NULL",
+		_sql(mem_ctx, recipient), system_idx);
+
+	ret = status(select_first_uint(conn, sql, folder_id));
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
 
 static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 					  const char *recipient,
@@ -2845,6 +2872,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->get_new_changeNumbers = get_new_changeNumbers;
 	oc_ctx->get_next_changeNumber = get_next_changeNumber;
 	oc_ctx->get_SystemFolderID = get_SystemFolderID;
+	oc_ctx->get_SpecialFolderID = get_SpecialFolderID;
 	oc_ctx->get_PublicFolderID = get_PublicFolderID;
 	oc_ctx->get_distinguishedName = get_distinguishedName;
 	oc_ctx->get_MailboxGuid = get_MailboxGuid;

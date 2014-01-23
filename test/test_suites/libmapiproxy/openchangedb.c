@@ -29,6 +29,10 @@ static enum MAPISTATUS ret;
 START_TEST (test_get_SystemFolderID) {
 	uint64_t folder_id = 0;
 
+	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 2, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 792633534417207297);
+
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 14, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 1657324662872342529);
@@ -39,6 +43,21 @@ START_TEST (test_get_SystemFolderID) {
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 15, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 1729382256910270465);
+} END_TEST
+
+START_TEST (test_get_SpecialFolderID) {
+	uint64_t folder_id = 0;
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 2, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 2017612633061982209);
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 5, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 2233785415175766017);
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 6, &folder_id);
+	CHECK_FAILURE;
 } END_TEST
 
 START_TEST (test_get_PublicFolderID) {
@@ -1115,6 +1134,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_unchecked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_get_SystemFolderID);
+	tcase_add_test(tc, test_get_SpecialFolderID);
 	tcase_add_test(tc, test_get_PublicFolderID);
 	tcase_add_test(tc, test_get_MailboxGuid);
 	tcase_add_test(tc, test_get_MailboxReplica);

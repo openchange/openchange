@@ -677,24 +677,21 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		// folder's names created when provisioning the first time
 		property_row.cValues = 1;
 		property_row.lpProps[0].ulPropTag = PidTagDisplayName;
-		for (i = EMSMDBP_DEFERRED_ACTION; i < EMSMDBP_MAX_MAILBOX_SYSTEMIDX; i++) {
+		for (i = EMSMDBP_MAILBOX_ROOT; i < EMSMDBP_MAX_MAILBOX_SYSTEMIDX; i++) {
 			openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, i, &current_fid);
-			property_row.lpProps[0].value.lpszW = folder_names[i];
+			if (i == EMSMDBP_MAILBOX_ROOT) {
+				property_row.lpProps[0].value.lpszW = talloc_asprintf(mem_ctx, folder_names[i], username);
+			} else {
+				property_row.lpProps[0].value.lpszW = folder_names[i];
+			}
 			DEBUG(3, ("Changing name of system folder to %s\n", folder_names[i]));
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 		}
 		for (i = 0; i < PROVISIONING_SPECIAL_FOLDERS_SIZE; i++) {
 			current_folder = special_folders + i;
-			current_name = current_folder->name;
-			current_entry = main_entries[current_folder->role];
-			if (!current_entry || !current_entry->url) {
-				DEBUG(0, ("Cannot change special folder `%s` (%d) name because we don't know its url",
-					  current_name, i));
-				continue;
-			}
-			openchangedb_get_fid(emsmdbp_ctx->oc_ctx, current_entry->url, &current_fid);
-			property_row.lpProps[0].value.lpszW = current_name;
-			DEBUG(3, ("Changing name of special folder to %s\n", current_name));
+			openchangedb_get_SpecialFolderID(emsmdbp_ctx->oc_ctx, username, i, &current_fid);
+			property_row.lpProps[0].value.lpszW = current_folder->name;
+			DEBUG(3, ("Changing name of special folder to %s\n", current_folder->name));
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 		}
 	}

@@ -98,12 +98,20 @@ end:
 static void openchange_ldb_init(const char *syspath)
 {
 	TALLOC_CTX *mem_ctx;
+	struct loadparm_context *lp_ctx;
+	const char *openchangedb_backend;
 
 	if (globals.ocdb_ctx) return;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	lp_ctx = loadparm_init_global(true);
+	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
 
-	openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
+	if (openchangedb_backend) {
+		openchangedb_mysql_initialize(mem_ctx, openchangedb_backend, &globals.ocdb_ctx);
+	} else {
+		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
+	}
 
 	if (!globals.ocdb_ctx) {
 		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");

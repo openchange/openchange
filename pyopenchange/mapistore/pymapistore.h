@@ -28,6 +28,7 @@
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include <tevent.h>
 
 typedef struct {

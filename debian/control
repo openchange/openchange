@@ -23,7 +23,8 @@ Build-Depends: autoconf,
                python-paste,
                python-pastedeploy,
                python-pastescript,
-               python-mako
+               python-mako,
+               libmysqlclient-dev
 Standards-Version: 3.9.1
 Vcs-Bzr: http://bzr.debian.org/pkg-samba/openchange/unstable
 Vcs-Browser: http://bzr.debian.org/lh/pkg-samba/openchange/unstable

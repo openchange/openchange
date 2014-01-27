@@ -477,7 +477,6 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
 }
 
 /**
-   FIXME Not used anywhere. Remove it?
    \details Allocates a batch of new change numbers and returns them
    
    \param oc_ctx pointer to the openchange DB context

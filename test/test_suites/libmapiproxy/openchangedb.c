@@ -274,6 +274,20 @@ START_TEST (test_get_new_changeNumber) {
 	}
 } END_TEST
 
+START_TEST (test_get_new_changeNumbers) {
+	uint64_t cn;
+	int i;
+	struct UI8Array_r *cns;
+
+	ret = openchangedb_get_new_changeNumbers(oc_ctx, mem_ctx, 10, &cns);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(10, cns->cValues);
+	for (i = 0; i < 10; i++) {
+		cn = ((exchange_globcnt(NEXT_CHANGE_NUMBER+5+i) << 16) | 0x0001);
+		ck_assert(cns->lpui8[i] == cn);
+	}
+} END_TEST
+
 START_TEST (test_get_next_changeNumber) {
 	uint64_t new_cn = 0, next_cn = 0;
 	int i;
@@ -1107,6 +1121,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_get_folder_count);
 	tcase_add_test(tc, test_get_folder_count_public_folder);
 	tcase_add_test(tc, test_get_new_changeNumber);
+	tcase_add_test(tc, test_get_new_changeNumbers);
 	tcase_add_test(tc, test_get_next_changeNumber);
 	tcase_add_test(tc, test_get_folder_property);
 	tcase_add_test(tc, test_get_public_folder_property);

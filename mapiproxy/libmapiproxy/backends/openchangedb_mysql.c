@@ -586,7 +586,30 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 					     TALLOC_CTX *mem_ctx, uint64_t max,
 					     struct UI8Array_r **cns_p)
 {
-	return not_implemented();
+	enum MAPISTATUS ret;
+	MYSQL *conn = self->data;
+	struct UI8Array_r *cns;
+	uint64_t cn;
+	size_t count;
+
+	ret = get_server_change_number(conn, &cn);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
+
+	// Transform the numbers the way exchange protocol likes it
+	cns = talloc_zero(mem_ctx, struct UI8Array_r);
+	cns->cValues = max;
+	cns->lpui8 = talloc_array(cns, uint64_t, max);
+
+	for (count = 0; count < max; count++) {
+		cns->lpui8[count] = (exchange_globcnt(cn + count) << 16) | 0x0001;
+	}
+
+	ret = set_server_change_number(conn, cn + max); // TODO ou_id
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
+
+	*cns_p = cns;
+
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,

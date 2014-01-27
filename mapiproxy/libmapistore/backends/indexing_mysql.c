@@ -241,7 +241,8 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(count <= 0, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(count < 0, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(count == 0, MAPISTORE_SUCCESS, NULL);
 
 	/* Retrieve and increment the counter */
 	ret = execute_query(MYSQL(ictx), "START TRANSACTION");

@@ -58,6 +58,7 @@ CREATE TABLE IF NOT EXISTS `mailboxes` (
   `ReplicaID` INT NOT NULL,
   `SystemIdx` INT NOT NULL,
   `indexing_url` VARCHAR(1024) NULL,
+  `locale` VARCHAR(15) NULL,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_mailboxes_ou_id`
     FOREIGN KEY (`ou_id`)
@@ -216,16 +217,43 @@ CREATE INDEX `fk_servers_company_id_idx` ON `servers` (`company_id` ASC);
 
 
 -- -----------------------------------------------------
--- Table `folders_names`
+-- Table `provisioning_folders`
 -- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `folders_names` (
-  `folder_id` BIGINT UNSIGNED NOT NULL,
+CREATE TABLE IF NOT EXISTS `provisioning_folders` (
   `locale` VARCHAR(15) NOT NULL,
-  `display_name` VARCHAR(512) NOT NULL,
-  PRIMARY KEY (`folder_id`, `locale`),
-  CONSTRAINT `fk_folders_names_folder_id`
-    FOREIGN KEY (`folder_id`)
-    REFERENCES `folders` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
-ENGINE = InnoDB;
+  `mailbox` VARCHAR(128) NOT NULL DEFAULT "OpenChange Mailbox: %s",
+  `deferred_action` VARCHAR(128) NOT NULL DEFAULT "Deferred Action",
+  `spooler_queue` VARCHAR(128) NOT NULL DEFAULT "Spooler Queue",
+  `common_views` VARCHAR(128) NOT NULL DEFAULT "Common Views",
+  `schedule` VARCHAR(128) NOT NULL DEFAULT "Schedule",
+  `finder` VARCHAR(128) NOT NULL DEFAULT "Finder",
+  `views` VARCHAR(128) NOT NULL DEFAULT "Views",
+  `shortcuts` VARCHAR(128) NOT NULL DEFAULT "Shortcuts",
+  `reminders` VARCHAR(128) NOT NULL DEFAULT "Reminders",
+  `todo` VARCHAR(128) NOT NULL DEFAULT "To-Do",
+  `tracked_mail_processing` VARCHAR(128) NOT NULL DEFAULT "Tracked Mail Processing",
+  `top_info_store` VARCHAR(128) NOT NULL DEFAULT "Top of Information Store",
+  `inbox` VARCHAR(128) NOT NULL DEFAULT "Inbox",
+  `outbox` VARCHAR(128) NOT NULL DEFAULT "Outbox",
+  `sent_items` VARCHAR(128) NOT NULL DEFAULT "Sent Items",
+  `deleted_items` VARCHAR(128) NOT NULL DEFAULT "Deleted Items",
+  PRIMARY KEY (`locale`)
+) ENGINE = InnoDB;
+
+INSERT INTO `provisioning_folders` SET locale = 'en';
+
+-- -----------------------------------------------------
+-- Table `provisioning_special_folders`
+-- -----------------------------------------------------
+CREATE TABLE IF NOT EXISTS `provisioning_special_folders` (
+  `locale` VARCHAR(15) NOT NULL,
+  `drafts` VARCHAR(128) NOT NULL DEFAULT "Drafts",
+  `calendar` VARCHAR(128) NOT NULL DEFAULT "Calendar",
+  `contacts` VARCHAR(128) NOT NULL DEFAULT "Contacts",
+  `tasks` VARCHAR(128) NOT NULL DEFAULT "Tasks",
+  `notes` VARCHAR(128) NOT NULL DEFAULT "Notes",
+  `journal` VARCHAR(128) NOT NULL DEFAULT "Journal",
+  PRIMARY KEY (`locale`)
+) ENGINE = InnoDB;
+
+INSERT INTO `provisioning_special_folders` SET locale = 'en';

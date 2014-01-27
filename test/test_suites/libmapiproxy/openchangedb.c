@@ -29,6 +29,10 @@ static enum MAPISTATUS ret;
 START_TEST (test_get_SystemFolderID) {
 	uint64_t folder_id = 0;
 
+	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 2, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 792633534417207297);
+
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 14, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 1657324662872342529);
@@ -39,6 +43,21 @@ START_TEST (test_get_SystemFolderID) {
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 15, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 1729382256910270465);
+} END_TEST
+
+START_TEST (test_get_SpecialFolderID) {
+	uint64_t folder_id = 0;
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 2, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 2017612633061982209);
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 5, &folder_id);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(folder_id, 2233785415175766017);
+
+	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 6, &folder_id);
+	CHECK_FAILURE;
 } END_TEST
 
 START_TEST (test_get_PublicFolderID) {
@@ -622,7 +641,7 @@ START_TEST (test_create_mailbox) {
 	uint32_t *data_int;
 	uint64_t fid = 1234567890ul;
 
-	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid);
+	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
@@ -1012,6 +1031,29 @@ START_TEST (test_build_table_folders_live_filtering) {
 	ck_assert_str_eq("Schedule", (char *)data);
 } END_TEST
 
+START_TEST (test_set_locale) {
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x1001));
+	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x1001));
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x040c));
+	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x0422));
+	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x0422));
+} END_TEST
+
+START_TEST (test_get_folders_names) {
+	const char **names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "folders");
+	ck_assert(names != NULL);
+	ck_assert_str_eq(names[15], "Deleted Items");
+
+	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "special_folders");
+	ck_assert(names != NULL);
+	ck_assert_str_eq(names[0], "Drafts");
+	ck_assert_str_eq(names[4], "Notes");
+	ck_assert_str_eq(names[5], "Journal");
+
+	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "fr", "special_folders");
+	ck_assert(names == NULL);
+} END_TEST
+
 // ^ Unit test ----------------------------------------------------------------
 
 // v Suite definition ---------------------------------------------------------
@@ -1106,6 +1148,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_unchecked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_get_SystemFolderID);
+	tcase_add_test(tc, test_get_SpecialFolderID);
 	tcase_add_test(tc, test_get_PublicFolderID);
 	tcase_add_test(tc, test_get_MailboxGuid);
 	tcase_add_test(tc, test_get_MailboxReplica);
@@ -1151,6 +1194,12 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_build_table_folders);
 	tcase_add_test(tc, test_build_table_folders_with_restrictions);
 	tcase_add_test(tc, test_build_table_folders_live_filtering);
+
+	if (strcmp(backend_name, "MySQL") == 0) {
+		// Ugly workaround to test mysql only functions
+		tcase_add_test(tc, test_set_locale);
+		tcase_add_test(tc, test_get_folders_names);
+	}
 
 	suite_add_tcase(s, tc);
 	return s;

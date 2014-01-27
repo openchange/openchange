@@ -164,7 +164,7 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 {
 	MYSQL_RES *res;
 	struct StringArrayW_r *results;
-	uint32_t i;
+	uint32_t i, num_rows;
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -173,7 +173,11 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 		results->cValues = 0;
 	} else if (ret == MYSQL_SUCCESS) {
 		results = talloc_zero(mem_ctx, struct StringArrayW_r);
-		results->cValues = mysql_num_rows(res);
+		num_rows = mysql_num_rows(res);
+		results->cValues = num_rows;
+		if (results->cValues == 1) {
+			results->cValues  = mysql_field_count(conn) - 1;
+		}
 	} else {
 		// Unexpected error on sql query
 		return ret;
@@ -181,16 +185,24 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 
 	results->lppszW = talloc_zero_array(results, const char *,
 					    results->cValues);
-
-	for (i = 0; i < results->cValues; i++) {
+	if (num_rows == 1 && results->cValues != 1) {
+		// Getting 1 row with n strings
 		MYSQL_ROW row = mysql_fetch_row(res);
-		if (row == NULL) {
-			DEBUG(0, ("Error getting row %d of `%s`: %s", i, sql,
-				  mysql_error(conn)));
-			mysql_free_result(res);
-			return MYSQL_ERROR;
+		for (i = 0; i < results->cValues; i++) {
+			results->lppszW[i] = talloc_strdup(results, row[i+1]);
 		}
-		results->lppszW[i] = talloc_strdup(results, row[0]);
+	} else {
+		// Getting n rows with 1 string
+		for (i = 0; i < results->cValues; i++) {
+			MYSQL_ROW row = mysql_fetch_row(res);
+			if (row == NULL) {
+				DEBUG(0, ("Error getting row %d of `%s`: %s", i, sql,
+					  mysql_error(conn)));
+				mysql_free_result(res);
+				return MYSQL_ERROR;
+			}
+			results->lppszW[i] = talloc_strdup(results, row[0]);
+		}
 	}
 
 	if (ret == MYSQL_SUCCESS) {
@@ -286,7 +298,10 @@ bool create_schema(MYSQL *conn, char *schema_file)
 	queries_to_execute = query != NULL;
 	while (queries_to_execute) {
 		ret = mysql_query(conn, query) ? false : true;
-		if (!ret) break;
+		if (!ret) {
+			DEBUG(0, ("Error creating schema: %s\n", mysql_error(conn)));
+			break;
+		}
 		query = strtok(NULL, ";");
 		queries_to_execute = ret && query && strlen(query) > 10;
 	}

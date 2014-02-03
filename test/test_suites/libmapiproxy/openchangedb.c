@@ -615,24 +615,35 @@ START_TEST (test_delete_public_folder) {
 } END_TEST
 
 START_TEST (test_set_ReceiveFolder) {
-	uint64_t fid_1 = 13980299143264862209ul,
-		 fid_2 = 14052356737302790145ul, fid;
-	const char *e;
+	uint64_t fid_1, fid_2, fid;
+	const char *explicit;
 
+	fid_1 = 13980299143264862209ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_1);
+	CHECK_SUCCESS;
 	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_1);
 	CHECK_SUCCESS;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_1);
+	CHECK_SUCCESS;
 
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
-					     "whatever", &fid, &e);
+					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_1);
+	ck_assert_str_eq(explicit, "whatever");
 
+	fid_2 = 14052356737302790145ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_2);
+	CHECK_SUCCESS;
 	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_2);
 	CHECK_SUCCESS;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_2);
+	CHECK_SUCCESS;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
-					     "whatever", &fid, &e);
+					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_2);
+	ck_assert_str_eq(explicit, "whatever");
 } END_TEST
 
 START_TEST (test_get_users_from_partial_uri) {
@@ -1064,6 +1075,23 @@ START_TEST (test_get_folders_names) {
 	ck_assert(names == NULL);
 } END_TEST
 
+START_TEST (test_set_receive_folder_to_mailbox) {
+	uint64_t mailbox_fid, fid;
+	const char *explicit;
+
+	mailbox_fid = 17438782182108692481ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "IPC",
+					     mailbox_fid);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+					     "IPC", &fid, &explicit);
+	CHECK_SUCCESS;
+
+	ck_assert_int_eq(fid, mailbox_fid);
+	ck_assert_str_eq(explicit, "IPC");
+} END_TEST
+
 // ^ Unit test ----------------------------------------------------------------
 
 // v Suite definition ---------------------------------------------------------
@@ -1210,6 +1238,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 		tcase_add_test(tc, test_set_locale);
 		tcase_add_test(tc, test_get_folders_names);
 	}
+
+	tcase_add_test(tc, test_set_receive_folder_to_mailbox);
 
 	suite_add_tcase(s, tc);
 	return s;

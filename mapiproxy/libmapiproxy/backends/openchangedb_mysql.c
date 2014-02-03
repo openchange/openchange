@@ -496,9 +496,12 @@ end:
 	return ret;
 }
 
-static bool is_public_folder(uint64_t fid)
+#define is_public_folder(id) is_public_folder_id(NULL, id)
+static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 {
-	return fid <= MAX_PUBLIC_FOLDER_ID;
+	uint64_t real_fid = (fid >> 56) | (((fid >> 48) & 0x00FF) << 8);
+	return ((fid & 0xFFFF000000000000) << 16) == 0x0 &&
+		real_fid <= MAX_PUBLIC_FOLDER_ID;
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
@@ -1582,8 +1585,9 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 
 	if (*fid > 0) {
 		sql = talloc_asprintf(mem_ctx, // TODO ou_id
-			"SELECT max(f.folder_id) FROM folders f "
-			"WHERE folder_class = '%s'", PUBLIC_FOLDER);
+			"SELECT max((f.folder_id >> 56) | "
+			"           (((f.folder_id >> 48) & 0x00ff) << 8)) "
+			"FROM folders f WHERE folder_class = '"PUBLIC_FOLDER"'");
 		ret = status(select_first_uint(conn, sql, fid));
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 	}
@@ -1596,13 +1600,10 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 
 	(*fid)++;
 
+	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
+
 	talloc_free(mem_ctx);
 	return ret;
-}
-
-static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
-{
-	return fid <= MAX_PUBLIC_FOLDER_ID;
 }
 
 static const char *get_indexing_url(struct openchangedb_context *self, const char *username)

@@ -224,7 +224,7 @@ START_TEST (test_create_id_MNID_STRING) {
 
 Suite *namedprops_ldb_suite(void)
 {
-	Suite *s = suite_create ("Named Properties LDB Backend");
+	Suite *s = suite_create("Named Properties LDB Backend");
 
 	TCase *tc_ldb_q = tcase_create("LDB queries");
 	tcase_add_unchecked_fixture(tc_ldb_q, ldb_q_setup, ldb_q_teardown);

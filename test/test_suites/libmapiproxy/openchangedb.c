@@ -1182,7 +1182,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 					   backend_name);
 	Suite *s = suite_create(suite_name);
 
-	TCase *tc = tcase_create(backend_name);
+	TCase *tc = tcase_create(suite_name);
 	tcase_add_unchecked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_get_SystemFolderID);

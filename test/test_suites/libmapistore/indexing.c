@@ -159,6 +159,38 @@ START_TEST (test_backend_get_fmid)
 } END_TEST
 
 
+START_TEST (test_backend_get_fmid_with_wildcard)
+{
+	enum mapistore_error ret;
+	uint64_t retrieved_fid, fid_1, fid_2;
+	bool soft_del = true;
+
+	fid_1 = 42;
+	ret = ictx->add_fmid(ictx, USERNAME, fid_1, "foo://bar/user11");
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	fid_2 = 99;
+	ret = ictx->add_fmid(ictx, USERNAME, fid_2, "foo://bar/user21");
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+
+	ret = ictx->get_fmid(ictx, USERNAME, "foo://bar/*", true,
+			     &retrieved_fid, &soft_del);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	ck_assert(!soft_del);
+	ck_assert(retrieved_fid == fid_1 || retrieved_fid == fid_2);
+
+	ret = ictx->get_fmid(ictx, USERNAME, "foo://bar/user2*", true,
+			     &retrieved_fid, &soft_del);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	ck_assert(!soft_del);
+	ck_assert_int_eq(retrieved_fid, fid_2);
+
+	ret = ictx->get_fmid(ictx, USERNAME, "*user21", true, &retrieved_fid,
+			     &soft_del);
+	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	ck_assert(!soft_del);
+	ck_assert_int_eq(retrieved_fid, fid_2);
+} END_TEST
+
 /* allocate_fmid */
 
 START_TEST (test_backend_allocate_fmid)
@@ -254,6 +286,8 @@ static Suite *indexing_create_suite(const char *backend_name, SFun setup,
 	tcase_add_test(tc, test_backend_get_uri_unknown);
 	tcase_add_test(tc, test_backend_get_fmid);
 	tcase_add_test(tc, test_backend_allocate_fmid);
+
+	tcase_add_test(tc, test_backend_get_fmid_with_wildcard);
 
 	suite_add_tcase(s, tc);
 

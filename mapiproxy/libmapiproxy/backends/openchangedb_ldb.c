@@ -517,7 +517,7 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		ldb_element = ldb_msg_find_element(res->msgs[j], "PidTagMessageClass");
 		DEBUG(6, ("openchangedb_ldb get_ReceiveFolder, checking fid: %.16"PRIx64"\n",
 			  ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0)));
-		for (i = 0, length = 0; i < ldb_element[j].num_values; i++) {
+		for (i = 0, length = 0; i < ldb_element->num_values; i++) {
 			DEBUG(6, ("openchangedb_ldb get_ReceiveFolder, element %i, data: %s\n", i, (char *)ldb_element->values[i].data));
 			if (MessageClass &&
 			    !strncasecmp(MessageClass, (char *)ldb_element->values[i].data, strlen((char *)ldb_element->values[i].data)) &&

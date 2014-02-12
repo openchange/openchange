@@ -1,6 +1,6 @@
 # record 1
-dn: CN=1369094286720630785,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1369094286720630785
+dn: CN=18087300528450043905,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18087300528450043905
 FolderType: 1
 objectClass: systemfolder
 PidTagAccess: 63
@@ -10,8 +10,8 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1369094286720630785
-PidTagParentFolderId: 720575940379279361
+PidTagFolderId: 18087300528450043905
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 10
 PidTagDisplayName: To-Do
@@ -19,12 +19,12 @@ PidTagContainerClass: IPF.Task
 PidTagFolderType: 2
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2017612633061982209
-distinguishedName: CN=1369094286720630785,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=18087300528450043905,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 2
-dn: CN=1657324662872342529,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1657324662872342529
+dn: CN=18375530904601755649,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18375530904601755649
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@outbox/folderDrafts/
 objectClass: systemfolder
@@ -35,22 +35,22 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1657324662872342529
+PidTagFolderId: 18375530904601755649
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 14
 PidTagDisplayName: Outbox
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2594073385365405697
-distinguishedName: CN=1657324662872342529,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=18375530904601755649,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 3
-dn: CN=1152921504606846977,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1152921504606846977
+dn: CN=17871127746336260097,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17871127746336260097
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0x1000000000000001/
 objectClass: systemfolder
@@ -61,20 +61,20 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1152921504606846977
+PidTagFolderId: 17871127746336260097
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 7
 PidTagDisplayName: Views
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1585267068834414593
-distinguishedName: CN=1152921504606846977,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=17871127746336260097,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 4
-dn: CN=1297036692682702849,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1297036692682702849
+dn: CN=18015242934412115969,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18015242934412115969
 FolderType: 1
 objectClass: systemfolder
 PidTagAccess: 63
@@ -84,8 +84,8 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1297036692682702849
-PidTagParentFolderId: 720575940379279361
+PidTagFolderId: 18015242934412115969
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 9
 PidTagDisplayName: Reminders
@@ -93,12 +93,12 @@ PidTagContainerClass: Outlook.Reminder
 PidTagFolderType: 2
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1873497444986126337
-distinguishedName: CN=1297036692682702849,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=18015242934412115969,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 5
-dn: CN=15708555500268290049,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 15708555500268290049
+dn: CN=13980299143264862209,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 13980299143264862209
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderA1/
 objectClass: systemfolder
@@ -109,21 +109,21 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130282287560000000
-PidTagFolderId: 15708555500268290049
+PidTagFolderId: 13980299143264862209
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 PidTagDisplayName: A1
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130282287560000000
 PidTagChangeNumber: 288511851128422401
-distinguishedName: CN=15708555500268290049,CN=1513209474796486657,CN=paco,CN=F
+distinguishedName: CN=13980299143264862209,CN=18231415716525899777,CN=paco,CN=F
  irst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,
  DC=lan
 
 # record 6
-dn: CN=2233785415175766017,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2233785415175766017
+dn: CN=505529058172338177,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 505529058172338177
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0x1f00000000000001/
 objectClass: systemfolder
@@ -134,22 +134,22 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2233785415175766017
+PidTagFolderId: 505529058172338177
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 5
 PidTagDisplayName: Journal
 PidTagContainerClass: IPF.Journal
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 4467570830351532033
-distinguishedName: CN=2233785415175766017,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=505529058172338177,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 7
-dn: CN=1801439850948198401,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1801439850948198401
+dn: CN=73183493944770561,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 73183493944770561
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0x1900000000000001/
 objectClass: systemfolder
@@ -160,22 +160,22 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1801439850948198401
+PidTagFolderId: 73183493944770561
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 16
 PidTagDisplayName: Deleted Items
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2882303761517117441
-distinguishedName: CN=1801439850948198401,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=73183493944770561,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 8
-dn: CN=15780613094306217985,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 15780613094306217985
+dn: CN=14052356737302790145,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 14052356737302790145
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderA2/
 objectClass: systemfolder
@@ -186,21 +186,21 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130282287560000000
-PidTagFolderId: 15780613094306217985
+PidTagFolderId: 14052356737302790145
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 PidTagDisplayName: A2
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130282287560000000
 PidTagChangeNumber: 432627039204278273
-distinguishedName: CN=15780613094306217985,CN=1513209474796486657,CN=paco,CN=F
+distinguishedName: CN=14052356737302790145,CN=18231415716525899777,CN=paco,CN=F
  irst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,
  DC=lan
 
 # record 9
-dn: CN=2377900603251621889,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2377900603251621889
+dn: CN=649644246248194049,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 649644246248194049
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0x2100000000000001/
 objectClass: systemfolder
@@ -211,20 +211,20 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2377900603251621889
+PidTagFolderId: 649644246248194049
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 PidTagDisplayName: Freebusy Data
 PidTagChangeNumber: 4971973988617027585
 PidTagChangeNumber: 5044031582654955521
 PidTagLastModificationTime: 130268260180000000
-distinguishedName: CN=2377900603251621889,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=649644246248194049,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 10
-dn: CN=1008806316530991105,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1008806316530991105
+dn: CN=17727012558260404225,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17727012558260404225
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0xe00000000000001/
 objectClass: systemfolder
@@ -235,20 +235,20 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1008806316530991105
+PidTagFolderId: 17727012558260404225
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 5
 PidTagDisplayName: Schedule
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1297036692682702849
-distinguishedName: CN=1008806316530991105,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=17727012558260404225,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 11
-dn: CN=1729382256910270465,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1729382256910270465
+dn: CN=1125899906842625,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 1125899906842625
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderSent/
 objectClass: systemfolder
@@ -259,16 +259,16 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1729382256910270465
+PidTagFolderId: 1125899906842625
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 15
 PidTagDisplayName: Sent
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2738188573441261569
-distinguishedName: CN=1729382256910270465,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=1125899906842625,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
@@ -281,8 +281,8 @@ distinguishedName: CN=First Administrative Group,CN=First Organization,CN=ZENT
  YAL,DC=zentyal-domain,DC=lan
 
 # record 13
-dn: CN=2305843009213693953,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2305843009213693953
+dn: CN=577586652210266113,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 577586652210266113
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderSpam/
 objectClass: systemfolder
@@ -293,21 +293,21 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2305843009213693953
+PidTagFolderId: 577586652210266113
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 PidTagDisplayName: Spam
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 4899916394579099649
-distinguishedName: CN=2305843009213693953,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=577586652210266113,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 14
-dn: CN=1873497444986126337,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1873497444986126337
+dn: CN=145241087982698497,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 145241087982698497
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderDrafts/
 objectClass: systemfolder
@@ -318,33 +318,33 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1873497444986126337
+PidTagFolderId: 145241087982698497
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 0
 PidTagDisplayName: Drafts
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 3026418949592973313
-distinguishedName: CN=1873497444986126337,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=145241087982698497,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
-dn: CN=2522015791327477762,CN=1873497444986126337,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+dn: CN=2522015791327477762,CN=145241087982698497,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 cn: 2522015791327477762
 objectClass: systemMessage
 PidTagHasNamedProperties: 0
 PidTagMessageId: 2522015791327477762
 PidTagNormalizedSubject: Sample message on system folder
-PidTagParentFolderId: 1873497444986126337
-distinguishedName: CN=2522015791327477762,CN=1873497444986126337,CN=1513209474
+PidTagParentFolderId: 145241087982698497
+distinguishedName: CN=2522015791327477762,CN=145241087982698497,CN=1513209474
  796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENT
  YAL,DC=zentyal-domain,DC=lan
 
 # record 15
-dn: CN=864691128455135233,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 864691128455135233
+dn: CN=17582897370184548353,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17582897370184548353
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0xc00000000000001/
 objectClass: systemfolder
@@ -355,49 +355,49 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 864691128455135233
+PidTagFolderId: 17582897370184548353
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 3
 PidTagDisplayName: Spooler Queue
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1008806316530991105
-distinguishedName: CN=864691128455135233,CN=paco,CN=First Administrative Group
+distinguishedName: CN=17582897370184548353,CN=paco,CN=First Administrative Group
  ,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 16
-dn: CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 7
+dn: CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 504403158265495553
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 7
+PidTagChangeNumber: 504403158265495553
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: SCHEDULE+ FREE BUSY
 PidTagFolderChildCount: 1
-PidTagFolderId: 7
+PidTagFolderId: 504403158265495553
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 3
+PidTagParentFolderId: 216172782113783809
 PidTagSubFolders: TRUE
 SystemIdx: 5
-distinguishedName: CN=7,CN=3,CN=720575940379
+distinguishedName: CN=504403158265495553,CN=216172782113783809,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 17
-dn: CN=2522015791327477761,CN=9,CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+dn: CN=2522015791327477761,CN=576460752303423489,CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 cn: 2522015791327477761
 objectClass: systemMessage
 PidTagHasNamedProperties: 0
 PidTagMessageId: 2522015791327477761
 PidTagNormalizedSubject: USER-/CN=RECIPIENTS/CN=PACO
-PidTagParentFolderId: 9
-distinguishedName: CN=2522015791327477761,CN=9,CN=50440315826
- 5495553,CN=3,CN=1,CN=publicfolders,CN=First 
+PidTagParentFolderId: 576460752303423489
+distinguishedName: CN=2522015791327477761,CN=576460752303423489,CN=50440315826
+ 5495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First 
  Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=la
  n
 
@@ -409,8 +409,8 @@ objectClass: org
 distinguishedName: CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 19
-dn: CN=1945555039024054273,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1945555039024054273
+dn: CN=217298682020626433,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 217298682020626433
 FolderType: 1
 MAPIStoreURI: sogo://paco@calendar/personal/
 objectClass: systemfolder
@@ -421,22 +421,22 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1945555039024054273
+PidTagFolderId: 217298682020626433
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 1
 PidTagDisplayName: Personal Calendar (c)
 PidTagContainerClass: IPF.Appointment
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 3314649325744685057
-distinguishedName: CN=1945555039024054273,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=217298682020626433,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 20
-dn: CN=792633534417207297,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 792633534417207297
+dn: CN=17510839776146620417,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17510839776146620417
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0xb00000000000001/
 objectClass: systemfolder
@@ -447,20 +447,20 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 792633534417207297
+PidTagFolderId: 17510839776146620417
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 2
 PidTagDisplayName: Deferred Action
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 864691128455135233
-distinguishedName: CN=792633534417207297,CN=paco,CN=First Administrative Group
+distinguishedName: CN=17510839776146620417,CN=paco,CN=First Administrative Group
  ,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 21
-dn: CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1513209474796486657
+dn: CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18231415716525899777
 FolderType: 1
 objectClass: systemfolder
 PidTagAccess: 63
@@ -470,21 +470,21 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1513209474796486657
+PidTagFolderId: 18231415716525899777
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 12
 PidTagDisplayName: Top of Information Store
 PidTagSubfolders: TRUE
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2305843009213693953
-distinguishedName: CN=1513209474796486657,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=18231415716525899777,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 22
-dn: CN=1585267068834414593,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1585267068834414593
+dn: CN=18303473310563827713,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18303473310563827713
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderINBOX/
 objectClass: systemfolder
@@ -495,9 +495,9 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1585267068834414593
+PidTagFolderId: 18303473310563827713
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 13
 PidTagDisplayName: INBOX
@@ -521,13 +521,13 @@ PidTagIpmJournalEntryId: AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAA
 PidTagRemindersOnlineEntryId: AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2
  mlIAAAAAABIAAA==
 PidTagChangeNumber: 4755801206503243777
-distinguishedName: CN=1585267068834414593,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=18303473310563827713,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 23
-dn: CN=11961560610296037377,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 11961560610296037377
+dn: CN=10233304253292609537,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 10233304253292609537
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderFUCK/
 objectClass: systemfolder
@@ -538,21 +538,21 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130282261650000000
-PidTagFolderId: 11961560610296037377
+PidTagFolderId: 10233304253292609537
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 PidTagDisplayName: FUCK
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130282261650000000
 PidTagChangeNumber: 14843864371813154817
-distinguishedName: CN=11961560610296037377,CN=1513209474796486657,CN=paco,CN=F
+distinguishedName: CN=10233304253292609537,CN=18231415716525899777,CN=paco,CN=F
  irst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,
  DC=lan
 
 # record 24
-dn: CN=1080863910568919041,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1080863910568919041
+dn: CN=17799070152298332161,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17799070152298332161
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0xf00000000000001/
 objectClass: systemfolder
@@ -563,64 +563,64 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1080863910568919041
+PidTagFolderId: 17799070152298332161
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 6
 PidTagDisplayName: Finder
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1441151880758558721
-distinguishedName: CN=1080863910568919041,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=17799070152298332161,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 25
-dn: CN=8,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 8
+dn: CN=360287970189639681,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 360287970189639681
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 8
+PidTagChangeNumber: 360287970189639681
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: OFFLINE ADDRESS BOOK
 PidTagFolderChildCount: 1
-PidTagFolderId: 8
+PidTagFolderId: 360287970189639681
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 3
+PidTagParentFolderId: 216172782113783809
 PidTagSubFolders: TRUE
 SystemIdx: 6
-distinguishedName: CN=8,CN=3,CN=720575940379
+distinguishedName: CN=360287970189639681,CN=216172782113783809,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 26
-dn: CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 3
+dn: CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 216172782113783809
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 3
+PidTagChangeNumber: 216172782113783809
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: NON_IPM_SUBTREE
 PidTagFolderChildCount: 4
-PidTagFolderId: 3
+PidTagFolderId: 216172782113783809
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 1
+PidTagParentFolderId: 72057594037927937
 PidTagSubFolders: TRUE
 SystemIdx: 3
-distinguishedName: CN=3,CN=1,CN=publicfolders
+distinguishedName: CN=216172782113783809,CN=72057594037927937,CN=publicfolders
  ,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-do
  main,DC=lan
 
 # record 27
-dn: CN=2161727821137838081,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2161727821137838081
+dn: CN=433471464134410241,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 433471464134410241
 FolderType: 1
 MAPIStoreURI: sogo://paco@notes/
 objectClass: systemfolder
@@ -631,103 +631,103 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2161727821137838081
+PidTagFolderId: 433471464134410241
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 4
 PidTagDisplayName: Notes
 PidTagContainerClass: IPF.StickyNote
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 4179340454199820289
-distinguishedName: CN=2161727821137838081,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=433471464134410241,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 28
-dn: CN=9,CN=7,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 9
+dn: CN=576460752303423489,CN=504403158265495553,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 576460752303423489
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 9
+PidTagChangeNumber: 576460752303423489
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: EX:/o=first organization/ou=first administrative group
 PidTagFolderChildCount: 0
-PidTagFolderId: 9
+PidTagFolderId: 576460752303423489
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 7
+PidTagParentFolderId: 504403158265495553
 PidTagSubFolders: FALSE
 SystemIdx: 8
-distinguishedName: CN=9,CN=7,CN=216172782113
- 783809,CN=1,CN=publicfolders,CN=First Administrative Group,CN
+distinguishedName: CN=576460752303423489,CN=504403158265495553,CN=216172782113
+ 783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN
  =First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 29
-dn: CN=4,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 4
+dn: CN=648518346341351425,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 648518346341351425
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 4
+PidTagChangeNumber: 648518346341351425
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: Events Root
 PidTagFolderChildCount: 0
-PidTagFolderId: 4
+PidTagFolderId: 648518346341351425
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 3
+PidTagParentFolderId: 216172782113783809
 PidTagSubFolders: FALSE
 SystemIdx: -1
-distinguishedName: CN=4,CN=3,CN=720575940379
+distinguishedName: CN=648518346341351425,CN=216172782113783809,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 30
-dn: CN=5,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 5
+dn: CN=288230376151711745,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 288230376151711745
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 5
+PidTagChangeNumber: 288230376151711745
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: EFORMS REGISTRY
 PidTagFolderChildCount: 0
-PidTagFolderId: 5
+PidTagFolderId: 288230376151711745
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 3
+PidTagParentFolderId: 216172782113783809
 PidTagSubFolders: FALSE
 SystemIdx: 4
-distinguishedName: CN=5,CN=3,CN=720575940379
+distinguishedName: CN=288230376151711745,CN=216172782113783809,CN=720575940379
  27937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN
  =ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 31
-dn: CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1
+dn: CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 72057594037927937
 objectClass: publicfolder
-PidTagChangeNumber: 1
+PidTagChangeNumber: 72057594037927937
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: Public Folder Root
 PidTagFolderChildCount: 2
-PidTagFolderId: 1
+PidTagFolderId: 72057594037927937
 PidTagLastModificationTime: 130264095410000000
 PidTagSubFolders: TRUE
 SystemIdx: 1
-distinguishedName: CN=1,CN=publicfolders,CN=First Administrati
+distinguishedName: CN=72057594037927937,CN=publicfolders,CN=First Administrati
  ve Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 32
-dn: CN=936748722493063169,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 936748722493063169
+dn: CN=17654954964222476289,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17654954964222476289
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0xd00000000000001/
 objectClass: systemfolder
@@ -738,20 +738,20 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 936748722493063169
+PidTagFolderId: 17654954964222476289
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 4
 PidTagDisplayName: Common Views
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1152921504606846977
-distinguishedName: CN=936748722493063169,CN=paco,CN=First Administrative Group
+distinguishedName: CN=17654954964222476289,CN=paco,CN=First Administrative Group
  ,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 33
-dn: CN=2017612633061982209,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2017612633061982209
+dn: CN=289356276058554369,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 289356276058554369
 FolderType: 1
 MAPIStoreURI: sogo://paco@contacts/personal/
 objectClass: systemfolder
@@ -762,44 +762,44 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2017612633061982209
+PidTagFolderId: 289356276058554369
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 2
 PidTagDisplayName: Personal Address Book
 PidTagContainerClass: IPF.Contact
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 3602879701896396801
-distinguishedName: CN=2017612633061982209,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=289356276058554369,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
 # record 34
-dn: CN=6,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 6
+dn: CN=144115188075855873,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 144115188075855873
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 6
+PidTagChangeNumber: 144115188075855873
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: IPM_SUBTREE
 PidTagFolderChildCount: 0
-PidTagFolderId: 6
+PidTagFolderId: 144115188075855873
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 1
+PidTagParentFolderId: 72057594037927937
 PidTagSubFolders: FALSE
 SystemIdx: 2
-distinguishedName: CN=6,CN=1,CN=publicfolders
+distinguishedName: CN=144115188075855873,CN=72057594037927937,CN=publicfolders
  ,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-do
  main,DC=lan
 
 # record 35
-dn: CN=1224979098644774913,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1224979098644774913
+dn: CN=17943185340374188033,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 17943185340374188033
 FolderType: 1
 MAPIStoreURI: sogo://paco@fallback/0x1100000000000001/
 objectClass: systemfolder
@@ -810,15 +810,15 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1224979098644774913
+PidTagFolderId: 17943185340374188033
 PidTagFolderType: 1
-PidTagParentFolderId: 720575940379279361
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 8
 PidTagDisplayName: Shortcuts
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 1729382256910270465
-distinguishedName: CN=1224979098644774913,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=17943185340374188033,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 36
@@ -830,7 +830,7 @@ objectClass: container
 PidTagAccess: 63
 PidTagCreationTime: 130268260180000000
 PidTagDisplayName: OpenChange Mailbox: paco
-PidTagFolderId: 720575940379279361
+PidTagFolderId: 17438782182108692481
 PidTagFolderType: 1
 PidTagLastModificationTime: 130268260180000000
 PidTagRights: 2043
@@ -858,31 +858,31 @@ distinguishedName: CN=paco,CN=First Administrative Group,CN=First Organization
  ,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 37
-dn: CN=10,CN=8,CN=3,CN=1,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 10
+dn: CN=432345564227567617,CN=360287970189639681,CN=216172782113783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 432345564227567617
 FolderType: 1
 objectClass: publicfolder
 PidTagAttributeHidden: 0
 PidTagAttributeReadOnly: 0
 PidTagAttributeSystem: 0
-PidTagChangeNumber: 10
+PidTagChangeNumber: 432345564227567617
 PidTagContainerClass: IPF.Note (check this)
 PidTagCreationTime: 130264095410000000
 PidTagDisplayName: /o=First Organization/cn=addrlists/cn=oabs/cn=Default Offli
  ne Address Book
 PidTagFolderChildCount: 0
-PidTagFolderId: 10
+PidTagFolderId: 432345564227567617
 PidTagLastModificationTime: 130264095410000000
-PidTagParentFolderId: 8
+PidTagParentFolderId: 360287970189639681
 PidTagSubFolders: FALSE
 SystemIdx: 9
-distinguishedName: CN=10,CN=8,CN=216172782113
- 783809,CN=1,CN=publicfolders,CN=First Administrative Group,CN
+distinguishedName: CN=432345564227567617,CN=360287970189639681,CN=216172782113
+ 783809,CN=72057594037927937,CN=publicfolders,CN=First Administrative Group,CN
  =First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 38
-dn: CN=1441151880758558721,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 1441151880758558721
+dn: CN=18159358122487971841,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 18159358122487971841
 FolderType: 1
 objectClass: systemfolder
 PidTagAccess: 63
@@ -892,8 +892,8 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 1441151880758558721
-PidTagParentFolderId: 720575940379279361
+PidTagFolderId: 18159358122487971841
+PidTagParentFolderId: 17438782182108692481
 PidTagRights: 2043
 SystemIdx: 11
 PidTagDisplayName: Tracked Mail Processing
@@ -901,12 +901,12 @@ PidTagContainerClass: IPF.Note
 PidTagFolderType: 2
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 2161727821137838081
-distinguishedName: CN=1441151880758558721,CN=paco,CN=First Administrative Grou
+distinguishedName: CN=18159358122487971841,CN=paco,CN=First Administrative Grou
  p,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 39
-dn: CN=2089670227099910145,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 2089670227099910145
+dn: CN=361413870096482305,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 361413870096482305
 FolderType: 1
 MAPIStoreURI: sogo://paco@tasks/personal/
 objectClass: systemfolder
@@ -917,16 +917,16 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130268260180000000
-PidTagFolderId: 2089670227099910145
+PidTagFolderId: 361413870096482305
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 SystemIdx: 3
 PidTagDisplayName: Personal Calendar (t)
 PidTagContainerClass: IPF.Task
 PidTagLastModificationTime: 130268260180000000
 PidTagChangeNumber: 3891110078048108545
-distinguishedName: CN=2089670227099910145,CN=1513209474796486657,CN=paco,CN=Fi
+distinguishedName: CN=361413870096482305,CN=18231415716525899777,CN=paco,CN=Fi
  rst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,D
  C=lan
 
@@ -950,8 +950,8 @@ ChangeNumber: 402
 distinguishedName: CN=ZENTYAL,DC=zentyal-domain,DC=lan
 
 # record 42
-dn: CN=15852670688344145921,CN=1513209474796486657,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
-cn: 15852670688344145921
+dn: CN=14124414331340718081,CN=18231415716525899777,CN=paco,CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan
+cn: 14124414331340718081
 FolderType: 1
 MAPIStoreURI: sogo://paco:paco@mail/folderA3/
 objectClass: systemfolder
@@ -962,15 +962,15 @@ PidTagAttributeSystem: 0
 PidTagContentCount: 0
 PidTagContentUnreadCount: 0
 PidTagCreationTime: 130282287560000000
-PidTagFolderId: 15852670688344145921
+PidTagFolderId: 14124414331340718081
 PidTagFolderType: 1
-PidTagParentFolderId: 1513209474796486657
+PidTagParentFolderId: 18231415716525899777
 PidTagRights: 2043
 PidTagDisplayName: A3
 PidTagContainerClass: IPF.Note
 PidTagLastModificationTime: 130282287560000000
 PidTagChangeNumber: 576742227280134145
-distinguishedName: CN=15852670688344145921,CN=1513209474796486657,CN=paco,CN=F
+distinguishedName: CN=14124414331340718081,CN=18231415716525899777,CN=paco,CN=F
  irst Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,
  DC=lan
 

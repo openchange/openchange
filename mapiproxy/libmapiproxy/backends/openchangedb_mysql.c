@@ -496,9 +496,12 @@ end:
 	return ret;
 }
 
-static bool is_public_folder(uint64_t fid)
+#define is_public_folder(id) is_public_folder_id(NULL, id)
+static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 {
-	return fid <= MAX_PUBLIC_FOLDER_ID;
+	uint64_t real_fid = (fid >> 56) | (((fid >> 48) & 0x00FF) << 8);
+	return ((fid & 0xFFFF000000000000) << 16) == 0x0 &&
+		real_fid <= MAX_PUBLIC_FOLDER_ID;
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
@@ -1257,11 +1260,13 @@ static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
 
 static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 					 const char *recipient,
-					 const char *message_class, uint64_t fid)
+					 const char *message_class,
+					 uint64_t fid)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_ReceiveFolder");
 	char *sql;
 	enum MAPISTATUS ret;
+	uint64_t mailbox_id, mailbox_folder_id;
 
 	// Delete current receive folder for that message class if exists
 	sql = talloc_asprintf(mem_ctx,
@@ -1273,15 +1278,34 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	ret = status(execute_query(conn, sql));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
-	// Create PidTagMessageClass folder property for the fid specified
 	sql = talloc_asprintf(mem_ctx,
-		"INSERT INTO folders_properties VALUES ("
-		" ("
-		"  SELECT f.id FROM folders f "
-		"  JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
-		"  WHERE f.folder_id = %"PRIu64
-		" ), 'PidTagMessageClass', '%s')",
-		_sql(mem_ctx, recipient), fid, _sql(mem_ctx, message_class)); // FIXME ou_id
+		"DELETE mp FROM mailboxes_properties mp "
+		"JOIN mailboxes mb ON mb.id = mp.mailbox_id AND mb.name = '%s' "
+		"WHERE mp.name = 'PidTagMessageClass' AND mp.value = '%s'",
+		_sql(mem_ctx, recipient), _sql(mem_ctx, message_class)); // FIXME ou_id
+	ret = status(execute_query(conn, sql));
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+
+	// Create PidTagMessageClass folder property for the fid specified
+	ret = get_mailbox_ids_by_name(conn, recipient, &mailbox_id,
+				      &mailbox_folder_id);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	if (fid == mailbox_folder_id) {
+		// Folder is the mailbox itself
+		sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO mailboxes_properties VALUES "
+			"(%"PRIu64", 'PidTagMessageClass', '%s')",
+			mailbox_id, _sql(mem_ctx, message_class));
+	} else {
+		sql = talloc_asprintf(mem_ctx,
+			"INSERT INTO folders_properties VALUES ("
+			" ("
+			"  SELECT f.id FROM folders f "
+			"  JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+			"  WHERE f.folder_id = %"PRIu64
+			" ), 'PidTagMessageClass', '%s')",
+			_sql(mem_ctx, recipient), fid, _sql(mem_ctx, message_class)); // FIXME ou_id
+	}
 	ret = status(execute_query(conn, sql));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
@@ -1582,8 +1606,9 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 
 	if (*fid > 0) {
 		sql = talloc_asprintf(mem_ctx, // TODO ou_id
-			"SELECT max(f.folder_id) FROM folders f "
-			"WHERE folder_class = '%s'", PUBLIC_FOLDER);
+			"SELECT max((f.folder_id >> 56) | "
+			"           (((f.folder_id >> 48) & 0x00ff) << 8)) "
+			"FROM folders f WHERE folder_class = '"PUBLIC_FOLDER"'");
 		ret = status(select_first_uint(conn, sql, fid));
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 	}
@@ -1596,13 +1621,10 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 
 	(*fid)++;
 
+	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
+
 	talloc_free(mem_ctx);
 	return ret;
-}
-
-static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
-{
-	return fid <= MAX_PUBLIC_FOLDER_ID;
 }
 
 static const char *get_indexing_url(struct openchangedb_context *self, const char *username)

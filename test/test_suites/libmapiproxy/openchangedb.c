@@ -31,18 +31,18 @@ START_TEST (test_get_SystemFolderID) {
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 792633534417207297);
+	ck_assert_int_eq(folder_id, 17510839776146620417ul);
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 14, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 1657324662872342529);
+	ck_assert_int_eq(folder_id, 18375530904601755649ul);
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "chuck", 14, &folder_id);
 	CHECK_FAILURE;
 
 	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 15, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 1729382256910270465);
+	ck_assert_int_eq(folder_id, 1125899906842625ul);
 } END_TEST
 
 START_TEST (test_get_SpecialFolderID) {
@@ -50,11 +50,11 @@ START_TEST (test_get_SpecialFolderID) {
 
 	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 2017612633061982209);
+	ck_assert_int_eq(folder_id, 289356276058554369);
 
 	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 5, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 2233785415175766017);
+	ck_assert_int_eq(folder_id, 505529058172338177);
 
 	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 6, &folder_id);
 	CHECK_FAILURE;
@@ -68,11 +68,11 @@ START_TEST (test_get_PublicFolderID) {
 
 	ret = openchangedb_get_PublicFolderID(oc_ctx, 5, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 7);
+	ck_assert_int_eq(folder_id, 504403158265495553);
 
 	ret = openchangedb_get_PublicFolderID(oc_ctx, 6, &folder_id);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(folder_id, 8);
+	ck_assert_int_eq(folder_id, 360287970189639681);
 } END_TEST
 
 START_TEST (test_get_MailboxGuid) {
@@ -125,21 +125,21 @@ START_TEST (test_get_PublicFolderReplica) {
 
 START_TEST (test_get_mapistoreURI) {
 	char *mapistoreURI;
+	uint64_t fid;
 
+	fid = 577586652210266113ul;
 	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
-					    2305843009213693953,
-					    &mapistoreURI, true);
+					    fid, &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderSpam/");
 
 	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
-					    2305843009213693953,
-					    &mapistoreURI, false);
+					    fid, &mapistoreURI, false);
 	CHECK_FAILURE;
 
+	fid = 145241087982698497ul;
 	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
-					    1873497444986126337,
-					    &mapistoreURI, true);
+					    fid, &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderDrafts/");
 } END_TEST
@@ -147,7 +147,7 @@ START_TEST (test_get_mapistoreURI) {
 START_TEST (test_set_mapistoreURI) {
 	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
 	char *uri;
-	uint64_t fid = 15708555500268290049U;
+	uint64_t fid = 13980299143264862209ul;
 	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, initial_uri);
@@ -164,33 +164,33 @@ START_TEST (test_set_mapistoreURI) {
 } END_TEST
 
 START_TEST (test_get_parent_fid) {
-	uint64_t pfid = 0ul, fid = 0ul;
+	uint64_t pfid = 0ul, fid;
 
-	fid = 15708555500268290049ul;
+	fid = 13980299143264862209ul;
 	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(1513209474796486657ul, pfid);
+	ck_assert_int_eq(18231415716525899777ul, pfid);
 
-	fid = 3;
+	fid = 216172782113783809ul;
 	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(1, pfid);
+	ck_assert_int_eq(72057594037927937ul, pfid);
 
-	fid = 7;
+	fid = 504403158265495553ul;
 	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(3ul, pfid);
+	ck_assert_int_eq(216172782113783809ul, pfid);
 } END_TEST
 
 START_TEST (test_get_parent_fid_which_is_the_mailbox) {
 	uint64_t pfid = 0ul, fid = 0ul;
 
-	fid = 1441151880758558721ul;
+	fid = 18159358122487971841ul;
 	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(720575940379279361ul, pfid);
+	ck_assert_int_eq(17438782182108692481ul, pfid);
 } END_TEST
 
 START_TEST (test_get_fid) {
@@ -200,7 +200,7 @@ START_TEST (test_get_fid) {
 	uri = talloc_strdup(mem_ctx, "sogo://paco@contacts/personal/");
 	ret = openchangedb_get_fid(oc_ctx, uri, &fid);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(fid, 2017612633061982209ul);
+	ck_assert_int_eq(fid, 289356276058554369ul);
 } END_TEST
 
 START_TEST (test_get_MAPIStoreURIs) {
@@ -220,27 +220,27 @@ START_TEST (test_get_MAPIStoreURIs) {
 } END_TEST
 
 START_TEST (test_get_ReceiveFolder) {
-	uint64_t fid = 0;
+	uint64_t fid = 0, expected_fid = 18303473310563827713ul;
 	const char *explicit;
 
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
 					     "Report.IPM", &fid, &explicit);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_int_eq(fid, expected_fid);
 	ck_assert_str_eq(explicit, "Report.IPM");
 
 	fid = 0;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "IPM",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_int_eq(fid, expected_fid);
 	ck_assert_str_eq(explicit, "IPM");
 
 	fid = 0;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "all",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(fid, 1585267068834414593ul);
+	ck_assert_int_eq(fid, expected_fid);
 	ck_assert_str_eq(explicit, "All");
 } END_TEST
 
@@ -248,19 +248,19 @@ START_TEST (test_get_TransportFolder) {
 	uint64_t fid;
 	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
 	CHECK_SUCCESS;
-	ck_assert_int_eq(fid, 1657324662872342529ul);
+	ck_assert_int_eq(fid, 18375530904601755649ul);
 } END_TEST
 
 START_TEST (test_get_folder_count) {
 	uint32_t count;
 	uint64_t fid;
 
-	fid = 1513209474796486657ul;
+	fid = 18231415716525899777ul;
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
-	fid = 720575940379279361ul;
+	fid = 17438782182108692481ul;
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 12);
@@ -269,15 +269,18 @@ START_TEST (test_get_folder_count) {
 START_TEST (test_get_folder_count_public_folder) {
 	uint32_t count;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", 3, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+					    216172782113783809ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 4);
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", 4, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+					    648518346341351425ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 0);
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", 1, &count);
+	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+					    72057594037927937ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 2);
 } END_TEST
@@ -326,27 +329,31 @@ START_TEST (test_get_folder_property) {
 
 	// PT_LONG
 	proptag = PidTagAccess;
-	fid = 2089670227099910145ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	fid = 17871127746336260097ul;
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
+	CHECK_SUCCESS;
 	ck_assert_int_eq(63, *(int *)data);
 
 	// PT_UNICODE
 	proptag = PidTagDisplayName;
-	fid = 15852670688344145921ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	fid = 14124414331340718081ul;
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
+	CHECK_SUCCESS;
 	ck_assert_str_eq("A3", (char *)data);
 	proptag = PidTagRights;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
+	CHECK_SUCCESS;
 	ck_assert_int_eq(2043, *(int *)data);
 
 	// PT_SYSTIME
 	proptag = PidTagLastModificationTime;
-	fid = 720575940379279361ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	fid = 17438782182108692481ul;
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
+	CHECK_SUCCESS;
 	ck_assert_int_eq(130268260180000000 >> 32,
 			 ((struct FILETIME *)data)->dwHighDateTime);
 	ck_assert_int_eq(130268260180000000 & 0xffffffff,
@@ -354,37 +361,39 @@ START_TEST (test_get_folder_property) {
 
 	// Mailbox display name
 	proptag = PidTagDisplayName;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
+	CHECK_SUCCESS;
 	ck_assert_str_eq("OpenChange Mailbox: paco", (char *)data);
 
 	// PT_BINARY
 	proptag = PidTagIpmDraftsEntryId;
-	fid = 720575940379279361ul;
-	openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag, fid,
-					 &data);
+	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+					       fid, &data);
 	ck_assert_int_eq(46, ((struct Binary_r *)data)->cb);
 } END_TEST
 
 START_TEST (test_get_public_folder_property) {
 	void *data;
 	uint32_t proptag;
+	uint64_t fid;
 
+	fid = 216172782113783809ul;
 	proptag = PidTagAttributeReadOnly;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       3, &data);
+					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(0, *(int *)data);
 
 	proptag = PidTagDisplayName;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       3, &data);
+					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("NON_IPM_SUBTREE", (char *)data);
 
 	proptag = PidTagCreationTime;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       3, &data);
+					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(130264095410000000 >> 32,
 			 ((struct FILETIME *)data)->dwHighDateTime);
@@ -402,7 +411,7 @@ START_TEST (test_set_folder_properties) {
 
 	// We have to check that last_modification_time and change_number have
 	// changed (besides the property we are setting)
-	fid = 15852670688344145921ul;
+	fid = 14124414331340718081ul;
 	proptag = PidTagLastModificationTime;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification);
@@ -455,7 +464,7 @@ START_TEST (test_set_folder_properties_on_mailbox) {
 	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
 	struct Binary_r *s1, *s2;
 
-	fid = 1585267068834414593ul;
+	fid = 18303473310563827713ul;
 	proptag = PidTagIpmTaskEntryId;
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
@@ -479,25 +488,26 @@ START_TEST (test_set_folder_properties_on_mailbox) {
 START_TEST (test_set_public_folder_properties) {
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
-	uint64_t change_number, change_number_after;
+	uint64_t change_number, change_number_after, fid;
 	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
 	char *display_name;
 
+	fid = 648518346341351425ul;
 	// We have to check that last_modification_time and change_number have
 	// changed (besides the property we are setting)
 	proptag = PidTagLastModificationTime;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&last_modification);
+					       fid, (void **)&last_modification);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&change_number);
+					       fid, (void **)&change_number);
 	CHECK_SUCCESS;
 
 	proptag = PidTagDisplayName;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&display_name);
+					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "Events Root");
 
@@ -505,17 +515,17 @@ START_TEST (test_set_public_folder_properties) {
 	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
 	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foo public");
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", 4, row);
+	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
 	proptag = PidTagLastModificationTime;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&last_modification_after);
+					       fid, (void **)&last_modification_after);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&change_number_after);
+					       fid, (void **)&change_number_after);
 	CHECK_SUCCESS;
 
 	ck_assert(change_number != change_number_after);
@@ -526,7 +536,7 @@ START_TEST (test_set_public_folder_properties) {
 
 	proptag = PidTagDisplayName;
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
-					       4, (void **)&display_name);
+					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "foo public");
 } END_TEST
@@ -534,21 +544,21 @@ START_TEST (test_set_public_folder_properties) {
 START_TEST (test_get_fid_by_name) {
 	uint64_t pfid, fid = 0;
 
-	pfid = 1513209474796486657ul;
+	pfid = 18231415716525899777ul;
 	ret = openchangedb_get_fid_by_name(oc_ctx, "paco", pfid, "A2", &fid);
 	CHECK_SUCCESS;
-	ck_assert(fid == 15780613094306217985ul);
+	ck_assert(fid == 14052356737302790145ul);
 
-	pfid = 3;
+	pfid = 216172782113783809ul;
 	ret = openchangedb_get_fid_by_name(oc_ctx, "doesnt matter", pfid,
 					   "EFORMS REGISTRY", &fid);
 	CHECK_SUCCESS;
-	ck_assert(fid == 5);
+	ck_assert(fid == 288230376151711745ul);
 } END_TEST
 
 START_TEST (test_get_mid_by_subject) {
 	uint64_t pfid, mid = 0;
-	pfid = 1873497444986126337ul;
+	pfid = 145241087982698497ul;
 	ret = openchangedb_get_mid_by_subject(oc_ctx, "paco", pfid,
 					      "Sample message on system folder",
 					      true, &mid);
@@ -558,7 +568,7 @@ START_TEST (test_get_mid_by_subject) {
 
 START_TEST (test_get_mid_by_subject_on_public_folder) {
 	uint64_t pfid, mid = 0;
-	pfid = 9;
+	pfid = 576460752303423489ul;
 	ret = openchangedb_get_mid_by_subject(oc_ctx, "does not matter", pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
 					      false, &mid);
@@ -570,8 +580,8 @@ START_TEST (test_delete_folder) {
 	uint64_t fid, pfid;
 	uint32_t count = 0;
 
-	fid = 11961560610296037377ul;
-	pfid = 1513209474796486657ul;
+	fid = 10233304253292609537ul;
+	pfid = 18231415716525899777ul;
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
@@ -589,8 +599,8 @@ START_TEST (test_delete_public_folder) {
 	uint32_t count = 0;
 	size_t n;
 
-	fid = 5;
-	pfid = 3;
+	fid = 288230376151711745ul;
+	pfid = 216172782113783809ul;
 	n = 4;
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
@@ -605,24 +615,35 @@ START_TEST (test_delete_public_folder) {
 } END_TEST
 
 START_TEST (test_set_ReceiveFolder) {
-	uint64_t fid_1 = 15708555500268290049ul,
-		 fid_2 = 15780613094306217985ul, fid;
-	const char *e;
+	uint64_t fid_1, fid_2, fid;
+	const char *explicit;
 
+	fid_1 = 13980299143264862209ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_1);
+	CHECK_SUCCESS;
 	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_1);
 	CHECK_SUCCESS;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_1);
+	CHECK_SUCCESS;
 
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
-					     "whatever", &fid, &e);
+					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_1);
+	ck_assert_str_eq(explicit, "whatever");
 
+	fid_2 = 14052356737302790145ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_2);
+	CHECK_SUCCESS;
 	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_2);
 	CHECK_SUCCESS;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_2);
+	CHECK_SUCCESS;
 	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
-					     "whatever", &fid, &e);
+					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_2);
+	ck_assert_str_eq(explicit, "whatever");
 } END_TEST
 
 START_TEST (test_get_users_from_partial_uri) {
@@ -639,7 +660,7 @@ START_TEST (test_get_users_from_partial_uri) {
 START_TEST (test_create_mailbox) {
 	char *data;
 	uint32_t *data_int;
-	uint64_t fid = 1234567890ul;
+	uint64_t fid = 14989949884725985281ul;
 
 	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
@@ -667,12 +688,12 @@ START_TEST (test_create_folder) {
 	uint64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
 
-	pfid = 1513209474796486657ul;
+	pfid = 18231415716525899777ul;
 
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
-	fid = 4242;
+	fid = 10524912329164849153ul;
 	changenumber = 424242;
 	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
 					 "sogo://paco@mail/folderOhlala", 100);
@@ -693,11 +714,11 @@ START_TEST (test_create_folder_without_mapistore_uri) {
 	CHECK_SUCCESS;
 	uris_before = uris->cValues;
 
-	pfid = 1513209474796486657ul;
+	pfid = 18231415716525899777ul;
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
-	fid = 4243;
+	fid = 10596969923202777089ul;
 	changenumber = 424243;
 	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
 					 NULL, 100);
@@ -718,12 +739,12 @@ START_TEST (test_create_folder_and_display_name) {
 	uint64_t pfid, fid, fid2, changenumber;
 	uint32_t count, count_after;
 
-	pfid = 1513209474796486657ul;
+	pfid = 18231415716525899777ul;
 
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
-	fid = 4244;
+	fid = 10669027517240705025ul;
 	changenumber = 424244;
 	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
 					 "sogo://paco@mail/folderOhlala", 100);
@@ -750,7 +771,7 @@ START_TEST (test_create_public_folder) {
 	uint64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
 
-	pfid = 3;
+	pfid = 216172782113783809ul;
 
 	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
@@ -768,7 +789,7 @@ START_TEST (test_create_public_folder) {
 
 START_TEST (test_get_message_count) {
 	uint32_t count = 0;
-	uint64_t fid = 1873497444986126337ul;
+	uint64_t fid = 145241087982698497ul;
 	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
@@ -780,7 +801,7 @@ START_TEST (test_get_message_count) {
 
 START_TEST (test_get_message_count_from_public_folder) {
 	uint32_t count = 0;
-	uint64_t fid = 9;
+	uint64_t fid = 576460752303423489ul;
 	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
@@ -796,12 +817,12 @@ START_TEST (test_get_message_count_from_public_folder) {
 
 START_TEST (test_get_system_idx) {
 	int system_idx = 0;
-	uint64_t fid = 864691128455135233ul;
+	uint64_t fid = 17582897370184548353ul;
 	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(3, system_idx);
 
-	fid = 1729382256910270465ul;
+	fid = 1125899906842625ul;
 	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(15, system_idx);
@@ -809,12 +830,12 @@ START_TEST (test_get_system_idx) {
 
 START_TEST (test_get_system_idx_from_public_folder) {
 	int system_idx = 0;
-	uint64_t fid = 7;
+	uint64_t fid = 504403158265495553ul;
 	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(5, system_idx);
 
-	fid = 3;
+	fid = 216172782113783809ul;
 	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(3, system_idx);
@@ -827,7 +848,7 @@ START_TEST (test_create_and_edit_message) {
 	void *data;
 	struct SRow row;
 
-	fid = 720575940379279361ul;
+	fid = 17438782182108692481ul;
 	mid = 10;
 	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
 					  false, &msg);
@@ -889,7 +910,7 @@ START_TEST (test_create_and_edit_message_on_public_folder) {
 	void *data;
 	struct SRow row;
 
-	fid = 4;
+	fid = 648518346341351425ul;
 	mid = 1234512345ul;
 	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
 					  true, &msg);
@@ -938,7 +959,7 @@ START_TEST (test_build_table_folders) {
 	enum MAPITAGS prop;
 	uint32_t i;
 
-	fid = 720575940379279361ul;
+	fid = 17438782182108692481ul;
 	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 	prop = PidTagFolderId;
@@ -976,7 +997,7 @@ START_TEST (test_build_table_folders_with_restrictions) {
 	enum MAPITAGS prop;
 	struct mapi_SRestriction res;
 
-	fid = 720575940379279361ul;
+	fid = 17438782182108692481ul;
 	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 
@@ -1002,7 +1023,7 @@ START_TEST (test_build_table_folders_live_filtering) {
 	struct mapi_SRestriction res;
 	int ok = 0, bad = 0, idx;
 
-	fid = 720575940379279361ul;
+	fid = 17438782182108692481ul;
 	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 
@@ -1052,6 +1073,23 @@ START_TEST (test_get_folders_names) {
 
 	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "fr", "special_folders");
 	ck_assert(names == NULL);
+} END_TEST
+
+START_TEST (test_set_receive_folder_to_mailbox) {
+	uint64_t mailbox_fid, fid;
+	const char *explicit;
+
+	mailbox_fid = 17438782182108692481ul;
+	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "IPC",
+					     mailbox_fid);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+					     "IPC", &fid, &explicit);
+	CHECK_SUCCESS;
+
+	ck_assert_int_eq(fid, mailbox_fid);
+	ck_assert_str_eq(explicit, "IPC");
 } END_TEST
 
 // ^ Unit test ----------------------------------------------------------------
@@ -1144,7 +1182,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 					   backend_name);
 	Suite *s = suite_create(suite_name);
 
-	TCase *tc = tcase_create(backend_name);
+	TCase *tc = tcase_create(suite_name);
 	tcase_add_unchecked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_get_SystemFolderID);
@@ -1200,6 +1238,8 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 		tcase_add_test(tc, test_set_locale);
 		tcase_add_test(tc, test_get_folders_names);
 	}
+
+	tcase_add_test(tc, test_set_receive_folder_to_mailbox);
 
 	suite_add_tcase(s, tc);
 	return s;

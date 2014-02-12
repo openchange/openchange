@@ -409,7 +409,7 @@ class OpenChangeDBWithMysqlBackend(object):
     def _add_one_public_folder(self, parent_fid, path, children, system_index,
                                names):
         name = path[-1]
-        fid = str(self.global_count)
+        fid = gen_mailbox_folder_fid(self.global_count, self.replica_id)
         change_num = gen_mailbox_folder_fid(self.change_number, self.replica_id)
         childcount = len(children)
         print "\t* %-40s: 0x%.16x (%s)" % (name, int(fid, 10), fid)

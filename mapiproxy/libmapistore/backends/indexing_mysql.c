@@ -9,6 +9,7 @@
 #include "../../util/mysql.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
+#include <samba_util.h>
 #include <talloc.h>
 
 
@@ -189,40 +190,51 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 
 
 static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
-					        const char *username,
-					        const char *uri, bool partial,
-					        uint64_t *fmidp, bool *soft_deletedp)
+						  const char *username,
+						  const char *uri,
+						  bool partial,
+						  uint64_t *fmidp,
+						  bool *soft_deletedp)
 {
-	int		ret;
-	char		*sql;
-	MYSQL_RES	*res;
-	MYSQL_ROW	row;
-	TALLOC_CTX	*mem_ctx;
+	enum MYSQLRESULT ret;
+	char *sql, *uri_like;
+	MYSQL_RES *res;
+	MYSQL_ROW row;
+	TALLOC_CTX *mem_ctx;
 
-	/* Sanity checks */
+	// Sanity checks
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
+	mem_ctx = talloc_named(NULL, 0, "mysql_record_get_fmid");
 
-	mem_ctx = talloc_new(NULL);
-	// TODO take partial into account and do a LIKE search
 	sql = talloc_asprintf(mem_ctx,
-		"SELECT fmid, soft_deleted FROM %s "
-		"WHERE username = '%s' AND url = '%s'",
-		INDEXING_TABLE, _sql(mem_ctx, username), _sql(mem_ctx, uri));
+		"SELECT fmid, soft_deleted FROM "INDEXING_TABLE" "
+		"WHERE username = '%s'", _sql(mem_ctx, username));
+	if (partial) {
+		uri_like = talloc_strdup(mem_ctx, uri);
+		string_replace(uri_like, '*', '%');
+		sql = talloc_asprintf_append(sql, " AND url LIKE '%s'",
+					     _sql(mem_ctx, uri_like));
+	} else {
+		sql = talloc_asprintf_append(sql, " AND url = '%s'",
+					     _sql(mem_ctx, uri));
+	}
 
 	ret = select_without_fetch(MYSQL(ictx), sql, &res);
-	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, sql);
-	MAPISTORE_RETVAL_IF(!mysql_num_rows(res), MAPISTORE_ERR_NOT_FOUND, sql);
+	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+	MAPISTORE_RETVAL_IF(!mysql_num_rows(res), MAPISTORE_ERR_NOT_FOUND, mem_ctx);
 
 	row = mysql_fetch_row(res);
 
 	*fmidp = strtoull(row[0], NULL, 0);
 	*soft_deletedp = strtoull(row[1], NULL, 0) == 1;
 
+	mysql_free_result(res);
 	talloc_free(mem_ctx);
+
 	return MAPISTORE_SUCCESS;
 }
 
@@ -313,7 +325,6 @@ static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-
 _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *mstore_ctx,
 							    const char *username,
 							    const char *connection_string,

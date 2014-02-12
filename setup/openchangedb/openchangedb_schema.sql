@@ -7,8 +7,6 @@ CREATE TABLE IF NOT EXISTS `company` (
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
-CREATE UNIQUE INDEX `domain_UNIQUE` ON `company` (`domain`(767) ASC);
-
 
 -- -----------------------------------------------------
 -- Table `organizational_units`

@@ -93,14 +93,14 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, 0, NULL, 0)) {
 		// Nop
 		DEBUG(0, ("Can't connect to mysql using %s", connection_string));
-		conn = NULL;
+		*conn = NULL;
 	} else {
 		// Connect it!, let's try to create database
 		sql = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", db);
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
 			DEBUG(0, ("Can't connect to mysql using %s",
 				  connection_string));
-			conn = NULL;
+			*conn = NULL;
 		}
 	}
 end:

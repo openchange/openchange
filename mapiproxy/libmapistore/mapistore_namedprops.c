@@ -151,7 +151,6 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_
 {
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(propID < 0x8000, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!nameidp, MAPISTORE_ERROR, NULL);
 
 	return nprops->get_nameid(nprops, propID, mem_ctx, nameidp);

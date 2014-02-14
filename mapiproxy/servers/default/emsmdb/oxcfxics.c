@@ -2623,7 +2623,7 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_check_cnset(struct ldb_context *oc_ctx, struct idset *parsed_idset, const char *label)
+static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct idset *parsed_idset, const char *label)
 {
 	uint64_t next_cn, high_cn;
 
@@ -3030,7 +3030,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_GetLocalReplicaIds;
 
 	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_username, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
-	openchangedb_reserve_fmid_range(emsmdbp_ctx->oc_ctx, request->IdCount, &new_id);
+	mapistore_indexing_reserve_fmid_range(emsmdbp_ctx->mstore_ctx, request->IdCount, &new_id);
 	new_id >>= 16;
 	for (i = 0; i < 6 ; i++) {
 		mapi_repl->u.mapi_GetLocalReplicaIds.GlobalCount[i] = new_id & 0xff;

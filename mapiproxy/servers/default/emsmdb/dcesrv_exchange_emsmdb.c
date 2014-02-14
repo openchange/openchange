@@ -32,7 +32,7 @@
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
-void					*openchange_ldb_ctx = NULL;
+void					*openchange_db_ctx = NULL;
 
 static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
 {
@@ -123,7 +123,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, 
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
 		smb_panic("unable to initialize emsmdbp context");
 		return MAPI_E_FAILONEPROVIDER;
@@ -1591,7 +1591,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx,
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
 		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
 		goto failure;
@@ -1949,9 +1949,9 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	emsmdb_session->session = NULL;
 
 	/* Open read/write context on OpenChange dispatcher database */
-	openchange_ldb_ctx = emsmdbp_openchange_ldb_init(dce_ctx->lp_ctx);
-	if (!openchange_ldb_ctx) {
-		smb_panic("unable to initialize 'openchange.ldb' context");
+	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
+	if (!openchange_db_ctx) {
+		smb_panic("unable to initialize 'openchange db' context");
 	}
 
 	return NT_STATUS_OK;

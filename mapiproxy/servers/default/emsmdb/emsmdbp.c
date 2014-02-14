@@ -91,12 +91,13 @@ static int emsmdbp_mapi_handles_destructor(void *data)
  */
 _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 					      const char *username,
-					      void *ldb_ctx)
+					      void *oc_ctx)
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
 	enum mapistore_error	ret;
+	char			*samdb_url;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -121,8 +122,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
+	/* Retrieve samdb url (local or external) */
+	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
+	if (!samdb_url) {
+		samdb_url = "sam.ldb";
+	}
+
 	/* return an opaque context pointer on samDB database */
-	emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+	emsmdbp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
@@ -130,7 +137,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	}
 
 	/* Reference global OpenChange dispatcher database pointer within current context */
-	emsmdbp_ctx->oc_ctx = ldb_ctx;
+	emsmdbp_ctx->oc_ctx = oc_ctx;
 
 	/* Initialize the mapistore context */		
 	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
@@ -170,14 +177,14 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
    \note This function is just a wrapper over
    mapiproxy_server_openchange_ldb_init
 
-   \return Allocated LDB context on success, otherwise NULL
+   \return Allocated openchangedb context on success, otherwise NULL
  */
-_PUBLIC_ void *emsmdbp_openchange_ldb_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ void *emsmdbp_openchangedb_init(struct loadparm_context *lp_ctx)
 {
 	/* Sanity checks */
 	if (!lp_ctx) return NULL;
 
-	return mapiproxy_server_openchange_ldb_init(lp_ctx);
+	return mapiproxy_server_openchangedb_init(lp_ctx);
 }
 
 

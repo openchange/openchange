@@ -1182,45 +1182,45 @@ sub mapistore_namedprops($)
     mparse sprintf "cn: custom";
     mparse sprintf "";
 
-    for my $key ( keys %oleguid ) {
-	my $value = $oleguid{$key};
+    for my $key (sort(keys %oleguid)) {
+        my $value = $oleguid{$key};
 
-	mparse sprintf "dn: CN=%s,CN=default", $value;
-	mparse sprintf "cn: %s", $value;
-	mparse sprintf "name: %s", $key;
-	mparse sprintf "oleguid: %s", $value;
-	mparse "";
+        mparse sprintf "dn: CN=%s,CN=default", $value;
+        mparse sprintf "cn: %s", $value;
+        mparse sprintf "name: %s", $key;
+        mparse sprintf "oleguid: %s", $value;
+        mparse "";
     }
 
     @lines = split(/\n/, $contents);
     foreach $line (@lines) {
-	$line =~ s/^\#+.*$//;
-	if ($line) {
-	    @prop = split(/\s+/, $line);
-	    if ($prop[5] eq "MNID_ID" && $prop[7]) {
-		mparse sprintf "dn: CN=%s,CN=%s,CN=default", $prop[2], $oleguid{$prop[6]};
-		mparse sprintf "objectClass: %s", $prop[5];
-		mparse sprintf "cn: %s", $prop[2];
-		mparse sprintf "canonical: %s", $prop[0];
-		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mappedId: %d", hex($prop[7]);
-		mparse sprintf "propId: %d", hex($prop[2]);
-		mparse sprintf "propType: %s", $prop_names{$prop[4]};
-		mparse sprintf "oom: %s", $prop[1];
-		mparse sprintf "";
-	    } elsif ($prop[5] eq "MNID_STRING" && $prop[7]) {
-		mparse sprintf "dn: CN=%s,CN=%s,CN=default", $prop[3], $oleguid{$prop[6]};
-		mparse sprintf "objectClass: %s", $prop[5];
-		mparse sprintf "cn: %s", $prop[3];
-		mparse sprintf "canonical: %s", $prop[0];
-		mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
-		mparse sprintf "mappedId: %d", hex($prop[7]);
-		mparse sprintf "propId: 0";
-		mparse sprintf "propType: %s", $prop[4];
-		mparse sprintf "propName: %s", $prop[3];
-		mparse sprintf "";
-	    }
-	}
+        $line =~ s/^\#+.*$//;
+        if ($line) {
+            @prop = split(/\s+/, $line);
+            if ($prop[5] eq "MNID_ID" && $prop[7]) {
+                mparse sprintf "dn: CN=%s,CN=%s,CN=default", $prop[2], $oleguid{$prop[6]};
+                mparse sprintf "objectClass: %s", $prop[5];
+                mparse sprintf "cn: %s", $prop[2];
+                mparse sprintf "canonical: %s", $prop[0];
+                mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
+                mparse sprintf "mappedId: %d", hex($prop[7]);
+                mparse sprintf "propId: %d", hex($prop[2]);
+                mparse sprintf "propType: %s", $prop_names{$prop[4]};
+                mparse sprintf "oom: %s", $prop[1];
+                mparse sprintf "";
+            } elsif ($prop[5] eq "MNID_STRING" && $prop[7]) {
+                mparse sprintf "dn: CN=%s,CN=%s,CN=default", $prop[3], $oleguid{$prop[6]};
+                mparse sprintf "objectClass: %s", $prop[5];
+                mparse sprintf "cn: %s", $prop[3];
+                mparse sprintf "canonical: %s", $prop[0];
+                mparse sprintf "oleguid: %s", $oleguid{$prop[6]};
+                mparse sprintf "mappedId: %d", hex($prop[7]);
+                mparse sprintf "propId: 0";
+                mparse sprintf "propType: %s", $prop[4];
+                mparse sprintf "propName: %s", $prop[3];
+                mparse sprintf "";
+            }
+        }
     }
     return $ret;
 }

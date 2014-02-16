@@ -399,7 +399,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This should be handled differently here: temporary hack */
-	retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+	retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
@@ -437,7 +437,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 		break;
 	case false:
 		retval = openchangedb_message_create(emsmdbp_ctx->mstore_ctx, 
-						     emsmdbp_ctx->oc_ctx, messageID, folderID, mapi_req->u.mapi_CreateMessage.AssociatedFlag,
+						     emsmdbp_ctx->oc_ctx,
+						     emsmdbp_ctx->username,
+						     messageID, folderID,
+						     mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						     &message_object->backend_object);
 		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
 		break;
@@ -599,7 +602,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	switch (mapistore) {
 	case false:
-		retval = openchangedb_message_save(object->backend_object, flags);
+		retval = openchangedb_message_save(emsmdbp_ctx->oc_ctx, object->backend_object, flags);
 		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
 		break;
 	case true:
@@ -1512,7 +1515,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
                 if (request->OpenModeFlags == MAPI_CREATE) {
-                        retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+                        retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
                         if (retval) {
                                 mapi_repl->error_code = MAPI_E_NO_SUPPORT;
                                 goto end;

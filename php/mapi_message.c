@@ -209,7 +209,7 @@ zval* mapi_message_get_base64_binary_property(mapi_message_object_t* msg, mapi_i
 	return result;
 }
 
-zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_id_t prop_id, char *base64)
+zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_id_t prop_id, char *base64 TSRMLS_DC)
 {
 	zval 		*result;
 	uint32_t 	prop_type;
@@ -227,7 +227,7 @@ zval* mapi_message_set_base64_binary_property(mapi_message_object_t* msg, mapi_i
 	bin->cb = blob.length;
 	bin->lpb = blob.data;
 
-	mapi_message_so_set_prop(msg->talloc_ctx, msg->message, prop_id, (void*) bin);
+	mapi_message_so_set_prop(msg->talloc_ctx, msg->message, prop_id, (void*) bin TSRMLS_CC);
 
 	efree(bin);
 	data_blob_free(&blob);
@@ -570,7 +570,7 @@ PHP_METHOD(MAPIMessage, get)
 	}
 }
 
-void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx, mapi_object_t *message, mapi_id_t id, void *data)
+void mapi_message_so_set_prop(TALLOC_CTX *mem_ctx, mapi_object_t *message, mapi_id_t id, void *data TSRMLS_DC)
 {
 	enum MAPISTATUS		retval;
 	struct SPropValue	*lpProps = NULL;
@@ -608,7 +608,7 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
 
-		mapi_message_so_set_prop(message_obj->talloc_ctx, message_obj->message, id, data);
+		mapi_message_so_set_prop(message_obj->talloc_ctx, message_obj->message, id, data TSRMLS_CC);
 	}
 
 }
@@ -805,5 +805,5 @@ PHP_METHOD(MAPIMessage, setAsBase64)
 	}
 
 	this_obj    = (mapi_message_object_t *) zend_object_store_get_object(getThis() TSRMLS_CC);
-	mapi_message_set_base64_binary_property(this_obj, (mapi_id_t) prop_id, base64);
+	mapi_message_set_base64_binary_property(this_obj, (mapi_id_t) prop_id, base64 TSRMLS_CC);
 }

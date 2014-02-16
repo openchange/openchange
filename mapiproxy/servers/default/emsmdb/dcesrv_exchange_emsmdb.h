@@ -51,7 +51,7 @@ struct emsmdbp_context {
 	uint32_t				userLanguage;
 	char					*username;
 	struct loadparm_context			*lp_ctx;
-	struct ldb_context			*oc_ctx;
+	struct openchangedb_context		*oc_ctx;
 	struct ldb_context			*samdb_ctx;
 	struct mapistore_context		*mstore_ctx;
 	struct mapi_handles_context		*handles_ctx;
@@ -287,14 +287,16 @@ struct emsmdbp_special_folder {
 	const char			*name;
 };
 
+#define PROVISIONING_SPECIAL_FOLDERS_SIZE 6
+#define PROVISIONING_FOLDERS_SIZE EMSMDBP_DELETED_ITEMS
 __BEGIN_DECLS
 
 NTSTATUS	samba_init_module(void);
-struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
+struct ldb_context *samdb_connect_url(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, unsigned int, char *);
 
 /* definitions from emsmdbp.c */
 struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, const char *, void *);
-void			*emsmdbp_openchange_ldb_init(struct loadparm_context *);
+void			*emsmdbp_openchangedb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
@@ -315,9 +317,13 @@ int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint
 int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 
-/* definitions from emsmdbp_privisioning.c */
+/* definitions from emsmdbp_provisioning.c */
 enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *);
 enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
+
+/* definitions from emsmdbp_provisioning_names.c */
+const char **emsmdbp_get_folders_names(TALLOC_CTX *, struct emsmdbp_context *);
+const char **emsmdbp_get_special_folders(TALLOC_CTX *, struct emsmdbp_context *);
 
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
 enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);

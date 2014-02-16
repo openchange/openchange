@@ -34,15 +34,24 @@ __docformat__ = 'restructuredText'
 
 DEFAULTSITE = "Default-First-Site-Name"
 
+
+class NotProvisionedError(Exception):
+    """Raised when an action expects the server to be provisioned and it's not."""
+
+
+class ServerInUseError(Exception):
+    """Raised when a server is still in use when requested to be removed."""
+
+
 # This is a hack. Kind-of cute, but still a hack
 def abstract():
     import inspect
     caller = inspect.getouterframes(inspect.currentframe())[1][3]
     raise NotImplementedError(caller + ' must be implemented in subclass')
 
-# Define an abstraction for progress reporting from the provisioning
-class AbstractProgressReporter(object):
 
+class AbstractProgressReporter(object):
+    """Define an abstraction for progress reporting from the provisioning"""
     def __init__(self):
         self.currentStep = 0
 
@@ -53,11 +62,13 @@ class AbstractProgressReporter(object):
     def doReporting(self, stepName):
         abstract()
 
-# A concrete example of a progress reporter - just provides text output for
-# each new step.
+
 class TextProgressReporter(AbstractProgressReporter):
+    """A concrete example of a progress reporter - just provides text output
+    for each new step."""
     def doReporting(self, stepName):
         print "[+] Step %d: %s" % (self.currentStep, stepName)
+
 
 class ProvisionNames(object):
 
@@ -68,7 +79,6 @@ class ProvisionNames(object):
         self.schemadn = None
         self.dnsdomain = None
         self.netbiosname = None
-        self.domain = None
         self.hostname = None
         self.serverrole = None
         self.firstorg = None
@@ -77,6 +87,21 @@ class ProvisionNames(object):
         # OpenChange dispatcher database specific
         self.ocfirstorgdn = None
         self.ocserverdn = None
+
+        self._domain = None
+
+    @property
+    def domain(self):
+        if self._domain:
+            return self._domain
+        elif self.ocserverdn:
+            serverdn_parts = self.ocserverdn.split(',')
+            return serverdn_parts[-2] + "." + serverdn_parts[-1]
+
+    @domain.setter
+    def domain(self, value):
+        self._domain = value
+
 
 def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
@@ -149,6 +174,7 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
 
     return names
 
+
 def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
     """Provision/modify schema using LDIF specified file
     :param setup_path: Path to the setup directory.
@@ -173,23 +199,22 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
             ldif_function = setup_modify_ldif
         else:
             ldif_function = setup_add_ldif
-        ldif_function(db, setup_path(ldif), {
-                "FIRSTORG": names.firstorg,
-                "FIRSTORGDN": names.firstorgdn,
-                "FIRSTOU": names.firstou,
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "DOMAINDN": names.domaindn,
-                "DOMAIN": names.domain,
-                "DNSDOMAIN": names.dnsdomain,
-                "NETBIOSNAME": names.netbiosname,
-                "HOSTNAME": names.hostname
-                })
+        ldif_function(db, setup_path(ldif), {"FIRSTORG": names.firstorg,
+                                             "FIRSTORGDN": names.firstorgdn,
+                                             "FIRSTOU": names.firstou,
+                                             "CONFIGDN": names.configdn,
+                                             "SCHEMADN": names.schemadn,
+                                             "DOMAINDN": names.domaindn,
+                                             "DOMAIN": names.domain,
+                                             "DNSDOMAIN": names.dnsdomain,
+                                             "NETBIOSNAME": names.netbiosname,
+                                             "HOSTNAME": names.hostname})
     except:
         db.transaction_cancel()
         raise
 
     db.transaction_commit()
+
 
 def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Modify schema using LDIF specified file
@@ -203,7 +228,6 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """
 
     return provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
-
 
 
 def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
@@ -270,7 +294,7 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
                 ldif_content = "\n".join(entry)
                 try:
                     db.modify_ldif(ldif_content)
-                except err:
+                except Exception as err:
                     print ("[!] error: %s" % str(err))
         else:
             lines = ldif_content.splitlines()
@@ -293,6 +317,7 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
         raise
 
     db.transaction_commit()
+
 
 def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Unmodify schema using LDIF specified file
@@ -375,6 +400,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
 
+
 def get_ldb_url(lp, creds, names):
     if names.serverrole == "member server":
         net = Net(creds, lp)
@@ -384,6 +410,7 @@ def get_ldb_url(lp, creds, names):
         url = lp.samdb_url()
 
     return url
+
 
 def get_user_dn(ldb, basedn, username):
     if not isinstance(ldb, Ldb):
@@ -396,6 +423,7 @@ def get_user_dn(ldb, basedn, username):
         user_dn = res[0].dn.get_linearized()
 
     return user_dn
+
 
 def newuser(names, lp, creds, username=None):
     """extend user record with OpenChange settings.
@@ -442,8 +470,7 @@ msExchUserAccountControl: 0
         if len(res) == 1:
             record = res[0]
         else:
-            raise Exception, \
-                "this should never happen as we just modified the record..."
+            raise Exception("this should never happen as we just modified the record...")
         record_keys = map(lambda x: x.lower(), record.keys())
 
         if "displayname" not in record_keys:
@@ -469,7 +496,7 @@ def accountcontrol(names, lp, creds, username=None, value=0):
     :param value: the control value
     """
 
-    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     extended_user = """
@@ -483,6 +510,76 @@ msExchUserAccountControl: %d
         print "[+] Account %s disabled" % username
     else:
         print "[+] Account %s enabled" % username
+
+
+def checkusage(names, lp, creds):
+    """Checks whether this server is already provisioned and is being used.
+
+    :param names: provision names object.
+    :param lp: Loadparm context
+    :param creds: Credentials Context
+    """
+
+    session_info = system_session()
+
+    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
+                  credentials=creds, lp=lp)
+
+    try:
+        config_dn = samdb.get_config_basedn()
+        mapi_servers = samdb.search(
+            base=config_dn, scope=ldb.SCOPE_SUBTREE,
+            expression="(&(objectClass=msExchExchangeServer)(cn=%s))" % names.netbiosname)
+        if len(mapi_servers) != 1:
+            # The server is not provisioned.
+            raise NotProvisionedError
+
+        server_uses = []
+        # Check if we are the primary folder store server.
+        our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+                                                        names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+        assert len(ret) == 1
+        siteFolderName = ret[0]["siteFolderServer"][0]
+        if our_siteFolderName.lower() == siteFolderName.lower():
+            server_uses.append("primary folder store server")
+
+        # Check if we are the primary receipt update service
+        our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+        dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+        assert len(ret) == 1
+        addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+        if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+            server_uses.append("primary receipt update service server")
+
+        # Check if we handle any mailbox.
+        db = Ldb(
+            url=get_ldb_url(lp, creds, names), session_info=system_session(),
+            credentials=creds, lp=lp)
+
+        our_mailbox_store = "CN=Mailbox Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        mailboxes = db.search(
+            base=names.domaindn, scope=ldb.SCOPE_SUBTREE,
+            expression="(homeMDB=*)")
+        mailboxes_handled = 0
+        for user_mailbox in mailboxes:
+            if (user_mailbox['homeMDB'][0] == our_mailbox_store and
+                user_mailbox['msExchUserAccountControl'][0] != '2'):
+                mailboxes_handled += 1
+
+        if mailboxes_handled > 0:
+            server_uses.append(
+                "handling %d mailboxes" % mailboxes_handled)
+
+        return server_uses
+    except LdbError, ldb_error:
+        print >> sys.stderr, "[!] error while checking whether this server is being used (%d): %s" % ldb_error.args
+        raise ldb_error
+    except RuntimeError as err:
+        print >> sys.stderr, "[!] error while checking whether this server is being used: %s" % err
+        raise err
 
 
 def provision(setup_path, names, lp, creds, reporter=None):
@@ -516,8 +613,13 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
+
     if reporter is None:
         reporter = TextProgressReporter()
+
+    server_uses = checkusage(names, lp, creds)
+    if (len(server_uses) > 0):
+        raise ServerInUseError(', '.join(server_uses))
 
     session_info = system_session()
 
@@ -527,41 +629,16 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
                   credentials=creds, lp=lp)
 
     try:
-        config_dn = samdb.get_config_basedn()
-        ret = samdb.search(base=config_dn, scope=ldb.SCOPE_SUBTREE, expression="(objectClass=msExchExchangeServer)")
-        if len(ret) > 1:
-            # If we are the primary folder store server, raise exception
-            # The user has to set another server as primary before unregister
-            # this one
-            our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
-                                                        names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
-            assert len(ret) == 1
-            siteFolderName = ret[0]["siteFolderServer"][0]
-            if our_siteFolderName.lower() == siteFolderName.lower():
-                raise Exception("This server is the primary folder store server")
-
-            # If we are the primary receipt update service, raise exception
-            our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
-            dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
-            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
-            assert len(ret) == 1
-            addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
-            if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-                raise Exception("This server is the primary receipt update service server")
-
-            # Unregister the server
-            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Remove Exchange samba registration")
-        else:
-            # This is the unique server, remove full schema
-            deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+        # This is the unique server, remove full schema
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
+        raise ldb_error
     except RuntimeError as err:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects: %s" % err)
+        raise err
 
     ## NOTE: AD schema objects cannot be deleted (it's a feature!)
     # try:
@@ -605,6 +682,46 @@ def register(setup_path, names, lp, creds, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
+def unregister(setup_path, names, lp, creds, reporter=None):
+    """Unregisters an OpenChange server.
+
+    :param setup_path: Path to the setup directory
+    :param names: Provision Names object
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    :raise ServerInUseError: If the server being unregistered is still being
+                             used. The error string gives you the list of
+                             uses.
+    :raise NotProvisionedError: If we try to unregister a server which is not
+                                yet provisioned.
+
+    If a progress reporter is not provided, a text output reporter is provided
+    """
+
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    server_uses = checkusage(names, lp, creds)
+    if (len(server_uses) > 0):
+        raise ServerInUseError(', '.join(server_uses))
+
+    try:
+        # Unregister the server
+        deprovision_schema(setup_path, names, lp, creds, reporter,
+                           "AD/oc_provision_configuration_new_server.ldif",
+                           "Unregistering Openchange server")
+    except LdbError, ldb_error:
+        print ("[!] error while unregistering the Openchange configuration"
+               " objects (%d): %s" % ldb_error.args)
+        raise ldb_error
+    except RuntimeError as err:
+        print ("[!] error while deprovisioning the Openchange configuration"
+               " objects: %s" % err)
+        raise err
+
+
 def registerasmain(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as the main Exchange server.
 
@@ -628,41 +745,57 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
                " objects (%d): %s" % ldb_error.args)
 
 
-def openchangedb_provision(names, lp, mapistore=None):
-    """Create the OpenChange database.
+def openchangedb_deprovision(names, lp, mapistore=None):
+    """Removed the OpenChange database.
 
     :param names: Provision names object
     :param lp: Loadparm context
     :param mapistore: The public folder store type (fsocpf, sqlite, etc)
     """
 
+    print "Removing openchange db"
+    uri = openchangedb_url(lp)
+    if uri.startswith('mysql'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
+    else:
+        openchangedb = mailbox.OpenChangeDB(uri)
+    openchangedb.remove()
+
+
+def openchangedb_provision(names, lp, uri=None):
+    """Create the OpenChange database.
+
+    :param names: Provision names object
+    :param lp: Loadparm context
+    :param uri: Openchangedb destination, by default will be a ldb file inside
+    private samba directory. You can specify a mysql connection string like
+    mysql://user:passwd@host/db_name to use openchangedb with mysql backend
+    """
+
     print "Setting up openchange db"
-    openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
-    openchange_ldb.setup()
+    if uri is None or len(uri) == 0 or uri.startswith('ldb'):  # LDB backend
+        openchangedb = mailbox.OpenChangeDB(openchangedb_url(lp))
+    elif uri.startswith('mysql'):  # MySQL backend
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
+    else:
+        print "[!] error provisioning openchangedb: Unknown uri `%s`" % uri
+        return
+    openchangedb.setup(names)
+    openchangedb.add_server(names)
+    openchangedb.add_public_folders(names)
 
-    print "Adding root DSE"
-    openchange_ldb.add_rootDSE(names.ocserverdn, names.firstorg, names.firstou)
-
-    # Add a server object
-    # It is responsible for holding the GlobalCount identifier (48 bytes)
-    # and the Replica identifier
-    openchange_ldb.add_server(names.ocserverdn, names.netbiosname, names.firstorg, names.firstou)
-
-    print "[+] Public Folders"
-    print "==================="
-    openchange_ldb.add_public_folders(names)
 
 def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
     if "/site-packages/" in dirname:
         prefix = dirname[:dirname.index("/site-packages/")]
-        for suffix in ["share/openchange/setup", "share/setup", "share/samba/setup", "setup"]:
-            ret = os.path.join(prefix, suffix)
+        for suffix in ["share/setup", "share/openchange/setup", "share/samba/setup", "setup"]:
+            ret = os.path.join(prefix, "../..", suffix)
             if os.path.isdir(ret):
-                return ret
+                return os.path.abspath(ret)
     # In source tree
     ret = os.path.join(dirname, "../../setup")
     if os.path.isdir(ret):
-        return ret
+        return os.path.abspath(ret)
     raise Exception("Unable to find setup directory.")

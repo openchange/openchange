@@ -475,10 +475,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			}
 			goto end;
 		}
-	}
-	else {
+	} else {
 		/* Step 3. Turn CreateFolder parameters into MAPI property array */
-		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+		parent_fid = parent_object->object.folder->folderID;
+		if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
+			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fid);
+		} else {
+			retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fid);
+		}
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
@@ -492,8 +496,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 
-		parent_fid = parent_object->object.folder->folderID;
-		
 		aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
 		cnValue.ulPropTag = PidTagChangeNumber;
@@ -1011,7 +1013,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 		/* We prepare a set of new MIDs for the backend */
 		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
 		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
-			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMIDs[i]);
+			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &targetMIDs[i]);
 		}
 
 		/* We invoke the backend method */

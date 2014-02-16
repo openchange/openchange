@@ -9,22 +9,20 @@ import ocsmanager.lib.app_globals as app_globals
 import ocsmanager.lib.helpers
 import ocsmanager.lib.config as OCSConfig
 from ocsmanager.config.routing import make_map
+from ocsmanager.lib.openchangedb import get_openchangedb
 import openchange.mapistore as mapistore
 
 # samba
 import samba.param
-from samba import Ldb
 from samba.samdb import SamDB
 from samba.auth import system_session, admin_session
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
-def _load_samba_environment():
-    """Load the samba configuration vars from smb.conf and the sam.db.
-    
-    """
 
+def _load_samba_environment():
+    """Load the samba configuration vars from smb.conf and the sam.db."""
     params = samba.param.LoadParm()
     params.load_default()
 
@@ -62,25 +60,10 @@ def _load_samba_environment():
     return sam_environ
 
 
-def _load_ocdb():
-    """Return a Ldb object pointing to the openchangedb.ldb
-    
-    """
-
-    params = samba.param.LoadParm()
-    params.load_default()
-
-    ocdb = Ldb(os.path.join(params.get("private dir"), "openchange.ldb"))
-
-    return ocdb
-
-
 def load_environment(global_conf, app_conf):
-    """Configure the Pylons environment via the ``pylons.config``
-    object
-    """
+    """Configure the Pylons environment via the ``pylons.config`` object"""
     config = PylonsConfig()
-    
+
     # Pylons paths
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     paths = dict(root=root,
@@ -94,11 +77,10 @@ def load_environment(global_conf, app_conf):
     config['routes.map'] = make_map(config)
     config['pylons.app_globals'] = app_globals.Globals(config)
     config['pylons.h'] = ocsmanager.lib.helpers
-    
+
     # Setup cache object as early as possible
     import pylons
     pylons.cache._push_object(config['pylons.app_globals'].cache)
-    
 
     # Create the Mako TemplateLookup, with the default auto-escaping
     config['pylons.app_globals'].mako_lookup = TemplateLookup(
@@ -114,7 +96,7 @@ def load_environment(global_conf, app_conf):
     config['ocsmanager'] = ocsconfig.load()
 
     config['samba'] = _load_samba_environment()
-    config['oc_ldb'] = _load_ocdb()
+    config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].lp)
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])
@@ -122,5 +104,5 @@ def load_environment(global_conf, app_conf):
     config['management'] = mstore.management()
     if config['ocsmanager']['main']['debug'] == "yes":
         config['management'].verbose = True;
-    
+
     return config

@@ -5,7 +5,12 @@ AC_PREREQ(2.57)
 AC_INIT(openchange, 2.0, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
-AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
+
+AH_VERBATIM([_GNU_SOURCE],
+[#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif])
+
 
 PKG_PROG_PKG_CONFIG([0.20])
 
@@ -15,6 +20,12 @@ then
 fi
 
 CFLAGS="-I. $CFLAGS"
+
+dnl #################################################################
+dnl MySQL
+dnl #################################################################
+AC_CHECK_HEADER(mysql/mysql.h, , [AC_MSG_ERROR(
+        [Couldn't find mysql.h... try installing libmysqlclient-dev package])])
 
 dnl #################################################################
 dnl Check for OS dependent options
@@ -479,7 +490,7 @@ AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread]
 	       [
 	        ov_cv_boost_thread=no
 		ov_save_LIBS=$LIBS
-		LIBS="-lboost_thread$BOOST_LIB_SUFFIX $LIBS"
+		LIBS="-lboost_thread$BOOST_LIB_SUFFIX -lboost_system$BOOST_LIB_SUFFIX $LIBS"
 		AC_LANG_PUSH([C++])
 		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <boost/thread.hpp>]],
 						[[boost::thread t]])],

@@ -18,6 +18,7 @@
 
 from base64 import b64encode
 import os
+import re
 from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
@@ -788,8 +789,9 @@ def openchangedb_provision(names, lp, uri=None):
 def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)
-    if "/site-packages/" in dirname:
-        prefix = dirname[:dirname.index("/site-packages/")]
+    search_path = re.search(r'(/(site|dist)-packages/)', dirname)
+    if search_path and search_path.group(0):
+        prefix = dirname[:dirname.index(search_path.group(0))]
         for suffix in ["share/setup", "share/openchange/setup", "share/samba/setup", "setup"]:
             ret = os.path.join(prefix, "../..", suffix)
             if os.path.isdir(ret):

@@ -549,40 +549,8 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 					   const char *recipient,
 					   uint64_t *FolderId)
 {
-	TALLOC_CTX			*mem_ctx;
-	struct ldb_result		*res = NULL;
-	const char * const		attrs[] = { "*", NULL };
-	int				ret;
-	char				*dnstr;
-	struct ldb_dn			*ldb_dn = NULL;
-	struct ldb_context		*ldb_ctx = self->data;
-
-	mem_ctx = talloc_named(NULL, 0, "get_TransportFolder");
-
-	/* Step 1. Find mailbox DN for the recipient */
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			 LDB_SCOPE_SUBTREE, attrs, "CN=%s", recipient);
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-
-	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
-
-	talloc_free(res);
-
-	/* Step 2. Find "Outbox" in user mailbox */
-	ldb_dn = ldb_dn_new(mem_ctx, ldb_ctx, dnstr);
-	talloc_free(dnstr);
-
-	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_dn, LDB_SCOPE_SUBTREE, attrs, "(PidTagDisplayName=%s)", "Outbox");
-	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
-
-	/* Step 2. If Mailbox root folder, check for FolderID within current record */
-	*FolderId = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0);
-	OPENCHANGE_RETVAL_IF(!*FolderId, MAPI_E_CORRUPT_STORE, mem_ctx);
-
-	talloc_free(mem_ctx);
-
-	return MAPI_E_SUCCESS;
+	return get_SystemFolderID(self, recipient, TRANSPORT_FOLDER_SYSTEM_IDX,
+				  FolderId);
 }
 
 static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,

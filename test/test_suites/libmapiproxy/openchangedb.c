@@ -251,6 +251,22 @@ START_TEST (test_get_TransportFolder) {
 	ck_assert_int_eq(fid, 18375530904601755649ul);
 } END_TEST
 
+START_TEST (test_get_Transport_folder_when_has_unusual_display_name) {
+	uint64_t fid = 0, transport_fid = 18375530904601755649ul;
+	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+
+	row->cValues = 1;
+	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps[0].ulPropTag = PidTagDisplayName;
+	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "wH4t3v3r mate");
+	ret = openchangedb_set_folder_properties(oc_ctx, "paco", transport_fid, row);
+	CHECK_SUCCESS;
+
+	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(fid, transport_fid);
+} END_TEST
+
 START_TEST (test_get_folder_count) {
 	uint32_t count;
 	uint64_t fid;
@@ -1232,6 +1248,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_build_table_folders);
 	tcase_add_test(tc, test_build_table_folders_with_restrictions);
 	tcase_add_test(tc, test_build_table_folders_live_filtering);
+	tcase_add_test(tc, test_get_Transport_folder_when_has_unusual_display_name);
 
 	if (strcmp(backend_name, "MySQL") == 0) {
 		// Ugly workaround to test mysql only functions

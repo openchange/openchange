@@ -303,13 +303,16 @@ class OpenChangeDBWithMysqlBackend(object):
     def _create_database(self):
         if '`' in self.db_name:
             raise Exception("Database name must not have '`' on its name")
-        self._execute("DROP DATABASE IF EXISTS `%s`" % self.db_name)
-        self._execute("CREATE DATABASE `%s`" % self.db_name)
+        self._execute("DROP DATABASE IF EXISTS `%s`" %
+                      self.db.escape_string(self.db_name))
+        self._execute("CREATE DATABASE `%s`" %
+                      self.db.escape_string(self.db_name))
         self.db.select_db(self.db_name)
 
     def remove(self):
         """Remove an existing OpenChangeDB."""
-        self._execute("DROP DATABASE %s", self.db_name)
+        self._execute("DROP DATABASE `%s`" %
+                      self.db.escape_string(self.db_name))
 
     def _parse_mysql_url(self):
         # self.url should be mysql://user[:passwd]@some_host/some_db_name

@@ -46,7 +46,7 @@ def getSambaProcess(logger):
 	return psbuffer	
 
 
-def runGdb(pid):
+def runGdb(pid, logger):
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
 	try:
 		subprocess.call(['gdb', '--pid' , pid])
@@ -73,7 +73,7 @@ def main():
 		fh = open('/proc/%s/maps' % pid, 'r')
 		try:
 			map = fh.read()
-			if 'dcerpc_mapiproxy' in map: return runGdb(pid)
+			if 'dcerpc_mapiproxy' in map: return runGdb(pid, logger)
 		except (IOError, OSError) as e:
 			logger.error(e)
 			return	

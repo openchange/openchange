@@ -3,7 +3,9 @@
 
 ifneq ($(MAKECMDGOALS), samba)
 ifneq ($(MAKECMDGOALS), samba-git)
+ifneq ($(MAKECMDGOALS), samba-git-update)
 include config.mk
+endif
 endif
 endif
 

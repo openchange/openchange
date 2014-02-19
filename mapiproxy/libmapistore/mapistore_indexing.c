@@ -371,21 +371,42 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore
 }
 
 static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_context *mstore_ctx,
+							    const char *username,
 							    uint64_t range_len, uint64_t *fid)
 {
 	enum mapistore_error ret;
 	struct indexing_context	*ictx;
-	const char *username;
 
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	username = mstore_ctx->conn_info->username;
 	ictx = mapistore_indexing_search(mstore_ctx, username);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ret = ictx->allocate_fmids(ictx, username, range_len, fid);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Allocates a new FolderID for a specific user and returns it
+
+   \param mstore_ctx pointer to the mapistore context
+   \param username name of the mailbox
+   \param fid pointer to the fid value the function returns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct mapistore_context *mstore_ctx,
+									  const char *username, uint64_t *fid)
+{
+	enum mapistore_error ret;
+
+	ret = mapistore_indexing_allocate_fid(mstore_ctx, username, 1, fid);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
+
+	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
 
 	return MAPISTORE_SUCCESS;
 }
@@ -401,14 +422,7 @@ static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_con
 _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID(struct mapistore_context *mstore_ctx,
 								  uint64_t *fid)
 {
-	enum mapistore_error ret;
-
-	ret = mapistore_indexing_allocate_fid(mstore_ctx, 1, fid);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
-
-	*fid = (exchange_globcnt(*fid) << 16) | 0x0001;
-
-	return MAPISTORE_SUCCESS;
+	return mapistore_indexing_get_new_folderID_as_user(mstore_ctx, mstore_ctx->conn_info->username, fid);
 }
 
 /**
@@ -431,7 +445,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapist
 	enum mapistore_error ret;
 	struct UI8Array_r *fids;
 
-	ret = mapistore_indexing_allocate_fid(mstore_ctx, max, &fid);
+	ret = mapistore_indexing_allocate_fid(mstore_ctx, mstore_ctx->conn_info->username, max, &fid);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
 
 	fids = talloc_zero(mem_ctx, struct UI8Array_r);

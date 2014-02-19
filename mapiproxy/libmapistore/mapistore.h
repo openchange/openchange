@@ -392,6 +392,7 @@ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context 
 enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *, const char *, const char *, bool, uint64_t *, bool *);
 
 enum mapistore_error mapistore_indexing_get_new_folderID(struct mapistore_context *, uint64_t *);
+enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct mapistore_context *, const char *, uint64_t *);
 enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapistore_context *, TALLOC_CTX *, uint64_t, struct UI8Array_r **);
 enum mapistore_error mapistore_indexing_reserve_fmid_range(struct mapistore_context *, uint64_t, uint64_t *);
 

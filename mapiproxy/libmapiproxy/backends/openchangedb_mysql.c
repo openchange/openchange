@@ -2490,7 +2490,7 @@ static enum MAPISTATUS get_id_from_folder_id(MYSQL *conn, const char *username,
 	return ret;
 }
 
-static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS message_create(TALLOC_CTX *parent_ctx,
 				      struct openchangedb_context *self,
 				      const char *username,
 				      uint64_t message_id, uint64_t fid,
@@ -2504,15 +2504,15 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 
 	ret = get_mailbox_ids_by_name(conn, username, &mailbox_id,
 				      &mailbox_folder_id);
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
 	parent_is_mailbox = mailbox_folder_id == fid;
 	if (!parent_is_mailbox) {
 		ret = get_id_from_folder_id(conn, username, fid, &folder_id);
-		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 	}
 
-	msg = talloc_zero(mem_ctx, struct openchangedb_message);
+	msg = talloc_zero(parent_ctx, struct openchangedb_message);
 	OPENCHANGE_RETVAL_IF(!msg, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	msg->id = 0; // Only new records will have id equal to 0
 	// TODO ou_id

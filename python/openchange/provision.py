@@ -792,7 +792,7 @@ def find_setup_dir():
     search_path = re.search(r'(/(site|dist)-packages/)', dirname)
     if search_path and search_path.group(0):
         prefix = dirname[:dirname.index(search_path.group(0))]
-        for suffix in ["share/setup", "share/openchange/setup", "share/samba/setup", "setup"]:
+        for suffix in ["share/openchange/setup", "share/setup", "share/samba/setup", "setup"]:
             ret = os.path.join(prefix, "../..", suffix)
             if os.path.isdir(ret):
                 return os.path.abspath(ret)

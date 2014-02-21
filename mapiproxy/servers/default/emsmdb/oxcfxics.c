@@ -2633,7 +2633,8 @@ static void oxcfxics_check_cnset(struct ldb_context *oc_ctx, struct idset *parse
 		high_cn = exchange_globcnt(parsed_idset->ranges->high);
 		if (high_cn >= next_cn) {
 			DEBUG(0, ("inconsistency: idset range for '%s' is referencing a change number that has not been issued yet: %"PRIx64" >= %"PRIx64" \n", label, high_cn, next_cn));
-			abort();
+			/* FIXME: Decide what we should do in this situation? Aborting is not very cool for end-users obviously :) */
+//			abort();
 		}
 	}
 }

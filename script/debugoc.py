@@ -69,7 +69,7 @@ def main():
 	for line in psbuffer.split('\n'):
 		if not 'samba' in line: continue
 		logger.info(line)
-		pid = line.split(' ')[0]
+		pid = filter(None, line.split(' '))[0]
 		fh = open('/proc/%s/maps' % pid, 'r')
 		try:
 			map = fh.read()

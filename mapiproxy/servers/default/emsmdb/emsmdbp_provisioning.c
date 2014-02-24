@@ -362,7 +362,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
 			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
 			mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, mailbox_fid, current_fid, current_cn, mapistore_url, i);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, mailbox_fid, current_fid, current_cn, mapistore_url, i);
 			property_row.lpProps[0].value.lpszW = folder_names[i];
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
@@ -384,7 +384,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		if (ret != MAPI_E_SUCCESS) {
 			mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_fid);
 			openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &current_cn);
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, mailbox_fid, current_fid, current_cn, NULL, i);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, mailbox_fid, current_fid, current_cn, NULL, i);
 			property_row.lpProps[0].value.lpszW = folder_names[i];
 			property_row.lpProps[1].value.lpszW = search_container_classes[j];
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
@@ -404,7 +404,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		property_row.lpProps[1].ulPropTag = PR_SUBFOLDERS;
 		property_row.lpProps[0].value.lpszW = folder_names[EMSMDBP_TOP_INFORMATION_STORE];
 		property_row.lpProps[1].value.b = true;
-		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, mailbox_fid, ipm_fid, current_cn, NULL, EMSMDBP_TOP_INFORMATION_STORE);
+		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, mailbox_fid, ipm_fid, current_cn, NULL, EMSMDBP_TOP_INFORMATION_STORE);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, ipm_fid, &property_row);
 		openchangedb_set_ReceiveFolder(emsmdbp_ctx->oc_ctx, username, "IPC", mailbox_fid);
 	}
@@ -459,7 +459,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				j++;
 			}
 
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, ipm_fid, current_fid, current_cn, mapistore_url, i);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			property_row.lpProps[0].value.lpszW = current_name;
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
@@ -518,7 +518,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 			property_row.lpProps[0].value.lpszW = current_name;
 			property_row.lpProps[1].value.lpszW = container_classes[current_folder->role];
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, ipm_fid, current_fid, current_cn, mapistore_url, i);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, i);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */
@@ -589,7 +589,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 				}
 				property_row.lpProps[0].value.lpszW = current_name;
 
-				openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, ipm_fid, current_fid, current_cn, mapistore_url, -1);
+				openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, ipm_fid, current_fid, current_cn, mapistore_url, -1);
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
 				/* instantiate the new folder in the backend to make sure it is initialized properly */
@@ -626,7 +626,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			property_row.lpProps[2].value.d = current_cn;
 
 			mapistore_url = talloc_asprintf(mem_ctx, "%s0x%"PRIx64"/", fallback_url, current_fid);
-			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, mailbox_fid, current_fid, current_cn, mapistore_url, -1);
+			openchangedb_create_folder(emsmdbp_ctx->oc_ctx, username, mailbox_fid, current_fid, current_cn, mapistore_url, -1);
 			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username, current_fid, &property_row);
 
 			/* instantiate the new folder in the backend to make sure it is initialized properly */

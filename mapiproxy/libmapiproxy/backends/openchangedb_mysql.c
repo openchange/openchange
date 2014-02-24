@@ -17,8 +17,6 @@
 
 #define THRESHOLD_SLOW_QUERIES 0.25
 
-#define TRANSPORT_FOLDER_NAME "Outbox"
-
 // We only used one connection
 // FIXME assumption that every user will use the same mysql server. Change
 // into list of connections indexed by username, like indexing backend.
@@ -440,24 +438,10 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 
 static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 					   const char *recipient,
-					   uint64_t *FolderId)
+					   uint64_t *folder_id)
 {
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_TransportFolder");
-	MYSQL *conn = self->data;
-	char *sql;
-	enum MAPISTATUS ret;
-
-	// FIXME ou_id
-	sql = talloc_asprintf(mem_ctx,
-		"SELECT f.folder_id FROM folders f "
-		"JOIN mailboxes m ON f.mailbox_id = m.id AND m.name = '%s' "
-		"JOIN folders_properties p ON p.folder_id = f.id"
-		" AND p.name = 'PidTagDisplayName' AND p.value = '%s'",
-		_sql(mem_ctx, recipient), TRANSPORT_FOLDER_NAME);
-
-	ret = status(select_first_uint(conn, sql, FolderId));
-	talloc_free(mem_ctx);
-	return ret;
+	return get_SystemFolderID(self, recipient, TRANSPORT_FOLDER_SYSTEM_IDX,
+				  folder_id);
 }
 
 static enum MAPISTATUS get_mailbox_ids_by_name(MYSQL *conn,

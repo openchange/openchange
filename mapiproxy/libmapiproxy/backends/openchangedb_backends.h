@@ -68,4 +68,7 @@ struct openchangedb_context {
 
 const char *nil_string;
 
+
+#define TRANSPORT_FOLDER_SYSTEM_IDX 14
+
 #endif /* __OPENCHANGEDB_BACKEND_H__ */

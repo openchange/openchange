@@ -1602,10 +1602,6 @@ _PUBLIC_ enum mapistore_error mapistore_message_attachment_create_embedded_messa
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (strstr(backend_ctx->uri, "@tasks") != NULL) {
-		return MAPI_E_NOT_IMPLEMENTED;
-	}
-
 	/* Step 2. Call backend operation */
 	return mapistore_backend_message_attachment_create_embedded_message(backend_ctx, attachment, mem_ctx, embedded_message, msg);
 }

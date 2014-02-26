@@ -35,6 +35,8 @@
 #include <gen_ndr/ndr_property.h>
 
 
+#define MAILBOX_ROOT_NAME "OpenChange: %s"
+
 static struct emsmdbp_special_folder *get_special_folders(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx)
 {
 	static struct emsmdbp_special_folder default_values[PROVISIONING_SPECIAL_FOLDERS_SIZE] = {
@@ -347,7 +349,11 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	ret = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, &mailbox_fid);
 	if (ret != MAPI_E_SUCCESS) {
 		mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &mailbox_fid);
-		current_name = talloc_asprintf(mem_ctx, folder_names[EMSMDBP_MAILBOX_ROOT], username);
+		// FIXME Behavior watched on Outlook 2007. First time mailbox is open
+		// we can see SOGo inbox name, after first /resetfoldernames we see the
+		// value set here. After that outlook won't update that value, no matter
+		// how many times /resetfoldernames is executed again.
+		current_name = talloc_asprintf(mem_ctx, MAILBOX_ROOT_NAME, username);
 		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid, current_name);
 		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}

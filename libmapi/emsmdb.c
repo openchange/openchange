@@ -643,7 +643,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
+	openchange_load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
 	ipaddr = iface_best_ip(ifaces, mapi_ctx->session->profile->server);
 	if (!ipaddr) {
 		talloc_free(notify_ctx->notifications);

@@ -48,6 +48,7 @@
      invalid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: Memory allocation failed
  */
 _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store, 
 					    uint32_t IdCount,
@@ -77,6 +78,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 		return retval;
 
 	mem_ctx = talloc_named(session, 0, "GetLocalReplicaIds");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	size = 0;
 
 	/* Fill the GetLocalReplicaIds operation */
@@ -85,6 +87,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_req->opnum = op_MAPI_GetLocalReplicaIds;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
@@ -93,10 +96,12 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
 	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
@@ -140,6 +145,7 @@ _PUBLIC_ enum MAPISTATUS GetLocalReplicaIds(mapi_object_t *obj_store,
      invalid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: Memory allocation failed
  */
 _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 					 enum FastTransferDestConfig_SourceOperation sourceOperation,
@@ -167,6 +173,7 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 		return retval;
 
 	mem_ctx = talloc_named(session, 0, "FXDestConfigure");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	size = 0;
 
 	/* Fill the ConfigureDestination operation */
@@ -179,6 +186,7 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_req->opnum = op_MAPI_FastTransferDestConfigure;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
@@ -187,10 +195,12 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
 	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 	mapi_request->handles[1] = 0xFFFFFFFF;
 
@@ -228,6 +238,7 @@ _PUBLIC_ enum MAPISTATUS FXDestConfigure(mapi_object_t *obj,
      invalid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: Memory allocation failed
  */
 _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[3])
 {
@@ -253,6 +264,7 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 		return retval;
 
 	mem_ctx = talloc_named(session, 0, "TellVersion");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	size = 0;
 
 	/* Fill the operation */
@@ -265,6 +277,7 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_req->opnum = op_MAPI_TellVersion;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
@@ -273,10 +286,12 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
 	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 1);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->handles[0] = mapi_object_get_handle(obj_store);
 
 	status = emsmdb_transaction_wrapper(session, mem_ctx, mapi_request, &mapi_response);
@@ -319,6 +334,7 @@ _PUBLIC_ enum MAPISTATUS TellVersion(mapi_object_t *obj_store, uint16_t version[
      invalid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: Memory allocation failed
  */
 _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uint8_t sendOptions,
 				      mapi_object_t *obj_source_context)
@@ -345,6 +361,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 		return retval;
 
 	mem_ctx = talloc_named(session, 0, "FXCopyFolder");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	size = 0;
 
 	/* Fill the CopyFolder operation */
@@ -357,6 +374,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_req->opnum = op_MAPI_FastTransferSourceCopyFolder;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
@@ -365,10 +383,12 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
 	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 	mapi_request->handles[1] = 0xffffffff;
 
@@ -429,6 +449,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyFolder(mapi_object_t *obj, uint8_t copyFlags, uin
      invalid
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
    transaction
+   - MAPI_E_NOT_ENOUGH_MEMORY: Memory allocation failed
  */
 _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *message_ids,
 					uint8_t copyFlags, uint8_t sendOptions,
@@ -456,6 +477,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 		return retval;
 
 	mem_ctx = talloc_named(session, 0, "FXCopyMessages");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	size = 0;
 
 	/* Fill the CopyMessages operation */
@@ -473,6 +495,7 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 
 	/* Fill the MAPI_REQ structure */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_req->opnum = op_MAPI_FastTransferSourceCopyMessages;
 	mapi_req->logon_id = logon_id;
 	mapi_req->handle_idx = 0;
@@ -481,10 +504,12 @@ _PUBLIC_ enum MAPISTATUS FXCopyMessages(mapi_object_t *obj, mapi_id_array_t *mes
 
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
+	OPENCHANGE_RETVAL_IF(!mapi_request, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->mapi_len = size + sizeof (uint32_t) * 2;
 	mapi_request->length = (uint16_t)size;
 	mapi_request->mapi_req = mapi_req;
 	mapi_request->handles = talloc_array(mem_ctx, uint32_t, 2);
+	OPENCHANGE_RETVAL_IF(!mapi_request->handles, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	mapi_request->handles[0] = mapi_object_get_handle(obj);
 	mapi_request->handles[1] = 0xffffffff;
 

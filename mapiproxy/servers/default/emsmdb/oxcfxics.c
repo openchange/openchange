@@ -3167,7 +3167,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			bin_data->lpb += read_states_size;
 
 			guid_blob.data = read_states->MessageId;
-			if (GUID_from_data_blob(&guid_blob, &guid).v != 0) {
+			if (NT_STATUS_IS_ERR(GUID_from_data_blob(&guid_blob, &guid))) {
 				continue;
 			}
 			owner = emsmdbp_get_owner(synccontext_object);

@@ -2577,7 +2577,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 		*retvalsp = retvals;
 	}
 
-	if (retval) {
+	if (retval != MAPISTORE_SUCCESS) {
 		talloc_free(data_pointers);
 		data_pointers = NULL;
 	}

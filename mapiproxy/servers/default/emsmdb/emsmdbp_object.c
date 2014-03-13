@@ -1661,8 +1661,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			mapistore_folder = false;
 			break;
 		default:
-			DEBUG(5, ("you should never get here\n"));
-			abort();
+			OC_ABORT(true, ("Trying open row in unsupported type of table. Table type: %d\n", table_object->object.table->ulType));
+			return NULL;
 		}
 		if (ret != MAPISTORE_SUCCESS) {
 			talloc_free(retvals);

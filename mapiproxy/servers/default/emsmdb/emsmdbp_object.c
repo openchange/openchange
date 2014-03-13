@@ -279,7 +279,10 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 
 	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &new_folder->backend_object);
 	if (ret != MAPISTORE_SUCCESS) {
-		abort();
+		OC_ABORT(false,
+			 ("mapistore_add_context() failed with 0x%.8x, mapistore_uri = [%s].\n",
+			  ret, mapistore_uri));
+		goto end;
 	}
 
 	new_folder->object.folder->contextID = context_id;

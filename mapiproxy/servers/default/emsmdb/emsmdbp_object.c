@@ -1400,9 +1400,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 								       true);
 					break;
 				default:
-					DEBUG(0, ("Unhandled openchangedb table type for folders: %d\n", table_type));
 					table_object->object.table->denominator = 0;
-					abort();
+					OC_ABORT(false, ("Unhandled openchangedb table type for folders: %d\n", table_type));
+					return table_object;
 				}
 			}
 			if (!emsmdbp_is_mapistore(parent_object)) {

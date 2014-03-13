@@ -2591,13 +2591,15 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 	}
 
 end:
-	if (retvalsp) {
-		*retvalsp = retvals;
-	}
-
 	if (retval != MAPISTORE_SUCCESS) {
 		talloc_free(data_pointers);
 		data_pointers = NULL;
+		talloc_free(retvals);
+		retvals = NULL;
+	}
+
+	if (retvalsp) {
+		*retvalsp = retvals;
 	}
 
         return data_pointers;

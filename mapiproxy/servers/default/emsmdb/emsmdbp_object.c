@@ -1354,8 +1354,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 				mstore_type = MAPISTORE_PERMISSIONS_TABLE;
 				break;
 			default:
-				DEBUG(5, ("Unhandled table type for folders: %d\n", table_type));
-				abort();
+				OC_ABORT(false, ("Unhandled table type for folders: %d\n", table_type));
+				talloc_free(table_object);
+				return NULL;
 			}
 
 			ret = mapistore_folder_open_table(parent_object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_object), parent_object->backend_object, table_object, mstore_type, handle_id, &table_object->backend_object, &table_object->object.table->denominator);

@@ -10,7 +10,7 @@ def main():
 		print '%s password' % (sys.argv[0])
 
 	salt = os.urandom(4)
-	h = hashlib.sha1(sys.argv[0])
+	h = hashlib.sha1(sys.argv[1])
 	h.update(salt)
 	print "{SSHA}" + encode(h.digest() + salt)
 	sys.exit()

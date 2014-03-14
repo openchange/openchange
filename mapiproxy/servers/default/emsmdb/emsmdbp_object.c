@@ -30,6 +30,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "mapiproxy/libmapistore/mapistore_nameid.h"
 #include "libmapi/property_tags.h"
@@ -371,8 +372,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
 		}
 		else {
-			DEBUG(0, (__location__": PidTagChangeNumber *must* be present\n"));
-			abort();
+			OC_ABORT(true, ("PidTagChangeNumber *must* be present\n"));
 		}
 	}
 	*new_folderp = new_folder;

@@ -122,7 +122,7 @@ uint8_t			mapi_recipients_get_org_length(struct mapi_profile *);
 uint16_t		mapi_recipients_RecipientFlags(struct SRow *);
 
 /* The following private definitions come from libmapi/socket/interface.c  */
-void			load_interfaces(TALLOC_CTX *, const char **, struct interface **);
+void			openchange_load_interfaces(TALLOC_CTX *, const char **, struct interface **);
 int			iface_count(struct interface *);
 const char		*iface_n_ip(struct interface *, int);
 const char		*iface_n_bcast(struct interface *, int);

@@ -186,7 +186,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 /**
 load the list of network interfaces
 **/
-void load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
+void openchange_load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, struct interface **local_interfaces)
 {
 	const char **ptr = interfaces;
 	int i;

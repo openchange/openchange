@@ -816,6 +816,9 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 			value_size = (bin_value->cb + sizeof(uint16_t));
 			dest_value = bin_value;
 			break;
+		default:
+			DEBUG(0, ("unexpected property type\n"));
+			abort();
 		}
 		recipient->data[i+2] = dest_value;
 		data_pos += value_size;

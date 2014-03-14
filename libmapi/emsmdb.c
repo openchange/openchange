@@ -277,6 +277,8 @@ int emsmdb_disconnect_dtor(void *data)
 
 	emsmdb_disconnect(emsmdb_ctx);	
 
+	if (emsmdb_ctx == NULL) return 0;
+
 	talloc_free(emsmdb_ctx->cache_requests);
 
 	if (emsmdb_ctx->info.szDisplayName) {
@@ -500,6 +502,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	uint32_t		pulTransTime = 0;
 	DATA_BLOB		rgbOut;
 	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
+	enum ndr_err_code ndr_err;
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.pulFlags = r.out.pulFlags = &pulFlags;
@@ -567,7 +570,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	status = dcerpc_EcDoRpcExt2_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
 	talloc_free(ndr_rgbIn);
 	talloc_free(ndr_comp_rgbIn);
-		
+
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	} else if (r.out.result) {
@@ -579,8 +582,11 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	rgbOut.length = *r.out.pcbOut;
 	ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	
-	ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
+
+	ndr_err = ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		return ndr_map_error2ntstatus(ndr_err);
+	}
 
 	*repl = mapi2k7_response.mapi_response;
 
@@ -593,6 +599,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_wrapper(struct mapi_session *session,
 					     struct mapi_request *req,
 					     struct mapi_response **repl)
 {
+	if (session->emsmdb->ctx == NULL) return NT_STATUS_INVALID_PARAMETER;
 	switch (session->profile->exchange_version) {
 	case 0x0:
 	  return emsmdb_transaction((struct emsmdb_context *)session->emsmdb->ctx, mem_ctx, req, repl);
@@ -636,7 +643,7 @@ struct mapi_notify_ctx *emsmdb_bind_notification(struct mapi_context *mapi_ctx,
 	notify_ctx->notifications->prev = NULL;
 	notify_ctx->notifications->next = NULL;
 
-	load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
+	openchange_load_interfaces(mem_ctx, lpcfg_interfaces(mapi_ctx->lp_ctx), &ifaces);
 	ipaddr = iface_best_ip(ifaces, mapi_ctx->session->profile->server);
 	if (!ipaddr) {
 		talloc_free(notify_ctx->notifications);

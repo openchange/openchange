@@ -523,6 +523,7 @@ static enum MAPISTATUS get_body(TALLOC_CTX *mem_ctx,
    Sample mbox mail:
 
    From Administrator Mon Apr 23 14:43:01 2007
+   Archived-At: <outlook:$message_entryID>
    Date: Mon Apr 23 14:43:01 2007
    From: Administrator 
    To: Julien Kerihuel
@@ -533,7 +534,8 @@ static enum MAPISTATUS get_body(TALLOC_CTX *mem_ctx,
 **/
 
 static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp, 
-			 struct SRow *aRow, mapi_object_t *obj_message,
+			 struct SRow *aRow, mapi_object_t *obj_store,
+			 mapi_object_t *obj_folder, mapi_object_t *obj_message,
 			 int base_level)
 {
 	enum MAPISTATUS			retval;
@@ -591,7 +593,11 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 
 	/* First line From - but only if base_level == 0 */
 	if (base_level == 0) {
-		char *f, *p;
+		char				*f, *p;
+		const struct SBinary_short	*entry_id;
+		struct SBinary_short		entry_id_for_2010;
+		uint8_t				*ptr;
+
 		f = talloc_strdup(mem_ctx, from);
 		/* strip out all '"'s, ugly but works */
 		for (p = f; p && *p; ) {
@@ -602,6 +608,20 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 			p++;
 		}
 		fprintf(fp, "From \"%s\" %s\n", f, date);
+		entry_id = (const struct SBinary_short *) find_SPropValue_data(aRow, PR_ENTRYID);
+		if (!entry_id) {
+			EntryIDFromSourceIDForMessage(mem_ctx, obj_store, obj_folder, &obj_message, &entry_id_for_2010);
+			entry_id = &entry_id_for_2010;
+		}
+		ptr = entry_id->lpb;
+		if (ptr) {
+			size_t c = entry_id->cb;
+			fprintf(fp, "Archived-At: <outlook:");
+			while (c--) {
+				fprintf(fp, "%02X", (unsigned char)*ptr++);
+			}
+			fprintf(fp, ">\n");
+		}
   		talloc_free(f);
 	}
 
@@ -942,7 +962,7 @@ old_code:
 							fprintf(fp, "Content-Disposition: inline\n");
 							fprintf(fp, "\n");
 
-							message2mbox(mem_ctx, fp, &eRow, &obj_embeddedmsg,
+							message2mbox(mem_ctx, fp, &eRow, NULL, NULL, &obj_embeddedmsg,
 									base_level + 2 /* 0 = main, 1 = alt */);
 							talloc_free(embProps);
 							} break;
@@ -1166,7 +1186,7 @@ int main(int argc, const char *argv[])
 					     rowset.aRow[i].lpProps[1].value.d, 
 					     &obj_message, 0);
 			if (retval == MAPI_E_SUCCESS) {
-				SPropTagArray = set_SPropTagArray(mem_ctx, 0x1b,
+				SPropTagArray = set_SPropTagArray(mem_ctx, 0x1c,
 								  PR_INTERNET_MESSAGE_ID,
 								  PR_INTERNET_MESSAGE_ID_UNICODE,
 								  PR_CONVERSATION_TOPIC,
@@ -1193,7 +1213,8 @@ int main(int argc, const char *argv[])
 								  PR_NORMALIZED_SUBJECT,
 								  PR_NORMALIZED_SUBJECT_UNICODE,
 								  PR_SUBJECT,
-								  PR_SUBJECT_UNICODE);
+								  PR_SUBJECT_UNICODE,
+								  PR_ENTRYID);
 				retval = GetProps(&obj_message, MAPI_UNICODE, SPropTagArray, &lpProps, &count);
 				MAPIFreeBuffer(SPropTagArray);
 				if (retval != MAPI_E_SUCCESS) {
@@ -1213,7 +1234,7 @@ int main(int argc, const char *argv[])
 						bool ok;
 						
 						message_error = 0;
-						ok = message2mbox(mem_ctx, fp, &aRow, &obj_message, 0);
+						ok = message2mbox(mem_ctx, fp, &aRow, &obj_store, &obj_inbox, &obj_message, 0);
 						if (!ok) {
 							printf("Message-ID: %s error, not added to %s\n", msgid, profile->profname);
 						} else if (message_error) {

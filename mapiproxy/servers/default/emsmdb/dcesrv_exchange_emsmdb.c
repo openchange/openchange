@@ -1236,7 +1236,9 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
+			retval = MAPI_E_NOT_IMPLEMENTED;
 		}
+		if (retval != MAPI_E_SUCCESS) return NULL;
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			idx++;

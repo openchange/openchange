@@ -6,13 +6,7 @@ aclocal.m4
 *~
 configure
 Doxyfile
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
 ./bin/
->>>>>>> Start refactoring openchange administration tools into a single tool
-=======
->>>>>>> Add OpenChange custom options through getopt module
 config.h
 config.h.in
 config.log

@@ -43,5 +43,5 @@ def test_suite():
     import openchange.tests
     return openchange.tests.test_suite()
 
-import _glue
+from samba import _glue
 version = _glue.version

@@ -2633,8 +2633,7 @@ static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct ids
 		high_cn = exchange_globcnt(parsed_idset->ranges->high);
 		if (high_cn >= next_cn) {
 			DEBUG(0, ("inconsistency: idset range for '%s' is referencing a change number that has not been issued yet: %"PRIx64" >= %"PRIx64" \n", label, high_cn, next_cn));
-			/* FIXME: Decide what we should do in this situation? Aborting is not very cool for end-users obviously :) */
-//			abort();
+			abort();
 		}
 	}
 }
@@ -3167,7 +3166,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			bin_data->lpb += read_states_size;
 
 			guid_blob.data = read_states->MessageId;
-			if (NT_STATUS_IS_ERR(GUID_from_data_blob(&guid_blob, &guid))) {
+			if (GUID_from_data_blob(&guid_blob, &guid).v != 0) {
 				continue;
 			}
 			owner = emsmdbp_get_owner(synccontext_object);

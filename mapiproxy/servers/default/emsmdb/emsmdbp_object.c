@@ -30,7 +30,6 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
-#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "mapiproxy/libmapistore/mapistore_nameid.h"
 #include "libmapi/property_tags.h"
@@ -279,10 +278,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 
 	ret = mapistore_add_context(emsmdbp_ctx->mstore_ctx, owner, mapistore_uri, fid, &context_id, &new_folder->backend_object);
 	if (ret != MAPISTORE_SUCCESS) {
-		OC_ABORT(false,
-			 ("mapistore_add_context() failed with 0x%.8x, mapistore_uri = [%s].\n",
-			  ret, mapistore_uri));
-		goto end;
+		abort();
 	}
 
 	new_folder->object.folder->contextID = context_id;
@@ -372,14 +368,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			new_folder->object.folder->postponed_props = postponed_props;
 			new_folder->object.folder->mapistore_root = true;
 
-			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
-			if (retval != MAPISTORE_SUCCESS) {
-				talloc_free(new_folder);
-				return mapistore_error_to_mapi(retval);
-			}
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
 		}
 		else {
-			OC_ABORT(true, ("PidTagChangeNumber *must* be present\n"));
+			DEBUG(0, (__location__": PidTagChangeNumber *must* be present\n"));
+			abort();
 		}
 	}
 	*new_folderp = new_folder;
@@ -441,9 +434,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				parent_fid = parent->object.folder->folderID;
 				break;
 			default:
-				OC_ABORT(true, ("Trying to open folder with parent not a Mailbox or Folder. Parent type: %d\n",
-						parent->type));
-				break;
+				DEBUG(5, ("you should never get here\n"));
+				abort();
 			}
 			mailbox_object = emsmdbp_get_mailbox(parent);
 			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
@@ -1339,11 +1331,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	}
 
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->postponed_props) {
-		ret = emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
-		if (ret != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("folder_commit_creatin failed with error: 0x%.8X", ret));
-			return NULL;
-		}
+		emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
 	}
 
 	table_object = emsmdbp_object_table_init(mem_ctx, parent_object->emsmdbp_ctx, parent_object);
@@ -1365,9 +1353,8 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 				mstore_type = MAPISTORE_PERMISSIONS_TABLE;
 				break;
 			default:
-				OC_ABORT(false, ("Unhandled table type for folders: %d\n", table_type));
-				talloc_free(table_object);
-				return NULL;
+				DEBUG(5, ("Unhandled table type for folders: %d\n", table_type));
+				abort();
 			}
 
 			ret = mapistore_folder_open_table(parent_object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent_object), parent_object->backend_object, table_object, mstore_type, handle_id, &table_object->backend_object, &table_object->object.table->denominator);
@@ -1413,9 +1400,9 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 								       true);
 					break;
 				default:
+					DEBUG(0, ("Unhandled openchangedb table type for folders: %d\n", table_type));
 					table_object->object.table->denominator = 0;
-					OC_ABORT(false, ("Unhandled openchangedb table type for folders: %d\n", table_type));
-					return table_object;
+					abort();
 				}
 			}
 			if (!emsmdbp_is_mapistore(parent_object)) {
@@ -1674,8 +1661,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			mapistore_folder = false;
 			break;
 		default:
-			OC_ABORT(true, ("Trying open row in unsupported type of table. Table type: %d\n", table_object->object.table->ulType));
-			return NULL;
+			DEBUG(5, ("you should never get here\n"));
+			abort();
 		}
 		if (ret != MAPISTORE_SUCCESS) {
 			talloc_free(retvals);
@@ -2618,11 +2605,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
 	    object->object.folder->mapistore_root == true) {
 		if (object->object.folder->postponed_props) {
-			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
-			if (retval != MAPISTORE_SUCCESS) {
-				DEBUG(0, ("folder_commit_creation() failed with 0x%.8X", retval));
-				goto end;
-			}
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
 		}
 
 		retval = emsmdbp_object_get_properties_mapistore_root(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
@@ -2658,16 +2641,13 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 		}
 	}
 
-end:
-	if (retval != MAPISTORE_SUCCESS) {
-		talloc_free(data_pointers);
-		data_pointers = NULL;
-		talloc_free(retvals);
-		retvals = NULL;
-	}
-
 	if (retvalsp) {
 		*retvalsp = retvals;
+	}
+
+	if (retval) {
+		talloc_free(data_pointers);
+		data_pointers = NULL;
 	}
 
         return data_pointers;

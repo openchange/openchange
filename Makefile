@@ -775,6 +775,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/mapi_handles.po				\
 							mapiproxy/libmapiproxy/entryid.po					\
 							mapiproxy/libmapiproxy/modules.po					\
+							mapiproxy/libmapiproxy/fault_util.po	            \
 							mapiproxy/util/mysql.po								\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

@@ -372,11 +372,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 			new_folder->object.folder->postponed_props = postponed_props;
 			new_folder->object.folder->mapistore_root = true;
 
-			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
-			if (retval != MAPISTORE_SUCCESS) {
-				talloc_free(new_folder);
-				return mapistore_error_to_mapi(retval);
-			}
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, new_folder, false);
 		}
 		else {
 			OC_ABORT(true, ("PidTagChangeNumber *must* be present\n"));
@@ -1339,11 +1335,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	}
 
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->postponed_props) {
-		ret = emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
-		if (ret != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("folder_commit_creatin failed with error: 0x%.8X", ret));
-			return NULL;
-		}
+		emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
 	}
 
 	table_object = emsmdbp_object_table_init(mem_ctx, parent_object->emsmdbp_ctx, parent_object);
@@ -2618,11 +2610,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 	if (object && object->type == EMSMDBP_OBJECT_FOLDER &&
 	    object->object.folder->mapistore_root == true) {
 		if (object->object.folder->postponed_props) {
-			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
-			if (retval != MAPISTORE_SUCCESS) {
-				DEBUG(0, ("folder_commit_creation() failed with 0x%.8X", retval));
-				goto end;
-			}
+			emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
 		}
 
 		retval = emsmdbp_object_get_properties_mapistore_root(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
@@ -2658,7 +2646,6 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 		}
 	}
 
-end:
 	if (retvalsp) {
 		*retvalsp = retvals;
 	}

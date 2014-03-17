@@ -19,6 +19,7 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql, uint64_t *n);
 
 bool table_exists(MYSQL *, char *);
 bool create_schema(MYSQL *, char *);
+bool convert_string_to_ull(const char *, uint64_t *);
 
 MYSQL* create_connection(const char *, MYSQL **);
 

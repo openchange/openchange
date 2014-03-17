@@ -247,10 +247,14 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 	ret = select_first_string(mem_ctx, conn, sql, &result);
 	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, mem_ctx);
 
-	*n = strtoul(result, NULL, 10);
+	ret = MYSQL_ERROR;
+	if (convert_string_to_ull(result, n)) {
+		ret = MYSQL_SUCCESS;
+	}
+
 	talloc_free(mem_ctx);
 
-	return MYSQL_SUCCESS;
+	return ret;
 }
 
 
@@ -337,4 +341,22 @@ const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)
 	}
 
 	return ret;
+}
+
+// FIXME use this function instead of strtoull(*, NULL, *) in openchangedb_mysql.c
+bool convert_string_to_ull(const char *str, uint64_t *ret)
+{
+	bool retval = false;
+	char *aux = NULL;
+
+	if (ret != NULL) {
+		*ret = strtoull(str, &aux, 10);
+		if (aux != NULL && *aux == '\0') {
+			retval = true;
+		} else {
+			DEBUG(0, ("ERROR converting %s into ull\n", str));
+		}
+	}
+
+	return retval;
 }

@@ -427,7 +427,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	count = 0;
 	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
-		i = table->numerator;
 		goto finish;
 	}
 

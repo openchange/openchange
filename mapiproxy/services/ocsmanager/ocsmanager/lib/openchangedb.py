@@ -2,7 +2,7 @@ from pylons import config
 import MySQLdb
 from samba import Ldb
 from abc import ABCMeta, abstractmethod
-
+import os
 
 class OpenchangeDB:
     __metaclass__ = ABCMeta

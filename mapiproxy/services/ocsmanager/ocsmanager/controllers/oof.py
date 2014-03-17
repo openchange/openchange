@@ -16,7 +16,7 @@ from pylons import config
 from xml.etree.ElementTree import Element, ElementTree, tostring, register_namespace
 from cStringIO import StringIO
 from time import time, strftime, localtime
-
+from pwd import getpwnam
 from ocsmanager.lib.base import BaseController, render
 
 log = logging.getLogger(__name__)
@@ -316,8 +316,8 @@ class OofSettings:
         self._config['external_reply_message'] = None
 
     def _sieve_path(self, mailbox):
-        ebox_uid = 107
-        ebox_gid = 112
+        ebox_uid = getpwnam('ebox').pw_uid
+        ebox_gid = getpwnam('ebox').pw_gid
         sieve_path_base = '/var/vmail/sieve'
         sieve_path_vdomain = os.path.join(sieve_path_base, mailbox.split('@')[1])
         sieve_path_mailbox = os.path.join(sieve_path_vdomain, mailbox)
@@ -330,11 +330,11 @@ class OofSettings:
 
         if not os.path.isdir(sieve_path_vdomain):
             os.mkdir(sieve_path_vdomain, 0770)
-            os.chown(sieve_path_vdomain, ebox_uid, ebox_gid)
+        os.chown(sieve_path_vdomain, ebox_uid, ebox_gid)
 
         if not os.path.isdir(sieve_path_mailbox):
             os.mkdir(sieve_path_mailbox, 0770)
-            os.chown(sieve_path_mailbox, ebox_uid, ebox_gid)
+        os.chown(sieve_path_mailbox, ebox_uid, ebox_gid)
 
         if os.path.isfile(sieve_path_script):
             if not self._isOofScript(sieve_path_script):
@@ -435,16 +435,20 @@ class OofSettings:
             internal_message = internal_message
         )
 
+        ebox_uid = getpwnam('ebox').pw_uid
+        ebox_gid = getpwnam('ebox').pw_gid
         if sieve_path_config is not None:
             f = open(sieve_path_config, 'w')
             f.write(self._to_json())
             f.close()
             os.chmod(sieve_path_config, 0660)
+            os.chown(sieve_path_config, ebox_uid, ebox_gid)
 
         f = open(sieve_path_script, 'w')
         f.write(script.encode('utf8'))
         f.close()
         os.chmod(sieve_path_script, 0770)
+        os.chown(sieve_path_script, ebox_uid, ebox_gid)
 
     def from_xml(self, settings_element):
         """

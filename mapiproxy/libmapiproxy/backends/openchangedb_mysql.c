@@ -426,7 +426,12 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 				explicit = talloc_strdup(mem_ctx, message_class);
 			}
 			*ExplicitMessageClass = explicit;
-			*fid = strtoul(row[1], NULL, 10);
+
+			ret = MAPI_E_CALL_FAILED;
+			if (convert_string_to_ull(row[1], fid)) {
+				ret = MAPI_E_SUCCESS;
+			}
+
 			length = message_class_length;
 		}
 	}
@@ -469,10 +474,10 @@ static enum MAPISTATUS get_mailbox_ids_by_name(MYSQL *conn,
 	}
 
 	if (mailbox_id) {
-		*mailbox_id = strtoul(row[0], NULL, 10);
+		*mailbox_id = strtoull(row[0], NULL, 10);
 	}
 	if (mailbox_folder_id) {
-		*mailbox_folder_id = strtoul(row[1], NULL, 10);
+		*mailbox_folder_id = strtoull(row[1], NULL, 10);
 	}
 end:
 	mysql_free_result(res);
@@ -788,7 +793,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 		break;
 	case PT_I8:
 		ll = talloc_zero(mem_ctx, uint64_t);
-		*ll = strtoul(value, NULL, 10);
+		*ll = strtoull(value, NULL, 10);
 		data = (void *)ll;
 		break;
 	case PT_STRING8:
@@ -798,7 +803,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 	case PT_SYSTIME:
 		ft = talloc_zero(mem_ctx, struct FILETIME);
 		ll = talloc_zero(mem_ctx, uint64_t);
-		*ll = strtoul(value, NULL, 10);
+		*ll = strtoull(value, NULL, 10);
 		ft->dwLowDateTime = (*ll & 0xffffffff);
 		ft->dwHighDateTime = *ll >> 32;
 		data = (void *)ft;

@@ -314,6 +314,13 @@ static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *
 }
 
 
+static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
+{
+	MYSQL *conn = ictx->data;
+	mysql_close(conn);
+	return 0;
+}
+
 /**
    \details Open connection to indexing database for a given user
 
@@ -342,6 +349,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	ictx = talloc_zero(mstore_ctx, struct indexing_context);
 
 	ictx->data = create_connection(connection_string, &conn);
+	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
 	OPENCHANGE_RETVAL_IF(!ictx->data, MAPI_E_NOT_INITIALIZED, ictx);
 	if (!table_exists(conn, INDEXING_TABLE)) {
 		DEBUG(0, ("Creating schema for indexing on mysql %s",

@@ -47,6 +47,7 @@ parser.add_option("--additional", action="store_true", help="Provisioning an add
 parser.add_option("--primary-server", action="store_true", help="Set this OpenChange server as the primary server")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
 parser.add_option("--deprovision", action="store_true", help="Unregister this OpenChange from the AD")
+parser.add_option("--can-deprovision", action="store_true", help="Check whether we can uninstall the Exchange schema and objects from AD or not")
 parser.add_option("--full-deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 opts,args = parser.parse_args()
 if len(args) != 0:
@@ -68,7 +69,18 @@ provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
 if not opts.openchangedb:
-    if opts.deprovision:
+    if opts.can_deprovision:
+        try:
+            server_uses = openchange.check_unregister(provisionnames, lp, creds)
+            if server_uses:
+                print server_uses
+                sys.exit(-1)
+            else:
+                print "Ok"
+        except:
+            print >> sys.stderr, "[!] Unable to check if we can unregister this server, %s" % str(e)
+            sys.exit(1)
+    elif opts.deprovision:
         try:
             openchange.unregister(setup_path, provisionnames, lp, creds)
             openchange.openchangedb_deprovision(provisionnames, lp)

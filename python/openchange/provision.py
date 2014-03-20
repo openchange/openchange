@@ -669,8 +669,8 @@ def check_unregister(names, lp, creds):
     :param lp: Loadparm context
     :param creds: Credentials context
 
-    :returns: string with server usages that avoid to unregister the server
-              or None in case we are able to unregister this server.
+    :return: string with server usages that avoid to unregister the server
+             or None in case we are able to unregister this server.
     """
     server_uses = checkusage(names, lp, creds)
     if len(server_uses) > 0:

@@ -70,16 +70,12 @@ provisionnames = openchange.guess_names_from_smbconf(
 
 if not opts.openchangedb:
     if opts.can_deprovision:
-        try:
-            server_uses = openchange.check_unregister(provisionnames, lp, creds)
-            if server_uses:
-                print server_uses
-                sys.exit(-1)
-            else:
-                print "Ok"
-        except:
-            print >> sys.stderr, "[!] Unable to check if we can unregister this server, %s" % str(e)
+        server_uses = openchange.check_unregister(provisionnames, lp, creds)
+        if server_uses:
+            print server_uses
             sys.exit(1)
+        else:
+            print "Ok"
     elif opts.deprovision:
         try:
             openchange.unregister(setup_path, provisionnames, lp, creds)

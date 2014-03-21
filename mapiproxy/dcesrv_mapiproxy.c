@@ -132,10 +132,10 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		
 		switch (dce_call->pkt.ptype) {
 		case DCERPC_PKT_BIND:
-			status = dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.bind.assoc_group_id);
+			b->assoc_group_id = dce_call->pkt.u.bind.assoc_group_id;
 			break;
 		case DCERPC_PKT_ALTER:
-			status = dcerpc_binding_set_assoc_group_id(b, dce_call->pkt.u.alter.assoc_group_id);
+			b->assoc_group_id = dce_call->pkt.u.alter.assoc_group_id;
 			break;
 		default:
 			break;
@@ -152,7 +152,7 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
 		
 	} else {
 		status = dcerpc_pipe_connect(dce_call->context,
@@ -167,7 +167,7 @@ static NTSTATUS mapiproxy_op_connect(struct dcesrv_call_state *dce_call,
 		if (!NT_STATUS_IS_OK(status)) {
 			return status;
 		}
-		dce_call->context->assoc_group->id = dcerpc_binding_get_assoc_group_id(private->c_pipe->binding);
+		dce_call->context->assoc_group->id = private->c_pipe->assoc_group_id;
 	}
 
 	private->connected = true;

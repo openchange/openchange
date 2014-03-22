@@ -668,9 +668,12 @@ def check_unregister(names, lp, creds):
     :param names: Provision Names object
     :param lp: Loadparm context
     :param creds: Credentials context
+
+    :return: string with server usages that avoid to unregister the server
+             or None in case we are able to unregister this server.
     """
     server_uses = checkusage(names, lp, creds)
-    if (len(server_uses) > 0):
+    if len(server_uses) > 0:
         return ', '.join(server_uses)
     return None
 
@@ -697,7 +700,7 @@ def unregister(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     server_uses = check_unregister(names, lp, creds)
-    if (server_uses is not None):
+    if server_uses is not None:
         raise ServerInUseError(server_uses)
 
     try:

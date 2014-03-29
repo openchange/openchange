@@ -886,6 +886,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
+	rmdir setup/mapistore
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 
@@ -1527,13 +1528,13 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 
 
 pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h
-		pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
+	pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
 
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
-#	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
-#	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
+	rm -f pyopenchange/mapistore/errors.c
+	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 
 clean:: pyopenchange-clean

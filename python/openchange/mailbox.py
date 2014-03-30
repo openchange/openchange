@@ -8,19 +8,18 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import os
 import samba
-from samba import Ldb, unix2nttime
+from samba import Ldb
 import ldb
 import uuid
 import time
@@ -39,7 +38,7 @@ class OpenChangeDB(object):
     def __init__(self, url):
         self.url = url
         self.ldb = Ldb(self.url)
-	self.nttime = samba.unix2nttime(int(time.time()))
+        self.nttime = samba.unix2nttime(int(time.time()))
 
     def reopen(self):
         self.ldb = Ldb(self.url)
@@ -159,7 +158,7 @@ dn: CASE_INSENSITIVE
                 }, 1)
 
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names)
-        
+
     def lookup_server(self, cn, attributes=[]):
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn

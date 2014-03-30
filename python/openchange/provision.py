@@ -8,19 +8,18 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 from base64 import b64encode
 import os
-from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
 import ldb
@@ -30,6 +29,8 @@ from samba.auth import system_session
 from samba.provision import (setup_add_ldif, setup_modify_ldif)
 from samba.net import Net
 from samba.dcerpc import nbt
+
+from openchange import mailbox
 from openchange.urlutils import openchangedb_url
 
 __docformat__ = 'restructuredText'
@@ -63,6 +64,7 @@ class TextProgressReporter(AbstractProgressReporter):
     def doReporting(self, stepName):
         print "[+] Step %d: %s" % (self.currentStep, stepName)
 
+
 class ProvisionNames(object):
 
     def __init__(self):
@@ -84,7 +86,7 @@ class ProvisionNames(object):
 
 def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
-    
+
     :param lp: Loadparm context.
     :param firstorg: First Organization
     :param firstou: First Organization Unit
@@ -183,6 +185,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
 
     db.transaction_commit()
 
+
 def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Modify schema using LDIF specified file
     :param setup_path: Path to the setup directory.
@@ -195,7 +198,6 @@ def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """
 
     return provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
-
 
 
 def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
@@ -293,8 +295,8 @@ def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
 
 
 def install_schemas(setup_path, names, lp, creds, reporter):
-    """Install the OpenChange-specific schemas in the SAM LDAP database. 
-    
+    """Install the OpenChange-specific schemas in the SAM LDAP database.
+
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
     :param lp: Loadparm context
@@ -369,6 +371,7 @@ def get_ldb_url(lp, creds, names):
 
     return url
 
+
 def get_user_dn(ldb, basedn, username):
     if not isinstance(ldb, Ldb):
         raise TypeError("'ldb' argument must be an Ldb intance")
@@ -381,9 +384,10 @@ def get_user_dn(ldb, basedn, username):
 
     return user_dn
 
+
 def newuser(lp, creds, username=None):
     """extend user record with OpenChange settings.
-    
+
     :param lp: Loadparm context
     :param creds: Credentials context
     :param username: Name of user to extend
@@ -425,8 +429,8 @@ msExchUserAccountControl: 0
         if len(res) == 1:
             record = res[0]
         else:
-            raise Exception, \
-                "this should never happen as we just modified the record..."
+            raise AssertionError(
+                "this should never happen as we just modified the record...")
         record_keys = map(lambda x: x.lower(), record.keys())
 
         if "displayname" not in record_keys:
@@ -470,7 +474,7 @@ msExchUserAccountControl: %d
 
 def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
     """Extend Samba4 with OpenChange data.
-    
+
     :param setup_path: Path to the setup directory
     :param lp: Loadparm context
     :param creds: Credentials context
@@ -492,8 +496,7 @@ def provision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None)
 
 
 def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=None):
-    """Remote all configuration entries added by the OpenChange
-    installation.
+    """Remote all configuration entries added by the OpenChange installation.
 
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
@@ -551,7 +554,7 @@ def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     :param mapistore: The public folder store type (fsocpf, sqlite, etc)
     """
     names = guess_names_from_smbconf(lp, firstorg, firstou)
-    
+
     print "Setting up openchange db"
     openchange_ldb = mailbox.OpenChangeDB(openchangedb_url(lp))
     openchange_ldb.setup()
@@ -567,6 +570,7 @@ def openchangedb_provision(lp, firstorg=None, firstou=None, mapistore=None):
     print "[+] Public Folders"
     print "==================="
     openchange_ldb.add_public_folders(names)
+
 
 def find_setup_dir():
     """Find the setup directory used by provision."""

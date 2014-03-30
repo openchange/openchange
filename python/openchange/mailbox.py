@@ -23,7 +23,7 @@ from samba import Ldb
 import ldb
 import uuid
 import time
-from openchange.urlutils import *
+
 
 __docformat__ = 'restructuredText'
 

@@ -358,8 +358,7 @@ class RPCRTSPacket(RPCPacket):
 
         data_blob = self.data[self.offset:self.offset+count]
         self.offset = self.offset + count
-
-        return data_value
+        return data_blob
 
     def _parse_command_client_address(self, data_blob):
         (address_type,) = unpack_from("<l", self.data, self.offset)

@@ -131,7 +131,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx, struct
 /**
    \details Save (commit) message in openchangedb database
 
-   \param msg the message object
+   \param _msg the message object
    \param SaveFlags flags associated to the save operation
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

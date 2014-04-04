@@ -123,7 +123,7 @@ _PUBLIC_ enum MAPISTATUS ResolveNames(struct mapi_session *session,
    \param session pointer to the MAPI session context
    \param SPropTagArray pointer to an array of MAPI properties we want
    to fetch
-   \param SRowSet pointer to the rows of the table returned
+   \param rowsetp pointer to the rows of the table returned
    \param count the number of rows we want to fetch
    \param ulFlags specify the table cursor location
 

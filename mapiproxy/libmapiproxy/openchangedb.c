@@ -1967,9 +1967,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct ldb_context *ldb_ctx
    \param ldb_ctx pointer to the openchangedb LDB context
    \param parentFolderID the FID of the parent folder
    \param fid the FID of the folder to create
-   \param MAPIStoreURI the mapistore URI to associate to this folder
-   \param nt_time the creation time of the folder
    \param changeNumber the change number
+   \param MAPIStoreURI the mapistore URI to associate to this folder
+   \param systemIdx the SystemIdx value to associate with this folder (-1 to not associate a system index)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */

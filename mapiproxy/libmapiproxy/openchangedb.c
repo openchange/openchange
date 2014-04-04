@@ -26,6 +26,7 @@
  */
 
 #include <inttypes.h>
+#include <time.h>
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"

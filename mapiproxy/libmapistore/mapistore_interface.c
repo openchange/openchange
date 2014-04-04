@@ -1384,14 +1384,14 @@ end:
 }
 
 /**
-   \details Modify recipients of a message in mapistore
+   \details Get message data for a message in mapistore
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param mid the identifier referencing the message
-   \rows the array of recipient rows
-   \count the number of elements in the array
+   \param message the message
+   \param mem_ctx talloc context to use for the result message
+   \param msg the message data for the message
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -1416,9 +1416,10 @@ enum mapistore_error mapistore_message_get_message_data(struct mapistore_context
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param mid the identifier referencing the message
-   \rows the array of recipient rows
-   \count the number of elements in the array
+   \param message the message
+   \param columns properties array 
+   \param count the number of elements in the array
+   \param recipients the receipients
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */

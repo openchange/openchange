@@ -1272,7 +1272,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_by_id(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsabp_ctx pointer to the EMSABP context
    \param ContainerID id of the container to fetch
-   \param ldb_res pointer on pointer to the LDB result returned by the
+   \param ldb_resp pointer on pointer to the LDB result returned by the
    function
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

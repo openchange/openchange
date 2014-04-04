@@ -1,6 +1,9 @@
 # # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
+# C++11 support
+CXX11FLAGS=-std=c++0x
+
 ifneq ($(MAKECMDGOALS), samba)
 ifneq ($(MAKECMDGOALS), samba-git)
 include config.mk
@@ -119,11 +122,11 @@ re:: clean install
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
-	@$(CXX) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
 
 .cpp.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -fPIC -c $< -o $@
 
 #################################################################
 # IDL compilation rules
@@ -350,7 +353,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	libmapi++/src/session.po \
 	libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
+	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
 
 libmapixx-installpc:
 	@echo "[*] install: libmapi++ pc files"
@@ -431,7 +434,7 @@ bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
 
 clean:: libmapixx-test-clean
 
@@ -446,7 +449,7 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-attach-clean
 
@@ -456,7 +459,7 @@ bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking exception test application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 libmapixx-exception-clean:
 	rm -f bin/libmapixx-exception
@@ -476,7 +479,7 @@ bin/libmapixx-profiletest: libmapi++/tests/profile_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking profile test application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-profiletest-clean
 
@@ -497,7 +500,7 @@ libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking foldertree example application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-foldertree-clean
 
@@ -505,7 +508,7 @@ libmapi++/examples/messages: libmapi++/examples/messages.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking messages example application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-messages-clean
 
@@ -1696,7 +1699,7 @@ libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	qt/lib/foldermodel.o			\
 	qt/lib/messagesmodel.o
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
 
 qt/demo/demoapp: qt/demo/demoapp.o 				\
@@ -1705,7 +1708,7 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 	libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 	libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(QT4_LIBS) $(LDFLAGS) $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(QT4_LIBS) $(LDFLAGS) $(LIBS)
 	# we don't yet install this...
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT)
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION)

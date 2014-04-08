@@ -469,33 +469,10 @@ AC_CACHE_CHECK([C++ compiler availability], [ac_cv_libmapixx_gxx_works],
 		AC_LANG_POP([C++])
 		])
 
-dnl ---------------------------------------------------------------------------
-dnl Check for boost-thread
-dnl ---------------------------------------------------------------------------
-
-AC_ARG_VAR([BOOST_LIB_SUFFIX], [Boost library name suffix])
-
-AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread],
-	       [
-	        ov_cv_boost_thread=no
-		ov_save_LIBS=$LIBS
-		LIBS="-lboost_thread$BOOST_LIB_SUFFIX -lboost_system$BOOST_LIB_SUFFIX $LIBS"
-		AC_LANG_PUSH([C++])
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <stdint.h>
-						#include <boost/thread.hpp>]],
-						[[boost::thread t]])],
-				[ov_cv_boost_thread=yes])
-		AC_LANG_POP([C++])
-		LIBS=$ov_save_LIBS
-	       ])
-
-
 if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
-   if test x"$ov_cv_boost_thread" = "xyes"; then
-      AC_PROG_CXX 
-      libmapixx=1
-      OC_RULE_ADD(libmapixx, LIBS)
-   fi
+   AC_PROG_CXX 
+   libmapixx=1
+   OC_RULE_ADD(libmapixx, LIBS)
 fi
 
 

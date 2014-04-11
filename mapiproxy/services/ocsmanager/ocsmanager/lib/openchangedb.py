@@ -79,4 +79,4 @@ def get_openchangedb(lp):
         return OpenchangeDBWithMySQL(openchangedb_uri)
     else:
         openchage_ldb = os.path.join(lp.get("private dir"), "openchange.ldb")
-        return OpenchangeDBWithMySQL(openchage_ldb)
+        return OpenchangeDBWithLDB(openchage_ldb)

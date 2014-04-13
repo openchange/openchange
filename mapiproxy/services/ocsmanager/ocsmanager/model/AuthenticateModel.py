@@ -1,14 +1,16 @@
 from pylons import config
-from lxml import etree
 import re
+import sys
+import logging
 
-from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 from ocsmanager.model.auth import SingleAuthenticateModel as single
 from ocsmanager.lib.utils import validateDocXML
 #from ocsmanager.model.auth import LDAPAuthenticateModel as ldap
 #from ocsmanager.model.auth import FileAuthenticateModel as mfile
+
+log = logging.getLogger(__name__)
 
 class AuthenticateModel:
 

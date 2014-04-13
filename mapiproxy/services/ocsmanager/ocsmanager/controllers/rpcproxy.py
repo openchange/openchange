@@ -1,10 +1,9 @@
 import logging
 
-from pylons import request, response, session, tmpl_context as c, url
-from pylons.controllers.util import abort, redirect
+from pylons import request, response
 # from ocsmanager.model import RPCProxyAuthenticateModel
 
-from ocsmanager.lib.base import BaseController, render
+from ocsmanager.lib.base import BaseController
 
 log = logging.getLogger(__name__)
 
@@ -24,8 +23,8 @@ class RpcproxyController(BaseController):
             # retval = auth.Authenticate(request.authorization)
             response.headers['Content-Type'] = 'application/rpc'
 
-            if retval == 1:
-                log.debug('Authentication failure')
+            #if retval == 1:
+            #    log.debug('Authentication failure')
 
         return ''
 

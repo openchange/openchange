@@ -3,7 +3,6 @@
 Provides the BaseController class for subclassing.
 """
 from pylons.controllers import WSGIController
-from pylons.templating import render_mako as render
 
 class BaseController(WSGIController):
 

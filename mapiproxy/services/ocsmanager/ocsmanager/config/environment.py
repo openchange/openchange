@@ -15,7 +15,6 @@ import openchange.mapistore as mapistore
 import samba.param
 from samba import Ldb
 from samba.samdb import SamDB
-from samba.auth import system_session, admin_session
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"

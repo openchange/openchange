@@ -1,10 +1,8 @@
 #!/usr/bin/python
 
-import os
 import tempfile
 import StringIO
 import pycurl
-import urllib
 from lxml import etree
 from OCSManager import ClientAuthentication
 from OCSManager import ClientNotification

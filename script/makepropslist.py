@@ -6,7 +6,6 @@ import string
 import subprocess
 import sys
 import tempfile
-import re
 
 knownpropsets = { "PSETID_PostRss" :           "{00062041-0000-0000-C000-000000000046}",
 		  "PSETID_Sharing" :           "{00062040-0000-0000-C000-000000000046}",
@@ -542,7 +541,6 @@ temporary_private_tags_struct = """\t{ openchange_private_ROOT_FOLDER_FID,		PT_I
 def make_mapi_properties_file():
 	proplines = []
 	altnamelines = []
-	previous_propid_list = []
 	for entry in properties:
 		if (entry.has_key("CanonicalName") == False):
 			print "Section", entry["OXPROPS_Sect"], "has no canonical name entry"
@@ -1015,7 +1013,7 @@ def check_proptypes():
 		if (knowndatatypes.has_key(datatypename) == False):
 			print "\tIn section %(section)s : unknown data type %(type)s" % { 'section': entry["OXPROPS_Sect"], 'type': datatypename }
 		elif (knowndatatypes[datatypename] != datatypevalue):
-			print "\tIn section %(section)s : got value %(value)i for type %(type)i (expected %(expected)i)" % { 'section': entry["OXPROPS_Sect"], 'value': datatypeval, 'type': datatypename, 'expected': knowndatatype[datatypename] }
+			print "\tIn section %(section)s : got value %(value)i for type %(type)i (expected %(expected)i)" % { 'section': entry["OXPROPS_Sect"], 'value': datatypevalue, 'type': datatypename, 'expected': knowndatatypes[datatypename] }
 
 def check_propsets():
 	print "Checking that property sets match:"

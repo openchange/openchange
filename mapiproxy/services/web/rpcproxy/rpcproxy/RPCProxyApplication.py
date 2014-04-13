@@ -17,10 +17,7 @@
 #
 
 import logging
-from errno import EEXIST
-from os import umask, mkdir, rmdir, listdir, getpid
-from os.path import join
-from uuid import uuid4
+from os import mkdir
 from shutil import rmtree
 import sys
 

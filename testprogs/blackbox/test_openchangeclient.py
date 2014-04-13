@@ -1,9 +1,7 @@
 import testtools
 import unittest
 import subprocess
-import subunit
 from testtools.matchers import DocTestMatches
-import sys
 
 class TestProgram(testtools.TestCase):
 

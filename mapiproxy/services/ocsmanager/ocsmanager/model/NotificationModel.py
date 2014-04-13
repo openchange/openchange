@@ -1,7 +1,5 @@
 from pylons import config
-from lxml import etree
 from ocsmanager.lib.utils import validateDocXML
-import re
 
 class NotificationModel:
 
@@ -35,7 +33,7 @@ class NotificationModel:
 
         # messageID parameter
         param = notification.find('messageID')
-        if param is None or param.text is None: retrun (True, 'Invalid/Missing messageID parameter')
+        if param is None or param.text is None: return (True, 'Invalid/Missing messageID parameter')
         params['messageID'] = param.text
 
         # username parameter

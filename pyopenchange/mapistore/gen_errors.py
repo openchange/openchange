@@ -1,7 +1,5 @@
 #!/usr/bin/python
 
-import os
-from os.path import dirname
 import sys
 
 def parse_equality(line, last_value):

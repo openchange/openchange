@@ -6,7 +6,6 @@ import sys
 sys.path.append("python")
 
 import os
-import openchange
 import openchange.mapistore as mapistore
 from openchange import mapi
 

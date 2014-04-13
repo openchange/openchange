@@ -1,9 +1,12 @@
 import os, sys
 import hashlib
+import logging
 
 from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 from pylons import config
+
+log = logging.getLogger(__name__)
 
 class SingleAuthenticateModel(object):
     def __init__(self):

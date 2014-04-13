@@ -98,8 +98,6 @@ class OCSConfig(object):
     def load(self):
         """Load the configuration file.
         """
-        
-        cfg = {}
 
         try:
             os.stat(self.config)

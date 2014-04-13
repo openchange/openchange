@@ -5,7 +5,6 @@ import sys
 sys.path.append("python")
 
 import os
-import openchange
 import openchange.ocpf as ocpf
 import openchange.mapi as mapi
 from openchange.ocpf import Ocpf

@@ -377,7 +377,7 @@ class RPCRTSPacket(RPCPacket):
         # compute offset with padding, which is ignored
         self.offset = self.offset + address_size + 12
 
-        return data_value
+        return data_blob
 
     def make_dump_output(self):
         (fields, values) = RPCPacket.make_dump_output(self)

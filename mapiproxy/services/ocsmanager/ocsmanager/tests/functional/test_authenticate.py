@@ -1,5 +1,4 @@
-from ocsmanager.tests import *
-import paste.httpexceptions as httpexceptions
+from ocsmanager.tests import TestController, url
 from xml.etree import ElementTree as ET
 
 class TestAuthenticateController(TestController):

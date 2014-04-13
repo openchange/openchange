@@ -1,6 +1,6 @@
 #!/usr/bin/python
 
-import os,sys
+import sys
 import argparse
 import ConfigParser
 from OCSManager import Network

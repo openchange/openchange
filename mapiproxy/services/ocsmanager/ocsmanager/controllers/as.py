@@ -1,29 +1,24 @@
 import logging
 
 import datetime
-from time import time
 
-from pylons import request, response, session, tmpl_context as c, url
 from pylons import config
-from pylons.controllers.util import abort, redirect
-from pylons.decorators.rest import restrict
 
-import rpclib
 from rpclib.application import Application
-from rpclib.decorator import rpc, srpc
+from rpclib.decorator import rpc
 from rpclib.interface.wsdl import Wsdl11
 from rpclib.protocol.soap import Soap11
 from rpclib.service import ServiceBase
 from rpclib.server.wsgi import WsgiApplication
-from rpclib.util.simple import wsgi_soap_application
-
-from lxml.etree import Element, ElementTree, tostring
 
 import ldb
-from openchange import mapistore
-from ocsmanager.lib.base import BaseController, render
 
-from ews_types import *
+from ews_types import (ArrayOfFreeBusyResponse, ArrayOfMailboxData,
+                       CalendarEvent, EWS_M_NS, FreeBusyResponse, FreeBusyView,
+                       FreeBusyViewOptionsType, ResponseMessageType, SerializableTimeZone,
+                       ServerVersionInfo, SuggestionDayResult, SuggestionsResponseType,
+                       SuggestionsViewOptionsType, WorkingHours, WorkingPeriod)
+
 
 log = logging.getLogger(__name__)
 

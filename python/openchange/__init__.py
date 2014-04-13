@@ -36,7 +36,7 @@ except ImportError:
             if os.path.isdir(os.path.join(path, "samba")):
                 sys.path.append(path)
                 break
-    import samba
+    import samba # NOQA
 
 
 def test_suite():

@@ -508,23 +508,18 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
     if reporter is None:
         reporter = TextProgressReporter()
 
-    session_info = system_session()
-
     lp.set("dsdb:schema update allowed", "yes")
 
     names = guess_names_from_smbconf(lp, None, None)
-
-    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
-                  credentials=creds, lp=lp)
 
     try:
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
-    except RuntimeError as err:
+    except RuntimeError as error:
         print ("[!] error while deprovisioning the Exchange configuration"
-               " objects (%d): %s" % ldb_error.args)
+               " objects (%d): %s" % error.args)
 
     ## NOTE: AD schema objects cannot be deleted (it's a feature!)
     # try:

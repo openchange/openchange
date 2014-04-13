@@ -42,7 +42,6 @@ class UploadStreamBufferParser:
 
     def run(self, lines):
         count = 0
-        maxlines = len(lines)
         methods = [ self._doStart,
                     self._doStartBeginStream, self._doEndBeginStream,
                     self._doStartContinueStream,
@@ -95,7 +94,7 @@ def PrintUploadStream(data):
     print "{%.8x-%.4x-%.4x-%.4x-%.4x%.8x}" % (start + final)
 
     runner = GLOBSetRunner(data, 16)
-    consumed = runner.run()
+    runner.run()
     count = 0
     for r in runner.ranges:
         print "        %d: [0x%.12x:0x%.12x]" % ((count,) + r)

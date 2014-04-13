@@ -64,7 +64,6 @@ def make_app(global_conf, full_stack=True, static_files=True, **app_conf):
 
     # authenticator = OCSAuthenticator(config)
     # app = AuthBasicHandler(app, "OCSManager", authenticator)
-    fqdn = "%(hostname)s.%(dnsdomain)s" % config["samba"]
     auth_handler = NTLMAuthHandler(app)
 
     def ntlm_env_setter(environ, start_response):

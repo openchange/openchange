@@ -2,7 +2,6 @@ import ldap
 import logging
 from pylons import config
 
-from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 log = logging.getLogger(__name__)

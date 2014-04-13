@@ -1,6 +1,5 @@
 #!/usr/bin/python
 
-import os
 import hashlib
 from lxml import etree
 

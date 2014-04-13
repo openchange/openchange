@@ -28,9 +28,8 @@ from uuid import UUID
 
 # from rpcproxy.RPCH import RPCH, RTS_FLAG_ECHO
 from openchange.utils.fdunix import send_socket, receive_socket
-from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
-    RTS_CMD_VERSION, RTS_CMD_RECEIVE_WINDOW_SIZE, \
-    RTS_CMD_CONNECTION_TIMEOUT, RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, \
+from openchange.utils.packets import RTS_CMD_VERSION, \
+    RTS_CMD_RECEIVE_WINDOW_SIZE, RTS_CMD_CONNECTION_TIMEOUT, RTS_FLAG_ECHO, \
     RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket
 
 

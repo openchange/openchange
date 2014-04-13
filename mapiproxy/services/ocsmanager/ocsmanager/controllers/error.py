@@ -1,10 +1,6 @@
 import cgi
 
-from paste.urlparser import PkgResourcesParser
 from pylons import request
-from pylons.controllers.util import forward
-from pylons.middleware import error_document_template
-from webhelpers.html.builder import literal
 
 
 from ocsmanager.lib.base import BaseController

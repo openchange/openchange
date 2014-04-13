@@ -3,10 +3,8 @@ import hashlib
 import os
 
 from base64 import urlsafe_b64encode as encode
-from base64 import urlsafe_b64decode as decode
 
-from pylons import request, response, session, tmpl_context as c, url
-from pylons.controllers.util import abort, redirect
+from pylons import request, response, session, tmpl_context as c
 from pylons.decorators.rest import restrict
 from ocsmanager.model import AuthenticateModel
 

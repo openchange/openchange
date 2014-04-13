@@ -36,7 +36,7 @@ from os.path import join, exists
 from select import poll, POLLIN, POLLHUP
 from socket import socket, SHUT_RDWR, AF_INET, AF_UNIX, \
     SOCK_STREAM, MSG_WAITALL, error as socket_error
-from struct import pack, unpack, unpack_from, error as struct_error
+from struct import pack, unpack_from, error as struct_error
 import sys
 import traceback
 from time import sleep, time
@@ -239,8 +239,8 @@ class _NTLMDaemon(object):
         _safe_close(server_socket)
         # unlink(self.socket_filename)
         # close client sockets
-        [_safe_close(client_socket)
-         for client_socket in client_sockets.itervalues()]
+        for client_socket in client_sockets.itervalues():
+            _safe_close(client_socket)
         
         self.log.info("NTLMAuthHandler daemon shutdown (%d)", getpid())
 

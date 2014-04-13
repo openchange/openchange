@@ -112,7 +112,6 @@ class GetPropsParser:
         self.response = self.response + charValue
 
     def _printResponse(self):
-        length = len(self.response)
         pos = 0
         for column in self.columns:
             pos = pos + self._printResponseColumn(column, pos)

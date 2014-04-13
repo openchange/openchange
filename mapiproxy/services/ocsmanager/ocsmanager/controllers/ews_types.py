@@ -4,8 +4,9 @@ files provided by the Exchange doc.
 
 """
 
-from rpclib.model.complex import *
-from rpclib.model.primitive import *
+from rpclib.model.complex import Array, ComplexModel, XmlAttribute
+from rpclib.model.primitive import (AnyXml, Boolean, DateTime, Integer,
+                                    Integer16, String)
 
 #aliases
 Short = Integer16

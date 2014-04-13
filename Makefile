@@ -48,7 +48,7 @@ all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
-		$(PYMAPIALL)		\
+		$(PYOPENCHANGEALL)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 

@@ -1594,32 +1594,31 @@ uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
 
 doxygen:	
-	@if test ! -d apidocs ; then						\
-		echo "Doxify API documentation: HTML and man pages";		\
-		mkdir -p apidocs/html;						\
-		mkdir -p apidocs/man;						\
-		$(DOXYGEN) Doxyfile;						\
-		$(DOXYGEN) libmapi/Doxyfile;					\
-		$(DOXYGEN) libmapiadmin/Doxyfile;				\
-		$(DOXYGEN) libocpf/Doxyfile;					\
-		$(DOXYGEN) libmapi++/Doxyfile;					\
-		$(DOXYGEN) mapiproxy/Doxyfile;					\
-		$(DOXYGEN) utils/mapitest/Doxyfile;				\
-		$(DOXYGEN) mapiproxy/libmapistore/Doxyfile;			\
-		cp -f doc/doxygen/index.html apidocs/html;			\
-		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
-		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
-		rm -f apidocs/man/man3/todo.3;					\
-		rm -f apidocs/man/man3/bug.3;					\
-		rm -f apidocs/man/man3/*.c.3;					\
-	fi								
+	echo "Doxify API documentation: HTML and man pages"
+	mkdir -p apidocs/html
+	mkdir -p apidocs/man
+	mkdir -p apidocs/xml
+	$(DOXYGEN) Doxyfile
+	$(DOXYGEN) libmapi/Doxyfile
+	$(DOXYGEN) libmapiadmin/Doxyfile
+	$(DOXYGEN) libocpf/Doxyfile
+	$(DOXYGEN) libmapi++/Doxyfile
+	$(DOXYGEN) mapiproxy/Doxyfile
+	$(DOXYGEN) utils/mapitest/Doxyfile
+	$(DOXYGEN) mapiproxy/libmapistore/Doxyfile
+	cp -f doc/doxygen/index.html apidocs/html
+	cp -f doc/doxygen/pictures/* apidocs/html/overview
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapi
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapi++
+	cp -f doc/doxygen/pictures/* apidocs/html/libocpf
+	cp -f doc/doxygen/pictures/* apidocs/html/mapitest
+	cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapistore
+	cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy
+	rm -f apidocs/man/man3/todo.3
+	rm -f apidocs/man/man3/bug.3
+	rm -f apidocs/man/man3/*.c.3
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`

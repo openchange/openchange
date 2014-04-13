@@ -635,6 +635,15 @@ AC_SUBST(OC_MAPISTORE_CLEAN)
 AC_SUBST(OC_MAPISTORE_INSTALL)
 AC_SUBST(OC_MAPISTORE_UNINSTALL)
 
+OC_SERVER=
+OC_SERVER_CLEAN=
+OC_SERVER_INSTALL=
+OC_SERVER_UNINSTALL=
+AC_SUBST(OC_SERVER)
+AC_SUBST(OC_SERVER_CLEAN)
+AC_SUBST(OC_SERVER_INSTALL)
+AC_SUBST(OC_SERVER_UNINSTALL)
+
 dnl ##########################################################################
 dnl mapiproxy server
 dnl ##########################################################################
@@ -662,14 +671,20 @@ AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
 AC_SUBST(PYCDIR)
 
-dnl Enable pyopenchange by default
-PYMAPIALL="$PYMAPIALL pyopenchange"
-PYMAPIINSTALL="$PYMAPIALLINSTALL pyopenchange-install"
-PYMAPIUNINSTALL="$PYMAPIUNINSTALL pyopenchange-uninstall"
+PYOPENCHANGEALL=
+PYOPENCHANGEINSTALL=
+PYOPENCHANGEUNINSTALL=
 
-AC_SUBST(PYMAPIALL)
-AC_SUBST(PYMAPIINSTALL)
-AC_SUBST(PYMAPIUNINSTALL)
+if test x$enable_pymapi = xyes ; then
+	dnl Enable pyopenchange by default
+	PYOPENCHANGEALL="$PYOPENCHANGEALL pyopenchange"
+	PYOPENCHANGEINSTALL="$PYOPENCHANGEALLINSTALL pyopenchange-install"
+	PYOPENCHANGEUNINSTALL="$PYOPENCHANGEUNINSTALL pyopenchange-uninstall"
+fi
+
+AC_SUBST(PYOPENCHANGEALL)
+AC_SUBST(PYOPENCHANGEINSTALL)
+AC_SUBST(PYOPENCHANGEUNINSTALL)
 
 
 dnl ##########################################################################

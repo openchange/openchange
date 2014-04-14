@@ -1407,8 +1407,8 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	mapiproxy/libmapistore/backends/indexing_tdb.o \
 	mapiproxy/libmapistore/backends/indexing_mysql.o \
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)"
-	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
+	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)"
+	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)
 
 
 unittest-clean:

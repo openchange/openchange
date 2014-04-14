@@ -283,36 +283,20 @@ class ExchangeService(ServiceBase):
     @staticmethod
     def _open_user_calendar_folder(email):
         # lookup usercn from email
-
         ldbdb = config["samba"]["samdb_ldb"]
         base_dn = "CN=Users,%s" % config["samba"]["domaindn"]
         ldb_filter = "(&(objectClass=user)(mail=%s))" % email
         res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=ldb_filter, attrs=["cn"])
-        if len(res) == 1:
-            ldb_record = res[0]
-            usercn = ldb_record["cn"][0]
-        else:
-            usercn = None
-        
-        cal_folder = None
+        if len(res) != 1:
+            return None
 
-        # lookup mapistore url for cal folder
-        cal_folder = None
-        if usercn is not None:
-            ldbdb = config["oc_ldb"]
-            base_dn = "CN=%s,%s" % (usercn, config["samba"]["oc_user_basedn"])
-            ldb_filter = "(&(objectClass=systemfolder)(PidTagContainerClass=IPF.Appointment)(MAPIStoreURI=*))"
-            res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
-                               expression=ldb_filter, attrs=["MAPIStoreURI"])
-            for x in xrange(len(res)):
-                ldb_record = res[x]
-                uri = ldb_record["MAPIStoreURI"][0]
-                if str(uri).find("/personal") > -1:  # FIXME: this is evil
-                    context = config["mapistore"].add_context(uri, usercn)
-                    cal_folder = context.open()
-
-        return cal_folder
+        usercn = res[0]["cn"][0]
+        ocdb = config["ocdb"]
+        for uri in ocdb.get_calendar_uri(usercn, email):
+            if uri.find("/personal") > -1:  # FIXME: this is evil
+                context = config["mapistore"].add_context(uri, usercn)
+                return context.open()
 
     @staticmethod
     def _timezone_datetime(year, tz_time):

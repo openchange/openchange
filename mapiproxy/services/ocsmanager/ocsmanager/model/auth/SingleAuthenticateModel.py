@@ -28,7 +28,7 @@ class SingleAuthenticateModel(object):
         if username != self.username: return (True, 'Invalid Username/Password')
 
         salt = decode(salt64)
-        token_salt = decode(token_salt64)        
+        token_salt = decode(token_salt64)
 
         # Recreate the payload and compare it
         if self.encryption == "plain":
@@ -42,7 +42,7 @@ class SingleAuthenticateModel(object):
             sys.exit()
 
         h = hashlib.sha1(str(username) + ':' + str(sshaPassword) + ':' + str(token_salt))
-        h.update(token_salt)            
+        h.update(token_salt)
         phash = h.hexdigest()
 
         # Final authentication check

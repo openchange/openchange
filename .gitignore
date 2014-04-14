@@ -39,7 +39,7 @@ mapiproxy/libmapistore/Doxyfile
 mapiproxy/libmapistore/mapistore_nameid.h
 mapiproxy/libmapistore/mgmt/gen_ndr/
 pyopenchange/mapistore/errors.c
-setup/mapistore/
+setup/mapistore/mapistore_namedprops.ldif
 stamp-h1
 utils/mapitest/Doxyfile
 utils/mapitest/mapitest_proto.h

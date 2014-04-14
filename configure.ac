@@ -24,8 +24,22 @@ CFLAGS="-I. $CFLAGS"
 dnl #################################################################
 dnl MySQL
 dnl #################################################################
-AC_CHECK_HEADER(mysql/mysql.h, , [AC_MSG_ERROR(
-        [Couldn't find mysql.h... try installing libmysqlclient-dev package])])
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+	AC_MSG_WARN([No version of mysql_config was found!])
+	AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
 
 dnl #################################################################
 dnl Check for OS dependent options

@@ -11,9 +11,6 @@ endif
 
 default: all
 
-# TODO move to configure.ac
-LIBS+=-lmysqlclient -lgcov
-
 # Until we add proper dependencies for all the C files:
 .NOTPARALLEL:
 
@@ -766,20 +763,20 @@ mapiproxy/libmapiproxy/modules.o mapiproxy/libmapiproxy/modules.po: CFLAGS+=-DMO
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dcesrv_mapiproxy_module.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_server.po	\
 							mapiproxy/libmapiproxy/dcesrv_mapiproxy_session.po	\
-							mapiproxy/libmapiproxy/openchangedb.po				\
+							mapiproxy/libmapiproxy/openchangedb.po			\
 							mapiproxy/libmapiproxy/openchangedb_table.po		\
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
 							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
-							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po \
-							mapiproxy/libmapiproxy/mapi_handles.po				\
-							mapiproxy/libmapiproxy/entryid.po					\
-							mapiproxy/libmapiproxy/modules.po					\
-							mapiproxy/libmapiproxy/fault_util.po	            \
-							mapiproxy/util/mysql.po								\
+							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
+							mapiproxy/libmapiproxy/mapi_handles.po			\
+							mapiproxy/libmapiproxy/entryid.po			\
+							mapiproxy/libmapiproxy/modules.po			\
+							mapiproxy/libmapiproxy/fault_util.po			\
+							mapiproxy/util/mysql.po					\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -932,7 +929,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $(MYSQL_LIBS)
 
 mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
 
@@ -1410,8 +1407,8 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	mapiproxy/libmapistore/backends/indexing_tdb.o \
 	mapiproxy/libmapistore/backends/indexing_mysql.o \
 	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)"
-	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS)
+	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)"
+	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)
 
 
 unittest-clean:

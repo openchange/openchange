@@ -12,6 +12,7 @@ from ocsmanager.lib.base import BaseController, render
 
 log = logging.getLogger(__name__)
 
+
 class AuthenticateController(BaseController):
 
     def _auth_abort(self, code, message):
@@ -25,19 +26,19 @@ class AuthenticateController(BaseController):
         for the user.
         """
         # Ensure Content-type is text/xml
-        if request.headers.get("Content-Type", "").startswith("text/xml") is False: 
+        if request.headers.get("Content-Type", "").startswith("text/xml") is False:
             return self._auth_abort(417, 'Invalid Parameter')
 
         # Retrieve request XML body
         payload = request.body
-        if payload is None: 
+        if payload is None:
             log.error('Empty payload in auth:token()')
             return self._auth_abort(417, 'Invalid Parameter')
 
         # Retrieve the salt from the model
         authModel = AuthenticateModel.AuthenticateModel()
         login = authModel.getTokenLogin(payload)
-        if login is None: 
+        if login is None:
             return self._auth_abort(417, 'Invalid Parameter')
 
         salt = authModel.getTokenLoginSalt(login)
@@ -63,11 +64,16 @@ class AuthenticateController(BaseController):
         """Authenticate the user on ocsmanager.
         """
 
-        if not "ocsmanager" in request.cookies: return self._auth_abort(403, 'Invalid Session')
-        if not "token" in session: return self._auth_abort(403, 'Invalid Session')
-        if not "token" in request.cookies: return self._auth_abort(403, 'Invalid Token')
-        if request.cookies.get('token') != session['token']: return self._auth_abort(403, 'Invalid Token')
-        if not "login" in session: return self._auth_abort(403, 'Invalid Session')
+        if not "ocsmanager" in request.cookies:
+            return self._auth_abort(403, 'Invalid Session')
+        if not "token" in session:
+            return self._auth_abort(403, 'Invalid Session')
+        if not "token" in request.cookies:
+            return self._auth_abort(403, 'Invalid Token')
+        if request.cookies.get('token') != session['token']:
+            return self._auth_abort(403, 'Invalid Token')
+        if not "login" in session:
+            return self._auth_abort(403, 'Invalid Session')
 
         payload = request.body
         if payload is None:

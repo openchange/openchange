@@ -15,4 +15,3 @@ SPropValue.add(mapi.PidTagMessageCcMe, False)
 SPropValue.add(mapi.PidTagStartDate, time.time())
 
 SPropValue.dump("Python: ")
-

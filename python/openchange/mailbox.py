@@ -27,11 +27,14 @@ import time
 
 __docformat__ = 'restructuredText'
 
+
 class NoSuchServer(Exception):
+
     """Raised when a server could not be found."""
 
 
 class OpenChangeDB(object):
+
     """The OpenChange database.
     """
 
@@ -110,7 +113,7 @@ dn: CASE_INSENSITIVE
                       "FolderType": str(1),
                       "SystemIdx": str(SystemIndex)})
 
-    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, dn_prefix = None):
+    def add_one_public_folder(self, parent_fid, path, children, SystemIndex, names, dn_prefix=None):
 
         name = path[-1]
         GlobalCount = self.get_message_GlobalCount(names.netbiosname)
@@ -126,7 +129,7 @@ dn: CASE_INSENSITIVE
         if parent_fid == 0:
             self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount)
         else:
-            self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount);
+            self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount)
 
         GlobalCount += 1
         self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -144,18 +147,18 @@ dn: CASE_INSENSITIVE
                       "StoreGUID": pfstoreGUID,
                       "ReplicaID": str(1)})
         public_folders = ({
-                "IPM_SUBTREE": ({}, 2),
-                "NON_IPM_SUBTREE": ({
-                        "EFORMS REGISTRY": ({}, 4),
-                        "Events Root": ({}, -1),
-                        "OFFLINE ADDRESS BOOK": ({
-                                "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 9),
-                                }, 6),
-                        "SCHEDULE+ FREE BUSY": ({
-                                "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 8),
-                                }, 5),
-                        }, 3),
-                }, 1)
+            "IPM_SUBTREE": ({}, 2),
+            "NON_IPM_SUBTREE": ({
+                                "EFORMS REGISTRY": ({}, 4),
+                                "Events Root": ({}, -1),
+                                "OFFLINE ADDRESS BOOK": ({
+                                                         "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 9),
+                                                         }, 6),
+                                "SCHEDULE+ FREE BUSY": ({
+                                                        "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 8),
+                                                        }, 5),
+                                }, 3),
+        }, 1)
 
         self.add_one_public_folder(0, ("Public Folder Root",), public_folders[0], public_folders[1], names)
 
@@ -163,7 +166,7 @@ dn: CASE_INSENSITIVE
         # Step 1. Search Server object
         filter = "(&(objectClass=server)(cn=%s))" % cn
         res = self.ldb.search("", scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=attributes)
+                              expression=filter, attrs=attributes)
         if len(res) != 1:
             raise NoSuchServer(cn)
         return res[0]
@@ -180,7 +183,7 @@ dn: CASE_INSENSITIVE
         # Step 2. Search User object
         filter = "(&(objectClass=mailbox)(cn=%s))" % (username)
         return self.ldb.search(server_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=filter, attrs=attributes)
+                               expression=filter, attrs=attributes)
 
     def lookup_public_folder(self, server, displayname, attributes=[]):
         """Retrieve the record for a public folder matching a specific display name
@@ -217,7 +220,6 @@ dn: CASE_INSENSITIVE
         """
         return self.get_message_attribute(server, "GlobalCount")
 
-
     def set_message_GlobalCount(self, server, GlobalCount):
         """Update current mailbox GlobalCount for given message database (server).
 
@@ -246,7 +248,6 @@ GlobalCount: %d
         """
         return self.get_message_attribute(server, "ChangeNumber")
 
-
     def set_message_ChangeNumber(self, server, ChangeNumber):
         """Update current mailbox ChangeNumber for given message database (server).
 
@@ -268,14 +269,16 @@ ChangeNumber: %d
         finally:
             self.ldb.transaction_commit()
 
+
 def reverse_int64counter(GlobalCount):
     rev_counter = 0
     for x in xrange(6):
         sh = x * 8
-        unsh = (7-x) * 8
+        unsh = (7 - x) * 8
         rev_counter = rev_counter | (((GlobalCount >> sh) & 0xff) << unsh)
 
     return rev_counter
+
 
 def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """Generates a Folder ID from index.

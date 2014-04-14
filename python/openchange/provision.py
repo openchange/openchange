@@ -40,12 +40,16 @@ FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
 # This is a hack. Kind-of cute, but still a hack
+
+
 def abstract():
     import inspect
     caller = inspect.getouterframes(inspect.currentframe())[1][3]
     raise NotImplementedError(caller + ' must be implemented in subclass')
 
 # Define an abstraction for progress reporting from the provisioning
+
+
 class AbstractProgressReporter(object):
 
     def __init__(self):
@@ -60,7 +64,10 @@ class AbstractProgressReporter(object):
 
 # A concrete example of a progress reporter - just provides text output for
 # each new step.
+
+
 class TextProgressReporter(AbstractProgressReporter):
+
     def doReporting(self, stepName):
         print "[+] Step %d: %s" % (self.currentStep, stepName)
 
@@ -83,6 +90,7 @@ class ProvisionNames(object):
         # OpenChange dispatcher database specific
         self.ocfirstorgdn = None
         self.ocserverdn = None
+
 
 def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
@@ -144,6 +152,7 @@ def guess_names_from_smbconf(lp, firstorg=None, firstou=None):
 
     return names
 
+
 def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
     """Provision/modify schema using LDIF specified file
     :param setup_path: Path to the setup directory.
@@ -169,16 +178,16 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
         else:
             ldif_function = setup_add_ldif
         ldif_function(db, setup_path(ldif), {
-                "FIRSTORG": names.firstorg,
-                "FIRSTORGDN": names.firstorgdn,
-                "CONFIGDN": names.configdn,
-                "SCHEMADN": names.schemadn,
-                "DOMAINDN": names.domaindn,
-                "DOMAIN": names.domain,
-                "DNSDOMAIN": names.dnsdomain,
-                "NETBIOSNAME": names.netbiosname,
-                "HOSTNAME": names.hostname
-                })
+            "FIRSTORG": names.firstorg,
+            "FIRSTORGDN": names.firstorgdn,
+            "CONFIGDN": names.configdn,
+            "SCHEMADN": names.schemadn,
+            "DOMAINDN": names.domaindn,
+            "DOMAIN": names.domain,
+            "DNSDOMAIN": names.dnsdomain,
+            "NETBIOSNAME": names.netbiosname,
+            "HOSTNAME": names.hostname
+        })
     except:
         db.transaction_cancel()
         raise
@@ -279,6 +288,7 @@ def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify
 
     db.transaction_commit()
 
+
 def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     """Unmodify schema using LDIF specified file
 
@@ -348,7 +358,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
-    except LdbError, ldb_error:
+    except LdbError as ldb_error:
         print ("[!] error while provisioning the Exchange"
                " schema classes (%d): %s"
                % ldb_error.args)
@@ -357,9 +367,10 @@ def install_schemas(setup_path, names, lp, creds, reporter):
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Exchange Samba with Exchange configuration objects")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize Exchange configuration objects")
         print "[SUCCESS] Done!"
-    except LdbError, ldb_error:
+    except LdbError as ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
+
 
 def get_ldb_url(lp, creds, names):
     if names.serverrole == "member server":
@@ -394,7 +405,7 @@ def newuser(lp, creds, username=None):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
@@ -456,7 +467,7 @@ def accountcontrol(lp, creds, username=None, value=0):
     """
 
     names = guess_names_from_smbconf(lp, None, None)
-    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(), 
+    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     extended_user = """
@@ -514,14 +525,14 @@ def deprovision(setup_path, lp, creds, firstorg=None, firstou=None, reporter=Non
 
     try:
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
-    except LdbError, ldb_error:
+    except LdbError as ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
     except RuntimeError as error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % error.args)
 
-    ## NOTE: AD schema objects cannot be deleted (it's a feature!)
+    # NOTE: AD schema objects cannot be deleted (it's a feature!)
     # try:
     #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Remove exchange attributes from existing Samba classes")
     #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Remove possSuperior attributes to Exchange classes")

@@ -5,6 +5,7 @@ from pylons import request
 
 from ocsmanager.lib.base import BaseController
 
+
 class ErrorController(BaseController):
 
     """Generates error documents as and when they are required.
@@ -26,5 +27,5 @@ class ErrorController(BaseController):
 <xml>
   <error code="%(code)s">%(message)s</error>
 </xml>
-""" % {'code':cgi.escape(request.GET.get('code', str(resp.status_int))), 'message': content}
+""" % {'code': cgi.escape(request.GET.get('code', str(resp.status_int))), 'message': content}
         return page

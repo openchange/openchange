@@ -4,6 +4,7 @@ Provides the BaseController class for subclassing.
 """
 from pylons.controllers import WSGIController
 
+
 class BaseController(WSGIController):
 
     def __call__(self, environ, start_response):

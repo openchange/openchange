@@ -9,6 +9,7 @@ from ocsmanager.lib.base import BaseController, render
 
 log = logging.getLogger(__name__)
 
+
 class NotificationController(BaseController):
 
     def _abort(self, code, message):
@@ -24,13 +25,15 @@ class NotificationController(BaseController):
         notification = NotificationModel.NotificationModel()
         authModel = AuthenticateModel.AuthenticateModel()
         token = authModel.getSessionToken(request.body)
-        if token is None: return self._abort(472, 'Invalid token')
-        if token != session['tokenLogin']: return self._abort(403, 'Access forbidden')
+        if token is None:
+            return self._abort(472, 'Invalid token')
+        if token != session['tokenLogin']:
+            return self._abort(403, 'Access forbidden')
 
-        (error,params) = notification.getNewMailParams(request.body)
-        if error is True: return self._abort(417, params)
+        (error, params) = notification.getNewMailParams(request.body)
+        if error is True:
+            return self._abort(417, params)
 
         print params
 
         return render('/notification.xml')
-        

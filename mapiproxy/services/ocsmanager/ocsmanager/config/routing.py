@@ -6,6 +6,7 @@ refer to the routes manual at http://routes.groovie.org/docs/
 """
 from routes import Mapper
 
+
 def make_map(config):
     """Create, configure and return the routes Mapper"""
     map = Mapper(directory=config['pylons.paths']['controllers'],

@@ -274,7 +274,9 @@ xmlns:xsd="http://www.w3.org/2001/XMLSchema">
 
 """
 
+
 class ExchangeService(ServiceBase):
+
     @staticmethod
     def _open_user_calendar_folder(email):
         # lookup usercn from email
@@ -289,7 +291,7 @@ class ExchangeService(ServiceBase):
             usercn = ldb_record["cn"][0]
         else:
             usercn = None
-        
+
         cal_folder = None
 
         # lookup mapistore url for cal folder
@@ -347,7 +349,7 @@ class ExchangeService(ServiceBase):
         fb_response = FreeBusyResponse()
         fb_response.ResponseMessage = ResponseMessageType()
         fb_response.ResponseMessage.ResponseClass = "Success"
-        fb_response.ResponseMessage.ResponseCode = "NoError" 
+        fb_response.ResponseMessage.ResponseCode = "NoError"
         fb_response.FreeBusyView = FreeBusyView()
         fb_response.FreeBusyView.FreeBusyViewType = "FreeBusy"
 
@@ -394,7 +396,7 @@ class ExchangeService(ServiceBase):
     @staticmethod
     def _suggestions_response(timezone, suggestions_view_options):
         suggestions = SuggestionsResponseType()
-            
+
         suggestions.ResponseMessage = ResponseMessageType(ResponseClass="NoError")
 
         start = suggestions_view_options.DetailedSuggestionsWindow.StartTime
@@ -416,7 +418,7 @@ class ExchangeService(ServiceBase):
         suggestions.SuggestionDayResultArray = suggestions_list
 
         return suggestions
-       
+
     @staticmethod
     def _suggestions_lookup_error_response():
         suggestions = SuggestionsResponseType()
@@ -428,7 +430,7 @@ class ExchangeService(ServiceBase):
         suggestions.SuggestionDayResultArray = []
 
         return suggestions
- 
+
     @rpc(SerializableTimeZone, ArrayOfMailboxData, FreeBusyViewOptionsType, SuggestionsViewOptionsType,
          _in_message_name="GetUserAvailabilityRequest",
          _in_variable_names={"timezone": "TimeZone",
@@ -438,12 +440,12 @@ class ExchangeService(ServiceBase):
          _out_message="GetUserAvailabilityResponse",
          _out_header=ServerVersionInfo,
          _out_variable_names=("FreeBusyResponseArray", "SuggestionsResponse"),
-         _returns=(ArrayOfFreeBusyResponse,SuggestionsResponseType),
+         _returns=(ArrayOfFreeBusyResponse, SuggestionsResponseType),
          _soap_body_style="document")
-    def GetUserAvailabilityRequest(ctx, 
-                                   timezone = None, mailbox_data_array = None,
-                                   freebusy_view_options = None,
-                                   suggestions_view_options = None):
+    def GetUserAvailabilityRequest(ctx,
+                                   timezone=None, mailbox_data_array=None,
+                                   freebusy_view_options=None,
+                                   suggestions_view_options=None):
         ctx.out_header = ServerVersionInfo(MajorVersion=8,
                                            MinorVersion=0,
                                            MajorBuildNumber=685,
@@ -478,7 +480,7 @@ class ExchangeService(ServiceBase):
                                                         suggestions_view_options)
         else:
             suggestions = None
-        
+
         return (freebusy, suggestions)
 
 EwsApp = Application([ExchangeService], EWS_M_NS,

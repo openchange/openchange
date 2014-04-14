@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -34,7 +34,9 @@ PARSER_START,\
     PARSER_END_CONTINUESTREAM,\
     PARSER_DONE = range(7)
 
+
 class UploadStreamBufferParser:
+
     def __init__(self):
         self.bytes = []
         self.property = None
@@ -42,10 +44,10 @@ class UploadStreamBufferParser:
 
     def run(self, lines):
         count = 0
-        methods = [ self._doStart,
-                    self._doStartBeginStream, self._doEndBeginStream,
-                    self._doStartContinueStream,
-                    self._doContinueContinueStream ]
+        methods = [self._doStart,
+                   self._doStartBeginStream, self._doEndBeginStream,
+                   self._doStartContinueStream,
+                   self._doContinueContinueStream]
 
         while self.state != PARSER_DONE:
             line = lines[count]
@@ -62,7 +64,7 @@ class UploadStreamBufferParser:
         if line.find("StateProperty") > -1:
             col_idx = line.find(":")
             property_end_idx = line.find(" ", col_idx + 2)
-            self.property = line[col_idx+2:property_end_idx]
+            self.property = line[col_idx + 2:property_end_idx]
             print "property: %s" % self.property
             self.state = PARSER_END_BEGINSTREAM
 
@@ -79,15 +81,16 @@ class UploadStreamBufferParser:
         if bIdx > -1:
             byteIdx = line.find("0x", bIdx)
             ebIdx = line.find(" ", byteIdx)
-            byteValue = int(line[byteIdx+2:ebIdx], 16)
+            byteValue = int(line[byteIdx + 2:ebIdx], 16)
             self.bytes.append(chr(byteValue))
         else:
             self.state = PARSER_DONE
 
+
 def PrintUploadStream(data):
     dataLen = len(data)
     if dataLen < 16:
-        raise Exception, "Data buffer is only %d bytes long" % dataLen
+        raise Exception("Data buffer is only %d bytes long" % dataLen)
 
     start = struct.unpack_from("<LHH", data, 0)
     final = struct.unpack_from(">HHL", data, 8)

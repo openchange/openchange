@@ -6,12 +6,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -50,12 +50,12 @@ from openchange.utils.packets import RPCAuth3OutPacket, RPCBindACKPacket, \
 SAMBA_PORT = 1024
 
 # those are left unconfigurable, at least for now
-CLIENT_TIMEOUT = 60 * 5 # 5 minutes since last use
-ACTIVITY_TIMEOUT = CLIENT_TIMEOUT # 5 minutes since any socket has been used
-SAMBA_CONNECT_MAX_TRIES = 10 # ~10 seconds
+CLIENT_TIMEOUT = 60 * 5  # 5 minutes since last use
+ACTIVITY_TIMEOUT = CLIENT_TIMEOUT  # 5 minutes since any socket has been used
+SAMBA_CONNECT_MAX_TRIES = 10  # ~10 seconds
 
 
-## client-daemon protocol:
+# client-daemon protocol:
 # * server knows client?
 # client -> server "k" + sizeof(cookie) + cookie
 # server->client = 0 or 1 (binary)
@@ -75,6 +75,7 @@ def _safe_close(socket_obj):
 
 
 class _NTLMDaemon(object):
+
     def __init__(self, samba_host, socket_filename, owner_pair):
         self.socket_filename = socket_filename
         self.owner_pair = owner_pair
@@ -114,7 +115,7 @@ class _NTLMDaemon(object):
         maxfd = resource.getrlimit(resource.RLIMIT_NOFILE)[1]
         if (maxfd == resource.RLIM_INFINITY):
             maxfd = MAXFD
-  
+
         if hasattr(sys.stderr, "fileno"):
             stderr_fileno = sys.stderr.fileno()
         else:
@@ -142,7 +143,7 @@ class _NTLMDaemon(object):
             _exit(0)
 
         self.log.info("NTLMAuthHandler daemon spawned with pid %d", getpid())
-        
+
         # forked processes inherits lock created by flock, so we need to
         # unlock the file here
         # flock(lockf.fileno(), LOCK_UN)
@@ -152,12 +153,12 @@ class _NTLMDaemon(object):
         # Catch all exceptions here and print them to stderr before exiting
         # to avoid problems when running under paster
         try:
-          self._run_as_daemon()
+            self._run_as_daemon()
         except Exception as e:
-          trace = traceback.format_exc()
-          self.log.critical("Uncaught exception: %s\n%s", e,trace)
-          self.log.critical("Exiting")
-          _exit(1)
+            trace = traceback.format_exc()
+            self.log.critical("Uncaught exception: %s\n%s", e, trace)
+            self.log.critical("Exiting")
+            _exit(1)
 
     def _run_as_daemon(self):
         client_sockets = {}
@@ -165,7 +166,7 @@ class _NTLMDaemon(object):
         last_activity = time()
 
         # ensure only the current user can connect to our socket
-        umask(0077)
+        umask(0o077)
 
         # create socket and listen
         server_socket = socket(AF_UNIX, SOCK_STREAM)
@@ -241,7 +242,7 @@ class _NTLMDaemon(object):
         # close client sockets
         for client_socket in client_sockets.itervalues():
             _safe_close(client_socket)
-        
+
         self.log.info("NTLMAuthHandler daemon shutdown (%d)", getpid())
 
     def _cleanup_client_data(self, time_limit):
@@ -297,10 +298,10 @@ class _NTLMDaemon(object):
                 # directly cleanup the client record, in order to reduce the
                 # amount of sockets in use
                 if client_id in self.client_data:
-                  if "server" in self.client_data[client_id]:
-                      server = self.client_data[client_id]["server"]
-                      _safe_close(server)
-                  del self.client_data[client_id]
+                    if "server" in self.client_data[client_id]:
+                        server = self.client_data[client_id]["server"]
+                        _safe_close(server)
+                    del self.client_data[client_id]
 
             len_ntlm_payload = len(ntlm_payload)
             client_socket.sendall(pack("<Bl", response, len_ntlm_payload)
@@ -378,7 +379,7 @@ class _NTLMDaemon(object):
 
         connected = False
         attempt = 0
-        while not connected and attempt < SAMBA_CONNECT_MAX_TRIES :
+        while not connected and attempt < SAMBA_CONNECT_MAX_TRIES:
             try:
                 attempt = attempt + 1
                 # TODO: we should query port 135 for the right service
@@ -400,7 +401,7 @@ class _NTLMDaemon(object):
         self.log.debug("building bind packet")
         packet = RPCBindOutPacket()
         packet.ntlm_payload = ntlm_payload
-        
+
         self.log.debug("sending bind packet")
         server.sendall(packet.make())
 
@@ -426,6 +427,7 @@ class _NTLMDaemon(object):
 
 
 class _NTLMAuthClient(object):
+
     def __init__(self, work_dir, samba_host):
         self.work_dir = work_dir
         self.samba_host = samba_host
@@ -548,6 +550,7 @@ class _NTLMAuthClient(object):
 
 
 class NTLMAuthHandler(object):
+
     """
     HTTP/1.0 ``NTLM`` authentication middleware
 
@@ -637,7 +640,7 @@ class NTLMAuthHandler(object):
             samba_host = env["SAMBA_HOST"]
         else:
             log.warning("'SAMBA_HOST' not configured, "
-                "'localhost' will be used")
+                        "'localhost' will be used")
             samba_host = "localhost"
 
         if "NTLMAUTHHANDLER_COOKIENAME" in env:
@@ -682,4 +685,3 @@ class NTLMAuthHandler(object):
         start_response(status, headers)
 
         return [content]
-

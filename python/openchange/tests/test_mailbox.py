@@ -22,7 +22,9 @@ from openchange.mailbox import NoSuchServer, OpenChangeDB, gen_mailbox_folder_fi
 import os
 import unittest
 
+
 class OpenChangeDBTests(unittest.TestCase):
+
     """Tests for OpenChangeDB."""
 
     def setUp(self):
@@ -33,7 +35,7 @@ class OpenChangeDBTests(unittest.TestCase):
 
     def test_server_lookup_doesnt_exist(self):
         self.assertRaises(NoSuchServer, self.db.lookup_server,
-            "nonexistantserver")
+                          "nonexistantserver")
 
     def test_server_lookup(self):
         self.db.add_server("dc=blaserver", "blaserver", "firstorg", "firstou")
@@ -57,4 +59,3 @@ class MailboxFIDTests(unittest.TestCase):
 
     def test_simple(self):
         self.assertEquals("10524912329165383686", gen_mailbox_folder_fid(4242, 534534))
-

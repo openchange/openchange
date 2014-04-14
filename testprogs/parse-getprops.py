@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -27,8 +27,10 @@ import time
 
 PARSER_START, PARSER_PREREQUEST, PARSER_REQUEST, PARSER_BETWEEN, PARSER_PRERESPONSE, PARSER_RESPONSE, PARSER_DONE = range(7)
 
+
 class GetPropsParser:
-    def __init__(self, lines, pos = 0):
+
+    def __init__(self, lines, pos=0):
         self.lines = lines
         self.columns = []
         self.state = PARSER_START
@@ -47,7 +49,7 @@ class GetPropsParser:
                 if line.find("properties: ARRAY(") > -1:
                     self.state = PARSER_REQUEST
             elif self.state == PARSER_REQUEST:
-                match = "properties               : ";
+                match = "properties               : "
                 matchIdx = line.find(match)
                 if matchIdx > -1:
                     propIdx = matchIdx + len(match)
@@ -84,21 +86,21 @@ class GetPropsParser:
         spaceIdx = remain.find(" ")
         propName = remain[0:spaceIdx]
         parenCloseIdx = remain.find(")")
-        propTag = remain[spaceIdx+2:parenCloseIdx]
+        propTag = remain[spaceIdx + 2:parenCloseIdx]
         propTagInt = int(propTag, 16)
         if propName == "UNKNOWN_ENUM_VALUE":
             propName = propTag
-        newColumn = { "name": propName, "tag": propTagInt }
+        newColumn = {"name": propName, "tag": propTagInt}
         self.columns.append(newColumn)
 
     def _appendResponse(self, line):
-        pos = 6;
+        pos = 6
         maxLength = 56
         done = False
         while not done:
             it = 0
             while it < 8 and not done:
-                responseByte = line[pos+1:pos+3]
+                responseByte = line[pos + 1:pos + 3]
                 if pos > maxLength or responseByte.strip() == "":
                     done = True
                 else:
@@ -119,7 +121,7 @@ class GetPropsParser:
                 pos = pos + 1
 
     def _printResponseColumn(self, column, pos):
-        colType = column["tag"] & 0xffff;
+        colType = column["tag"] & 0xffff
 
         print "pos: %d" % pos
         if self.layout:
@@ -128,7 +130,7 @@ class GetPropsParser:
             if flag == 0x0a:
                 colType = 0x0a
             elif flag != 0x00:
-                raise Exception, "Unhandled flag value: %d" % flag
+                raise Exception("Unhandled flag value: %d" % flag)
         else:
             flag = 0
 
@@ -158,7 +160,7 @@ class GetPropsParser:
         elif (colType & 0x1000):
             consumed = self._printMultiValue(pos, colType)
         else:
-            raise Exception, "Unhandled column type: 0x%.4x" % colType
+            raise Exception("Unhandled column type: 0x%.4x" % colType)
 
         return consumed
 
@@ -184,7 +186,7 @@ class GetPropsParser:
 
         return 8
 
-    def _printLong(self, pos, error = False):
+    def _printLong(self, pos, error=False):
         longValue = struct.unpack_from("<L", self.response, pos)[0]
 
         if error:
@@ -207,7 +209,7 @@ class GetPropsParser:
         length = 0
         stringValue = ""
         while (ord(self.response[pos + length]) != 0
-               or ord(self.response[pos + 1 +length]) != 0):
+               or ord(self.response[pos + 1 + length]) != 0):
             stringValue = (stringValue
                            + self.response[pos + length]
                            + self.response[pos + length + 1])

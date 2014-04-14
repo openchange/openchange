@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -41,7 +41,9 @@ def compare_dict_keys(left_dict, right_dict, label):
 
     return common_keys
 
+
 class StreamSection(object):
+
     def __init__(self):
         self.properties = {}
         self.named_properties = {}
@@ -67,7 +69,9 @@ class StreamSection(object):
                 print "   left has: '%s'" % self_value.strip()
                 print "  right has: '%s'" % other_value.strip()
 
+
 class SyncStream(object):
+
     def __init__(self, filename):
         self.filename = filename
         self.sections = None
@@ -134,13 +138,13 @@ class SyncStream(object):
             proptype = line3[4:8]
             if proptype == "name":
                 col_idx = line3.find(":", 9)
-                dispid = line3[col_idx+2:]
+                dispid = line3[col_idx + 2:]
             else:
                 dispid = line3[14:]
             value = prop_data[4:]
-            section.named_properties[guid+dispid] = "\n".join(value)
+            section.named_properties[guid + dispid] = "\n".join(value)
         else:
-            # non-named properties are identified by their property 
+            # non-named properties are identified by their property
             value = [line0[11:]]
             if len(prop_data) > 1:
                 value.extend(prop_data[1:])
@@ -166,4 +170,4 @@ class SyncStream(object):
 
 
 if __name__ == "__main__":
-    SyncStream(sys.argv[1]).compare(SyncStream (sys.argv[2]))
+    SyncStream(sys.argv[1]).compare(SyncStream(sys.argv[2]))

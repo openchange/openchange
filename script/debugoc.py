@@ -25,60 +25,63 @@ import logging
 
 LOG_LEVEL = logging.DEBUG
 
-def setLogger():
-	logger = logging.getLogger()
-	logger.setLevel(logging.INFO)
 
-	formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
-	lsh = logging.StreamHandler()
-	lsh.setLevel(LOG_LEVEL)
-	lsh.setFormatter(formatter)
-	logger.addHandler(lsh)
-	return logger
+def setLogger():
+    logger = logging.getLogger()
+    logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('[%(asctime)s] %(levelname)s: %(message)s')
+    lsh = logging.StreamHandler()
+    lsh.setLevel(LOG_LEVEL)
+    lsh.setFormatter(formatter)
+    logger.addHandler(lsh)
+    return logger
 
 
 def getSambaProcess(logger):
-	logger.info("Retrieving the list of Samba process")
-        ps = subprocess.Popen("ps -U 0", shell=True, stdout=subprocess.PIPE)
-        psbuffer = ps.stdout.read()
-        ps.stdout.close()
-        ps.wait()
-	return psbuffer	
+    logger.info("Retrieving the list of Samba process")
+    ps = subprocess.Popen("ps -U 0", shell=True, stdout=subprocess.PIPE)
+    psbuffer = ps.stdout.read()
+    ps.stdout.close()
+    ps.wait()
+    return psbuffer
 
 
 def runGdb(pid, logger):
-	signal.signal(signal.SIGINT, signal.SIG_IGN)
-	try:
-		subprocess.call(['gdb', '--pid' , pid])
-	except OSError as e:
-		if e.errno == os.errno.ENOENT:
-			logger.critical('GDB not found in path')
-			return False
-		else:
-			raise
-	return True
+    signal.signal(signal.SIGINT, signal.SIG_IGN)
+    try:
+        subprocess.call(['gdb', '--pid', pid])
+    except OSError as e:
+        if e.errno == os.errno.ENOENT:
+            logger.critical('GDB not found in path')
+            return False
+        else:
+            raise
+    return True
 
 
 def main():
-	logger = setLogger()
-	psbuffer = getSambaProcess(logger)
-	if not 'samba' in psbuffer:
-		logger.info('Samba is not running')
-		return
-		
-	for line in psbuffer.split('\n'):
-		if not 'samba' in line: continue
-		logger.info(line)
-		pid = filter(None, line.split(' '))[0]
-		fh = open('/proc/%s/maps' % pid, 'r')
-		try:
-			map = fh.read()
-			if 'dcerpc_mapiproxy' in map: return runGdb(pid, logger)
-		except (IOError, OSError) as e:
-			logger.error(e)
-			return	
-		finally:
-			fh.close()
+    logger = setLogger()
+    psbuffer = getSambaProcess(logger)
+    if not 'samba' in psbuffer:
+        logger.info('Samba is not running')
+        return
+
+    for line in psbuffer.split('\n'):
+        if not 'samba' in line:
+            continue
+        logger.info(line)
+        pid = filter(None, line.split(' '))[0]
+        fh = open('/proc/%s/maps' % pid, 'r')
+        try:
+            map = fh.read()
+            if 'dcerpc_mapiproxy' in map:
+                return runGdb(pid, logger)
+        except (IOError, OSError) as e:
+            logger.error(e)
+            return
+        finally:
+            fh.close()
 
 if __name__ == '__main__':
     main()

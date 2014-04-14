@@ -41,6 +41,7 @@ class CMSGHdr(Structure):
 
 FDBuffer = (c_byte * sizeof(c_int))
 
+
 class CMSG(Structure):
     # The cmsg_data must be an array of chars rather than a pointer of chars,
     # therefore we must diverge from the C struct due to the fact that ctypes
@@ -67,8 +68,10 @@ class MSGHdr(Structure):
 def CMSG_ALIGN(x):
     return ((x + sizeof(c_size_t) - 1) & ~(sizeof(c_size_t) - 1))
 
+
 def CMSG_SPACE(x):
     return CMSG_ALIGN(x) + CMSG_ALIGN(sizeof(CMSGHdr))
+
 
 def CMSG_LEN(x):
     return CMSG_ALIGN(sizeof(CMSGHdr)) + x

@@ -34,25 +34,24 @@ MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "Administrator")
 Inbox = MAPICtx.open()
 identifier = MAPICtx.add_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2)
-while 1:
+while True:
     time.sleep(1)
     MAPICtx.get_notifications()
-    
+
 time.sleep(15)
 MAPICtx.delete_subscription("sogo://Administrator:Administrator@inbox/", False, 0x2, identifier)
 
-#Calendar = MAPIStore.add_context("sogo://Administator:Administrator@inbox/", "Administrator").open()
-#time.sleep(5)
-#print Calendar.folder_count
-#time.sleep(5)
-#MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "GoodAdmin")
+# Calendar = MAPIStore.add_context("sogo://Administator:Administrator@inbox/", "Administrator").open()
+# time.sleep(5)
+# print Calendar.folder_count
+# time.sleep(5)
+# MAPICtx = MAPIStore.add_context("sogo://Administrator:Administrator@inbox/", "GoodAdmin")
 Inbox.create_folder(name="Test")
 time.sleep(15)
 NewCalender = MAPICtx.open()
 
-print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count, 
-                                                                                  Inbox.message_count, 
+print "[I] We have %d sub folders, %d messages and %d fai messages  within %s" % (Inbox.folder_count,
+                                                                                  Inbox.message_count,
                                                                                   Inbox.fai_message_count,
                                                                                   hex(Inbox.fid))
 MAPIStore.delete_context(MAPICtx)
-

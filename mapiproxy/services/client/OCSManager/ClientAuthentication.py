@@ -10,7 +10,9 @@ from base64 import urlsafe_b64decode as decode
 OCSManager Client Authentication documentation
 """
 
+
 class ClientAuthentication(object):
+
     """Authentication class documentation. Prepare XML request
     payloads and analyze response payloads.
     """
@@ -28,7 +30,8 @@ class ClientAuthentication(object):
         except etree.XMLSyntaxError:
             return (True, 'Invalid document')
 
-        if xmlData.tag != "ocsmanager": return (True, 'Incorrect root element %s' % xmlData.tag)
+        if xmlData.tag != "ocsmanager":
+            return (True, 'Incorrect root element %s' % xmlData.tag)
 
         return (False, xmlData)
 
@@ -44,22 +47,27 @@ class ClientAuthentication(object):
         """Extract content from the token payload returned by the server.
         """
         (error, xmlData) = self._check_document(payload)
-        if error is True: return (error, xmlData)
+        if error is True:
+            return (error, xmlData)
 
         d = {}
         token = xmlData.find('token')
-        if token is None: return (True, 'No token parameter received')
-        if not 'type' in token.attrib: return (True, 'No type attribute in token parameter')
-        if token.attrib['type'] != 'salt': 
+        if token is None:
+            return (True, 'No token parameter received')
+        if not 'type' in token.attrib:
+            return (True, 'No type attribute in token parameter')
+        if token.attrib['type'] != 'salt':
             return (True, 'Expected type=salt for attribute, got type=%s' % token.attrib['type'])
         d["token"] = token.text
 
         salt = xmlData.find('salt')
-        if salt is None: return (True, 'No salt parameter received')
+        if salt is None:
+            return (True, 'No salt parameter received')
         d["salt"] = salt.text
 
         ttl = xmlData.find('ttl')
-        if ttl is None: return (True, 'No TTL parameter received')
+        if ttl is None:
+            return (True, 'No TTL parameter received')
         d["ttl"] = int(ttl.text)
 
         return (False, d)
@@ -68,11 +76,14 @@ class ClientAuthentication(object):
         """Extract token login from login response payload.
         """
         (error, xmlData) = self._check_document(payload)
-        if error is True: return (error, xmlData)
+        if error is True:
+            return (error, xmlData)
 
         token = xmlData.find('token')
-        if token is None: return (True, 'No token parameter received')
-        if token.text is None: return (True, 'Empty token received')
+        if token is None:
+            return (True, 'No token parameter received')
+        if token.text is None:
+            return (True, 'Empty token received')
 
         return (False, token.text)
 

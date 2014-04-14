@@ -20,7 +20,7 @@ setup(
     include_package_data=True,
     test_suite='nose.collector',
     package_data={'ocsmanager': ['i18n/*/LC_MESSAGES/*.mo']},
-    #message_extractors={'ocsmanager': [
+    # message_extractors={'ocsmanager': [
     #        ('**.py', 'python', None),
     #        ('templates/**.mako', 'mako', {'input_encoding': 'utf-8'}),
     #        ('public/**', 'ignore', None)]},

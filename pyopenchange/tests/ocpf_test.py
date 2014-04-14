@@ -9,7 +9,7 @@ import openchange.ocpf as ocpf
 import openchange.mapi as mapi
 from openchange.ocpf import Ocpf
 
-filename = os.getcwd() + "/../../libocpf/examples/sample_appointment.ocpf";
+filename = os.getcwd() + "/../../libocpf/examples/sample_appointment.ocpf"
 ctx = Ocpf(filename, ocpf.OCPF_FLAGS_READ)
 
 ret = ctx.parse()
@@ -33,10 +33,10 @@ del SPropValue
 SPropValue = ctx.get_SPropValue()
 SPropValue.dump("2. SPropValue:  ")
 
-print 
+print
 print "Writing ocpf_test.ocpf file:"
 print "============================"
-filename = os.getcwd() + "/ocpf_test.ocpf";
+filename = os.getcwd() + "/ocpf_test.ocpf"
 ctx2 = Ocpf(filename, ocpf.OCPF_FLAGS_CREATE)
 # dummy test to ensure we can set an ocpf parameter properly
 ret = ctx2.write_init(0x12345678)

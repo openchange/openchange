@@ -1,12 +1,14 @@
 from pylons import config
 from ocsmanager.lib.utils import validateDocXML
 
+
 class NotificationModel:
 
     def getNewMailParams(self, payload):
         """Retrieve newmail parameters."""
         (error, xmlData) = validateDocXML(payload)
-        if error is True: return (error, xmlData)
+        if error is True:
+            return (error, xmlData)
 
         # Retrieve MAPIStore management object
         mgmt = config['mapistore']
@@ -16,34 +18,43 @@ class NotificationModel:
 
         # Retrieve notification and ensure it's newmail
         notification = xmlData.find('notification')
-        if notification is None: return (True, 'Missing Notification')
-        if not 'category' in notification.attrib: return (True, 'Missing notification type')
-        if notification.attrib['category'] != 'newmail': return (True, 'Invalid notification type')
+        if notification is None:
+            return (True, 'Missing Notification')
+        if not 'category' in notification.attrib:
+            return (True, 'Missing notification type')
+        if notification.attrib['category'] != 'newmail':
+            return (True, 'Invalid notification type')
 
         # backend parameter
         param = notification.find('backend')
-        if param is None or param.text is None: return (True, 'Invalid/Missing backend parameter')
-        if mgmt.registered_backend(param.text) is False: return (True, 'Specified backend is invalid')
+        if param is None or param.text is None:
+            return (True, 'Invalid/Missing backend parameter')
+        if mgmt.registered_backend(param.text) is False:
+            return (True, 'Specified backend is invalid')
         params['backend'] = param.text
 
         # folder parameter
         param = notification.find('folder')
-        if param is None or param.text is None: return (True, 'Invalid/Missing folder parameter')
+        if param is None or param.text is None:
+            return (True, 'Invalid/Missing folder parameter')
         params['folder'] = param.text
 
         # messageID parameter
         param = notification.find('messageID')
-        if param is None or param.text is None: return (True, 'Invalid/Missing messageID parameter')
+        if param is None or param.text is None:
+            return (True, 'Invalid/Missing messageID parameter')
         params['messageID'] = param.text
 
         # username parameter
         param = notification.find('username')
-        if param is None or param.text is None: return (True, 'Invalid/Missing username parameter')
+        if param is None or param.text is None:
+            return (True, 'Invalid/Missing username parameter')
         params['vuser'] = param.text
 
         # Search for openchange user matching above attributes
         ed = mgmt.existing_users(params['backend'], params['vuser'], params['folder'])
-        if ed['count'] == 0: return (True, 'Invalid user')
+        if ed['count'] == 0:
+            return (True, 'Invalid user')
         print ed
         count = 0
         for info in ed['infos']:
@@ -54,19 +65,22 @@ class NotificationModel:
                 count = count + 1
             else:
                 # Register the message in all users indexing databases
-                message = mgmt.register_message(params['backend'], info['username'], 
+                message = mgmt.register_message(params['backend'], info['username'],
                                                 info['mapistoreURI'], params['messageID'])
-                if not message: print "Unable to register URI for user %s" % (info['username'])
+                if not message:
+                    print "Unable to register URI for user %s" % (info['username'])
                 else:
                     print "[REGISTERED] user %s: (%s, %s)" % (info['username'], hex(message[0]), message[1])
 
         # Case where all users referencing this folder already got notified
-        if count == ed['count']: return (True, 'Message already registered')
+        if count == ed['count']:
+            return (True, 'Message already registered')
 
         # Only trigger a notification for registered users
         rd = mgmt.registered_users(params['backend'], param.text)
         print rd
-        if rd["count"] == 0: return (True, 'User not registered')
+        if rd["count"] == 0:
+            return (True, 'User not registered')
         params['usernames'] = rd["usernames"]
 
         # Trigger newmail notification for registered users (rd) who subscribed for newmail Notification

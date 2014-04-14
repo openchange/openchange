@@ -7,6 +7,7 @@ from ocsmanager.lib.base import BaseController
 
 log = logging.getLogger(__name__)
 
+
 class RpcproxyController(BaseController):
 
     def index(self):
@@ -23,8 +24,7 @@ class RpcproxyController(BaseController):
             # retval = auth.Authenticate(request.authorization)
             response.headers['Content-Type'] = 'application/rpc'
 
-            #if retval == 1:
+            # if retval == 1:
             #    log.debug('Authentication failure')
 
         return ''
-

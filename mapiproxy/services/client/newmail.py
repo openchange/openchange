@@ -5,11 +5,13 @@ import argparse
 import ConfigParser
 from OCSManager import Network
 
+
 def parse_config_file(filename):
     """Parse configuration file."""
 
     cfg = {'username': None, 'password': None, 'encryption': None, 'host': None, 'port': None}
-    if filename is None: return cfg
+    if filename is None:
+        return cfg
 
     config = ConfigParser.ConfigParser()
     try:
@@ -22,17 +24,23 @@ def parse_config_file(filename):
         print '[!] Missing Config section'
         sys.exit()
 
-    if config.has_option('Config', 'username'): cfg['username'] = config.get('Config', 'username')
-    if config.has_option('Config', 'password'): cfg['password'] = config.get('Config', 'password')
-    if config.has_option('Config', 'host'): cfg['host'] = config.get('Config', 'host')
-    if config.has_option('Config', 'port'): cfg['port'] = config.getint('Config', 'port')
+    if config.has_option('Config', 'username'):
+        cfg['username'] = config.get('Config', 'username')
+    if config.has_option('Config', 'password'):
+        cfg['password'] = config.get('Config', 'password')
+    if config.has_option('Config', 'host'):
+        cfg['host'] = config.get('Config', 'host')
+    if config.has_option('Config', 'port'):
+        cfg['port'] = config.getint('Config', 'port')
 
     # Sanity checks on options
     return cfg
 
+
 def parse_error(arg):
     print '[!] Missing %s argument' % arg
     sys.exit()
+
 
 def parse_arguments():
     """Parse command line arguments."""
@@ -53,18 +61,26 @@ def parse_arguments():
     cfg = parse_config_file(args.config)
 
     # Override config parameters if supplied on command line
-    if args.username is not None: cfg['username'] = args.username
-    if args.password is not None: cfg['password'] = args.password
-    if args.host is not None: cfg['host'] = args.host
-    if args.port is not None: cfg['port'] = args.port
+    if args.username is not None:
+        cfg['username'] = args.username
+    if args.password is not None:
+        cfg['password'] = args.password
+    if args.host is not None:
+        cfg['host'] = args.host
+    if args.port is not None:
+        cfg['port'] = args.port
     cfg['verbose'] = args.verbose
 
     # Preliminary sanity checks on parameters
-    if cfg['username'] is None: parse_error('username')
-    if cfg['password'] is None: parse_error('password')
-    if cfg['host'] is None: parse_error('host')
-    if cfg['port'] is None: parse_error('port')
-    
+    if cfg['username'] is None:
+        parse_error('username')
+    if cfg['password'] is None:
+        parse_error('password')
+    if cfg['host'] is None:
+        parse_error('host')
+    if cfg['port'] is None:
+        parse_error('port')
+
     if cfg['password'].startswith('{SSHA}'):
         cfg['encryption'] = "ssha"
     else:
@@ -80,11 +96,13 @@ def parse_arguments():
 
     return cfg
 
+
 def error_check(function):
     (error, code) = function
     if error is True:
         print '[!] Error: %s' % code
         sys.exit()
+
 
 def main():
     cfg = parse_arguments()

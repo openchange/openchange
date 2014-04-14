@@ -1,10 +1,13 @@
 import ConfigParser
-import os, sys
+import os
+import sys
 import logging
 
 log = logging.getLogger(__name__)
 
+
 class OCSConfig(object):
+
     """OCSConfig class documentation. Load and retrieve ocsmanager
     options from configuration file.
     """
@@ -60,7 +63,7 @@ class OCSConfig(object):
         if self.d['main']['debug'] != "yes" and self.d['main']['debug'] != "no":
             log.error("%s: invalid debug value: %s. Must be set to yes or no", self.config, self.d['main']['debug'])
             sys.exit()
-        
+
         if not self.cfg.has_section('auth:%s' % self.d['auth']['type']):
             log.error("%s: Missing [auth:%s] section", self.config, self.d['auth']['type'])
             sys.exit()
@@ -68,7 +71,7 @@ class OCSConfig(object):
     def __parse_auth(self):
         section = 'auth:%s' % self.d['auth'].get('type')
         self.__get_section(section)
-        
+
         if self.d['auth']['type'] == 'single':
             self.__get_option(section, 'username', 'auth', None)
             self.__get_option(section, 'password', 'auth', None)
@@ -114,5 +117,5 @@ class OCSConfig(object):
         self.__parse_main()
         self.__parse_auth()
         self.__parse_rpcproxy()
-        
+
         return self.d

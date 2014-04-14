@@ -333,6 +333,26 @@ AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
 
 dnl ----------------------------------------------------------------------------
+dnl Check for MYSQL client libraries
+dnl ----------------------------------------------------------------------------
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+   AC_MSG_WARN([No version of mysql_config was found!])
+   AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
+
+dnl ----------------------------------------------------------------------------
 dnl Check for Flex
 dnl ----------------------------------------------------------------------------
 if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then

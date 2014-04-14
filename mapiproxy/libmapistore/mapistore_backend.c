@@ -297,7 +297,7 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-enum mapistore_error mapistore_backend_list_contexts(const char *username, struct tdb_wrap *tdbwrap, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
+enum mapistore_error mapistore_backend_list_contexts(const char *username, struct indexing_context *ictx, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
 {
 	enum mapistore_error		retval;
 	int				i;
@@ -307,7 +307,7 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
 	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
-		retval = backends[i].backend->backend.list_contexts(username, tdbwrap, mem_ctx, &current_contexts_list);
+		retval = backends[i].backend->backend.list_contexts(username, ictx, mem_ctx, &current_contexts_list);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}
@@ -329,7 +329,7 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct tdb_wrap *tdbwrap,
+enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct indexing_context *ictx,
 						      const char *namespace, const char *uri, uint64_t fid, struct backend_context **context_p)
 {
 	struct backend_context		*context;
@@ -346,7 +346,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 		if (backends[i].backend->backend.namespace && 
 		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
 			found = true;
-			retval = backends[i].backend->backend.create_context(context, conn_info, tdbwrap, uri, &backend_object);
+			retval = backends[i].backend->backend.create_context(context, conn_info, ictx, uri, &backend_object);
 			if (retval != MAPISTORE_SUCCESS) {
 				goto end;
 			}

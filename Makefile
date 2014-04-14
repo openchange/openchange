@@ -48,7 +48,7 @@ all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
-		$(PYOPENCHANGEALL)		\
+		$(PYOPENCHANGEALL)	\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 
@@ -58,7 +58,7 @@ install: 	all 			\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
-		$(PYMAPIINSTALL) \
+		$(PYOPENCHANGEINSTALL)	\
 		installnagios
 
 installlib:	$(OC_LIBS_INSTALL)
@@ -68,7 +68,7 @@ installheader:	$(OC_LIBS_INSTALLHEADERS)
 uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TOOLS_UNINSTALL) 	\
 		$(OC_SERVER_UNINSTALL) 	\
-		$(PYMAPIUNINSTALL)
+		$(PYOPENCHANGEUNINSTALL)
 
 dist:: distclean
 	./autogen.sh

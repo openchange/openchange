@@ -664,10 +664,10 @@ AC_SUBST(modulesdir)
 dnl ##########################################################################
 dnl Python bindings dependencies
 dnl ##########################################################################
-AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
+AC_ARG_ENABLE(pyopenchange, AC_HELP_STRING([--enable-pyopenchange],
 			   [build Python bindings for libmapi]),
-			   enable_pymapi="$enableval",
-			   enable_pymapi=no)
+			   enable_pyopenchange="$enableval",
+			   enable_pyopenchange=no)
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
 AC_SUBST(PYCDIR)
 
@@ -675,7 +675,7 @@ PYOPENCHANGEALL=
 PYOPENCHANGEINSTALL=
 PYOPENCHANGEUNINSTALL=
 
-if test x$enable_pymapi = xyes ; then
+if test x$enable_pyopenchange = xyes ; then
 	dnl Enable pyopenchange by default
 	PYOPENCHANGEALL="$PYOPENCHANGEALL pyopenchange"
 	PYOPENCHANGEINSTALL="$PYOPENCHANGEALLINSTALL pyopenchange-install"

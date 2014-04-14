@@ -76,8 +76,10 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
 	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
-	ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
-	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
+	if (strncmp(username, emsmdbp_ctx->username, strlen(username)) == 0) {
+		ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
+		OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
+	}
 
 	/* Step 3. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;

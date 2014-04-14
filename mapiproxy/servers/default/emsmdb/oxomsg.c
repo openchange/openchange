@@ -98,7 +98,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			}
 
 			folderID = folderSvrID->FolderId;
-			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
 
 			/* DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 			break;

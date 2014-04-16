@@ -35,4 +35,4 @@ OPENCHANGE_VERSION_RELEASE_NICKNAME=Quadrant
 # e.g. OPENCHANGE_VERSION_RELEASE_VERSION=0.8.2             #
 #  ->  "0.8.2 (Nicky Nickname)"                             #
 #############################################################
-OPENCHANGE_VERSION_RELEASE_NUMBER=2.0
+OPENCHANGE_VERSION_RELEASE_NUMBER=2.1

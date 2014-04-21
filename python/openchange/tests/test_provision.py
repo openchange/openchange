@@ -29,7 +29,6 @@ from openchange.provision import (
     )
 
 import os
-import shutil
 
 
 class ExtendedSamDBTestCase(SamDBTestCase):
@@ -52,5 +51,4 @@ class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
         lp.load_default()
         lp.set("private dir", self.tempdir)
         openchangedb_provision(lp)
-        shutil.rmtree(os.path.join(self.tempdir, "mapistore"))
         os.unlink(os.path.join(self.tempdir, "openchange.ldb"))

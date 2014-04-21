@@ -31,9 +31,6 @@ class OpenChangeDBTests(unittest.TestCase):
         self.db = OpenChangeDB("openchange.ldb")
         self.db.setup()
 
-    def test_user_exists_no_server(self):
-        self.assertRaises(NoSuchServer, self.db.user_exists, "someserver", "foo")
-
     def test_server_lookup_doesnt_exist(self):
         self.assertRaises(NoSuchServer, self.db.lookup_server,
             "nonexistantserver")
@@ -41,11 +38,6 @@ class OpenChangeDBTests(unittest.TestCase):
     def test_server_lookup(self):
         self.db.add_server("dc=blaserver", "blaserver", "firstorg", "firstou")
         self.assertEquals("dc=blaserver", str(self.db.lookup_server("blaserver")['dn']))
-
-    def test_add_mailbox_user(self):
-        self.db.add_server("cn=myserver", "myserver", "firstorg", "firstou")
-        self.db.add_mailbox_user("cn=firstorg,cn=firstou,cn=myserver", "someuser")
-        self.assertTrue(self.db.user_exists("myserver", "someuser"))
 
     def test_msg_globalcount_initial(self):
         self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
@@ -64,5 +56,5 @@ class OpenChangeDBTests(unittest.TestCase):
 class MailboxFIDTests(unittest.TestCase):
 
     def test_simple(self):
-        self.assertEquals("0x00000000109282806", gen_mailbox_folder_fid(4242, 534534))
+        self.assertEquals("10524912329165383686", gen_mailbox_folder_fid(4242, 534534))
 

@@ -344,13 +344,6 @@ if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then
    if test x"$FLEX" = x""; then
       	AC_MSG_WARN([No version of flex was found!])
 	AC_MSG_ERROR([Please install flex])
-   else
-	V=`$FLEX --version | awk '{print $NF}'`
-   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
-   	if test "x$W" != x ; then
-	   AC_MSG_WARN([Adjust your FLEX environment variable])
-      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
-      	fi
    fi
 
    AC_SUBST(FLEX)

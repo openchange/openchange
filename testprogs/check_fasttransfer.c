@@ -445,13 +445,13 @@ int main(int argc, const char *argv[])
 	if (opt_mapistore) {
 		mretval = mapistore_del_context(output_ctx.mstore_ctx, output_ctx.mapistore_context_id);
 		if (mretval != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_del_context", mretval);
+			printf("mapistore_del_context: %s\n", mapistore_errstr(mretval));
 			exit (1);
 		}
 
 		mretval = mapistore_release(output_ctx.mstore_ctx);
 		if (mretval != MAPISTORE_SUCCESS) {
-			mapi_errstr("mapistore_release", mretval);
+			printf("mapistore_release: %s\n", mapistore_errstr(mretval));
 			exit (1);
 		}
 	}
@@ -459,7 +459,6 @@ int main(int argc, const char *argv[])
 	talloc_free(parser);
 
 	mapi_object_release(&obj_fx_context);
-
 	mapi_object_release(&obj_folder);
 	mapi_object_release(&obj_store);
 	MAPIUninitialize(mapi_ctx);

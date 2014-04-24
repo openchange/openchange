@@ -288,9 +288,9 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error.
  */
-_PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapistore_context *mstore_ctx,
-								  const char *mqueue_name,
-								  struct mapistore_notification_list **nl)
+_PUBLIC_ enum mapistore_error mapistore_get_queued_notifications_named(struct mapistore_context *mstore_ctx,
+								       const char *mqueue_name,
+								       struct mapistore_notification_list **nl)
 {
 	bool					found = false;
 #if 0
@@ -363,9 +363,9 @@ _PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications_named(struct mapisto
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum MAPISTATUS mapistore_get_queued_notifications(struct mapistore_context *mstore_ctx,
-							    struct mapistore_subscription *s,
-							    struct mapistore_notification_list **nl)
+_PUBLIC_ enum mapistore_error mapistore_get_queued_notifications(struct mapistore_context *mstore_ctx,
+								 struct mapistore_subscription *s,
+								 struct mapistore_notification_list **nl)
 {
 	bool					found = false;
 #if 0

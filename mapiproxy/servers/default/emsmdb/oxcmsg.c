@@ -416,7 +416,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 
 	contextID = emsmdbp_get_contextID(folder_object);
 	mapistore = emsmdbp_is_mapistore(folder_object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case true:
 		ret = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, contextID, 
 						      folder_object->backend_object, message_object, 
@@ -597,7 +597,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	flags = mapi_req->u.mapi_SaveChangesMessage.SaveFlags;
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		retval = openchangedb_message_save(object->backend_object, flags);
 		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
@@ -970,7 +970,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	}
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
@@ -1094,7 +1094,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (emsmdbp_is_mapistore(message_object)) {
+	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		DEBUG(0, ("Not implemented yet\n"));
 		break;
@@ -1261,7 +1261,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (emsmdbp_is_mapistore(message_object)) {
+	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
@@ -1365,7 +1365,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	switch (emsmdbp_is_mapistore(message_object)) {
+	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
@@ -1508,7 +1508,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
         memset(response, 0, sizeof(struct OpenEmbeddedMessage_repl));
 
 	mapistore = emsmdbp_is_mapistore(attachment_object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented - shouldn't occur\n"));
 		break;

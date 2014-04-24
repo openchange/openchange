@@ -1993,7 +1993,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	}
 
 	mapistore = emsmdbp_is_mapistore(folder_object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		/* system/special folder */
 		message_object = emsmdbp_object_message_init(mem_ctx, emsmdbp_ctx, messageID, folder_object);
@@ -2041,7 +2041,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 	if (!emsmdbp_ctx) return NULL;
         if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) return NULL;
 
-	switch (emsmdbp_is_mapistore(message_object)) {
+	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("[%s] not implemented yet - shouldn't occur\n", __location__));
@@ -2566,7 +2566,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 			mapistore = true;
 		}
 
-		switch (mapistore) {
+		switch ((int)mapistore) {
 		case false:
 			switch (object->type) {
 			case EMSMDBP_OBJECT_MAILBOX:
@@ -2689,7 +2689,7 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	else {
 		contextID = emsmdbp_get_contextID(object);
 		mapistore = emsmdbp_is_mapistore(object);
-		switch (mapistore) {
+		switch ((int)mapistore) {
 		case false:
 			if (object->type == EMSMDBP_OBJECT_FOLDER) {
 				openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, object->object.folder->folderID, rowp);

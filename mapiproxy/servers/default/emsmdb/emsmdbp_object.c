@@ -328,14 +328,14 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 {
 	uint64_t			parentFolderID, testFolderID;
 	struct SPropValue		*value;
-	int				retval;
+	enum mapistore_error		retval;
 	struct emsmdbp_object		*new_folder;
 	struct SRow			*postponed_props;
 
 	/* Sanity checks */
-	if (!emsmdbp_ctx) return MAPISTORE_ERROR;
-	if (!parent_folder) return MAPISTORE_ERROR;
-	if (!rowp) return MAPISTORE_ERROR;
+	MAPI_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!parent_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!rowp, MAPI_E_INVALID_PARAMETER, NULL);
 
 	new_folder = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {
@@ -1577,10 +1577,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
-		retval = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
-						 table_object->backend_object, data_pointers,
-						 query_type, row_id, &properties);
-		if (retval == MAPI_E_SUCCESS) {
+		ret = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
+					      table_object->backend_object, data_pointers,
+					      query_type, row_id, &properties);
+		if (ret == MAPISTORE_SUCCESS) {
 			for (i = 0; i < num_props; i++) {
 				data_pointers[i] = properties[i].data;
                                         
@@ -2354,6 +2354,7 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *object, struct SPropTagArray *properties, void **data_pointers, enum MAPISTATUS *retvals)
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	enum mapistore_error		mretval;
 	struct emsmdbp_object_folder	*folder;
 	char				*owner;
 	struct Binary_r			*binr;
@@ -2372,29 +2373,29 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
                         /* a hack to avoid fetching dynamic fields from openchange.ldb */
                         obj_count = talloc_zero(data_pointers, uint32_t);
-                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
-			if (!retval) {
+                        mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
+			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
                 }
                 else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
-                        retval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
-			if (!retval) {
+                        mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
+			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
                 }
                 else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
                         retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
-			if (!retval) {
+			if (retval == MAPI_E_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
 			obj_count = talloc_zero(NULL, uint32_t);
 			retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
-			if (!retval) {
+			if (retval == MAPI_E_SUCCESS) {
 				has_subobj = talloc_zero(data_pointers, uint8_t);
 				*has_subobj = (*obj_count > 0) ? 1 : 0;
 				data_pointers[i] = has_subobj;

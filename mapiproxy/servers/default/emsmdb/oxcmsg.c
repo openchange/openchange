@@ -1217,6 +1217,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
                                                uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	mretval;
 	uint32_t		handle;
 	uint32_t		attachmentID;
 	uint32_t		contextID;
@@ -1276,9 +1277,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
 								   message_object->object.message->messageID, message_object);
 		if (attachment_object) {
-			retval = mapistore_message_open_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object,
-								   attachment_object, attachmentID, &attachment_object->backend_object);
-			if (retval) {
+			mretval = mapistore_message_open_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object,
+								    attachment_object, attachmentID, &attachment_object->backend_object);
+			if (mretval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
 				DEBUG(5, ("could not open nor create mapistore message\n"));
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -1315,6 +1316,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
                                                  uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS		retval;
+	enum mapistore_error	mretval;
 	uint32_t		handle;
 	uint32_t		contextID;
 	uint64_t		messageID;
@@ -1380,9 +1382,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
 								   messageID, message_object);
 		if (attachment_object) {
-			retval = mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object,
-								     attachment_object, &attachment_object->backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
-			if (retval) {
+			mretval = mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object,
+								      attachment_object, &attachment_object->backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
+			if (mretval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
 				DEBUG(5, ("could not open nor create mapistore message\n"));
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;

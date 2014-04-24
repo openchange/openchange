@@ -601,10 +601,10 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 
 			for (j = 0; j < msg->columns->cValues; j++) {
 				if (recipient->data[j] == NULL) {
-					retvals[j] = MAPISTORE_ERR_NOT_FOUND;
+					retvals[j] = MAPI_E_NOT_FOUND;
 				}
 				else {
-					retvals[j] = MAPISTORE_SUCCESS;
+					retvals[j] = MAPI_E_SUCCESS;
 				}
 			}
 

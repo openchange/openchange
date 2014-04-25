@@ -2779,7 +2779,7 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_get_property");
 	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
 	char *sql;
-	const char *attr, *value;
+	const char *attr, *value = NULL;
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	uint64_t *id;

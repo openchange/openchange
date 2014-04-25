@@ -907,7 +907,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *mem_ctx,
         folder_object = private_data;
 
 	mapistore = emsmdbp_is_mapistore(folder_object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("TODO Empty system/special folder\n"));

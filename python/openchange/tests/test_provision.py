@@ -29,20 +29,6 @@ from openchange.provision import (
     )
 
 import os
-import shutil
-
-
-class ExtendedSamDBTestCase(SamDBTestCase):
-
-    def test_install_schemas(self):
-        def setup_path(relpath):
-            return os.path.join(find_setup_dir(), relpath)
-
-        names = guess_names_from_smbconf(self.lp)
-        creds = Credentials()
-        creds.set_anonymous()
-        self.lp.set("sam database", os.path.join(self.tempdir, "samdb.ldb"))
-        install_schemas(setup_path, names, self.lp, creds)
 
 
 class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
@@ -52,5 +38,4 @@ class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
         lp.load_default()
         lp.set("private dir", self.tempdir)
         openchangedb_provision(lp)
-        shutil.rmtree(os.path.join(self.tempdir, "mapistore"))
         os.unlink(os.path.join(self.tempdir, "openchange.ldb"))

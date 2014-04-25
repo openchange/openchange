@@ -1643,10 +1643,6 @@ ctags:
 
 test:: check
 
-check:: libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
-	# FIXME: Set up server
-	./bin/mapitest --mapi-calls 
-
 ####################################
 # coverage tests
 #

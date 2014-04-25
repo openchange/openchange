@@ -44,9 +44,25 @@ const char *mapistore_namedprops_get_ldif_path(void)
 }
 
 
-static bool starts_with(const char *str, const char *prefix)
+/**
+   \details Check if a string starts with the specified prefix
+
+   \param str pointer to the string to lookup
+   \param prefix pointer to the prefix to search
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error starts_with(const char *str, const char *prefix)
 {
-	return strncmp(str, prefix, strlen(prefix)) == 0;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!prefix, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	if (!strncmp(str, prefix, strlen(prefix))) {
+		return MAPISTORE_SUCCESS;
+	}
+
+	return MAPISTORE_ERR_NOT_FOUND;
 }
 
 
@@ -64,20 +80,22 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 					       const char *conn_info,
 					       struct namedprops_context **nprops)
 {
+	char		*database;
+
+	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (starts_with(conn_info, LDB_PREFIX)) {
-		char *database = talloc_strdup(mem_ctx, conn_info + strlen(LDB_PREFIX));
+	if (starts_with(conn_info, LDB_PREFIX) == MAPISTORE_SUCCESS) {
+		database = talloc_strdup(mem_ctx, conn_info + strlen(LDB_PREFIX));
 		return mapistore_namedprops_ldb_init(mem_ctx, database, nprops);
-	} else if (starts_with(conn_info, MYSQL_PREFIX)) {
+	} else if (starts_with(conn_info, MYSQL_PREFIX) == MAPISTORE_SUCCESS) {
 		return mapistore_namedprops_mysql_init(mem_ctx, conn_info, nprops);
-	} else {
-		DEBUG(0, ("Unknown type of named_properties backend for %s\n",
-			  conn_info));
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
+	} 
+		
+	DEBUG(0, ("Unknown type of named_properties backend for %s\n", conn_info));
+	return MAPISTORE_ERR_INVALID_PARAMETER;
 }
 
 

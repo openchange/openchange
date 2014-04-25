@@ -33,8 +33,10 @@
 #define MYSQL_PREFIX "mysql://"
 
 /**
-   \details Path to the ldif file with initial named properties to populate the
-   database.
+   \details Return the path to the ldif file holding initial set of
+   named properties to populate the backend
+
+   \return path to the ldif file
  */
 const char *mapistore_namedprops_get_ldif_path(void)
 {
@@ -218,77 +220,71 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedp
 	return MAPISTORE_SUCCESS;
 }
 
+/* [MS-OXCDATA] 2.11.1 */
+struct mapistore_namedprops_typarray {
+	uint16_t	type_value;
+	const char	*type_name;
+	const char	*alt_name;
+};
+
+static struct mapistore_namedprops_typarray mapistore_typarray[] = {
+	{ PT_UNSPECIFIED, "PtypUnspecified", "PT_UNSPECIFIED" },
+	{ PT_NULL, "PtypNull", "PT_NULL" },
+	{ PT_I2, "PtypInteger16", "PT_I2" },
+	{ PT_SHORT, "PtypInteger16", "PT_SHORT" },
+	{ PT_LONG, "PtypInteger32", "PT_LONG" },
+	{ PT_FLOAT, "PtypFloating32", "PT_FLOAT" },
+	{ PT_DOUBLE, "PtypFloating64", "PT_DOUBLE" },
+	{ PT_CURRENCY, "PtypCurrency", "PT_CURRENCY" },
+	{ PT_APPTIME, "PtypFloatingTime", "PT_APPTIME" },
+	{ PT_ERROR, "PtypErrorCode", "PT_ERROR" },
+	{ PT_BOOLEAN, "PtypBoolean", "PT_BOOLEAN" },
+	{ PT_OBJECT, "PtypObject", "PT_OBJECT" },
+	{ PT_I8, "PtypInteger64", "PT_I8" },
+	{ PT_UNICODE, "PtypString", "PT_UNICODE" },
+	{ PT_STRING8, "PtypeString8", "PT_STRING8" },
+	{ PT_SYSTIME, "PtypTime", "PT_SYSTIME" },
+	{ PT_CLSID, "PtypGuid", "PT_CLSID" },
+	{ PT_SVREID, "PtypServerId", "PT_SVREID" },
+	{ PT_SRESTRICT, "PtypRestriction", "PT_SRESTRICT" },
+	{ PT_ACTIONS, "PtypRuleAction", "PT_ACTIONS"},
+	{ PT_BINARY, "PtypBinary", "PT_BINARY" },
+	{ PT_MV_SHORT, "PtypMultipleInteger16", "PT_MV_SHORT" },
+	{ PT_MV_LONG, "PtypMultipleInteger32", "PT_MV_LONG" },
+	{ PT_MV_FLOAT, "PtypMultipleFloating32", "PT_MV_FLOAT" },
+	{ PT_MV_DOUBLE, "PtypMultipleFloating64", "PT_MV_DOUBLE" },
+	{ PT_MV_CURRENCY, "PtypMultipleCurrency", "PT_MV_CURRENCY" },
+	{ PT_MV_APPTIME, "PtypFloatingTime", "PT_MV_APPTIME" },
+	{ PT_MV_I8, "PtypMultipleInteger64", "PT_MV_I8" },
+	{ PT_MV_UNICODE, "PtypMultipleString", "PT_MV_UNICODE" },
+	{ PT_MV_STRING8, "PtypMultipleString8", "PT_MV_STRING8" },
+	{ PT_MV_SYSTIME, "PtypMultipleTime", "PT_MV_SYSTIME" },
+	{ PT_MV_CLSID, "PtypMultipleGuid", "PT_MV_CLSID" },
+	{ PT_MV_BINARY, "PtypMultipleBinary", "PT_MV_BINARY" },
+	{ 0x0, NULL, NULL }
+};
+
+/**
+   \details Return the property type given the alternate name
+
+   \param prop_type_str the alternate name to lookup
+
+   \return valid uint16_t property type on success, otherwise -1
+ */
 int mapistore_namedprops_prop_type_from_string(const char *prop_type_str)
 {
-	if (strcmp(prop_type_str, "PT_UNSPECIFIED") == 0) {
-		return PT_UNSPECIFIED;
-	} else if (strcmp(prop_type_str, "PT_NULL") == 0) {
-		return PT_NULL;
-	} else if (strcmp(prop_type_str, "PT_I2") == 0) {
-		return PT_I2;
-	} else if (strcmp(prop_type_str, "PT_SHORT") == 0) {
-		return PT_SHORT;
-	} else if (strcmp(prop_type_str, "PT_LONG") == 0) {
-		return PT_LONG;
-	} else if (strcmp(prop_type_str, "PT_FLOAT") == 0) {
-		return PT_FLOAT;
-	} else if (strcmp(prop_type_str, "PT_DOUBLE") == 0) {
-		return PT_DOUBLE;
-	} else if (strcmp(prop_type_str, "PT_CURRENCY") == 0) {
-		return PT_CURRENCY;
-	} else if (strcmp(prop_type_str, "PT_APPTIME") == 0) {
-		return PT_APPTIME;
-	} else if (strcmp(prop_type_str, "PT_ERROR") == 0) {
-		return PT_ERROR;
-	} else if (strcmp(prop_type_str, "PT_BOOLEAN") == 0) {
-		return PT_BOOLEAN;
-	} else if (strcmp(prop_type_str, "PT_OBJECT") == 0) {
-		return PT_OBJECT;
-	} else if (strcmp(prop_type_str, "PT_I8") == 0) {
-		return PT_I8;
-	} else if (strcmp(prop_type_str, "PT_STRING8") == 0) {
-		return PT_STRING8;
-	} else if (strcmp(prop_type_str, "PT_UNICODE") == 0) {
-		return PT_UNICODE;
-	} else if (strcmp(prop_type_str, "PT_SYSTIME") == 0) {
-		return PT_SYSTIME;
-	} else if (strcmp(prop_type_str, "PT_CLSID") == 0) {
-		return PT_CLSID;
-	} else if (strcmp(prop_type_str, "PT_SVREID") == 0) {
-		return PT_SVREID;
-	} else if (strcmp(prop_type_str, "PT_SRESTRICT") == 0) {
-		return PT_SRESTRICT;
-	} else if (strcmp(prop_type_str, "PT_ACTIONS") == 0) {
-		return PT_ACTIONS;
-	} else if (strcmp(prop_type_str, "PT_BINARY") == 0) {
-		return PT_BINARY;
-	} else if (strcmp(prop_type_str, "PT_MV_SHORT") == 0) {
-		return PT_MV_SHORT;
-	} else if (strcmp(prop_type_str, "PT_MV_LONG") == 0) {
-		return PT_MV_LONG;
-	} else if (strcmp(prop_type_str, "PT_MV_FLOAT") == 0) {
-		return PT_MV_FLOAT;
-	} else if (strcmp(prop_type_str, "PT_MV_DOUBLE") == 0) {
-		return PT_MV_DOUBLE;
-	} else if (strcmp(prop_type_str, "PT_MV_CURRENCY") == 0) {
-		return PT_MV_CURRENCY;
-	} else if (strcmp(prop_type_str, "PT_MV_APPTIME") == 0) {
-		return PT_MV_APPTIME;
-	} else if (strcmp(prop_type_str, "PT_MV_I8") == 0) {
-		return PT_MV_I8;
-	} else if (strcmp(prop_type_str, "PT_MV_STRING8") == 0) {
-		return PT_MV_STRING8;
-	} else if (strcmp(prop_type_str, "PT_MV_UNICODE") == 0) {
-		return PT_MV_UNICODE;
-	} else if (strcmp(prop_type_str, "PT_MV_SYSTIME") == 0) {
-		return PT_MV_SYSTIME;
-	} else if (strcmp(prop_type_str, "PT_MV_CLSID") == 0) {
-		return PT_MV_CLSID;
-	} else if (strcmp(prop_type_str, "PT_MV_BINARY") == 0) {
-		return PT_MV_BINARY;
-	} else {
-		return -1;
+	uint8_t	i;
+
+	/* Sanity checks */
+	if (!prop_type_str) return -1;
+
+	for (i = 0; mapistore_typarray[i].alt_name != NULL; i++) {
+		if (!strcmp(prop_type_str, mapistore_typarray[i].alt_name)) {
+			return mapistore_typarray[i].type_value;
+		}
 	}
+
+	return -1;
 }
 
 _PUBLIC_ enum mapistore_error mapistore_namedprops_transaction_start(struct namedprops_context *nprops)

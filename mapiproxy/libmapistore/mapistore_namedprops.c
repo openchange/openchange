@@ -23,14 +23,10 @@
 #include <stdbool.h>
 #include <string.h>
 #include "mapistore.h"
-// available named_properties backend implementations
+
 #include "backends/namedprops_ldb.h"
 #include "backends/namedprops_mysql.h"
 
-
-// Known prefixes for connection strings
-#define LDB_PREFIX "ldb://"
-#define MYSQL_PREFIX "mysql://"
 
 /**
    \details Return the path to the ldif file holding initial set of

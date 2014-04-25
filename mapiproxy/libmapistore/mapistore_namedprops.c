@@ -71,8 +71,9 @@ static enum mapistore_error starts_with(const char *str, const char *prefix)
    to the existing one if already initialized/opened.
 
    \param mem_ctx pointer to the memory context
-   \param ldb_ctx pointer on pointer to the ldb context the function
-   returns
+   \param conn_info pointer to the mapistore namedprops backend URL
+   \param nprops pointer on pointer to the namedprops context the
+   function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -80,7 +81,7 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 					       const char *conn_info,
 					       struct namedprops_context **nprops)
 {
-	char		*database;
+	const char		*database;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -88,13 +89,14 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	if (starts_with(conn_info, LDB_PREFIX) == MAPISTORE_SUCCESS) {
-		database = talloc_strdup(mem_ctx, conn_info + strlen(LDB_PREFIX));
+		database = &conn_info[strlen(LDB_PREFIX)];
 		return mapistore_namedprops_ldb_init(mem_ctx, database, nprops);
 	} else if (starts_with(conn_info, MYSQL_PREFIX) == MAPISTORE_SUCCESS) {
 		return mapistore_namedprops_mysql_init(mem_ctx, conn_info, nprops);
 	} 
 		
-	DEBUG(0, ("Unknown type of named_properties backend for %s\n", conn_info));
+	DEBUG(0, ("[%s:%d]: ERROR Invalid named_properties backend type for %s\n", 
+		  __FUNCTION__, __LINE__, conn_info));
 	return MAPISTORE_ERR_INVALID_PARAMETER;
 }
 

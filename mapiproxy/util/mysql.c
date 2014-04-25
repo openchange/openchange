@@ -161,7 +161,9 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = execute_query(conn, sql);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	*res = mysql_store_result(conn);
 	if (*res == NULL) {
@@ -185,7 +187,7 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 {
 	MYSQL_RES *res;
 	struct StringArrayW_r *results;
-	uint32_t i, num_rows;
+	uint32_t i, num_rows = 0;
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -242,7 +244,9 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	MYSQL_ROW row = mysql_fetch_row(res);
 	if (row == NULL) {
@@ -266,7 +270,10 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = select_first_string(mem_ctx, conn, sql, &result);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, mem_ctx);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	ret = MYSQL_ERROR;
 	if (convert_string_to_ull(result, n)) {

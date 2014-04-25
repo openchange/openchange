@@ -78,22 +78,59 @@ static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 	return MAPISTORE_SUCCESS;
 }
 
-static uint16_t next_unused_id(struct namedprops_context *self)
+/**
+   \details Return the next unused namedprops ID
+
+   \param nprops pointer to the namedprops context
+   \param highest_id pointer to the next ID to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error next_unused_id(struct namedprops_context *nprops,
+					   uint16_t *highest_id)
 {
-	uint16_t highest_id = 0;
-	MYSQL *conn = self->data;
+	TALLOC_CTX	*mem_ctx;
+	MYSQL		*conn;
+	MYSQL_RES	*res;
+	MYSQL_ROW	row;
+	char		*sql_query;
+	int		ret;
 
-	const char *sql = "SELECT max(mappedId) FROM " TABLE_NAME;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!highest_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (mysql_query(conn, sql) == 0) {
-		MYSQL_RES *res = mysql_store_result(conn);
-		MYSQL_ROW row = mysql_fetch_row(res);
-		highest_id = strtol(row[0], NULL, 10);
+	conn = (MYSQL *) nprops->data;
+	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_OPS, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "next_unused_id");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	sql_query = talloc_asprintf(mem_ctx, "SELECT max(mappedId FROM %s", TABLE_NAME);
+	MAPISTORE_RETVAL_IF(!sql_query, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	ret = mysql_query(conn, sql_query);
+	talloc_free(sql_query);
+	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	res = mysql_store_result(conn);
+	MAPISTORE_RETVAL_IF(!res, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	row = mysql_fetch_row(res);
+	if (!row) {
 		mysql_free_result(res);
+		mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 
-	return highest_id + 1;
+	*highest_id = strtol(row[0], NULL, 10);
+	mysql_free_result(res);
+
+	*highest_id = *highest_id + 1;
+	return MAPISTORE_SUCCESS;
 }
+
 
 static enum mapistore_error create_id(struct namedprops_context *self,
 				      struct MAPINAMEID nameid,

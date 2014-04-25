@@ -108,14 +108,20 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 _PUBLIC_ enum mapistore_error mapistore_namedprops_next_unused_id(struct namedprops_context *nprops,
 								  uint16_t *highest_id)
 {
+	enum mapistore_error	retval;
+	uint16_t		nid = 0;
+
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!highest_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* FIXME: change next_unused_id prototype */
-	*highest_id = nprops->next_unused_id(nprops);
-	DEBUG(5, ("[%s:%d] next unused id: 0x%x\n", __FUNCTION__, __LINE__, *highest_id));
+	retval = nprops->next_unused_id(nprops, &nid);
+	if (retval == MAPISTORE_SUCCESS) {
+		*highest_id = nid;
+		DEBUG(5, ("[%s:%d] next unused id: 0x%x\n", __FUNCTION__, __LINE__, *highest_id));
+	}
 
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 /**

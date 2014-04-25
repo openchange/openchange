@@ -172,28 +172,49 @@ static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 	return MAPISTORE_SUCCESS;
 }
 
-static uint16_t next_unused_id(struct namedprops_context *self)
+/**
+   \details Return the next unused namedprops ID
+
+   \param nprops pointer to the namedprops context
+   \param highest_id pointer to the next ID to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error next_unused_id(struct namedprops_context *nprops, uint16_t *highest_id)
 {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX		*mem_ctx = NULL;
+	struct ldb_context	*ldb_ctx;
+	struct ldb_result	*res = NULL;
+	const char * const	attrs[] = { "mappedId", NULL };
+	int			ret;
+	int			i;
+	uint16_t		current_id;
 
-	struct ldb_context *ldb_ctx = self->data;
-	struct ldb_result *res = NULL;
-	const char * const attrs[] = { "mappedId", NULL };
-	int ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
-			     LDB_SCOPE_SUBTREE, attrs, "(cn=*)");
-	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, 0, mem_ctx);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!highest_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	uint16_t highest_id = 0;
-	unsigned int i;
+	ldb_ctx = (struct ldb_context *) nprops->data;
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "next_unused_id");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
+			 LDB_SCOPE_SUBTREE, attrs, "(cn=*)");
+	MAPISTORE_RETVAL_IF(ret != LDB_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	*highest_id = 0;
 	for (i = 0; i < res->count; i++) {
-		uint16_t current_id = ldb_msg_find_attr_as_uint(res->msgs[i], "mappedId", 0);
-		if (current_id > 0 && highest_id < current_id)
-			highest_id = current_id;
+		current_id = ldb_msg_find_attr_as_uint(res->msgs[i], "mappedId", 0);
+		if (current_id > 0 && *highest_id < current_id)
+			*highest_id = current_id;
 	}
 
-	talloc_free(mem_ctx);
+	*highest_id = *highest_id + 1;
 
-	return highest_id + 1;
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
 }
 
 static enum mapistore_error create_id(struct namedprops_context *self,

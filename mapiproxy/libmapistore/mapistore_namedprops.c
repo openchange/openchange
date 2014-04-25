@@ -98,20 +98,24 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 
 
 /**
-   \details return the next unmapped property ID
+   \details Returns the next unmapped property ID
 
-   \param ldb_ctx pointer to the namedprops ldb context
+   \param nprops pointer to the namedprops context
+   \param highest_id pointer to the next unused id to return
 
-   \return 0 on error, the next mapped id otherwise
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ uint16_t mapistore_namedprops_next_unused_id(struct namedprops_context *nprops)
+_PUBLIC_ enum mapistore_error mapistore_namedprops_next_unused_id(struct namedprops_context *nprops,
+								  uint16_t *highest_id)
 {
-	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERROR, NULL);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	uint16_t highest_id = nprops->next_unused_id(nprops);
-	DEBUG(5, ("next_mapped_id: %d\n", highest_id));
+	/* FIXME: change next_unused_id prototype */
+	*highest_id = nprops->next_unused_id(nprops);
+	DEBUG(5, ("[%s:%d] next unused id: 0x%x\n", __FUNCTION__, __LINE__, *highest_id));
 
-	return highest_id;
+	return MAPISTORE_SUCCESS;
 }
 
 /**

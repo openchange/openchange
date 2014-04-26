@@ -233,7 +233,7 @@ AC_SUBST(COVERAGE_INIT)
 dnl ---------------------------------------------------------------------------
 dnl Check for check (unittest library)
 dnl ---------------------------------------------------------------------------
-PKG_CHECK_MODULES(CHECK, check, [testsuite=1], [])
+PKG_CHECK_MODULES(CHECK, check, [testsuite=1], [AC_MSG_WARN(Conditions unmet for unit testing support)])
 AC_SUBST(CHECK_CFLAGS)
 AC_SUBST(CHECK_LIBS)
 OC_RULE_ADD(testsuite, TESTSUITE)

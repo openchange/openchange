@@ -122,6 +122,14 @@ if test "x${$1}set" != "xset"; then
 		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
    		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
 	;;
+	TESTSUITE)
+		OC_$2="$OC_$2 $1"
+		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
+		OC_$2_CHECK="$OC_$2_CHECK $1-check"
+
+		AC_SUBST(OC_$2_CHECK)
+	;;
 	SERVER|MAPISTORE)
 		OC_$2="$OC_$2 $1"
 		OC_$2_CLEAN="$OC_$2_CLEAN $1-clean"
@@ -221,6 +229,14 @@ if test "x$use_cov" = x"yes"; then
    COVERAGE_INIT="coverage-init"
 fi
 AC_SUBST(COVERAGE_INIT)
+
+dnl ---------------------------------------------------------------------------
+dnl Check for check (unittest library)
+dnl ---------------------------------------------------------------------------
+PKG_CHECK_MODULES(CHECK, check, [testsuite=1], [])
+AC_SUBST(CHECK_CFLAGS)
+AC_SUBST(CHECK_LIBS)
+OC_RULE_ADD(testsuite, TESTSUITE)
 
 dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
@@ -783,6 +799,8 @@ OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(mapiproxy)
 
+OC_SETVAL(testsuite)
+
 OC_SETVAL(doxygen)
 
 AC_MSG_RESULT([
@@ -809,15 +827,16 @@ OpenChange Configuration (Please review)
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical
-	     - mapitest:		$enable_mapitest
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
-	   * subunit format (mapitest):	$have_subunit
+	   * Unit and functional testing
+	     - mapitest:		$enable_mapitest
+	     - mapitest (subunit):      $have_subunit
+	     - openchange-testsuite:    $enable_testsuite
+	     - coverage tests:		$use_cov
 
 	   * OpenChange Documentation:	$enable_doxygen
-
-	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
 	     - Qt4:			$enable_openchange_qt4

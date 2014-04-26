@@ -49,6 +49,7 @@ all: 		$(OC_IDL)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
 		$(PYOPENCHANGEALL)	\
+		$(OC_TESTSUITE)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 
@@ -57,6 +58,7 @@ install: 	all 			\
 		installpc 		\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
+		$(OC_TESTSUITE_INSTALL)	\
 		$(OC_SERVER_INSTALL) 	\
 		$(PYOPENCHANGEINSTALL)	\
 		installnagios
@@ -65,9 +67,10 @@ installlib:	$(OC_LIBS_INSTALL)
 installpc:	$(OC_LIBS_INSTALLPC)
 installheader:	$(OC_LIBS_INSTALLHEADERS)
 
-uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
-		$(OC_TOOLS_UNINSTALL) 	\
-		$(OC_SERVER_UNINSTALL) 	\
+uninstall:: 	$(OC_LIBS_UNINSTALL)		\
+		$(OC_TOOLS_UNINSTALL)		\
+		$(OC_TESTSUITE_UNINSTALL)	\
+		$(OC_SERVER_UNINSTALL)		\
 		$(PYOPENCHANGEUNINSTALL)
 
 dist:: distclean
@@ -1279,6 +1282,33 @@ bin/exchange2ical:	utils/exchange2ical_tool.o	\
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) $(ICAL_LIBS) -lpopt
 
+######################
+# testsuite
+######################
+
+testsuite:	bin/openchange-testsuite
+
+testsuite-install: testsuite
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchange-testsuite $(DESTDIR)$(bindir)
+
+testsuite-uninstall:
+	rm -f $(DESTDIR)$(bindir)/openchange-testsuite
+
+testsuite-clean:
+	rm -f bin/openchange-testsuite
+	rm -f testsuite/*.o
+
+clean:: testsuite-clean
+
+bin/openchange-testsuite: testsuite/testsuite.o
+	@echo "Linking $@"
+	@$(CC) $(LDFLAGS) $(CHECK_CFLAGS) -o $@ $^ $(LIBS) $(CHECK_LIBS)
+
+testsuite-check:	testsuite
+	@./bin/openchange-testsuite
+
+check::	$(OC_TESTSUITE_CHECK)
 
 ###################
 # mapitest

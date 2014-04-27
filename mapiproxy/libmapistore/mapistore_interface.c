@@ -443,6 +443,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Failed creating the context";
 	case MAPISTORE_ERR_INVALID_NAMESPACE:
 		return "Invalid Namespace";
+	case MAPISTORE_ERR_INVALID_URI:
+		return "Invalid URI";
 	case MAPISTORE_ERR_NOT_FOUND:
 		return "Not Found";
 	case MAPISTORE_ERR_REF_COUNT:

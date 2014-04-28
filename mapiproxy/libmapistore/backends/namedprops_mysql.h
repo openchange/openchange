@@ -24,7 +24,16 @@
 
 #include "namedprops_backend.h"
 
-#define	MYSQL_PREFIX "mysql://"
+#define	NAMEDPROPS_BACKEND_MYSQL "mysql"
+
+struct namedprops_mysql_params {
+	const char	*sock;
+	const char	*host;
+	const char	*user;
+	const char	*pass;
+	const char	*db;
+	int		port;
+};
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -37,7 +46,8 @@
 #endif
 
 __BEGIN_DECLS
-enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *, const char *, struct namedprops_context **);
+enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *, struct loadparm_context *, struct namedprops_context **);
+enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_context *, struct namedprops_mysql_params *);
 __END_DECLS
 
 #endif /* __NAMEDPROPS_MYSQL_H_ */

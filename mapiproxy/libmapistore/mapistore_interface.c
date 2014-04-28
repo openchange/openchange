@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,7 +49,6 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	const char			*private_dir;
 	char				*mapping_path;
 	const char			*indexing_url;
-	const char			*nprops_backend;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -99,24 +98,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mapistore_set_default_indexing_url(indexing_url);
 
 	mstore_ctx->nprops_ctx = NULL;
-	nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");
-	if (nprops_backend) {
-		DEBUG(0, ("Using custom backend for named properties: %s\n",
-			  nprops_backend));
-		retval = mapistore_namedprops_init(mstore_ctx, nprops_backend,
-						   &(mstore_ctx->nprops_ctx));
-	} else {
-		// Use default ldb backend
-		char *nprops_default_db = talloc_asprintf(mstore_ctx, "ldb://%s/%s",
-				mapistore_get_mapping_path(), MAPISTORE_DB_NAMED);
-		DEBUG(0, ("Using default backend for named properties: %s\n",
-			  nprops_default_db));
-		retval = mapistore_namedprops_init(mstore_ctx, nprops_default_db,
-						   &(mstore_ctx->nprops_ctx));
-		talloc_free(nprops_default_db);
-	}
+	retval = mapistore_namedprops_init(mstore_ctx, lp_ctx, &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}

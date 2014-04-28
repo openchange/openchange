@@ -23,8 +23,11 @@
 #define __NAMEDPROPS_BACKEND_H__
 
 #include <talloc.h>
+#include <stdbool.h>
 #include <stdint.h>
-#include "../mapistore_errors.h"
+#include "mapiproxy/libmapistore/mapistore_errors.h"
+
+#include <param.h>
 
 struct MAPINAMEID;
 
@@ -42,10 +45,22 @@ struct namedprops_context {
 };
 
 
-// Implemented on mapistore_namedprops
-enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, const char *, struct namedprops_context **);
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+__BEGIN_DECLS
+
+enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *, struct loadparm_context *, struct namedprops_context **);
 const char *mapistore_namedprops_get_ldif_path(void);
 int mapistore_namedprops_prop_type_from_string(const char *);
 
+__END_DECLS
 
 #endif /* __NAMEDPROPS_BACKEND_H__ */

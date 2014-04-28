@@ -26,6 +26,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
 #include <ldb.h>
 #include <samba_util.h>
 
@@ -270,53 +271,39 @@ static int mapistore_namedprops_mysql_destructor(struct namedprops_context *self
 	return 0;
 }
 
-static bool parse_connection_string(TALLOC_CTX *local_mem_ctx,
-				   const char *connection_string,
-				   char **host, char **user, char **passwd,
-				   char **db)
-{
-	// connection_string has format mysql://user[:pass]@host/database
-	int prefix_size = strlen("mysql://");
-	const char *s = connection_string + prefix_size;
-	if (!connection_string || strlen(connection_string) < prefix_size ||
-	    !strstr(connection_string, "mysql://") || !strchr(s, '@') ||
-	    !strchr(s, '/')) {
-		// Invalid format
-		return false;
-	}
-	if (strchr(s, ':') == NULL || strchr(s, ':') > strchr(s, '@')) {
-		// No password
-		int user_size = strchr(s, '@') - s;
-		*user = talloc_zero_array(local_mem_ctx, char, user_size + 1);
-		strncpy(*user, s, user_size);
-		(*user)[user_size] = '\0';
-		*passwd = talloc_zero_array(local_mem_ctx, char, 1);
-		(*passwd)[0] = '\0';
-	} else {
-		// User
-		int user_size = strchr(s, ':') - s;
-		*user = talloc_zero_array(local_mem_ctx, char, user_size);
-		strncpy(*user, s, user_size);
-		(*user)[user_size] = '\0';
-		// Password
-		int passwd_size = strchr(s, '@') - strchr(s, ':') - 1;
-		*passwd = talloc_zero_array(local_mem_ctx, char, passwd_size + 1);
-		strncpy(*passwd, strchr(s, ':') + 1, passwd_size);
-		(*passwd)[passwd_size] = '\0';
-	}
-	// Host
-	int host_size = strchr(s, '/') - strchr(s, '@') - 1;
-	*host = talloc_zero_array(local_mem_ctx, char, host_size + 1);
-	strncpy(*host, strchr(s, '@') + 1, host_size);
-	(*host)[host_size] = '\0';
-	// Database name
-	int db_size = strlen(strchr(s, '/') + 1);
-	*db = talloc_zero_array(local_mem_ctx, char, db_size + 1);
-	strncpy(*db, strchr(s, '/') + 1, db_size);
-	(*db)[db_size] = '\0';
+/**
+   \details Retrieve MySQL backend parametric options from
+   configuration file and store them into a data structure.
 
-	return true;
+   \param lp_ctx Pointer to the loadparm context
+   \param p pointer to the structure with individual
+   parameters to return
+
+   \return MAPISTORE_SUCCES on success, otherwise MAPISTORE error
+ */
+enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_context *lp_ctx,
+							   struct namedprops_mysql_params *p)
+{
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!p, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve parametric options */
+	p->sock = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_sock");
+	p->user = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_user");
+	p->pass = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_pass");
+	p->host = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_host");
+	p->port = lpcfg_parm_int(lp_ctx, NULL, "namedproperties", "mysql_port", 3306);
+	p->db = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_db");
+
+	/* Enforce the logic */
+	MAPISTORE_RETVAL_IF(!p->user, MAPISTORE_ERR_BACKEND_INIT, NULL);
+	MAPISTORE_RETVAL_IF(!p->host && !p->sock, MAPISTORE_ERR_BACKEND_INIT, NULL);
+	MAPISTORE_RETVAL_IF(!p->db, MAPISTORE_ERR_BACKEND_INIT, NULL);
+
+	return MAPISTORE_SUCCESS;
 }
+
 
 static bool is_schema_created(MYSQL *conn)
 {
@@ -503,13 +490,83 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 }
 
 
+/**
+   \details Initialize mapistore named properties MySQL backend
+
+   \param mem_ctx pointer to the memory context
+   \param lp_ctx pointer to the loadparm context
+   \param nprops_ctx pointer on pointer to the namedprops context to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
 enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
-						     const char *connection_string,
-						     struct namedprops_context **ctx)
+						     struct loadparm_context *lp_ctx,
+						     struct namedprops_context **nprops_ctx)
 {
-	// 0) Create context
-	struct namedprops_context *nprops = talloc_zero(mem_ctx, struct namedprops_context);
-	nprops->backend_type = talloc_strdup(mem_ctx, "mysql");
+	enum mapistore_error		retval;
+	int				ret;
+	struct namedprops_context	*nprops = NULL;
+	struct namedprops_mysql_params	parms;
+	MYSQL				*conn = NULL;
+	MYSQL				*rconn = NULL;
+	my_bool				reconnect = true;
+	char				*query = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!nprops_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve smb.conf arguments */
+	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &parms);
+	if (retval) {
+		DEBUG(0, ("[%s:%d] ERROR: parsing MySQL named properties "
+			  "parametric option failed with %s\n",
+			  __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+	}
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+
+	/* Establish MySQL connection */
+	conn = mysql_init(NULL);
+	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_NO_MEMORY, NULL);
+	mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
+
+	rconn = mysql_real_connect(conn, parms.host, parms.user, parms.pass, 
+				  parms.db, parms.port, parms.sock, 0);
+	if (rconn == NULL) {
+		if (mysql_errno(conn) == ER_BAD_DB_ERROR) {
+			DEBUG(5, ("[%s:%d] WARNING: %s\n", __FUNCTION__, __LINE__, mysql_error(conn)));
+			rconn = mysql_real_connect(conn, parms.host, parms.user, parms.pass,
+						   NULL, parms.port, parms.sock, 0);
+			if (rconn == NULL) {
+				DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mysql_error(conn)));
+				return MAPISTORE_ERR_DATABASE_INIT;
+			} else {
+				query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", parms.db);
+				ret = mysql_query(conn, query);
+				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, query);
+				talloc_free(query);
+				
+				ret = mysql_select_db(conn, parms.db);
+				MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_OPS, NULL);
+			}
+		} else {
+			DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mysql_error(conn)));
+			return MAPISTORE_ERR_DATABASE_INIT;
+		}
+	}
+
+	/* Initialize the database */
+	if ((is_schema_created(conn) == false) || (is_database_empty(conn) == true)) {
+		retval = initialize_database(conn);
+		MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	}
+
+	/* Create context */
+	nprops = talloc_zero(mem_ctx, struct namedprops_context);
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	nprops->backend_type = NAMEDPROPS_BACKEND_MYSQL;
 	nprops->create_id = create_id;
 	nprops->get_mapped_id = get_mapped_id;
 	nprops->get_nameid = get_nameid;
@@ -517,54 +574,9 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	nprops->next_unused_id = next_unused_id;
 	nprops->transaction_commit = transaction_commit;
 	nprops->transaction_start = transaction_start;
-
-	// 1) Establish mysql connection
-	MYSQL *conn = mysql_init(NULL);
-	my_bool reconnect = true;
-	mysql_options(conn, MYSQL_OPT_RECONNECT, &reconnect);
-	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	char *host, *user, *passwd, *db;
-	bool parsed = parse_connection_string(local_mem_ctx, connection_string,
-					  &host, &user, &passwd, &db);
-	if (!parsed) {
-		DEBUG(0, ("Wrong connection string to mysql %s", connection_string));
-		MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT, local_mem_ctx);
-	}
-	// First try to connect to the database, if it fails try to create it
-	if (mysql_real_connect(conn, host, user, passwd, db, 0, NULL, 0) == NULL) {
-		// Try to create database
-		if (mysql_real_connect(conn, host, user, passwd, NULL, 0, NULL, 0) == NULL) {
-			// Nop
-			DEBUG(0, ("Can't connect to mysql using %s",
-				  connection_string));
-			MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT,
-					    local_mem_ctx);
-		} else {
-			// Connect it!, let's try to create database
-			char *sql = talloc_asprintf(local_mem_ctx,
-						    "CREATE DATABASE %s", db);
-			if (mysql_query(conn, sql) != 0 ||
-			    mysql_select_db(conn, db) != 0) {
-				DEBUG(0, ("Can't connect to mysql using %s",
-					  connection_string));
-				MAPISTORE_RETVAL_IF(1, MAPISTORE_ERR_BACKEND_INIT,
-						    local_mem_ctx);
-			}
-		}
-	}
 	nprops->data = conn;
 	talloc_set_destructor(nprops, mapistore_namedprops_mysql_destructor);
 
-	// 2) Initialize database
-	bool should_initialize_database = (!is_schema_created(conn) ||
-					    is_database_empty(conn));
-	if (should_initialize_database) {
-		enum mapistore_error ret = initialize_database(conn);
-		MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, local_mem_ctx);
-	}
-
-	*ctx = nprops;
-	talloc_free(local_mem_ctx);
-
+	*nprops_ctx = nprops;
 	return MAPISTORE_SUCCESS;
 }

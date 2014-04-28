@@ -24,7 +24,7 @@
 
 #include "namedprops_backend.h"
 
-#define	LDB_PREFIX "ldb://"
+#define	NAMEDPROPS_BACKEND_LDB	"ldb"
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -37,7 +37,7 @@
 #endif
 
 __BEGIN_DECLS
-enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *, const char *, struct namedprops_context **);
+enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *, struct loadparm_context *, struct namedprops_context **);
 __END_DECLS
 
 #endif /* __NAMEDPROPS_LDB_H_ */

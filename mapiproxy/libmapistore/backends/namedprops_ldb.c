@@ -367,24 +367,44 @@ static enum mapistore_error transaction_commit(struct namedprops_context *self)
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Initialize mapistore named properties LDB backend
+
+   \param mem_ctx pointer to the memory context
+   \param lp_ctx pointer to the loadparm context
+   \param nprops_ctx pointer on pointer ot the namedprops context to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
 enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
-						   const char *database,
-						   struct namedprops_context **_nprops)
+						   struct loadparm_context *lp_ctx,
+						   struct namedprops_context **nprops_ctx)
 {
-	int                     ret;
-	struct stat             sb;
-	struct ldb_context      *ldb_ctx = NULL;
-	struct ldb_ldif         *ldif;
-	char                    *filename;
-	FILE                    *f;
-	struct tevent_context   *ev;
+	int				ret;
+	struct namedprops_context	*nprops = NULL;
+	const char			*database;
+	struct stat			sb;
+	struct ldb_context		*ldb_ctx = NULL;
+	struct ldb_ldif			*ldif;
+	struct ldb_message		*msg;
+	char				*filename;
+	FILE				*f;
+	struct tevent_context		*ev;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!nprops_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve smb.conf argument */
+	database = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "ldb_url");
+	MAPISTORE_RETVAL_IF(!database, MAPISTORE_ERR_BACKEND_INIT, NULL);
 
 	ev = tevent_context_init(mem_ctx);
 	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	DEBUG(5, ("database = %s\n", database));
-
-	// Stat the database and populate it if it doesn't exist
+	/* Stat the database and populate it if it doesn't exist */
 	if (stat(database, &sb) == -1) {
 		ldb_ctx = mapistore_ldb_wrap_connect(mem_ctx, ev, database, 0);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
@@ -397,32 +417,23 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 
 		ldb_transaction_start(ldb_ctx);
 
-		{
-			// dn: @INDEXLIST
-			//	@IDXATTR: cn
-			//	@IDXATTR: oleguid
-			//	@IDXATTR: mappedId
-			TALLOC_CTX *_mem_ctx;
-			struct ldb_message *msg;
-
-			_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-			msg = ldb_msg_new(_mem_ctx);
-			msg->dn = ldb_dn_new(msg, ldb_ctx, "@INDEXLIST");
-			ldb_msg_add_string(msg, "@IDXATTR", "cn");
-			ldb_msg_add_string(msg, "@IDXATTR", "oleguid");
-			ldb_msg_add_string(msg, "@IDXATTR", "mappedId");
-			msg->elements[0].flags = LDB_FLAG_MOD_ADD;
-			ret = ldb_add(ldb_ctx, msg);
-			if (ret != LDB_SUCCESS) {
-				fclose(f);
-				talloc_free(_mem_ctx);
-				return MAPISTORE_ERR_DATABASE_INIT;
-			}
-			talloc_free(_mem_ctx);
+		msg = ldb_msg_new(mem_ctx);
+		MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_NO_MEMORY, NULL);
+		msg->dn = ldb_dn_new(msg, ldb_ctx, "@INDEXLIST");
+		ldb_msg_add_string(msg, "@IDXATTR", "cn");
+		ldb_msg_add_string(msg, "@IDXATTR", "oleguid");
+		ldb_msg_add_string(msg, "@IDXATTR", "mappedId");
+		msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+		ret = ldb_add(ldb_ctx, msg);
+		talloc_free(msg);
+		if (ret != LDB_SUCCESS) {
+			fclose(f);
+			return MAPISTORE_ERR_DATABASE_INIT;
 		}
 
 		while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
-			struct ldb_message *normalized_msg;
+			struct ldb_message	*normalized_msg;
+
 			ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &normalized_msg);
 			MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_INIT, NULL);
 			ret = ldb_add(ldb_ctx, normalized_msg);
@@ -441,9 +452,10 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 	}
 
-	struct namedprops_context *nprops = talloc_zero(mem_ctx, struct namedprops_context);
+	nprops = talloc_zero(mem_ctx, struct namedprops_context);
+	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	nprops->backend_type = talloc_strdup(mem_ctx, "ldb");
+	nprops->backend_type = NAMEDPROPS_BACKEND_LDB;
 	nprops->create_id = create_id;
 	nprops->get_mapped_id = get_mapped_id;
 	nprops->get_nameid = get_nameid;
@@ -453,7 +465,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 	nprops->transaction_start = transaction_start;
 	nprops->data = ldb_ctx;
 
-	*_nprops = nprops;
+	*nprops_ctx = nprops;
 
 	return MAPISTORE_SUCCESS;
 }

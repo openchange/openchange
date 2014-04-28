@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2010-2013
+   Copyright (C) Julien Kerihuel 2010-2014
    Copyright (C) Jesús García Sáez 2014
 
    This program is free software; you can redistribute it and/or modify
@@ -36,29 +36,7 @@
  */
 const char *mapistore_namedprops_get_ldif_path(void)
 {
-       return MAPISTORE_LDIF; // Defined on compilation time
-}
-
-
-/**
-   \details Check if a string starts with the specified prefix
-
-   \param str pointer to the string to lookup
-   \param prefix pointer to the prefix to search
-
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
- */
-static enum mapistore_error starts_with(const char *str, const char *prefix)
-{
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!prefix, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	if (!strncmp(str, prefix, strlen(prefix))) {
-		return MAPISTORE_SUCCESS;
-	}
-
-	return MAPISTORE_ERR_NOT_FOUND;
+       return MAPISTORE_LDIF;
 }
 
 
@@ -67,32 +45,33 @@ static enum mapistore_error starts_with(const char *str, const char *prefix)
    to the existing one if already initialized/opened.
 
    \param mem_ctx pointer to the memory context
-   \param conn_info pointer to the mapistore namedprops backend URL
+   \param lp_ctx pointer to the loadparm context
    \param nprops pointer on pointer to the namedprops context the
    function returns
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
-					       const char *conn_info,
+					       struct loadparm_context *lp_ctx,
 					       struct namedprops_context **nprops)
 {
-	const char		*database;
+	const char	*backend;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!conn_info, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	if (starts_with(conn_info, LDB_PREFIX) == MAPISTORE_SUCCESS) {
-		database = &conn_info[strlen(LDB_PREFIX)];
-		return mapistore_namedprops_ldb_init(mem_ctx, database, nprops);
-	} else if (starts_with(conn_info, MYSQL_PREFIX) == MAPISTORE_SUCCESS) {
-		return mapistore_namedprops_mysql_init(mem_ctx, conn_info, nprops);
-	} 
-		
-	DEBUG(0, ("[%s:%d]: ERROR Invalid named_properties backend type for %s\n", 
-		  __FUNCTION__, __LINE__, conn_info));
+	backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "namedproperties");
+	if (!strncmp(backend, NAMEDPROPS_BACKEND_LDB, strlen(NAMEDPROPS_BACKEND_LDB))) {
+		return mapistore_namedprops_ldb_init(mem_ctx, lp_ctx, nprops);
+	} else if (!strncmp(backend, NAMEDPROPS_BACKEND_MYSQL, strlen(NAMEDPROPS_BACKEND_MYSQL))) {
+		return mapistore_namedprops_mysql_init(mem_ctx, lp_ctx, nprops);
+	} else {
+		DEBUG(0, ("[%s:%d] ERROR: Invalid namedproperties backend type '%s'\n",
+			  __FUNCTION__, __LINE__, backend));
+	}
+	
 	return MAPISTORE_ERR_INVALID_PARAMETER;
 }
 

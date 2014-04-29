@@ -32,10 +32,10 @@ START_TEST (test_init) {
 	struct namedprops_context	*nprops_ctx;
 
 	mem_ctx = talloc_named(NULL, 0, "test_init");
-	ck_assert(mem_ctx);
+	ck_assert(mem_ctx != NULL);
 
 	lp_ctx = loadparm_init_global(true);
-	ck_assert(lp_ctx);
+	ck_assert(lp_ctx != NULL);
 
 	/* check sanity checks compliance */
 	retval = mapistore_namedprops_init(NULL, lp_ctx, &nprops_ctx);

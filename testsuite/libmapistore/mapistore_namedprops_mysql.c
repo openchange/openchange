@@ -34,10 +34,10 @@ START_TEST(test_parameters) {
 	memset(&p, 0, sizeof (struct namedprops_mysql_params));
 
 	mem_ctx = talloc_named(NULL, 0, "test_parameters");
-	ck_assert(mem_ctx);
+	ck_assert(mem_ctx != NULL);
 
 	lp_ctx = loadparm_init(mem_ctx);
-	ck_assert(lp_ctx);
+	ck_assert(lp_ctx != NULL);
 
 	/* check sanity check compliance */
 	retval = mapistore_namedprops_mysql_parameters(NULL, &p);

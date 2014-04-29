@@ -20,7 +20,11 @@
 #ifndef	__TESTSUITE_H__
 #define	__TESTSUITE_H_
 
+#include <stdio.h>
 #include <stdlib.h>
+
+#include <string.h>
+#include <stdbool.h>
 
 #include <check.h>
 #ifdef HAVE_SUBUNIT
@@ -38,7 +42,11 @@
 #endif
 
 __BEGIN_DECLS
-Suite *libmapistore_suite(void);
+
+/* libmapistore */
+Suite *mapistore_namedprops_suite(void);
+Suite *mapistore_namedprops_mysql_suite(void);
+
 __END_DECLS
 
 #endif /*! __TESTSUITE_H__ */

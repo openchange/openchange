@@ -1301,9 +1301,14 @@ testsuite-clean:
 
 clean:: testsuite-clean
 
-bin/openchange-testsuite: testsuite/testsuite.o
+bin/openchange-testsuite: 	testsuite/testsuite.o					\
+				testsuite/libmapistore/mapistore_namedprops.c		\
+				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
+				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+				libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(LDFLAGS) $(CHECK_CFLAGS) -o $@ $^ $(LIBS) $(CHECK_LIBS)
+	@$(CC) $(LDFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LIBS) $(TDB_LIBS) $(CHECK_LIBS)
 
 testsuite-check:	testsuite
 	@./bin/openchange-testsuite

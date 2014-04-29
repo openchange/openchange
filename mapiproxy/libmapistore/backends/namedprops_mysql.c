@@ -298,8 +298,8 @@ enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_conte
 
 	/* Enforce the logic */
 	MAPISTORE_RETVAL_IF(!p->user, MAPISTORE_ERR_BACKEND_INIT, NULL);
-	MAPISTORE_RETVAL_IF(!p->host && !p->sock, MAPISTORE_ERR_BACKEND_INIT, NULL);
 	MAPISTORE_RETVAL_IF(!p->db, MAPISTORE_ERR_BACKEND_INIT, NULL);
+	MAPISTORE_RETVAL_IF(!p->host && !p->sock, MAPISTORE_ERR_BACKEND_INIT, NULL);
 
 	return MAPISTORE_SUCCESS;
 }

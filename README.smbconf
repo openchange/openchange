@@ -39,6 +39,6 @@ mapistore named properties backend
   port on which server is available for the MySQL named properties
   backend. The option is set to 3306 if not specified.
 
-- __namedproperties:mysql_database = STRING__ This option is
+- __namedproperties:mysql_db = STRING__ This option is
   mandatory. It defines the database to use for the MySQL named
   properties backend.

@@ -70,6 +70,24 @@ START_TEST(test_parameters) {
 	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &p);
 	ck_assert(retval == MAPISTORE_SUCCESS);
 
+	/* test all parametric options */
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_sock", "/tmp/mysql.sock") == true));
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_host", "localhost") == true));
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_user", "root") == true));
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_pass", "openchange") == true));
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_port", "3305") == true));
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_db", "db_openchange") == true));
+
+	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &p);
+	ck_assert(retval == MAPISTORE_SUCCESS);
+
+	ck_assert_str_eq(p.sock, "/tmp/mysql.sock");
+	ck_assert_str_eq(p.host, "localhost");
+	ck_assert_str_eq(p.user, "root");
+	ck_assert_str_eq(p.pass, "openchange");
+	ck_assert_str_eq(p.db, "db_openchange");
+	ck_assert_int_eq(p.port, 3305);
+
 	talloc_free(lp_ctx);
 	talloc_free(mem_ctx);
 

@@ -18,7 +18,7 @@
  */
 
 #ifndef	__TESTSUITE_H__
-#define	__TESTSUITE_H_
+#define	__TESTSUITE_H__
 
 #include <stdio.h>
 #include <stdlib.h>

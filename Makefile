@@ -1311,7 +1311,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS)
+	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 testsuite-check:	testsuite
 	@./bin/openchange-testsuite

@@ -57,6 +57,31 @@ static struct emsabp_context *dcesrv_find_emsabp_context(struct GUID *uuid)
 	return emsabp_ctx;
 }
 
+
+/**
+ * Make PropertyRow record with empty value and PT_ERROR flag for PropTag.
+ * We should return such rows when client requests an MId we can't find.
+ */
+static void dcesrv_make_ptyp_error_property_row(TALLOC_CTX* mem_ctx,
+						struct SPropTagArray* pPropTags,
+						struct PropertyRow_r* aRow)
+{
+	int i;
+	uint32_t ulPropTag;
+	aRow->Reserved = 0x0;
+	aRow->cValues = pPropTags->cValues;
+	aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
+	for (i = 0; i < aRow->cValues; i++) {
+		ulPropTag = pPropTags->aulPropTag[i];
+		ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
+
+		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
+		aRow->lpProps[i].dwAlignPad = 0x0;
+		set_PropertyValue(&(aRow->lpProps[i]), NULL);
+	}
+}
+
+
 /**
    \details exchange_nsp NspiBind (0x0) function, Initiates a NSPI
    session with the client.
@@ -777,21 +802,7 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	if (retval != MAPI_E_SUCCESS) {
 		/* Is MId is not found, proceed as if no attributes were found */
 		if (retval == MAPI_E_INVALID_BOOKMARK) {
-			uint32_t	ulPropTag;
-			struct PropertyRow_r	*aRow;
-			
-			aRow = r->out.ppRows[0];
-			aRow->Reserved = 0x0;
-			aRow->cValues = r->in.pPropTags->cValues;
-			aRow->lpProps = talloc_array(mem_ctx, struct PropertyValue_r, aRow->cValues);
-			for (i = 0; i < aRow->cValues; i++) {
-				ulPropTag = r->in.pPropTags->aulPropTag[i];
-				ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
-
-				aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
-				aRow->lpProps[i].dwAlignPad = 0x0;
-				set_PropertyValue(&(aRow->lpProps[i]), NULL);
-			}
+			dcesrv_make_ptyp_error_property_row(mem_ctx, pPropTags, r->out.ppRows[0]);
 			retval = MAPI_W_ERRORS_RETURNED;
 		} else {
 			talloc_free(r->out.ppRows);

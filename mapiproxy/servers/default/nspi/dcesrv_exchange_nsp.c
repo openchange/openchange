@@ -452,7 +452,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			for (i = r->in.pStat->NumPos; i < r->in.dwETableCount; i++) {
 				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[j]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
 				if (retval != MAPI_E_SUCCESS) {
-					goto failure;
+					dcesrv_make_ptyp_error_property_row(mem_ctx, pPropTags, &(pRows->aRow[j]));
 				}
 				j++;
 			}

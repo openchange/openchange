@@ -194,7 +194,13 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 		return MAPISTORE_SUCCESS;
 	}
 	else {
-		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, name, fidp);
+		struct emsmdbp_object *mailbox_object = emsmdbp_get_mailbox(parent_folder);
+		if (mailbox_object == NULL) {
+			DEBUG(0, ("%s: Failed to find mailbox object for parent_folder.\n", __FUNCTION__));
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, folderID, name, fidp);
 	}
 }
 

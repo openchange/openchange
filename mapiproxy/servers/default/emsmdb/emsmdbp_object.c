@@ -584,7 +584,11 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 	int			retval;
 	struct emsmdbp_object	*parent_object = NULL;
 	struct emsmdbp_object   *mailbox_object;
-	
+
+	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
+
 	if ((context_object->type == EMSMDBP_OBJECT_MAILBOX
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
@@ -592,12 +596,11 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 		*folder_object_p = context_object;
 		return MAPISTORE_SUCCESS;
 	}
-	else {
-		mailbox_object = emsmdbp_get_mailbox(context_object);
-		if (fid == mailbox_object->object.mailbox->folderID) {
-			*folder_object_p = mailbox_object;
-			return MAPISTORE_SUCCESS;
-		}
+
+	mailbox_object = emsmdbp_get_mailbox(context_object);
+	if (fid == mailbox_object->object.mailbox->folderID) {
+		*folder_object_p = mailbox_object;
+		return MAPISTORE_SUCCESS;
 	}
 
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);

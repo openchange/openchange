@@ -582,7 +582,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 {
 	uint64_t		parent_fid;
 	int			retval;
-	struct emsmdbp_object	*parent_object = NULL;
 	struct emsmdbp_object   *mailbox_object;
 
 	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
@@ -606,6 +605,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
 	if (retval == MAPISTORE_SUCCESS) {
 		if (parent_fid) {
+			struct emsmdbp_object	*parent_object = NULL;
+
 			retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, parent_fid, &parent_object);
 			if (retval != MAPISTORE_SUCCESS) {
 				return retval;

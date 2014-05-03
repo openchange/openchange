@@ -416,7 +416,13 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	else {
 		local_ctx = talloc_zero(NULL, void);
 	
-		retval = openchangedb_get_mapistoreURI(local_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &path, true);
+		mailbox_object = emsmdbp_get_mailbox(parent);
+		if (mailbox_object == NULL) {
+			DEBUG(0, ("%s: Failed to find mailbox object for parent passed.\n", __FUNCTION__));
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+
+		retval = openchangedb_get_mapistoreURI(local_ctx, emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, fid, &path, true);
 		if (retval == MAPISTORE_SUCCESS && path) {
 			folder_object->object.folder->mapistore_root = true;
 			/* system/special folder */
@@ -451,8 +457,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 						parent->type));
 				break;
 			}
-			mailbox_object = emsmdbp_get_mailbox(parent);
-			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
+			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
 			if (ret != MAPI_E_SUCCESS) {
 				DEBUG(0, ("folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid));
 				talloc_free(local_ctx);

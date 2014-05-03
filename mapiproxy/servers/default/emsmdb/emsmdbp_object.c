@@ -530,24 +530,28 @@ static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 	return parent_uri;
 }
 
-static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, uint64_t fid, uint64_t *parent_fidp)
+static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, uint64_t fid, uint64_t *parent_fidp)
 {
 	TALLOC_CTX	*mem_ctx;
 	int		retval = MAPISTORE_SUCCESS;
 	bool		soft_deleted;
 	char		*uri, *parent_uri;
+	struct emsmdbp_object_mailbox *mailbox;
+
+	MAPISTORE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
+	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, true);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, true);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, false);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, false);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
 
-	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, fid, &uri, &soft_deleted);
+	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
 	if (retval == MAPISTORE_SUCCESS) {
 		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
 		if (parent_uri) {

@@ -112,23 +112,23 @@ static void checked_mysql_setup(void)
 	int		ret;
 
 	mem_ctx = talloc_named(NULL, 0, "checked_mysql_setup");
-	ck_assert_ptr_ne(mem_ctx, NULL);
+	ck_assert(mem_ctx != NULL);
 
 	conn = mysql_init(NULL);
-	ck_assert_ptr_ne(conn, NULL);
+	ck_assert(conn != NULL);
 
 	rconn = mysql_real_connect(conn, NAMEDPROPS_MYSQL_HOST,
 			   NAMEDPROPS_MYSQL_USER, NULL,
 			   NULL, 0, NULL, 0);
-	ck_assert_ptr_ne(rconn, NULL);
+	ck_assert(rconn != NULL);
 
 	query = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
-	ck_assert_ptr_ne(query, NULL);
+	ck_assert(query != NULL);
 	ret = mysql_query(conn, query);
 	talloc_free(query);
 
 	query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", NAMEDPROPS_MYSQL_DB);
-	ck_assert_ptr_ne(query, NULL);
+	ck_assert(query != NULL);
 	ret = mysql_query(conn, query);
 	talloc_free(query);
 	ck_assert_int_eq(ret, 0);
@@ -146,10 +146,10 @@ static void checked_mysql_teardown(void)
 	int		ret;
 
 	mem_ctx = talloc_named(NULL, 0, "checked_mysql_teardown");
-	ck_assert_ptr_ne(mem_ctx, NULL);
+	ck_assert(mem_ctx != NULL);
 
 	database = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
-	ck_assert_ptr_ne(database, NULL);
+	ck_assert(database != NULL);
 
 	ret = mysql_query(conn, database);
 	talloc_free(database);

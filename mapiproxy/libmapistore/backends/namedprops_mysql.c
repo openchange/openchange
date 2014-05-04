@@ -369,12 +369,14 @@ static enum mapistore_error create_schema(MYSQL *conn, const char *schema_path)
 
 	len = fread(query, sizeof(char), sb.st_size, f);
 	if (len != sb.st_size) {
+		retval = MAPISTORE_ERR_BACKEND_INIT;
 		mapistore_set_errno(MAPISTORE_ERR_BACKEND_INIT);
 		goto end;
 	}
 
 	ret = mysql_query(conn, query);
 	if (ret) {
+		retval = MAPISTORE_ERR_DATABASE_OPS;
 		mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
 	}
 

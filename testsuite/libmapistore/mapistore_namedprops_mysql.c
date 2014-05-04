@@ -36,7 +36,11 @@
 #define	NAMEDPROPS_MYSQL_TMPDIR		"/tmp"
 
 /* Global variables used for test fixture */
-MYSQL	*conn;
+static MYSQL				*conn;
+static struct namedprops_context	*g_nprops;
+static struct loadparm_context		*g_lp_ctx;
+static TALLOC_CTX			*g_mem_ctx;
+
 
 START_TEST(test_parameters) {
 	TALLOC_CTX			*mem_ctx;
@@ -85,6 +89,7 @@ START_TEST(test_parameters) {
 	ck_assert(retval == MAPISTORE_SUCCESS);
 
 	/* test all parametric options */
+	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_data", "setup/mapistore") == true));
 	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_sock", "/tmp/mysql.sock") == true));
 	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_host", "localhost") == true));
 	ck_assert((lpcfg_set_cmdline(lp_ctx, "namedproperties:mysql_user", "root") == true));
@@ -95,6 +100,7 @@ START_TEST(test_parameters) {
 	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &p);
 	ck_assert(retval == MAPISTORE_SUCCESS);
 
+	ck_assert_str_eq(p.data, "setup/mapistore");
 	ck_assert_str_eq(p.sock, "/tmp/mysql.sock");
 	ck_assert_str_eq(p.host, "localhost");
 	ck_assert_str_eq(p.user, "root");
@@ -246,11 +252,66 @@ START_TEST (test_initialize_database) {
 
 } END_TEST
 
+static void checked_mysql_query_setup(void)
+{
+	enum mapistore_error		retval;
+
+	g_mem_ctx = talloc_named(NULL, 0, "checked_mysql_query_setup");
+	ck_assert(g_mem_ctx != NULL);
+
+	g_lp_ctx = loadparm_init(g_mem_ctx);
+	ck_assert(g_lp_ctx != NULL);
+
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "mapistore:namedproperties", "mysql") == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_data", NAMEDPROPS_MYSQL_SCHEMA_PATH) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_host", NAMEDPROPS_MYSQL_HOST) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_user", NAMEDPROPS_MYSQL_USER) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", "") == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_port", "3306") == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_db", NAMEDPROPS_MYSQL_DB) == true));
+
+	retval = mapistore_namedprops_init(g_mem_ctx, g_lp_ctx, &g_nprops);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+}
+
+static void checked_mysql_query_teardown(void)
+{
+	int	ret;
+	char	*query = NULL;
+
+	query = talloc_asprintf(g_mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	ck_assert(query != NULL);
+
+	ret = mysql_query(g_nprops->data, query);
+	talloc_free(query);
+	ck_assert_int_eq(ret, 0);
+
+	talloc_free(g_nprops);
+	talloc_free(g_lp_ctx);
+	talloc_free(g_mem_ctx);
+}
+
+START_TEST (test_next_unused_id) {
+	enum mapistore_error	retval;
+	uint16_t		highest_id = 0;
+
+	/* test sanity checks */
+	retval = next_unused_id(NULL, &highest_id);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = next_unused_id(g_nprops, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = next_unused_id(g_nprops, &highest_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+} END_TEST
+
 Suite *mapistore_namedprops_mysql_suite(void)
 {
 	Suite	*s;
 	TCase	*tc_config;
 	TCase	*tc_mysql;
+	TCase	*tc_mysql_q;
 
 	s = suite_create("libmapistore named properties: MySQL backend");
 
@@ -269,6 +330,12 @@ Suite *mapistore_namedprops_mysql_suite(void)
 	tcase_add_test(tc_mysql, test_initialize_database);
 	suite_add_tcase(s, tc_mysql);
 
+	/* MySQL queries */
+	tc_mysql_q = tcase_create("MySQL queries");
+	tcase_set_timeout(tc_mysql_q, 60);
+	tcase_add_checked_fixture(tc_mysql_q, checked_mysql_query_setup, checked_mysql_query_teardown);
+	tcase_add_test(tc_mysql_q, test_next_unused_id);
+	suite_add_tcase(s, tc_mysql_q);
 
 	return s;
 }

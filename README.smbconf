@@ -42,3 +42,7 @@ mapistore named properties backend
 - __namedproperties:mysql_db = STRING__ This option is
   mandatory. It defines the database to use for the MySQL named
   properties backend.
+
+- __namedproperties:mysql_data = STRING__ This option specifies
+  the path where MySQL schema file and provisioning content is
+  located.

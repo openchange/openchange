@@ -103,7 +103,7 @@ static enum mapistore_error next_unused_id(struct namedprops_context *nprops,
 	mem_ctx = talloc_named(NULL, 0, "next_unused_id");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	sql_query = talloc_asprintf(mem_ctx, "SELECT max(mappedId FROM %s", NAMEDPROPS_MYSQL_TABLE);
+	sql_query = talloc_asprintf(mem_ctx, "SELECT max(mappedId) FROM %s", NAMEDPROPS_MYSQL_TABLE);
 	MAPISTORE_RETVAL_IF(!sql_query, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	ret = mysql_query(conn, sql_query);
@@ -285,6 +285,7 @@ enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_conte
 	MAPISTORE_RETVAL_IF(!p, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Retrieve parametric options */
+	p->data = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_data");
 	p->sock = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_sock");
 	p->user = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_user");
 	p->pass = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "mysql_pass");
@@ -664,7 +665,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 
 	/* Initialize the database */
 	if ((is_schema_created(conn) == false) || (is_database_empty(conn) == true)) {
-		retval = initialize_database(conn, NULL);
+		retval = initialize_database(conn, parms.data);
 		MAPISTORE_RETVAL_IF(retval, retval, NULL);
 	}
 

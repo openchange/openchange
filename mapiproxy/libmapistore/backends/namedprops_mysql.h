@@ -31,6 +31,7 @@
 #define	NAMEDPROPS_MYSQL_TABLE		"named_properties"
 
 struct namedprops_mysql_params {
+	const char	*data;
 	const char	*sock;
 	const char	*host;
 	const char	*user;

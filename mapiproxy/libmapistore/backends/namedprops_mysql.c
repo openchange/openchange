@@ -358,6 +358,7 @@ static enum mapistore_error create_schema(MYSQL *conn, const char *schema_path)
 
 	ret = stat(filename, &sb);
 	MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
+	MAPISTORE_RETVAL_IF(sb.st_size == 0, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 
 	f = fopen(filename, "r");
 	talloc_free(filename);
@@ -374,7 +375,7 @@ static enum mapistore_error create_schema(MYSQL *conn, const char *schema_path)
 
 	ret = mysql_query(conn, query);
 	if (ret) {
-		mapistore_set_errno(MAPISTORE_ERR_BACKEND_INIT);
+		mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
 	}
 
 end:

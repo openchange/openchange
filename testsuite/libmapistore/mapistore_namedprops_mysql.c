@@ -230,6 +230,22 @@ START_TEST (test_is_schema_created) {
 
 } END_TEST
 
+START_TEST (test_initialize_database) {
+	enum mapistore_error	retval;
+
+	/* test sanity checks */
+	retval = initialize_database(NULL, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
+
+	ck_assert(is_database_empty(conn) == true);
+
+	retval = initialize_database(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	ck_assert(is_database_empty(conn) == false);
+
+} END_TEST
+
 Suite *mapistore_namedprops_mysql_suite(void)
 {
 	Suite	*s;
@@ -245,9 +261,12 @@ Suite *mapistore_namedprops_mysql_suite(void)
 
 	/* MySQL initialization */
 	tc_mysql = tcase_create("MySQL initialization");
+	/* database provisioning takes longer than default timeout */
+	tcase_set_timeout(tc_mysql, 60);
 	tcase_add_checked_fixture(tc_mysql, checked_mysql_setup, checked_mysql_teardown);
 	tcase_add_test(tc_mysql, test_create_schema);
 	tcase_add_test(tc_mysql, test_is_schema_created);
+	tcase_add_test(tc_mysql, test_initialize_database);
 	suite_add_tcase(s, tc_mysql);
 
 

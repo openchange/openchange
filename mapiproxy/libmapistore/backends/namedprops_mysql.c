@@ -535,10 +535,11 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
   \details Initialize the database and provision it
 
   \param conn pointer to the MySQL context
+  \param path pointer to the path holding schema files
 
   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-static enum mapistore_error initialize_database(MYSQL *conn)
+static enum mapistore_error initialize_database(MYSQL *conn, const char *schemapath)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval = MAPISTORE_SUCCESS;
@@ -553,7 +554,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	retval = create_schema(conn, NULL);
+	retval = create_schema(conn, schemapath);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "initialize_database");
@@ -563,7 +564,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
 
 	filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",
-				   mapistore_namedprops_get_ldif_path());
+				   schemapath ? schemapath : mapistore_namedprops_get_ldif_path());
 	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	f = fopen(filename, "r");
@@ -573,6 +574,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
 		ret = ldb_msg_normalize(ldb_ctx, mem_ctx, ldif->msg, &msg);
 		if (ret) {
+			retval = MAPISTORE_ERR_DATABASE_INIT;
 			mapistore_set_errno(MAPISTORE_ERR_DATABASE_INIT);
 			goto end;
 		}
@@ -580,6 +582,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 		inserted = insert_ldif_msg(conn, msg);
 		ldb_ldif_read_free(ldb_ctx, ldif);
 		if (!inserted) {
+			retval = MAPISTORE_ERR_DATABASE_OPS;
 			mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
 			goto end;
 		}
@@ -661,7 +664,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 
 	/* Initialize the database */
 	if ((is_schema_created(conn) == false) || (is_database_empty(conn) == true)) {
-		retval = initialize_database(conn);
+		retval = initialize_database(conn, NULL);
 		MAPISTORE_RETVAL_IF(retval, retval, NULL);
 	}
 

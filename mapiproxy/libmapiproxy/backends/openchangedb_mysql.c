@@ -2758,7 +2758,8 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "message_get_property");
 	struct openchangedb_message *msg = (struct openchangedb_message *)_msg;
 	char *sql;
-	const char *attr, *value;
+	size_t attr_len;
+	const char *attr, *value = NULL;
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 	uint64_t *id;
@@ -2809,15 +2810,20 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 	if (!attr) {
 		attr = _unknown_property(mem_ctx, proptag);
 	}
+	attr_len = strlen(attr);
 	for (i = 0; i < msg->properties.size; i++) {
-		if (strncmp(msg->properties.names[i], attr, strlen(attr)) == 0) {
+		if (strncmp(msg->properties.names[i], attr, attr_len) == 0) {
 			value = msg->properties.values[i];
-			ret = MAPI_E_SUCCESS;
 			break;
 		}
 	}
-	// Transform string into the expected data type
-	*data = get_property_data(parent_ctx, proptag, value);
+	// check if we have a value for proptag requested
+	if (value != NULL) {
+		// Transform string into the expected data type
+		*data = get_property_data(parent_ctx, proptag, value);
+		ret = MAPI_E_SUCCESS;
+	}
+
 end:
 	talloc_free(mem_ctx);
 	return ret;

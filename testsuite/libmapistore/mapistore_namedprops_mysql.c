@@ -33,6 +33,7 @@
 #define	NAMEDPROPS_MYSQL_USER		"root"
 #define	NAMEDPROPS_MYSQL_DB		"myapp_test"
 #define	NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
+#define	NAMEDPROPS_MYSQL_TMPDIR		"/tmp"
 
 /* Global variables used for test fixture */
 MYSQL	*conn;
@@ -103,7 +104,6 @@ START_TEST(test_parameters) {
 
 	talloc_free(lp_ctx);
 	talloc_free(mem_ctx);
-
 } END_TEST
 
 static void checked_mysql_setup(void)
@@ -160,6 +160,62 @@ static void checked_mysql_teardown(void)
 	talloc_free(mem_ctx);
 }
 
+START_TEST (test_create_schema) {
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	int			ret;
+	char			*schemafile = NULL;
+	char			str[] = "invalid schema file";
+	FILE			*fp;
+
+	mem_ctx = talloc_named(NULL, 0, "test_create_schema");
+	ck_assert(mem_ctx != NULL);
+
+	schemafile = talloc_asprintf(mem_ctx, "%s/%s", NAMEDPROPS_MYSQL_TMPDIR,
+				     NAMEDPROPS_MYSQL_SCHEMA);
+	ck_assert(schemafile != NULL);
+
+	/* check sanity checks */
+	retval = create_schema(NULL, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* test non existent schema file */
+	unlink(schemafile);
+
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_BACKEND_INIT);
+
+	/* test empty schema file */
+	ret = unlink(schemafile);
+	ck_assert_int_eq(ret, -1);
+
+	fp = fopen(schemafile, "w+");
+	ck_assert(fp != NULL);
+	fclose(fp);
+
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
+
+	/* test invalid schema file */
+	fp = fopen(schemafile, "w+");
+	ck_assert(fp != NULL);
+	fwrite(str, 1, sizeof(str), fp);
+	fclose(fp);
+
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_OPS);
+
+	ret = unlink(schemafile);
+	ck_assert_int_eq(ret, 0);
+
+	/* test real schema file */
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	talloc_free(schemafile);
+	talloc_free(mem_ctx);
+} END_TEST
+
 START_TEST (test_is_schema_created) {
 	enum mapistore_error	retval;
 
@@ -190,6 +246,7 @@ Suite *mapistore_namedprops_mysql_suite(void)
 	/* MySQL initialization */
 	tc_mysql = tcase_create("MySQL initialization");
 	tcase_add_checked_fixture(tc_mysql, checked_mysql_setup, checked_mysql_teardown);
+	tcase_add_test(tc_mysql, test_create_schema);
 	tcase_add_test(tc_mysql, test_is_schema_created);
 	suite_add_tcase(s, tc_mysql);
 

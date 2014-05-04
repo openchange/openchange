@@ -308,7 +308,7 @@ enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_conte
 
    \return true if the schema is created, otherwise false;
  */
-bool is_schema_created(MYSQL *conn)
+static bool is_schema_created(MYSQL *conn)
 {
 	MYSQL_RES	*res = NULL;
 	int		num_rows = 0;
@@ -334,8 +334,7 @@ bool is_schema_created(MYSQL *conn)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum mapistore_error mapistore_namedprops_mysql_create_schema(MYSQL *conn,
-							      const char *schema_path)
+static enum mapistore_error create_schema(MYSQL *conn, const char *schema_path)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval = MAPISTORE_SUCCESS;
@@ -349,7 +348,7 @@ enum mapistore_error mapistore_namedprops_mysql_create_schema(MYSQL *conn,
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "namedprops_mysql_create_schema");
+	mem_ctx = talloc_named(NULL, 0, "create_schema");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	filename = talloc_asprintf(mem_ctx, "%s/" NAMEDPROPS_MYSQL_SCHEMA,
@@ -393,7 +392,7 @@ end:
 
    \return true if the database is empty, otherwise false
  */
-bool is_database_empty(MYSQL *conn)
+static bool is_database_empty(MYSQL *conn)
 {
 	TALLOC_CTX	*mem_ctx = NULL;
 	MYSQL_RES	*res = NULL;
@@ -551,7 +550,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	retval = mapistore_namedprops_mysql_create_schema(conn, NULL);
+	retval = create_schema(conn, NULL);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "initialize_database");

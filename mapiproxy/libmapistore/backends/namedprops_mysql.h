@@ -52,11 +52,6 @@ struct namedprops_mysql_params {
 __BEGIN_DECLS
 enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *, struct loadparm_context *, struct namedprops_context **);
 enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_context *, struct namedprops_mysql_params *);
-
-bool is_schema_created(MYSQL *);
-bool is_database_empty(MYSQL *);
-enum mapistore_error mapistore_namedprops_mysql_create_schema(MYSQL *, const char *);
-
 __END_DECLS
 
 #endif /* __NAMEDPROPS_MYSQL_H_ */

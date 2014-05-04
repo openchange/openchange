@@ -4,6 +4,7 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2014
+   copyright (C) Jesús García Sáez 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -23,6 +24,7 @@
 #include <libmapistore/mapistore.h>
 #include <libmapistore/mapistore_errors.h>
 #include <libmapistore/backends/namedprops_mysql.h>
+#include "libmapistore/backends/namedprops_mysql.c"
 
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
@@ -164,7 +166,7 @@ START_TEST (test_is_schema_created) {
 	ck_assert(is_schema_created(conn) == false);
 	ck_assert(is_database_empty(conn) == true);
 
-	retval = mapistore_namedprops_mysql_create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	ck_assert(is_schema_created(conn) == true);

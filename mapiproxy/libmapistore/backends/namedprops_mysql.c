@@ -301,26 +301,41 @@ enum mapistore_error mapistore_namedprops_mysql_parameters(struct loadparm_conte
 }
 
 
-static bool is_schema_created(MYSQL *conn)
+/**
+   \details Check if the named properties schema is created
+
+   \param conn pointer to the MySQL connection
+
+   \return true if the schema is created, otherwise false;
+ */
+bool is_schema_created(MYSQL *conn)
 {
-	MYSQL_RES *res = mysql_list_tables(conn, NAMEDPROPS_MYSQL_TABLE);
+	MYSQL_RES	*res = NULL;
+	int		num_rows = 0;
+
+	res = mysql_list_tables(conn, NAMEDPROPS_MYSQL_TABLE);
 	if (res == NULL) return false;
-	bool created = mysql_num_rows(res) == 1;
+
+	num_rows = mysql_num_rows(res);
 	mysql_free_result(res);
-	return created;
+
+	if (num_rows != 1) return false;
+	return true;
 }
 
 /**
    \details Create the schema for mapistore named properties table
 
    \param conn pointer to the MySQL connection
+   \param schema_path path to the schema file
 
    \fixme find a better approach than allocating buffer of the file
    size
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-static enum mapistore_error create_schema(MYSQL *conn)
+enum mapistore_error mapistore_namedprops_mysql_create_schema(MYSQL *conn,
+							      const char *schema_path)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval = MAPISTORE_SUCCESS;
@@ -334,10 +349,11 @@ static enum mapistore_error create_schema(MYSQL *conn)
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "create_schema");
+	mem_ctx = talloc_named(NULL, 0, "namedprops_mysql_create_schema");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	filename = talloc_asprintf(mem_ctx, "%s/" NAMEDPROPS_MYSQL_SCHEMA,
+				   schema_path ? schema_path :
 				   mapistore_namedprops_get_ldif_path());
 	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, NULL);
 
@@ -370,18 +386,47 @@ end:
 	return retval;
 }
 
-static bool is_database_empty(MYSQL *conn)
+/**
+   \details Check if the database is empty
+
+   \param conn pointer to the MySQL connection
+
+   \return true if the database is empty, otherwise false
+ */
+bool is_database_empty(MYSQL *conn)
 {
-	if (mysql_query(conn, "SELECT count(*) FROM " NAMEDPROPS_MYSQL_TABLE)) {
-		// Query failed, table doesn't exist?
+	TALLOC_CTX	*mem_ctx = NULL;
+	MYSQL_RES	*res = NULL;
+	MYSQL_ROW	row;
+	int		ret;
+	int		n = 0;
+	char		*query = NULL;
+
+	mem_ctx = talloc_named(NULL, 0, "is_database_empty");
+	if (mem_ctx == NULL) return true;
+
+	query = talloc_asprintf(mem_ctx, "SELECT count(*) FROM %s",
+				NAMEDPROPS_MYSQL_TABLE);
+	if (query == NULL) return true;
+
+	ret = mysql_query(conn, query);
+	talloc_free(query);
+	if (ret) {
+		/* query failed, table does not exist? */
+		talloc_free(mem_ctx);
 		return true;
 	} else {
-		MYSQL_RES *res = mysql_store_result(conn);
-		MYSQL_ROW row = mysql_fetch_row(res);
-		int n = atoi(row[0]);
+
+		res = mysql_store_result(conn);
+		row = mysql_fetch_row(res);
+		n = atoi(row[0]);
 		mysql_free_result(res);
-		return n == 0;
 	}
+
+	talloc_free(mem_ctx);
+
+	if (n) return false;
+	return true;
 }
 
 static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
@@ -506,7 +551,7 @@ static enum mapistore_error initialize_database(MYSQL *conn)
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	retval = create_schema(conn);
+	retval = mapistore_namedprops_mysql_create_schema(conn, NULL);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "initialize_database");

@@ -24,6 +24,17 @@
 #include <libmapistore/mapistore_errors.h>
 #include <libmapistore/backends/namedprops_mysql.h>
 
+#include <mysql/mysql.h>
+#include <mysql/mysqld_error.h>
+
+#define	NAMEDPROPS_MYSQL_HOST		"127.0.0.1"
+#define	NAMEDPROPS_MYSQL_USER		"root"
+#define	NAMEDPROPS_MYSQL_DB		"myapp_test"
+#define	NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
+
+/* Global variables used for test fixture */
+MYSQL	*conn;
+
 START_TEST(test_parameters) {
 	TALLOC_CTX			*mem_ctx;
 	struct loadparm_context		*lp_ctx;
@@ -93,19 +104,93 @@ START_TEST(test_parameters) {
 
 } END_TEST
 
+static void checked_mysql_setup(void)
+{
+	TALLOC_CTX	*mem_ctx = NULL;
+	MYSQL		*rconn = NULL;
+	char		*query = NULL;
+	int		ret;
+
+	mem_ctx = talloc_named(NULL, 0, "checked_mysql_setup");
+	ck_assert_ptr_ne(mem_ctx, NULL);
+
+	conn = mysql_init(NULL);
+	ck_assert_ptr_ne(conn, NULL);
+
+	rconn = mysql_real_connect(conn, NAMEDPROPS_MYSQL_HOST,
+			   NAMEDPROPS_MYSQL_USER, NULL,
+			   NULL, 0, NULL, 0);
+	ck_assert_ptr_ne(rconn, NULL);
+
+	query = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	ck_assert_ptr_ne(query, NULL);
+	ret = mysql_query(conn, query);
+	talloc_free(query);
+
+	query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	ck_assert_ptr_ne(query, NULL);
+	ret = mysql_query(conn, query);
+	talloc_free(query);
+	ck_assert_int_eq(ret, 0);
+
+	ret = mysql_select_db(conn, NAMEDPROPS_MYSQL_DB);
+	ck_assert_int_eq(ret, 0);
+
+	talloc_free(mem_ctx);
+}
+
+static void checked_mysql_teardown(void)
+{
+	TALLOC_CTX	*mem_ctx;
+	char		*database = NULL;
+	int		ret;
+
+	mem_ctx = talloc_named(NULL, 0, "checked_mysql_teardown");
+	ck_assert_ptr_ne(mem_ctx, NULL);
+
+	database = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	ck_assert_ptr_ne(database, NULL);
+
+	ret = mysql_query(conn, database);
+	talloc_free(database);
+	ck_assert_int_eq(ret, 0);
+
+	talloc_free(mem_ctx);
+}
+
+START_TEST (test_is_schema_created) {
+	enum mapistore_error	retval;
+
+	ck_assert(is_schema_created(conn) == false);
+	ck_assert(is_database_empty(conn) == true);
+
+	retval = mapistore_namedprops_mysql_create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	ck_assert(is_schema_created(conn) == true);
+	ck_assert(is_database_empty(conn) == true);
+
+} END_TEST
 
 Suite *mapistore_namedprops_mysql_suite(void)
 {
 	Suite	*s;
 	TCase	*tc_config;
+	TCase	*tc_mysql;
 
 	s = suite_create("libmapistore named properties: MySQL backend");
 
 	/* Core / Configuration */
-	tc_config =  tcase_create("Configuration");
+	tc_config = tcase_create("MySQL backend configuration");
 	tcase_add_test(tc_config, test_parameters);
-
 	suite_add_tcase(s, tc_config);
+
+	/* MySQL initialization */
+	tc_mysql = tcase_create("MySQL initialization");
+	tcase_add_checked_fixture(tc_mysql, checked_mysql_setup, checked_mysql_teardown);
+	tcase_add_test(tc_mysql, test_is_schema_created);
+	suite_add_tcase(s, tc_mysql);
+
 
 	return s;
 }

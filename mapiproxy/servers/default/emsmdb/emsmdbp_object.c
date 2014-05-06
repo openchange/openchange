@@ -194,7 +194,13 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 		return MAPISTORE_SUCCESS;
 	}
 	else {
-		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, name, fidp);
+		struct emsmdbp_object *mailbox_object = emsmdbp_get_mailbox(parent_folder);
+		if (mailbox_object == NULL) {
+			DEBUG(0, ("%s: Failed to find mailbox object for parent_folder.\n", __FUNCTION__));
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+
+		return openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, folderID, name, fidp);
 	}
 }
 
@@ -410,7 +416,13 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	else {
 		local_ctx = talloc_zero(NULL, void);
 	
-		retval = openchangedb_get_mapistoreURI(local_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &path, true);
+		mailbox_object = emsmdbp_get_mailbox(parent);
+		if (mailbox_object == NULL) {
+			DEBUG(0, ("%s: Failed to find mailbox object for parent passed.\n", __FUNCTION__));
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+
+		retval = openchangedb_get_mapistoreURI(local_ctx, emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, fid, &path, true);
 		if (retval == MAPISTORE_SUCCESS && path) {
 			folder_object->object.folder->mapistore_root = true;
 			/* system/special folder */
@@ -445,8 +457,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 						parent->type));
 				break;
 			}
-			mailbox_object = emsmdbp_get_mailbox(parent);
-			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
+			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
 			if (ret != MAPI_E_SUCCESS) {
 				DEBUG(0, ("folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid));
 				talloc_free(local_ctx);
@@ -519,24 +530,28 @@ static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 	return parent_uri;
 }
 
-static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, uint64_t fid, uint64_t *parent_fidp)
+static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, uint64_t fid, uint64_t *parent_fidp)
 {
 	TALLOC_CTX	*mem_ctx;
 	int		retval = MAPISTORE_SUCCESS;
 	bool		soft_deleted;
 	char		*uri, *parent_uri;
+	struct emsmdbp_object_mailbox *mailbox;
+
+	MAPISTORE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
+	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, true);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, true);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
-	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid, parent_fidp, false);
+	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, false);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
 
-	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, fid, &uri, &soft_deleted);
+	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
 	if (retval == MAPISTORE_SUCCESS) {
 		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
 		if (parent_uri) {
@@ -567,8 +582,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 {
 	uint64_t		parent_fid;
 	int			retval;
-	struct emsmdbp_object	*parent_object;
-	
+	struct emsmdbp_object   *mailbox_object;
+
+	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
+
 	if ((context_object->type == EMSMDBP_OBJECT_MAILBOX
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
@@ -576,17 +595,18 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_
 		*folder_object_p = context_object;
 		return MAPISTORE_SUCCESS;
 	}
-	else {
-		parent_object = emsmdbp_get_mailbox(context_object);
-		if (fid == parent_object->object.mailbox->folderID) {
-			*folder_object_p = parent_object;
-			return MAPISTORE_SUCCESS;
-		}
+
+	mailbox_object = emsmdbp_get_mailbox(context_object);
+	if (fid == mailbox_object->object.mailbox->folderID) {
+		*folder_object_p = mailbox_object;
+		return MAPISTORE_SUCCESS;
 	}
 
-	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, fid, &parent_fid);
+	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
 	if (retval == MAPISTORE_SUCCESS) {
 		if (parent_fid) {
+			struct emsmdbp_object	*parent_object = NULL;
+
 			retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, parent_fid, &parent_object);
 			if (retval != MAPISTORE_SUCCESS) {
 				return retval;
@@ -2554,7 +2574,7 @@ static int emsmdbp_object_get_properties_mailbox(TALLOC_CTX *mem_ctx, struct ems
 			}
 			break;
 		default:
-			retvals[i] = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, properties->aulPropTag[i], object->object.mailbox->folderID, data_pointers + i);
+			retvals[i] = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username, properties->aulPropTag[i], object->object.mailbox->folderID, data_pointers + i);
 		}
 	}
 

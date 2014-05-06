@@ -305,7 +305,8 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 	} else {
-		DEBUG(0, ("Called get_mapistoreURI with mailboxstore=false!"));
+		DEBUG(0, ("Called get_mapistoreURI with mailboxstore=false!\n"));
+		talloc_free(mem_ctx);
 		return MAPI_E_NOT_IMPLEMENTED;
 		//ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
 		//		 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);

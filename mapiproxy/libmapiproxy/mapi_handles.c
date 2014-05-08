@@ -289,7 +289,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	/* Step 1. Seek the TDB database for the first free record */
 	ret = tdb_traverse(handles_ctx->tdb_ctx, mapi_handles_traverse_null, (void *)&handle);
 	if (ret > -1 && handle > 0) {
-		DEBUG(0, ("We have found free record 0x%x\n", handle));
+		DEBUG(5, ("We have found free record 0x%x\n", handle));
 		retval = mapi_handles_tdb_update(handles_ctx, handle, container_handle);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 		

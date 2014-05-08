@@ -562,7 +562,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 	struct mapistore_mgmt_notif	*el;
 	bool				found = false;
 
-	printf("Looking for 0x%x\n", NotificationFlags);
+	DEBUG(5, ("Looking for notification flags 0x%x\n", NotificationFlags));
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);

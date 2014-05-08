@@ -61,7 +61,7 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx, struct ldb_c
 	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	database = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), MAPISTORE_DB_NAMED);
-	DEBUG(0, ("database = %s\n", database));
+	DEBUG(5, ("%s: database = %s\n", __func__, database));
 
 	/* Step 1. Stat the database and populate it if it doesn't exist */
 	if (stat(database, &sb) == -1) {

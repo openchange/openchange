@@ -156,7 +156,7 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 		DEBUG(5, ("  [unexpected]: existing nsp_session: %p; session: %p (ref++)\n", session, session->session));
 	}
 	else {
-		DEBUG(0, ("Creating new session\n"));
+		DEBUG(5, ("%s: Creating new session\n", __func__));
 
 		/* Step 6. Associate this emsabp context to the session */
 		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
@@ -213,10 +213,10 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 			ret = mpm_session_release(session->session);
 			if (ret == true) {
 				DLIST_REMOVE(nsp_session, session);
-				DEBUG(0, ("[%s:%d]: Session found and released\n", 
+				DEBUG(5, ("[%s:%d]: Session found and released\n",
 					  __FUNCTION__, __LINE__));
 			} else {
-				DEBUG(0, ("[%s:%d]: Session found and ref_count decreased\n",
+				DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
 					  __FUNCTION__, __LINE__));
 			}
 		}
@@ -901,12 +901,12 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	switch (r->in.dwFlags) {
 	case NspiAddressCreationTemplates:
 	case NspiAddressCreationTemplates|NspiUnicodeStrings:
-		DEBUG(0, ("CreationTemplates Table requested\n"));
+		DEBUG(5, ("CreationTemplates Table requested\n"));
 		r->out.result = emsabp_get_CreationTemplatesTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
 		break;
 	case NspiUnicodeStrings:
 	case 0x0:
-		DEBUG(0, ("Hierarchy Table requested\n"));
+		DEBUG(5, ("Hierarchy Table requested\n"));
 		r->out.result = emsabp_get_HierarchyTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
 		break;
 	default:
@@ -1281,7 +1281,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
-	DEBUG (0, ("dcesrv_exchange_nsp_dispatch\n"));
+	DEBUG (5, ("dcesrv_exchange_nsp_dispatch\n"));
 
 	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;

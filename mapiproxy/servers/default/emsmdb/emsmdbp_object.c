@@ -400,7 +400,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);
 	if (emsmdbp_is_mapistore(parent)) {
-		DEBUG(0, ("%s: opening child mapistore folder\n", __FUNCTION__));
+		DEBUG(5, ("%s: opening child mapistore folder\n", __FUNCTION__));
 		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent), parent->backend_object, folder_object, fid, &folder_object->backend_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			talloc_free(folder_object);
@@ -414,7 +414,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 		if (retval == MAPISTORE_SUCCESS && path) {
 			folder_object->object.folder->mapistore_root = true;
 			/* system/special folder */
-			DEBUG(0, ("%s: opening base mapistore folder\n", __FUNCTION__));
+			DEBUG(5, ("%s: opening base mapistore folder\n", __FUNCTION__));
 
 			retval = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, path, &contextID, &folder_object->backend_object);
 			if (retval == MAPISTORE_SUCCESS) {
@@ -459,7 +459,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 				talloc_free(folder_object);
 				return MAPISTORE_ERR_NOT_FOUND;
 			}
-			DEBUG(0, ("%s: opening openchangedb folder\n", __FUNCTION__));
+			DEBUG(5, ("%s: opening openchangedb folder\n", __FUNCTION__));
 		}
 		talloc_free(local_ctx);
 	}

@@ -2339,7 +2339,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnsSize;
+		[subcontext(0),subcontext_size(ColumnsSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Columns;
 	} ContentsRowModifiedNotification;
 
 	typedef [nodiscriminant] union {

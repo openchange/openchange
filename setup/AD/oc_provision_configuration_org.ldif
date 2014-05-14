@@ -1,0 +1,1942 @@
+################################################################
+# CN=Services,${CONFIGDN} records
+################################################################
+
+
+#
+# Exchange configuration information object
+# This object stores configuration information for the Exchange Server
+#
+#dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
+#objectClass: top
+#objectClass: container
+#objectClass: msExchConfigurationContainer
+#cn: Microsoft Exchange
+#distinguishedName: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
+#showInAdvancedViewOnly: TRUE
+#adminDisplayName: Microsoft Exchange
+#name: Microsoft Exchange
+#objectCategory: CN=ms-Exch-Configuration-Container,${SCHEMADN}
+#msExchPolicyRoots: CN=System Policies,${FIRSTORGDN}
+#msExchPolicyRoots: CN=Recipient Policies,${FIRSTORGDN}
+
+
+#
+# First Organization
+#
+dn: ${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchOrganizationContainer
+cn: ${FIRSTORG}
+distinguishedName: ${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+adminDisplayName: {335A1087-5131-4D45-BE3E-3C6C7F76F5EC}
+name: ${FIRSTORG}
+legacyExchangeDN: /o=${FIRSTORG}
+objectCategory: CN=ms-Exch-Organization-Container,${SCHEMADN}
+
+
+#
+# Administrative Groups
+#
+dn: CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchAdminGroupContainer
+cn: Administrative Groups
+distinguishedName: CN=Administrative Groups,${FIRSTORGDN}
+displayName: Administrative Groups
+showInAdvancedViewOnly: TRUE
+name: Administrative Groups
+objectCategory: CN=ms-Exch-Admin-Group-Container,${SCHEMADN}
+
+
+#
+# First Administrative Group
+#
+dn: CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: msExchAdminGroup
+cn: ${FIRSTOU}
+distinguishedName: CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+displayName: ${FIRSTOU}
+showInAdvancedViewOnly: TRUE
+siteFolderGUID: 4b2d197b-1cb3-486a-b8c3-42e8c5c08e27
+name: ${FIRSTOU}
+legacyExchangeDN: /o=${FIRSTORG}/ou=${FIRSTOU}
+objectCategory: CN=ms-Exch-Admin-Group,${SCHEMADN}
+msExchAdminGroupMode: 0
+msExchDefaultAdminGroup: TRUE
+
+#
+# Servers
+#
+dn: CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchServersContainer
+cn: Servers
+distinguishedName: CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Servers
+containerInfo: 8
+name: Servers
+objectCategory: CN=ms-Exch-Servers-Container,${SCHEMADN}
+
+#
+# Address Lists Containers
+# description: Address book root container
+#
+dn: CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Address Lists Container
+distinguishedName: CN=Address Lists Container,${FIRSTORGDN}
+instanceType: 4
+displayName: Address Lists Container
+showInAdvancedViewOnly: TRUE
+name: Address Lists Container
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+#
+# Offline Address Lists
+#
+dn: CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Offline Address Lists
+distinguishedName: CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: Offline Address Lists
+showInAdvancedViewOnly: TRUE
+name: Offline Address Lists
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+# disabled because CN=ms-Exch-OAB,${SCHEMADN} is not provisioned
+#
+# Default Offline Address List
+#
+# dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# objectClass: top
+# objectClass: msExchOAB
+# cn: Default Offline Address List
+# distinguishedName: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# showInAdvancedViewOnly: TRUE
+# offLineABStyle: 1
+# offLineABContainers: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+# offLineABSchedule:: AAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAAAAAAAAAAgAAAAAAA
+# siteFolderGUID: e72eae5f-ee8e-4908-becb-fb58af7c62aa
+# doOABVersion: 0
+# name: Default Offline Address List
+# systemFlags: 1610612736
+# legacyExchangeDN: /o=${FIRSTORG}/cn=addrlists/cn=oabs/cn=Default Offline Address List
+# objectCategory: CN=ms-Exch-OAB,${SCHEMADN}
+# objectGUID: f4d2ff48-0a08-4f96-8cfc-967401492989
+# msExchOABDefault: TRUE
+# msExchOABFolder: AA==
+
+#
+# All Address Lists
+# description: Address book recipient
+#
+dn: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: All Address Lists
+distinguishedName: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Address Lists
+showInAdvancedViewOnly: TRUE
+name: All Address Lists
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+
+#
+# All Global Address Lists
+#
+dn: CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: All Global Address Lists
+distinguishedName: CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Global Address Lists
+showInAdvancedViewOnly: TRUE
+name: All Global Address Lists
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+
+#
+# Default global Address List
+#
+dn: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: Default Global Address List
+distinguishedName: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: Default Global Address List
+showInAdvancedViewOnly: TRUE
+name: Default Global Address List
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=user)(!(homeMDB=*))(!(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=user)(|(homeMDB=*)(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=contact))(objectCategory=group)(objectCategory=publicFolder)(objectCategory=msExchDynamicDistributionList) ))
+
+
+#
+# Recipient Update Services
+#
+dn: CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Recipient Update Services
+distinguishedName: CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+displayName: Recipient Update Services
+showInAdvancedViewOnly: TRUE
+name: Recipient Update Services
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+#
+# Recipient Update Service (${DOMAIN})
+#
+dn: CN=Recipient Update Service (${DOMAIN}),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: msExchAddressListService
+cn: Recipient Update Service (${DOMAIN})
+distinguishedName: CN=Recipient Update Service (${DOMAIN}),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+activationStyle: 2
+showInAdvancedViewOnly: TRUE
+name: Recipient Update Service (${DOMAIN})
+systemFlags: 1073741824
+objectCategory: CN=ms-Exch-Address-List-Service,${SCHEMADN}
+msExchServer1NetworkAddress: ${HOSTNAME}
+msExchServer1PageSize: 20
+msExchDoFullReplication: FALSE
+msExchReplicateNow: FALSE
+msExchPollInterval: 60
+msExchDomainLink: ${DOMAINDN}
+msExchDomainLocalGroupGuid: {D9CA41A1-5041-4FBF-8635-23B4D0BA8A48}
+msExchDomainGlobalGroupGuid: {1E2B98D3-4FAC-4FAE-B16F-A26AB09AAE34}
+msExchDomainLocalGroupSid: S-1-5-21-1226241484-1028146065-4277480997-1110
+msExchDomainGlobalGroupSid: S-1-5-21-1226241484-1028146065-4277480997-1109
+
+#
+# Recipient Update Service (Enterprise Configuration)
+#
+#dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#objectClass: top
+#objectClass: msExchAddressListService
+#cn: Recipient Update Service (Enterprise Configuration)
+#distinguishedName: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#activationStyle: 2
+#showInAdvancedViewOnly: TRUE
+#name: Recipient Update Service (Enterprise Configuration)
+#systemFlags: 1073741824
+#objectCategory: CN=ms-Exch-Address-List-Service,CN=Schema,CN=Configuration,DC=openchange2003,DC=local
+#msExchServer1NetworkAddress: ${HOSTNAME}
+#msExchServer1PageSize: 20
+#msExchDoFullReplication: FALSE
+#msExchReplicateNow: FALSE
+#msExchPollInterval: 60
+#msExchDomainLink: CN=Configuration,${DOMAINDN}
+
+#
+# All Users
+#
+dn: CN=All Users,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: All Users
+distinguishedName: CN=All Users,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Users
+showInAdvancedViewOnly: TRUE
+name: All Users
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=user)(!(homeMDB=*))(!(msExchHomeServerName=*)))(&(objectCategory=person)(objectClass=user)(|(homeMDB=*)(msExchHomeServerName=*))) ))
+
+
+#
+# All Groups
+#
+dn: CN=All Groups,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: All Groups
+distinguishedName: CN=All Groups,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Groups
+showInAdvancedViewOnly: TRUE
+name: All Groups
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+purportedSearch: (& (mailnickname=*) (| (objectCategory=group) ))
+
+
+#
+# All Contacts
+# description: Address book recipient
+#
+dn: CN=All Contacts,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: All Contacts
+distinguishedName: CN=All Contacts,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: All Contacts
+showInAdvancedViewOnly: TRUE
+name: All Contacts
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+purportedSearch: (& (mailnickname=*) (| (&(objectCategory=person)(objectClass=contact)) ))
+
+
+#
+# Public Folders
+# description: Address book recipient
+#
+dn: CN=Public Folders,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+objectClass: top
+objectClass: addressBookContainer
+cn: Public Folders
+distinguishedName: CN=Public Folders,CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+displayName: Public Folders
+showInAdvancedViewOnly: TRUE
+name: Public Folders
+systemFlags: 1610612736
+objectCategory: CN=Address-Book-Container,${SCHEMADN}
+purportedSearch: (& (mailnickname=*) (| (objectCategory=publicFolder) ))
+
+
+#
+# Addressing
+# description:  Address container
+#
+dn: CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Addressing
+distinguishedName: CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Addressing
+containerInfo: 16
+name: Addressing
+legacyExchangeDN: /o=${FIRSTORG}/cn=Configuration/cn=Addressing
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+
+
+#
+# Address-Templates
+# description: Specifies information for a Display Template
+#
+dn: CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Address-Templates
+distinguishedName: CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+adminDisplayName: One-Off Address Templates
+containerInfo: 32
+name: Address-Templates
+legacyExchangeDN: /o=${FIRSTORG}/cn=Configuration/cn=Addressing/cn=Address-Templates
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+msExchTemplateRDNs: 81A
+msExchTemplateRDNs: 403
+msExchTemplateRDNs: 422
+msExchTemplateRDNs: 427
+msExchTemplateRDNs: 426
+msExchTemplateRDNs: 425
+msExchTemplateRDNs: 402
+msExchTemplateRDNs: 424
+msExchTemplateRDNs: 41b
+msExchTemplateRDNs: 418
+msExchTemplateRDNs: 41a
+msExchTemplateRDNs: 42d
+msExchTemplateRDNs: 41e
+msExchTemplateRDNs: 40e
+msExchTemplateRDNs: 41f
+msExchTemplateRDNs: 419
+msExchTemplateRDNs: 414
+msExchTemplateRDNs: 406
+msExchTemplateRDNs: 405
+msExchTemplateRDNs: 41d
+msExchTemplateRDNs: 816
+msExchTemplateRDNs: 415
+msExchTemplateRDNs: 408
+msExchTemplateRDNs: 40b
+msExchTemplateRDNs: 413
+msExchTemplateRDNs: 416
+msExchTemplateRDNs: 40d
+msExchTemplateRDNs: 401
+msExchTemplateRDNs: 410
+msExchTemplateRDNs: C0A
+msExchTemplateRDNs: 404
+msExchTemplateRDNs: 804
+msExchTemplateRDNs: 412
+msExchTemplateRDNs: 40c
+msExchTemplateRDNs: c0c
+msExchTemplateRDNs: 407
+msExchTemplateRDNs: 411
+msExchTemplateRDNs: 409
+
+
+#
+# Address-Types
+# description: E-Mail Address Generators
+#
+dn: CN=Address-Types,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Address-Types
+distinguishedName: CN=Address-Types,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+adminDisplayName: E-Mail Address Generators
+containerInfo: 128
+name: Address-Types
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+
+#
+# Display-Templates
+#
+#
+dn: CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Display-Templates
+distinguishedName: CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Details Templates
+containerInfo: 64
+name: Display-Templates
+legacyExchangeDN: /o=${FIRSTORG}/cn=Configuration/cn=Addressing/cn=Display-Templates
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}
+
+#
+# Arabic Address-Templates
+#
+dn: CN=401,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 401
+distinguishedName: CN=401,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Arabic
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Arabic
+name: 401
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=401
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Bulgarian Address-Templates
+#
+dn: CN=402,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 402
+distinguishedName: CN=402,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Bulgarian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Bulgarian
+name: 402
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=402
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Catalan Address-Templates
+#
+dn: CN=403,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 403
+distinguishedName: CN=403,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Catalan
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Catalan
+name: 403
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=403
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Chinese Traditional Address-Templates
+#
+dn: CN=404,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 404
+distinguishedName: CN=404,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Chinese Traditional
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Chinese Traditional
+name: 404
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=404
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Czech Address-Templates
+#
+dn: CN=405,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 405
+distinguishedName: CN=405,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Czech
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Czech
+name: 405
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=405
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Danish Address-Templates
+#
+dn: CN=406,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 406
+distinguishedName: CN=406,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Danish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Danish
+name: 406
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=406
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# German Address-Templates
+#
+dn: CN=407,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 407
+distinguishedName: CN=407,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: German
+showInAdvancedViewOnly: TRUE
+adminDisplayName: German
+name: 407
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=407
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Greek Address-Templates
+#
+dn: CN=408,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 408
+distinguishedName: CN=408,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Greek
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Greek
+name: 408
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=408
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# English Address-Templates
+#
+dn: CN=409,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 409
+distinguishedName: CN=409,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: English
+showInAdvancedViewOnly: TRUE
+adminDisplayName: English
+name: 409
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=409
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Finish Address-Templates
+#
+dn: CN=40b,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40b
+distinguishedName: CN=40b,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Finnish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Finnish
+name: 40b
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40b
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# French Address-Templates (cocorico)
+#
+dn: CN=40c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40c
+distinguishedName: CN=40c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French
+name: 40c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40c
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# French (Canada) Address-Templates
+#
+dn: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=c0c
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Hebrew Address-Templates
+#
+dn: CN=40d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40d
+distinguishedName: CN=40d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Hebrew
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Hebrew
+name: 40d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40d
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Hungarian Address-Templates
+#
+dn: CN=40e,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40e
+distinguishedName: CN=40e,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Hungarian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Hungarian
+name: 40e
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=40e
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Italian Address-Templates
+#
+dn: CN=410,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 410
+distinguishedName: CN=410,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Italian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Italian
+name: 410
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=410
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Japanese Address-Templates
+#
+dn: CN=411,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 411
+distinguishedName: CN=411,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Japanese
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Japanese
+name: 411
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=411
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Korean Address-Templates
+#
+dn: CN=412,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 412
+distinguishedName: CN=412,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Korean
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Korean
+name: 412
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=412
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Dutch Address-Templates
+#
+dn: CN=413,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 413
+distinguishedName: CN=413,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Dutch
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Dutch
+name: 413
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=413
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Norwegian Address-Templates
+#
+dn: CN=414,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 414
+distinguishedName: CN=414,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Norwegian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Norwegian
+name: 414
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=414
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Polish Address-Templates
+#
+dn: CN=415,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 415
+distinguishedName: CN=415,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Polish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Polish
+name: 415
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=415
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Brazilian Address-Templates (Samba)
+#
+dn: CN=416,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 416
+distinguishedName: CN=416,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Brazilian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Brazilian
+name: 416
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=416
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Romanian Address-Templates
+#
+dn: CN=418,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 418
+distinguishedName: CN=418,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Romanian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Romanian
+name: 418
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=418
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Russian Address-Templates
+#
+dn: CN=419,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 419
+distinguishedName: CN=419,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Russian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Russian
+name: 419
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=419
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Croatian Address-Templates
+#
+dn: CN=41a,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41a
+distinguishedName: CN=41a,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Croatian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Croatian
+name: 41a
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41a
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Slovak Address-Templates
+#
+dn: CN=41b,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41b
+distinguishedName: CN=41b,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Slovak
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Slovak
+name: 41b
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41b
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Swedish Address-Templates
+#
+dn: CN=41d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41d
+distinguishedName: CN=41d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Swedish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Swedish
+name: 41d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41d
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Thai Address-Templates
+#
+dn: CN=41e,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41e
+distinguishedName: CN=41e,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Thai
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Thai
+name: 41e
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41e
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Turkish Address-Templates
+#
+dn: CN=41f,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41f
+distinguishedName: CN=41f,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Turkish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Turkish
+name: 41f
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=41f
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Ukrainian Address-Templates
+#
+dn: CN=422,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 422
+distinguishedName: CN=422,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Ukrainian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ukrainian
+name: 422
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=422
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Slovenian Address-Templates
+#
+dn: CN=424,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 424
+distinguishedName: CN=424,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Slovenian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Slovenian
+name: 424
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=424
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Estonian Address-Templates
+#
+dn: CN=425,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 425
+distinguishedName: CN=425,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Estonian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Estonian
+name: 425
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=425
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Latvian Address-Templates
+#
+dn: CN=426,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 426
+distinguishedName: CN=426,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Latvian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Latvian
+name: 426
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=426
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Lithuanian Address-Templates
+#
+dn: CN=427,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 427
+distinguishedName: CN=427,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Lithuanian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Lithuanian
+name: 427
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=427
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Basque Address-Templates
+#
+dn: CN=42d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 42d
+distinguishedName: CN=42d,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Basque
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Basque
+name: 42d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=42d
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Chinese Simplified Address-Templates
+#
+dn: CN=804,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 804
+distinguishedName: CN=804,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Chinese Simplified
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Chinese Simplified
+name: 804
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=804
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Portuguese Address-Templates
+#
+dn: CN=816,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 816
+distinguishedName: CN=816,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Portuguese
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Portuguese
+name: 816
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=816
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Serbian Address-Templates
+#
+dn: CN=81A,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 81A
+distinguishedName: CN=81A,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Serbian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Serbian
+name: 81A
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=81A
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Spanish Address-Templates
+#
+dn: CN=C0A,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: C0A
+distinguishedName: CN=C0A,CN=Address-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Spanish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Spanish
+name: C0A
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Address-Templates/CN=C0A
+objectCategory: CN=Container,${SCHEMADN}
+msExchTemplateRDNs: EX
+msExchTemplateRDNs: SMTP
+msExchTemplateRDNs: CCMAIL
+msExchTemplateRDNs: MSA
+msExchTemplateRDNs: MS
+msExchTemplateRDNs: x400
+
+
+#
+# Arabic Display-Templates
+#
+dn: CN=401,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 401
+distinguishedName: CN=401,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Arabic
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Arabic
+name: 401
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=401
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Bulgarian Display-Templates
+#
+dn: CN=402,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 402
+distinguishedName: CN=402,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Bulgarian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Bulgarian
+name: 402
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=402
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Catalan Display-Templates
+#
+dn: CN=403,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 403
+distinguishedName: CN=403,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Catalan
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Catalan
+name: 403
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=403
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Chinese Traditional Display-Templates
+#
+dn: CN=404,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 404
+distinguishedName: CN=404,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Chinese Traditional
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Chinese Traditional
+name: 404
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=404
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Czech Display-Templates
+#
+dn: CN=405,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 405
+distinguishedName: CN=405,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Czech
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Czech
+name: 405
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=405
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Danish Display-Templates
+#
+dn: CN=406,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 406
+distinguishedName: CN=406,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Danish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Danish
+name: 406
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=406
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# German Display-Templtes
+#
+dn: CN=407,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 407
+distinguishedName: CN=407,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: German
+showInAdvancedViewOnly: TRUE
+adminDisplayName: German
+name: 407
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=407
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Greek Display-Templates
+#
+dn: CN=408,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 408
+distinguishedName: CN=408,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Greek
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Greek
+name: 408
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=408
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# English Display-Templates
+#
+dn: CN=409,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 409
+distinguishedName: CN=409,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: English
+showInAdvancedViewOnly: TRUE
+adminDisplayName: English
+name: 409
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=409
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Finish Display-Templates
+#
+dn: CN=40b,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40b
+distinguishedName: CN=40b,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Finnish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Finnish
+name: 40b
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40b
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# French Display-Templates (cocorico)
+#
+dn: CN=40c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40c
+distinguishedName: CN=40c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French
+name: 40c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40c
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# French (Canada) Display-Templates (cocorico)
+#
+dn: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: c0c
+distinguishedName: CN=c0c,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: French (Canada)
+showInAdvancedViewOnly: TRUE
+adminDisplayName: French (Canada)
+name: c0c
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=c0c
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Hebrew Display-Templates
+#
+dn: CN=40d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40d
+distinguishedName: CN=40d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Hebrew
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Hebrew
+name: 40d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40d
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Hungarian Display-Templates
+#
+dn: CN=40e,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 40e
+distinguishedName: CN=40e,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Hungarian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Hungarian
+name: 40e
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=40e
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Italian Display-Templates
+#
+dn: CN=410,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 410
+distinguishedName: CN=410,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Italian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Italian
+name: 410
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=410
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Japanese Display-Templates
+#
+dn: CN=411,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 411
+distinguishedName: CN=411,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Japanese
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Japanese
+name: 411
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=411
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Korean Display-Templates
+#
+dn: CN=412,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 412
+distinguishedName: CN=412,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Korean
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Korean
+name: 412
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=412
+objectCategory: CN=Container,${SCHEMADN}
+
+
+
+#
+# Dutch Display-Templates
+#
+dn: CN=413,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 413
+distinguishedName: CN=413,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Dutch
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Dutch
+name: 413
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=413
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Norwegian Display-Templates
+#
+dn: CN=414,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 414
+distinguishedName: CN=414,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Norwegian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Norwegian
+name: 414
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=414
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Polish Display-Templates
+#
+dn: CN=415,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 415
+distinguishedName: CN=415,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Polish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Polish
+name: 415
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=415
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Brazilian Display-Templates (Samba)
+#
+dn: CN=416,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 416
+distinguishedName: CN=416,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Brazilian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Brazilian
+name: 416
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=416
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Romanian Display-Templates
+#
+dn: CN=418,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 418
+distinguishedName: CN=418,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Romanian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Romanian
+name: 418
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=418
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Russian Display-Templates
+#
+dn: CN=419,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 419
+distinguishedName: CN=419,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Russian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Russian
+name: 419
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=419
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Croatian Display-Templates
+#
+dn: CN=41a,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41a
+distinguishedName: CN=41a,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Croatian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Croatian
+name: 41a
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=41a
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Slovak Display-Templates
+#
+dn: CN=41b,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41b
+distinguishedName: CN=41b,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Slovak
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Slovak
+name: 41b
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=41b
+objectCategory: CN=Container,${SCHEMADN}
+
+
+
+#
+# Swedish Display-Templates
+#
+dn: CN=41d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41d
+distinguishedName: CN=41d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Swedish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Swedish
+name: 41d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=41d
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Thai Display-Templates
+#
+dn: CN=41e,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41e
+distinguishedName: CN=41e,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Thai
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Thai
+name: 41e
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=41e
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Turkish Display-Templates
+#
+dn: CN=41f,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 41f
+distinguishedName: CN=41f,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Turkish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Turkish
+name: 41f
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=41f
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Ukrainian Display-Templates
+#
+dn: CN=422,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 422
+distinguishedName: CN=422,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Ukrainian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Ukrainian
+name: 422
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=422
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Slovenian Display-Templates
+#
+dn: CN=424,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 424
+distinguishedName: CN=424,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Slovenian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Slovenian
+name: 424
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=424
+objectCategory: CN=Container,${SCHEMADN}
+
+
+
+#
+# Estonian Display-Templates
+#
+dn: CN=425,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 425
+distinguishedName: CN=425,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Estonian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Estonian
+name: 425
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=425
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Latvian Display-Templates
+#
+dn: CN=426,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 426
+distinguishedName: CN=426,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Latvian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Latvian
+name: 426
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=426
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Lithuanian Display-Templates
+#
+dn: CN=427,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 427
+distinguishedName: CN=427,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Lithuanian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Lithuanian
+name: 427
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=427
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Basque Display-Templates
+#
+dn: CN=42d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 42d
+distinguishedName: CN=42d,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Basque
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Basque
+name: 42d
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=42d
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Chinese Simplified Display-Templates
+#
+dn: CN=804,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 804
+distinguishedName: CN=804,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Chinese Simplified
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Chinese Simplified
+name: 804
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=804
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Portuguese Display-Templates
+#
+dn: CN=816,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 816
+distinguishedName: CN=816,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Portuguese
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Portuguese
+name: 816
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=816
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Serbian Display-Templates
+#
+dn: CN=81A,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: 81A
+distinguishedName: CN=81A,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Serbian
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Serbian
+name: 81A
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=81A
+objectCategory: CN=Container,${SCHEMADN}
+
+
+#
+# Spanish Display-Templates
+#
+dn: CN=C0A,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+cn: C0A
+distinguishedName: CN=C0A,CN=Display-Templates,CN=Addressing,${FIRSTORGDN}
+instanceType: 4
+displayName: Spanish
+showInAdvancedViewOnly: TRUE
+adminDisplayName: Spanish
+name: C0A
+legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=C0A
+objectCategory: CN=Container,${SCHEMADN}

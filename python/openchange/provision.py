@@ -395,10 +395,28 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize generic Exchange configuration objects")
-        print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
+               " objects (%d): %s" % ldb_error.args)
+
+
+def provision_organization(setup_path, names, lp, creds, reporter=None):
+    """Create exchange organization
+
+    :param setup_path: Path to the setup directory
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: Provision Names object
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    """
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    try:
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects")
+    except LdbError, ldb_error:
+        print ("[!] error while provisioning the Exchange organization"
                " objects (%d): %s" % ldb_error.args)
 
 
@@ -602,6 +620,11 @@ def provision(setup_path, names, lp, creds, reporter=None):
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds, reporter)
+
+    # Provision first org
+    provision_organization(setup_path, names, lp, creds, reporter)
+
+    print "[SUCCESS] Done!"
 
 
 def deprovision(setup_path, names, lp, creds, reporter=None):

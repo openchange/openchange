@@ -1,6 +1,7 @@
 #include <stdlib.h>
 #include <check.h>
 
+#include "test_suites/libmapi/test_property.h"
 #include "test_suites/libmapistore/namedprops_backends.h"
 #include "test_suites/libmapistore/indexing.h"
 #include "test_suites/libmapiproxy/openchangedb.h"
@@ -9,6 +10,8 @@
 int main(void)
 {
 	SRunner *sr = srunner_create(suite_create("Open Change unit tests"));
+
+	srunner_add_suite(sr, libmapi_property_create_suite());
 
 	srunner_add_suite(sr, openchangedb_mysql_suite());
 	srunner_add_suite(sr, openchangedb_ldb_suite());

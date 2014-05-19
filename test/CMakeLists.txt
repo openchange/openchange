@@ -5,6 +5,14 @@ SET(OPENCHANGE_TEST_SRCS
     ${CMAKE_SOURCE_DIR}/openchange_test_suite.c
     ${CMAKE_SOURCE_DIR}/test_common.c
     # =========================================================================
+    # Libmapi
+    # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/../libmapi/property.c
+    # -------------------------------------------------------------------------
+    # Test suites
+    # -------------------------------------------------------------------------
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapi/property.c
+    # =========================================================================
     # Libmapistore
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/../mapiproxy/libmapistore/mapistore_interface.c

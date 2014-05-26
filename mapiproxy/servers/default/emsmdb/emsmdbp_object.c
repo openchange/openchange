@@ -1599,10 +1599,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
-		retval = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
+		ret = mapistore_table_get_row(emsmdbp_ctx->mstore_ctx, contextID,
 						 table_object->backend_object, data_pointers,
 						 query_type, row_id, &properties);
-		if (retval == MAPI_E_SUCCESS) {
+		if (ret == MAPISTORE_SUCCESS) {
 			for (i = 0; i < num_props; i++) {
 				data_pointers[i] = properties[i].data;
                                         

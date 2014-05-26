@@ -2228,7 +2228,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2238,7 +2239,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowModifiedNotification;
 
 	typedef [nodiscriminant] union {
@@ -2323,7 +2325,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} ContentsRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {

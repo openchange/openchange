@@ -4229,7 +4229,7 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0x06 */
-	void EcDummyRpc();
+	MAPISTATUS EcDummyRpc();
 
 	/*****************/
 	/* Function 0x07 */

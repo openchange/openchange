@@ -1469,12 +1469,12 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx,
-			      struct EcDummyRpc *r)
+static enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct EcDummyRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6) not implemented\n"));
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6)\n"));
+	return MAPI_E_SUCCESS;
 }
 
 

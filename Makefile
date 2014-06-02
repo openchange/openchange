@@ -1383,6 +1383,7 @@ unittest: CFLAGS += -fprofile-arcs -ftest-coverage -Itest
 unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm -ldl -ltdb
 
 bin/unittest: test/test_suites/libmapistore/indexing.o \
+	test/test_suites/libmapi/property.o \
 	test/test_suites/libmapistore/namedprops_mysql.o \
 	test/test_suites/libmapistore/namedprops_ldb.o \
 	test/test_suites/libmapiproxy/openchangedb.o \

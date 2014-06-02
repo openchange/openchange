@@ -1715,6 +1715,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct EcDoRpcExt2 *r)
 {
+	enum ndr_err_code		ndr_err;
 	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi2k7_request		mapi2k7_request;
@@ -1759,8 +1760,13 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	rgbIn.length = r->in.cbIn;
 	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
+	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
+
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		r->out.result = ecRpcFormat;
+		return ecRpcFormat;
+	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
 	talloc_free(mapi2k7_request.mapi_request);

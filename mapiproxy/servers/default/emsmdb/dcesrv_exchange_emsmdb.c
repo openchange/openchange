@@ -1755,6 +1755,12 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
+	/* Sanity checks on pcbOut input parameter */
+	if (*r->in.pcbOut < 0x00000008) {
+		r->out.result = ecRpcFailed;
+		return ecRpcFailed;
+	}
+
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;
 	rgbIn.length = r->in.cbIn;
@@ -1766,6 +1772,11 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		r->out.result = ecRpcFormat;
 		return ecRpcFormat;
+	}
+
+	if (ndr_pull->data_size > *r->in.pcbOut) {
+		r->out.result = ecBufferTooSmall;
+		return ecBufferTooSmall;
 	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);

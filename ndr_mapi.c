@@ -1559,8 +1559,11 @@ _PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int 
 				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
 				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
 				if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response) == NDR_ERR_SUCCESS) {
-					ndr_print_mapi2k7_response(ndr, "mapi_response", 
-								 (const struct mapi2k7_response *)mapi_response);
+					ndr_print_mapi2k7_response(ndr, "mapi_response", (const struct mapi2k7_response *)mapi_response);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_response);
+					break;
 				}
 				talloc_free(mapi_response);
 			}
@@ -1672,8 +1675,11 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
 				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
 				if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response) == NDR_ERR_SUCCESS) {
-					ndr_print_mapi2k7_response(ndr, "mapi_response", 
-								 (const struct mapi2k7_response *)mapi_response);
+					ndr_print_mapi2k7_response(ndr, "mapi_response", (const struct mapi2k7_response *)mapi_response);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_response);
+					break;
 				}
 				talloc_free(mapi_response);
 			}

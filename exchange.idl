@@ -3288,7 +3288,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x68 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		uint8		flag;
 		hyper		fid;
 		astring		lpszMessageClass;
 		FILETIME	modiftime;

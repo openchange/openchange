@@ -1108,7 +1108,13 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */
 		/* op_MAPI_CopyProperties: 0x67 */
-		/* op_MAPI_GetReceiveFolderTable: 0x68 */
+		case op_MAPI_GetReceiveFolderTable: /* 0x68 */
+			retval = EcDoRpc_RopGetReceiveFolderTable(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
+
 		/* op_MAPI_GetCollapseState: 0x6b */
 		/* op_MAPI_SetCollapseState: 0x6c */
 		case op_MAPI_GetTransportFolder: /* 0x6d */

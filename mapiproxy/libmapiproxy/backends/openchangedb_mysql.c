@@ -441,6 +441,83 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
+static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,
+					      struct openchangedb_context *oc_ctx,
+					      const char *recipient,
+					      uint32_t *cValues,
+					      struct ReceiveFolder **entries)
+{
+	TALLOC_CTX		*tmp_ctx;
+	enum MAPISTATUS		ret;
+	char			*sql;
+	MYSQL_RES		*res;
+	struct ReceiveFolder	*rcvfolders;
+	my_ulonglong		nrows, i;
+	MYSQL_ROW		row;
+	int			num_fields;
+	NTTIME			nt;
+
+	tmp_ctx = talloc_named(NULL, 0, "get_ReceiveFolderTable");
+	OPENCHANGE_RETVAL_IF(!tmp_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	sql = talloc_asprintf(tmp_ctx,
+			      "SELECT f.folder_id, fp.value, fp2.value FROM folders f "
+			      "JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+			      "JOIN folders_properties fp ON fp.folder_id = f.id AND "
+			      "fp.name = 'PidTagMessageClass' "
+			      "JOIN folders_properties fp2 on fp2.folder_id = f.id AND "
+			      "fp2.name = 'PidTagLastModificationTime' "
+			      "UNION "
+			      "SELECT m2.folder_id, mp.value, mp2.value FROM mailboxes m2 "
+			      "JOIN mailboxes_properties mp ON mp.mailbox_id = m2.id AND "
+			      "mp.name = 'PidTagMessageClass' "
+			      "JOIN mailboxes_properties mp2 ON mp2.mailbox_id = m2.id AND "
+			      "mp2.name = 'PidTagLastModificationTime' "
+			      "WHERE m2.name='%s';", _sql(mem_ctx, recipient),
+			      _sql(mem_ctx, recipient));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, tmp_ctx);
+
+	ret = status(select_without_fetch(conn, sql, &res));
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, tmp_ctx);
+
+	nrows = mysql_num_rows(res);
+	rcvfolders = talloc_array(tmp_ctx, struct ReceiveFolder, nrows + 1);
+	for (i = 0; i < nrows; i++) {
+		row = mysql_fetch_row(res);
+		if (row == NULL) {
+			DEBUG(0, ("Error getting row %d of `%s`: %s\n",
+				  (int)i, sql, mysql_error(conn)));
+			mysql_free_result(res);
+			OPENCHANGE_RETVAL_IF(row == NULL, MAPI_E_CALL_FAILED, tmp_ctx);
+		}
+
+		num_fields = mysql_num_fields(res);
+		OPENCHANGE_RETVAL_IF(num_fields != 3, MAPI_E_CALL_FAILED, tmp_ctx);
+
+		rcvfolders[i].flag = 0;
+		rcvfolders[i].fid = strtoull(row[0], NULL, 10);
+		if (!row[1] || (row[1] && !strcmp(row[1], "All"))) {
+			rcvfolders[i].lpszMessageClass = "";
+		} else {
+			rcvfolders[i].lpszMessageClass = talloc_strdup(rcvfolders, row[1]);
+		}
+
+		nt = strtoull(row[2], NULL, 10);
+
+		rcvfolders[i].modiftime.dwLowDateTime = (nt << 32) >> 32;
+		rcvfolders[i].modiftime.dwHighDateTime = (nt >> 32);
+	}
+
+	*cValues = (uint32_t) nrows;
+	talloc_steal(mem_ctx, rcvfolders);
+	*entries = rcvfolders;
+
+	mysql_free_result(res);
+	talloc_free(tmp_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
 static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 					   const char *recipient,
 					   uint64_t *folder_id)
@@ -1275,6 +1352,10 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	ret = status(execute_query(conn, sql));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
+	if (fid == 0) {
+		goto end;
+	}
+
 	// Create PidTagMessageClass folder property for the fid specified
 	ret = get_mailbox_ids_by_name(conn, recipient, &mailbox_id,
 				      &mailbox_folder_id);
@@ -1298,6 +1379,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	ret = status(execute_query(conn, sql));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
+end:
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
@@ -2924,6 +3006,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->set_mapistoreURI = set_mapistoreURI;
 	oc_ctx->get_fid = get_fid;
 	oc_ctx->get_ReceiveFolder = get_ReceiveFolder;
+	oc_ctx->get_ReceiveFolderTable = get_ReceiveFolderTable;
 	oc_ctx->get_TransportFolder = get_TransportFolder;
 	oc_ctx->lookup_folder_property = lookup_folder_property;
 	oc_ctx->set_folder_properties = set_folder_properties;

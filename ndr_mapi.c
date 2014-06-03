@@ -224,12 +224,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_request(struct ndr_pull *ndr, int nd
 
 				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, -1));
 				{
-					if (r->header.Flags & RHEF_Compressed) {
+					if ((r->header.Flags == (RHEF_Compressed|RHEF_XorMagic)) ||
+					    (r->header.Flags == (RHEF_Compressed|RHEF_XorMagic|RHEF_Last))) {
+						struct ndr_pull *_ndr_data_compressed = NULL;
+
+						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
+						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->header.SizeActual));
+						NDR_CHECK(ndr_pull_mapi_request(_ndr_data_compressed, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
+						_ndr_buffer->offset = _ndr_buffer->data_size;
+					} else if ((r->header.Flags  == RHEF_Compressed) ||
+						   (r->header.Flags == (RHEF_Compressed|RHEF_Last))) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
 
 						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->header.SizeActual));
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_data_compressed, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
-					} else if (r->header.Flags & RHEF_XorMagic) {
+						_ndr_buffer->offset = _ndr_buffer->data_size;
+					} else if ((r->header.Flags == RHEF_XorMagic) ||
+						   (r->header.Flags == (RHEF_XorMagic|RHEF_Last))) {
 						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
 					} else {

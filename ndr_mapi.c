@@ -3,7 +3,7 @@
 
    libndr mapi support
 
-   Copyright (C) Julien Kerihuel 2005-2010
+   Copyright (C) Julien Kerihuel 2005-2014
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1652,8 +1652,8 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth--;
 
 		/* Put MAPI response blob into a ndr_pull structure */
-		if (*r->out.pcbOut) {
-		  rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+		if (r->out.pcbOut && *r->out.pcbOut) {
+			rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
@@ -1671,9 +1671,11 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		}
 		/* ndr_print_array_uint8(ndr, "rgbOut", r->out.rgbOut, *r->out.pcbOut); */
 		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
-		ndr->depth--;
+		if (r->out.pcbOut) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
+			ndr->depth--;
+		}
 		if (r->out.rgbAuxOut && r->out.pcbAuxOut) {
 			ndr->print(ndr, "%s: ARRAY(%d)", "rgbAuxOut", (int)*r->out.pcbAuxOut);
 			ndr->depth++;
@@ -1689,13 +1691,17 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
-		ndr->depth--;
+		if (r->out.pcbAuxOut) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+			ndr->depth--;
+		}
 		ndr_print_ptr(ndr, "pulTransTime", r->out.pulTransTime);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
-		ndr->depth--;
+		if (r->out.pulTransTime) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
+			ndr->depth--;
+		}
 		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

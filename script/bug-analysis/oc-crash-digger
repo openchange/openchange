@@ -98,13 +98,18 @@ class CrashDigger(object):
 
     def fill_crashdb(self):
         """
-        Go through crashes directory and load into crashdb
+        Go through crashes argument and load into crashdb
         """
-        if not os.path.isdir(self.crashes_dir):
-            raise SystemError("%s is not a directory" % self.crashes_dir)
+        crashes_files = []
+        if os.path.isdir(self.crashes_dir):
+            for fname in os.listdir(self.crashes_dir):
+                crashes_files.append(os.path.join(self.crashes_dir, fname))
+        elif os.path.isfile(self.crashes_dir):
+            crashes_files = [self.crashes_dir]
+        else:
+            raise SystemError("%s is not a directory neither a file" % self.crashes_dir)
 
-        for fname in os.listdir(self.crashes_dir):
-            fpath = os.path.join(self.crashes_dir, fname)
+        for fpath in crashes_files:
             with open(fpath, 'rb') as f:
                 try:
                     report = ProblemReport(f)
@@ -238,8 +243,8 @@ def parse_options():
                          help='After processing all reports, publish duplicate database to given directory',
                          metavar='DIR', default=None)
     # OC crash digger specific options
-    optparser.add_option('-S', '--crashes', metavar='DIR',
-                         help="Directory to look for crashes to fill")
+    optparser.add_option('-S', '--crashes', metavar='DIR_OR_FILE',
+                         help="Directory or file to look for crashes to fill")
     optparser.add_option('-O', '--oc-cd-conf', metavar='FILE',
                          help='oc-crash-digger specific configuration')
 

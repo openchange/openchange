@@ -31,6 +31,8 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
+#include <samba/version.h>
+
 #include <execinfo.h>
 
 /**
@@ -67,6 +69,14 @@ _PUBLIC_ void debug_print_backtrace(int dbg_level)
  */
 _PUBLIC_ void openchange_abort(bool is_fatal)
 {
+	/* print Samba and OpenChange versions */
+	const char *samba_version = SAMBA_VERSION_STRING;
+	DEBUG(0, ("Version Samba: %s", samba_version));
+	const char *openchange_version = OPENCHANGE_VERSION_STRING;
+	DEBUG(0, ("Version OpenChange: %s", openchange_version));
+	DEBUGSEP(0);
+
+	/* print stacktrace */
 	debug_print_backtrace(0);
 
 	/* TODO: decide to abort or not */

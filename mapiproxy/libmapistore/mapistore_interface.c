@@ -353,7 +353,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	if (context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
+	DEBUG(5, ("mapistore_del_context: context_id to del is %d\n", context_id));
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -1395,14 +1395,14 @@ end:
 }
 
 /**
-   \details Modify recipients of a message in mapistore
+   \details Get message data for a message in mapistore
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param mid the identifier referencing the message
-   \rows the array of recipient rows
-   \count the number of elements in the array
+   \param message the message
+   \param mem_ctx talloc context to use for the result message
+   \param msg the message data for the message
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -1427,9 +1427,10 @@ enum mapistore_error mapistore_message_get_message_data(struct mapistore_context
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param mid the identifier referencing the message
-   \rows the array of recipient rows
-   \count the number of elements in the array
+   \param message the message
+   \param columns properties array 
+   \param count the number of elements in the array
+   \param recipients the receipients
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */

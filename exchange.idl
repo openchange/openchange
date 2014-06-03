@@ -2228,7 +2228,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2238,7 +2239,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowModifiedNotification;
 
 	typedef [nodiscriminant] union {
@@ -2323,7 +2325,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} ContentsRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2339,7 +2342,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnsSize;
+		[subcontext(0),subcontext_size(ColumnsSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Columns;
 	} ContentsRowModifiedNotification;
 
 	typedef [nodiscriminant] union {
@@ -3731,8 +3735,7 @@ System Attendant Private Interface
 	typedef [public,bitmap8bit] bitmap {
 		LogonPrivate	= 0x1,
 		UnderCover	= 0x2,
-		Ghosted		= 0x4,
-		SpIProcess	= 0x8
+		Ghosted		= 0x4
 	} LogonFlags;
 
 	typedef [public,bitmap32bit] bitmap {
@@ -3818,11 +3821,12 @@ System Attendant Private Interface
 	} store_mailbox;
 
 	typedef [nodiscriminant] union {
- 		[case(0x0)]		store_pf	store_pf;
-		[case(0x3)]		store_mailbox	store_mailbox;
-		[case(0x9)]		store_mailbox	store_mailbox;
-		[case(0x19)]		store_mailbox	store_mailbox;
-		[case(LogonPrivate)]	store_mailbox	store_mailbox;
+		[case(0x0)]				store_pf	store_pf;
+		[case(LogonPrivate)]			store_mailbox	store_mailbox;
+		[case(UnderCover)]			store_pf	store_pf;
+		[case(Ghosted)]				store_pf	store_pf;
+		[case(LogonPrivate|UnderCover)]		store_mailbox	store_mailbox;
+		[case(LogonPrivate|Ghosted)]		store_mailbox	store_mailbox;
 	} LogonType;
 
 	typedef [nopush,flag(NDR_NOALIGN)] struct {
@@ -4225,7 +4229,7 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0x06 */
-	void EcDummyRpc();
+	MAPISTATUS EcDummyRpc();
 
 	/*****************/
 	/* Function 0x07 */

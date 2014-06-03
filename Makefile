@@ -1,6 +1,9 @@
 # # Makefile for OpenChange
 # Written by Jelmer Vernooij <jelmer@openchange.org>, 2005.
 
+# C++11 support
+CXX11FLAGS=-std=c++0x
+
 ifneq ($(MAKECMDGOALS), samba)
 ifneq ($(MAKECMDGOALS), samba-git)
 ifneq ($(MAKECMDGOALS), samba-git-update)
@@ -47,7 +50,7 @@ all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
-		$(PYMAPIALL)		\
+		$(PYOPENCHANGEALL)	\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 
@@ -57,7 +60,7 @@ install: 	all 			\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
-		$(PYMAPIINSTALL) \
+		$(PYOPENCHANGEINSTALL)	\
 		installnagios
 
 installlib:	$(OC_LIBS_INSTALL)
@@ -67,7 +70,7 @@ installheader:	$(OC_LIBS_INSTALLHEADERS)
 uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
 		$(OC_TOOLS_UNINSTALL) 	\
 		$(OC_SERVER_UNINSTALL) 	\
-		$(PYMAPIUNINSTALL)
+		$(PYOPENCHANGEUNINSTALL)
 
 dist:: distclean
 	./autogen.sh
@@ -121,11 +124,11 @@ re:: clean install
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
-	@$(CXX) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(QT4_CXXFLAGS) -fPIC -c $< -o $@
 
 .cpp.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CXX) $(CXXFLAGS) -fPIC -c $< -o $@
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -fPIC -c $< -o $@
 
 #################################################################
 # IDL compilation rules
@@ -352,7 +355,7 @@ libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	libmapi++/src/session.po \
 	libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
+	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libmapipp.$(SHLIBEXT).$(LIBMAPIPP_SO_VERSION) -o $@ $^ $(LIBS) 
 
 libmapixx-installpc:
 	@echo "[*] install: libmapi++ pc files"
@@ -433,7 +436,7 @@ bin/libmapixx-test:	libmapi++/tests/test.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -o $@ $^ $(LIBS) 
 
 clean:: libmapixx-test-clean
 
@@ -448,7 +451,7 @@ bin/libmapixx-attach: libmapi++/tests/attach_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking sample application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-attach-clean
 
@@ -458,7 +461,7 @@ bin/libmapixx-exception: libmapi++/tests/exception_test.cpp \
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking exception test application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 libmapixx-exception-clean:
 	rm -f bin/libmapixx-exception
@@ -478,7 +481,7 @@ bin/libmapixx-profiletest: libmapi++/tests/profile_test.po	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking profile test application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-profiletest-clean
 
@@ -499,7 +502,7 @@ libmapi++/examples/foldertree: libmapi++/examples/foldertree.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking foldertree example application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-foldertree-clean
 
@@ -507,7 +510,7 @@ libmapi++/examples/messages: libmapi++/examples/messages.cpp	\
 		libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION) \
 		libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking messages example application $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(LIBS)
 
 clean:: libmapixx-messages-clean
 
@@ -894,6 +897,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
+	rmdir setup/mapistore
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 
@@ -1594,13 +1598,13 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 
 
 pyopenchange/mapistore/errors.c: pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h
-		pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
+	pyopenchange/mapistore/gen_errors.py mapiproxy/libmapistore/mapistore_errors.h $@
 
 pyopenchange-clean:
 	rm -f pyopenchange/*.o
 	rm -f pyopenchange/*.pyc
-#	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
-#	rm -f $(pythonscriptdir)/openchange/ocpf.$(SHLIBEXT)
+	rm -f pyopenchange/mapistore/errors.c
+	rm -f $(pythonscriptdir)/openchange/mapi.$(SHLIBEXT)
 	rm -f $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT)
 
 clean:: pyopenchange-clean
@@ -1657,32 +1661,31 @@ uninstallman:
 	@./script/uninstallman.sh $(DESTDIR)$(mandir) $(manpages)
 
 doxygen:	
-	@if test ! -d apidocs ; then						\
-		echo "Doxify API documentation: HTML and man pages";		\
-		mkdir -p apidocs/html;						\
-		mkdir -p apidocs/man;						\
-		$(DOXYGEN) Doxyfile;						\
-		$(DOXYGEN) libmapi/Doxyfile;					\
-		$(DOXYGEN) libmapiadmin/Doxyfile;				\
-		$(DOXYGEN) libocpf/Doxyfile;					\
-		$(DOXYGEN) libmapi++/Doxyfile;					\
-		$(DOXYGEN) mapiproxy/Doxyfile;					\
-		$(DOXYGEN) utils/mapitest/Doxyfile;				\
-		$(DOXYGEN) mapiproxy/libmapistore/Doxyfile;			\
-		cp -f doc/doxygen/index.html apidocs/html;			\
-		cp -f doc/doxygen/pictures/* apidocs/html/overview;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapi;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapi++;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libocpf;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/mapitest;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy;		\
-		cp -f doc/doxygen/pictures/* apidocs/html/libmapistore;		\
-		cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy;\
-		rm -f apidocs/man/man3/todo.3;					\
-		rm -f apidocs/man/man3/bug.3;					\
-		rm -f apidocs/man/man3/*.c.3;					\
-	fi								
+	echo "Doxify API documentation: HTML and man pages"
+	mkdir -p apidocs/html
+	mkdir -p apidocs/man
+	mkdir -p apidocs/xml
+	$(DOXYGEN) Doxyfile
+	$(DOXYGEN) libmapi/Doxyfile
+	$(DOXYGEN) libmapiadmin/Doxyfile
+	$(DOXYGEN) libocpf/Doxyfile
+	$(DOXYGEN) libmapi++/Doxyfile
+	$(DOXYGEN) mapiproxy/Doxyfile
+	$(DOXYGEN) utils/mapitest/Doxyfile
+	$(DOXYGEN) mapiproxy/libmapistore/Doxyfile
+	cp -f doc/doxygen/index.html apidocs/html
+	cp -f doc/doxygen/pictures/* apidocs/html/overview
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapi
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapiadmin
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapi++
+	cp -f doc/doxygen/pictures/* apidocs/html/libocpf
+	cp -f doc/doxygen/pictures/* apidocs/html/mapitest
+	cp -f doc/doxygen/pictures/* apidocs/html/mapiproxy
+	cp -f doc/doxygen/pictures/* apidocs/html/libmapistore
+	cp -f mapiproxy/documentation/pictures/* apidocs/html/mapiproxy
+	rm -f apidocs/man/man3/todo.3
+	rm -f apidocs/man/man3/bug.3
+	rm -f apidocs/man/man3/*.c.3
 
 etags:
 	etags `find $(srcdir) -name "*.[ch]"`
@@ -1693,10 +1696,6 @@ ctags:
 .PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.c mapiproxy/libmapistore/mgmt/gen_ndr/mapistore_mgmt.h
 
 test:: check
-
-check:: libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION)
-	# FIXME: Set up server
-	./bin/mapitest --mapi-calls 
 
 ####################################
 # coverage tests
@@ -1762,7 +1761,7 @@ libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 	\
 	qt/lib/foldermodel.o			\
 	qt/lib/messagesmodel.o
 	@echo "Linking $@"
-	@$(CXX) $(DSOOPT) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION) -o $@ $^ $(LIBS)
+	@$(CXX) $(DSOOPT) $(CXX11FLAGS) $(CXXFLAGS) $(LDFLAGS) -Wl,-soname,libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION) -o $@ $^ $(LIBS)
 
 
 qt/demo/demoapp: qt/demo/demoapp.o 				\
@@ -1771,7 +1770,7 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 	libmapipp.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 	libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CXX) $(CXXFLAGS) -o $@ $^ $(QT4_LIBS) $(LDFLAGS) $(LIBS)
+	@$(CXX) $(CXX11FLAGS) $(CXXFLAGS) -o $@ $^ $(QT4_LIBS) $(LDFLAGS) $(LIBS)
 	# we don't yet install this...
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT)
 	ln -sf libqtmapi.$(SHLIBEXT).$(PACKAGE_VERSION) libqtmapi.$(SHLIBEXT).$(LIBQTMAPI_SO_VERSION)

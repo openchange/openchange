@@ -60,7 +60,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertiesSpecific_size(struct EcDoRpc_MAP
 /**
    \details Calculate GetPropertiesAll Rop size
 
-   \param request pointer to the GetPropertiesAll EcDoRpc_MAPI_REPL structure
+   \param response pointer to the GetPropertiesAll EcDoRpc_MAPI_REPL structure
 
    \return Size of GetPropsAll response
  */
@@ -82,7 +82,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetPropertiesAll_size(struct EcDoRpc_MAPI_REP
 /**
    \details Calculate GetPropertiesList Rop size
 
-   \param request pointer to the GetPropertiesList EcDoRpc_MAPI_REPL structure
+   \param response pointer to the GetPropertiesList EcDoRpc_MAPI_REPL structure
    
    \return Size of GetPropertiesList response
  */

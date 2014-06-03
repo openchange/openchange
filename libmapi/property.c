@@ -2275,7 +2275,7 @@ _PUBLIC_ void cast_PropertyRow_to_SRow(TALLOC_CTX *mem_ctx, struct PropertyRow_r
 
    \param mem_ctx pointer to the allocation context for structure members
    \param prowset pointer to the PropertyRowSet_r structure to copy data to
-   \param setrowset pointer to the SRowSet structure to copy data from
+   \param srowset pointer to the SRowSet structure to copy data from
  */
 _PUBLIC_ void cast_PropertyRowSet_to_SRowSet(TALLOC_CTX *mem_ctx, struct PropertyRowSet_r *prowset, struct SRowSet *srowset)
 {

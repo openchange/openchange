@@ -338,7 +338,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 	void				*backend_object = NULL;
 	int				i;
 
-	DEBUG(0, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
+	DEBUG(5, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
 
 	context = talloc_zero(NULL, struct backend_context);
 

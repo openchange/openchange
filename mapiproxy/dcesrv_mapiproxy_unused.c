@@ -718,10 +718,10 @@ enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *d
 /* 
   EcDummyRpc 
 */
-void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct EcDummyRpc *r)
+enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		                  struct EcDummyRpc *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

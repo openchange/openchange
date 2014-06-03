@@ -461,7 +461,7 @@ static enum MAPISTATUS get_body(TALLOC_CTX *mem_ctx,
 	const struct SBinary_short	*bin;
 
 	*body_count = 0;
-	memset(body, 0, sizeof(body));
+	memset(body, 0, sizeof(body_stuff_t) * 3);
 
 	data = octool_get_propval(aRow, PR_BODY);
 	if (data && strlen(data)) {
@@ -610,7 +610,7 @@ static bool message2mbox(TALLOC_CTX *mem_ctx, FILE *fp,
 		fprintf(fp, "From \"%s\" %s\n", f, date);
 		entry_id = (const struct SBinary_short *) find_SPropValue_data(aRow, PR_ENTRYID);
 		if (!entry_id) {
-			EntryIDFromSourceIDForMessage(mem_ctx, obj_store, obj_folder, &obj_message, &entry_id_for_2010);
+			EntryIDFromSourceIDForMessage(mem_ctx, obj_store, obj_folder, obj_message, &entry_id_for_2010);
 			entry_id = &entry_id_for_2010;
 		}
 		ptr = entry_id->lpb;

@@ -187,8 +187,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_ModifyPermissions;
 
 	if (emsmdbp_is_mapistore(folder_object)) {
-		mretval = mapistore_folder_modify_permissions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), 
-							      folder_object->backend_object, request->rowList.ModifyFlags, 
+		mretval = mapistore_folder_modify_permissions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object),
+							      folder_object->backend_object, request->rowList.ModifyFlags,
 							      request->rowList.ModifyCount, request->rowList.PermissionsData);
 	}
 	else {

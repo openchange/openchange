@@ -659,34 +659,76 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 */
 _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *source_values, struct SPropValue *dest_values, uint32_t count)
 {
-	uint32_t		i;
+	uint32_t		i, k;
 	struct SPropValue	*source_value, *dest_value;
 	uint16_t		prop_type;
 
 	for (i = 0; i < count; i++) {
 		source_value = source_values + i;
 		dest_value = dest_values + i;
+
+		// binary copy the value
 		*dest_value = *source_value;
 
 		prop_type = (source_value->ulPropTag & 0xFFFF);
-		if ((prop_type & MV_FLAG)) {
-			DEBUG(5, ("multivalues not handled\n"));
-			abort();
-		}
-		else {
-			switch(prop_type) {
-			case PT_STRING8:
-				dest_value->value.lpszA = talloc_strdup(mem_ctx, source_value->value.lpszA);
-				break;
-			case PT_UNICODE:
-				dest_value->value.lpszW = talloc_strdup(mem_ctx, source_value->value.lpszW);
-				break;
-			case PT_BINARY:
-				dest_value->value.bin.cb = source_value->value.bin.cb;
-				dest_value->value.bin.lpb = talloc_memdup(mem_ctx, source_value->value.bin.lpb, sizeof(uint8_t) * source_value->value.bin.cb);
-				break;
-			default:
-				*dest_value = *source_value;
+		switch(prop_type) {
+		case PT_STRING8:
+			dest_value->value.lpszA = talloc_strdup(mem_ctx, source_value->value.lpszA);
+			break;
+		case PT_UNICODE:
+			dest_value->value.lpszW = talloc_strdup(mem_ctx, source_value->value.lpszW);
+			break;
+		case PT_CLSID:
+			dest_value->value.lpguid = talloc_memdup(mem_ctx, source_value->value.lpguid, sizeof(*source_value->value.lpguid));
+			break;
+		case PT_SVREID:
+			dest_value->value.bin.cb = source_value->value.bin.cb;
+			dest_value->value.bin.lpb = talloc_memdup(mem_ctx, source_value->value.bin.lpb, source_value->value.bin.cb);
+			break;
+		case PT_BINARY:
+			dest_value->value.bin.cb = source_value->value.bin.cb;
+			dest_value->value.bin.lpb = talloc_memdup(mem_ctx, source_value->value.bin.lpb, sizeof(uint8_t) * source_value->value.bin.cb);
+			break;
+		case PT_MV_LONG:
+			dest_value->value.MVl.cValues = source_value->value.MVl.cValues;
+			dest_value->value.MVl.lpl = talloc_memdup(mem_ctx, source_value->value.MVl.lpl, sizeof(uint32_t) * source_value->value.MVl.cValues);
+			break;
+		case PT_MV_STRING8:
+			dest_value->value.MVszA.cValues = source_value->value.MVszA.cValues;
+
+			dest_value->value.MVszA.lppszA = talloc_array(mem_ctx, const char *, source_value->value.MVszA.cValues);
+			for (k = 0; k < source_value->value.MVszA.cValues; k++) {
+				dest_value->value.MVszA.lppszA[k] = talloc_strdup(dest_value->value.MVszA.lppszA, source_value->value.MVszA.lppszA[k]);
+			}
+			break;
+		case PT_MV_UNICODE:
+			dest_value->value.MVszW.cValues = source_value->value.MVszW.cValues;
+
+			dest_value->value.MVszW.lppszW = talloc_array(mem_ctx, const char *, source_value->value.MVszW.cValues);
+			for (k = 0; k < source_value->value.MVszW.cValues; k++) {
+				dest_value->value.MVszW.lppszW[k] = talloc_strdup(dest_value->value.MVszW.lppszW, source_value->value.MVszW.lppszW[k]);
+			}
+			break;
+		case PT_MV_BINARY:
+			dest_value->value.MVbin.cValues = source_value->value.MVbin.cValues;
+
+			dest_value->value.MVbin.lpbin = talloc_array(mem_ctx, struct Binary_r, source_value->value.MVbin.cValues);
+			for (k = 0; k < source_value->value.MVbin.cValues; k++) {
+				dest_value->value.MVbin.lpbin[k] = source_value->value.MVbin.lpbin[k];
+				if (source_value->value.MVbin.lpbin[k].cb) {
+					dest_value->value.MVbin.lpbin[k].lpb = talloc_memdup(dest_value->value.MVbin.lpbin,
+											     source_value->value.MVbin.lpbin[k].lpb,
+											     source_value->value.MVbin.lpbin[k].cb);
+				}
+			}
+			break;
+		default:
+			// check if missed to handle a multi-value property
+			if (prop_type & MV_FLAG) {
+				// TODO: Replace this with OC_ABORT() macro when it gets visible in libmapi too
+				DEBUG(0, ("%s: Unexpected multi-value property type: %s.\n",
+						__location__, get_proptag_name(source_value->ulPropTag)));
+				smb_panic("Unexpected multi-value property type while copying 'struct SPropValue'");
 			}
 		}
 	}

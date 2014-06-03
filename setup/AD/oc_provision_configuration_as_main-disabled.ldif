@@ -1,0 +1,22 @@
+# The disabled entries are here instead of oc_provision_configuration_as_main.ldif
+# because seems like the samba's ldif parser is not ignoring the commented
+# entries...
+#
+#  Finalize Default Offline Address List
+#
+# DISABLED!
+#dn: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+#changetype: modify
+#add: siteFolderServer
+#siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,${FIRSTORGDN}
+#add: offLineABServer
+#offLineABServer: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+
+#
+#  Finalize Recipient Update Service (Enterprise Configuration)
+#
+# DISABLED!
+#dn: CN=Recipient Update Service (Enterprise Configuration),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+#changetype: modify
+#add: msExchAddressListServiceLink
+#msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}

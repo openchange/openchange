@@ -18,9 +18,10 @@
 #
 
 from openchange.mailbox import NoSuchServer, OpenChangeDB, gen_mailbox_folder_fid
-
+from openchange.provision import ProvisionNames
 import os
 import unittest
+
 
 class OpenChangeDBTests(unittest.TestCase):
     """Tests for OpenChangeDB."""
@@ -30,31 +31,40 @@ class OpenChangeDBTests(unittest.TestCase):
             os.unlink("openchange.ldb")
         self.db = OpenChangeDB("openchange.ldb")
         self.db.setup()
+        self.names = ProvisionNames()
+        self.names.firstorg = 'firstorg'
+        self.names.firstou = 'firstou'
+        self.names.ocserverdn = 'dc=myserver'
+        self.names.netbiosname = 'myserver'
+
+    def test_user_exists_no_server(self):
+        self.assertRaises(NoSuchServer, self.db.lookup_mailbox_user,
+                          "someserver", "foo")
 
     def test_server_lookup_doesnt_exist(self):
         self.assertRaises(NoSuchServer, self.db.lookup_server,
-            "nonexistantserver")
+                          "nonexistantserver")
 
     def test_server_lookup(self):
-        self.db.add_server("dc=blaserver", "blaserver", "firstorg", "firstou")
-        self.assertEquals("dc=blaserver", str(self.db.lookup_server("blaserver")['dn']))
+        self.db.add_server(self.names)
+        self.assertEquals(self.names.ocserverdn,
+                          str(self.db.lookup_server(self.names.netbiosname)['dn']))
 
     def test_msg_globalcount_initial(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.assertEquals(1, self.db.get_message_GlobalCount("myserver"))
+        self.db.add_server(self.names)
+        self.assertEquals(1, self.db.get_message_GlobalCount(self.names.netbiosname))
 
     def test_set_msg_globalcount(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.db.set_message_GlobalCount("myserver", 42)
-        self.assertEquals(42, self.db.get_message_GlobalCount("myserver"))
+        self.db.add_server(self.names)
+        self.db.set_message_GlobalCount(self.names.netbiosname, 42)
+        self.assertEquals(42, self.db.get_message_GlobalCount(self.names.netbiosname))
 
     def test_msg_replicaid_initial(self):
-        self.db.add_server("dc=myserver", "myserver", "firstorg", "firstou")
-        self.assertEquals(1, self.db.get_message_ReplicaID("myserver"))
+        self.db.add_server(self.names)
+        self.assertEquals(1, self.db.get_message_ReplicaID(self.names.netbiosname))
 
 
 class MailboxFIDTests(unittest.TestCase):
 
     def test_simple(self):
-        self.assertEquals("10524912329165383686", gen_mailbox_folder_fid(4242, 534534))
-
+        self.assertEquals(0x7816000000012345, int(gen_mailbox_folder_fid(0x1678, 0x12345)))

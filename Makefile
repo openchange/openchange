@@ -6,7 +6,9 @@ CXX11FLAGS=-std=c++0x
 
 ifneq ($(MAKECMDGOALS), samba)
 ifneq ($(MAKECMDGOALS), samba-git)
+ifneq ($(MAKECMDGOALS), samba-git-update)
 include config.mk
+endif
 endif
 endif
 
@@ -768,13 +770,16 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_table.po		\
 							mapiproxy/libmapiproxy/openchangedb_message.po		\
 							mapiproxy/libmapiproxy/openchangedb_property.po		\
+							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
+							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
 							mapiproxy/libmapiproxy/modules.po			\
-							mapiproxy/libmapiproxy/fault_util.po	\
+							mapiproxy/libmapiproxy/fault_util.po			\
+							mapiproxy/util/mysql.po					\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
 
 mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -853,6 +858,8 @@ mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.h mapiproxy/libmapistore/mgmt/gen_ndr/
 libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
+		setup/mapistore/named_properties_schema.sql \
+		setup/mapistore/indexing_schema.sql		\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
@@ -881,6 +888,7 @@ endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiserver.pc $(DESTDIR)$(libdir)/pkgconfig
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/mapistore
 	$(INSTALL) -m 0644 setup/mapistore/*.ldif $(DESTDIR)$(datadir)/setup/mapistore/
+	$(INSTALL) -m 0644 setup/mapistore/*.sql $(DESTDIR)$(datadir)/setup/mapistore/
 	@$(SED) $(DESTDIR)$(includedir)/mapistore/*.h
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
@@ -913,14 +921,19 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_backend.po			\
 							mapiproxy/libmapistore/mapistore_backend_defaults.po		\
 							mapiproxy/libmapistore/mapistore_tdb_wrap.po			\
-							mapiproxy/libmapistore/mapistore_ldb_wrap.po			\
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
-							mapiproxy/libmapistore/mapistore_notification.po 		\
+							mapiproxy/libmapistore/mapistore_notification.po		\
+							mapiproxy/libmapistore/backends/namedprops_ldb.po		\
+							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
+							mapiproxy/libmapistore/backends/indexing_tdb.po			\
+							mapiproxy/libmapistore/backends/indexing_mysql.po		\
+							mapiproxy/util/mysql.po						\
+							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $(MYSQL_LIBS)
 
 mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
 
@@ -938,7 +951,8 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SH
 mapistore_test: bin/mapistore_test
 
 bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
@@ -1015,9 +1029,14 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
+	$(INSTALL) -m 0644 setup/openchangedb/openchangedb_schema.sql $(DESTDIR)$(datadir)/setup/openchangedb/
 
 provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_finalize.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_new_server.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_as_main.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_configuration_as_main-disabled.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_modify.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_ADSC.ldif
@@ -1060,6 +1079,7 @@ mapiproxy/servers/exchange_emsmdb.$(SHLIBEXT):	mapiproxy/servers/default/emsmdb/
 						mapiproxy/servers/default/emsmdb/emsmdbp.po			\
 						mapiproxy/servers/default/emsmdb/emsmdbp_object.po		\
 						mapiproxy/servers/default/emsmdb/emsmdbp_provisioning.po	\
+						mapiproxy/servers/default/emsmdb/emsmdbp_provisioning_names.po	\
 						mapiproxy/servers/default/emsmdb/oxcstor.po			\
 						mapiproxy/servers/default/emsmdb/oxcprpt.po			\
 						mapiproxy/servers/default/emsmdb/oxcfold.po			\
@@ -1356,6 +1376,52 @@ utils/mapitest/proto.h:					\
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 
+
+###################
+# unittest
+###################
+
+unittest: bin/unittest
+
+unittest: CFLAGS += -fprofile-arcs -ftest-coverage -Itest
+unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm -ldl -ltdb
+
+bin/unittest: test/test_suites/libmapistore/indexing.o \
+	test/test_suites/libmapi/property.o \
+	test/test_suites/libmapistore/namedprops_mysql.o \
+	test/test_suites/libmapistore/namedprops_ldb.o \
+	test/test_suites/libmapiproxy/openchangedb.o \
+	test/openchange_test_suite.o \
+	test/test_common.c \
+	mapiproxy/util/mysql.o \
+	mapiproxy/libmapiproxy/openchangedb.o \
+	mapiproxy/libmapiproxy/openchangedb_table.o \
+	mapiproxy/libmapiproxy/openchangedb_message.o \
+	mapiproxy/libmapiproxy/openchangedb_property.o \
+	mapiproxy/libmapiproxy/backends/openchangedb_ldb.o \
+	mapiproxy/libmapiproxy/backends/openchangedb_mysql.o \
+	mapiproxy/libmapistore/mapistore_interface.o \
+	mapiproxy/libmapistore/mapistore_processing.o \
+	mapiproxy/libmapistore/mapistore_backend.o \
+	mapiproxy/libmapistore/mapistore_backend_defaults.o \
+	mapiproxy/libmapistore/mapistore_tdb_wrap.o \
+	mapiproxy/libmapistore/mapistore_indexing.o \
+	mapiproxy/libmapistore/mapistore_replica_mapping.o \
+	mapiproxy/libmapistore/mapistore_namedprops.o \
+	mapiproxy/libmapistore/mapistore_notification.o \
+	mapiproxy/libmapistore/backends/indexing_tdb.o \
+	mapiproxy/libmapistore/backends/indexing_mysql.o \
+	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)"
+	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)
+
+
+unittest-clean:
+	rm -f bin/unittest
+	find test -name *.o | xargs -r rm
+
+clean:: unittest-clean
+
 #####################
 # openchangemapidump
 #####################
@@ -1436,7 +1502,8 @@ clean:: check_fasttransfer-clean
 
 bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
 

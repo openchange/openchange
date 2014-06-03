@@ -631,7 +631,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name,
 
 /**
    \details set SPropTagArray ulPropTag property types from
-   mapi_nameid returned by GetIDsFromNames()
+   mapi_nameid returned by GetIDsFromNames(). If a SPropTagArray property tag
+   has the type PT_ERROR set, it's kept untouched to propagate the error.
 
    \param mapi_nameid the structure where results are stored
    \param SPropTagArray the array of property tags returned by
@@ -656,12 +657,15 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < mapi_nameid->count; i++) {
-		if (mapi_nameid->entries[i].propType) {
-		  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-								 mapi_nameid->entries[i].propType);
+		if (((int)SPropTagArray->aulPropTag[i] & 0x0000FFFF) != PT_ERROR) {
+			if (mapi_nameid->entries[i].propType) {
+				SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(
+					((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) |
+					mapi_nameid->entries[i].propType);
+			}
 		}
 	}
-	
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -933,7 +937,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
    property tags with their real property type.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -942,11 +946,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
    \sa GetIDsFromNames, mapi_nameid_SPropTagArray
 */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_nameid,
-						     mapi_object_t *obj, 
+						     mapi_object_t *obj,
 						     struct SPropTagArray *SPropTagArray)
 {
 	enum MAPISTATUS		retval;
-	uint32_t		i;
 
 	/* sanity check */
 	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
@@ -954,14 +957,13 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 
 	retval = GetIDsFromNames(obj, mapi_nameid->count, mapi_nameid->nameid, 0,
 				 &SPropTagArray);
-	OPENCHANGE_RETVAL_IF(retval, GetLastError(), NULL);
+	OPENCHANGE_RETVAL_IF(
+		retval != MAPI_E_SUCCESS && retval != MAPI_W_ERRORS_RETURNED,
+		retval, NULL);
 
-	for (i = 0; i < SPropTagArray->cValues; i++) {
-	  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-							 mapi_nameid->entries[i].propType);
-	}
+	mapi_nameid_SPropTagArray(mapi_nameid, SPropTagArray);
 
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 _PUBLIC_ const char *get_namedid_name(uint32_t proptag)

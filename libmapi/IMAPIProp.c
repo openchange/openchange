@@ -969,6 +969,8 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
+   - MAPI_W_ERRORS_RETURNED: Some property names where not valid and should be
+     ignored. It's more a warning than an error.
 
    \sa GetNamesFromIds, QueryNamesFromIDs, mapi_nameid_new
 */
@@ -1048,7 +1050,9 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
+	OPENCHANGE_RETVAL_IF(
+		(retval != MAPI_W_ERRORS_RETURNED) && (retval != MAPI_E_SUCCESS),
+		retval, mem_ctx);
 
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
@@ -1056,13 +1060,17 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
 	proptags[0]->aulPropTag = (enum MAPITAGS *) talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
 	for (i = 0; i < proptags[0]->cValues; i++) {
-	  proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
+		if (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i]) {
+			proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
+		} else {
+			proptags[0]->aulPropTag[i] = PT_ERROR;
+		}
 	}
-	
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 

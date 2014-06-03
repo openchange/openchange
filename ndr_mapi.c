@@ -1702,7 +1702,6 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 			talloc_free(ndr_pull);
 			talloc_free(rgbOut.data);
 		}
-		/* ndr_print_array_uint8(ndr, "rgbOut", r->out.rgbOut, *r->out.pcbOut); */
 		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
 		if (r->out.pcbOut) {
 			ndr->depth++;

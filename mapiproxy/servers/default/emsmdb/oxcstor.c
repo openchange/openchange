@@ -487,8 +487,13 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *) private_data;
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+
+	/* Step 2. Do not allow over Public Folder */
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
 	
-	/* Step 2. Verify MessageClass string */
+	/* Step 3. Verify MessageClass string */
 	MessageClass = mapi_req->u.mapi_GetReceiveFolder.MessageClass;
 	if (!MessageClass || !strcmp(MessageClass, "")) {
 		MessageClass="All";
@@ -497,7 +502,7 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 		return MAPI_E_INVALID_PARAMETER;
 	}
 
-	/* Step 3. Search for the specified MessageClass substring within user mailbox */
+	/* Step 4. Search for the specified MessageClass substring within user mailbox */
 	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
 						MessageClass, &mapi_repl->u.mapi_GetReceiveFolder.folder_id,
 						&mapi_repl->u.mapi_GetReceiveFolder.MessageClass);

@@ -110,7 +110,8 @@ class CrashDigger(object):
                     report = ProblemReport(f)
                     report.load(f)
                     report_id = self.crashdb.upload(report)
-                    self.crashes_files[report_id] = fpath
+                    self.crashes_files[report_id] = {'path': fpath,
+                                                     'DistroRelease': report['DistroRelease']}
                     self.log('%s uploaded.' % fpath)
                 except Exception as exc:
                     self.log("Cannot load %s: %s" % (fpath, exc))
@@ -144,9 +145,9 @@ class CrashDigger(object):
         if self.crashes_dir and id in self.crashes_files:
             argv.append('-s')  # Put in stdout by now
             if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf:
-                for package in self.oc_cd_conf['extra_packages']:
+                for package in self.oc_cd_conf['extra_packages'][self.crashes_files[id]['DistroRelease']]:
                     argv.extend(['--extra-package', package])
-            argv.append(self.crashes_files[id])
+            argv.append(self.crashes_files[id]['path'])
         else:
             argv.append(str(id))
 

@@ -1636,6 +1636,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	*dnprefix = '\0';
+	emsmdbp_ctx->szDNPrefix = talloc_strdup(emsmdbp_ctx, userDN);
 	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
 
 	/* Step 6. Fill EcDoConnectEx reply */

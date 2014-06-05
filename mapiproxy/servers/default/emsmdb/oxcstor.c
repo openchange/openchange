@@ -381,6 +381,10 @@ static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *) private_data;
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
 	
 	/* Step 2. Verify MessageClass string */
 	fid = mapi_req->u.mapi_SetReceiveFolder.fid;

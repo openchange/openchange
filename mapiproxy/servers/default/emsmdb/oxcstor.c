@@ -339,7 +339,7 @@ static bool MessageClassIsValid(const char *MessageClass)
 	if (MessageClass[0] && (MessageClass[0] == '.')) {
 		return false;
 	}
-	if (MessageClass[0] && (MessageClass[len] == '.')) {
+	if (MessageClass[0] && (MessageClass[len - 1] == '.')) {
 		return false;
 	}
 	

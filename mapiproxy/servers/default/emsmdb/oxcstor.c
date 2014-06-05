@@ -601,7 +601,12 @@ static enum MAPISTATUS RopGetReceiveFolderTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
 
-	/* Step 2. Retrieve reveive folder table and properties from user mailbox */
+	/* Step 2. Do not allow over Public Folder */
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* Step 3. Retrieve reveive folder table and properties from user mailbox */
 	retval = openchangedb_get_ReceiveFolderTable(mem_ctx, emsmdbp_ctx->oc_ctx,
 						     object->object.mailbox->owner_username,
 						     &mapi_repl->u.mapi_GetReceiveFolderTable.cValues,

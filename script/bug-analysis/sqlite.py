@@ -1,0 +1,207 @@
+"""
+SQLite CrashDatabase implementation.
+
+It is useful to have a complete implementation of crash management in a single host.
+"""
+import apport.crashdb
+from apport.report import Report
+from io import BytesIO
+import os.path
+import sqlite3
+
+
+class CrashDatabase(apport.crashdb.CrashDatabase):
+    """
+    Simple implementation of crash database interface which keeps everything
+    in a simple SQLite file.
+    """
+    def __init__(self, auth_file, options):
+        """
+        Initialize the crash database connection
+
+        Options are:
+        
+        * dbfile: the file to store the database. If you supply None, then
+                  it will create a new file at ~/crashdb.sqlite.
+        """
+        apport.crashdb.CrashDatabase.__init__(self, auth_file, options)
+        self.dbfile = options.get('dbfile', os.path.expanduser('~/crashdb.sqlite'))
+
+        init = not os.path.exists(self.dbfile) or self.dbfile == ':memory:' or \
+            os.path.getsize(self.dbfile) == 0
+        self.db = sqlite3.connect(self.dbfile, timeout=7200)
+        self.format_version = 1
+        import pdb; pdb.set_trace()
+        if init:
+            self.__create_db()
+            self.last_crash_id = 0
+        else:
+            with self.db:
+                cur = self.db.cursor()
+                cur.execute("""SELECT MAX(crash_id) FROM crashes""")
+                row = cur.fetchone()
+                if row and row[0] is not None:
+                    self.last_crash_id = row[0]
+                else:
+                    self.last_crash_id = 0
+
+    def upload(self, report, progress_callback=None):
+        """
+        Upload the report to the database.
+
+        No progress callback is implemented yet.
+        """
+        cur = self.db.cursor()
+        app, version = report['Package'].split(' ', 1)
+        buf = BytesIO()
+        report.write(buf)
+        buf.seek(0)  # Start over again
+        cur.execute("""INSERT INTO crashes
+                       (crash_id, crash, title, app, version, sym_stacktrace, distro_release)
+                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                    (self.last_crash_id + 1, buf.read(), report.standard_title(), app, version,
+                     report.get('StackTrace', None), report.get('DistroRelease', None)))
+        self.db.commit()
+        self.last_crash_id = cur.lastrowid
+        return self.last_crash_id
+
+    def download(self, id):
+        """
+        Download the report from the database
+
+        :raises TypeError: if the report does not exist
+        """
+        cur = self.db.cursor()
+        cur.execute("""SELECT crash
+                       FROM crashes
+                       WHERE crash_id = ?""", [id])
+        buf = cur.fetchone()[0]
+        report = Report()
+        if isinstance(buf, unicode):
+            buf = bytes(buf)
+        report.load(BytesIO(buf))
+        return report
+
+    def get_comment_url(self):
+        """
+        Not implemented
+        """
+        return None
+
+    def get_id_url(self):
+        """
+        Not implemented
+        """
+        return None
+
+    def update(self, id, report, comment, change_description=False,
+               attachment_comment=None, key_filter=None):
+        """
+        Update the given report ID with the data from this report.
+
+        Attachments are unsupported by this moment.
+
+        See apport.crashdb.CrashDatabase.update for more information.
+        """
+        db_report = self.download(id)
+        # Insert the comment
+        with self.db:
+            cur = self.db.cursor()
+            if comment: 
+                if change_description:
+                    cur.execute("""UPDATE crashes SET description = ? WHERE crash_id = ?""",
+                                (comment, id))
+                else:
+                    cur.execute("""INSERT INTO crash_comments(crash_id, comment) VALUES (?, ?)""",
+                                (id, comment))
+    
+            if key_filter:
+                for k in key_filter:
+                    if k in report:
+                        db_report[k] = report[k]
+            else:
+                db_report.update(report)
+            
+            # Do what upload does
+            buf = BytesIO()
+            db_report.write(buf)
+            buf.seek(0)
+
+            cur.execute("""UPDATE crashes SET crash = ?, title = ?, sym_stacktrace = ?, distro_release = ?
+                           WHERE crash_id = ?""",
+                        (buf.read(), db_report.standard_title(), report.get('Stacktrace', None),
+                         report.get('DistroRelease', None), id))
+
+    def set_credentials(self, username, password):
+        """
+        Not Implemented
+        """
+        pass
+
+    def get_distro_release(self, id):
+        """
+        Get 'DistroRelease: <release>' from the report ID.
+        """
+        distro_release = None
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT distro_release
+                           FROM crashes WHERE crash_id = ?""", [id])
+            distro_release = cur.fetchone()[0]
+        return distro_release
+
+    def get_untraced(self):
+        """
+        Return set of crash IDs which have not been retraced yet.
+
+        This should only include crashes which match the current host
+        architecture.
+
+        :return: the list of crash untraced identifiers
+        :rtype: list
+        """
+        ids = []
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT crash_id FROM crashes
+                           WHERE sym_stacktrace IS NULL""")
+            rows = cur.fetchall()
+            ids = [row[0] for row in rows]
+        return ids
+
+    def get_dup_unchecked(self):
+        """
+        Unimplemented right now
+        """
+        return []
+
+    def mark_retraced(self, id):
+        """
+        Mark crash id as retraced.
+        """
+        # Do nothing as self.update method is in charge of it
+        pass
+
+    def __create_db(self):
+        """
+        Create the DB
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute('CREATE TABLE version (format INTEGER NOT NULL)')
+            cur.execute('INSERT INTO version VALUES (?)', [self.format_version])
+
+            cur.execute("""CREATE TABLE crashes (
+            crash_id INTEGER NOT NULL,
+            crash BLOB NOT_NULL,
+            title VARCHAR(64),
+            app VARCHAR(64) NOT NULL,
+            version VARCHAR(64),
+            distro_release VARCHAR(64),
+            description TEXT,
+            sym_stacktrace VARCHAR(256),
+            CONSTRAINT crashes_pk PRIMARY KEY(crash_id))""")
+
+            cur.execute("""CREATE TABLE crash_comments (
+            crash_id INTEGER NOT_NULL,
+            comment TEXT)""")

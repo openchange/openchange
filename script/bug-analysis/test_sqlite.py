@@ -20,9 +20,11 @@ raise () from /lib/libpthread.so.0
 __frob (x=4) at crash.c:30"""
 
     def test_create_db_default(self):
-        cb = CrashDatabase(None, {})
-        self.assertTrue(os.path.isfile(os.path.expanduser('~/crashdb.sqlite')))
-        os.unlink(os.path.expanduser('~/crashdb.sqlite'))
+        try:
+            CrashDatabase(None, {})
+            self.assertTrue(os.path.isfile(os.path.expanduser('~/crashdb.sqlite')))
+        finally:
+            os.unlink(os.path.expanduser('~/crashdb.sqlite'))
 
     def test_upload_download(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
@@ -41,9 +43,10 @@ __frob (x=4) at crash.c:30"""
 
     def test_unimplemented(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        args = [1, 2]
         for func_name in ('get_comment_url', 'get_id_url'):
             func = getattr(cb, func_name)
-            self.assertIsNone(func())
+            self.assertIsNone(func(*args))
 
     def test_update(self):
         """
@@ -91,7 +94,7 @@ __frob (x=4) at crash.c:30"""
 
         crash_id = cb.upload(self.r)
         self.assertEqual(cb.get_unretraced(), [1])
-        
+
         self.r['Stacktrace'] = """
  #0  0x00007f96dcfb9f77 in __GI_raise (sig=sig@entry=6) at ../nptl/sysdeps/unix/sysv/linux/raise.c:56
          resultvar = 0
@@ -126,4 +129,20 @@ __frob (x=4) at crash.c:30"""
          __PRETTY_FUNCTION__ = "sogo_table_get_row"
 """
         crash_id = cb.update(1, self.r, "")
+        self.assertIsNotNone(crash_id)
         self.assertEqual(cb.get_unretraced(), [])
+
+    def test_close_duplicate(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        crash_id = cb.upload(self.r)
+        self.assertIsNone(cb.duplicate_of(crash_id))
+
+        crash_id2 = cb.upload(self.r)
+        self.assertIsNone(cb.duplicate_of(crash_id2))
+
+        cb.close_duplicate(self.r, crash_id2, crash_id)
+        self.assertEqual(cb.duplicate_of(crash_id2), crash_id)
+
+        # Remove current duplicate thing
+        cb.close_duplicate(self.r, crash_id2, None)
+        self.assertIsNone(cb.duplicate_of(crash_id2))

@@ -20,7 +20,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         Initialize the crash database connection
 
         Options are:
-        
+
         * dbfile: the file to store the database. If you supply None, then
                   it will create a new file at ~/crashdb.sqlite.
         """
@@ -81,15 +81,27 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         report.load(BytesIO(buf))
         return report
 
-    def get_comment_url(self):
+    def get_comment_url(self, report, handle):
         """
-        Not implemented
+        Not implemented. Always returned None.
         """
         return None
 
-    def get_id_url(self):
+    def get_id_url(self, report, id):
         """
-        Not implemented
+        Return URL for a given report ID.
+
+        The report is passed in case building the URL needs additional
+        information from it, such as the SourcePackage name.
+
+        Return None if URL is not available or cannot be determined.Return URL for a given report ID.
+
+        The report is passed in case building the URL needs additional
+        information from it, such as the SourcePackage name.
+
+        Return None if URL is not available or cannot be determined.
+
+        Not implemented. Always returned None.
         """
         return None
 
@@ -106,21 +118,21 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         # Insert the comment
         with self.db:
             cur = self.db.cursor()
-            if comment: 
+            if comment:
                 if change_description:
                     cur.execute("""UPDATE crashes SET description = ? WHERE crash_id = ?""",
                                 (comment, id))
                 else:
                     cur.execute("""INSERT INTO crash_comments(crash_id, comment) VALUES (?, ?)""",
                                 (id, comment))
-    
+
             if key_filter:
                 for k in key_filter:
                     if k in report:
                         db_report[k] = report[k]
             else:
                 db_report.update(report)
-            
+
             # Do what upload does
             buf = BytesIO()
             db_report.write(buf)
@@ -181,6 +193,63 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         # Do nothing as self.update method is in charge of it
         pass
 
+    def _mark_dup_checked(self, id, report):
+        """
+        Unimplemented right now
+        """
+        pass
+
+    def duplicate_of(self, id):
+        """
+        Return master ID for a duplicate bug.
+
+        If the bug is not a duplicate, return None.
+        """
+        cur = self.db.cursor()
+        cur.execute('SELECT master_id FROM crashes WHERE crash_id = ?',
+                    [id])
+        row = cur.fetchone()
+        if row:
+            return row[0]
+        return None
+
+    def close_duplicate(self, report, id, master):
+        """
+        Mark a crash id as duplicate of given master ID.
+
+        If master is None, id gets un-duplicated.
+        """
+        with self.db:
+            cur = self.db.cursor()
+            if master is None:
+                cur.execute("""UPDATE crashes SET state = NULL, master_id = NULL
+                               WHERE crash_id = ?""",
+                            [id])
+            else:
+                cur.execute("""UPDATE crashes SET state = 'duplicated', master_id = ?
+                               WHERE crash_id = ?""", [master, id])
+
+    def get_fixed_version(self, id):
+        """
+        Return the package version that fixes a given crash.
+
+        Return None if the crash is not yet fixed, or an empty string if the
+        crash is fixed, but it cannot be determined by which version. Return
+        'invalid' if the crash report got invalidated, such as closed a
+        duplicate or rejected.
+
+        This function should make sure that the returned result is correct. If
+        there are any errors with connecting to the crash database, it should
+        raise an exception (preferably IOError).
+        """
+        fixed_version = None
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT fixed_version
+                           FROM crashes WHERE crash_id = ?""", [id])
+            fixed_version = cur.fetchone()[0]
+        return fixed_version
+
     def __create_db(self):
         """
         Create the DB
@@ -199,7 +268,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             distro_release VARCHAR(64),
             description TEXT,
             sym_stacktrace VARCHAR(256),
+            fixed_version VARCHAR(64),
+            state VARCHAR(64),
+            master_id INTEGER,
+            CONSTRAINT master_fk FOREIGN KEY(master_id) REFERENCES crashes(crash_id),
             CONSTRAINT crashes_pk PRIMARY KEY(crash_id))""")
+
+            cur.execute('CREATE INDEX master_index ON crashes(master_id)')
 
             cur.execute("""CREATE TABLE crash_comments (
             crash_id INTEGER NOT_NULL,

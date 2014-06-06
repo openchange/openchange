@@ -31,7 +31,6 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             os.path.getsize(self.dbfile) == 0
         self.db = sqlite3.connect(self.dbfile, timeout=7200)
         self.format_version = 1
-        import pdb; pdb.set_trace()
         if init:
             self.__create_db()
             self.last_crash_id = 0
@@ -150,7 +149,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             distro_release = cur.fetchone()[0]
         return distro_release
 
-    def get_untraced(self):
+    def get_unretraced(self):
         """
         Return set of crash IDs which have not been retraced yet.
 

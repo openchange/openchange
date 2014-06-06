@@ -85,12 +85,12 @@ __frob (x=4) at crash.c:30"""
         crash_id = cb.upload(self.r)
         self.assertEqual(cb.get_distro_release(crash_id), 'Ubuntu 14.04')
 
-    def test_get_untraced(self):
+    def test_get_unretraced(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
-        self.assertEqual(cb.get_untraced(), [])
+        self.assertEqual(cb.get_unretraced(), [])
 
         crash_id = cb.upload(self.r)
-        self.assertEqual(cb.get_untraced(), [1])
+        self.assertEqual(cb.get_unretraced(), [1])
         
         self.r['Stacktrace'] = """
  #0  0x00007f96dcfb9f77 in __GI_raise (sig=sig@entry=6) at ../nptl/sysdeps/unix/sysv/linux/raise.c:56
@@ -126,4 +126,4 @@ __frob (x=4) at crash.c:30"""
          __PRETTY_FUNCTION__ = "sogo_table_get_row"
 """
         crash_id = cb.update(1, self.r, "")
-        self.assertEqual(cb.get_untraced(), [])
+        self.assertEqual(cb.get_unretraced(), [])

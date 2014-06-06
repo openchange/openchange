@@ -1,12 +1,17 @@
 #!/bin/bash
 
 OPTIND=1
-while getopts "v" OPTION ; do # set $o to the next passed option
+while getopts "vsg" OPTION ; do # set $o to the next passed option
   case $OPTION in
     v)
        verbose=-v
        ;;
-
+    g)
+       out=--gdb
+       ;;
+    s)
+       out=--stdout
+       ;;
     ?) echo "Invalid option $OPTION"
        exit 1;
        ;;
@@ -25,4 +30,8 @@ if [ -z "$crashes" ]; then
     exit 1
 fi
 
-APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c apport-config -C apport-sandbox-cache -S $crashes --oc-cd-conf=crash-digger.conf $verbose
+if [ -z "$out" ]; then
+    out=--stdout
+fi
+
+APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c apport-config -C apport-sandbox-cache -S $crashes --oc-cd-conf=crash-digger.conf $verbose $out

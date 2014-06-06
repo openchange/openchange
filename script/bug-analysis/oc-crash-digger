@@ -28,7 +28,7 @@ import zlib
 
 import apport
 from apport.crashdb import get_crashdb
-from problem_report import ProblemReport
+from apport.report import Report
 
 
 #
@@ -37,7 +37,7 @@ from problem_report import ProblemReport
 class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
-                 crashes_dir=None, oc_cd_conf=None):
+                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False):
         """
         Initialize pools.
 
@@ -57,6 +57,8 @@ class CrashDigger(object):
         self.crashes_dir = crashes_dir
         self.crashes_files = dict()
         self.oc_cd_conf = oc_cd_conf
+        self.stdout = stdout
+        self.gdb = gdb
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -87,18 +89,18 @@ class CrashDigger(object):
         """
         Query crash db for new IDs to process.
         """
-        if self.dupcheck_mode:
+        if self.crashes_dir:
+            self.load_crashes()
+        elif self.dupcheck_mode:
             self.dupcheck_pool.update(self.crashdb.get_dup_unchecked())
             self.log('fill_pool: dup check pool now: %s' % str(self.dupcheck_pool))
         else:
-            if self.crashes_dir:
-                self.fill_crashdb()
             self.retrace_pool.update(self.crashdb.get_unretraced())
             self.log('fill_pool: retrace pool now: %s' % str(self.retrace_pool))
 
-    def fill_crashdb(self):
+    def load_crashes(self):
         """
-        Go through crashes argument and load into crashdb
+        Go through crashes argument and check if it can be loaded into memory
         """
         crashes_files = []
         if os.path.isdir(self.crashes_dir):
@@ -109,15 +111,15 @@ class CrashDigger(object):
         else:
             raise SystemError("%s is not a directory neither a file" % self.crashes_dir)
 
+        report_id = 1
         for fpath in crashes_files:
             with open(fpath, 'rb') as f:
                 try:
-                    report = ProblemReport(f)
+                    report = Report()
                     report.load(f)
-                    report_id = self.crashdb.upload(report)
                     self.crashes_files[report_id] = {'path': fpath,
-                                                     'DistroRelease': report['DistroRelease']}
-                    self.log('%s uploaded.' % fpath)
+                                                     'distro_release': report['DistroRelease']}
+                    self.log('%s loaded.' % fpath)
                 except Exception as exc:
                     self.log("Cannot load %s: %s" % (fpath, exc))
 
@@ -139,6 +141,25 @@ class CrashDigger(object):
             self.log('crash is release %s which does not have a config available, skipping' % rel)
             return
 
+        self.__call_retrace(id, rel)
+
+        self.crashdb.mark_retraced(id)
+
+    def retrace_file(self, id):
+        """
+        Retrace a file
+        """
+        crash_file = self.crashes_files[id]['path']
+        self.log('retracing %s' % crash_file)
+
+        rel = self.crashes_files[id]['distro_release']
+        if rel not in self.releases:
+            self.log('crash is release %s which does not have a config available, skipping' % rel)
+            return
+
+        self.__call_retrace(id, rel)
+
+    def __call_retrace(self, id, rel):
         argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
@@ -147,11 +168,18 @@ class CrashDigger(object):
         if self.verbose:
             argv.append('-v')
 
+        if self.stdout:
+            argv.append('-s')
+        elif self.gdb:
+            argv.append('--gdb')
+        else:
+            argv.extend(['--auth', 'foo'])
+
+        if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf and rel in self.oc_cd_conf['extra_packages']:
+            for package in self.oc_cd_conf['extra_packages'][rel]:
+                argv.extend(['--extra-package', package])
+
         if self.crashes_dir and id in self.crashes_files:
-            argv.append('-s')  # Put in stdout by now
-            if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf:
-                for package in self.oc_cd_conf['extra_packages'][self.crashes_files[id]['DistroRelease']]:
-                    argv.extend(['--extra-package', package])
             argv.append(self.crashes_files[id]['path'])
         else:
             argv.append(str(id))
@@ -166,8 +194,6 @@ class CrashDigger(object):
                 self.log('transient error reported; halting')
                 return
             raise SystemError('retracing #%i failed' % id)
-
-        self.crashdb.mark_retraced(id)
 
     def dupcheck_next(self):
         """
@@ -205,6 +231,8 @@ class CrashDigger(object):
             self.dupcheck_next()
         while self.retrace_pool:
             self.retrace_next()
+        for id in self.crashes_files.keys():
+            self.retrace_file(id)
 
         if self.publish_dir and self.dup_db:
             self.crashdb.duplicate_db_publish(self.publish_dir)
@@ -247,11 +275,20 @@ def parse_options():
                          help="Directory or file to look for crashes to fill")
     optparser.add_option('-O', '--oc-cd-conf', metavar='FILE',
                          help='oc-crash-digger specific configuration')
+    optparser.add_option('-s', '--stdout',
+                         help="Print the trace to stdout",
+                         action='store_true', dest='stdout', default=False)
+    optparser.add_option('-g', '--gdb',
+                         help="Launch GDB with the trace",
+                         action='store_true', dest='gdb', default=False)
 
     (opts, args) = optparser.parse_args()
 
     if not opts.config_dir and not opts.dupcheck_mode:
         apport.fatal('Error: --config-dir or --dupcheck needs to be given')
+
+    if opts.stdout and opts.gdb:
+        apport.fatal('Error: --stdout and --gdb are incompatible')
 
     return (opts, args)
 
@@ -283,7 +320,7 @@ try:
     CrashDigger(opts.config_dir, opts.cache,
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
-                opts.oc_cd_conf).run()
+                opts.oc_cd_conf, opts.stdout, opts.gdb).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

@@ -41,12 +41,10 @@ __frob (x=4) at crash.c:30"""
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
         self.assertRaises(Exception, cb.download, 23232)
 
-    def test_unimplemented(self):
+    def test_get_id_url(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
-        args = [1, 2]
-        for func_name in ('get_comment_url', 'get_id_url'):
-            func = getattr(cb, func_name)
-            self.assertIsNone(func(*args))
+        self.assertEqual("#1", cb.get_id_url(None, 1))
+        self.assertEqual("#1: None", cb.get_id_url(self.r, 1))
 
     def test_update(self):
         """
@@ -128,8 +126,7 @@ __frob (x=4) at crash.c:30"""
          __FUNCTION__ = "sogo_table_get_row"
          __PRETTY_FUNCTION__ = "sogo_table_get_row"
 """
-        crash_id = cb.update(1, self.r, "")
-        self.assertIsNotNone(crash_id)
+        cb.update(1, self.r, "")
         self.assertEqual(cb.get_unretraced(), [])
 
     def test_close_duplicate(self):

@@ -59,7 +59,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                        (crash_id, crash, title, app, version, sym_stacktrace, distro_release)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
                     (self.last_crash_id + 1, buf.read(), report.standard_title(), app, version,
-                     report.get('StackTrace', None), report.get('DistroRelease', None)))
+                     report.get('Stacktrace', None), report.get('DistroRelease', None)))
         self.db.commit()
         self.last_crash_id = cur.lastrowid
         return self.last_crash_id
@@ -101,9 +101,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         Return None if URL is not available or cannot be determined.
 
-        Not implemented. Always returned None.
+        Dummy implementation: It returns the id and the standard title.
         """
-        return None
+        try:
+            return "#%d: %s" % (id, report.standard_title())
+        except:
+            return "#%d" % id
 
     def update(self, id, report, comment, change_description=False,
                attachment_comment=None, key_filter=None):

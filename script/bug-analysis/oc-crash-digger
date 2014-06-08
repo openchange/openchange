@@ -12,11 +12,12 @@
 # option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
 # the full text of the license.
 
-#
-# This is an enhancement version of crash-digger available with apport-retrace
-#
+"""
+This is an enhancement version of crash-digger available with apport-retrace
+"""
 
 import errno
+import gzip
 import optparse
 import os
 import shutil
@@ -115,7 +116,13 @@ class CrashDigger(object):
 
         report_id = 1
         for fpath in crashes_files:
-            with open(fpath, 'rb') as f:
+            # This may lead to bad guesses...
+            if fpath.endswith('.gz'):
+                open_f = gzip.open
+            else:
+                open_f = open
+
+            with open_f(fpath, 'rb') as f:
                 try:
                     report = Report()
                     report.load(f)
@@ -160,7 +167,19 @@ class CrashDigger(object):
             self.log('crash is release %s which does not have a config available, skipping' % rel)
             return
 
-        self.__call_retrace(id, rel)
+        # This may lead to bad guesses...
+        temp_file = None
+        if crash_file.endswith('.gz'):
+            temp_file = NamedTemporaryFile()
+            f_in = gzip.open(crash_file, 'rb')
+            f_out = open(temp_file.name, 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+
+            self.log('Tracing temp_file %s' % temp_file.name)
+
+        self.__call_retrace(id, rel, temp_file=temp_file.name)
 
         if self.upload:
             report = Report()
@@ -182,7 +201,7 @@ class CrashDigger(object):
             # Delete temporary file once it is uploaded
             os.unlink(self.file_to_upload.name)
 
-    def __call_retrace(self, id, rel):
+    def __call_retrace(self, id, rel, temp_file=None):
         argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
@@ -207,7 +226,9 @@ class CrashDigger(object):
             for package in self.oc_cd_conf['extra_packages'][rel]:
                 argv.extend(['--extra-package', package])
 
-        if self.crashes_dir and id in self.crashes_files:
+        if temp_file:
+            argv.append(temp_file)
+        elif self.crashes_dir and id in self.crashes_files:
             argv.append(self.crashes_files[id]['path'])
         else:
             argv.append(str(id))

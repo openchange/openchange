@@ -270,7 +270,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             version VARCHAR(64),
             distro_release VARCHAR(64),
             description TEXT,
-            sym_stacktrace VARCHAR(256),
+            sym_stacktrace TEXT,
             fixed_version VARCHAR(64),
             state VARCHAR(64),
             master_id INTEGER,

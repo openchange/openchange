@@ -23,6 +23,7 @@ import shutil
 import subprocess
 import sys
 import time
+from tempfile import NamedTemporaryFile
 import zlib
 
 
@@ -37,7 +38,7 @@ from apport.report import Report
 class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
-                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False):
+                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False):
         """
         Initialize pools.
 
@@ -59,6 +60,7 @@ class CrashDigger(object):
         self.oc_cd_conf = oc_cd_conf
         self.stdout = stdout
         self.gdb = gdb
+        self.upload = upload
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -120,6 +122,7 @@ class CrashDigger(object):
                     self.crashes_files[report_id] = {'path': fpath,
                                                      'distro_release': report['DistroRelease']}
                     self.log('%s loaded.' % fpath)
+                    report_id += 1
                 except Exception as exc:
                     self.log("Cannot load %s: %s" % (fpath, exc))
 
@@ -147,7 +150,7 @@ class CrashDigger(object):
 
     def retrace_file(self, id):
         """
-        Retrace a file
+        Retrace a file and upload to the crashdb if flag says so
         """
         crash_file = self.crashes_files[id]['path']
         self.log('retracing %s' % crash_file)
@@ -158,6 +161,26 @@ class CrashDigger(object):
             return
 
         self.__call_retrace(id, rel)
+
+        if self.upload:
+            report = Report()
+            report.load(self.file_to_upload)
+            # Check for duplicates here...
+            known_report = self.crashdb.known(report)
+            if not known_report:  # Client-side
+                crash_id = self.crashdb.upload(report)
+                ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
+                if ret_dup_check is not None:
+                    self.log('This report is a duplicated of #%i' % ret_dup_check[0])
+                    if ret_dup_check[1] is not None:
+                        self.log('This report is fixed in %s version' % ret_dup_check[1])
+                else:
+                    self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+            else:
+                self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+
+            # Delete temporary file once it is uploaded
+            os.unlink(self.file_to_upload.name)
 
     def __call_retrace(self, id, rel):
         argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
@@ -174,6 +197,11 @@ class CrashDigger(object):
             argv.append('--gdb')
         else:
             argv.extend(['--auth', 'foo'])
+
+        if self.upload:
+            # Retrace the result, store it in a file to upload it afterwards
+            self.file_to_upload = NamedTemporaryFile(delete=False)
+            argv.extend(['--output', self.file_to_upload.name])
 
         if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf and rel in self.oc_cd_conf['extra_packages']:
             for package in self.oc_cd_conf['extra_packages'][rel]:
@@ -281,6 +309,9 @@ def parse_options():
     optparser.add_option('-g', '--gdb',
                          help="Launch GDB with the trace",
                          action='store_true', dest='gdb', default=False)
+    optparser.add_option('-u', '--upload',
+                         help="Upload the retraced crashes",
+                         action='store_true', dest='upload', default=False)
 
     (opts, args) = optparser.parse_args()
 
@@ -289,6 +320,9 @@ def parse_options():
 
     if opts.stdout and opts.gdb:
         apport.fatal('Error: --stdout and --gdb are incompatible')
+
+    if opts.upload and not opts.dup_db:
+        apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')
 
     return (opts, args)
 
@@ -320,7 +354,7 @@ try:
     CrashDigger(opts.config_dir, opts.cache,
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
-                opts.oc_cd_conf, opts.stdout, opts.gdb).run()
+                opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

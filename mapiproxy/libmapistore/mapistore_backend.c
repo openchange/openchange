@@ -234,22 +234,25 @@ _PUBLIC_ init_backend_fn *mapistore_backend_load(TALLOC_CTX *mem_ctx, const char
    \param fns pointer to an array of mapistore backends initialization
    functions
 
-   \return true on success, otherwise false
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ bool mapistore_backend_run_init(init_backend_fn *fns)
+_PUBLIC_ enum mapistore_error mapistore_backend_run_init(init_backend_fn *fns)
 {
 	int				i;
-	bool				ret = true;
+	enum mapistore_error		retval = MAPISTORE_SUCCESS;
 
 	if (fns == NULL) {
-		return true;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	for (i = 0; fns[i]; i++) {
-		ret &= (bool)fns[i]();
+		retval &= (bool)fns[i]();
+		if (retval != MAPISTORE_SUCCESS) {
+			return retval;
+		}
 	}
 
-	return ret;
+	return retval;
 }
 
 
@@ -266,26 +269,29 @@ _PUBLIC_ bool mapistore_backend_run_init(init_backend_fn *fns)
 enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *path)
 {
 	init_backend_fn			*ret;
-	bool				status;
-	int				retval;
+	enum mapistore_error		retval = MAPISTORE_SUCCESS;
 	int				i;
 
 	ret = mapistore_backend_load(mem_ctx, path);
-	status = mapistore_backend_run_init(ret);
+	retval = mapistore_backend_run_init(ret);
 	talloc_free(ret);
+
+	retval = mapistore_python_load_and_run(mem_ctx, path);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend) {
-			retval = backends[i].backend->backend.init();
+			retval = backends[i].backend->backend.init(backends[i].backend->backend.name);
 			if (retval != MAPISTORE_SUCCESS) {
 				DEBUG(3, ("[!] MAPISTORE backend '%s' initialization failed\n", backends[i].backend->backend.name));
+				return retval;
 			} else {
 				DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
 			}
 		}
 	}
 
-	return (status != true) ? MAPISTORE_SUCCESS : MAPISTORE_ERR_BACKEND_INIT;
+	return retval;
 }
 
 /**
@@ -324,13 +330,22 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
    \details Create backend context
 
    \param mem_ctx pointer to the memory context
+   \param conn_info pointer to the mapistore connection information
+   \param ictx pointer to the indexing context
    \param namespace the backend namespace
    \param uri the backend parameters which can be passes inline
+   \param fid the folder identifier of the folder
+   \param context_p pointer on pointer to the backend_context to return
 
-   \return a valid backend_context pointer on success, otherwise NULL
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struct mapistore_connection_info *conn_info, struct indexing_context *ictx,
-						      const char *namespace, const char *uri, uint64_t fid, struct backend_context **context_p)
+enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx,
+						      struct mapistore_connection_info *conn_info,
+						      struct indexing_context *ictx,
+						      const char *namespace,
+						      const char *uri,
+						      uint64_t fid,
+						      struct backend_context **context_p)
 {
 	struct backend_context		*context;
 	enum mapistore_error		retval;
@@ -346,7 +361,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 		if (backends[i].backend->backend.namespace && 
 		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
 			found = true;
-			retval = backends[i].backend->backend.create_context(context, conn_info, ictx, uri, &backend_object);
+			retval = backends[i].backend->backend.create_context(context, backends[i].backend->backend.name, conn_info, ictx, uri, &backend_object);
 			if (retval != MAPISTORE_SUCCESS) {
 				goto end;
 			}

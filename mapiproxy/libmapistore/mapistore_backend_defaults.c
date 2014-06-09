@@ -30,9 +30,10 @@
  */
 
 
-static enum mapistore_error mapistore_op_defaults_init(void)
+static enum mapistore_error mapistore_op_defaults_init(const char *module_name)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));	
+	DEBUG(3, ("[%s:%d][%s] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n",
+		  __FUNCTION__, __LINE__, module_name));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -45,11 +46,13 @@ static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owne
 }
 
 static enum mapistore_error mapistore_op_defaults_create_context(TALLOC_CTX *mem_ctx, 
+								 const char *module_name,
 								 struct mapistore_connection_info *conn_info,
 								 struct indexing_context *indexing_ctx,
 								 const char *uri, void **ctx)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	DEBUG(3, ("[%s:%d][%s] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n",
+		  __FUNCTION__, __LINE__, module_name));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 

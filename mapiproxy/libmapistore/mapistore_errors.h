@@ -116,59 +116,70 @@ enum mapistore_error {
 	MAPISTORE_ERR_BACKEND_INIT = 11,
 
 /**
+   The backend is invalid
+*/
+	MAPISTORE_ERR_INVALID_BACKEND = 12,
+
+
+/**
    The function failed because mapistore failed to create a context
 */
-	MAPISTORE_ERR_CONTEXT_FAILED = 12,
+	MAPISTORE_ERR_CONTEXT_FAILED = 13,
+
+/**
+   The function failed because mapistore context is invalid
+*/
+	MAPISTORE_ERR_INVALID_CONTEXT = 14,
 
 /**
    The function failed because the provided namespace is invalid
 */
-	MAPISTORE_ERR_INVALID_NAMESPACE = 13,
+	MAPISTORE_ERR_INVALID_NAMESPACE = 15,
 
 /**
    The specified URI is invalid
 */
-	MAPISTORE_ERR_INVALID_URI = 14,
+	MAPISTORE_ERR_INVALID_URI = 16,
 
 /**
    The function failed to find requested record/data
 */
-	MAPISTORE_ERR_NOT_FOUND = 15,
+	MAPISTORE_ERR_NOT_FOUND = 17,
 
 /**
    The function still has a reference count
 */
-	MAPISTORE_ERR_REF_COUNT = 16,
+	MAPISTORE_ERR_REF_COUNT = 18,
 
 /**
    The function already have record/data for the searched element
 */
-	MAPISTORE_ERR_EXIST = 17,
+	MAPISTORE_ERR_EXIST = 19,
 
 /**
    The function failed to generate requested data/payload
 */
-	MAPISTORE_ERR_INVALID_DATA = 18,
+	MAPISTORE_ERR_INVALID_DATA = 20,
 
 /**
    The function failed to send message
 */
-	MAPISTORE_ERR_MSG_SEND = 19,
+	MAPISTORE_ERR_MSG_SEND = 21,
 
 /**
    The function failed to receive message
 */
-	MAPISTORE_ERR_MSG_RCV = 20,
+	MAPISTORE_ERR_MSG_RCV = 22,
 
 /** 
     The operation required privileges that the user does not have
 */
-	MAPISTORE_ERR_DENIED = 21,
+	MAPISTORE_ERR_DENIED = 23,
 
 /**
    The function is not implemented
 */
-	MAPISTORE_ERR_NOT_IMPLEMENTED
+	MAPISTORE_ERR_NOT_IMPLEMENTED = 24
 };
 
 #endif /* ! __MAPISTORE_ERRORS_H */

@@ -168,9 +168,10 @@ class CrashDigger(object):
             return
 
         # This may lead to bad guesses...
-        temp_file = None
+        temp_file_name = None
         if crash_file.endswith('.gz'):
             temp_file = NamedTemporaryFile()
+            temp_file_name = temp_file.name
             f_in = gzip.open(crash_file, 'rb')
             f_out = open(temp_file.name, 'wb')
             f_out.writelines(f_in)
@@ -179,7 +180,7 @@ class CrashDigger(object):
 
             self.log('Tracing temp_file %s' % temp_file.name)
 
-        self.__call_retrace(id, rel, temp_file=temp_file.name)
+        self.__call_retrace(id, rel, temp_file=temp_file_name)
 
         if self.upload:
             report = Report()

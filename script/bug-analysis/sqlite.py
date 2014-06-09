@@ -1,3 +1,21 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2014 Enrique J. Hernández
+# Author: Enrique J. Hernández <ejhernandez@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 """
 SQLite CrashDatabase implementation.
 
@@ -55,11 +73,16 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         buf = BytesIO()
         report.write(buf)
         buf.seek(0)  # Start over again
+
+        stacktrace = None
+        if 'Stacktrace' in report:
+            stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
+
         cur.execute("""INSERT INTO crashes
                        (crash_id, crash, title, app, version, sym_stacktrace, distro_release)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (self.last_crash_id + 1, buf.read(), report.standard_title(), app, version,
-                     report.get('Stacktrace', None), report.get('DistroRelease', None)))
+                    (self.last_crash_id + 1, sqlite3.Binary(buf.getvalue()), report.standard_title(),
+                     app, version, stacktrace, report.get('DistroRelease', None)))
         self.db.commit()
         self.last_crash_id = cur.lastrowid
         return self.last_crash_id
@@ -76,9 +99,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                        WHERE crash_id = ?""", [id])
         buf = cur.fetchone()[0]
         report = Report()
-        if isinstance(buf, unicode):
-            buf = bytes(buf)
-        report.load(BytesIO(buf))
+        report.load(BytesIO(bytes(buf)))
         return report
 
     def get_comment_url(self, report, handle):
@@ -141,9 +162,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             db_report.write(buf)
             buf.seek(0)
 
+            stacktrace = None
+            if 'Stacktrace' in report:
+                stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
+
             cur.execute("""UPDATE crashes SET crash = ?, title = ?, sym_stacktrace = ?, distro_release = ?
                            WHERE crash_id = ?""",
-                        (buf.read(), db_report.standard_title(), report.get('Stacktrace', None),
+                        (buf.read(), db_report.standard_title(), stacktrace,
                          report.get('DistroRelease', None), id))
 
     def set_credentials(self, username, password):
@@ -262,6 +287,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             cur.execute('CREATE TABLE version (format INTEGER NOT NULL)')
             cur.execute('INSERT INTO version VALUES (?)', [self.format_version])
 
+            # sym_stacktrace is a blob due to a bug in printing int array within
+            # a struct in gdb
             cur.execute("""CREATE TABLE crashes (
             crash_id INTEGER NOT NULL,
             crash BLOB NOT_NULL,
@@ -270,7 +297,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             version VARCHAR(64),
             distro_release VARCHAR(64),
             description TEXT,
-            sym_stacktrace TEXT,
+            sym_stacktrace BLOB,
             fixed_version VARCHAR(64),
             state VARCHAR(64),
             master_id INTEGER,

@@ -52,39 +52,57 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /* TODO: to be completed... */
 
         NotificationData = &response->u.mapi_Notify.NotificationData;
-	printf("Looking for: 0x%x\n", response->u.mapi_Notify.NotificationType);
         switch (response->u.mapi_Notify.NotificationType) {
                 /* Folders */
         case 0x3010: /* different forms of folder modifications */
-                size += sizeof (uint32_t);
+                size += sizeof (uint64_t) + sizeof (uint32_t) * 2 + sizeof (uint16_t);
+                if (NotificationData->FolderModifiedNotification_3010.TagCount != 0xFFFF) {
+			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_3010.TagCount;
+                }
 		break;
         case 0x1010:
+		size += sizeof (uint64_t) + sizeof (uint16_t) + sizeof(uint32_t);
+		if (NotificationData->FolderModifiedNotification_1010.TagCount != 0xFFFF) {
+			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_1010.TagCount;
+		}
+		break;
         case 0x2010:
-                size += sizeof (uint32_t);
+		size += sizeof (uint64_t) + sizeof (uint16_t) + sizeof(uint32_t);
+		if (NotificationData->FolderModifiedNotification_2010.TagCount != 0xFFFF) {
+			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_2010.TagCount;
+		}
 		break;
         case 0x0010: /* folder modified */
-                size += sizeof(uint64_t) + sizeof(uint16_t);
+                size += sizeof (uint64_t) + sizeof (uint16_t);
                 if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
-                        size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_10.TagCount;
+			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_10.TagCount;
                 }
                 break;
-
         case 0x0004: /* folder created */
+		size += sizeof (uint64_t) * 2 + sizeof (uint16_t);
+		if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
+			size += sizeof(enum MAPITAGS) * NotificationData->FolderCreatedNotification.TagCount;
+		}
 		break;
 	case 0x0002: /* newmail */
 	case 0x8002:
 		size += sizeof (uint64_t) * 2 + sizeof (uint32_t) + sizeof (uint8_t);
 		if (NotificationData->NewMailNotification.UnicodeFlag == false) {
-			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszA);
+			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszA) + 1;
 		} else {
 			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszW) * 2 + 2;
 		}
 		break;
-        case 0x8004: /* message created */ 
+        case 0x8004: /* message created */
+		size += sizeof (uint64_t) * 2 + sizeof(uint16_t);
+		if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
+		        size += sizeof(enum MAPITAGS) * NotificationData->MessageCreatedNotification.TagCount;
+		}
+		break;
         case 0x8010: /* message modified */
-                size += sizeof(uint16_t);
+                size += sizeof (uint64_t) * 2 + sizeof(uint16_t);
                 if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
-                        size += sizeof(enum MAPITAGS) * NotificationData->MessageCreatedNotification.TagCount;
+                        size += sizeof(enum MAPITAGS) * NotificationData->MessageModifiedNotification.TagCount;
                 }
 		break;
         case 0x8008: /* message deleted */
@@ -182,7 +200,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /*         break; */
         case 0x8020:
         case 0x8040:
-                 size += sizeof(struct MessageMoveCopyNotification);
+                 size += sizeof (uint64_t) * 4;
                  break; 
         /* case 0x8100: */
         /* case 0xc100: */
@@ -198,7 +216,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /*         size += sizeof(struct SearchMessageModifiedNotification); */
         /*         break; */
         default:
-                DEBUG(5, (__location__": unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
+                DEBUG(0, (__location__": unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
         }
 
         return size;

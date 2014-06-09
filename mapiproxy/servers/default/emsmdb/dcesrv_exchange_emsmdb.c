@@ -1108,7 +1108,13 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */
 		/* op_MAPI_CopyProperties: 0x67 */
-		/* op_MAPI_GetReceiveFolderTable: 0x68 */
+		case op_MAPI_GetReceiveFolderTable: /* 0x68 */
+			retval = EcDoRpc_RopGetReceiveFolderTable(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
+
 		/* op_MAPI_GetCollapseState: 0x6b */
 		/* op_MAPI_SetCollapseState: 0x6c */
 		case op_MAPI_GetTransportFolder: /* 0x6d */
@@ -1267,29 +1273,33 @@ notif:
 	}
 	
 #if 0
-	DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
-	/* Process notifications available on subscriptions queues */
-	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
-		DEBUG(0, ("subscription = %p\n", sel->subscription));
-		if (sel->subscription) {
-			DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
-			DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
-			DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
-			DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
-		}
-		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
-		if (retval == MAPI_E_SUCCESS) {
-			for (el = nlist; el->notification; el = el->next) {
-				if (needs_realloc) {
-					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
-										  struct EcDoRpc_MAPI_REPL, idx + 2);
-				}
-				needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
-									  &(mapi_response->mapi_repl[idx]),
-									  sel->subscription, el->notification, &size);
-				idx++;
+	{
+		enum mapistore_error	mretval;
+
+		DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
+		/* Process notifications available on subscriptions queues */
+		for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
+			DEBUG(0, ("subscription = %p\n", sel->subscription));
+			if (sel->subscription) {
+				DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
+				DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
+				DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
+				DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
 			}
-			talloc_free(nlist);
+			mretval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
+			if (mretval == MAPISTORE_SUCCESS) {
+				for (el = nlist; el->notification; el = el->next) {
+					if (needs_realloc) {
+						mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
+											  struct EcDoRpc_MAPI_REPL, idx + 2);
+					}
+					needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
+										  &(mapi_response->mapi_repl[idx]),
+										  sel->subscription, el->notification, &size);
+					idx++;
+				}
+				talloc_free(nlist);
+			}
 		}
 	}
 #endif
@@ -1465,12 +1475,12 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx,
-			      struct EcDummyRpc *r)
+static enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct EcDummyRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6) not implemented\n"));
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6)\n"));
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -1709,6 +1719,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct EcDoRpcExt2 *r)
 {
+	enum ndr_err_code		ndr_err;
 	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi2k7_request		mapi2k7_request;
@@ -1748,13 +1759,29 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
+	/* Sanity checks on pcbOut input parameter */
+	if (*r->in.pcbOut < 0x00000008) {
+		r->out.result = ecRpcFailed;
+		return ecRpcFailed;
+	}
+
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;
 	rgbIn.length = r->in.cbIn;
 	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
+	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
+
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		r->out.result = ecRpcFormat;
+		return ecRpcFormat;
+	}
+
+	if (ndr_pull->data_size > *r->in.pcbOut) {
+		r->out.result = ecBufferTooSmall;
+		return ecBufferTooSmall;
+	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
 	talloc_free(mapi2k7_request.mapi_request);

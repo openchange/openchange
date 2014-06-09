@@ -22,8 +22,8 @@
 #define LIBMAPIPP__FOLDER_H__
 
 #include <iostream> //for debugging
+#include <memory>
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 #include <libmapi++/clibmapi.h>
 #include <libmapi++/mapi_exception.h>
@@ -41,14 +41,14 @@ class folder : public object {
 		/**
 		 * Pointer to a message
 		*/
-		typedef boost::shared_ptr<message>		message_shared_ptr;
+		typedef std::shared_ptr<message>		message_shared_ptr;
 
 		typedef std::vector<message_shared_ptr >	message_container_type;
 
 		/**
 		 * Pointer to a %folder
 		*/
-		typedef boost::shared_ptr<folder>		folder_shared_ptr;
+		typedef std::shared_ptr<folder>		folder_shared_ptr;
 
 		/**
 		 * Hierarchy folders

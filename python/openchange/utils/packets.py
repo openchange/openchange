@@ -6,17 +6,16 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import logging
 from socket import _socketobject, MSG_WAITALL
 from struct import pack, unpack_from
 from uuid import UUID
@@ -32,12 +31,12 @@ PFC_DID_NOT_EXECUTE = 32
 PFC_MAYBE = 64
 PFC_OBJECT_UUID = 128
 PFC_FLAG_LABELS = ("PFC_FIRST_FRAG",
-                   "PFC_LAST_FRAG", 
-                   "PFC_(PENDING_CANCEL|SUPPORT_HEADER_SIGN)", 
-                   "PFC_RESERVED_1", 
-                   "PFC_CONC_MPX", 
+                   "PFC_LAST_FRAG",
+                   "PFC_(PENDING_CANCEL|SUPPORT_HEADER_SIGN)",
+                   "PFC_RESERVED_1",
+                   "PFC_CONC_MPX",
                    "PFC_DID_NOT_EXECUTE",
-                   "PFC_MAYBE", 
+                   "PFC_MAYBE",
                    "PFC_OBJECT_UUID")
 
 
@@ -240,7 +239,7 @@ class RPCPacket(object):
 
     def make_dump_output(self):
         values = []
-        
+
         ptype = self.header["ptype"]
         values.append(DCERPC_PKG_LABELS[ptype])
 
@@ -275,7 +274,7 @@ class RPCBindACKPacket(RPCPacket):
     def __init__(self, data, logger=None):
         RPCPacket.__init__(self, data, logger)
         self.ntlm_payload = None
-        
+
     def parse(self):
         auth_offset = self.header["frag_length"] - self.header["auth_length"]
         self.ntlm_payload = self.data[auth_offset:]
@@ -344,7 +343,7 @@ class RPCRTSPacket(RPCPacket):
         self.offset = self.offset + data_size
         # dumb method
         return data_blob
-    
+
     def _parse_command_cookie(self, data_size):
         data_blob = self.data[self.offset:self.offset+data_size]
         self.offset = self.offset + data_size
@@ -359,8 +358,7 @@ class RPCRTSPacket(RPCPacket):
 
         data_blob = self.data[self.offset:self.offset+count]
         self.offset = self.offset + count
-
-        return data_value
+        return data_blob
 
     def _parse_command_client_address(self, data_blob):
         (address_type,) = unpack_from("<l", self.data, self.offset)
@@ -664,7 +662,7 @@ class RPCRTSOutPacket(object):
             values.append(data)
 
         self.command_data.append("".join(values))
-        
+
     def _make_command_flow_control_ack(self, data_blob):
         # dumb method
         len_data = len(data_blob)
@@ -674,7 +672,7 @@ class RPCRTSOutPacket(object):
         self.size = self.size + len_data
 
         return data_blob
-    
+
     def _make_command_cookie(self, data_blob):
         # dumb method
         len_data = len(data_blob)

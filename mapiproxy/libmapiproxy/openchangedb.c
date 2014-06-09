@@ -350,6 +350,38 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 					 MessageClass, fid, ExplicitMessageClass);
 }
 
+
+/**
+   \details Retrieve the list of receive folder identifier, message
+   class along with latest modification time for the mailbox of the
+   user.
+
+   \param mem_ctx pointer to the memory context
+   \param oc_ctx pointer to the openchange DB context
+   \param recipient pointer to the mailbox's username
+   \param cValues pointer to the number of ReceiveFolder records the
+   function returns
+   \param entries pointer on pointer to the list of ReceiveFolder structure to
+   return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_NOT_FOUND
+ */
+_PUBLIC_ enum MAPISTATUS openchangedb_get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,
+							     struct openchangedb_context *oc_ctx,
+							     const char *recipient,
+							     uint32_t *cValues,
+							     struct ReceiveFolder **entries)
+{
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!cValues, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!entries, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->get_ReceiveFolderTable(mem_ctx, oc_ctx, recipient,
+					      cValues, entries);
+}
+
 /**
    \details Retrieve the Transport Folder FolderID for given recipient
    from openchange dispatcher database

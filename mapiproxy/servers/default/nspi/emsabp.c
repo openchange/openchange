@@ -823,7 +823,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				emsabp_PermanentEntryID_to_Binary_r(mem_ctx, permEntryID, &(lpProps.value.bin));
 				break;
 			case PR_CONTAINER_FLAGS:
-				switch (child) {
+			  switch ((int)child) {
 				case true:
 					lpProps.value.l = AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 					break;
@@ -832,7 +832,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				}
 				break;
 			case PR_DEPTH:
-				switch (child) {
+			  switch ((int)child) {
 				case true:
 					lpProps.value.l = 0x1;
 					break;
@@ -1281,7 +1281,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_by_id(TALLOC_CTX *mem_ctx,
    \param mem_ctx pointer to the memory context
    \param emsabp_ctx pointer to the EMSABP context
    \param ContainerID id of the container to fetch
-   \param ldb_res pointer on pointer to the LDB result returned by the
+   \param ldb_resp pointer on pointer to the LDB result returned by the
    function
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

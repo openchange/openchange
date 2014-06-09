@@ -147,6 +147,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 					      uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
@@ -219,9 +220,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_SortTable;
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
-		retval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request->lpSortCriteria, &status);
-                if (retval) {
-			mapi_repl->error_code = retval;
+		mretval = mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request->lpSortCriteria, &status);
+                if (mretval) {
+			mapi_repl->error_code = mapistore_error_to_mapi(mretval);
 			goto end;
 		}
 		mapi_repl->u.mapi_SortTable.TableStatus = status;
@@ -264,6 +265,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 					     uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
@@ -324,9 +326,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 	if (emsmdbp_is_mapistore(object)) {
 		status = TBLSTAT_COMPLETE;
 		contextID = emsmdbp_get_contextID(object);
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, &request.restrictions, &status);
-                if (retval) {
-                        mapi_repl->error_code = retval;
+		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, &request.restrictions, &status);
+                if (mretval) {
+                        mapi_repl->error_code = (enum MAPISTATUS) mretval;
 			goto end;
 		}
 
@@ -698,6 +700,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object_table	*table;
 	struct FindRow_req		request;
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	void				*data = NULL;
 	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
@@ -770,10 +773,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 	memset (&row, 0, sizeof(DATA_BLOB));
 
-	switch (emsmdbp_is_mapistore(object)) {
+	switch ((int)emsmdbp_is_mapistore(object)) {
 	case true:
 		/* Restrict rows to be fetched */
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
+		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 
@@ -824,7 +827,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 			}
 		}
 
-		retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
+		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
 
 		/* Adjust parameters */
 		if (found) {
@@ -937,6 +940,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 					       uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	struct mapi_handles		*parent;
 	struct emsmdbp_object		*object;
 	struct emsmdbp_object_table	*table;
@@ -998,7 +1002,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 		/* 1.2. empty restrictions */
 		if (emsmdbp_is_mapistore(object)) {
 			contextID = emsmdbp_get_contextID(object);
-			retval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, NULL, &status);
+			mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, NULL, &status);
 			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));

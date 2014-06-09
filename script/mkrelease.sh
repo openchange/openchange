@@ -1,16 +1,38 @@
 #!/bin/sh
 
 #
-# ./script/mkrelease.sh VERSION NICKNAME NICKNAME2 FIRST_REVISION
-# ./script/mkrelease.sh 0.7 PHASER Phaser 308
+# ./script/mkrelease.sh VERSION NICKNAME NICKNAME2
+# ./script/mkrelease.sh 2.1 QUADRANT Quadrant
 #
 
-TMPDIR=`mktemp openchange-XXXXX`
-rm $TMPDIR || exit 1
-svn export . $TMPDIR || exit 1
-svn log -r$4:HEAD > $TMPDIR/CHANGELOG || exit 1
+if [ $# -ne 3 ]; then
+    echo "Usage: `basename $0` <NUMBER> <NAME> <NICKNAME>"
+    exit 1
+fi
 
-( cd $TMPDIR/
+VERSION="$1-$2"
+
+# Check if we already have a release
+if [ -f openchange-$VERSION.tar.gz ]; then
+    echo "The release already exists in current directory"
+    exit 1
+fi
+
+if [ -f openchange-$VERSION.tar.gz.asc ]; then
+    echo "The release signature already exists in current directory"
+    exit 1
+fi
+
+# Make the release
+TMPDIR=`mktemp openchange-XXXXX`
+TMPTAR="$TMPDIR.tar"
+rm -f $TMPDIR || exit 1
+rm -f $TMPTAR || exit 1
+(git archive master --format tar --output $TMPTAR) || exit 1
+
+mkdir openchange-$VERSION || exit 1
+tar xvf $TMPTAR -C openchange-$VERSION || exit 1
+( cd openchange-$VERSION
  ./autogen.sh || exit 1
  ./configure || exit 1
  make || exit 1
@@ -22,14 +44,16 @@ svn log -r$4:HEAD > $TMPDIR/CHANGELOG || exit 1
  ./configure || exit 1
  make doxygen || exit 1
  make distclean  || exit 1
- rm .bzrignore
 ) || exit 1
 
-VERSION=$1-$2
-mv $TMPDIR openchange-$VERSION || exit 1
 tar -cf openchange-$VERSION.tar openchange-$VERSION || exit 1
+gzip openchange-$VERSION.tar
+
+# cleanup temporary files
+rm -f $TMPTAR
+rm -rf openchange-$VERSION
+
 echo "Now run: "
-echo "gpg --detach-sign --armor openchange-$VERSION.tar"
-echo "gzip openchange-$VERSION.tar" 
+echo "gpg -u <key_id> --detach-sign --armor openchange-$VERSION.tar.gz"
 echo "And then upload "
-echo "openchange-$VERSION.tar.gz openchange-$VERSION.tar.asc" 
+echo "openchange-$VERSION.tar.gz openchange-$VERSION.tar.gz.asc" 

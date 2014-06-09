@@ -32,8 +32,9 @@ else
 fi
 
 export PKG_CONFIG_PATH=$SAMBA_PREFIX/lib/pkgconfig:$PKG_CONFIG_PATH
-pythondir=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
-export PYTHONPATH=$SAMBA_PREFIX$pythondir:$PYTHONPATH
+pythondir_nodep=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(0,0,'/')"`
+pythondir_dep=`python -c "from distutils import sysconfig; print sysconfig.get_python_lib(1,0,'/')"`
+export PYTHONPATH=$SAMBA_PREFIX$pythondir_nodep:$SAMBA_PREFIX$python_dep:$PYTHONPATH
 
 RUNDIR=$(readlink -f $(dirname $0))
 HOST_OS=`$RUNDIR/../config.guess`

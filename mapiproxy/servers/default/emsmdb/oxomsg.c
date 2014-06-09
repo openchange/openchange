@@ -188,7 +188,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
@@ -439,7 +439,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	response = &mapi_repl->u.mapi_TransportSend;
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;

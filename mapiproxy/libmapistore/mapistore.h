@@ -172,9 +172,9 @@ struct mapistore_backend {
 		const char	*description;
 		const char	*namespace;
 
-		enum mapistore_error	(*init)(void);
+		enum mapistore_error	(*init)(const char *);
 		enum mapistore_error	(*list_contexts)(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
-		enum mapistore_error	(*create_context)(TALLOC_CTX *, struct mapistore_connection_info *, struct indexing_context *, const char *, void **);
+		enum mapistore_error	(*create_context)(TALLOC_CTX *, const char *, struct mapistore_connection_info *, struct indexing_context *, const char *, void **);
 		enum mapistore_error	(*create_root_folder)(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 	} backend;
 
@@ -374,7 +374,7 @@ init_backend_fn	*mapistore_backend_load(TALLOC_CTX *, const char *);
 struct backend_context *mapistore_backend_lookup(struct backend_context_list *, uint32_t);
 struct backend_context *mapistore_backend_lookup_by_uri(struct backend_context_list *, const char *);
 struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *, const char *);
-bool		mapistore_backend_run_init(init_backend_fn *);
+enum mapistore_error mapistore_backend_run_init(init_backend_fn *);
 
 /* definitions from mapistore_backend_defaults */
 enum mapistore_error mapistore_backend_init_defaults(struct mapistore_backend *);

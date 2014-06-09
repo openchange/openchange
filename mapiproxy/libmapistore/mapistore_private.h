@@ -25,6 +25,8 @@
 #include <talloc.h>
 #include "backends/namedprops_backend.h"
 
+#include <Python.h>
+
 #ifndef	ISDOT
 #define ISDOT(path) ( \
 			*((const char *)(path)) == '.' && \
@@ -39,7 +41,6 @@
 			    *(((const char *)(path)) + 2) == '\0' \
 			)
 #endif
-
 
 struct tdb_wrap {
 	struct tdb_context	*tdb;
@@ -113,6 +114,28 @@ struct replica_mapping_context_list {
  */
 #define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
 #define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
+
+/**
+   MAPIStore python data structures
+ */
+enum mapistore_python_object_type {
+	MAPISTORE_PYTHON_OBJECT_BACKEND,
+	MAPISTORE_PYTHON_OBJECT_CONTEXT,
+	MAPISTORE_PYTHON_OBJECT_FOLDER,
+	MAPISTORE_PYTHON_OBJECT_MESSAGE,
+	MAPISTORE_PYTHON_OBJECT_TABLE,
+	MAPISTORE_PYTHON_OBJECT_PROPERTIES,
+	MAPISTORE_PYTHON_OBJECT_MANAFER
+};
+
+struct mapistore_python_object {
+	enum mapistore_python_object_type	obj_type;
+	char					*name;
+	struct mapistore_connection_info	*conn;
+	struct indexing_context			*ictx;
+	PyObject				*module;
+	PyObject				*private_object;
+};
 
 __BEGIN_DECLS
 
@@ -190,6 +213,10 @@ enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const ch
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t, int type);
+
+/* definitions from mapistore_python.c */
+enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *, const char *);
+const char *mapistore_python_get_installdir(void);
 
 __END_DECLS
 

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -21,6 +21,7 @@
 
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <talloc.h>
 #include <core/ntstatus.h>
 #include <popt.h>
@@ -40,19 +41,20 @@ int main(int argc, const char *argv[])
 	int				retval;
 	struct mapistore_context	*mstore_ctx;
 	struct loadparm_context		*lp_ctx;
+	void				*openchangedb_ctx;
 	poptContext			pc;
 	int				opt;
 	const char			*opt_debug = NULL;
+	const char			*opt_uri = NULL;
 	uint32_t			context_id = 0;
-	uint32_t			context_id2 = 0;
-	uint32_t			context_id3 = 0;
-	void				*root_folder;
+	void				*backend_obj;
 
-	enum { OPT_DEBUG=1000 };
+	enum { OPT_DEBUG=1000, OPT_URI };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "debuglevel",	'd', POPT_ARG_STRING, NULL, OPT_DEBUG,	"set the debug level", NULL },
+		{ "uri", 'U', POPT_ARG_STRING, NULL, OPT_URI, "set the backend URI", NULL},
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
 
@@ -66,10 +68,18 @@ int main(int argc, const char *argv[])
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
 			break;
+		case OPT_URI:
+			opt_uri = poptGetOptArg(pc);
+			break;
 		}
 	}
 
 	poptFreeContext(pc);
+
+	if (!opt_uri) {
+		DEBUG(0, ("Usage: mapistore_test -U <opt_uri> [OPTION]\n"));
+		exit(0);
+	}
 
 	if (opt_debug) {
 		lpcfg_set_cmdline(lp_ctx, "log level", opt_debug);
@@ -86,30 +96,17 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test.db", -1, &context_id, &root_folder);
-	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
-		exit (1);
-	}
+	openchangedb_ctx = mapiproxy_server_openchangedb_init(lp_ctx);
 
-	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test2.db", -1, &context_id2, &root_folder);
-	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
-		exit (1);
-	}
+	retval = mapistore_set_connection_info(mstore_ctx, NULL, openchangedb_ctx, "openchange");
 
-	DEBUG(0, ("Context ID: [1] = %d and [2] = %d\n", context_id, context_id2));
-
-
-	retval = mapistore_add_context(mstore_ctx, "openchange", "fsocpf:///tmp/fsocpf", -1, &context_id3, &root_folder);
+	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &backend_obj);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);
-	retval = mapistore_del_context(mstore_ctx, context_id2);
-	retval = mapistore_del_context(mstore_ctx, context_id3);
 
 	retval = mapistore_release(mstore_ctx);
 	if (retval != MAPISTORE_SUCCESS) {

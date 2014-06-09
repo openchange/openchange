@@ -160,7 +160,8 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* FIXME */
+	/* MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL); */
 	MAPISTORE_RETVAL_IF(!oc_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -425,8 +426,12 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Storage backend registration failed";
 	case MAPISTORE_ERR_BACKEND_INIT:
 		return "Storage backend initialization failed";
+	case MAPISTORE_ERR_INVALID_BACKEND:
+		return "Invalid backend";
 	case MAPISTORE_ERR_CONTEXT_FAILED:
 		return "Failed creating the context";
+	case MAPISTORE_ERR_INVALID_CONTEXT:
+		return "Invalid context";
 	case MAPISTORE_ERR_INVALID_NAMESPACE:
 		return "Invalid Namespace";
 	case MAPISTORE_ERR_INVALID_URI:

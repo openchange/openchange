@@ -52,14 +52,13 @@ all: 		$(OC_IDL)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 
-install: 	all 			\
+install:: 	all 			\
 		installlib 		\
 		installpc 		\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_SERVER_INSTALL) 	\
-		$(PYOPENCHANGEINSTALL)	\
-		installnagios
+		$(PYOPENCHANGEINSTALL)
 
 installlib:	$(OC_LIBS_INSTALL)
 installpc:	$(OC_LIBS_INSTALLPC)
@@ -1564,6 +1563,8 @@ installnagios:
 	$(INSTALL) -d $(DESTDIR)$(nagiosdir)
 	$(INSTALL) -m 0755 script/check_exchange $(DESTDIR)$(nagiosdir)
 
+install:: installnagios
+
 ###################
 # libmapi examples
 ###################
@@ -1712,3 +1713,11 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 # need config.mk
 distclean::
 	rm -f config.mk
+
+ocsmanager-install::
+	cd $(srcdir)/mapiproxy/services/ocsmanager && ./setup.py install --root="$(DESTDIR)" --prefix=$(prefix)
+
+# TODO: detect pylons and paste in configure, and if they are available,
+# add ocsmanager-install to the install target.
+#
+# install:: ocsmanager-install

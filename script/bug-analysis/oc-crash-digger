@@ -31,6 +31,7 @@ import zlib
 import apport
 from apport.crashdb import get_crashdb
 from apport.report import Report
+from buganalysis.pkgshelper import map_package, map_dependencies
 
 
 #
@@ -78,7 +79,9 @@ class CrashDigger(object):
             oc_cd_conf_settings = dict()
             with open(self.oc_cd_conf) as f:
                 exec(compile(f.read(), self.oc_cd_conf, 'exec'), oc_cd_conf_settings)
-                self.oc_cd_conf = {'extra_packages': oc_cd_conf_settings['extra_packages']}
+                self.oc_cd_conf = {}
+                if 'extra_packages' in oc_cd_conf_settings:
+                    self.oc_cd_conf['extra_packages'] = oc_cd_conf_settings['extra_packages']
 
     def log(self, str):
         """
@@ -127,7 +130,9 @@ class CrashDigger(object):
                     report = Report()
                     report.load(f)
                     self.crashes_files[report_id] = {'path': fpath,
-                                                     'distro_release': report['DistroRelease']}
+                                                     'distro_release': report['DistroRelease'],
+                                                     'map_required': ('Package' not in report or
+                                                                      'Dependencies' not in report)}
                     self.log('%s loaded.' % fpath)
                     report_id += 1
                 except Exception as exc:
@@ -180,7 +185,27 @@ class CrashDigger(object):
 
             self.log('Tracing temp_file %s' % temp_file.name)
 
-        self.__call_retrace(id, rel, temp_file=temp_file_name)
+        extra_packages = None
+        if self.crashes_files[id]['map_required']:
+            report = Report()
+            if temp_file_name is None:
+                temp_file = NamedTemporaryFile()
+                temp_file_name = temp_file.name
+
+                with open(crash_file, 'rb') as f:
+                    report.load(f)
+            else:
+                with open(temp_file.name, 'rb') as f:
+                    report.load(f)
+
+            # Origin set the requirement to download the packages
+            report['Package'] = '%s %s [origin: Zentyal]' % map_package(report)
+            # Set as extra packages as we don't have the version from the crash
+            extra_packages = map_dependencies(report)
+            with open(temp_file.name, 'wb') as f:
+                report.write(f)
+
+        self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages)
 
         if self.upload:
             report = Report()
@@ -202,7 +227,7 @@ class CrashDigger(object):
             # Delete temporary file once it is uploaded
             os.unlink(self.file_to_upload.name)
 
-    def __call_retrace(self, id, rel, temp_file=None):
+    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None):
         argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
@@ -225,6 +250,9 @@ class CrashDigger(object):
 
         if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf and rel in self.oc_cd_conf['extra_packages']:
             for package in self.oc_cd_conf['extra_packages'][rel]:
+                argv.extend(['--extra-package', package])
+        if extra_packages is not None:
+            for package in extra_packages:
                 argv.extend(['--extra-package', package])
 
         if temp_file:

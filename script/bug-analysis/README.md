@@ -14,7 +14,7 @@ Dependencies
 
 It is required to get the following package and its dependencies:
 
-apport-retrace
+* `apport-retrace`
 
 Retrace
 -------

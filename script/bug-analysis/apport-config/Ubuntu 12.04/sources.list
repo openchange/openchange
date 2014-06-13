@@ -2,8 +2,7 @@
 #deb http://ppa.launchpad.net/zentyal/3.2/ubuntu precise main
 #deb-src http://ppa.launchpad.net/zentyal/3.2/ubuntu precise main
 #deb http://archive.zentyal.org/zentyal cloud main
-deb https://user:pass@qa.cloud.zentyal.com/ zentyal-qa-3.2 main universe multiverse extra
-
+deb http://archive.zentyal.org/old precise main
 
 deb http://fr.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
 deb-src http://fr.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted

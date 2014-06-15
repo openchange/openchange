@@ -10,6 +10,7 @@ from sqlite import CrashDatabase
 class CrashDatabaseTestCase(TestCase):
 
     def setUp(self):
+        self.crash_path = os.path.sep + os.path.join('tmp', 'test.crash')
         self.r = Report()
         self.r['Package'] = 'libnapoleon-solo1 1.2-1'
         self.r['Signal'] = '11'
@@ -18,6 +19,11 @@ d01 (x=3) at crash.c:29
 raise () from /lib/libpthread.so.0
 <signal handler called>
 __frob (x=4) at crash.c:30"""
+        self.r['_URL'] = 'file://' + self.crash_path
+
+    def tearDown(self):
+        if os.path.exists(self.crash_path):
+            os.unlink(self.crash_path)
 
     def test_create_db_default(self):
         try:
@@ -37,6 +43,18 @@ __frob (x=4) at crash.c:30"""
         self.assertIn('Signal', report)
         self.assertEqual(report['Signal'], '11')
 
+    def test_failed_upload_no_URL(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+
+        del self.r['_URL']
+        self.assertRaises(ValueError, cb.upload, self.r)
+
+    def test_failed_upload_invalid_URL_scheme(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+
+        self.r['_URL'] = 'invalid://scheme/path'
+        self.assertRaises(ValueError, cb.upload, self.r)
+
     def test_failed_download(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
         self.assertRaises(Exception, cb.download, 23232)
@@ -54,12 +72,12 @@ __frob (x=4) at crash.c:30"""
         crash_id = cb.upload(self.r)
 
         self.r['SourcePackage'] = 'adios'
-        self.r['Signal'] = '9'
+        self.r['Signal'] = u'9'
         cb.update(crash_id, self.r, 'a comment to add')
 
         report = cb.download(crash_id)
         self.assertIn('SourcePackage', report)
-        self.assertEqual(report['Signal'], '9')
+        self.assertEqual(report['Signal'], u'9')
 
     def test_update_with_key_filter(self):
         """
@@ -69,12 +87,19 @@ __frob (x=4) at crash.c:30"""
         crash_id = cb.upload(self.r)
 
         self.r['SourcePackage'] = 'adios'
-        self.r['Signal'] = '9'
+        self.r['Signal'] = u'9'
         cb.update(crash_id, self.r, 'a comment to add', key_filter=('Package', 'SourcePackage'))
 
         report = cb.download(crash_id)
         self.assertIn('SourcePackage', report)
-        self.assertNotEqual(report['Signal'], '9')
+        self.assertNotEqual(report['Signal'], u'9')
+
+    def test_failed_update_no_URL(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+
+        crash_id = cb.upload(self.r)
+        del self.r['_URL']
+        self.assertRaises(ValueError, cb.update, *(crash_id, self.r, 'comment'))
 
     def test_get_distro_release(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
@@ -91,7 +116,7 @@ __frob (x=4) at crash.c:30"""
         self.assertEqual(cb.get_unretraced(), [])
 
         crash_id = cb.upload(self.r)
-        self.assertEqual(cb.get_unretraced(), [1])
+        self.assertEqual(cb.get_unretraced(), [crash_id])
 
         self.r['Stacktrace'] = """
  #0  0x00007f96dcfb9f77 in __GI_raise (sig=sig@entry=6) at ../nptl/sysdeps/unix/sysv/linux/raise.c:56

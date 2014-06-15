@@ -26,6 +26,21 @@ from apport.report import Report
 from io import BytesIO
 import os.path
 import sqlite3
+import sys
+
+
+if sys.version_info.major == 2:
+    from urllib2 import HTTPSHandler, Request, build_opener
+    from httplib import HTTPSConnection
+    from urllib import urlencode, urlopen
+    (HTTPSHandler, Request, build_opener, HTTPSConnection, urlencode, urlopen)  # pyflakes
+    from urlparse import urlparse
+    _python2 = True
+else:
+    from urllib.request import HTTPSHandler, Request, build_opener, urlopen
+    from urllib.parse import urlencode, urlparse
+    from http.client import HTTPSConnection
+    _python2 = False
 
 
 class CrashDatabase(apport.crashdb.CrashDatabase):
@@ -67,21 +82,28 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         Upload the report to the database.
 
         No progress callback is implemented yet.
+
+        The report is not uploaded but the pointer indicated by _URL attribute in the report.
+
+        :raise ValueError: if the report does not have _URL attribute
         """
         cur = self.db.cursor()
         app, version = report['Package'].split(' ', 1)
-        buf = BytesIO()
-        report.write(buf)
-        buf.seek(0)  # Start over again
+
+        if '_URL' not in report:
+            raise ValueError('This backend requires _URL attribute to upload a crash report')
 
         stacktrace = None
         if 'Stacktrace' in report:
             stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
 
+        # Store it in the destination URL
+        self._upload_report_file(report)
+
         cur.execute("""INSERT INTO crashes
-                       (crash_id, crash, title, app, version, sym_stacktrace, distro_release)
+                       (crash_id, crash_url, title, app, version, sym_stacktrace, distro_release)
                        VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                    (self.last_crash_id + 1, sqlite3.Binary(buf.getvalue()), report.standard_title(),
+                    (self.last_crash_id + 1, report['_URL'], report.standard_title(),
                      app, version, stacktrace, report.get('DistroRelease', None)))
         self.db.commit()
         self.last_crash_id = cur.lastrowid
@@ -94,12 +116,18 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         :raises TypeError: if the report does not exist
         """
         cur = self.db.cursor()
-        cur.execute("""SELECT crash
+        cur.execute("""SELECT crash_url
                        FROM crashes
                        WHERE crash_id = ?""", [id])
-        buf = cur.fetchone()[0]
+        url = cur.fetchone()[0]
+
+        fh = urlopen(url)
+
+        # Actually read the content
+        buf = BytesIO(bytes(fh.read()))
+
         report = Report()
-        report.load(BytesIO(bytes(buf)))
+        report.load(buf)
         return report
 
     def get_comment_url(self, report, handle):
@@ -137,6 +165,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         Attachments are unsupported by this moment.
 
         See apport.crashdb.CrashDatabase.update for more information.
+
+        :raise ValueError: if the report does not have _URL attribute
         """
         db_report = self.download(id)
         # Insert the comment
@@ -158,18 +188,19 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 db_report.update(report)
 
             # Do what upload does
-            buf = BytesIO()
-            db_report.write(buf)
-            buf.seek(0)
+            if '_URL' not in report:
+                raise ValueError('This backend requires _URL attribute to update a crash report')
+
+            self._update_report_file(db_report)
 
             stacktrace = None
-            if 'Stacktrace' in report:
-                stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
+            if 'Stacktrace' in db_report:
+                stacktrace = sqlite3.Binary(bytes(db_report['Stacktrace']))
 
-            cur.execute("""UPDATE crashes SET crash = ?, title = ?, sym_stacktrace = ?, distro_release = ?
+            cur.execute("""UPDATE crashes SET crash_url = ?, title = ?, sym_stacktrace = ?, distro_release = ?
                            WHERE crash_id = ?""",
-                        (buf.read(), db_report.standard_title(), stacktrace,
-                         report.get('DistroRelease', None), id))
+                        (db_report['_URL'], db_report.standard_title(), stacktrace,
+                         db_report.get('DistroRelease', None), id))
 
     def set_credentials(self, username, password):
         """
@@ -291,8 +322,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             # a struct in gdb
             cur.execute("""CREATE TABLE crashes (
             crash_id INTEGER NOT NULL,
-            crash BLOB NOT_NULL,
-            title VARCHAR(64),
+            crash_url VARCHAR(1024) NOT NULL,
+            title VARCHAR(512),
             app VARCHAR(64) NOT NULL,
             version VARCHAR(64),
             distro_release VARCHAR(64),
@@ -309,3 +340,27 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             cur.execute("""CREATE TABLE crash_comments (
             crash_id INTEGER NOT_NULL,
             comment TEXT)""")
+
+    def _upload_report_file(self, report):
+        '''Upload the report file based on scheme'''
+        url = urlparse(report['_URL'])
+        if url.scheme == 'file':
+            # Write the file directly
+            with open(url.path, 'wb') as f:
+                report.write(f)
+        elif url.scheme == 'http':
+            # Mimetise what upload_blob from launchpad.py crash_impl does
+            pass
+        else:
+            raise ValueError('Unhandled scheme: %s' % url.scheme)
+
+    def _update_report_file(self, report):
+        '''Update the report file based on scheme'''
+        url = urlparse(report['_URL'])
+        if url.scheme == 'file':
+            self._upload_report_file(report)
+        elif url.scheme == 'http':
+            # Mimetise what upload_blob from launchpad.py crash_impl does
+            pass
+        else:
+            raise ValueError('Unhandled scheme: %s' % url.scheme)

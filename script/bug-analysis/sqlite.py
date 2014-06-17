@@ -361,6 +361,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
             if ':' in url.netloc:
                 host, port = url.netloc.split(':')
+                port = int(port)
             else:
                 host, port = url.netloc, 80
             file_name = url.path.rsplit('/', 1)[-1]

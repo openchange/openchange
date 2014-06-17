@@ -30,16 +30,15 @@ import sys
 
 
 if sys.version_info.major == 2:
-    from urllib2 import HTTPSHandler, Request, build_opener
-    from httplib import HTTPSConnection
-    from urllib import urlencode, urlopen
-    (HTTPSHandler, Request, build_opener, HTTPSConnection, urlencode, urlopen)  # pyflakes
+    from urllib import urlopen
     from urlparse import urlparse, urljoin
+    from httplib import HTTP as HTTPConnection
+    from httplib import HTTPException
     _python2 = True
 else:
-    from urllib.request import HTTPSHandler, Request, build_opener, urlopen
-    from urllib.parse import urlencode, urlparse, urljoin
-    from http.client import HTTPSConnection
+    from http.client import HTTPConnection, HTTPException
+    from urllib.request import urlopen
+    from urllib.parse import urlparse, urljoin
     _python2 = False
 
 
@@ -355,23 +354,73 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             with open(url.path, 'wb') as f:
                 report.write(f)
         elif url.scheme == 'http':
-            # Mimetise what upload_blob from launchpad.py crash_impl does
-            pass
+            blob = BytesIO()
+            report.write(blob)
+            blob.flush()
+            blob.seek(0)
+
+            if ':' in url.netloc:
+                host, port = url.netloc.split(':')
+            else:
+                host, port = url.netloc, 80
+            file_name = url.path.rsplit('/', 1)[-1]
+            post_multipart(host, port, url.path, [], [('upload', file_name, blob.getvalue())])
         else:
             raise ValueError('Unhandled scheme: %s' % url.scheme)
 
     def _update_report_file(self, report):
         '''Update the report file based on scheme'''
-        url = urlparse(report['_URL'])
-        if url.scheme == 'file':
-            self._upload_report_file(report)
-        elif url.scheme == 'http':
-            # Mimetise what upload_blob from launchpad.py crash_impl does
-            pass
-        else:
-            raise ValueError('Unhandled scheme: %s' % url.scheme)
+        self._upload_report_file(report)
 
     def _report_file_name(self, report):
         sep = '_'
         exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
         return str(self.last_crash_id + 1) + sep + exe_path
+
+
+def post_multipart(host, port, selector, fields, files):
+    content_type, body = encode_multipart_formdata(fields, files)
+    h = HTTPConnection(host, port)
+    h.putrequest('POST', selector)
+    h.putheader('content-type', content_type)
+    h.putheader('content-length', str(len(body)))
+    h.endheaders()
+    if _python2:
+        h.send(body)
+    else:
+        h.send(body.encode('utf-8'))
+    if _python2:
+        errcode, errmsg, headers = h.getreply()
+        if errcode != 200:
+            raise HTTPException("%s: %s" % (errcode, errmsg))
+        return h.file.read()
+    else:
+        res = h.getresponse()
+        if res.status != 200:
+            raise HTTPException("%s: %s" % (res.status, res.reason))
+        return res.read()
+
+
+def encode_multipart_formdata(fields, files):
+    LIMIT = '----------lImIt_of_THE_fIle_eW_$'
+    CRLF = '\r\n'
+    L = []
+    for (key, value) in fields:
+        L.append('--' + LIMIT)
+        L.append('Content-Disposition: form-data; name="%s"' % key)
+        L.append('')
+        L.append(value)
+    for (key, filename, value) in files:
+        L.append('--' + LIMIT)
+        L.append('Content-Disposition: form-data; name="%s"; filename="%s"' % (key, filename))
+        L.append('Content-Type: application/octet-stream')
+        L.append('')
+        if _python2:
+            L.append(value)
+        else:
+            L.append(value.decode())
+    L.append('--' + LIMIT + '--')
+    L.append('')
+    body = CRLF.join(L)
+    content_type = 'multipart/form-data; boundary=%s' % LIMIT
+    return content_type, body

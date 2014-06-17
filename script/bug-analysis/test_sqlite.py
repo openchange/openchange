@@ -10,8 +10,11 @@ from sqlite import CrashDatabase
 class CrashDatabaseTestCase(TestCase):
 
     def setUp(self):
-        self.crash_path = os.path.sep + os.path.join('tmp', 'test.crash')
+        self.crash_base = os.path.sep + 'tmp'
+        self.crash_base_url = 'file://' + self.crash_base + '/'
+        self.crash_path = os.path.join(self.crash_base, 'test.crash')
         self.r = Report()
+        self.r['ExecutablePath'] = '/usr/bin/napoleon-solod'
         self.r['Package'] = 'libnapoleon-solo1 1.2-1'
         self.r['Signal'] = '11'
         self.r['StacktraceTop'] = """foo_bar (x=2) at crash.c:28
@@ -19,11 +22,13 @@ d01 (x=3) at crash.c:29
 raise () from /lib/libpthread.so.0
 <signal handler called>
 __frob (x=4) at crash.c:30"""
-        self.r['_URL'] = 'file://' + self.crash_path
 
     def tearDown(self):
         if os.path.exists(self.crash_path):
             os.unlink(self.crash_path)
+        exe_crash_base = os.path.join(self.crash_base, '1_usr_bin_napoleon-solod')
+        if os.path.exists(exe_crash_base):
+            os.unlink(exe_crash_base)
 
     def test_create_db_default(self):
         try:
@@ -32,8 +37,16 @@ __frob (x=4) at crash.c:30"""
         finally:
             os.unlink(os.path.expanduser('~/crashdb.sqlite'))
 
-    def test_upload_download(self):
+    def test_crashes_base_url(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        self.assertEqual(cb.base_url, self.crash_base_url)
+
+    def test_crashes_base_url(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        self.assertIsNone(cb.base_url)
+
+    def test_upload_download(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
 
         crash_id = cb.upload(self.r)
         self.assertEqual(crash_id, 1)
@@ -45,8 +58,6 @@ __frob (x=4) at crash.c:30"""
 
     def test_failed_upload_no_URL(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
-
-        del self.r['_URL']
         self.assertRaises(ValueError, cb.upload, self.r)
 
     def test_failed_upload_invalid_URL_scheme(self):
@@ -62,13 +73,14 @@ __frob (x=4) at crash.c:30"""
     def test_get_id_url(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
         self.assertEqual("#1", cb.get_id_url(None, 1))
-        self.assertEqual("#1: None", cb.get_id_url(self.r, 1))
+        self.assertEqual("#1: napoleon-solod crashed with SIGSEGV in foo_bar()",
+                         cb.get_id_url(self.r, 1))
 
     def test_update(self):
         """
         Test complete update
         """
-        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         crash_id = cb.upload(self.r)
 
         self.r['SourcePackage'] = 'adios'
@@ -83,7 +95,7 @@ __frob (x=4) at crash.c:30"""
         """
         Test a partial update
         """
-        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         crash_id = cb.upload(self.r)
 
         self.r['SourcePackage'] = 'adios'
@@ -97,12 +109,14 @@ __frob (x=4) at crash.c:30"""
     def test_failed_update_no_URL(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
 
+        self.r['_URL'] = self.crash_base_url + 'test.crash'
         crash_id = cb.upload(self.r)
+
         del self.r['_URL']
         self.assertRaises(ValueError, cb.update, *(crash_id, self.r, 'comment'))
 
     def test_get_distro_release(self):
-        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         crash_id = cb.upload(self.r)
 
         self.assertIsNone(cb.get_distro_release(crash_id))
@@ -112,7 +126,7 @@ __frob (x=4) at crash.c:30"""
         self.assertEqual(cb.get_distro_release(crash_id), 'Ubuntu 14.04')
 
     def test_get_unretraced(self):
-        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         self.assertEqual(cb.get_unretraced(), [])
 
         crash_id = cb.upload(self.r)
@@ -155,7 +169,7 @@ __frob (x=4) at crash.c:30"""
         self.assertEqual(cb.get_unretraced(), [])
 
     def test_close_duplicate(self):
-        cb = CrashDatabase(None, {'dbfile': ':memory:'})
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         crash_id = cb.upload(self.r)
         self.assertIsNone(cb.duplicate_of(crash_id))
 

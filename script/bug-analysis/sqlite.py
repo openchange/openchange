@@ -34,11 +34,11 @@ if sys.version_info.major == 2:
     from httplib import HTTPSConnection
     from urllib import urlencode, urlopen
     (HTTPSHandler, Request, build_opener, HTTPSConnection, urlencode, urlopen)  # pyflakes
-    from urlparse import urlparse
+    from urlparse import urlparse, urljoin
     _python2 = True
 else:
     from urllib.request import HTTPSHandler, Request, build_opener, urlopen
-    from urllib.parse import urlencode, urlparse
+    from urllib.parse import urlencode, urlparse, urljoin
     from http.client import HTTPSConnection
     _python2 = False
 
@@ -59,6 +59,9 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         """
         apport.crashdb.CrashDatabase.__init__(self, auth_file, options)
         self.dbfile = options.get('dbfile', os.path.expanduser('~/crashdb.sqlite'))
+        self.base_url = options.get('crashes_base_url', None)
+        if self.base_url is not None and urlparse(self.base_url).scheme not in ('file', 'http'):
+            raise ValueError('crashes_base_url option has not a valid scheme: %s' % self.base_url)
 
         init = not os.path.exists(self.dbfile) or self.dbfile == ':memory:' or \
             os.path.getsize(self.dbfile) == 0
@@ -85,13 +88,16 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         The report is not uploaded but the pointer indicated by _URL attribute in the report.
 
-        :raise ValueError: if the report does not have _URL attribute
+        :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set
         """
         cur = self.db.cursor()
         app, version = report['Package'].split(' ', 1)
 
+        if '_URL' not in report and self.base_url is None:
+            raise ValueError('This backend requires _URL attribute to upload a crash report or crashes_base_url configuration option')
+
         if '_URL' not in report:
-            raise ValueError('This backend requires _URL attribute to upload a crash report')
+            report['_URL'] = urljoin(self.base_url, self._report_file_name(report))
 
         stacktrace = None
         if 'Stacktrace' in report:
@@ -188,7 +194,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 db_report.update(report)
 
             # Do what upload does
-            if '_URL' not in report:
+            if '_URL' not in report and self.base_url is None:
                 raise ValueError('This backend requires _URL attribute to update a crash report')
 
             self._update_report_file(db_report)
@@ -364,3 +370,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             pass
         else:
             raise ValueError('Unhandled scheme: %s' % url.scheme)
+
+    def _report_file_name(self, report):
+        sep = '_'
+        exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
+        return str(self.last_crash_id + 1) + sep + exe_path

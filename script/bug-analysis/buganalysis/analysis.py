@@ -49,17 +49,7 @@ def guess_components(report):
         # Manually killed, no component
         return comps
 
-    lines = report['StacktraceTop'].splitlines()
-
-    bt_fn_re = re.compile('^(\w+)\s(\(.*\))\sat\s(.*):(\d+)$')
-    parsed_stacktrace_top = []
-    for line in lines:
-        m = bt_fn_re.match(line)
-        if m:
-            parsed_stacktrace_top.append({'fname': m.group(1),
-                                          'params': m.group(2),
-                                          'file_name': m.group(3),
-                                          'line_number': m.group(4)})
+    full_stacktrace = parse_stacktrace(report['Stacktrace'])
 
     # High-level OpenChange components
     oc_comps = set(('mapiproxy', 'libmapi', 'libmapiadmin', 'libocpf'))
@@ -67,7 +57,7 @@ def guess_components(report):
     micro_comps = re.compile(r'ox')
 
     # Check based on the filename
-    for frame in parsed_stacktrace_top:
+    for frame in full_stacktrace:
         file_path_parts = frame['file_name'].split(os.sep)
         # High-level OC comps
         if file_path_parts[0] == "":
@@ -85,3 +75,63 @@ def guess_components(report):
                 comps.add(basename)
 
     return comps
+
+
+def parse_stacktrace(stacktrace):
+    """
+    Parse stacktrace ignoring unwind_functions
+
+    :param str stacktrace: the 'bt full' gdb command output
+    :returns: a list with the frames in a dict (fname, params, file_name and line_number as keys)
+    :rtype: list
+    """
+    # Based on report._gen_stacktrace_top
+    unwind_functions = set(['g_logv', 'g_log', 'IA__g_log', 'IA__g_logv',
+                            'g_assert_warning', 'IA__g_assert_warning',
+                            '__GI_abort', '__GI_raise', '_XError'])
+    unwound = False
+    unwinding = False
+    fn_re = re.compile('^(\w+)\s(\(.*\))\sat\s(.*):(\d+)$')
+    bt_fn_re = re.compile('^#(\d+)\s+(?:0x(?:\w+)\s+in\s+\*?(.*)|(<signal handler called>)\s*)$')
+    bt_fn_noaddr_re = re.compile('^#(\d+)\s+(?:(.*)|(<signal handler called>)\s*)$')
+    # some internal functions like the SSE stubs cause unnecessary jitter
+    ignore_functions_re = re.compile('^(__.*_s?sse\d+(?:_\w+)?|__kernel_vsyscall)$')
+
+    parsed_stacktrace = []
+    for line in stacktrace.splitlines():
+        m = bt_fn_re.match(line)
+        if not m:
+            m = bt_fn_noaddr_re.match(line)
+            if not m:
+                continue
+
+        if not unwound or unwinding:
+            if m.group(2):
+                fn = m.group(2).split()[0].split('(')[0]
+            else:
+                fn = None
+
+            if m.group(3) or fn in unwind_functions:
+                unwinding = True
+                parsed_stacktrace = []
+                if m.group(3):
+                    # we stop unwinding when we found a <signal handler>,
+                    # but we continue unwinding otherwise, as e. g. a glib
+                    # abort is usually sitting on top of an XError
+                    unwound = True
+
+                    continue
+            else:
+                unwinding = False
+
+        frame = m.group(2) or m.group(3)
+        function = frame.split()[0]
+        if not ignore_functions_re.match(function):
+            m = fn_re.match(frame)
+            if m:
+                parsed_stacktrace.append({'fname': m.group(1),
+                                          'params': m.group(2),
+                                          'file_name': m.group(3),
+                                          'line_number': m.group(4)})
+
+    return parsed_stacktrace

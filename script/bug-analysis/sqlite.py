@@ -61,6 +61,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         self.base_url = options.get('crashes_base_url', None)
         if self.base_url is not None and urlparse(self.base_url).scheme not in ('file', 'http'):
             raise ValueError('crashes_base_url option has not a valid scheme: %s' % self.base_url)
+        if self.base_url is not None and self.base_url[-1] != '/':
+            self.base_url += '/'
 
         init = not os.path.exists(self.dbfile) or self.dbfile == ':memory:' or \
             os.path.getsize(self.dbfile) == 0

@@ -32,6 +32,7 @@ import apport
 from apport.crashdb import get_crashdb
 from apport.report import Report
 from buganalysis.pkgshelper import map_package, map_dependencies
+from buganalysis.analysis import guess_components
 
 
 #
@@ -40,7 +41,8 @@ from buganalysis.pkgshelper import map_package, map_dependencies
 class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
-                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False):
+                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
+                 component=False):
         """
         Initialize pools.
 
@@ -63,6 +65,7 @@ class CrashDigger(object):
         self.stdout = stdout
         self.gdb = gdb
         self.upload = upload
+        self.guess_component = component
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -221,6 +224,7 @@ class CrashDigger(object):
                         self.log('This report is fixed in %s version' % ret_dup_check[1])
                 else:
                     self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+                    self.set_components(crash_id, report)
             else:
                 self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
 
@@ -299,6 +303,25 @@ class CrashDigger(object):
         else:
             self.log('Duplicate check negative')
 
+    def set_components(self, id, report=None):
+        """
+        Set the application components for a report
+        """
+        if report is None:
+            try:
+                report = self.crashdb.download(id)
+            except (MemoryError, TypeError, ValueError, IOError, zlib.error) as e:
+                self.log('Cannot download report: ' + str(e))
+                apport.error('Cannot download report %i: %s', id, str(e))
+                return
+
+        comps = guess_components(report)
+        if comps:
+            self.log("Set app components: %s to crash %d" % (', '.join(comps), id))
+            self.crashdb.set_app_components(id, comps)
+        else:
+            self.log("Impossible to guess app components to crash %d" % id)
+
     def run(self):
         """
         Process the work pools until they are empty.
@@ -311,6 +334,9 @@ class CrashDigger(object):
             self.retrace_next()
         for id in self.crashes_files.keys():
             self.retrace_file(id)
+        if self.guess_component:
+            for id in self.crashdb.get_unfixed():
+                self.set_components(id)
 
         if self.publish_dir and self.dup_db:
             self.crashdb.duplicate_db_publish(self.publish_dir)
@@ -362,11 +388,14 @@ def parse_options():
     optparser.add_option('-u', '--upload',
                          help="Upload the retraced crashes",
                          action='store_true', dest='upload', default=False)
+    optparser.add_option('-m', '--set-components',
+                         help="Guess components for the stored unfixed crashes",
+                         action='store_true', dest='component', default=False)
 
     (opts, args) = optparser.parse_args()
 
-    if not opts.config_dir and not opts.dupcheck_mode:
-        apport.fatal('Error: --config-dir or --dupcheck needs to be given')
+    if not opts.config_dir and not opts.dupcheck_mode and not opts.component:
+        apport.fatal('Error: --config-dir or --dupcheck or --set-components needs to be given')
 
     if opts.stdout and opts.gdb:
         apport.fatal('Error: --stdout and --gdb are incompatible')
@@ -404,7 +433,8 @@ try:
     CrashDigger(opts.config_dir, opts.cache,
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
-                opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload).run()
+                opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
+                opts.component).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

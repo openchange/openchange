@@ -192,3 +192,31 @@ __frob (x=4) at crash.c:30"""
         # Remove current duplicate thing
         cb.close_duplicate(self.r, crash_id2, None)
         self.assertIsNone(cb.duplicate_of(crash_id2))
+
+    # Tests related with components
+    def test_app_components_get_set(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        crash_id = cb.upload(self.r)
+
+        self.assertEqual(cb.get_app_components(crash_id), [])
+
+        cb.set_app_components(crash_id, ['sand'])
+        self.assertEqual(cb.get_app_components(crash_id), ['sand'])
+
+        cb.set_app_components(crash_id, ['sand'])
+        self.assertEqual(cb.get_app_components(crash_id), ['sand'])
+
+    def test_app_components_remove(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        crash_id = cb.upload(self.r)
+
+        self.assertRaises(ValueError, cb.remove_app_component, *(crash_id, 'sand'))
+        self.assertIsNone(cb.remove_app_component(crash_id))
+
+        cb.set_app_components(crash_id, ['sand'])
+        self.assertIsNone(cb.remove_app_component(crash_id, 'sand'))
+        self.assertEqual(cb.get_app_components(crash_id), [])
+
+        cb.set_app_components(crash_id, ['sand'])
+        self.assertIsNone(cb.remove_app_component(crash_id))
+        self.assertEqual(cb.get_app_components(crash_id), [])

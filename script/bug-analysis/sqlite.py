@@ -333,6 +333,61 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             fixed_version = cur.fetchone()[0]
         return fixed_version
 
+    """
+    This set of methods are exclusive for OpenChange mining tool
+    """
+    def set_app_components(self, id, components):
+        """
+        Set the component for a crash
+
+        :param list components: the crash app components
+        """
+        with self.db:
+            cur = self.db.cursor()
+            for component in components:
+                cur.execute("""SELECT COUNT(*)
+                               FROM crash_app_components
+                               WHERE crash_id = ? AND component = ?""",
+                            [id, component])
+                comp_num = cur.fetchone()[0]
+                if comp_num == 0:
+                    cur.execute("""INSERT INTO crash_app_components (crash_id, component)
+                                   VALUES (?, ?)""",
+                                [id, component])
+
+    def get_app_components(self, id):
+        """
+        Set the component for a crash
+
+        :returns: the components for a crash
+        :rtype: list
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT component
+                           FROM crash_app_components
+                           WHERE crash_id = ?""", [id])
+            comps = [row[0] for row in cur.fetchall()]
+        return comps
+
+    def remove_app_component(self, id, component=None):
+        """
+        Remove components for a crash
+
+        :param str component: if it is None, all components are deleted
+        :raise ValueError: if the component is not None but it is not a crash app component
+        """
+        with self.db:
+            cur = self.db.cursor()
+            if component is None:
+                cur.execute("""DELETE FROM crash_app_components
+                               WHERE crash_id = ?""", [id])
+            else:
+                cur.execute("""DELETE FROM crash_app_components
+                               WHERE crash_id = ? AND component = ?""", [id, component])
+                if cur.rowcount == 0:
+                    raise ValueError("%s is not an application component of crash %d" % (component, id))
+
     def __create_db(self):
         """
         Create the DB
@@ -364,6 +419,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             cur.execute("""CREATE TABLE crash_comments (
             crash_id INTEGER NOT_NULL,
             comment TEXT)""")
+
+            cur.execute("""CREATE TABLE crash_app_components (
+            crash_id INTEGER NOT NULL,
+            component VARCHAR(64) NOT NULL,
+            CONSTRAINT crashes_fk FOREIGN KEY(crash_id) REFERENCES crashes(crash_id)
+            )""")
 
     def _upload_report_file(self, report):
         '''Upload the report file based on scheme'''

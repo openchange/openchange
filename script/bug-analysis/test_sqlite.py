@@ -41,7 +41,7 @@ __frob (x=4) at crash.c:30"""
         cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
         self.assertEqual(cb.base_url, self.crash_base_url)
 
-    def test_crashes_base_url(self):
+    def test_crashes_base_url_is_none(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
         self.assertIsNone(cb.base_url)
 
@@ -167,6 +167,16 @@ __frob (x=4) at crash.c:30"""
 """
         cb.update(1, self.r, "")
         self.assertEqual(cb.get_unretraced(), [])
+
+    def test_get_unfixed(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        self.assertEqual(cb.get_unfixed(), set())
+
+        crash_id = cb.upload(self.r)
+        self.assertEqual(cb.get_unfixed(), set([crash_id]))
+
+        cb.close_duplicate(self.r, crash_id, crash_id)
+        self.assertEqual(cb.get_unfixed(), set())
 
     def test_close_duplicate(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})

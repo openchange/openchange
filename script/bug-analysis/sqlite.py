@@ -244,6 +244,25 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             ids = [row[0] for row in rows]
         return ids
 
+    def get_unfixed(self):
+        """
+        Return an ID set of all crashes which are not yet fixed.
+
+        The list must not contain bugs which were rejected or duplicate.
+
+        This function should make sure that the returned list is correct. If
+        there are any errors with connecting to the crash database, it should
+        raise an exception (preferably IOError).
+        """
+        ids = set()
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT crash_id FROM crashes
+                           WHERE (state IS NULL OR state <> 'duplicated')""")
+            for row in cur.fetchall():
+                ids.add(row[0])
+        return ids
+
     def get_dup_unchecked(self):
         """
         Unimplemented right now

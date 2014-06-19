@@ -1,6 +1,7 @@
 About OpenChange
 ----------------
-![travis build][https://travis-ci.org/openchange/openchange.svg]
+
+![travis build](https://travis-ci.org/openchange/openchange.svg)
 
 The OpenChange Project aims to provide a portable Open Source
 implementation of Microsoft Exchange Server and Exchange

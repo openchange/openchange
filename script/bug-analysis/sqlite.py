@@ -241,7 +241,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         with self.db:
             cur = self.db.cursor()
             cur.execute("""SELECT crash_id FROM crashes
-                           WHERE sym_stacktrace IS NULL""")
+                           WHERE sym_stacktrace IS NULL
+                           UNION
+                           SELECT crash_id FROM crashes
+                           WHERE sym_stacktrace LIKE '%No symbol table info available.%'""")
             rows = cur.fetchall()
             ids = [row[0] for row in rows]
         return ids

@@ -165,8 +165,21 @@ __frob (x=4) at crash.c:30"""
          __FUNCTION__ = "sogo_table_get_row"
          __PRETTY_FUNCTION__ = "sogo_table_get_row"
 """
-        cb.update(1, self.r, "")
+        cb.update(crash_id, self.r, "")
         self.assertEqual(cb.get_unretraced(), [])
+
+        self.r['Stacktrace'] = """#8  0x00007ff5aae8e159 in ldb_msg_find_ldb_val (msg=<optimised out>, attr_name=<optimised out>) at ../common/ldb_msg.c:399
+        el = <optimised out>
+#9  0x00007ff5aae8e669 in ldb_msg_find_attr_as_string (msg=<optimised out>, attr_name=<optimised out>, default_value=0x0) at ../common/ldb_msg.c:584
+        v = <optimised out>
+#10 0x00007ff5905d0e5f in ?? ()
+No symbol table info available.
+#11 0x0000000000000081 in ?? ()
+No symbol table info available.
+#12 0x0000000000000000 in ?? ()
+No symbol table info available."""
+        cb.update(crash_id, self.r, "")
+        self.assertEqual(cb.get_unretraced(), [crash_id])
 
     def test_get_unfixed(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})

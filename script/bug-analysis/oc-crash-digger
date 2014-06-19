@@ -18,6 +18,7 @@ This is an enhancement version of crash-digger available with apport-retrace
 
 import errno
 import gzip
+from io import BytesIO
 import optparse
 import os
 import shutil
@@ -124,22 +125,29 @@ class CrashDigger(object):
         for fpath in crashes_files:
             # This may lead to bad guesses...
             if fpath.endswith('.gz'):
-                open_f = gzip.open
+                # As gzip set its own mode attribute, we have to store
+                # the report in BytesIO...
+                f = BytesIO()
+                with gzip.open(fpath, 'rb') as gzip_file:
+                    f.write(gzip_file.read())
+                f.flush()
+                f.seek(0)
             else:
-                open_f = open
+                f = open(fpath, 'rb')
 
-            with open_f(fpath, 'rb') as f:
-                try:
-                    report = Report()
-                    report.load(f)
-                    self.crashes_files[report_id] = {'path': fpath,
-                                                     'distro_release': report['DistroRelease'],
-                                                     'map_required': ('Package' not in report or
-                                                                      'Dependencies' not in report)}
-                    self.log('%s loaded.' % fpath)
-                    report_id += 1
-                except Exception as exc:
-                    self.log("Cannot load %s: %s" % (fpath, exc))
+            try:
+                report = Report()
+                report.load(f)
+                self.crashes_files[report_id] = {'path': fpath,
+                                                 'distro_release': report['DistroRelease'],
+                                                 'map_required': ('Package' not in report or
+                                                                  'Dependencies' not in report)}
+                self.log('%s loaded.' % fpath)
+                report_id += 1
+            except Exception as exc:
+                self.log("Cannot load %s: %s" % (fpath, exc))
+            finally:
+                f.close()
 
     def retrace_next(self):
         """

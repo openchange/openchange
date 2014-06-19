@@ -102,7 +102,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         stacktrace = None
         if 'Stacktrace' in report:
-            stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
+            if _python2 and isinstance(report['Stacktrace'], unicode):
+                stacktrace = sqlite3.Binary(report['Stacktrace'].encode('utf-8'))
+            else:
+                stacktrace = sqlite3.Binary(bytes(report['Stacktrace']))
 
         # Store it in the destination URL
         self._upload_report_file(report)
@@ -202,7 +205,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
             stacktrace = None
             if 'Stacktrace' in db_report:
-                stacktrace = sqlite3.Binary(bytes(db_report['Stacktrace']))
+                if _python2 and isinstance(db_report['Stacktrace'], unicode):
+                    stacktrace = sqlite3.Binary(db_report['Stacktrace'].encode('utf-8'))
+                else:
+                    stacktrace = sqlite3.Binary(bytes(db_report['Stacktrace']))
 
             cur.execute("""UPDATE crashes SET crash_url = ?, title = ?, sym_stacktrace = ?, distro_release = ?
                            WHERE crash_id = ?""",
@@ -507,6 +513,10 @@ def encode_multipart_formdata(fields, files):
             L.append(value.decode())
     L.append('--' + LIMIT + '--')
     L.append('')
-    body = CRLF.join(L)
+    s = BytesIO()
+    for element in L:
+        s.write(str(element))
+        s.write(CRLF)
+    body = s.getvalue()
     content_type = 'multipart/form-data; boundary=%s' % LIMIT
     return content_type, body

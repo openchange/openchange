@@ -70,9 +70,10 @@ def guess_components(report):
         if ext == '.m':
             comps.add('SOGo')
         elif first_dir in oc_comps:
-            comps.add(first_dir)
             if micro_comps.match(basename):
                 comps.add(basename)
+
+    # TODO: Check only samba4 crashes
 
     return comps
 

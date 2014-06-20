@@ -53,8 +53,11 @@ def guess_components(report):
 
     # High-level OpenChange components
     oc_comps = set(('mapiproxy', 'libmapi', 'libmapiadmin', 'libocpf'))
-    # RegExp
-    micro_comps = re.compile(r'ox')
+
+    # RegExps
+    micro_comps_re = re.compile(r'ox')
+    nspi_server_re = re.compile(r'nspi')
+    rfr_server_re = re.compile(r'rfr')
 
     # Check based on the filename
     for frame in full_stacktrace:
@@ -70,8 +73,12 @@ def guess_components(report):
         if ext == '.m':
             comps.add('SOGo')
         elif first_dir in oc_comps:
-            if micro_comps.match(basename):
+            if micro_comps_re.match(basename):
                 comps.add(basename)
+            elif nspi_server_re.search(frame['file_name']):
+                comps.add('nspi')
+            elif rfr_server_re.search(frame['file_name']):
+                comps.add('rfr')
 
     # TODO: Check only samba4 crashes
 

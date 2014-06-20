@@ -43,7 +43,7 @@ class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
                  crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
-                 component=False):
+                 component=False, crash_ids=[]):
         """
         Initialize pools.
 
@@ -67,6 +67,7 @@ class CrashDigger(object):
         self.gdb = gdb
         self.upload = upload
         self.guess_component = component
+        self.crash_ids = crash_ids
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -104,7 +105,7 @@ class CrashDigger(object):
         elif self.dupcheck_mode:
             self.dupcheck_pool.update(self.crashdb.get_dup_unchecked())
             self.log('fill_pool: dup check pool now: %s' % str(self.dupcheck_pool))
-        else:
+        elif not self.guess_component:
             self.retrace_pool.update(self.crashdb.get_unretraced())
             self.log('fill_pool: retrace pool now: %s' % str(self.retrace_pool))
 
@@ -343,7 +344,11 @@ class CrashDigger(object):
         for id in self.crashes_files.keys():
             self.retrace_file(id)
         if self.guess_component:
-            for id in self.crashdb.get_unfixed():
+            if self.crash_ids:
+                ids = self.crash_ids
+            else:
+                ids = self.crashdb.get_unfixed()
+            for id in ids:
                 self.set_components(id)
 
         if self.publish_dir and self.dup_db:
@@ -399,6 +404,7 @@ def parse_options():
     optparser.add_option('-m', '--set-components',
                          help="Guess components for the stored unfixed crashes",
                          action='store_true', dest='component', default=False)
+    optparser.add_option('-i', '--ids', action="append", type="int")
 
     (opts, args) = optparser.parse_args()
 
@@ -442,7 +448,7 @@ try:
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
                 opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
-                opts.component).run()
+                opts.component, opts.ids).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

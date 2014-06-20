@@ -79,6 +79,8 @@ def guess_components(report):
                 comps.add('nspi')
             elif rfr_server_re.search(frame['file_name']):
                 comps.add('rfr')
+            elif frame['fname'] == 'emsmdbp_mailbox_provision':
+                comps.add('emsmdbp_mailbox_provision')
 
     # TODO: Check only samba4 crashes
 

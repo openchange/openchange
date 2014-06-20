@@ -120,6 +120,11 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 
 	*rmctxp = rmctx;
 
+	/* Step 2. Initialize database if it freshly created */
+	if (mapistore_replica_mapping_get_next_replid(rmctx->tdb) == 0xffff) {
+		mapistore_replica_mapping_set_next_replid(rmctx->tdb, 0x3);
+	}
+
 	talloc_free(mem_ctx);
 
 	return MAPISTORE_SUCCESS;

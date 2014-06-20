@@ -55,6 +55,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         * dbfile: the file to store the database. If you supply None, then
                   it will create a new file at ~/crashdb.sqlite.
+        * crashes_base_url: the crashes will be stored in this URL.
         """
         apport.crashdb.CrashDatabase.__init__(self, auth_file, options)
         self.dbfile = options.get('dbfile', os.path.expanduser('~/crashdb.sqlite'))

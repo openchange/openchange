@@ -22,16 +22,9 @@ Retrace
 Here you are the steps to retrace a crash report:
 
  1. Get the crash
- 2. Add Package field to the crash at the beginning of the file to
-    identify the source package.
-
-    For instance:
-
-        Package: samba 2:4.1.6+dfsg-1~zentyal1~106
-  
-    If you are retracing a crash from Precise distribution release you
-    need to set up the proper repository at `apport-config/Ubuntu
-    12.04/sources.list`.
+ 2. If **Package** field is not set in the crash report, then it is
+    guessed as samba and its dependencies along with the openchange
+    ones are set to retrace the crash.
 
  3. Run the following script
  

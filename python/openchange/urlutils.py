@@ -21,5 +21,6 @@
 
 import os
 
+
 def openchangedb_url(lp):
     return os.path.join(lp.get("private dir"), "openchange.ldb")

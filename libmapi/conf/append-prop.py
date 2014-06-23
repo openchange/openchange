@@ -1,5 +1,5 @@
 #!/usr/bin/python
-###################################################
+#
 #
 # script that produces stub entries for missing properties passed as parameter in the form oldguid:olid
 #   example:
@@ -17,6 +17,7 @@ import sys
 
 filename = "mapi-named-properties"
 
+
 def getLineID(line):
     idPos = line.rfind("0x")
     if idPos < len(line) - 8:
@@ -25,6 +26,7 @@ def getLineID(line):
         lineID = int(line[idPos:], 16)
 
     return lineID
+
 
 def getLastID(filename):
     propFile = open(filename)
@@ -40,51 +42,53 @@ def getLastID(filename):
 
     return lastID
 
-guidArray = [("PS_MAPI",                "00020328-0000-0000-c000-000000000046"),
-             ("PS_PUBLIC_STRINGS",      "00020329-0000-0000-c000-000000000046"),
-             ("PS_INTERNET_HEADERS",    "00020386-0000-0000-c000-000000000046"),
-             ("PSETID_Appointment",     "00062002-0000-0000-c000-000000000046"),
-             ("PSETID_Task",            "00062003-0000-0000-c000-000000000046"),
-             ("PSETID_Address",         "00062004-0000-0000-c000-000000000046"),
-             ("PSETID_Common",          "00062008-0000-0000-c000-000000000046"),
+guidArray = [("PS_MAPI", "00020328-0000-0000-c000-000000000046"),
+             ("PS_PUBLIC_STRINGS", "00020329-0000-0000-c000-000000000046"),
+             ("PS_INTERNET_HEADERS", "00020386-0000-0000-c000-000000000046"),
+             ("PSETID_Appointment", "00062002-0000-0000-c000-000000000046"),
+             ("PSETID_Task", "00062003-0000-0000-c000-000000000046"),
+             ("PSETID_Address", "00062004-0000-0000-c000-000000000046"),
+             ("PSETID_Common", "00062008-0000-0000-c000-000000000046"),
              ("PS_UNKNOWN_0006200b_0000_0000_c000_000000000046", "0006200b-0000-0000-c000-000000000046"),
-             ("PSETID_Report",          "00062013-0000-0000-c000-000000000046"),
-             ("PSETID_Remote",          "00062014-0000-0000-c000-000000000046"),
-             ("PSETID_Sharing",         "00062040-0000-0000-c000-000000000046"),
-             ("PSETID_PostRss",         "00062041-0000-0000-c000-000000000046"),
-             ("PSETID_Log",             "0006200a-0000-0000-c000-000000000046"),
-             ("PSETID_Note",            "0006200e-0000-0000-c000-000000000046"),
-             ("PSETID_Meeting",         "6ed8da90-450b-101b-98da-00aa003f1305"),
-             ("PSETID_Messaging",       "41f28f13-83f4-4114-a584-eedb5a6b0bff"),
+             ("PSETID_Report", "00062013-0000-0000-c000-000000000046"),
+             ("PSETID_Remote", "00062014-0000-0000-c000-000000000046"),
+             ("PSETID_Sharing", "00062040-0000-0000-c000-000000000046"),
+             ("PSETID_PostRss", "00062041-0000-0000-c000-000000000046"),
+             ("PSETID_Log", "0006200a-0000-0000-c000-000000000046"),
+             ("PSETID_Note", "0006200e-0000-0000-c000-000000000046"),
+             ("PSETID_Meeting", "6ed8da90-450b-101b-98da-00aa003f1305"),
+             ("PSETID_Messaging", "41f28f13-83f4-4114-a584-eedb5a6b0bff"),
              ("PSETID_UnifiedMessaging", "4442858e-a9e3-4e80-b900-317a210cc15b"),
-             ("PSETID_AirSync",          "71035549-0739-4dcb-9163-00f0580dbbdf")]
+             ("PSETID_AirSync", "71035549-0739-4dcb-9163-00f0580dbbdf")]
 
 guidMapping = {}
 for guidTpl in guidArray:
     guidMapping[guidTpl[1]] = guidTpl[0]
 
+
 def canonicalizeName(name):
-    for sep in [ ":", "/" ]:
+    for sep in [":", "/"]:
         sepIdx = name.rfind(sep)
         if sepIdx > -1:
-            name = name[sepIdx+1:]
+            name = name[sepIdx + 1:]
     nameArray = name.split("-")
     name = "".join([x.capitalize() for x in nameArray])
 
     return name
 
+
 def genNewLine(olID, nextID):
     colIdx = olID.find(":")
     if colIdx == -1:
-        raise Exception, "Property line must contain a namespace id and a property name/id"
+        raise Exception("Property line must contain a namespace id and a property name/id")
 
     mappingKey = olID[0:colIdx]
-    if guidMapping.has_key(mappingKey):
+    if mappingKey in guidMapping:
         domain = guidMapping[mappingKey]
     else:
         domain = "PS_UNKNOWN_%s" % mappingKey.replace("-", "_")
 
-    olPropID = olID[colIdx+1:]
+    olPropID = olID[colIdx + 1:]
     try:
         int(olPropID, 16)
         isdigit = True
@@ -113,6 +117,7 @@ def genNewLine(olID, nextID):
 
     # PidLidServerProcessed				       ExchangeProcessed		    0x85CC NULL			  PT_BOOLEAN	MNID_ID	    PSETID_Common
     # PidNameCalendarAttendeeRole			       NULL			            0x0000 CalendarAttendeeRole	  PT_LONG	MNID_STRING PS_PUBLIC_STRINGS
+
 
 def main():
     lastID = getLastID(filename)

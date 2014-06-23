@@ -1,13 +1,10 @@
 import cgi
 
-from paste.urlparser import PkgResourcesParser
 from pylons import request
-from pylons.controllers.util import forward
-from pylons.middleware import error_document_template
-from webhelpers.html.builder import literal
 
 
 from ocsmanager.lib.base import BaseController
+
 
 class ErrorController(BaseController):
 
@@ -30,5 +27,5 @@ class ErrorController(BaseController):
 <xml>
   <error code="%(code)s">%(message)s</error>
 </xml>
-""" % {'code':cgi.escape(request.GET.get('code', str(resp.status_int))), 'message': content}
+""" % {'code': cgi.escape(request.GET.get('code', str(resp.status_int))), 'message': content}
         return page

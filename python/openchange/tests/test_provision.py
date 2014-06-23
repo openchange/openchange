@@ -26,7 +26,7 @@ from openchange.provision import (
     guess_names_from_smbconf,
     install_schemas,
     openchangedb_provision,
-    )
+)
 
 import os
 

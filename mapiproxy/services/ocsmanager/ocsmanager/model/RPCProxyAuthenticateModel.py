@@ -2,10 +2,10 @@ import ldap
 import logging
 from pylons import config
 
-from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 log = logging.getLogger(__name__)
+
 
 class RPCProxyAuthenticateModel:
 
@@ -41,14 +41,14 @@ class RPCProxyAuthenticateModel:
             username = credentials[0].split('\\')[1]
         else:
             username = credentials[0]
-        
+
         try:
             l = ldap.open(self.ldap['host'])
             l.protocol_version = ldap.VERSION3
             username = 'CN=%s,%s' % (username, self.ldap['basedn'])
             password = credentials[1]
             l.simple_bind(username, password)
-        except ldap.LDAPError, e:
+        except ldap.LDAPError as e:
             log.debug(e)
             return 1
 

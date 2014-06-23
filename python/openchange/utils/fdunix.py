@@ -21,7 +21,8 @@ a unix socket.
 
 """
 
-from ctypes import *
+from ctypes import (c_byte, c_char_p, c_int, c_size_t, c_uint32, CDLL,
+                    get_errno, POINTER, pointer, sizeof, Structure)
 from struct import pack_into, unpack_from
 from socket import fromfd, _socketobject, AF_INET, SOCK_STREAM
 
@@ -39,6 +40,7 @@ class CMSGHdr(Structure):
                 ("cmsg_type", c_int)]
 
 FDBuffer = (c_byte * sizeof(c_int))
+
 
 class CMSG(Structure):
     # The cmsg_data must be an array of chars rather than a pointer of chars,
@@ -66,8 +68,10 @@ class MSGHdr(Structure):
 def CMSG_ALIGN(x):
     return ((x + sizeof(c_size_t) - 1) & ~(sizeof(c_size_t) - 1))
 
+
 def CMSG_SPACE(x):
     return CMSG_ALIGN(x) + CMSG_ALIGN(sizeof(CMSGHdr))
+
 
 def CMSG_LEN(x):
     return CMSG_ALIGN(sizeof(CMSGHdr)) + x

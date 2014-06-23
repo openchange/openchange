@@ -1,14 +1,17 @@
 from pylons import config
-from lxml import etree
 import re
+import sys
+import logging
 
-from base64 import urlsafe_b64encode as encode
 from base64 import urlsafe_b64decode as decode
 
 from ocsmanager.model.auth import SingleAuthenticateModel as single
 from ocsmanager.lib.utils import validateDocXML
-#from ocsmanager.model.auth import LDAPAuthenticateModel as ldap
-#from ocsmanager.model.auth import FileAuthenticateModel as mfile
+# from ocsmanager.model.auth import LDAPAuthenticateModel as ldap
+# from ocsmanager.model.auth import FileAuthenticateModel as mfile
+
+log = logging.getLogger(__name__)
+
 
 class AuthenticateModel:
 
@@ -33,24 +36,27 @@ class AuthenticateModel:
         """Validate XML document and extract authentication token from
         the payload."""
         (error, xmlData) = validateDocXML(payload)
-        if error is True: return None
+        if error is True:
+            return None
 
         token = xmlData.find('token')
-        if token is None: return None
+        if token is None:
+            return None
         return decode(token.text)
-
-        
 
     def getTokenLogin(self, payload):
         """Validate XML document and retrieve the login from XML payload."""
         (error, xmlData) = validateDocXML(payload)
-        if error is True: return None
+        if error is True:
+            return None
 
         login = xmlData.find('login')
-        if login is None: return None
+        if login is None:
+            return None
 
         # Ensure login is made of allowed characters (prevent from injections)
-        if re.match(r'^[A-Za-z0-9_.@-]+$', login.text) is None: return None
+        if re.match(r'^[A-Za-z0-9_.@-]+$', login.text) is None:
+            return None
 
         return login.text
 
@@ -58,9 +64,11 @@ class AuthenticateModel:
         """Check if the supplied login hash is correct.
         """
         (error, xmlData) = validateDocXML(payload)
-        if error is True: return (error, xmlData)
+        if error is True:
+            return (error, xmlData)
 
         token = xmlData.find('token')
-        if token is None: return (True, 'No token parameter found')
- 
+        if token is None:
+            return (True, 'No token parameter found')
+
         return self.model.verifyPassword(login, token_salt, salt, token.text)

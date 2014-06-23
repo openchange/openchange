@@ -6,21 +6,18 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
 import logging
-from errno import EEXIST
-from os import umask, mkdir, rmdir, listdir, getpid
-from os.path import join
-from uuid import uuid4
+from os import mkdir
 from shutil import rmtree
 import sys
 
@@ -29,6 +26,7 @@ from channels import RPCProxyInboundChannelHandler,\
 
 
 class RPCProxyApplication(object):
+
     def __init__(self, samba_host, log_level=logging.DEBUG):
         # we keep a reference to the rmtree function until our instance is
         # deleted
@@ -47,7 +45,7 @@ class RPCProxyApplication(object):
         # has_socket_dir = False
         # umask(0077)
         # while not has_socket_dir:
-            # # leafname = "rpcproxy-%s" % str(uuid4())
+            # leafname = "rpcproxy-%s" % str(uuid4())
             # leafname = "rpcproxy" # % getpid()
             # dirname = "/tmp/%s" % leafname
             # try:

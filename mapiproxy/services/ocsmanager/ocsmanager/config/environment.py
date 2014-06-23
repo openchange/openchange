@@ -15,14 +15,14 @@ import openchange.mapistore as mapistore
 import samba.param
 from samba import Ldb
 from samba.samdb import SamDB
-from samba.auth import system_session, admin_session
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
 
+
 def _load_samba_environment():
     """Load the samba configuration vars from smb.conf and the sam.db.
-    
+
     """
 
     params = samba.param.LoadParm()
@@ -45,8 +45,8 @@ def _load_samba_environment():
     sam_environ = {"samdb_ldb": samdb_ldb,
                    "private_dir": params.get("private dir"),
                    "domaindn": domaindn,
-                   "oc_user_basedn": "CN=%s,CN=%s,CN=%s,%s" \
-                       % (firstou, firstorg, netbiosname, domaindn),
+                   "oc_user_basedn": "CN=%s,CN=%s,CN=%s,%s"
+                   % (firstou, firstorg, netbiosname, domaindn),
                    "firstorgdn": ("CN=%s,CN=Microsoft Exchange,CN=Services,%s"
                                   % (firstorg, configdn)),
                    "legacyserverdn": ("/o=%s/ou=%s/cn=Configuration/cn=Servers"
@@ -62,7 +62,7 @@ def _load_samba_environment():
 
 def _load_ocdb():
     """Return a Ldb object pointing to the openchangedb.ldb
-    
+
     """
 
     params = samba.param.LoadParm()
@@ -78,7 +78,7 @@ def load_environment(global_conf, app_conf):
     object
     """
     config = PylonsConfig()
-    
+
     # Pylons paths
     root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     paths = dict(root=root,
@@ -92,11 +92,10 @@ def load_environment(global_conf, app_conf):
     config['routes.map'] = make_map(config)
     config['pylons.app_globals'] = app_globals.Globals(config)
     config['pylons.h'] = ocsmanager.lib.helpers
-    
+
     # Setup cache object as early as possible
     import pylons
     pylons.cache._push_object(config['pylons.app_globals'].cache)
-    
 
     # Create the Mako TemplateLookup, with the default auto-escaping
     config['pylons.app_globals'].mako_lookup = TemplateLookup(
@@ -119,6 +118,6 @@ def load_environment(global_conf, app_conf):
     config['mapistore'] = mstore
     config['management'] = mstore.management()
     if config['ocsmanager']['main']['debug'] == "yes":
-        config['management'].verbose = True;
-    
+        config['management'].verbose = True
+
     return config

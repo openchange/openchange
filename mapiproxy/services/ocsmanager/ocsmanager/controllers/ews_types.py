@@ -4,14 +4,15 @@ files provided by the Exchange doc.
 
 """
 
-from rpclib.model.complex import *
-from rpclib.model.primitive import *
+from rpclib.model.complex import Array, ComplexModel, XmlAttribute
+from rpclib.model.primitive import (AnyXml, Boolean, DateTime, Integer,
+                                    Integer16, String)
 
-#aliases
+# aliases
 Short = Integer16
 
-EWS_T_NS = "http://schemas.microsoft.com/exchange/services/2006/types" # t
-EWS_M_NS = "http://schemas.microsoft.com/exchange/services/2006/messages" # m
+EWS_T_NS = "http://schemas.microsoft.com/exchange/services/2006/types"  # t
+EWS_M_NS = "http://schemas.microsoft.com/exchange/services/2006/messages"  # m
 
 
 """
@@ -45,6 +46,8 @@ DayOfWeekType = String
     </xs:sequence>
   </xs:complexType>
 """
+
+
 class SerializableTimeZoneTime(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"Bias": Integer,
@@ -63,6 +66,8 @@ class SerializableTimeZoneTime(ComplexModel):
     </xs:sequence>
   </xs:complexType>
 """
+
+
 class SerializableTimeZone(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"Bias": Integer,
@@ -79,6 +84,8 @@ class SerializableTimeZone(ComplexModel):
     </xs:sequence>
   </xs:complexType>
 """
+
+
 class EmailAddress(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"Name": String,
@@ -110,6 +117,8 @@ MeetingAttendeeType = String
     </xs:sequence>
   </xs:complexType>
 """
+
+
 class MailboxData(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"Email": EmailAddress,
@@ -126,6 +135,7 @@ class MailboxData(ComplexModel):
   </xs:complexType>
 """
 ArrayOfMailboxData = Array(MailboxData)
+
 
 class Duration(ComplexModel):
     __namespace__ = EWS_T_NS
@@ -163,6 +173,8 @@ FreeBusyViewType = String
   </xs:complexType>
   <xs:element name="FreeBusyViewOptions" type="t:FreeBusyViewOptionsType"/>
 """
+
+
 class FreeBusyViewOptionsType(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"TimeWindow": Duration,
@@ -200,6 +212,8 @@ SuggestionQuality = String
   <xs:element name="SuggestionsViewOptions" type="t:SuggestionsViewOptionsType"/>
 
 """
+
+
 class SuggestionsViewOptionsType(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"GoodThreshold": Integer,
@@ -227,6 +241,8 @@ INPUT:
     </xs:complexContent>
   </xs:complexType>
 """
+
+
 class GetUserAvailabilityRequestType(ComplexModel):
     __namespace__ = EWS_M_NS
     _type_info = {"TimeZone": SerializableTimeZone,
@@ -239,8 +255,8 @@ class GetUserAvailabilityRequestType(ComplexModel):
   <xs:simpleType name="ResponseCodeType">
     <xs:annotation>
       <xs:documentation>
-		Represents the message keys that can be returned by response error messages
-	  </xs:documentation>
+        Represents the message keys that can be returned by response error messages
+      </xs:documentation>
     </xs:annotation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="NoError"/>
@@ -556,10 +572,12 @@ ResponseClassType = String
   </xs:complexType>
 
 """
+
+
 class ResponseMessageType(ComplexModel):
     __namespace__ = EWS_M_NS
     _type_info = {"ResponseClass": XmlAttribute(String),
-                  
+
                   "MessageText": String,
                   "ResponseCode": ResponseCodeType,
                   "DescriptiveLinkKey": Integer,
@@ -596,6 +614,8 @@ LegacyFreeBusyType = String
   </xs:complexType>
 
 """
+
+
 class CalendarEventDetails(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"ID": String,
@@ -619,6 +639,8 @@ class CalendarEventDetails(ComplexModel):
   </xs:complexType>
 
 """
+
+
 class CalendarEvent(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"StartTime": DateTime,
@@ -657,6 +679,8 @@ DaysOfWeekType = String
   </xs:complexType>
 
 """
+
+
 class WorkingPeriod(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"DayOfWeek": DaysOfWeekType,
@@ -684,6 +708,8 @@ ArrayOfWorkingPeriod = Array(WorkingPeriod)
   </xs:complexType>
 
 """
+
+
 class WorkingHours(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"TimeZone": SerializableTimeZone,
@@ -700,6 +726,8 @@ class WorkingHours(ComplexModel):
   </xs:complexType>
 
 """
+
+
 class FreeBusyView(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"FreeBusyViewType": FreeBusyViewType,
@@ -717,6 +745,8 @@ class FreeBusyView(ComplexModel):
   </xs:complexType>
 
 """
+
+
 class FreeBusyResponse(ComplexModel):
     __namespace__ = EWS_M_NS
     _type_info = {"ResponseMessage": ResponseMessageType,
@@ -757,6 +787,8 @@ ArrayOfFreeBusyResponse = Array(FreeBusyResponse)
   </xs:complexType>
 
 """
+
+
 class UnknownAttendeeConflictData(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {}
@@ -787,6 +819,8 @@ class TooBigGroupAttendeeConflictData(ComplexModel):
   </xs:complexType>
 
 """
+
+
 class GroupAttendeeConflictData(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"NumberOfMembers": Integer,
@@ -805,6 +839,8 @@ class GroupAttendeeConflictData(ComplexModel):
     </xs:choice>
   </xs:complexType>
 """
+
+
 class ArrayOfAttendeeConflictData(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"UnknownAttendeeConflictData": UnknownAttendeeConflictData,
@@ -823,6 +859,8 @@ class ArrayOfAttendeeConflictData(ComplexModel):
   </xs:complexType>
 
 """
+
+
 class Suggestion(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"MeetingType": DateTime,
@@ -852,6 +890,8 @@ ArrayOfSuggestion = Array(Suggestion)
   </xs:complexType>
 
 """
+
+
 class SuggestionDayResult(ComplexModel):
     __namespace__ = EWS_T_NS
     _type_info = {"Date": DateTime,
@@ -879,6 +919,8 @@ ArrayOfSuggestionDayResult.__namespace__ = EWS_M_NS
   </xs:complexType>
 
 """
+
+
 class SuggestionsResponseType(ComplexModel):
     __namespace__ = EWS_M_NS
     _type_info = {"ResponseMessage": ResponseMessageType,
@@ -895,6 +937,8 @@ OUTPUT:
   </xs:complexType>
 
 """
+
+
 class GetUserAvailabilityResponseType(ComplexModel):
     __namespace__ = EWS_M_NS
     _type_info = {"FreeBusyResponseArray": ArrayOfFreeBusyResponse,

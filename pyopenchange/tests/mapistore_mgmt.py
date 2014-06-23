@@ -19,7 +19,6 @@
 
 import os
 import sys
-import time
 
 sys.path.append("python")
 
@@ -32,7 +31,7 @@ if not os.path.exists(dirname):
 mapistore.set_mapping_path(dirname)
 MAPIStore = mapistore.mapistore(syspath="/usr/local/samba/private")
 mgmt = MAPIStore.management()
-#while 1:
+# while 1:
 #    time.sleep(5)
 #    d = mgmt.registered_users("SOGo", "Administrator")
 #    print d

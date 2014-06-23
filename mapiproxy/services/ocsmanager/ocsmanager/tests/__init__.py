@@ -9,7 +9,6 @@ setup-app`) and provides the base testing objects.
 """
 from unittest import TestCase
 
-from paste.deploy import loadapp
 from paste.script.appinstall import SetupCommand
 from pylons import url
 from routes.util import URLGenerator
@@ -23,6 +22,7 @@ __all__ = ['environ', 'url', 'TestController']
 SetupCommand('setup-app').run([pylons.test.pylonsapp.config['__file__']])
 
 environ = {}
+
 
 class TestController(TestCase):
 

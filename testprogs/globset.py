@@ -1,4 +1,5 @@
 class GLOBSetRunner:
+
     def __init__(self, buffer, pos):
         self.buffer = buffer
         self.start_pos = pos
@@ -27,7 +28,7 @@ class GLOBSetRunner:
         self._doPush(6)
 
     def _doPush(self, nbr):
-        bytes = self.buffer[self.pos:self.pos+nbr]
+        bytes = self.buffer[self.pos:self.pos + nbr]
         # print "push %d bytes: (%s)" % (nbr, ", ".join(["0x%.2x" % ord(x) for x in bytes]))
         self.stack.append(bytes)
         self.stackByteLength = self.stackByteLength + nbr
@@ -45,7 +46,7 @@ class GLOBSetRunner:
 
     def _doBitmask(self):
         combined = self._rangeValue("".join(self.stack) + self.buffer[self.pos])
-        mask = ord(self.buffer[self.pos+1])
+        mask = ord(self.buffer[self.pos + 1])
         self.pos = self.pos + 2
 
         blank = False
@@ -76,22 +77,22 @@ class GLOBSetRunner:
 
     def _doRange(self):
         nbr = 6 - self.stackByteLength
-        
+
         combined = "".join(self.stack)
         if nbr > 0:
             # print "pair covering %d bytes" % nbr
             lowValue = self._rangeValue(combined
-                                        + self.buffer[self.pos:self.pos+nbr])
+                                        + self.buffer[self.pos:self.pos + nbr])
             self.pos = self.pos + nbr
             highValue = self._rangeValue(combined
-                                        + self.buffer[self.pos:self.pos+nbr])
+                                         + self.buffer[self.pos:self.pos + nbr])
             self.pos = self.pos + nbr
         elif nbr == 0:
             # print "singleton (implied)"
             lowValue = self._rangeValue(combined)
             highValue = lowValue
         else:
-            raise Exception, "reached negative range count"
+            raise Exception("reached negative range count")
 
         # print "doRange: [%.12x:%.12x]" % (lowValue, highValue)
 
@@ -111,23 +112,23 @@ class GLOBSetRunner:
         # print "end reached"
         self.end = True
         if len(self.stack) > 0:
-            raise Exception, "stack should be empty"
+            raise Exception("stack should be empty")
 
     def run(self):
-        command_methods = { 0x01: self._doPush1,
-                            0x02: self._doPush2,
-                            0x03: self._doPush3,
-                            0x04: self._doPush4,
-                            0x05: self._doPush5,
-                            0x06: self._doPush6,
-                            0x50: self._doPop,
-                            0x42: self._doBitmask,
-                            0x52: self._doRange,
-                            0x00: self._doEnd }
+        command_methods = {0x01: self._doPush1,
+                           0x02: self._doPush2,
+                           0x03: self._doPush3,
+                           0x04: self._doPush4,
+                           0x05: self._doPush5,
+                           0x06: self._doPush6,
+                           0x50: self._doPop,
+                           0x42: self._doBitmask,
+                           0x52: self._doRange,
+                           0x00: self._doEnd}
 
         while not self.end:
             command = ord(self.buffer[self.pos])
-            if command_methods.has_key(command):
+            if command in command_methods:
                 self.pos = self.pos + 1
                 command_method = command_methods[command]
                 command_method()
@@ -135,6 +136,6 @@ class GLOBSetRunner:
                 # print "buffer: %s..." % ["%.2x" % ord(x) for x in self.buffer[self.start_pos:self.pos]]
                 # for x in self.ranges:
                 #     print "[%.12x:%.12x]" % x
-                raise Exception, "unknown command: %x at pos %d" % (command, self.pos)
+                raise Exception("unknown command: %x at pos %d" % (command, self.pos))
 
         return (self.pos - self.start_pos)

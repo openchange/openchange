@@ -29,6 +29,7 @@ RESPONSEA_XMLNS = ("http://schemas.microsoft.com/exchange/autodiscover/outlook"
 
 
 class AutodiscoverHandler(object):
+
     """This class parses the XML request, interprets it, find the requested
     answers and spills back an appropriate XML response.
 
@@ -44,7 +45,7 @@ class AutodiscoverHandler(object):
                                  "HTTP_X_FORWARDED_HOST",
                                  "HTTP_HOST"])
         try:
-            while self.http_server_name == None:
+            while self.http_server_name is None:
                 env_name = server_env_names.next()
                 if env_name in self.environ:
                     self.http_server_name \
@@ -143,7 +144,7 @@ class AutodiscoverHandler(object):
         return mdb_dn
 
     def _append_user_found_response(self, resp_element, ldb_record):
-        #TODO: check user_record
+        # TODO: check user_record
         response_tree = {"User": self._get_user_record(ldb_record)}
         self._append_elements(resp_element, response_tree)
 
@@ -151,7 +152,7 @@ class AutodiscoverHandler(object):
         resp_element.append(account_element)
 
         self._append_elements(account_element, {"AccountType": "email",
-                                                 "Action": "settings"})
+                                                "Action": "settings"})
 
         mdb_dn = self._fetch_mdb_dn(ldb_record)
 
@@ -168,12 +169,12 @@ class AutodiscoverHandler(object):
              "ServerVersion": "720082AD",  # TODO: that is from ex2010
              "MdbDN": mdb_dn,
              "Server": self.http_server_name,
-             "ASUrl": "https://%s/ews/as" \
-                 % self.http_server_name,  # availability
-             "OOFUrl": "https://%s/ews/oof" \
-                 % self.http_server_name,  # out-of-office
-             "OABUrl": "https://%s/ews/oab" \
-                 % self.http_server_name,  # offline address book
+             "ASUrl": "https://%s/ews/as"
+             % self.http_server_name,  # availability
+             "OOFUrl": "https://%s/ews/oof"
+             % self.http_server_name,  # out-of-office
+             "OABUrl": "https://%s/ews/oab"
+             % self.http_server_name,  # offline address book
              }
         self._append_elements(prot_element, response_tree)
 
@@ -202,12 +203,12 @@ class AutodiscoverHandler(object):
 
     def _append_error(self, resp_element, error_code):
         error_messages = {500: "Unknown e-mail address",
-                          501: "No configuration information available" \
-                              " for e-mail address",
+                          501: "No configuration information available"
+                          " for e-mail address",
                           600: "Invalid request",
                           601: "Configuration information not available",
-                          602: "Error in configuration information for" \
-                              " e-mail address",
+                          602: "Error in configuration information for"
+                          " e-mail address",
                           603: "An internal error occurred",
                           0: "An unknown error occurred"}
 
@@ -240,7 +241,7 @@ class AutodiscoverHandler(object):
         Returns a fully formatted XML response.
         """
 
-        ## TODO:
+        # TODO:
         # error handling when self.request is none
         # error handling when samba_ldb is not available
 
@@ -265,11 +266,12 @@ class AutodiscoverHandler(object):
 
 
 class AutodiscoverController(BaseController):
+
     """The constroller class for Autodiscover requests."""
 
     @restrict('POST', 'GET')
     def autodiscover(self, **kwargs):
-        #TODO: authentication
+        # TODO: authentication
         try:
             if "environ" in kwargs:
                 environ = kwargs["environ"]

@@ -11,4 +11,4 @@ setup(name="rpcproxy",
       scripts=["rpcproxy.wsgi"],
       packages=["rpcproxy"],
       requires=["openchange"]
-)
+      )

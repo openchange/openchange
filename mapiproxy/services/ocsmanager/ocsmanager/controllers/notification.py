@@ -1,7 +1,6 @@
 import logging
 
-from pylons import request, response, session, tmpl_context as c, url
-from pylons.controllers.util import abort, redirect
+from pylons import request, session, tmpl_context as c
 from pylons.decorators.rest import restrict
 from ocsmanager.model import AuthenticateModel
 from ocsmanager.model import NotificationModel
@@ -9,6 +8,7 @@ from ocsmanager.model import NotificationModel
 from ocsmanager.lib.base import BaseController, render
 
 log = logging.getLogger(__name__)
+
 
 class NotificationController(BaseController):
 
@@ -25,13 +25,15 @@ class NotificationController(BaseController):
         notification = NotificationModel.NotificationModel()
         authModel = AuthenticateModel.AuthenticateModel()
         token = authModel.getSessionToken(request.body)
-        if token is None: return self._abort(472, 'Invalid token')
-        if token != session['tokenLogin']: return self._abort(403, 'Access forbidden')
+        if token is None:
+            return self._abort(472, 'Invalid token')
+        if token != session['tokenLogin']:
+            return self._abort(403, 'Access forbidden')
 
-        (error,params) = notification.getNewMailParams(request.body)
-        if error is True: return self._abort(417, params)
+        (error, params) = notification.getNewMailParams(request.body)
+        if error is True:
+            return self._abort(417, params)
 
         print params
 
         return render('/notification.xml')
-        

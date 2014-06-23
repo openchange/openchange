@@ -8,12 +8,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -31,55 +31,56 @@ from globset import GLOBSetRunner
 
 PARSER_START, PARSER_PRERESPONSE, PARSER_RESPONSE, PARSER_DONE = range(4)
 
-MarkerTags = { 0x40090003: "PidTagStartTopFld",
-               0x400B0003: "PidTagEndFolder",
-               0x400A0003: "PidTagStartSubFld",
-               0x400C0003: "PidTagStartMessage",
-               0x400D0003: "PidTagEndMessage",
-               0x40100003: "PidTagStartFAIMsg",
-               0x40010003: "PidTagStartEmbed",
-               0x40020003: "PidTagEndEmbed",
-               0x40030003: "PidTagStartRecip",
-               0x40040003: "PidTagEndToRecip",
-               0x40000003: "PidTagNewAttach",
-               0x400E0003: "PidTagEndAttach",
-               0x40120003: "PidTagIncrSyncChg",
-               0x407D0003: "PidTagIncrSyncChgPartial",
-               0x40130003: "PidTagIncrSyncDel",
-               0x40140003: "PidTagIncrSyncEnd",
-               0x402F0003: "PidTagIncrSyncRead",
-               0x403A0003: "PidTagIncrSyncStateBegin",
-               0x403B0003: "PidTagIncrSyncStateEnd",
-               0x4074000B: "PidTagIncrSyncProgressMode",
-               0x4075000B: "PidTagIncrSyncProgressPerMsg",
-               0x40150003: "PidTagIncrSyncMessage",
-               0x407B0102: "PidTagIncrSyncGroupInfo",
-               0x40180003: "PidTagFXErrorInfo" }
-ICSStateProperties = { 0x40170003: "PidTagIdsetGiven",
-                       0x67960102: "PidTagCnsetSeen",
-                       0x67da0102: "PidTagCnsetSeenFAI",
-                       0x67d20102: "PidTagCnsetRead" }
-DeltaStateProperties = { 0x67e50102: "PidTagIdsetDeleted",
-                         0x40210102: "PidTagIdsetNoLongerInScope",
-                         0x67930102: "PidTagIdsetExpired",
-                         0x402d0102: "PidTagIdsetRead",
-                         0x402e0102: "PidTagIdsetUnread" }
+MarkerTags = {0x40090003: "PidTagStartTopFld",
+              0x400B0003: "PidTagEndFolder",
+              0x400A0003: "PidTagStartSubFld",
+              0x400C0003: "PidTagStartMessage",
+              0x400D0003: "PidTagEndMessage",
+              0x40100003: "PidTagStartFAIMsg",
+              0x40010003: "PidTagStartEmbed",
+              0x40020003: "PidTagEndEmbed",
+              0x40030003: "PidTagStartRecip",
+              0x40040003: "PidTagEndToRecip",
+              0x40000003: "PidTagNewAttach",
+              0x400E0003: "PidTagEndAttach",
+              0x40120003: "PidTagIncrSyncChg",
+              0x407D0003: "PidTagIncrSyncChgPartial",
+              0x40130003: "PidTagIncrSyncDel",
+              0x40140003: "PidTagIncrSyncEnd",
+              0x402F0003: "PidTagIncrSyncRead",
+              0x403A0003: "PidTagIncrSyncStateBegin",
+              0x403B0003: "PidTagIncrSyncStateEnd",
+              0x4074000B: "PidTagIncrSyncProgressMode",
+              0x4075000B: "PidTagIncrSyncProgressPerMsg",
+              0x40150003: "PidTagIncrSyncMessage",
+              0x407B0102: "PidTagIncrSyncGroupInfo",
+              0x40180003: "PidTagFXErrorInfo"}
+ICSStateProperties = {0x40170003: "PidTagIdsetGiven",
+                      0x67960102: "PidTagCnsetSeen",
+                      0x67da0102: "PidTagCnsetSeenFAI",
+                      0x67d20102: "PidTagCnsetRead"}
+DeltaStateProperties = {0x67e50102: "PidTagIdsetDeleted",
+                        0x40210102: "PidTagIdsetNoLongerInScope",
+                        0x67930102: "PidTagIdsetExpired",
+                        0x402d0102: "PidTagIdsetRead",
+                        0x402e0102: "PidTagIdsetUnread"}
 PropFile = "/home/wsourdeau/src/openchange/libmapi/conf/mapi-properties"
 Properties = None
-PropertyTypes = { 0x0000: "PT_UNSPECIFIED",
-                  0x0001: "PT_NULL",
-                  0x0002: "PT_SHORT",
-                  0x0003: "PT_LONG",
-                  0x0005: "PT_DOUBLE",
-                  0x000a: "PT_ERROR",
-                  0x000b: "PT_BOOL",
-                  0x0014: "PT_LONG8",
-                  0x001e: "PT_STRING",
-                  0x001f: "PT_UNICODE",
-                  0x0040: "PT_SYSTIME",
-                  0x0048: "PT_CLSID",
-                  0x00fb: "PT_SVREID",
-                  0x0102: "PT_BINARY" }
+PropertyTypes = {0x0000: "PT_UNSPECIFIED",
+                 0x0001: "PT_NULL",
+                 0x0002: "PT_SHORT",
+                 0x0003: "PT_LONG",
+                 0x0005: "PT_DOUBLE",
+                 0x000a: "PT_ERROR",
+                 0x000b: "PT_BOOL",
+                 0x0014: "PT_LONG8",
+                 0x001e: "PT_STRING",
+                 0x001f: "PT_UNICODE",
+                 0x0040: "PT_SYSTIME",
+                 0x0048: "PT_CLSID",
+                 0x00fb: "PT_SVREID",
+                 0x0102: "PT_BINARY"}
+
 
 def ReadProperties(filename):
     props = {}
@@ -106,8 +107,10 @@ def ReadProperties(filename):
 
     return props
 
+
 class SyncBufferParser:
-    def __init__(self, lines, pos = 0):
+
+    def __init__(self, lines, pos=0):
         self.lines = lines
         self.state = PARSER_START
         self.pos = pos
@@ -117,10 +120,10 @@ class SyncBufferParser:
 
     def run(self):
         self.bufferLines = []
-        state_methods = { PARSER_START: self._doParserStart,
-                          PARSER_PRERESPONSE: self._doParserPreResponse,
-                          PARSER_RESPONSE: self._doParserResponse }
-                          
+        state_methods = {PARSER_START: self._doParserStart,
+                         PARSER_PRERESPONSE: self._doParserPreResponse,
+                         PARSER_RESPONSE: self._doParserResponse}
+
         while self.pos < len(self.lines) and self.state != PARSER_DONE:
             state_methods[self.state](self.lines[self.pos])
             self.pos = self.pos + 1
@@ -157,14 +160,14 @@ class SyncBufferParser:
                 self.state = PARSER_START
 
     def _appendResponse(self, line):
-        pos = 6;
+        pos = 6
         maxLength = 56
         done = False
         parsed = []
         while not done:
             it = 0
             while it < 8 and not done:
-                responseByte = line[pos+1:pos+3]
+                responseByte = line[pos + 1:pos + 3]
                 if pos > maxLength or responseByte.strip() == "":
                     done = True
                 else:
@@ -175,7 +178,9 @@ class SyncBufferParser:
             pos = pos + 2
         self.bufferLines.append(''.join(parsed))
 
+
 class SyncBufferPrinter:
+
     def __init__(self, data):
         self.data = data
 
@@ -183,21 +188,21 @@ class SyncBufferPrinter:
         length = len(self.data)
         pos = 0
         while pos < length:
-            tagstr = self.data[pos:pos+4]
+            tagstr = self.data[pos:pos + 4]
             tag = struct.unpack("<L", tagstr)[0]
             pos = pos + 4
             pos = pos + self._printResponseColumn(tag, pos)
 
     def _printResponseColumn(self, tag, pos):
-        if MarkerTags.has_key(tag):
+        if tag in MarkerTags:
             marker_name = MarkerTags[tag]
             print "* %.8x (%s)" % (tag, marker_name)
             consumed = 0
-        elif ICSStateProperties.has_key(tag):
+        elif tag in ICSStateProperties:
             property_name = ICSStateProperties[tag]
             print "ICS %.8x (%s):" % (tag, property_name),
             consumed = self._printIDSet(pos)
-        elif DeltaStateProperties.has_key(tag):
+        elif tag in DeltaStateProperties:
             property_name = DeltaStateProperties[tag]
             print "Delta %.8x (%s):" % (tag, property_name),
             consumed = self._printIDSet(pos, True)
@@ -205,7 +210,7 @@ class SyncBufferPrinter:
             colType = tag & 0x0fff
             # print "  pos: %d, length: %d, TAG: %.8x, " % (pos, len(self.data), tag)
             prefix = "  %.8x (" % tag
-            if Properties.has_key(tag):
+            if tag in Properties:
                 prefix = prefix + "%s, " % Properties[tag]
             if tag & 0x1000:
                 multiState = 0x1000
@@ -217,7 +222,7 @@ class SyncBufferPrinter:
             # PidTagSourceKey, PidTagChangeKey or PidTagParentSourceKey
             if tag == 0x65e00102 or tag == 0x65e20102 or tag == 0x65e10102:
                 consumed = self._printBinXID(pos)
-            elif tag == 0x65e30102: # PidTagPredecessorChangeList
+            elif tag == 0x65e30102:  # PidTagPredecessorChangeList
                 consumed = self._printPredecessorChangeList(pos)
             else:
                 if tag > 0x80000000:
@@ -265,7 +270,7 @@ class SyncBufferPrinter:
             remain = size - 16
             while remain > 0:
                 remain = remain - 1
-                localid = localid + "%.2x" % ord(self.data[pos+remain])
+                localid = localid + "%.2x" % ord(self.data[pos + remain])
             print "             localid: 0x%s" % localid
         else:
             print "(size: %d, skipped)" % size
@@ -282,7 +287,7 @@ class SyncBufferPrinter:
             print "    name:",
             consumed = consumed + self._printNamedPropName(pos + consumed)
         else:
-            raise Exception, "Invalid named prop type: %d" % namedPropType
+            raise Exception("Invalid named prop type: %d" % namedPropType)
 
         print "        ",
         consumed = consumed + self._printValue(pos + consumed, colType)
@@ -305,25 +310,25 @@ class SyncBufferPrinter:
         return length + 2
 
     def _printValue(self, pos, colType):
-        base_methods = { 0x0002: self._printShort,
-                         0x0003: self._printLong,
-                         0x0005: self._printDouble,
-                         0x000a: self._printLong,
-                         0x000b: self._printBool,
-                         0x0014: self._printLong8,
-                         0x001e: self._printString,
-                         0x001f: self._printUnicode,
-                         0x0040: self._printSysTime,
-                         0x0048: self._printGUID,
-                         0x00fb: self._printBinary,
-                         0x0102: self._printBinary }
-        if base_methods.has_key(colType):
+        base_methods = {0x0002: self._printShort,
+                        0x0003: self._printLong,
+                        0x0005: self._printDouble,
+                        0x000a: self._printLong,
+                        0x000b: self._printBool,
+                        0x0014: self._printLong8,
+                        0x001e: self._printString,
+                        0x001f: self._printUnicode,
+                        0x0040: self._printSysTime,
+                        0x0048: self._printGUID,
+                        0x00fb: self._printBinary,
+                        0x0102: self._printBinary}
+        if colType in base_methods:
             method = base_methods[colType]
             consumed = method(pos)
         elif (colType & 0x1000):
             consumed = self._printMultiValue(pos, colType)
         else:
-            raise Exception, "Unhandled column type: 0x%.4x" % colType
+            raise Exception("Unhandled column type: 0x%.4x" % colType)
 
         return consumed
 
@@ -448,7 +453,7 @@ class SyncBufferPrinter:
 
         return consumed
 
-    def _printIDSet(self, pos, short = False):
+    def _printIDSet(self, pos, short=False):
         length = struct.unpack_from("<L", self.data, pos)[0]
         print "(%d bytes)" % length
         pos = pos + 4

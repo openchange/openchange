@@ -5,7 +5,6 @@ import sys
 sys.path.append("python")
 
 import os
-import openchange
 import openchange.mapistore as mapistore
 from openchange import mapi
 
@@ -44,4 +43,3 @@ count = MAPIStore.get_folder_count(ctx_id, 0x0000000000010001, mapistore.MAPISTO
 print "List messages: %d" % (count)
 
 MAPIStore.del_context(ctx_id)
-

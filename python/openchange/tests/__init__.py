@@ -25,7 +25,7 @@ def test_suite():
     from openchange.tests import (
         test_provision,
         test_mailbox,
-        )
+    )
     suite.addTests(loader.loadTestsFromModule(test_provision))
     suite.addTests(loader.loadTestsFromModule(test_mailbox))
     return suite

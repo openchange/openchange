@@ -1,5 +1,4 @@
-INSERT company VALUES (1, 'zentyal-domain.lan');
-INSERT organizational_units VALUES (1, 1, 'First Organization', 'First Administrative Group');
+INSERT organizational_units VALUES (1, 'First Organization', 'First Administrative Group');
 INSERT servers VALUES (1, 1, 1, 402);
 INSERT public_folders VALUES (1, 1, 'c4898b91-da9d-4f3e-9ae4-8a8bd5051b89');
 INSERT mailboxes VALUES (1, 1, 17438782182108692481, 'paco', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, NULL, 'en_US');

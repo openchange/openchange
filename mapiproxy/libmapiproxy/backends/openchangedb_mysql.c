@@ -633,8 +633,7 @@ static enum MAPISTATUS get_server_change_number(MYSQL *conn,
 
 	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 		"SELECT change_number FROM servers s "
-		"JOIN company c ON c.id = s.company_id "
-		"JOIN organizational_units ou ON ou.company_id = c.id "
+		"JOIN organizational_units ou ON ou.id = s.ou_id "
 		);
 	ret = status(select_first_uint(conn, sql, change_number));
 	talloc_free(mem_ctx);
@@ -653,8 +652,7 @@ static enum MAPISTATUS set_server_change_number(MYSQL *conn,
 
 	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
 		"UPDATE servers s "
-		"JOIN company c ON c.id = s.company_id "
-		"JOIN organizational_units ou ON ou.company_id = c.id "
+		"JOIN organizational_units ou ON ou.id = s.ou_id "
 		"SET s.change_number=%"PRIu64"",
 		change_number);
 	ret = status(execute_query(conn, sql));

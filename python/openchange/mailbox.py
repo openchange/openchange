@@ -362,15 +362,12 @@ class OpenChangeDBWithMysqlBackend(object):
         return cur
 
     def add_server(self, names):
-        cur = self._execute("INSERT company VALUES (0, %s)", (names.domain,))
-        company_id = int(cur.lastrowid)
-        cur = self._execute("INSERT organizational_units VALUES (0, %s, %s, %s)",
-                            (company_id, names.firstorg, names.firstou))
+        cur = self._execute("INSERT organizational_units VALUES (0, %s, %s)",
+                            (names.firstorg, names.firstou))
         self.ou_id = int(cur.lastrowid)
-
         change_number = 1
         cur = self._execute("INSERT servers VALUES (0, %s, %s, %s)", 
-                            (company_id, self.replica_id, change_number))
+                            (self.ou_id, self.replica_id, change_number))
         self.server_id = int(cur.lastrowid)
 
     def _add_root_public_folder(self, fid, change_num, SystemIdx, childcount):

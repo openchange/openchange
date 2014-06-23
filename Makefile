@@ -964,6 +964,19 @@ mapistore_clean:
 
 clean:: mapistore_clean
 
+#######################
+# mapistore test tools
+#######################
+
+mapistore_check: bin/mapistore_check
+
+bin/mapistore_check: 	testprogs/mapistore_check.o		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+
 ####################
 # mapiproxy modules
 ####################

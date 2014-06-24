@@ -287,15 +287,16 @@ class ExchangeService(ServiceBase):
         base_dn = "CN=Users,%s" % config["samba"]["domaindn"]
         ldb_filter = "(&(objectClass=user)(mail=%s))" % email
         res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=ldb_filter, attrs=["cn"])
+                           expression=ldb_filter, attrs=["cn", "sAMAccountName"])
         if len(res) != 1:
             return None
 
-        usercn = res[0]["cn"][0]
+        user_cn = res[0]["cn"][0]
+        username = res[0]["sAMAccountName"][0]
         ocdb = config["ocdb"]
-        for uri in ocdb.get_calendar_uri(usercn, email):
+        for uri in ocdb.get_calendar_uri(user_cn, email):
             if uri.find("/personal") > -1:  # FIXME: this is evil
-                context = config["mapistore"].add_context(uri, usercn)
+                context = config["mapistore"].add_context(uri, username)
                 return context.open()
 
     @staticmethod

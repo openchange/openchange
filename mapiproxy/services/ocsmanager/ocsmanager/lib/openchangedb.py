@@ -9,6 +9,13 @@ class OpenchangeDB:
 
     @abstractmethod
     def get_calendar_uri(self, usercn, email):
+        """
+        :param str usercn: the user common name
+        :param str email: the email address
+
+        :returns: the calendar URIs for this user
+        :rtype: list of str
+        """
         pass
 
 
@@ -52,13 +59,13 @@ class OpenchangeDBWithMySQL(OpenchangeDB):
 
     def get_calendar_uri(self, usercn, email):
         mailbox_name = email.split('@')[0]
-        return self._select("""
-            SELECT MAPIStoreURI FROM folders f 
-            JOIN folders_properties p ON p.folder_id = f.id 
-                AND p.name = 'PidTagContainerClass' 
-                AND p.value ='IPF.Appointment' 
-            JOIN mailboxes m ON m.id = f.mailbox_id 
-                AND m.name = %s""", mailbox_name)
+        return [r[0] for r in self._select("""
+            SELECT MAPIStoreURI FROM folders f
+            JOIN folders_properties p ON p.folder_id = f.id
+                AND p.name = 'PidTagContainerClass'
+                AND p.value ='IPF.Appointment'
+            JOIN mailboxes m ON m.id = f.mailbox_id
+                AND m.name = %s""", mailbox_name)]
 
 
 class OpenchangeDBWithLDB(OpenchangeDB):

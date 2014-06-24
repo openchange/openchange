@@ -39,11 +39,11 @@ class OAB:
         index    = {}
         for acc in accounts:
             record  = self._browseRecord(acc)
-            index[record['samAccountName']] = len(contents)
+            index[acc['samAccountName']] = len(contents)
             contents += record
 
         # calculate RDN hash for put in browse file
-        return (contents, index)
+        return (index, contents)
 
     def _browseFileHeader(self, accounts):
         header = bytearray(10)

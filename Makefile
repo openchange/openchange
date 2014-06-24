@@ -966,6 +966,14 @@ bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
+mapistore_tool: bin/mapistore_tool
+
+bin/mapistore_tool: 	testprogs/mapistore_tool.o		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
 mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
 	rm -f mapiproxy/libmapistore/tests/*.gcno
@@ -973,6 +981,8 @@ mapistore_clean:
 	rm -f mapiproxy/libmapistore/backends/*.po
 	rm -f mapiproxy/libmapistore/backends/*.o
 	rm -f bin/mapistore_test
+	rm -f testprogs/mapistore_tool.o
+	rm -f bin/mapistore_tool
 
 clean:: mapistore_clean
 

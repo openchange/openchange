@@ -50,6 +50,7 @@ all: 		$(OC_IDL)		\
 		$(OC_LIBS)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
+		$(OC_NOTIF)		\
 		$(PYOPENCHANGEALL)	\
 		$(OC_TESTSUITE)		\
 		$(COVERAGE_INIT)	\
@@ -62,6 +63,7 @@ install:: 	all 			\
 		$(OC_TOOLS_INSTALL) 	\
 		$(OC_TESTSUITE_INSTALL)	\
 		$(OC_SERVER_INSTALL) 	\
+		$(OC_NOTIF_INSTALL)		\
 		$(PYOPENCHANGEINSTALL)
 
 installlib:	$(OC_LIBS_INSTALL)
@@ -72,6 +74,7 @@ uninstall:: 	$(OC_LIBS_UNINSTALL)		\
 		$(OC_TOOLS_UNINSTALL)		\
 		$(OC_TESTSUITE_UNINSTALL)	\
 		$(OC_SERVER_UNINSTALL)		\
+		$(OC_NOTIF_UNINSTALL) 	\
 		$(PYOPENCHANGEUNINSTALL)
 
 dist:: distclean
@@ -1706,6 +1709,37 @@ installnagios:
 	$(INSTALL) -m 0755 script/check_exchange $(DESTDIR)$(nagiosdir)
 
 install:: installnagios
+
+
+###################
+# notifications
+###################
+
+ocnotification:	bin/ocnotification
+
+ocnotification-install: ocnotification
+	$(INSTALL) -d $(DESTDIR)$(sbindir)
+	$(INSTALL) -m 0755 bin/ocnotification $(DESTDIR)$(sbindir)
+
+ocnotification-uninstall:
+	rm -f $(DESTDIR)$(sbindir)/ocnotification
+
+ocnotification-clean:
+	rm -f bin/ocnotification
+	rm -f mapiproxy/services/notification/src/*.o
+
+bin/ocnotification: mapiproxy/services/notification/src/notification_amqp.o \
+					mapiproxy/services/notification/src/notification_config.o \
+					mapiproxy/services/notification/src/notification.o \
+					mapiproxy/services/notification/src/notification_register.o \
+					mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+					mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) \
+					libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+
+clean:: ocnotification-clean
+
 
 ###################
 # libmapi examples

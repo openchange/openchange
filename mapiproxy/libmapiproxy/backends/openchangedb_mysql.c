@@ -456,20 +456,20 @@ static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!tmp_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	sql = talloc_asprintf(tmp_ctx,
-			      "SELECT f.folder_id, fp.value, fp2.value FROM folders f "
-			      "JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
-			      "JOIN folders_properties fp ON fp.folder_id = f.id AND "
-			      "fp.name = 'PidTagMessageClass' "
-			      "JOIN folders_properties fp2 on fp2.folder_id = f.id AND "
-			      "fp2.name = 'PidTagLastModificationTime' "
-			      "UNION "
-			      "SELECT m2.folder_id, mp.value, mp2.value FROM mailboxes m2 "
-			      "JOIN mailboxes_properties mp ON mp.mailbox_id = m2.id AND "
-			      "mp.name = 'PidTagMessageClass' "
-			      "JOIN mailboxes_properties mp2 ON mp2.mailbox_id = m2.id AND "
-			      "mp2.name = 'PidTagLastModificationTime' "
-			      "WHERE m2.name='%s';", _sql(mem_ctx, recipient),
-			      _sql(mem_ctx, recipient));
+		"SELECT f.folder_id, fp.value, fp2.value FROM folders f "
+		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
+		"JOIN folders_properties fp ON fp.folder_id = f.id "
+		"  AND fp.name = 'PidTagMessageClass' "
+		"JOIN folders_properties fp2 on fp2.folder_id = f.id "
+		"  AND fp2.name = 'PidTagLastModificationTime' "
+		"UNION "
+		"SELECT m2.folder_id, mp.value, mp2.value FROM mailboxes m2 "
+		"JOIN mailboxes_properties mp ON mp.mailbox_id = m2.id "
+		"  AND mp.name = 'PidTagMessageClass' "
+		"JOIN mailboxes_properties mp2 ON mp2.mailbox_id = m2.id "
+		"  AND mp2.name = 'PidTagLastModificationTime' "
+		"WHERE m2.name='%s'",
+		_sql(mem_ctx, recipient), _sql(mem_ctx, recipient));
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, tmp_ctx);
 
 	ret = status(select_without_fetch(conn, sql, &res));

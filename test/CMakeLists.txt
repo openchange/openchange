@@ -49,6 +49,7 @@ SET(OPENCHANGE_TEST_SRCS
     # Test suites
     # -------------------------------------------------------------------------
     ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb.c
+    ${CMAKE_SOURCE_DIR}/test_suites/libmapiproxy/openchangedb_multitenancy.c
     # =========================================================================
 )
 

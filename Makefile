@@ -1392,6 +1392,7 @@ bin/unittest: test/test_suites/libmapistore/indexing.o \
 	test/test_suites/libmapistore/namedprops_mysql.o \
 	test/test_suites/libmapistore/namedprops_ldb.o \
 	test/test_suites/libmapiproxy/openchangedb.o \
+	test/test_suites/libmapiproxy/openchangedb_multitenancy.o \
 	test/openchange_test_suite.o \
 	test/test_common.c \
 	mapiproxy/util/mysql.o \

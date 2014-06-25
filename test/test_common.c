@@ -3,6 +3,8 @@
 #include <unistd.h>
 #include <sys/types.h>
 #include <sys/wait.h>
+#include <mysql/mysql.h>
+#include <check.h>
 
 void copy(char *source, char *dest)
 {
@@ -65,3 +67,60 @@ void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path,
 	talloc_free(local_mem_ctx);
 }
 
+void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path,
+				struct openchangedb_context **oc_ctx)
+{
+	const char *database;
+	FILE *f;
+	long int sql_size;
+	size_t bytes_read;
+	char *sql, *insert;
+	bool inserts_to_execute;
+	MYSQL *conn;
+	enum MAPISTATUS ret;
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (strlen(MYSQL_PASS) == 0) {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
+					   MYSQL_HOST "/" MYSQL_DB);
+	} else {
+		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER ":"
+					   MYSQL_PASS "@" MYSQL_HOST "/"
+					   MYSQL_DB);
+	}
+	ret = openchangedb_mysql_initialize(mem_ctx, database, oc_ctx);
+
+	if (ret != MAPI_E_SUCCESS) {
+		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
+		ck_abort();
+	}
+
+	// Populate database with sample data
+	conn = (*oc_ctx)->data;
+	f = fopen(sql_file_path, "r");
+	if (!f) {
+		fprintf(stderr, "file %s not found", sql_file_path);
+		ck_abort();
+	}
+	fseek(f, 0, SEEK_END);
+	sql_size = ftell(f);
+	rewind(f);
+	sql = talloc_zero_array(mem_ctx, char, sql_size + 1);
+	bytes_read = fread(sql, sizeof(char), sql_size, f);
+	if (bytes_read != sql_size) {
+		fprintf(stderr, "error reading file %s", sql_file_path);
+		ck_abort();
+	}
+	insert = strtok(sql, ";");
+	inserts_to_execute = insert != NULL;
+	while (inserts_to_execute) {
+		ret = mysql_query(conn, insert) ? false : true;
+		if (!ret) {
+			fprintf(stderr, "ERROR: %s\n\t%s\n", mysql_error(conn),
+				insert);
+			break;
+		}
+		insert = strtok(NULL, ";");
+		inserts_to_execute = insert && strlen(insert) > 10;
+	}
+}

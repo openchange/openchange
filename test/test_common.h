@@ -5,6 +5,8 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdbool.h>
+#include <talloc.h>
+#include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
 #define MYSQL_HOST "localhost"
 #define MYSQL_USER "root"
@@ -22,5 +24,6 @@
 
 void copy(char *source, char *dest);
 void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path, const char *default_context, const char *root_context);
+void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path, struct openchangedb_context **oc_ctx);
 
 #endif /* TEST_COMMON_H_ */

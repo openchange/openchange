@@ -62,11 +62,6 @@ provisionnames = openchange.guess_names_from_smbconf(
 def setup_path(*args):
     return os.path.join(os.path.dirname(__file__), *args)
 
-if opts.enable == True:
-    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=0)
-
-if opts.disable == True:
-    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=2)
 
 if opts.create == True:
     openchange.newuser(provisionnames, lp, creds, username=args[0])
@@ -74,3 +69,8 @@ if opts.create == True:
 if opts.mailbox == True:
     print "Mailbox provisioning is now performed automatically at user logon"
 
+if opts.enable == True:
+    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=0)
+
+if opts.disable == True:
+    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=2)

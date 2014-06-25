@@ -1,0 +1,135 @@
+#! /usr/bin/env python
+# encoding: utf-8
+
+from waflib.Task import Task
+from waflib.TaskGen import extension
+from waflib.Tools import c_config
+import os
+
+APPNAME = 'OpenchangeNotificationService'
+VERSION = '1.0'
+
+def options(ctx):
+    ctx.load('compiler_c')
+
+def configure(ctx):
+    ctx.load('compiler_c')
+
+    ctx.define('_GNU_SOURCE', 1)
+    ctx.env.append_value('CCDEFINES', '_GNU_SOURCE=1')
+
+    # Check headers
+    ctx.check(header_name='stdio.h')
+    ctx.check(header_name='stdlib.h')
+    ctx.check(header_name='malloc.h')
+    ctx.check(header_name='syslog.h')
+    ctx.check(header_name='unistd.h')
+    ctx.check(header_name='stdbool.h')
+    ctx.check(header_name='popt.h')
+    ctx.check(header_name='errno.h')
+    ctx.check(header_name='string.h')
+    ctx.check(header_name='bsd/libutil.h')
+
+    # Check types
+    ctx.check(type_name='uint8_t')
+    ctx.check(type_name='uint16_t')
+    ctx.check(type_name='uint32_t')
+    ctx.check(type_name='uint64_t')
+    ctx.check(type_name='double')
+    ctx.check(type_name='int')
+    ctx.check(type_name='int8_t')
+    ctx.check(type_name='int16_t')
+    ctx.check(type_name='int32_t')
+    ctx.check(type_name='int64_t')
+    ctx.check(type_name='size_t', header_name='stddef.h')
+    ctx.check(type_name='bool', header_name='stdbool.h')
+
+    # Check external libraries and packages
+    ctx.check_cfg(atleast_pkgconfig_version='0.20')
+    #ctx.check_cfg(package='libmapi',
+    #              args=['libmapi >= 2.0', '--cflags', '--libs'],
+    #              uselib_store='LIBMAPI',
+    #              msg="Checking for libmapi 2.0",
+    #              mandatory=True)
+
+    ctx.check_cfg(package='libbsd',
+                  args=['libbsd >= 0.6.0', '--cflags', '--libs'],
+                  uselib_store='LIBBSD',
+                  msg="Check for libbsd 0.6.0",
+                  mandatory=True)
+
+    ctx.check_cfg(package='popt',
+                  args=['popt >= 1.16', '--cflags', '--libs'],
+                  uselib_store='POPT',
+                  msg="Check for popt 1.16",
+                  mandatory=True)
+
+    ctx.check_cfg(package='libconfig',
+                  args=['libconfig >= 1.4.8', '--cflags', '--libs'],
+                  uselib_store='LIBCONFIG',
+                  msg="Check for libconfig 1.4.8",
+                  mandatory=True)
+
+    ctx.check_cfg(package='json-c',
+                  args=['json-c >= 0.11', '--cflags', '--libs'],
+                  uselib_store='JSON-C',
+                  msg="Check for json-c 0.11",
+                  mandatory=True)
+
+    ctx.check_cfg(package='libssl',
+                  args=['libssl >= 1.0.1e', '--cflags', '--libs'],
+                  uselib_store='LIBSSL',
+                  msg="Check for libssl 1.0.1e",
+                  mandatory=True)
+
+    ctx.check_cfg(package='librabbitmq',
+                  args=['librabbitmq >= 0.4.1', '--cflags', '--libs'],
+                  uselib_store='RABBITMQ',
+                  msg="Check for librabbitmq 0.4.1",
+                  mandatory=True)
+
+    ctx.check_cfg(package='talloc',
+                  args=['talloc >= 2.0.8', '--cflags', '--libs'],
+                  uselib_store='TALLOC',
+                  msg="Check for talloc 2.0.8",
+                  mandatory=True)
+
+    ctx.check_cfg(package='samba-hostconfig',
+                  args=['samba-hostconfig >= 0.0.1', '--cflags', '--libs'],
+                  uselib_store='SAMBA_HOSTCONFIG',
+                  msg="Check for samba-hostconfig 0.0.1",
+                  mandatory=True)
+
+    ctx.check_cfg(package='libmapi',
+                  args=['libmapi >= 2.0', '--cflags', '--libs'],
+                  uselib_store='MAPI',
+                  msg="Check for libmapi 2.0",
+                  mandatory=True)
+
+    ctx.check_cfg(package='libmapistore',
+                  args=['libmapistore >= 2.0', '--cflags', '--libs'],
+                  uselib_store='MAPISTORE',
+                  msg="Check for libmapistore 2.0",
+                  mandatory=True)
+
+    ctx.check_cfg(package='libmapiproxy',
+                  args=['libmapiproxy >= 2.0', '--cflags', '--libs'],
+                  uselib_store='MAPIPROXY',
+                  msg="Check for libmapiproxy 2.0",
+                  mandatory=True)
+
+def build(bld):
+    bld.program(
+        source = [
+            'notification.c',
+            'notification_config.c',
+	    'notification_amqp.c',
+	    'notification_register.c',
+            ],
+        target = 'ocnotification',
+	install_path = '/usr/sbin',
+        includes = ['.', '..'],
+        cflags = ['-ggdb'],
+        depends_on = [APPNAME],
+        #use = [APPNAME, 'LIBMAPI', 'POPT', 'RABBITMQ'])
+        use = [APPNAME, 'POPT', 'TALLOC', 'JSON-C', 'LIBCONFIG', 'LIBBSD', 'LIBSSL', 'RABBITMQ', 'SAMBA_HOSTCONFIG', 'MAPI', 'MAPISTORE', 'MAPIPROXY'])

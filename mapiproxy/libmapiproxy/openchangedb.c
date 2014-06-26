@@ -107,18 +107,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_con
    \details Retrieve the public folder FolderID (fid) for a given folder type
 
    \param oc_ctx pointer to the OpenChangeDB context
+   \param username current user
    \param SystemIdx the system folder index
    \param FolderId pointer to the folder identifier the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *oc_ctx,
+							 const char *username,
 							 uint32_t SystemIdx, uint64_t *FolderId)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_PublicFolderID(oc_ctx, SystemIdx, FolderId);
+	return oc_ctx->get_PublicFolderID(oc_ctx, username, SystemIdx, FolderId);
 }
 
 /**
@@ -190,17 +192,19 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(struct openchangedb_con
    from the openchange dispatcher database
 
    \param oc_ctx pointer to the OpenChangeDB context
+   \param username current user
    \param ReplID pointer to the replica identifier the function returns
    \param ReplGUID pointer to the replica GUID the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *oc_ctx,
+							      const char *username,
 							      uint16_t *ReplID, struct GUID *ReplGUID)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
-	return oc_ctx->get_PublicFolderReplica(oc_ctx, ReplID, ReplGUID);
+	return oc_ctx->get_PublicFolderReplica(oc_ctx, username, ReplID, ReplGUID);
 }
 
 /**

@@ -100,6 +100,7 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
+					  const char *username,
 					  uint32_t SystemIdx,
 					  uint64_t *FolderId)
 {
@@ -108,10 +109,12 @@ static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
 	MYSQL *conn = self->data;
 	enum MAPISTATUS ret;
 
-	// FIXME ou_id
 	sql = talloc_asprintf(mem_ctx,
-		"SELECT f.folder_id FROM folders f WHERE f.SystemIdx = %"PRIu32
-		" AND f.folder_class = '%s'", SystemIdx, PUBLIC_FOLDER);
+		"SELECT f.folder_id FROM folders f "
+		"JOIN mailboxes m ON f.ou_id = m.ou_id AND m.name = '%s' "
+		"WHERE f.SystemIdx = %"PRIu32
+		"  AND f.folder_class = '"PUBLIC_FOLDER"'",
+		_sql(mem_ctx, username), SystemIdx);
 
 	ret = status(select_first_uint(conn, sql, FolderId));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
@@ -193,6 +196,7 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self,
+					       const char *username,
 					       uint16_t *ReplID,
 					       struct GUID *ReplGUID)
 {
@@ -204,9 +208,10 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 	enum MAPISTATUS ret;
 
 	if (ReplID) {
-		// FIXME ou_id
 		sql = talloc_asprintf(mem_ctx,
-			"SELECT ReplicaID FROM public_folders");
+			"SELECT pf.ReplicaID FROM public_folders pf "
+			"JOIN mailboxes m ON m.ou_id = pf.ou_id AND m.name = '%s'",
+			_sql(mem_ctx, username));
 
 		ret = status(select_first_uint(conn, sql, &n));
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
@@ -215,9 +220,10 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 	}
 
 	if (ReplGUID) {
-		// FIXME ou_id
 		sql = talloc_asprintf(mem_ctx,
-			"SELECT StoreGUID FROM public_folders");
+			"SELECT StoreGUID FROM public_folders pf "
+			"JOIN mailboxes m ON m.ou_id = pf.ou_id AND m.name = '%s'",
+			_sql(mem_ctx, username));
 
 		ret = status(select_first_string(mem_ctx, conn, sql, &guid));
 		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);

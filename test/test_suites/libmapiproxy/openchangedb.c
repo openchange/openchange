@@ -63,14 +63,14 @@ START_TEST (test_get_SpecialFolderID) {
 START_TEST (test_get_PublicFolderID) {
 	uint64_t folder_id = 0;
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 14, &folder_id);
+	ret = openchangedb_get_PublicFolderID(oc_ctx, "paco", 14, &folder_id);
 	CHECK_FAILURE;
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 5, &folder_id);
+	ret = openchangedb_get_PublicFolderID(oc_ctx, "paco", 5, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 504403158265495553);
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 6, &folder_id);
+	ret = openchangedb_get_PublicFolderID(oc_ctx, "paco", 6, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 360287970189639681);
 } END_TEST
@@ -112,7 +112,7 @@ START_TEST (test_get_PublicFolderReplica) {
 	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
 	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
 
-	ret = openchangedb_get_PublicFolderReplica(oc_ctx, repl_id, repl);
+	ret = openchangedb_get_PublicFolderReplica(oc_ctx, "paco", repl_id, repl);
 	CHECK_SUCCESS;
 
 	GUID_from_string("c4898b91-da9d-4f3e-9ae4-8a8bd5051b89", expected_repl);

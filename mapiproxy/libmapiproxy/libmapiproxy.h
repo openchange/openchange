@@ -205,12 +205,12 @@ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *
 enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *, uint64_t *);
 enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_SpecialFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
-enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *, uint32_t, uint64_t *);
+enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
 enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
 enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(struct openchangedb_context *, const char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
-enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *, uint16_t *, struct GUID *);
+enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *, const char *, uint64_t, uint64_t *, bool);
 enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct openchangedb_context *, const char *, TALLOC_CTX *, struct StringArrayW_r **);
 enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, char **, bool);

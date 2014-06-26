@@ -132,6 +132,7 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
+					  const char *username,
 					  uint32_t SystemIdx,
 					  uint64_t *FolderId)
 {
@@ -274,6 +275,7 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self,
+					       const char *username,
 					       uint16_t *ReplID,
 					       struct GUID *ReplGUID)
 {

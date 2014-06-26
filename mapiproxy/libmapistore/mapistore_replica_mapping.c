@@ -84,7 +84,6 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 	TALLOC_CTX				*mem_ctx;
 	struct replica_mapping_context_list	*rmctx;
 	char					*dbpath = NULL;
-	char					*mapistore_dir = NULL;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -97,11 +96,6 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_init");
 	rmctx = talloc_zero(mstore_ctx->replica_mapping_list, struct replica_mapping_context_list);
-
-	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s",
-					mapistore_get_mapping_path(), username);
-	mkdir(mapistore_dir, 0700);
 
 	/* Step 1. Open/Create the replica_mapping database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING, 
@@ -119,11 +113,6 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 	DLIST_ADD_END(mstore_ctx->replica_mapping_list, rmctx, struct replica_mapping_context_list *);
 
 	*rmctxp = rmctx;
-
-	/* Step 2. Initialize database if it freshly created */
-	if (mapistore_replica_mapping_get_next_replid(rmctx->tdb) == 0xffff) {
-		mapistore_replica_mapping_set_next_replid(rmctx->tdb, 0x3);
-	}
 
 	talloc_free(mem_ctx);
 

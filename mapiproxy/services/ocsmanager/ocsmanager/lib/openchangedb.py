@@ -21,6 +21,7 @@ class OpenchangeDB:
 
 class OpenchangeDBWithMySQL(OpenchangeDB):
     def __init__(self, uri):
+        self.uri = uri
         self.db = self._connect_to_mysql(uri)
 
     def _connect_to_mysql(self, uri):
@@ -52,7 +53,16 @@ class OpenchangeDBWithMySQL(OpenchangeDB):
             cur.execute(sql, params)
             rows = cur.fetchall()
             cur.close()
+            self.op_error = False
             return rows
+        except MySQLdb.OperationalError as e:
+            # FIXME: It may be leaded by another error
+            # Reconnect and rerun this
+            if self.op_error:
+                raise e
+            self.db = self._connect_to_mysql(self.uri)
+            self.op_error = True
+            return self._select(sql, params)
         except MySQLdb.ProgrammingError as e:
             print "Error executing %s with %r: %r" % (sql, params, e)
             raise e

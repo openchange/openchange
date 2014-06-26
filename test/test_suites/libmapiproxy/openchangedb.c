@@ -678,7 +678,9 @@ START_TEST (test_create_mailbox) {
 	uint32_t *data_int;
 	uint64_t fid = 14989949884725985281ul;
 
-	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
+	ret = openchangedb_create_mailbox(oc_ctx, "chuck", "First Organization",
+					  "First Administrative Group", fid,
+					  "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
 
 	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",

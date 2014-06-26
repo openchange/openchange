@@ -1473,8 +1473,11 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
-				      const char *username, int systemIdx,
-				      uint64_t fid, const char *display_name)
+				      const char *username,
+				      const char *organization_name,
+				      const char *groupo_name,
+				      int systemIdx, uint64_t fid,
+				      const char *display_name)
 {
 	int			ret;
 	TALLOC_CTX		*mem_ctx;

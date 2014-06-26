@@ -29,6 +29,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
@@ -795,7 +796,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 
    \param oc_ctx pointer to the openchange DB context
    \param username the owner of the mailbox
-   \param systemIdx the id of the mailbox
+   \param organization_name name of the organization of the user
+   \param group_name name of the group where the organization of the user belongs
    \param fid The fid used for the mailbox
    \param display_name Name of the mailbox
 
@@ -803,14 +805,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
 						     const char *username,
-						     int systemIdx,
+						     const char *organization_name,
+						     const char *group_name,
 						     uint64_t fid,
 						     const char *display_name)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-	
-	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fid, display_name);
+
+	return oc_ctx->create_mailbox(oc_ctx, username, organization_name,
+				      group_name, EMSMDBP_MAILBOX_ROOT, fid,
+				      display_name);
 }
 
 /**

@@ -65,6 +65,36 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
+static enum MAPISTATUS fetch_organizational_unit_of_user(TALLOC_CTX *mem_ctx, struct ldb_context *samdb_ctx, const char *username, char **organization_name, char **group_name)
+{
+
+	const char * const	attrs[] = {"legacyExchangeDN", NULL};
+	int			ret, i;
+	struct ldb_result	*res;
+	char			*filter, *exdn0, *exdn1;
+	const char		*exchangedn;
+
+	filter = talloc_asprintf(mem_ctx, "sAMAccountName=%s", username);
+	ret = ldb_search(samdb_ctx, mem_ctx, &res, ldb_get_default_basedn(samdb_ctx), LDB_SCOPE_SUBTREE, attrs, filter);
+	OPENCHANGE_RETVAL_IF((ret || res->count != 1), ecUnknownUser, NULL);
+	exchangedn = ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
+	OPENCHANGE_RETVAL_IF(!exchangedn, ecUnknownUser, NULL);
+
+	// exchangedn has format: /o=organizacion name/ou=group name/cn=Recipients/cn=username
+	exdn0 = strstr(exchangedn, "/o=");
+	OPENCHANGE_RETVAL_IF(!exdn0, ecUnknownUser, NULL);
+	exdn1 = strstr(exchangedn, "/ou=");
+	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
+	strncpy(*organization_name, exdn0 + 3, exdn1 - exdn0 - 3);
+
+	exdn0 = exdn1;
+	exdn1 = strstr(exchangedn, "/cn=Recipients");
+	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
+	strncpy(*group_name, exdn0 + 4, exdn1 - exdn0 - 4);
+
+	return MAPI_E_SUCCESS;
+}
+
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *emsmdbp_ctx, const char *EssDN)
 {
 	enum MAPISTATUS		ret;
@@ -242,6 +272,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	struct Binary_r				*entryId;
 	bool					exists, reminders_created;
 	void					*backend_object, *backend_table, *backend_message;
+	const char 				**organization_name, **group_name;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -354,7 +385,13 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		// value set here. After that outlook won't update that value, no matter
 		// how many times /resetfoldernames is executed again.
 		current_name = talloc_asprintf(mem_ctx, MAILBOX_ROOT_NAME, username);
-		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, EMSMDBP_MAILBOX_ROOT, mailbox_fid, current_name);
+
+		ret = fetch_organizational_unit_of_user(mem_ctx, emsmdbp_ctx->samdb_ctx, username, &organization_name, &group_name);
+		if (ret != MAPI_E_SUCCESS) {
+			DEBUG(0, ("Error provisioning mailbox, we couldn't fetch organizational unit of the user %s", username));
+			return MAPI_E_NOT_FOUND;
+		}
+		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, organization_name, group_name, mailbox_fid, current_name);
 		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}
 

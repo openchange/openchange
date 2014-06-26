@@ -230,7 +230,7 @@ enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, struct openchanged
 enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_context *, const char *, uint64_t, const char*, uint64_t *);
 enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_context *, const char *, uint64_t, const char *, bool, uint64_t *);
 enum MAPISTATUS openchangedb_set_ReceiveFolder(struct openchangedb_context *, const char *, const char *, uint64_t);
-enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *, const char *, int, uint64_t, const char *);
+enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *, const char *, const char *, const char *, uint64_t, const char *);
 enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *, const char *, uint64_t, uint64_t, uint64_t, const char *, int);
 enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *, const char *, uint64_t);
 enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchangedb_context *, const char *, uint64_t *);

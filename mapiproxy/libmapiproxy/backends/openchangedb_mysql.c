@@ -1402,7 +1402,9 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
-				      const char *username, int systemIdx,
+				      const char *username,
+				      const char *organization_name,
+				      const char *group_name, int systemIdx,
 				      uint64_t fid, const char *display_name)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "create_mailbox");
@@ -1411,10 +1413,18 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	char *sql, *mailbox_guid, *replica_guid, *values_sql, *value;
 	const char **l;
 	struct GUID guid;
-	uint64_t change_number;
+	uint64_t change_number, ou_id;
 	NTTIME now;
 
 	unix_to_nt_time(&now, time(NULL));
+
+	// Find ou_id
+	sql = talloc_asprintf(mem_ctx,
+		"SELECT id FROM organizational_units "
+		"WHERE organization = '%s' AND administrative_group = '%s'",
+		_sql(mem_ctx, organization_name), _sql(mem_ctx, group_name));
+	ret = status(select_first_uint(conn, sql, &ou_id));
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	get_new_changeNumber(self, &change_number);
 
@@ -1426,8 +1436,9 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
 		"INSERT INTO mailboxes SET folder_id = %"PRIu64", name = '%s', "
 		"MailboxGUID = '%s', ReplicaGUID = '%s', ReplicaID = %d, "
-		"SystemIdx = %d, ou_id = (SELECT id FROM organizational_units LIMIT 1)",
-		fid, _sql(mem_ctx, username), mailbox_guid, replica_guid, 1, systemIdx);
+		"SystemIdx = %d, ou_id = %"PRIu64,
+		fid, _sql(mem_ctx, username), mailbox_guid, replica_guid, 1,
+		systemIdx, ou_id);
 	ret = status(execute_query(conn, sql));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 

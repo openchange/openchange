@@ -897,7 +897,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
-	rm -f setup/mapistore/mapistore_namedprops_v2.ldif
+	rmdir setup/mapistore
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 
@@ -963,19 +963,6 @@ mapistore_clean:
 	rm -f bin/mapistore_test
 
 clean:: mapistore_clean
-
-#######################
-# mapistore test tools
-#######################
-
-mapistore_check: bin/mapistore_check
-
-bin/mapistore_check: 	testprogs/mapistore_check.o		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-
 
 ####################
 # mapiproxy modules

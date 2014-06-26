@@ -1636,7 +1636,6 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	*dnprefix = '\0';
-	emsmdbp_ctx->szDNPrefix = talloc_strdup(emsmdbp_ctx, userDN);
 	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
 
 	/* Step 6. Fill EcDoConnectEx reply */
@@ -1769,14 +1768,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;
 	rgbIn.length = r->in.cbIn;
-
 	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
-	if (ndr_pull->data_size > *r->in.pcbOut) {
-		r->out.result = ecBufferTooSmall;
-		talloc_free(ndr_pull);
-		return ecBufferTooSmall;
-	}
-
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
@@ -1784,6 +1776,11 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		r->out.result = ecRpcFormat;
 		return ecRpcFormat;
+	}
+
+	if (ndr_pull->data_size > *r->in.pcbOut) {
+		r->out.result = ecBufferTooSmall;
+		return ecBufferTooSmall;
 	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);

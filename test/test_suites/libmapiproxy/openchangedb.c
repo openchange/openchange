@@ -1136,6 +1136,7 @@ static void ldb_teardown(void)
 
 static void mysql_setup(void)
 {
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	initialize_mysql_with_file(mem_ctx, OPENCHANGEDB_SAMPLE_SQL, &oc_ctx);
 }
 

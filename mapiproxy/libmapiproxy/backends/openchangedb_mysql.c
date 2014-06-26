@@ -3013,6 +3013,16 @@ static const char *openchangedb_data_dir(void)
 	return OPENCHANGEDB_DATA_DIR; // defined on compilation time
 }
 
+static int openchangedb_mysql_destructor(struct openchangedb_context *self)
+{
+	DEBUG(3, ("Destroying openchangedb mysql context\n"));
+	if (conn != NULL) {
+		mysql_close(conn);
+		conn = NULL;
+	}
+	return 0;
+}
+
 _PUBLIC_
 enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 					      const char *connection_string,
@@ -3096,7 +3106,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED,
 				     oc_ctx);
 	}
-
+	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	*ctx = oc_ctx;
 
 	return MAPI_E_SUCCESS;

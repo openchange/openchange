@@ -79,7 +79,6 @@ void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path,
 	MYSQL *conn;
 	enum MAPISTATUS ret;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	if (strlen(MYSQL_PASS) == 0) {
 		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
 					   MYSQL_HOST "/" MYSQL_DB);

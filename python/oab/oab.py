@@ -23,16 +23,18 @@ class OAB:
             nAccounts = nAccounts[0:OAB.MAX_UL_TOT_RECORDS-1]
 
         browseFileIndex, browseFileContents = self._browseFileContents(accounts)
+        rdnFileContents    = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
+        anrFileContents = self._anrFileContents(accounts)
+
+
+        print '--------------------------'
         print 'Browse file:'
         pprint(browseFileContents)
-
-        rdnFileContents    = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
         print 'RDN file:'
         pprint(rdnFileContents)
-
-        anrFileContents = self._anrFileContents(accounts, browseFileIndex, browseFileContents)
         print 'ANR file:'
         pprint(anrFileContents)
+        print '--------------------------'
 
     def _browseFileContents(self, accounts):
         contents = self._browseFileHeader(accounts)
@@ -208,29 +210,34 @@ class OAB:
         return record
 
     def _anrFileContents(self, accounts):
-        contents = self._anrHeader(accounts)
+        anr_attrs = ['displayName', 'sn', 'office', 'alias']
+        nRecords = self._count_attributes(accounts, anr_attrs)
+        print "nRecords: " + str(nRecords)
+        contents = self._anrHeader(accounts, nRecords)
 
         oPrev = 0;
         oNextBase = 0
-        lastAccount = len(accounts) - 1
-        for i in range(0, lastAccount +1):
-            acc = accounts[i]
-            if i == lastAccount:
-                oNextBase = 0
-            else:
-                oNextBase = len(contents)
-            for attr in ['displayName', 'sn', 'office', 'alias']:
+        next_record = 0
+        for acc in accounts:
+            for attr in anr_attrs:
                 if not(attr in acc):
                     continue
 
+                if ((next_record+1) == nRecords):
+                    oNextBase = 0
+                else:
+                    oNextBase = len(contents)
+
                 attrValue = acc[attr]
+                print "ANR record " + str(next_record) + ' '+ attr + ':' + str(attrValue) + ' offset: ' + str(len(contents)) +  ' oPrev: ' + str(oPrev) + ' nextBase: ' + str(oNextBase)
                 record    = self._anrRecord(attrValue, oPrev, oNextBase, attr == 'alias')
                 contents += record
                 oPrev = oNextBase
+                next_record += 1
 
         return contents
 
-    def _anrHeader(self, accounts):
+    def _anrHeader(self, accounts, nRecords):
         header = bytearray(12)
         # ulVersion (4 bytes):
         header[0:4] = self._pack_uint(0x0000000E)
@@ -238,7 +245,7 @@ class OAB:
         # to be calculated later
         # ulTotRecs (4 bytes):
         # XXX attr for alias
-        nRecords = self._count_attributes(accounts, ['displayName', 'sn', 'office', 'alias'])
+
         header[8:12] = self._pack_uint(nRecords)
 
         return header

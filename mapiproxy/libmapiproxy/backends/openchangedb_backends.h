@@ -7,9 +7,9 @@
 #include <gen_ndr/exchange.h>
 
 struct openchangedb_context {
-	enum MAPISTATUS (*get_new_changeNumber)(struct openchangedb_context *, uint64_t *);
-	enum MAPISTATUS (*get_new_changeNumbers)(struct openchangedb_context *, TALLOC_CTX *, uint64_t, struct UI8Array_r **);
-	enum MAPISTATUS (*get_next_changeNumber)(struct openchangedb_context *, uint64_t *);
+	enum MAPISTATUS (*get_new_changeNumber)(struct openchangedb_context *, const char *, uint64_t *);
+	enum MAPISTATUS (*get_new_changeNumbers)(struct openchangedb_context *, TALLOC_CTX *, const char *, uint64_t, struct UI8Array_r **);
+	enum MAPISTATUS (*get_next_changeNumber)(struct openchangedb_context *, const char *, uint64_t *);
 	enum MAPISTATUS (*get_SpecialFolderID)(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
 	enum MAPISTATUS (*get_SystemFolderID)(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
 	enum MAPISTATUS (*get_PublicFolderID)(struct openchangedb_context *, const char *, uint32_t, uint64_t *);

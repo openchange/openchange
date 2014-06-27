@@ -523,16 +523,17 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
    \details Allocates a new change number and returns it
    
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param cn pointer to the cn value the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *oc_ctx, uint64_t *cn)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *oc_ctx, const char *username, uint64_t *cn)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!cn, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_new_changeNumber(oc_ctx, cn);
+	return oc_ctx->get_new_changeNumber(oc_ctx, username, cn);
 }
 
 /**
@@ -540,6 +541,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
    
    \param oc_ctx pointer to the openchange DB context
    \param mem_ctx memory context where the change numbers will be allocated
+   \param username current user
    \param max number of change number to allocate
    \param cns_p array of pointers to the change numbers values the function
    returns
@@ -547,13 +549,15 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *oc_ctx,
-							    TALLOC_CTX *mem_ctx, uint64_t max,
+							    TALLOC_CTX *mem_ctx,
+							    const char *username,
+							    uint64_t max,
 							    struct UI8Array_r **cns_p)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!cns_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_new_changeNumbers(oc_ctx, mem_ctx, max, cns_p);
+	return oc_ctx->get_new_changeNumbers(oc_ctx, mem_ctx, username, max, cns_p);
 }
 
 /**
@@ -561,16 +565,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_
    openchangedb_get_new_changeNumber is next invoked
    
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param cn pointer to the cn value the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *oc_ctx, uint64_t *cn)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *oc_ctx, const char *username, uint64_t *cn)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!cn, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_next_changeNumber(oc_ctx, cn);
+	return oc_ctx->get_next_changeNumber(oc_ctx, username, cn);
 }
 
 /**

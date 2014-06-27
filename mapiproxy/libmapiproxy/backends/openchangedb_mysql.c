@@ -632,16 +632,17 @@ static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,
    \details Get the current change number field
  */
 static enum MAPISTATUS get_server_change_number(MYSQL *conn,
+						const char *username,
 						uint64_t *change_number)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "get_server_change_number");
 	char *sql;
 	enum MAPISTATUS ret;
 
-	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
 		"SELECT change_number FROM servers s "
-		"JOIN organizational_units ou ON ou.id = s.ou_id "
-		);
+		"JOIN mailboxes m ON m.ou_id = s.ou_id AND m.name = '%s'",
+		_sql(mem_ctx, username));
 	ret = status(select_first_uint(conn, sql, change_number));
 	talloc_free(mem_ctx);
 	return ret;
@@ -651,32 +652,34 @@ static enum MAPISTATUS get_server_change_number(MYSQL *conn,
    \details Set the current change number field
  */
 static enum MAPISTATUS set_server_change_number(MYSQL *conn,
+						const char *username,
 						uint64_t change_number)
 {
 	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "set_server_change_number");
 	char *sql;
 	enum MAPISTATUS ret;
 
-	sql = talloc_asprintf(mem_ctx, //FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
 		"UPDATE servers s "
-		"JOIN organizational_units ou ON ou.id = s.ou_id "
-		"SET s.change_number=%"PRIu64"",
-		change_number);
+		"JOIN mailboxes m ON m.ou_id = s.ou_id AND m.name = '%s' "
+		"SET s.change_number=%"PRIu64,
+		_sql(mem_ctx, username), change_number);
 	ret = status(execute_query(conn, sql));
 	talloc_free(mem_ctx);
 	return ret;
 }
 
 static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self,
+					    const char *username,
 					    uint64_t *cn)
 {
 	enum MAPISTATUS ret;
 	MYSQL *conn = self->data;
 
-	ret = get_server_change_number(conn, cn); // TODO ou_id
+	ret = get_server_change_number(conn, username, cn);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
-	ret = set_server_change_number(conn, (*cn) + 1); // TODO ou_id
+	ret = set_server_change_number(conn, username, (*cn) + 1);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
 	// Transform the number the way exchange protocol likes it
@@ -686,7 +689,9 @@ static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
-					     TALLOC_CTX *mem_ctx, uint64_t max,
+					     TALLOC_CTX *mem_ctx,
+					     const char *username,
+					     uint64_t max,
 					     struct UI8Array_r **cns_p)
 {
 	enum MAPISTATUS ret;
@@ -695,7 +700,7 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 	uint64_t cn;
 	size_t count;
 
-	ret = get_server_change_number(conn, &cn);
+	ret = get_server_change_number(conn, username, &cn);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
 	// Transform the numbers the way exchange protocol likes it
@@ -707,7 +712,7 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 		cns->lpui8[count] = (exchange_globcnt(cn + count) << 16) | 0x0001;
 	}
 
-	ret = set_server_change_number(conn, cn + max); // TODO ou_id
+	ret = set_server_change_number(conn, username, cn + max);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
 	*cns_p = cns;
@@ -716,12 +721,12 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
-					     uint64_t *cn)
+					     const char *username, uint64_t *cn)
 {
 	enum MAPISTATUS ret;
 	MYSQL *conn = self->data;
 
-	ret = get_server_change_number(conn, cn);
+	ret = get_server_change_number(conn, username, cn);
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, NULL);
 
 	// Transform the number the way exchange protocol likes it
@@ -1114,7 +1119,8 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 
 	// Add change number
 	value->ulPropTag = PidTagChangeNumber;
-	get_new_changeNumber(self, (uint64_t *) &value->value.d);
+	ret = get_new_changeNumber(self, username, (uint64_t *) &value->value.d);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 	attr = openchangedb_property_get_attribute(value->ulPropTag);
 	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 	names = str_list_add(names, attr);
@@ -1432,14 +1438,12 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	ret = status(select_first_uint(conn, sql, &ou_id));
 	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
-	get_new_changeNumber(self, &change_number);
-
 	// Insert row in mailboxes
 	guid = GUID_random();
 	mailbox_guid = GUID_string(mem_ctx, &guid);
 	guid = GUID_random();
 	replica_guid = GUID_string(mem_ctx, &guid);
-	sql = talloc_asprintf(mem_ctx, // FIXME ou_id
+	sql = talloc_asprintf(mem_ctx,
 		"INSERT INTO mailboxes SET folder_id = %"PRIu64", name = '%s', "
 		"MailboxGUID = '%s', ReplicaGUID = '%s', ReplicaID = %d, "
 		"SystemIdx = %d, ou_id = %"PRIu64,
@@ -1464,6 +1468,8 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 		"(LAST_INSERT_ID(), 'PidTagLastModificationTime', '%"PRId64"')",
 		now);
 	l = str_list_add(l, value);
+	ret = get_new_changeNumber(self, username, &change_number);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 	value = talloc_asprintf(mem_ctx,
 		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')",
 		change_number);
@@ -1493,7 +1499,8 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 
 	unix_to_nt_time(&now, time(NULL));
 
-	get_new_changeNumber(self, &change_number);
+	ret = get_new_changeNumber(self, username, &change_number);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, mem_ctx);
 
 	if (is_public_folder(fid)) {
 		// Insert row in folders

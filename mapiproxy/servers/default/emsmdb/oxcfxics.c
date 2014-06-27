@@ -2304,7 +2304,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	}
 
 	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
 			folder_object = NULL;
@@ -2623,12 +2623,12 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct idset *parsed_idset, const char *label)
+static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, const char *username, struct idset *parsed_idset, const char *label)
 {
 	uint64_t next_cn, high_cn;
 
 	if (parsed_idset) {
-		openchangedb_get_next_changeNumber(oc_ctx, &next_cn);
+		openchangedb_get_next_changeNumber(oc_ctx, username, &next_cn);
 		next_cn = exchange_globcnt(next_cn >> 16);
 		high_cn = exchange_globcnt(parsed_idset->ranges->high);
 		if (high_cn >= next_cn) {
@@ -2720,7 +2720,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen");
+		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen");
 		old_idset = synccontext->cnset_seen;
 		synccontext->cnset_seen = parsed_idset;
 		break;
@@ -2728,7 +2728,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen_fai");
+		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_fai");
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = parsed_idset;
 		break;
@@ -2736,7 +2736,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen_read");
+		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_read");
 		old_idset = synccontext->cnset_read;
 		synccontext->cnset_read = parsed_idset;
 		break;
@@ -3364,7 +3364,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 	old_idset = synccontext->cnset_seen;
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
-	oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, synccontext->cnset_seen, "cnset_seen");
+	oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, synccontext->cnset_seen, "cnset_seen");
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 

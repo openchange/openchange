@@ -301,7 +301,7 @@ START_TEST (test_get_new_changeNumber) {
 	uint64_t cn = 0, new_cn;
 	int i;
 	for (i = 0; i < 5; i++) {
-		ret = openchangedb_get_new_changeNumber(oc_ctx, &cn);
+		ret = openchangedb_get_new_changeNumber(oc_ctx, USER1, &cn);
 		CHECK_SUCCESS;
 		new_cn = ((exchange_globcnt(NEXT_CHANGE_NUMBER+i) << 16) | 0x0001);
 		ck_assert(cn == new_cn);
@@ -313,7 +313,7 @@ START_TEST (test_get_new_changeNumbers) {
 	int i;
 	struct UI8Array_r *cns;
 
-	ret = openchangedb_get_new_changeNumbers(oc_ctx, mem_ctx, 10, &cns);
+	ret = openchangedb_get_new_changeNumbers(oc_ctx, mem_ctx, USER1, 10, &cns);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(10, cns->cValues);
 	for (i = 0; i < 10; i++) {
@@ -326,9 +326,9 @@ START_TEST (test_get_next_changeNumber) {
 	uint64_t new_cn = 0, next_cn = 0;
 	int i;
 	for (i = 0; i < 5; i++) {
-		ret = openchangedb_get_next_changeNumber(oc_ctx, &next_cn);
+		ret = openchangedb_get_next_changeNumber(oc_ctx, USER1, &next_cn);
 		CHECK_SUCCESS;
-		ret = openchangedb_get_new_changeNumber(oc_ctx, &new_cn);
+		ret = openchangedb_get_new_changeNumber(oc_ctx, USER1, &new_cn);
 		CHECK_SUCCESS;
 		ck_assert(next_cn == new_cn);
 	}

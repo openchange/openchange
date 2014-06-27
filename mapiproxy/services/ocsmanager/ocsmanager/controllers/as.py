@@ -1,6 +1,7 @@
 import logging
 
 import datetime
+from datetime import timedelta
 from time import time
 
 from pylons import request, response, session, tmpl_context as c, url
@@ -326,8 +327,12 @@ class ExchangeService(ServiceBase):
 
     @staticmethod
     def _freebusy_response(cal_folder, timezone, freebusy_view_options):
-        start = freebusy_view_options.TimeWindow.StartTime
-        end = freebusy_view_options.TimeWindow.EndTime
+        if freebusy_view_options is None:
+            start = datetime.datetime.now()
+            end = start + timedelta(days=42)  # Maximum time up to Exchange 2010 is 42 days, 62 days above
+        else:
+            start = freebusy_view_options.TimeWindow.StartTime
+            end = freebusy_view_options.TimeWindow.EndTime
 
         # a = time()
         # print "fetching freebusy"
@@ -439,27 +444,28 @@ class ExchangeService(ServiceBase):
                                            MajorBuildNumber=685,
                                            MinorBuildNumber=24)
 
+
         fb_requests = []
         for x in xrange(len(mailbox_data_array)):
             user_email = mailbox_data_array[x].Email.Address
             calendar_folder = ExchangeService._open_user_calendar_folder(user_email)
             fb_requests.append({"folder": calendar_folder, "email": user_email})
 
-        if freebusy_view_options is not None:
-            freebusy = []
-            for fb_request in fb_requests:
-                calendar_folder = fb_request["folder"]
-                if calendar_folder is None:
-                    log.warn("no calendar folder found for '%s'" % user_email)
-                    fb_response \
-                        = ExchangeService._freebusy_lookup_error_response()
-                else:
-                    fb_response \
-                        = ExchangeService._freebusy_response(calendar_folder,
-                                                             timezone,
-                                                             freebusy_view_options)
-                freebusy.append(fb_response)
-        else:
+        freebusy = []
+        for fb_request in fb_requests:
+            calendar_folder = fb_request["folder"]
+            if calendar_folder is None:
+                log.warn("no calendar folder found for '%s'" % user_email)
+                fb_response \
+                    = ExchangeService._freebusy_lookup_error_response()
+            else:
+                fb_response \
+                    = ExchangeService._freebusy_response(calendar_folder,
+                                                         timezone,
+                                                         freebusy_view_options)
+            freebusy.append(fb_response)
+
+        if not freebusy:
             freebusy = None
 
         if suggestions_view_options is not None:

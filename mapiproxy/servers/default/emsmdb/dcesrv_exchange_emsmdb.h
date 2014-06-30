@@ -318,7 +318,7 @@ int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 
 /* definitions from emsmdbp_provisioning.c */
-enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *);
+enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *, const char *);
 enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
 
 /* definitions from emsmdbp_provisioning_names.c */

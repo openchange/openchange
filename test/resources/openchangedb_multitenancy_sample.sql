@@ -7,7 +7,7 @@ INSERT public_folders VALUES (2, 1, 'd4898b91-da9d-4f3e-9ae4-8a8bd5051b89');
 
 INSERT mailboxes VALUES (1, 1, 17438782182108692481, 'user1@foobar.com', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, NULL, 'en_US');
 INSERT mailboxes_properties VALUES (1, 'PidTagDisplayName', 'OpenChange Mailbox: user1@foobar.com'), (1, 'PidTagAccess', '63'), (1, 'PidTagCreationTime', '130268260180000000'),(1, 'PidTagFolderType', '1'),(1, 'PidTagLastModificationTime', '130268260180000000'),(1, 'PidTagRights', '2043'),(1, 'PidTagSubFolders', 'TRUE'),(1, 'PidTagMessageClass', 'IPC'),(1, 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA=='),(1, 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA=='),(1, 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA=='),(1, 'PidTagIpmTaskEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB0AAA=='),(1, 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA=='),(1, 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA=='),(1, 'PidTagRemindersOnlineEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABIAAA=='),(1, 'PidTagChangeNumber', '4683743612465315841');
-INSERT mailboxes VALUES (2, 2, 17438782182108692481, 'user1@foobar.net', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, NULL, 'en_US');
+INSERT mailboxes VALUES (2, 2, 17438782182108692481, 'user1@foobar.net', '23c54881-02f6-4ade-ba7d-8b28c5f638c6', 'f87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, NULL, 'en_US');
 INSERT mailboxes_properties VALUES (2, 'PidTagDisplayName', 'OpenChange Mailbox: user1@foobar.net'), (2, 'PidTagAccess', '63'), (2, 'PidTagCreationTime', '130268260180000000'),(2, 'PidTagFolderType', '1'),(2, 'PidTagLastModificationTime', '130268260180000000'),(2, 'PidTagRights', '2043'),(2, 'PidTagSubFolders', 'TRUE'),(2, 'PidTagMessageClass', 'IPC'),(2, 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA=='),(2, 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA=='),(2, 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA=='),(2, 'PidTagIpmTaskEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB0AAA=='),(2, 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA=='),(2, 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA=='),(2, 'PidTagRemindersOnlineEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABIAAA=='),(2, 'PidTagChangeNumber', '4683743612465315841');
 
 INSERT INTO folders VALUES (0, 1, 72057594037927937, 'publicfolder', NULL, NULL, NULL, 1, NULL);
@@ -717,7 +717,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAccess', '63');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Journal');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '4467570830351532033');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
-INSERT INTO folders VALUES (0, 2, 505529058172338177, 'systemfolder', 2, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 18231415716525899777) as t), 1, 5, 'sogo://user1%40foobar.net@fallback/0x1f00000000000001/');
+INSERT INTO folders VALUES (0, 2, 605529058172338177, 'systemfolder', 2, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 18231415716525899777) as t), 1, 5, 'sogo://user1%40foobar.net@fallback/0x1f00000000000001/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Journal');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -804,7 +804,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAccess', '63');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Sent');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '2738188573441261569');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderType', '1');
-INSERT INTO folders VALUES (0, 2, 1125899906842625, 'systemfolder', 2, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 18231415716525899777) as t), 1, 15, 'sogo://user1%40foobar.net:user1%40foobar.net@mail/folderSent/');
+INSERT INTO folders VALUES (0, 2, 2125899906842625, 'systemfolder', 2, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 18231415716525899777) as t), 1, 15, 'sogo://user1%40foobar.net:user1%40foobar.net@mail/folderSent/');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130268260180000000');
@@ -888,12 +888,12 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130264095410000000');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'TRUE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
-INSERT INTO folders VALUES (0, 2, 504403158265495553, 'publicfolder', NULL, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 216172782113783809) as t), 1, 5, NULL);
+INSERT INTO folders VALUES (0, 2, 720575940379279361, 'publicfolder', NULL, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 216172782113783809) as t), 1, 5, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'SCHEDULE+ FREE BUSY');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '1');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagCreationTime', '130264095410000000');
-INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '504403158265495553');
+INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagChangeNumber', '720575940379279361');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeReadOnly', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF.Note (check this)');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130264095410000000');
@@ -963,7 +963,7 @@ INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagContainerClass', 'IPF
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagLastModificationTime', '130264095410000000');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagSubFolders', 'FALSE');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeSystem', '0');
-INSERT INTO folders VALUES (0, 2, 576460752303423489, 'publicfolder', NULL, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 504403158265495553) as t), 1, 8, NULL);
+INSERT INTO folders VALUES (0, 2, 576460752303423489, 'publicfolder', NULL, (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 720575940379279361) as t), 1, 8, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'EX:/o=first organization/ou=first administrative group');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagAttributeHidden', '0');
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagFolderChildCount', '0');
@@ -1005,7 +1005,7 @@ INSERT INTO messages VALUES (0, 1, 2522015791327477761, 'systemMessage', (SELECT
 INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
 
 
-INSERT INTO messages VALUES (0, 2, 2522015791327477762, 'systemMessage', (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 145241087982698497) as t), 2, 'Sample message on system folder');
+INSERT INTO messages VALUES (0, 2, 2522015791327477762, 'systemMessage', (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 145241087982698497) as t), 2, 'Another message on system folder');
 INSERT messages_properties VALUES (LAST_INSERT_ID(), 'PidTagHasNamedProperties', '0');
 
 INSERT INTO messages VALUES (0, 2, 2522015791327477761, 'systemMessage', (SELECT id FROM (SELECT f.id FROM folders f JOIN mailboxes m ON m.ou_id = f.ou_id AND m.name = 'user1@foobar.net' WHERE f.folder_id = 576460752303423489) as t), 2, 'USER-/CN=RECIPIENTS/CN=user1%40foobar.net');

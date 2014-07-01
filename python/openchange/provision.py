@@ -819,6 +819,22 @@ def openchangedb_provision(names, lp, uri=None):
     openchangedb.add_public_folders(names)
 
 
+def openchangedb_new_organization(names, lp):
+    """Create organization, servers and public folders in openchange db
+
+    :param names: Provision names object
+    :param lp: Loadparm context
+    """
+    uri = openchangedb_url(lp)
+    if uri.startswith('mysql'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
+    else:
+        openchangedb = mailbox.OpenChangeDB(uri)
+
+    openchangedb.add_server(names)
+    openchangedb.add_public_folders(names)
+
+
 def find_setup_dir():
     """Find the setup directory used by provision."""
     dirname = os.path.dirname(__file__)

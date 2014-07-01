@@ -63,3 +63,4 @@ provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
 openchange.provision_organization(setup_path, provisionnames, lp, creds)
+openchange.register(setup_path, provisionnames, lp, creds)

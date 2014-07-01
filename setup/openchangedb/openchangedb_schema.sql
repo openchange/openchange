@@ -3,8 +3,8 @@
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `organizational_units` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `organization` VARCHAR(256) NULL,
-  `administrative_group` VARCHAR(256) NULL,
+  `organization` VARCHAR(165) NULL,
+  `administrative_group` VARCHAR(165) NULL,
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 

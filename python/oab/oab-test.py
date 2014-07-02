@@ -17,7 +17,6 @@ class TestOAB(unittest.TestCase):
         self.assertEquals((browse_len-12)%32, 0)
 
         while offset < browse_len:
-            print "Browse record at " + str(offset) + 'broese len: ' + str(browse_len)
             entry = {}
             entry['oRDN']      = self._unpack_uint(browse[offset:offset+4])
             entry['oDetails']  = self._unpack_uint(browse[offset+4:offset+8])
@@ -40,9 +39,6 @@ class TestOAB(unittest.TestCase):
 
             entries[offset] = entry
             offset += 32 # 32 b size of browse entry
-
-        print "Browse entries"
-        pprint(entries)
 
         return entries
 
@@ -154,11 +150,9 @@ class TestOAB(unittest.TestCase):
             if iBrowse < 3:
                 self.assertTrue(False, msg="iBrowse bad value " + str(iBrowse))
             iBrowse -= 3
-#            print "ANR iBrowse: " + str(iBrowse) # XXX
             self.assertTrue(iBrowse in browse_entries)
 
             oPrev = self._unpack_uint(anr_contents[nextLink+12:nextLink+16])
-#            print 'ANR oPrev: ' + str(oPrev)
             self.assertTrue(oPrev < anr_contents_size)
             self.assertTrue(oPrev == prevLink)
 
@@ -183,6 +177,20 @@ class TestOAB(unittest.TestCase):
             nextLink = oNext
 
         return entry_by_offset
+
+    def _check_browse_references(self, browse_entries, rdn_by_offset, anr_by_offset):
+        for offset in browse_entries:
+            browse_entry = browse_entries[offset]
+            for rdnPointer in ['oRDN', 'oSMTP']:
+                if (rdnPointer in browse_entry) and (browse_entry[rdnPointer] != 0):
+                    rdn_offset = browse_entry[rdnPointer]
+                    self.assertTrue(rdn_offset in  rdn_by_offset, msg='Not found pointer for ' + rdnPointer)
+                    self.assertEquals(offset, rdn_by_offset[rdn_offset]['iBrowse'])
+            for anrPointer in ['oDispName', 'oAlias', 'oLocation', 'oSurname']:
+                if (anrPointer in browse_entry) and (browse_entry[anrPointer] != 0):
+                    anr_offset = browse_entry[anrPointer]
+                    self.assertTrue(anr_offset in anr_by_offset, msg='Mot found pointer for ' + anrPointer)
+                    self.assertEquals(offset, anr_by_offset[anr_offset]['iBrowse'])
 
 
     def test_basic_accounts(self):
@@ -221,13 +229,19 @@ class TestOAB(unittest.TestCase):
         contents = oab.generateFileContents(accounts)
 #        print "Contents generated"
 #        pprint(contents)
+
         browse_entries = self._browse_entries(contents['browse'])
+#        print "Browse by offset"
+#        pprint(browse_entries)
+
         rdn_by_offset = self._check_rdn_consistence(browse_entries, contents['rdn'])
 #        print "RDN by offset"
 #        pprint(rdn_by_offset)
+
         anr_by_offset = self._check_anr_consistence(browse_entries, contents['anr'])
-        # print "ANR by offset"
-        # pprint(anr_by_offset)
+#        print "ANR by offset"
+#        pprint(anr_by_offset)
+        self._check_browse_references(browse_entries, rdn_by_offset, anr_by_offset)
 
 
     def _unpack_uint(self, barray):

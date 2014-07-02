@@ -21,8 +21,7 @@ class TestOAB(unittest.TestCase):
 
         return entries
 
-    def _check_rdn_consistence(self, browseContents, rdnContents):
-        browse_entries = self._browse_entries(browseContents)
+    def _check_rdn_consistence(self, browse_entries, rdnContents):
         rdnContentsSize = len(rdnContents)
 
         nAccounts = struct.unpack('<I', rdnContents[8:12])
@@ -100,7 +99,7 @@ class TestOAB(unittest.TestCase):
             prevLink = nextLink
             nextLink = oNext
 
-    def _check_anr_consistence(self, anr_contents):
+    def _check_anr_consistence(self, browse_entries, anr_contents):
         anr_contents_size = len(anr_contents)
         nAccounts = self._unpack_uint(anr_contents[8:12])
         print 'ANR nAccounts ' + str(nAccounts)
@@ -114,8 +113,15 @@ class TestOAB(unittest.TestCase):
         while nextLink != 0:
             print "ANR with expected offset " + str(nextLink) + '  prev link ' + str(prevLink)
 
+            iBrowse = self._unpack_uint(anr_contents[nextLink+8:nextLink+12])
+            if iBrowse < 3:
+                self.assertTrue(False, msg="iBrowse bad value " + str(iBrowse))
+            iBrowse -= 3
+            print "ANR iBrowse: " + str(iBrowse) # XXX
+            self.assertTrue(iBrowse in browse_entries)
+
             oPrev = self._unpack_uint(anr_contents[nextLink+12:nextLink+16])
-            print 'oPrev: ' + str(oPrev)
+            print 'ANR oPrev: ' + str(oPrev)
             self.assertTrue(oPrev < anr_contents_size)
             self.assertTrue(oPrev == prevLink)
 
@@ -165,10 +171,11 @@ class TestOAB(unittest.TestCase):
 
         oab = OAB()
         contents = oab.generateFileContents(accounts)
-        print "Contents generated"
-        pprint(contents)
-        self._check_rdn_consistence(contents['browse'], contents['rdn'])
-        self._check_anr_consistence(contents['anr'])
+#        print "Contents generated"
+#        pprint(contents)
+        browse_entries = self._browse_entries(contents['browse'])
+        self._check_rdn_consistence(browse_entries, contents['rdn'])
+        self._check_anr_consistence(browse_entries, contents['anr'])
 
 
     def _unpack_uint(self, barray):

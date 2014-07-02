@@ -128,7 +128,9 @@ class OAB:
         lastAccount = len(accounts) - 1
         for i in range(0, lastAccount +1):
             acc = accounts[i]
-            iBrowse = browseFileIndex[acc['samAccountName']] + 3 # iBrowse has 3 offset
+            browse_offset = browseFileIndex[acc['samAccountName']]
+            iBrowse = browse_offset  + 3 # iBrowse has 3 offset
+
 
             rdn, pdn = acc['dn'].split(',', 1)
             rdn = rdn.split('=', 1)[1]
@@ -142,7 +144,7 @@ class OAB:
             else:
                 oNextBase = len(contents)
             # add oRDN entry to browse file
-#TTT            browseFileContents[iBrowse:iBrowse+4] = self._pack_uint(record_offset)
+            browseFileContents[browse_offset+0:browse_offset+4] = self._pack_uint(record_offset)
 
             rdn, pdn = acc['mail'].split('@', 1)
             rdn += '@'
@@ -152,7 +154,7 @@ class OAB:
             contents += record
             oNextBase = len(contents) # no effect if last account
             # add oSMTP entry to browse file
-#TTT            browseFileContents[iBrowse+12:iBrowse+16] = self._pack_uint(record_offset)
+            browseFileContents[browse_offset+12:browse_offset+16] = self._pack_uint(record_offset)
 
         return contents
 
@@ -240,26 +242,29 @@ class OAB:
         next_record = 0
         for acc in accounts:
             for attr in anr_attrs:
-                iBrowse = browseFileIndex[acc['samAccountName']] + 3 # iBrowse has 3 offs
+                browse_offset = browseFileIndex[acc['samAccountName']]
+                iBrowse =  browse_offset + 3 # iBrowse has 3 offs
                 if not(attr in acc):
                     continue
+
+                record_offset = len(contents)
 
                 if ((next_record+1) == nRecords):
                     oNextBase = 0
                 else:
-                    oNextBase = len(contents)
+                    oNextBase = record_offset
 
                 attrValue = acc[attr]
                 print "ANR record " + str(next_record) + ' '+ attr + ':' + str(attrValue) + ' offset: ' + str(len(contents)) +  ' oPrev: ' + str(oPrev) + ' nextBase: ' + str(oNextBase) + ' iBrowse: ' + str(iBrowse)
+
                 record    = self._anrRecord(attrValue, oPrev, oNextBase, iBrowse, attr == 'alias')
                 contents += record
-                oPrev = oNextBase
+                oPrev = record_offset
                 next_record += 1
 
                 # add entry to browse file
-# TTT
-#                browseFileOffset = iBrowse + attr_ibrowse_offset[attr]
-#                browseFileContents[browseFileOffset:browseFileOffset+4] = self._pack_uint(oNextBase)
+                browseFileOffset = browse_offset + attr_ibrowse_offset[attr]
+                browseFileContents[browseFileOffset:browseFileOffset+4] = self._pack_uint(record_offset)
 
         return contents
 

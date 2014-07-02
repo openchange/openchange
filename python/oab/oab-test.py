@@ -13,6 +13,9 @@ class TestOAB(unittest.TestCase):
 
         offset = 12 # 12 is the header size
         browse_len = len(browse)
+        # check that it has the correct size
+        self.assertEquals((browse_len-12)%32, 0)
+
         while offset < browse_len:
             print "Browse record at " + str(offset) + 'broese len: ' + str(browse_len)
             entry = {}
@@ -29,11 +32,11 @@ class TestOAB(unittest.TestCase):
                 entry['type'] = 'folder'
             else:
                 self.assertTrue(False, 'Bad binary value in browse entry type:' + str(browse[11]))
-            entry['oSMTP']  = self._unpack_uchar(browse[offset+12:offset+16])
-            entry['oDispName']  = self._unpack_uchar(browse[offset+16:offset+20])
-            entry['oAlias']  = self._unpack_uchar(browse[offset+20:offset+24])
-            entry['oLocation']  = self._unpack_uchar(browse[offset+24:offset+28])
-            entry['oSurname']  = self._unpack_uchar(browse[offset+28:offset+32])
+            entry['oSMTP']  = self._unpack_uint(browse[offset+12:offset+16])
+            entry['oDispName']  = self._unpack_uint(browse[offset+16:offset+20])
+            entry['oAlias']  = self._unpack_uint(browse[offset+20:offset+24])
+            entry['oLocation']  = self._unpack_uint(browse[offset+24:offset+28])
+            entry['oSurname']  = self._unpack_uint(browse[offset+28:offset+32])
 
             entries[offset] = entry
             offset += 32 # 32 b size of browse entry

@@ -24,6 +24,7 @@ class OpenchangeDBWithMySQL(OpenchangeDB):
     def __init__(self, uri):
         self.uri = uri
         self.db = self._connect_to_mysql(uri)
+        self.qlock = threading.RLock()
 
     def _connect_to_mysql(self, uri):
         # uri should be mysql://user[:passwd]@some_host/some_db_name
@@ -50,8 +51,7 @@ class OpenchangeDBWithMySQL(OpenchangeDB):
 
     def _select(self, sql, params=()):
         try:
-            qlock = threading.RLock()
-            qlock.acquire()
+            self.qlock.acquire()
             cur = self.db.cursor()
             cur.execute(sql, params)
             rows = cur.fetchall()
@@ -70,7 +70,7 @@ class OpenchangeDBWithMySQL(OpenchangeDB):
             print "Error executing %s with %r: %r" % (sql, params, e)
             raise e
         finally:
-            qlock.release()
+            self.qlock.release()
 
     def get_calendar_uri(self, usercn, email):
         mailbox_name = email.split('@')[0]

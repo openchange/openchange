@@ -8,13 +8,35 @@ sys.path.append('.')
 from oab import OAB
 
 class TestOAB(unittest.TestCase):
-    def _browse_entries(self, browseContents):
+    def _browse_entries(self, browse):
         entries = {}
 
-        record_position = 12 # 12 is the header size
-        while record_position < len(browseContents):
-            entries[record_position] = 1
-            record_position += 32 # 32 b size of browse entry
+        offset = 12 # 12 is the header size
+        browse_len = len(browse)
+        while offset < browse_len:
+            print "Browse record at " + str(offset) + 'broese len: ' + str(browse_len)
+            entry = {}
+            entry['oRDN']      = self._unpack_uint(browse[offset:offset+4])
+            entry['oDetails']  = self._unpack_uint(browse[offset+4:offset+8])
+            entry['cbDetails'] = self._unpack_ushort(browse[offset+8:offset+10])
+            entry['bDispType'] = self._unpack_uchar(browse[offset+10:offset+11])
+            entry['SendRichInfo'] = browse[offset+11] & 0x80
+            if browse[offset + 11] & 0x06:
+                entry['type'] = 'mailuser'
+            elif browse[offset + 11] & 0x08:
+                entry['type'] = 'distlist'
+            elif browse[offset + 11] & 0x03:
+                entry['type'] = 'folder'
+            else:
+                self.assertTrue(False, 'Bad binary value in browse entry type:' + str(browse[11]))
+            entry['oSMTP']  = self._unpack_uchar(browse[offset+12:offset+16])
+            entry['oDispName']  = self._unpack_uchar(browse[offset+16:offset+20])
+            entry['oAlias']  = self._unpack_uchar(browse[offset+20:offset+24])
+            entry['oLocation']  = self._unpack_uchar(browse[offset+24:offset+28])
+            entry['oSurname']  = self._unpack_uchar(browse[offset+28:offset+32])
+
+            entries[offset] = entry
+            offset += 32 # 32 b size of browse entry
 
         print "Browse entries"
         pprint(entries)
@@ -22,22 +44,15 @@ class TestOAB(unittest.TestCase):
         return entries
 
     def _check_rdn_consistence(self, browse_entries, rdnContents):
+        entry_by_offset = {}
         rdnContentsSize = len(rdnContents)
 
         nAccounts = struct.unpack('<I', rdnContents[8:12])
         self.assertTrue(nAccounts > 0)
 
-        # DDD
-        oRootBytes = str(bytearray(rdnContents[12:16]))
-        print 'oRootBytes=' + str(type(oRootBytes)) + ' -> '
-        pprint(oRootBytes)
-        # DDD
-
         oRoot = self._unpack_uint(rdnContents[12:16])
         print 'oRoot= ' + str(type(oRoot)) + ' -> ' + str(oRoot) # DDD
         self.assertTrue(oRoot > 16) # always will be more that 18(size header)
-
-
 
         pdnPart = rdnContents[16:oRoot]
         self.assertTrue(len(pdnPart) > 0)
@@ -72,6 +87,9 @@ class TestOAB(unittest.TestCase):
         while nextLink != 0:
             print "RDN with offset " + str(nextLink)
 
+            oLT = self._unpack_uint(rdnContents[nextLink+0:nextLink+4])
+            oGT = self._unpack_uint(rdnContents[nextLink+4:nextLink+8])
+
             iBrowse = self._unpack_uint(rdnContents[nextLink+8:nextLink+12])
             if iBrowse < 3:
                 self.assertTrue(False, msg="iBrowse bad value " + str(iBrowse))
@@ -96,10 +114,23 @@ class TestOAB(unittest.TestCase):
             rdn = str(rdnBytes)
             print 'RDN=' + rdn
 
+            entry_by_offset[nextLink] = {
+                'oLT' : oLT,
+                'oGT' : oGT,
+                'iBrowse' : iBrowse,
+                'oParentDN' : oParentDN,
+                'oNext'    : oNext,
+                'oPrev'    : oPrev,
+                'rdn' : rdn
+            }
+
             prevLink = nextLink
             nextLink = oNext
 
+        return entry_by_offset
+
     def _check_anr_consistence(self, browse_entries, anr_contents):
+        entry_by_offset = {}
         anr_contents_size = len(anr_contents)
         nAccounts = self._unpack_uint(anr_contents[8:12])
         print 'ANR nAccounts ' + str(nAccounts)
@@ -113,15 +144,18 @@ class TestOAB(unittest.TestCase):
         while nextLink != 0:
             print "ANR with expected offset " + str(nextLink) + '  prev link ' + str(prevLink)
 
+            oLT = self._unpack_uint(anr_contents[nextLink+0:nextLink+4])
+            oGT = self._unpack_uint(anr_contents[nextLink+4:nextLink+8])
+
             iBrowse = self._unpack_uint(anr_contents[nextLink+8:nextLink+12])
             if iBrowse < 3:
                 self.assertTrue(False, msg="iBrowse bad value " + str(iBrowse))
             iBrowse -= 3
-            print "ANR iBrowse: " + str(iBrowse) # XXX
+#            print "ANR iBrowse: " + str(iBrowse) # XXX
             self.assertTrue(iBrowse in browse_entries)
 
             oPrev = self._unpack_uint(anr_contents[nextLink+12:nextLink+16])
-            print 'ANR oPrev: ' + str(oPrev)
+#            print 'ANR oPrev: ' + str(oPrev)
             self.assertTrue(oPrev < anr_contents_size)
             self.assertTrue(oPrev == prevLink)
 
@@ -131,10 +165,21 @@ class TestOAB(unittest.TestCase):
             found = anr_contents.find(b'0', nextLink+20)
             anr_bytes  =  anr_contents[nextLink+20:found]
             anr = str(anr_bytes)
-            print 'ANR=' + anr
+#            print 'ANR=' + anr
+
+            entry_by_offset[nextLink] = {
+                'oLT' : oLT,
+                'oGT' : oGT,
+                'iBrowse' : iBrowse,
+                'oPrev' : oPrev,
+                'oNext': oNext,
+                'anr'  : anr
+            }
 
             prevLink = nextLink
             nextLink = oNext
+
+        return entry_by_offset
 
 
     def test_basic_accounts(self):
@@ -174,14 +219,25 @@ class TestOAB(unittest.TestCase):
 #        print "Contents generated"
 #        pprint(contents)
         browse_entries = self._browse_entries(contents['browse'])
-        self._check_rdn_consistence(browse_entries, contents['rdn'])
-        self._check_anr_consistence(browse_entries, contents['anr'])
+        rdn_by_offset = self._check_rdn_consistence(browse_entries, contents['rdn'])
+#        print "RDN by offset"
+#        pprint(rdn_by_offset)
+        anr_by_offset = self._check_anr_consistence(browse_entries, contents['anr'])
+        # print "ANR by offset"
+        # pprint(anr_by_offset)
 
 
     def _unpack_uint(self, barray):
         bstr = str(bytearray(barray[0:4]))
         return struct.unpack('<I', bstr)[0]
 
+    def _unpack_ushort(self, barray):
+        bstr = str(bytearray(barray[0:2]))
+        return struct.unpack('<H', bstr)[0]
+
+    def _unpack_uchar(self, barray):
+        bstr = str(barray[0])
+        return struct.unpack('<B', bstr)
 
 if __name__ == '__main__':
     unittest.main()

@@ -14,7 +14,8 @@ class OAB:
         pass
 
     def createFiles(self, accounts, directory):
-        contents = self._generateFileContents(accounts)
+#        contents = self._generateFileContents(accounts)
+        pass
 
     def generateFileContents(self, accounts):
         nAccounts = len(accounts)
@@ -26,8 +27,8 @@ class OAB:
             nAccounts = nAccounts[0:OAB.MAX_UL_TOT_RECORDS-1]
 
         browseFileIndex, browseFileContents = self._browseFileContents(accounts)
-        rdnFileContents    = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
-        anrFileContents = self._anrFileContents(accounts)
+        rdnFileContents = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
+        anrFileContents = self._anrFileContents(accounts, browseFileIndex, browseFileContents)
 
         # print '--------------------------'
         # print '# Browse file:'
@@ -82,7 +83,7 @@ class OAB:
         elif account['type'] == 'distlist':
             record[10] = 0x1
         else:
-            raise Exception("Unknow account type " + record['type'])
+            raise Exception("Unknow account type when settinf bDispType " + record['type'])
 
         # a 1b 1 (can receive rich content)
         if account['SendRichInfo']:
@@ -94,8 +95,10 @@ class OAB:
             record[11] += 0x06
         elif account['type'] == 'distlist':
             record[11] += 0x08
+        elif account['type'] == 'folder':
+            record[11] += 0x03
         else:
-            raise Exception("Unknow account type " + record['type'])
+            raise Exception("Unknow account type when setting type in bObjType byte " + record['type'])
         # oSmtp (4 bytes)
         # oAlias (4 bytes): A 32-bit unsigned integer that specifies the offset of the alias record in the
         # ANR Index file.
@@ -117,7 +120,6 @@ class OAB:
         offsetByPdn = pdn[0]
 
         # now we have the offset of the first RDN and we can set oRoot
-#        print "oRoot len(ciontnts) _> " + str(len(contents))
         oRootPacked = self._pack_uint(len(contents))
         contents[12:16]  = oRootPacked[0:4]
 
@@ -133,21 +135,24 @@ class OAB:
 
             record = self._rdnRecord(rdn, pdn, offsetByPdn, oPrev, oNextBase, iBrowse)
             oPrev = len(contents)
+            record_offset = len(contents)
             contents += record
             if i == lastAccount:
                 oNextBase = 0
             else:
                 oNextBase = len(contents)
+            # add oRDN entry to browse file
+#TTT            browseFileContents[iBrowse:iBrowse+4] = self._pack_uint(record_offset)
 
             rdn, pdn = acc['mail'].split('@', 1)
             rdn += '@'
             record = self._rdnRecord(rdn, pdn, offsetByPdn, oPrev, oNextBase, iBrowse)
             oPrev = len(contents)
-            contents += record
             record_offset = len(contents)
-            oNextBase = record_offset # no effect if last account
+            contents += record
+            oNextBase = len(contents) # no effect if last account
             # add oSMTP entry to browse file
-            browseFileContents[iBrowse+12:iBrowse+16] = self._pack_uint(record_offset)
+#TTT            browseFileContents[iBrowse+12:iBrowse+16] = self._pack_uint(record_offset)
 
         return contents
 
@@ -219,8 +224,14 @@ class OAB:
 
         return record
 
-    def _anrFileContents(self, accounts):
+    def _anrFileContents(self, accounts,  browseFileIndex, browseFileContents):
         anr_attrs = ['displayName', 'sn', 'office', 'alias']
+        attr_ibrowse_offset = {
+            'displayName' : 16,
+            'alias'       : 20,
+            'office'      : 24,
+            'sn'          : 28
+        }
         nRecords = self._count_attributes(accounts, anr_attrs)
         contents = self._anrHeader(accounts, nRecords)
 
@@ -229,6 +240,7 @@ class OAB:
         next_record = 0
         for acc in accounts:
             for attr in anr_attrs:
+                iBrowse = browseFileIndex[acc['samAccountName']] + 3 # iBrowse has 3 offs
                 if not(attr in acc):
                     continue
 
@@ -238,11 +250,16 @@ class OAB:
                     oNextBase = len(contents)
 
                 attrValue = acc[attr]
-                print "ANR record " + str(next_record) + ' '+ attr + ':' + str(attrValue) + ' offset: ' + str(len(contents)) +  ' oPrev: ' + str(oPrev) + ' nextBase: ' + str(oNextBase)
-                record    = self._anrRecord(attrValue, oPrev, oNextBase, attr == 'alias')
+                print "ANR record " + str(next_record) + ' '+ attr + ':' + str(attrValue) + ' offset: ' + str(len(contents)) +  ' oPrev: ' + str(oPrev) + ' nextBase: ' + str(oNextBase) + ' iBrowse: ' + str(iBrowse)
+                record    = self._anrRecord(attrValue, oPrev, oNextBase, iBrowse, attr == 'alias')
                 contents += record
                 oPrev = oNextBase
                 next_record += 1
+
+                # add entry to browse file
+# TTT
+#                browseFileOffset = iBrowse + attr_ibrowse_offset[attr]
+#                browseFileContents[browseFileOffset:browseFileOffset+4] = self._pack_uint(oNextBase)
 
         return contents
 
@@ -259,12 +276,13 @@ class OAB:
 
         return header
 
-    def _anrRecord(self, attrValue, oPrev, oNextBase, alias):
+    def _anrRecord(self, attrValue, oPrev, oNextBase, iBrowse, alias):
         record = bytearray(20) # 20 is only the fixed  bytes
         # XXX degenerate tree: oLT, oGT -> oPrev, oNext
         record[0:4] = self._pack_uint(oPrev) #oLt
         # oGT (4 bytes) , later
-        # iBrowse 3b XX TODO
+        # iBrowse 3b
+        record[8:12] = self._pack_uint(iBrowse)
         # a/b 1b
         ab = 0x00
         if alias:

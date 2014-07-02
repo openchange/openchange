@@ -5,18 +5,28 @@ from pprint import pprint
 import sys
 sys.path.append('.')
 
+from oab import OAB
+
 class TestOAB(unittest.TestCase):
+    def _browse_entries(self, browseContents):
+        entries = {}
+
+        record_position = 12 # 12 is the header size
+        while record_position < len(browseContents):
+            entries[record_position] = 1
+            record_position += 32 # 32 b size of browse entry
+
+        print "Browse entries"
+        pprint(entries)
+
+        return entries
+
     def _check_rdn_consistence(self, browseContents, rdnContents):
+        browse_entries = self._browse_entries(browseContents)
         rdnContentsSize = len(rdnContents)
 
         nAccounts = struct.unpack('<I', rdnContents[8:12])
         self.assertTrue(nAccounts > 0)
-
-        print 'rdnContents:'
-        pprint (rdnContents)
-
- #       print 'rdnContents[12:16] -> '
- #       pprint(rdnContents[12:16])
 
         # DDD
         oRootBytes = str(bytearray(rdnContents[12:16]))
@@ -51,7 +61,7 @@ class TestOAB(unittest.TestCase):
 
         pprint(pdnByOffset)
 
-        rdnPart = pdnPart[oRoot:] # DDd
+        rdnPart = pdnPart[oRoot:] # DDD
         pprint (rdnPart) # DDD
 
         # checking using prev/next links
@@ -62,6 +72,14 @@ class TestOAB(unittest.TestCase):
 
         while nextLink != 0:
             print "RDN with offset " + str(nextLink)
+
+            iBrowse = self._unpack_uint(rdnContents[nextLink+8:nextLink+12])
+            if iBrowse < 3:
+                self.assertTrue(False, msg="iBrowse bad value " + str(iBrowse))
+            iBrowse -= 3
+            print "iBrowse: " + str(iBrowse) # XXX
+            self.assertTrue(iBrowse in browse_entries)
+
 
             oPrev = self._unpack_uint(rdnContents[nextLink+12:nextLink+16])
             self.assertTrue(oPrev < rdnContentsSize)
@@ -81,22 +99,6 @@ class TestOAB(unittest.TestCase):
 
             prevLink = nextLink
             nextLink = oNext
-
-
-
-    def test_rdn_consistence(self):
-        cases = [
-            (
-                # Browse file:
-                bytearray(b'\n\x00\x00\x00\x05\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x86\xac\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x86\xf9\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x868\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x86u\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x86\xae\x01\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00'),
-                # RDN file:
-                bytearray(b'\x0e\x00\x00\x00\x00\x00\x00\x00\n\x00\x00\x00l\x00\x00\x00OU=\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd0\xb8,DC=zentyal-domain,DC=lan\x00zentyal-domain.lan\x00CN=Users,DC=zentyal-domain,DC=lan\x00\x00\x00\x00\x00\x90\x00\x00\x00\n\x00\x00\x00\x00\x00\x00\x00\x90\x00\x00\x00\x10\x00\x00\x00asdvsdffv a0l\x00\x00\x00\xac\x00\x00\x00\n\x00\x00\x00l\x00\x00\x00\xac\x00\x00\x007\x00\x00\x00u2@0\x90\x00\x00\x00\xd2\x00\x00\x00*\x00\x00\x00\x90\x00\x00\x00\xd2\x00\x00\x00J\x00\x00\x00Administrator0\xac\x00\x00\x00\xf9\x00\x00\x00*\x00\x00\x00\xac\x00\x00\x00\xf9\x00\x00\x007\x00\x00\x00administrator@0\xd2\x00\x00\x00\x1c\x01\x00\x00J\x00\x00\x00\xd2\x00\x00\x00\x1c\x01\x00\x00J\x00\x00\x00sdsdsd dfg0\xf9\x00\x00\x008\x01\x00\x00J\x00\x00\x00\xf9\x00\x00\x008\x01\x00\x007\x00\x00\x00u1@0\x1c\x01\x00\x00V\x01\x00\x00j\x00\x00\x00\x1c\x01\x00\x00V\x01\x00\x00J\x00\x00\x00Guest08\x01\x00\x00u\x01\x00\x00j\x00\x00\x008\x01\x00\x00u\x01\x00\x007\x00\x00\x00guest@0V\x01\x00\x00\x92\x01\x00\x00\x8a\x00\x00\x00V\x01\x00\x00\x92\x01\x00\x00J\x00\x00\x00a ad0u\x01\x00\x00\x00\x00\x00\x00\x8a\x00\x00\x00u\x01\x00\x00\x00\x00\x00\x007\x00\x00\x00ad@0')
-
-            )
-
-          ]
-        for case in cases:
-            self._check_rdn_consistence(case[0], case[1])
 
     def _check_anr_consistence(self, anr_contents):
         anr_contents_size = len(anr_contents)
@@ -128,14 +130,45 @@ class TestOAB(unittest.TestCase):
             prevLink = nextLink
             nextLink = oNext
 
-    def test_anr_consistence(self):
-        cases = [
-            bytearray(b'\x0e\x00\x00\x00\x00\x00\x00\x00\n\x00\x00\x00\x00\x00\x00\x00#\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00#\x00\x00\x00u20\x0c\x00\x00\x009\x00\x00\x00\x00\x00\x00\x00\x0c\x00\x00\x009\x00\x00\x00a0#\x00\x00\x00[\x00\x00\x00\x00\x00\x00\x00#\x00\x00\x00[\x00\x00\x00Administrator09\x00\x00\x00q\x00\x00\x00\x00\x00\x00\x009\x00\x00\x00q\x00\x00\x00-0[\x00\x00\x00\x88\x00\x00\x00\x00\x00\x00\x00[\x00\x00\x00\x88\x00\x00\x00u10q\x00\x00\x00\xa0\x00\x00\x00\x00\x00\x00\x00q\x00\x00\x00\xa0\x00\x00\x00dfg0\x88\x00\x00\x00\xba\x00\x00\x00\x00\x00\x00\x00\x88\x00\x00\x00\xba\x00\x00\x00Guest0\xa0\x00\x00\x00\xd0\x00\x00\x00\x00\x00\x00\x00\xa0\x00\x00\x00\xd0\x00\x00\x00-0\xba\x00\x00\x00\xe7\x00\x00\x00\x00\x00\x00\x00\xba\x00\x00\x00\xe7\x00\x00\x00ad0\xd0\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\xd0\x00\x00\x00\x00\x00\x00\x00ad0')
 
-            ]
-        for case in cases:
-            self._check_anr_consistence(case)
+    def test_basic_accounts(self):
+        accounts = [{'SendRichInfo': 1,
+                     'dn': 'CN=asdvsdffv a,OU=\xd1\x80\xd1\x83\xd1\x81\xd0\xba\xd0\xb8,DC=zentyal-domain,DC=lan',
+                     'mail': 'u2@zentyal-domain.lan',
+                     'samAccountName': 'u2',
+                     'sn': 'a',
+                     'type': 'mailuser'},
+                    {'SendRichInfo': 1,
+                     'dn': 'CN=Administrator,CN=Users,DC=zentyal-domain,DC=lan',
+                     'mail': 'administrator@zentyal-domain.lan',
+                     'samAccountName': 'Administrator',
+                     'sn': '-',
+                     'type': 'mailuser'},
+                    {'SendRichInfo': 1,
+                     'dn': 'CN=sdsdsd dfg,CN=Users,DC=zentyal-domain,DC=lan',
+                     'mail': 'u1@zentyal-domain.lan',
+                     'samAccountName': 'u1',
+                     'sn': 'dfg',
+                     'type': 'mailuser'},
+                    {'SendRichInfo': 1,
+                     'dn': 'CN=Guest,CN=Users,DC=zentyal-domain,DC=lan',
+                     'mail': 'guest@zentyal-domain.lan',
+                     'samAccountName': 'Guest',
+                     'sn': '-',
+                     'type': 'mailuser'},
+                    {'SendRichInfo': 1,
+                     'dn': 'CN=a ad,CN=Users,DC=zentyal-domain,DC=lan',
+                     'mail': 'ad@zentyal-domain.lan',
+                     'samAccountName': 'ad',
+                     'sn': 'ad',
+                     'type': 'mailuser'}]
 
+        oab = OAB()
+        contents = oab.generateFileContents(accounts)
+        print "Contents generated"
+        pprint(contents)
+        self._check_rdn_consistence(contents['browse'], contents['rdn'])
+        self._check_anr_consistence(contents['anr'])
 
 
     def _unpack_uint(self, barray):

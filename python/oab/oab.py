@@ -1,9 +1,9 @@
 import struct
 
 # TESTY
-from samba.param import LoadParm
-from samba.auth import system_session
-from samba import samdb, ldb
+#from samba.param import LoadParm
+#from samba.auth import system_session
+#from samba import samdb, ldb
 from pprint import pprint
 
 
@@ -14,6 +14,9 @@ class OAB:
         pass
 
     def createFiles(self, accounts, directory):
+        contents = self._generateFileContents(accounts)
+
+    def generateFileContents(self, accounts):
         nAccounts = len(accounts)
         if (nAccounts == 0):
             raise Exception('Trying to create OAB files without accounts');
@@ -26,20 +29,27 @@ class OAB:
         rdnFileContents    = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
         anrFileContents = self._anrFileContents(accounts)
 
+        # print '--------------------------'
+        # print '# Browse file:'
+        # pprint(browseFileContents)
+        # print '# RDN file:'
+        # pprint(rdnFileContents)
+        # print '# ANR file:'
+        # pprint(anrFileContents)
+        # print '--------------------------'
 
-        print '--------------------------'
-        print 'Browse file:'
-        pprint(browseFileContents)
-        print 'RDN file:'
-        pprint(rdnFileContents)
-        print 'ANR file:'
-        pprint(anrFileContents)
-        print '--------------------------'
+        return { 'browse' : browseFileContents,
+                 'rdn'    : rdnFileContents,
+                 'anr'    : anrFileContents,
+               }
+
+
 
     def _browseFileContents(self, accounts):
         contents = self._browseFileHeader(accounts)
         index    = {}
         for acc in accounts:
+            print "Browse record " + acc['samAccountName'] + ' : ' + str(len(contents))
             record  = self._browseRecord(acc)
             index[acc['samAccountName']] = len(contents)
             contents += record
@@ -48,7 +58,7 @@ class OAB:
         return (index, contents)
 
     def _browseFileHeader(self, accounts):
-        header = bytearray(10)
+        header = bytearray(12)
         # ulVersion
         header[0] =  0xA
         header[1] =  0x0
@@ -107,7 +117,7 @@ class OAB:
         offsetByPdn = pdn[0]
 
         # now we have the offset of the first RDN and we can set oRoot
-        print "oRoot len(ciontnts) _> " + str(len(contents))
+#        print "oRoot len(ciontnts) _> " + str(len(contents))
         oRootPacked = self._pack_uint(len(contents))
         contents[12:16]  = oRootPacked[0:4]
 
@@ -116,7 +126,7 @@ class OAB:
         lastAccount = len(accounts) - 1
         for i in range(0, lastAccount +1):
             acc = accounts[i]
-            iBrowse = browseFileIndex[acc['samAccountName']]
+            iBrowse = browseFileIndex[acc['samAccountName']] + 3 # iBrowse has 3 offset
 
             rdn, pdn = acc['dn'].split(',', 1)
             rdn = rdn.split('=', 1)[1]
@@ -193,7 +203,7 @@ class OAB:
         # set later
 
         # oParentDN (4 bytes)
-        print rdn + ' pdn: ' + pdn + ' offset ' + str(offsetByPdn[pdn])
+        print rdn + ' pdn: ' + pdn + ' offset ' + str(offsetByPdn[pdn]) + ' iBrowse ' + str(iBrowse)
         record[20:24] = self._pack_uint(offsetByPdn[pdn])
 
         # acKey (variable):
@@ -212,7 +222,6 @@ class OAB:
     def _anrFileContents(self, accounts):
         anr_attrs = ['displayName', 'sn', 'office', 'alias']
         nRecords = self._count_attributes(accounts, anr_attrs)
-        print "nRecords: " + str(nRecords)
         contents = self._anrHeader(accounts, nRecords)
 
         oPrev = 0;
@@ -341,8 +350,8 @@ def accountsList():
     return accounts
 
 
-# test code
-accounts = accountsList()
-pprint(accounts)
-oab = OAB()
-oab.createFiles(accounts, '/tmp')
+# # test code
+# accounts = accountsList()
+# pprint(accounts)
+# oab = OAB()
+# oab.createFiles(accounts, '/tmp')

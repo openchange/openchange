@@ -313,6 +313,7 @@ class OpenChangeDBWithMysqlBackend(object):
     # be moved to another place and being handled better
     def migrate(self):
         """Migrate both mysql schema and data"""
+        self.db.select_db(self.db_name)
         try:
             self._execute("SELECT count(*) FROM company")
         except:
@@ -385,11 +386,12 @@ class OpenChangeDBWithMysqlBackend(object):
         return cur
 
     def add_server(self, names):
+        self.db.select_db(self.db_name)
         cur = self._execute("INSERT organizational_units VALUES (0, %s, %s)",
                             (names.firstorg, names.firstou))
         self.ou_id = int(cur.lastrowid)
         change_number = 1
-        cur = self._execute("INSERT servers VALUES (0, %s, %s, %s)", 
+        cur = self._execute("INSERT servers VALUES (0, %s, %s, %s)",
                             (self.ou_id, self.replica_id, change_number))
         self.server_id = int(cur.lastrowid)
 
@@ -405,7 +407,7 @@ class OpenChangeDBWithMysqlBackend(object):
             "INSERT folders VALUES (0, %s, %s, 'public', NULL, NULL, 1, %s, NULL)",
             (self.ou_id, fid, SystemIdx))
         folder_id = cur.lastrowid
-        self._execute("INSERT folders_properties VALUES (%s, %s, %s)", 
+        self._execute("INSERT folders_properties VALUES (%s, %s, %s)",
                       [(folder_id,) + p for p in properties])
 
     def _add_sub_public_folder(self, parentfid, fid, change_num, display_name,
@@ -439,7 +441,7 @@ class OpenChangeDBWithMysqlBackend(object):
         if parent_fid == 0:
             self._add_root_public_folder(fid, change_num, system_index, childcount)
         else:
-            self._add_sub_public_folder(parent_fid, fid, change_num, name, 
+            self._add_sub_public_folder(parent_fid, fid, change_num, name,
                                         system_index, childcount);
 
         self.global_count += 1
@@ -454,20 +456,20 @@ class OpenChangeDBWithMysqlBackend(object):
             raise Exception("You have to add a server before calling add_public_folders method")
 
         store_guid = str(uuid.uuid4())
-        self._execute("INSERT public_folders VALUES (%s, %s, %s)", 
+        self._execute("INSERT public_folders VALUES (%s, %s, %s)",
                       (self.ou_id, self.replica_id, store_guid))
 
         public_folders = _public_folders_meta(names)
 
         print "[+] Public Folders"
         print "==================="
-        self._add_one_public_folder(0, ("Public Folder Root",), 
+        self._add_one_public_folder(0, ("Public Folder Root",),
                                     public_folders[0], public_folders[1], names)
 
     @property
     def change_number(self):
         if self._change_number is None:
-            cur = self._execute("SELECT change_number FROM servers WHERE id = %s", 
+            cur = self._execute("SELECT change_number FROM servers WHERE id = %s",
                                 self.server_id)
             data = cur.fetchone()
             if data:

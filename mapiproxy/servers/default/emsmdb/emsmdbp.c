@@ -581,3 +581,38 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
 
 	return MAPI_E_SUCCESS;
 }
+
+/**
+   \details Get the organization name (like "First Organization") as a DN.
+
+   \param emsmdbp_ctx pointer to the EMSMDBP context
+   \param basedn pointer to the returned struct ldb_dn
+
+   \return MAPI_E_SUCCESS or an error if something happens
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx, struct ldb_dn **basedn)
+{
+	enum MAPISTATUS		retval;
+	int			ret;
+	struct ldb_result	*res = NULL;
+	char			*org_name;
+
+	retval = emsmdbp_fetch_organizational_units(emsmdbp_ctx, emsmdbp_ctx, &org_name, NULL);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
+                         LDB_SCOPE_SUBTREE, NULL,
+                         "(&(objectClass=msExchOrganizationContainer)(cn=%s))", org_name);
+	talloc_free(org_name);
+
+	/* If the search failed */
+        if (ret != LDB_SUCCESS) {
+	  	DEBUG(1, ("emsmdbp_get_org_dn ldb_search failure.\n"));
+		return MAPI_E_NOT_FOUND;
+        }
+
+	*basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
+			     ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
+	return MAPI_E_SUCCESS;
+}

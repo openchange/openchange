@@ -64,15 +64,10 @@ class OAB:
     def _browseFileHeader(self, accounts):
         header = bytearray(OAB.BROWSE_HEADER_SIZE)
         # ulVersion
-        header[0] = 0x0E
-        header[1] = 0x00
+        header[0:4] = 0x0E, 0x00, 0x00, 0x00
         # ulSerial: later
         # ulTotRec
-        packedNAccounts = struct.pack('<I', len(accounts))
-        header[4] = packedNAccounts[0]
-        header[5] = packedNAccounts[1]
-        header[6] = packedNAccounts[2]
-        header[7] = packedNAccounts[3]
+        header[8:12] = struct.pack('<I', len(accounts))
         return header
 
     def _browseRecord(self, account):

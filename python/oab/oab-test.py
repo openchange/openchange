@@ -8,6 +8,49 @@ sys.path.append('.')
 from oab import OAB
 
 class TestOAB(unittest.TestCase):
+    def _check_headers_consistence(self, contents, accounts):
+        browse = contents['browse']
+        rdn    = contents['rdn']
+        anr    = contents['anr']
+
+        # browse checks
+        ulVersion = browse[0:4]
+        self.assertEquals('\x0E\x00\x00\x00', ulVersion)
+        browse_ulTotRecs = self._unpack_uint(browse[8:12])
+        # check if ulTotalRecs is correct
+        n_browse_records = (len(browse) - OAB.BROWSE_HEADER_SIZE) / OAB.BROWSE_ENTRY_SIZE
+        self.assertEquals(browse_ulTotRecs, n_browse_records)
+        self.assertEquals(browse_ulTotRecs, len(accounts))
+
+        # rdn checks
+        ulVersion = rdn[0:4]
+        self.assertEquals('\x0E\x00\x00\x00', ulVersion)
+        rdn_ulTotRecs = self._unpack_uint(rdn[8:12])
+        # for each browse entry, 2 rdn (oRDN and oSMTP)
+        self.assertEquals(rdn_ulTotRecs, browse_ulTotRecs*2)
+
+        oRoot = self._unpack_uint(rdn[12:16])
+        self.assertTrue(oRoot > 22) # header + 5 characters pdn + \0
+
+
+        # anr check
+        ulVersion = anr[0:4]
+        self.assertEquals('\x0E\x00\x00\x00', ulVersion)
+
+        anr_uTotRecs = self._unpack_uint(anr[8:12])
+        expected_anr_accounts = 0
+        for account in accounts:
+            anr_attrs = ['displayName', 'sn', 'office', 'alias']
+            for attr in anr_attrs:
+                if (attr in account) and account[attr]:
+                        expected_anr_accounts += 1
+        self.assertEquals(anr_uTotRecs, expected_anr_accounts)
+
+        # check if ulSerial are the same in the 3 files
+        self.assertEquals(browse[4:8], rdn[4:8])
+        self.assertEquals(browse[4:8], anr[4:8])
+        # TODO check the ulSerial hash
+
     def _browse_entries(self, browse):
         entries = {}
 
@@ -81,7 +124,6 @@ class TestOAB(unittest.TestCase):
         # XXX degenerate tree; tree not checked
         prevLink = 0
         nextLink = oRoot
-
 
         while nextLink != 0:
             print "RDN with offset " + str(nextLink)
@@ -229,6 +271,8 @@ class TestOAB(unittest.TestCase):
         contents = oab.generateFileContents(accounts)
 #        print "Contents generated"
 #        pprint(contents)
+
+        self._check_headers_consistence(contents, accounts)
 
         browse_entries = self._browse_entries(contents['browse'])
 #        print "Browse by offset"

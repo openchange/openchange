@@ -11,7 +11,7 @@ class TestOAB(unittest.TestCase):
     def _browse_entries(self, browse):
         entries = {}
 
-        offset = 12 # 12 is the header size
+        offset =  OAB.BROWSE_HEADER_SIZE
         browse_len = len(browse)
         # check that it has the correct size
         self.assertEquals((browse_len-12)%32, 0)
@@ -38,7 +38,7 @@ class TestOAB(unittest.TestCase):
             entry['oSurname']  = self._unpack_uint(browse[offset+28:offset+32])
 
             entries[offset] = entry
-            offset += 32 # 32 b size of browse entry
+            offset += OAB.BROWSE_ENTRY_SIZE
 
         return entries
 

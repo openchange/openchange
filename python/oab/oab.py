@@ -9,6 +9,8 @@ from pprint import pprint
 
 class OAB:
     MAX_UL_TOT_RECORDS = 16777212
+    BROWSE_HEADER_SIZE = 12
+    BROWSE_ENTRY_SIZE  = 32
 
     def __init__(self):
         pass
@@ -30,9 +32,10 @@ class OAB:
         rdnFileContents = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
         anrFileContents = self._anrFileContents(accounts, browseFileIndex, browseFileContents)
 
+        self._generate_RDN_hash(browseFileContents, rdnFileContents)
         # print '--------------------------'
-        # print '# Browse file:'
-        # pprint(browseFileContents)
+        print '# Browse file:'
+        pprint(browseFileContents)
         # print '# RDN file:'
         # pprint(rdnFileContents)
         # print '# ANR file:'
@@ -59,7 +62,7 @@ class OAB:
         return (index, contents)
 
     def _browseFileHeader(self, accounts):
-        header = bytearray(12)
+        header = bytearray(OAB.BROWSE_HEADER_SIZE)
         # ulVersion
         header[0] =  0xA
         header[1] =  0x0
@@ -226,6 +229,48 @@ class OAB:
 
         return record
 
+    def _generate_RDN_hash(self, browse, rdn_index):
+        rdn_hash = bytearray(4) # 0x00000000 initial value
+        browse_offset = OAB.BROWSE_HEADER_SIZE
+        browse_len    = len(browse)
+        while browse_offset < browse_len:
+            oRDN = self._unpack_uint(browse[browse_offset:browse_offset+4])
+            rdn_offset = oRDN + 24
+            rdn_end    = rdn_index.find(b'\x00', rdn_offset)
+            if rdn_end == -1:
+                raise Error("Error generating RDN hash: cannot found RDN starting at " + len(rdn_offset))
+            rdn_bytes = rdn_index[rdn_offset:rdn_end]
+            # pad rdn_bytes so they are multiple of 4
+            rdn_bytes_len = len(rdn_bytes)
+            mod4 = rdn_bytes_len % 4
+            if mod4 > 0:
+                missing = (4 - mod4)
+                pad =  '\x00' * missing
+                rdn_bytes += bytearray(pad)
+                rdn_bytes_len += missing
+
+            uint_ptr = 0
+            while uint_ptr < rdn_bytes_len:
+                for offset in range (0, 4):
+                    rdn_hash[offset] ^= rdn_bytes[uint_ptr + offset]
+                uint_ptr += 4
+
+            # left shift after processing entry
+            # XX not usre, specially for caryover
+            for nByte in (3, 2, 1, 0):
+                if (nByte > 0) and (rdn_hash[nByte] >= 128):
+                    # carry over
+                     rdn_hash[nByte] -= 128
+                     if rdn_hash[nByte -1] != 255:
+                         rdn_hash[nByte -1] += 1
+                     rdn_hash[nByte] <<= 1
+
+            browse_offset += OAB.BROWSE_ENTRY_SIZE
+
+        # set ulSerial
+        browse[4:8] = rdn_hash
+
+
     def _anrFileContents(self, accounts,  browseFileIndex, browseFileContents):
         anr_attrs = ['displayName', 'sn', 'office', 'alias']
         attr_ibrowse_offset = {
@@ -310,6 +355,10 @@ class OAB:
 
     def _pack_uint(self, uint):
         return struct.pack('<I', uint)
+
+    def _unpack_uint(self, barray):
+        bstr = str(bytearray(barray[0:4]))
+        return struct.unpack('<I', bstr)[0]
 
     def _count_attributes(self, accounts, attrs):
         count = 0

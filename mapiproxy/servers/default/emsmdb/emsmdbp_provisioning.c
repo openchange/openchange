@@ -74,12 +74,12 @@ static enum MAPISTATUS fetch_organizational_unit_of_user(TALLOC_CTX *mem_ctx, co
 	OPENCHANGE_RETVAL_IF(!exdn0, ecUnknownUser, NULL);
 	exdn1 = strstr(EssDN, "/ou=");
 	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
-	strncpy(*organization_name, exdn0 + 3, exdn1 - exdn0 - 3);
+	*organization_name = talloc_strndup(mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
 
 	exdn0 = exdn1;
 	exdn1 = strstr(EssDN, "/cn=");
 	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
-	strncpy(*group_name, exdn0 + 4, exdn1 - exdn0 - 4);
+	*group_name = talloc_strndup(mem_ctx, exdn0 + 4, exdn1 - exdn0 - 4);
 
 	return MAPI_E_SUCCESS;
 }

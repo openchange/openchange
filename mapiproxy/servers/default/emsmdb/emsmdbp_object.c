@@ -1871,64 +1871,38 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-/* Get the organisation name (like "First Organization") as a DN. */
-static bool mapiserver_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
-                                  struct ldb_dn **basedn)
+/* Get the legacyExchangeDN for the administrative group . */
+static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALLOC_CTX *mem_ctx,
+									    struct emsmdbp_context *emsmdbp_ctx,
+									    char **legacyexchangedn)
 {
-    int                 ret;
-    struct ldb_result   *res = NULL;
+	int			ret;
+	enum MAPISTATUS		retval;
+	struct  ldb_result	*res = NULL;
+	const char * const	attrs[] = { "legacyExchangeDN", NULL };
+	struct ldb_dn		*basedn = 0;
+	char			*group_name;
 
-    ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-                     ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
-                     LDB_SCOPE_SUBTREE, NULL,
-                     "(|(objectClass=msExchOrganizationContainer))");
+	retval = emsmdbp_get_org_dn(emsmdbp_ctx, &basedn);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+	retval = emsmdbp_fetch_organizational_units(mem_ctx, emsmdbp_ctx, NULL, &group_name);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-    /* If the search failed */
-    if (ret != LDB_SUCCESS) {
-        DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn ldb_search failure.\n"));
-        return false;
-    }
-    /* If we didn't get the expected entry */
-    if (res->count != 1) {
-        DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn unexpected entry count: %i (expected 1).\n", res->count));
-        return false;
-    }
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
+			 group_name);
 
-    *basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
-                         ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-    return true;
-}
+	/* If the search failed */
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("exchange_emsmdb: [emsmdbp_object] mapiserver_get_administrative_group_legazyexchangedn ldb_search failure.\n"));
+		return MAPI_E_NOT_FOUND;
+	}
 
-/* Get the legazyExchangeDN for the administrative group . */
-static bool mapiserver_get_administrative_group_legazyexchangedn(
-    TALLOC_CTX *mem_ctx,
-    struct emsmdbp_context *emsmdbp_ctx,
-    char ** legazyexchangedn)
-{
-    int                 ret;
-    struct  ldb_result  *res = NULL;
-    const char * const  attrs[] = { "legazyExchangeDN", NULL };
-    struct ldb_dn       *basedn = 0;
+	*legacyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL));
+	OPENCHANGE_RETVAL_IF(!*legacyexchangedn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
-    mapiserver_get_org_dn(emsmdbp_ctx, &basedn);
-    ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-                     basedn, LDB_SCOPE_SUBTREE, attrs,
-                     "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))");
-
-    /* If the search failed */
-    if (ret != LDB_SUCCESS) {
-        DEBUG(1, ("exchange_emsmdb: [emsmdbp_object] mapiserver_get_administrative_group_legazyexchangedn ldb_search failure.\n"));
-        return false;
-    }
-    /* If we didn't get the expected entry */
-    if (res->count != 1) {
-        DEBUG(1, ("exchange_emsmdb: [emsmdbp_object] mapiserver_get_administrative_group_legazyexchangedn: %i (expected 1).\n", res->count));
-        return false;
-    }
-
-    *legazyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(
-                                      res->msgs[0], "legazyExchangeDN", NULL));
-    return true;
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -1939,17 +1913,19 @@ static struct mapistore_freebusy_properties *emsmdbp_fetch_freebusy(TALLOC_CTX *
 	char					*email, *tmp, *administrativegroup;
 	struct SPropTagArray			*props;
         void					**data_pointers;
-        enum MAPISTATUS				*retvals = NULL;
+        enum MAPISTATUS				*retvals = NULL, retval;
 	struct emsmdbp_object			*mailbox, *inbox, *calendar;
 	uint64_t				inboxFID, calendarFID;
 	uint32_t				contextID;
 	int					i;
 
-	fb_props = NULL;
-    mapiserver_get_administrative_group_legazyexchangedn(mem_ctx, emsmdbp_ctx,
-                                                         &administrativegroup);
-
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	fb_props = NULL;
+
+	retval = mapiserver_get_administrative_group_legacyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
+	if (retval != MAPI_E_SUCCESS) {
+		goto end;
+	}
 
 	// WARNING: the mechanism here will fail if username is not all lower-case, as LDB does not support case-insensitive queries
 	tmp = talloc_strdup(local_mem_ctx, username);
@@ -1957,8 +1933,7 @@ static struct mapistore_freebusy_properties *emsmdbp_fetch_freebusy(TALLOC_CTX *
 		*tmp = tolower(*tmp);
 		tmp++;
 	}
-    email = talloc_asprintf(fb_props, "%s/cn=Recipients/cn=%s",
-                            administrativegroup, username);
+	email = talloc_asprintf(fb_props, "%s/cn=Recipients/cn=%s", administrativegroup, username);
 	/* open user mailbox */
 	mailbox = emsmdbp_object_mailbox_init(local_mem_ctx, emsmdbp_ctx, email, true);
 	if (!mailbox) {
@@ -2358,8 +2333,9 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 	fb_props = object->object.message->fb_properties;
 
 	owner = emsmdbp_get_owner(object);
-    mapiserver_get_administrative_group_legazyexchangedn(mem_ctx, emsmdbp_ctx,
-                                                         &administrativegroup);
+	retval = mapiserver_get_administrative_group_legacyexchangedn(mem_ctx, emsmdbp_ctx, &administrativegroup);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+
 	/* FIXME: this is wrong, as the CN attribute may differ from the user's username (sAMAccountName) */
 	email_address = talloc_asprintf(data_pointers, "%s/cn=Recipients/cn=%s",
                                     administrativegroup, owner);

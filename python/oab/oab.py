@@ -34,8 +34,8 @@ class OAB:
 
         self._generate_RDN_hash(browseFileContents, rdnFileContents, anrFileContents)
         # print '--------------------------'
-        print '# Browse file:'
-        pprint(browseFileContents)
+        # print '# Browse file:'
+        # pprint(browseFileContents)
         # print '# RDN file:'
         # pprint(rdnFileContents)
         # print '# ANR file:'
@@ -64,10 +64,10 @@ class OAB:
     def _browseFileHeader(self, accounts):
         header = bytearray(OAB.BROWSE_HEADER_SIZE)
         # ulVersion
-        header[0] =  0xA
-        header[1] =  0x0
-        # ulSerial
-        # TODO 2.3.3
+        header[0] = 0x0E
+        header[1] = 0x00
+        # ulSerial: later
+        # ulTotRec
         packedNAccounts = struct.pack('<I', len(accounts))
         header[4] = packedNAccounts[0]
         header[5] = packedNAccounts[1]
@@ -77,9 +77,9 @@ class OAB:
 
     def _browseRecord(self, account):
         record = bytearray(32)
-        # TODO oRDN 4
-        # TODO oDetails 4
-        # TODO cbDetails 2
+        # oRDN 4 later..
+        # oDetails 4 set to null for now XXX
+        # cbDetails 2 set to null for now
         # bDispType
         if account['type'] == 'mailuser':
             record[10] = 0x0
@@ -114,7 +114,6 @@ class OAB:
         return record
 
     def _rdnFileContents(self, accounts, browseFileIndex, browseFileContents):
-        # TODO : put also rdn for @ mail addresses
         contents = self._rdnHeader(accounts)
 
         pdn = self._rdnPdnRecords(accounts, len(contents))
@@ -166,11 +165,7 @@ class OAB:
         header = bytearray(16)
         # ulVersion
         header[0:4] = 0x0E, 0x00, 0x00, 0x00
-
-        # ulSerial (4 bytes): A 32-bit hexadecimal string that specifies the hash of the RDN (1) values for
-        #   the current set of OAB records. The value of this field is calculated as specified in section
-        # TODO
-
+        # ulSerial (4 bytes): later
         # ulTotRecs (4 bytes)
         nEntries = len(accounts)*2 # each account has a dn and mail attrs
         header[8:12] = self._pack_uint(nEntries)
@@ -256,7 +251,7 @@ class OAB:
                 uint_ptr += 4
 
             # left shift after processing entry
-            # XX not usre, specially for caryover
+            # XX not sure, specially for caryover
             for nByte in (3, 2, 1, 0):
                 if (nByte > 0) and (rdn_hash[nByte] >= 128):
                     # carry over
@@ -269,6 +264,7 @@ class OAB:
 
         # set ulSerial
         browse[4:8]    = rdn_hash
+        rdn_index[4:8] = rdn_hash
         anr_index[4:8] = rdn_hash
 
 

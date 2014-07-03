@@ -32,7 +32,7 @@ class OAB:
         rdnFileContents = self._rdnFileContents(accounts, browseFileIndex, browseFileContents)
         anrFileContents = self._anrFileContents(accounts, browseFileIndex, browseFileContents)
 
-        self._generate_RDN_hash(browseFileContents, rdnFileContents)
+        self._generate_RDN_hash(browseFileContents, rdnFileContents, anrFileContents)
         # print '--------------------------'
         print '# Browse file:'
         pprint(browseFileContents)
@@ -229,7 +229,7 @@ class OAB:
 
         return record
 
-    def _generate_RDN_hash(self, browse, rdn_index):
+    def _generate_RDN_hash(self, browse, rdn_index, anr_index):
         rdn_hash = bytearray(4) # 0x00000000 initial value
         browse_offset = OAB.BROWSE_HEADER_SIZE
         browse_len    = len(browse)
@@ -268,7 +268,8 @@ class OAB:
             browse_offset += OAB.BROWSE_ENTRY_SIZE
 
         # set ulSerial
-        browse[4:8] = rdn_hash
+        browse[4:8]    = rdn_hash
+        anr_index[4:8] = rdn_hash
 
 
     def _anrFileContents(self, accounts,  browseFileIndex, browseFileContents):

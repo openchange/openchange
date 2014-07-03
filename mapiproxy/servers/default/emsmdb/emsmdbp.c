@@ -534,3 +534,50 @@ _PUBLIC_ int emsmdbp_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_co
 
 	return MAPISTORE_SUCCESS;
 }
+
+/**
+   \details Extract organization name and group name from the legacy exchange
+   dn of the current logged user.
+
+   \param mem_ctx memory context used for returned values
+   \param emsmdbp_ctx pointer to the EMSMDBP context
+   \param organization_name pointer to the returned organization name
+   \param group_name pointer to the returned group name
+
+   \note You can set organization_name or group_name to NULL if you don't want
+   this values
+
+   \return MAPI_E_SUCCESS or an error if something happens
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
+							    struct emsmdbp_context *emsmdbp_ctx,
+							    char **organization_name,
+							    char **group_name)
+{
+	char 		*exdn0, *exdn1;
+	const char 	*EssDN;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->szUserDN, MAPI_E_NOT_INITIALIZED, NULL);
+
+	EssDN = emsmdbp_ctx->szUserDN;
+	// EssDN has format: /o=organizacion name/ou=group name/cn=Recipients/cn=username
+
+	if (organization_name) {
+		exdn0 = strstr(EssDN, "/o=");
+		OPENCHANGE_RETVAL_IF(!exdn0, MAPI_E_BAD_VALUE, NULL);
+		exdn1 = strstr(EssDN, "/ou=");
+		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
+		*organization_name = talloc_strndup(mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
+	}
+
+	if (group_name) {
+		exdn0 = strstr(EssDN, "/ou=");
+		OPENCHANGE_RETVAL_IF(!exdn0, MAPI_E_BAD_VALUE, NULL);
+		exdn1 = strstr(EssDN, "/cn=");
+		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
+		*group_name = talloc_strndup(mem_ctx, exdn0 + 4, exdn1 - exdn0 - 4);
+	}
+
+	return MAPI_E_SUCCESS;
+}

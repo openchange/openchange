@@ -301,6 +301,7 @@ bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);
 bool			emsmdbp_verify_userdn(struct dcesrv_call_state *, struct emsmdbp_context *, const char *, struct ldb_message **);
 enum MAPISTATUS		emsmdbp_resolve_recipient(TALLOC_CTX *, struct emsmdbp_context *, char *, struct mapi_SPropTagArray *, struct RecipientRow *);
+enum MAPISTATUS		emsmdbp_fetch_organizational_units(TALLOC_CTX *, struct emsmdbp_context *, char **, char **);
 
 const struct GUID *const	MagicGUIDp;
 int				emsmdbp_guid_to_replid(struct emsmdbp_context *, const char *username, const struct GUID *, uint16_t *);
@@ -318,7 +319,7 @@ int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 
 /* definitions from emsmdbp_provisioning.c */
-enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *, const char *);
+enum MAPISTATUS       emsmdbp_mailbox_provision(struct emsmdbp_context *, const char *);
 enum MAPISTATUS       emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *, const char *);
 
 /* definitions from emsmdbp_provisioning_names.c */

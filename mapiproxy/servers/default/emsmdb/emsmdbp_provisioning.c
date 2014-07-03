@@ -65,25 +65,6 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
-static enum MAPISTATUS fetch_organizational_unit_of_user(TALLOC_CTX *mem_ctx, const char *EssDN, char **organization_name, char **group_name)
-{
-
-	char *exdn0, *exdn1;
-	// EssDN has format: /o=organizacion name/ou=group name/cn=Recipients/cn=username
-	exdn0 = strstr(EssDN, "/o=");
-	OPENCHANGE_RETVAL_IF(!exdn0, ecUnknownUser, NULL);
-	exdn1 = strstr(EssDN, "/ou=");
-	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
-	*organization_name = talloc_strndup(mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
-
-	exdn0 = exdn1;
-	exdn1 = strstr(EssDN, "/cn=");
-	OPENCHANGE_RETVAL_IF(!exdn1, ecUnknownUser, NULL);
-	*group_name = talloc_strndup(mem_ctx, exdn0 + 4, exdn1 - exdn0 - 4);
-
-	return MAPI_E_SUCCESS;
-}
-
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *emsmdbp_ctx, const char *EssDN)
 {
 	enum MAPISTATUS		ret;
@@ -152,7 +133,7 @@ end:
 	return ret;
 }
 
-_PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision(struct emsmdbp_context *emsmdbp_ctx, const char *username, const char *EssDN)
+_PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision(struct emsmdbp_context *emsmdbp_ctx, const char *username)
 {
 /* auto-provisioning:
 
@@ -261,7 +242,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	struct Binary_r				*entryId;
 	bool					exists, reminders_created;
 	void					*backend_object, *backend_table, *backend_message;
-	const char 				**organization_name, **group_name;
+	char	 				*organization_name, *group_name;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -375,7 +356,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		// how many times /resetfoldernames is executed again.
 		current_name = talloc_asprintf(mem_ctx, MAILBOX_ROOT_NAME, username);
 
-		ret = fetch_organizational_unit_of_user(mem_ctx, EssDN, &organization_name, &group_name);
+		ret = emsmdbp_fetch_organizational_units(mem_ctx, emsmdbp_ctx, &organization_name, &group_name);
 		if (ret != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Error provisioning mailbox, we couldn't fetch organizational unit of the user %s", username));
 			return MAPI_E_NOT_FOUND;

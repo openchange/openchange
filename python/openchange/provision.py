@@ -418,6 +418,8 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange organization"
                " objects (%d): %s" % ldb_error.args)
+        return False
+    return True
 
 
 def get_ldb_url(lp, creds, names):

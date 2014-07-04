@@ -473,7 +473,7 @@ legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: smtp:postmaster@%(dnsdomain)s
-proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%(username)s
+proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_400)s;s=%(username)s
 proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
@@ -482,7 +482,9 @@ msExchUserAccountControl: 0
                                       "username": username,
                                       "netbiosname": names.netbiosname,
                                       "firstorg": names.firstorg,
+                                      "firstorg_x400": names.firstorg[:16],
                                       "firstou": names.firstou,
+                                      "firstou_x400": names.firstou[:64],
                                       "domaindn": names.domaindn,
                                       "dnsdomain": names.dnsdomain}
         db.modify_ldif(ldif_value)

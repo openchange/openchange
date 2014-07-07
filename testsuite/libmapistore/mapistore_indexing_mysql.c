@@ -36,6 +36,18 @@ static struct mapistore_context	*g_mstore_ctx = NULL;
 static struct indexing_context	*g_ictx = NULL;
 static const char		*g_test_username = "testuser";
 
+/* test helpers */
+static char * _make_connection_string(TALLOC_CTX *mem_ctx,
+				      const char *user, const char *pass,
+				      const char *host, const char *db)
+{
+	if (!pass || strlen(pass) == 0) {
+		return talloc_asprintf(mem_ctx, "mysql://%s@%s/%s", user, host, db);
+	}
+
+	return talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s", user, pass, host, db);
+}
+
 /* add_fmid */
 
 START_TEST (test_backend_add_fmid)
@@ -238,23 +250,24 @@ START_TEST (test_backend_allocate_fmid)
 static void mysql_setup(void)
 {
 	TALLOC_CTX *mem_ctx;
-	char *database;
+	char *conn_string;
+	enum mapistore_error retval;
 
 	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
+	ck_assert(mem_ctx != NULL);
 	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+	ck_assert(g_mstore_ctx != NULL);
 
-	if (strlen(INDEXING_MYSQL_PASS) == 0) {
-		database = talloc_asprintf(mem_ctx, "mysql://" INDEXING_MYSQL_USER "@"
-					   INDEXING_MYSQL_HOST "/" INDEXING_MYSQL_DB);
-	} else {
-		database = talloc_asprintf(mem_ctx, "mysql://" INDEXING_MYSQL_USER ":"
-					   INDEXING_MYSQL_PASS "@" INDEXING_MYSQL_HOST "/"
-					   INDEXING_MYSQL_DB);
-	}
+	conn_string = _make_connection_string(mem_ctx,
+					      INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
+					      INDEXING_MYSQL_HOST, INDEXING_MYSQL_DB);
+	ck_assert(conn_string != NULL);
 
-	mapistore_indexing_mysql_init(g_mstore_ctx, g_test_username, database, &g_ictx);
-	talloc_free(database);
-	fail_if(!g_ictx);
+	retval = mapistore_indexing_mysql_init(g_mstore_ctx, g_test_username, conn_string, &g_ictx);
+	ck_assert(retval == MAPISTORE_SUCCESS);
+	ck_assert(g_ictx != NULL);
+
+	talloc_free(conn_string);
 }
 
 static void mysql_teardown(void)

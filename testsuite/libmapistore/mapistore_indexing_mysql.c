@@ -26,15 +26,15 @@
 #include "mapiproxy/libmapistore/backends/indexing_mysql.h"
 #include "mapiproxy/util/mysql.h"
 
-#define MYSQL_HOST "127.0.0.1"
-#define MYSQL_USER "root"
-#define MYSQL_PASS ""
-#define MYSQL_DB   "openchange_indexing_test"
+#define INDEXING_MYSQL_HOST	"127.0.0.1"
+#define INDEXING_MYSQL_USER	"root"
+#define INDEXING_MYSQL_PASS	""
+#define INDEXING_MYSQL_DB	"openchange_indexing_test"
 
 /* Global test variables */
-static struct mapistore_context *mstore_ctx = NULL;
-static struct indexing_context *ictx = NULL;
-static const char *USERNAME = "testuser";
+static struct mapistore_context	*g_mstore_ctx = NULL;
+static struct indexing_context	*g_ictx = NULL;
+static const char		*g_test_username = "testuser";
 
 /* add_fmid */
 
@@ -46,10 +46,10 @@ START_TEST (test_backend_add_fmid)
 	char			*retrieved_uri = NULL;
 	bool			softDel = true;
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
+	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
 
 	ck_assert(!softDel);
 	ck_assert_str_eq(uri, retrieved_uri);
@@ -62,10 +62,10 @@ START_TEST (test_backend_repeated_add_fails)
 	const uint64_t		fid = 0x11;
 	const char		*uri = "random://url";
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret != MAPISTORE_SUCCESS);
 } END_TEST
 
@@ -80,13 +80,13 @@ START_TEST (test_backend_update_fmid)
 	char			*retrieved_uri = NULL;
 	bool			softDel = true;
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->update_fmid(ictx, USERNAME, fid, uri2);
+	ret = g_ictx->update_fmid(g_ictx, g_test_username, fid, uri2);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
+	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
 
 	ck_assert(!softDel);
 	ck_assert_str_eq(uri2, retrieved_uri);
@@ -101,9 +101,9 @@ START_TEST (test_backend_del_unkown_fmid)
 	const uint64_t		fid = 0x11;
 
 	// Unkown fid returns SUCCESS
-	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
+	ret = g_ictx->del_fmid(g_ictx, g_test_username, fid, MAPISTORE_SOFT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
-	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
+	ret = g_ictx->del_fmid(g_ictx, g_test_username, fid, MAPISTORE_PERMANENT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 } END_TEST
 
@@ -116,13 +116,13 @@ START_TEST (test_backend_del_fmid_soft)
 	char			*retrieved_uri = NULL;
 	bool			softDel = false;
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_SOFT_DELETE);
+	ret = g_ictx->del_fmid(g_ictx, g_test_username, fid, MAPISTORE_SOFT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
+	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 	ck_assert(softDel);
 	ck_assert_str_eq(uri, retrieved_uri);
@@ -137,13 +137,13 @@ START_TEST (test_backend_del_fmid_permanent)
 	char			*retrieved_uri = NULL;
 	bool			softDel = true;
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->del_fmid(ictx, USERNAME, fid, MAPISTORE_PERMANENT_DELETE);
+	ret = g_ictx->del_fmid(g_ictx, g_test_username, fid, MAPISTORE_PERMANENT_DELETE);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->get_uri(ictx, USERNAME, ictx, fid, &retrieved_uri, &softDel);
+	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
 	ck_assert(ret == MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
@@ -156,7 +156,7 @@ START_TEST (test_backend_get_uri_unknown) {
 	char			*uri = NULL;
 	bool			softDel = false;
 
-	ret = ictx->get_uri(ictx, USERNAME, ictx, 0x13, &uri, &softDel);
+	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, 0x13, &uri, &softDel);
 	ck_assert(ret == MAPISTORE_ERR_NOT_FOUND);
 } END_TEST
 
@@ -171,10 +171,10 @@ START_TEST (test_backend_get_fmid)
 	uint64_t		retrieved_fid;
 	bool			softDel = true;
 
-	ret = ictx->add_fmid(ictx, USERNAME, fid, uri);
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->get_fmid(ictx, USERNAME, uri, false, &retrieved_fid, &softDel);
+	ret = g_ictx->get_fmid(g_ictx, g_test_username, uri, false, &retrieved_fid, &softDel);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ck_assert(!softDel);
@@ -189,25 +189,25 @@ START_TEST (test_backend_get_fmid_with_wildcard)
 	bool soft_del = true;
 
 	fid_1 = 42;
-	ret = ictx->add_fmid(ictx, USERNAME, fid_1, "foo://bar/user11");
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid_1, "foo://bar/user11");
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	fid_2 = 99;
-	ret = ictx->add_fmid(ictx, USERNAME, fid_2, "foo://bar/user21");
+	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid_2, "foo://bar/user21");
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 
-	ret = ictx->get_fmid(ictx, USERNAME, "foo://bar/*", true,
+	ret = g_ictx->get_fmid(g_ictx, g_test_username, "foo://bar/*", true,
 			     &retrieved_fid, &soft_del);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert(!soft_del);
 	ck_assert(retrieved_fid == fid_1 || retrieved_fid == fid_2);
 
-	ret = ictx->get_fmid(ictx, USERNAME, "foo://bar/user2*", true,
+	ret = g_ictx->get_fmid(g_ictx, g_test_username, "foo://bar/user2*", true,
 			     &retrieved_fid, &soft_del);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert(!soft_del);
 	ck_assert_int_eq(retrieved_fid, fid_2);
 
-	ret = ictx->get_fmid(ictx, USERNAME, "*user21", true, &retrieved_fid,
+	ret = g_ictx->get_fmid(g_ictx, g_test_username, "*user21", true, &retrieved_fid,
 			     &soft_del);
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert(!soft_del);
@@ -222,10 +222,10 @@ START_TEST (test_backend_allocate_fmid)
 	uint64_t		fmid1 = 222;
 	uint64_t		fmid2 = 222;
 
-	ret = ictx->allocate_fmid(ictx, USERNAME, &fmid1);
+	ret = g_ictx->allocate_fmid(g_ictx, g_test_username, &fmid1);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
-	ret = ictx->allocate_fmid(ictx, USERNAME, &fmid2);
+	ret = g_ictx->allocate_fmid(g_ictx, g_test_username, &fmid2);
 	ck_assert(ret == MAPISTORE_SUCCESS);
 
 	ck_assert(fmid1 != fmid2);
@@ -241,26 +241,26 @@ static void mysql_setup(void)
 	char *database;
 
 	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
-	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
 
-	if (strlen(MYSQL_PASS) == 0) {
-		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
-					   MYSQL_HOST "/" MYSQL_DB);
+	if (strlen(INDEXING_MYSQL_PASS) == 0) {
+		database = talloc_asprintf(mem_ctx, "mysql://" INDEXING_MYSQL_USER "@"
+					   INDEXING_MYSQL_HOST "/" INDEXING_MYSQL_DB);
 	} else {
-		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER ":"
-					   MYSQL_PASS "@" MYSQL_HOST "/"
-					   MYSQL_DB);
+		database = talloc_asprintf(mem_ctx, "mysql://" INDEXING_MYSQL_USER ":"
+					   INDEXING_MYSQL_PASS "@" INDEXING_MYSQL_HOST "/"
+					   INDEXING_MYSQL_DB);
 	}
 
-	mapistore_indexing_mysql_init(mstore_ctx, USERNAME, database, &ictx);
+	mapistore_indexing_mysql_init(g_mstore_ctx, g_test_username, database, &g_ictx);
 	talloc_free(database);
-	fail_if(!ictx);
+	fail_if(!g_ictx);
 }
 
 static void mysql_teardown(void)
 {
-	mysql_query((MYSQL*)ictx->data, "DROP DATABASE " MYSQL_DB);
-	talloc_free(mstore_ctx);
+	mysql_query((MYSQL*)g_ictx->data, "DROP DATABASE " INDEXING_MYSQL_DB);
+	talloc_free(g_mstore_ctx);
 }
 
 Suite *indexing_mysql_suite(void)

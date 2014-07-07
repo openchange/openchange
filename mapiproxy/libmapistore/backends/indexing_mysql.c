@@ -339,7 +339,9 @@ static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *
 static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 {
 	MYSQL *conn = ictx->data;
-	mysql_close(conn);
+	if (conn) {
+		mysql_close(conn);
+	}
 	return 0;
 }
 
@@ -366,9 +368,12 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!connection_string, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ictxp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ictx = talloc_zero(mstore_ctx, struct indexing_context);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	ictx->data = create_connection(connection_string, &conn);
 	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
@@ -378,6 +383,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 			  connection_string));
 
 		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, SCHEMA_FILE);
+		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
 		schema_created = create_schema(MYSQL(ictx), schema_file);
 		talloc_free(schema_file);
 
@@ -387,6 +393,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 
 	/* TODO: extract url from backend mapping, by the moment we use the username */
 	ictx->url = talloc_strdup(ictx, username);
+	MAPISTORE_RETVAL_IF(!ictx->url, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	/* Fill function pointers */
 	ictx->add_fmid = mysql_record_add;

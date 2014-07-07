@@ -23,7 +23,6 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
-#include "mapiproxy/libmapistore/backends/indexing_tdb.h"
 #include "mapiproxy/libmapistore/backends/indexing_mysql.h"
 #include "mapiproxy/util/mysql.h"
 
@@ -236,32 +235,6 @@ START_TEST (test_backend_allocate_fmid)
 
 // v suite definition ---------------------------------------------------------
 
-static void tdb_setup(void)
-{
-	TALLOC_CTX		*mem_ctx;
-	enum mapistore_error	ret;
-
-	ret = mapistore_set_mapping_path("/tmp/");
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
-
-	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
-	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
-
-	mapistore_indexing_tdb_init(mstore_ctx, USERNAME, &ictx);
-	fail_if(!ictx);
-}
-
-static void tdb_teardown(void)
-{
-	char *indexing_file = NULL;
-
-	indexing_file = talloc_asprintf(mstore_ctx, "%s%s/indexing.tdb",
-					mapistore_get_mapping_path(),
-					USERNAME);
-	unlink(indexing_file);
-	talloc_free(mstore_ctx);
-}
-
 static void mysql_setup(void)
 {
 	TALLOC_CTX *mem_ctx;
@@ -290,16 +263,12 @@ static void mysql_teardown(void)
 	talloc_free(mstore_ctx);
 }
 
-static Suite *indexing_create_suite(const char *backend_name, SFun setup,
-				    SFun teardown)
+Suite *indexing_mysql_suite(void)
 {
-	char *suite_name = talloc_asprintf(talloc_autofree_context(),
-					   "Indexing %s backend",
-					   backend_name);
-	Suite *s = suite_create(suite_name);
+	Suite *s = suite_create("libmapistore indexing: MySQL backend");
 
-	TCase *tc = tcase_create(suite_name);
-	tcase_add_checked_fixture(tc, setup, teardown);
+	TCase *tc = tcase_create("indexing: MySQL backend");
+	tcase_add_checked_fixture(tc, mysql_setup, mysql_teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);
 	tcase_add_test(tc, test_backend_repeated_add_fails);
@@ -316,14 +285,4 @@ static Suite *indexing_create_suite(const char *backend_name, SFun setup,
 	suite_add_tcase(s, tc);
 
 	return s;
-}
-
-Suite *indexing_tdb_suite(void)
-{
-	return indexing_create_suite("TDB", tdb_setup, tdb_teardown);
-}
-
-Suite *indexing_mysql_suite(void)
-{
-	return indexing_create_suite("MySQL", mysql_setup, mysql_teardown);
 }

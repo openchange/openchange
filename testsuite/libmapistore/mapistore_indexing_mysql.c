@@ -31,6 +31,9 @@
 #define INDEXING_MYSQL_PASS	""
 #define INDEXING_MYSQL_DB	"openchange_indexing_test"
 
+#define INDEXING_TEST_FMID	0x123456
+#define INDEXING_TEST_FMID_NOK	0x0
+
 /* Global test variables */
 static struct mapistore_context	*g_mstore_ctx = NULL;
 static struct indexing_context	*g_ictx = NULL;
@@ -120,6 +123,34 @@ START_TEST(test_backend_init_parameters) {
 
 	talloc_free(mem_ctx);
 } END_TEST
+
+
+/* mysql_search_existing_fmid */
+
+START_TEST(test_mysql_search_existing_fmid_invalid_input)
+{
+	bool			is_soft_deleted;
+	enum mapistore_error	retval;
+
+	/* missing ictx */
+	retval = mysql_search_existing_fmid(NULL, g_test_username, INDEXING_TEST_FMID, &is_soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* missing username */
+	retval = mysql_search_existing_fmid(g_ictx, NULL, INDEXING_TEST_FMID, &is_soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* not valid FMID */
+	retval = mysql_search_existing_fmid(g_ictx, NULL, INDEXING_TEST_FMID_NOK, &is_soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* invalid ptr for soft_deleted */
+	retval = mysql_search_existing_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* test with good input is going to be tested through interface tests */
+}
+END_TEST
 
 
 /* add_fmid */
@@ -326,6 +357,8 @@ static void mysql_setup(void)
 	char *conn_string;
 	enum mapistore_error retval;
 
+	DEBUG(0, ("[%s]\n", __PRETTY_FUNCTION__));
+
 	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
 	ck_assert(mem_ctx != NULL);
 	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
@@ -345,6 +378,7 @@ static void mysql_setup(void)
 
 static void mysql_teardown(void)
 {
+	DEBUG(0, ("[%s]\n", __PRETTY_FUNCTION__));
 	mysql_query((MYSQL*)g_ictx->data, "DROP DATABASE " INDEXING_MYSQL_DB);
 	talloc_free(g_mstore_ctx);
 }
@@ -352,33 +386,40 @@ static void mysql_teardown(void)
 Suite *indexing_mysql_suite(void)
 {
 	Suite *s;
-	TCase *tc;
 	TCase *tc_config;
+	TCase *tc_internal;
+	TCase *tc_interface;
 
 	s = suite_create("libmapistore indexing: MySQL backend");
 
 	/* Core / Configuration */
-	tc_config = tcase_create("MySQL backend configuration");
+	tc_config = tcase_create("indexing: MySQL backend initialization");
 	tcase_add_test(tc_config, test_backend_init_parameters);
 	suite_add_tcase(s, tc_config);
 
+	/* test indexing backend internals */
+	tc_internal = tcase_create("indexing: MySQL backend internal");
+	tcase_add_checked_fixture(tc_internal, mysql_setup, mysql_teardown);
+	tcase_add_test(tc_internal, test_mysql_search_existing_fmid_invalid_input);
+	suite_add_tcase(s, tc_internal);
+
 	/* test indexing backend */
-	tc = tcase_create("indexing: MySQL backend");
-	tcase_add_checked_fixture(tc, mysql_setup, mysql_teardown);
+	tc_interface = tcase_create("indexing: MySQL backend interface");
+	tcase_add_checked_fixture(tc_interface, mysql_setup, mysql_teardown);
 
-	tcase_add_test(tc, test_backend_add_fmid);
-	tcase_add_test(tc, test_backend_repeated_add_fails);
-	tcase_add_test(tc, test_backend_update_fmid);
-	tcase_add_test(tc, test_backend_del_unkown_fmid);
-	tcase_add_test(tc, test_backend_del_fmid_soft);
-	tcase_add_test(tc, test_backend_del_fmid_permanent);
-	tcase_add_test(tc, test_backend_get_uri_unknown);
-	tcase_add_test(tc, test_backend_get_fmid);
-	tcase_add_test(tc, test_backend_allocate_fmid);
+	tcase_add_test(tc_interface, test_backend_add_fmid);
+	tcase_add_test(tc_interface, test_backend_repeated_add_fails);
+	tcase_add_test(tc_interface, test_backend_update_fmid);
+	tcase_add_test(tc_interface, test_backend_del_unkown_fmid);
+	tcase_add_test(tc_interface, test_backend_del_fmid_soft);
+	tcase_add_test(tc_interface, test_backend_del_fmid_permanent);
+	tcase_add_test(tc_interface, test_backend_get_uri_unknown);
+	tcase_add_test(tc_interface, test_backend_get_fmid);
+	tcase_add_test(tc_interface, test_backend_allocate_fmid);
 
-	tcase_add_test(tc, test_backend_get_fmid_with_wildcard);
+	tcase_add_test(tc_interface, test_backend_get_fmid_with_wildcard);
 
-	suite_add_tcase(s, tc);
+	suite_add_tcase(s, tc_interface);
 
 	return s;
 }

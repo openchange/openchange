@@ -42,9 +42,19 @@
 #define MYSQL(context)	((MYSQL *)context->data)
 
 
+/**
+  \details Search for existing FMID in indexing database
+
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param fmid FMID to search for
+  \param is_soft_deleted pointer to output location to return soft deleted state
+
+  \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
 static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *ictx,
-						     const char *username,
-						     uint64_t fmid, bool *IsSoftDeleted)
+						       const char *username,
+						       uint64_t fmid, bool *is_soft_deleted)
 {
 	int		ret;
 	uint64_t	soft_deleted;
@@ -52,8 +62,10 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
 	TALLOC_CTX	*mem_ctx;
 
 	/* Sanity */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!is_soft_deleted, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_new(NULL);
 	sql = talloc_asprintf(mem_ctx,
@@ -63,7 +75,7 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
 	ret = select_first_uint(MYSQL(ictx), sql, &soft_deleted);
 	MAPI_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_EXIST, mem_ctx);
 
-	*IsSoftDeleted = (soft_deleted == 1);
+	*is_soft_deleted = (soft_deleted == 1);
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }
@@ -379,7 +391,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
 	OPENCHANGE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(0, ("Creating schema for indexing on mysql %s",
+		DEBUG(0, ("Creating schema for indexing on mysql %s\n",
 			  connection_string));
 
 		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, SCHEMA_FILE);

@@ -23,7 +23,7 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
-#include "mapiproxy/libmapistore/backends/indexing_mysql.h"
+#include "mapiproxy/libmapistore/backends/indexing_mysql.c"
 #include "mapiproxy/util/mysql.h"
 
 #define INDEXING_MYSQL_HOST	"127.0.0.1"
@@ -47,6 +47,80 @@ static char * _make_connection_string(TALLOC_CTX *mem_ctx,
 
 	return talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s", user, pass, host, db);
 }
+
+/* backend initialization */
+
+START_TEST(test_backend_init_parameters) {
+	TALLOC_CTX			*mem_ctx;
+	struct mapistore_context	*mstore_ctx;
+	struct indexing_context		*ictx;
+	enum mapistore_error		retval;
+	char				*conn_string;
+	char				*conn_string_wrong_pass;
+
+	mem_ctx = talloc_named(NULL, 0, "test_backend_init_parameters");
+	ck_assert(mem_ctx != NULL);
+
+	mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+	ck_assert(mstore_ctx != NULL);
+
+	conn_string = _make_connection_string(mem_ctx,
+					      INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
+					      INDEXING_MYSQL_HOST, INDEXING_MYSQL_DB);
+	ck_assert(conn_string != NULL);
+
+	conn_string_wrong_pass = _make_connection_string(mem_ctx,
+							 INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
+							 INDEXING_MYSQL_HOST, "invalid password");
+	ck_assert(conn_string_wrong_pass != NULL);
+
+	/* check with NULL mstore context */
+	retval = mapistore_indexing_mysql_init(NULL, g_test_username, conn_string, &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* check with no username */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, NULL, conn_string, &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* check with NULL pointer to inexing context */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* check connection string handling */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, NULL, &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, "invalid", &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* check missing database */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, "mysql://root@localhost", &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* check missing host */
+/*
+ * 	TODO: at the moment mysql connect string parsing is widely untested
+ * 	and this test fails. To 'fix' it, it will require a bit more work
+ * 	and tests. When done, remove the comment.
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, "mysql://root@/somedb", &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+*/
+
+	/* check wrong password */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string_wrong_pass, &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* check successfull connection */
+	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string, &ictx);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	ck_assert(ictx != NULL);
+	ck_assert(ictx->data != NULL);
+	/* explicitly expect for url to be the username - current behavior */
+	ck_assert_str_eq(ictx->url, g_test_username);
+
+	talloc_free(mem_ctx);
+} END_TEST
+
 
 /* add_fmid */
 
@@ -161,7 +235,6 @@ START_TEST (test_backend_del_fmid_permanent)
 
 
 /* get_uri */
-
 
 START_TEST (test_backend_get_uri_unknown) {
 	enum mapistore_error	ret;
@@ -278,9 +351,19 @@ static void mysql_teardown(void)
 
 Suite *indexing_mysql_suite(void)
 {
-	Suite *s = suite_create("libmapistore indexing: MySQL backend");
+	Suite *s;
+	TCase *tc;
+	TCase *tc_config;
 
-	TCase *tc = tcase_create("indexing: MySQL backend");
+	s = suite_create("libmapistore indexing: MySQL backend");
+
+	/* Core / Configuration */
+	tc_config = tcase_create("MySQL backend configuration");
+	tcase_add_test(tc_config, test_backend_init_parameters);
+	suite_add_tcase(s, tc_config);
+
+	/* test indexing backend */
+	tc = tcase_create("indexing: MySQL backend");
 	tcase_add_checked_fixture(tc, mysql_setup, mysql_teardown);
 
 	tcase_add_test(tc, test_backend_add_fmid);

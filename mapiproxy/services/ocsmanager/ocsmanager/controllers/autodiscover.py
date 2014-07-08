@@ -40,8 +40,8 @@ class AutodiscoverHandler(object):
         self._parse_request(req.body)
 
         self.http_server_name = None
-        server_env_names = iter(["HTTP_X_FORWARDED_SERVER",
-                                 "HTTP_X_FORWARDED_HOST",
+        server_env_names = iter(["HTTP_X_FORWARDED_HOST",
+                                 "HTTP_X_FORWARDED_SERVER",
                                  "HTTP_HOST"])
         try:
             while self.http_server_name == None:

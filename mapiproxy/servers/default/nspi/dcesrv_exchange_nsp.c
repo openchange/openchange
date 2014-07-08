@@ -1058,11 +1058,10 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsabp_context		*emsabp_ctx = NULL;
-	struct ldb_message		*ldb_msg_ab;
 	struct SPropTagArray		*pPropTags;
-	const char			*purportedSearch;
+	char				*filter_search;
 	struct PropertyTagArray_r	*pMIds = NULL;
-	struct PropertyRowSet_r			*pRows = NULL;
+	struct PropertyRowSet_r		*pRows = NULL;
 	struct StringsArray_r		*paStr;
 	uint32_t			i;
 	int				ret;
@@ -1083,13 +1082,8 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. Prepare in/out data */
-	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &ldb_msg_ab);
+	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (!MAPI_STATUS_IS_OK(retval)) {
-		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
-	}
-
-	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
-	if (!purportedSearch) {
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
@@ -1130,7 +1124,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 		}
 
 		/* Search AD */
-		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", purportedSearch, filter);
+		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", filter_search, filter);
 		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
 				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);
@@ -1173,11 +1167,10 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsabp_context		*emsabp_ctx = NULL;
-	struct ldb_message		*ldb_msg_ab;
 	struct SPropTagArray		*pPropTags;
-	const char			*purportedSearch;
+	char				*filter_search;
 	struct PropertyTagArray_r	*pMIds = NULL;
-	struct PropertyRowSet_r			*pRows = NULL;
+	struct PropertyRowSet_r		*pRows = NULL;
 	struct StringsArrayW_r		*paWStr;
 	uint32_t			i;
 	int				ret;
@@ -1199,13 +1192,8 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Step 1. Prepare in/out data */
-	retval = emsabp_ab_container_by_id(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &ldb_msg_ab);
+	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (!MAPI_STATUS_IS_OK(retval)) {
-		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
-	}
-
-	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg_ab, "purportedSearch", NULL);
-	if (!purportedSearch) {
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
@@ -1246,7 +1234,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 		}
 
 		/* Search AD */
-		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", purportedSearch, filter);
+		filter = talloc_asprintf(mem_ctx, "(&%s(|%s))", filter_search, filter);
 		ret = ldb_search(emsabp_ctx->samdb_ctx, mem_ctx, &ldb_res,
 				 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
 				 LDB_SCOPE_SUBTREE, recipient_attrs, "%s", filter);

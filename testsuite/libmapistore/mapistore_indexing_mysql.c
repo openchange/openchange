@@ -73,8 +73,8 @@ START_TEST(test_backend_init_parameters) {
 	ck_assert(conn_string != NULL);
 
 	conn_string_wrong_pass = _make_connection_string(mem_ctx,
-							 INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
-							 INDEXING_MYSQL_HOST, "invalid password");
+							 INDEXING_MYSQL_USER, "invalid_password",
+							 INDEXING_MYSQL_HOST, INDEXING_MYSQL_DB);
 	ck_assert(conn_string_wrong_pass != NULL);
 
 	/* check with NULL mstore context */

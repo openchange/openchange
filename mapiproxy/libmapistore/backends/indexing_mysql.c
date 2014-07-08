@@ -76,6 +76,20 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+  \details Adds FMID and related URL in indexing database
+
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param fmid FMID to record
+  \param mapistore_URI mapistore URI string to associate with fmid
+
+  \return MAPISTORE_SUCCESS on success,
+	  MAPISTORE_ERR_EXIST if such entry already exists
+	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
+	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
+	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
+ */
 static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 					   const char *username,
 					   uint64_t fmid,
@@ -87,8 +101,10 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 	TALLOC_CTX	*mem_ctx;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid doesn't already exist within the database */
 	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);

@@ -14,8 +14,9 @@ import openchange.mapistore as mapistore
 
 # samba
 import samba.param
-from samba.samdb import SamDB
 from samba.auth import system_session, admin_session
+from samba.credentials import Credentials
+from samba.samdb import SamDB
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
@@ -32,7 +33,18 @@ def _load_samba_environment():
     dnsdomain = params.get("realm")
     dnsdomain = dnsdomain.lower()
 
-    samdb_ldb = SamDB(url=params.samdb_url(), lp=params)
+    creds = Credentials()
+    creds.guess(params)
+    creds.set_machine_account(params)
+
+    samdb_url = params.get('dcerpc_mapiproxy:samdb_url')
+    if samdb_url is None:
+        samdb_url = params.samdb_url()
+
+    samdb_ldb = SamDB(url=samdb_url,
+                      session_info=system_session(),
+                      credentials=creds,
+                      lp=params)
     domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn

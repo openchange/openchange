@@ -35,9 +35,6 @@
 #include <talloc.h>
 
 
-#define SCHEMA_FILE "indexing_schema.sql"
-#define INDEXING_TABLE "mapistore_indexing"
-#define INDEXING_ALLOC_TABLE "mapistore_indexes"
 #define MYSQL(context)	((MYSQL *)context->data)
 
 
@@ -393,7 +390,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 		DEBUG(0, ("Creating schema for indexing on mysql %s\n",
 			  connection_string));
 
-		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, SCHEMA_FILE);
+		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);
 		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
 		schema_created = create_schema(MYSQL(ictx), schema_file);
 		talloc_free(schema_file);

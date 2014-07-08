@@ -357,8 +357,6 @@ static void mysql_setup(void)
 	char *conn_string;
 	enum mapistore_error retval;
 
-	DEBUG(0, ("[%s]\n", __PRETTY_FUNCTION__));
-
 	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
 	ck_assert(mem_ctx != NULL);
 	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
@@ -378,7 +376,6 @@ static void mysql_setup(void)
 
 static void mysql_teardown(void)
 {
-	DEBUG(0, ("[%s]\n", __PRETTY_FUNCTION__));
 	mysql_query((MYSQL*)g_ictx->data, "DROP DATABASE " INDEXING_MYSQL_DB);
 	talloc_free(g_mstore_ctx);
 }

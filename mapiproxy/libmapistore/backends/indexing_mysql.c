@@ -38,7 +38,6 @@
 #define SCHEMA_FILE "indexing_schema.sql"
 #define INDEXING_TABLE "mapistore_indexing"
 #define INDEXING_ALLOC_TABLE "mapistore_indexes"
-#define TDB_WRAP(context)	(context)
 #define MYSQL(context)	((MYSQL *)context->data)
 
 

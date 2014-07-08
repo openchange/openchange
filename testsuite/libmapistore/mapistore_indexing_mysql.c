@@ -33,6 +33,8 @@
 
 #define INDEXING_TEST_FMID	0x123456
 #define INDEXING_TEST_FMID_NOK	0x0
+#define INDEXING_TEST_URI	"idxtest://url/test"
+#define INDEXING_TEST_URI_2	"idxtest://url/test2"
 
 /* Global test variables */
 static struct mapistore_context	*g_mstore_ctx = NULL;
@@ -155,36 +157,62 @@ END_TEST
 
 /* add_fmid */
 
-START_TEST (test_backend_add_fmid)
+START_TEST(test_add_fmid_sanity)
 {
-	enum mapistore_error	ret;
-	const uint64_t		fid = 0x11;
-	const char		*uri = "random://url";
+	enum mapistore_error	retval;
+
+	/* check missing mapistore context */
+	retval = g_ictx->add_fmid(NULL, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* check with missing username */
+	retval = g_ictx->add_fmid(g_ictx, NULL, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* test for invalid FMID */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID_NOK, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* check with missing mapistore URI */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+}
+END_TEST
+
+START_TEST(test_add_fmid)
+{
+	enum mapistore_error	retval;
 	char			*retrieved_uri = NULL;
-	bool			softDel = true;
+	bool			soft_deleted = true;
 
-	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
-	ck_assert(ret == MAPISTORE_SUCCESS);
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
-	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_TEST_FMID, &retrieved_uri, &soft_deleted);
+	ck_assert_int_eq(soft_deleted, false);
+	ck_assert_str_eq(INDEXING_TEST_URI, retrieved_uri);
+	ck_assert(talloc_is_parent(retrieved_uri, g_ictx));
+}
+END_TEST
 
-	ck_assert(!softDel);
-	ck_assert_str_eq(uri, retrieved_uri);
-} END_TEST
-
-
-START_TEST (test_backend_repeated_add_fails)
+START_TEST(test_add_fmid_duplicate_value_should_fail)
 {
-	enum mapistore_error	ret;
-	const uint64_t		fid = 0x11;
-	const char		*uri = "random://url";
+	enum mapistore_error	retval;
 
-	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
-	ck_assert(ret == MAPISTORE_SUCCESS);
+	/* populate record with test FMID */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
-	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
-	ck_assert(ret != MAPISTORE_SUCCESS);
-} END_TEST
+	/* create same record */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_EXIST);
+
+	/* create same record but different URL */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI_2);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_EXIST);
+}
+END_TEST
+
 
 /* update_fmid */
 
@@ -404,8 +432,9 @@ Suite *indexing_mysql_suite(void)
 	tc_interface = tcase_create("indexing: MySQL backend interface");
 	tcase_add_checked_fixture(tc_interface, mysql_setup, mysql_teardown);
 
-	tcase_add_test(tc_interface, test_backend_add_fmid);
-	tcase_add_test(tc_interface, test_backend_repeated_add_fails);
+	tcase_add_test(tc_interface, test_add_fmid_sanity);
+	tcase_add_test(tc_interface, test_add_fmid);
+	tcase_add_test(tc_interface, test_add_fmid_duplicate_value_should_fail);
 	tcase_add_test(tc_interface, test_backend_update_fmid);
 	tcase_add_test(tc_interface, test_backend_del_unkown_fmid);
 	tcase_add_test(tc_interface, test_backend_del_fmid_soft);

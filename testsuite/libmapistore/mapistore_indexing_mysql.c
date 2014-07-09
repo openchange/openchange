@@ -35,6 +35,9 @@
 #define INDEXING_TEST_FMID_NOK	0x0
 #define INDEXING_TEST_URI	"idxtest://url/test"
 #define INDEXING_TEST_URI_2	"idxtest://url/test2"
+/* Existing FMID/URL to be populated on setup */
+#define INDEXING_EXIST_FMID	0xEEEE
+#define INDEXING_EXIST_URL	"idxtest://existing_url"
 
 /* Global test variables */
 static struct mapistore_context	*g_mstore_ctx = NULL;
@@ -431,6 +434,9 @@ static void mysql_setup(void)
 	retval = mapistore_indexing_mysql_init(g_mstore_ctx, g_test_username, conn_string, &g_ictx);
 	ck_assert(retval == MAPISTORE_SUCCESS);
 	ck_assert(g_ictx != NULL);
+
+	/* populate DB with some data */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_EXIST_FMID, INDEXING_EXIST_URL);
 
 	talloc_free(conn_string);
 }

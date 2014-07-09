@@ -165,6 +165,13 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	talloc_free(mem_ctx);
+
+	/* did we updated anything? */
+	/* TODO: Move mysql_affected_rows() in execute_query() */
+	if (mysql_affected_rows(MYSQL(ictx)) == 0) {
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
 	return MAPISTORE_SUCCESS;
 }
 

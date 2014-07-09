@@ -216,26 +216,59 @@ END_TEST
 
 /* update_fmid */
 
-START_TEST (test_backend_update_fmid)
+START_TEST(test_update_fmid_sanity)
 {
-	enum mapistore_error	ret;
-	const uint64_t		fid = 0x11;
-	const char		*uri = "random://url";
-	const char		*uri2 = "random://url2";
-	char			*retrieved_uri = NULL;
-	bool			softDel = true;
+	enum mapistore_error	retval;
 
-	ret = g_ictx->add_fmid(g_ictx, g_test_username, fid, uri);
-	ck_assert(ret == MAPISTORE_SUCCESS);
+	/* missing indexing context */
+	retval = g_ictx->update_fmid(NULL, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
 
-	ret = g_ictx->update_fmid(g_ictx, g_test_username, fid, uri2);
-	ck_assert(ret == MAPISTORE_SUCCESS);
+	/* missing username */
+	retval = g_ictx->update_fmid(g_ictx, NULL, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
-	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, fid, &retrieved_uri, &softDel);
+	/* invalid FMID */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID_NOK, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
-	ck_assert(!softDel);
-	ck_assert_str_eq(uri2, retrieved_uri);
-} END_TEST
+	/* missing mapistore URI */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+}
+END_TEST
+
+START_TEST(test_update_fmid)
+{
+	enum mapistore_error	retval;
+	char			*mapistore_uri = NULL;
+	bool			soft_deleted = true;
+
+	/* prepare some data */
+	retval = g_ictx->add_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* actual test */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI_2);
+	ck_assert_int_eq(retval,  MAPISTORE_SUCCESS);
+
+	/* check what is in db */
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_TEST_FMID, &mapistore_uri, &soft_deleted);
+	ck_assert(!soft_deleted);
+	ck_assert_str_eq(mapistore_uri, INDEXING_TEST_URI_2);
+}
+END_TEST
+
+START_TEST(test_update_fmid_should_fail)
+{
+	enum mapistore_error	retval;
+
+	/* update non-existent FMID */
+	retval = g_ictx->update_fmid(g_ictx, g_test_username, INDEXING_TEST_FMID, INDEXING_TEST_URI);
+	ck_assert_int_eq(retval,  MAPISTORE_ERR_NOT_FOUND);
+}
+END_TEST
 
 
 /* del_fmid */
@@ -435,7 +468,9 @@ Suite *indexing_mysql_suite(void)
 	tcase_add_test(tc_interface, test_add_fmid_sanity);
 	tcase_add_test(tc_interface, test_add_fmid);
 	tcase_add_test(tc_interface, test_add_fmid_duplicate_value_should_fail);
-	tcase_add_test(tc_interface, test_backend_update_fmid);
+	tcase_add_test(tc_interface, test_update_fmid_sanity);
+	tcase_add_test(tc_interface, test_update_fmid);
+	tcase_add_test(tc_interface, test_update_fmid_should_fail);
 	tcase_add_test(tc_interface, test_backend_del_unkown_fmid);
 	tcase_add_test(tc_interface, test_backend_del_fmid_soft);
 	tcase_add_test(tc_interface, test_backend_del_fmid_permanent);

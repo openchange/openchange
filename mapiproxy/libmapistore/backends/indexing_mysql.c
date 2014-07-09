@@ -175,10 +175,25 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+  \details Delete FMID mapping from database.
+	   Note that function will succeed when there is no such FMID
+
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param fmid FMID to delete
+  \param flags MAPISTORE_SOFT_DELETE - soft delete the entry,
+	       MAPISTORE_PERMANENT_DELETE - permanently delete
+
+  \return MAPISTORE_SUCCESS on success
+	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
+	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
+	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
+ */
 static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
-					   const char *username,
-					   uint64_t fmid,
-					   uint8_t flags)
+					     const char *username,
+					     uint64_t fmid,
+					     uint8_t flags)
 {
 	int		ret;
 	bool		IsSoftDeleted = false;
@@ -187,14 +202,16 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid still exists within the database */
 	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_SUCCESS, NULL);
 
 	mem_ctx = talloc_new(NULL);
+
 	switch (flags) {
 	case MAPISTORE_SOFT_DELETE:
 		/* nothing to do if the record is already soft deleted */
@@ -211,6 +228,9 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 			"WHERE username = '%s' AND fmid = %"PRIu64,
 			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 		break;
+	default:
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	execute_query(MYSQL(ictx), sql);

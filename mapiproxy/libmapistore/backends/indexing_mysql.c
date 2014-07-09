@@ -403,7 +403,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
 	OPENCHANGE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(0, ("Creating schema for indexing on mysql %s\n",
+		DEBUG(3, ("Creating schema for indexing on mysql %s\n",
 			  connection_string));
 
 		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);

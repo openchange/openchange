@@ -473,7 +473,7 @@ legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: smtp:postmaster@%(dnsdomain)s
-proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_400)s;s=%(username)s
+proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
 proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0

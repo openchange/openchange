@@ -475,7 +475,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 
 	ictx->data = create_connection(connection_string, &conn);
 	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
-	OPENCHANGE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 	if (!table_exists(conn, INDEXING_TABLE)) {
 		DEBUG(3, ("Creating schema for indexing on mysql %s\n",
 			  connection_string));
@@ -485,7 +485,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 		schema_created = create_schema(MYSQL(ictx), schema_file);
 		talloc_free(schema_file);
 
-		OPENCHANGE_RETVAL_IF(!schema_created, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+		MAPISTORE_RETVAL_IF(!schema_created, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 	}
 
 

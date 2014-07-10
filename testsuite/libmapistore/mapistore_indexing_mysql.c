@@ -23,8 +23,11 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
-#include "mapiproxy/libmapistore/backends/indexing_mysql.c"
 #include "mapiproxy/util/mysql.h"
+
+#undef MAPISTORE_LDIF
+#define MAPISTORE_LDIF "setup/mapistore"
+#include "mapiproxy/libmapistore/backends/indexing_mysql.c"
 
 #define INDEXING_MYSQL_HOST	"127.0.0.1"
 #define INDEXING_MYSQL_USER	"root"

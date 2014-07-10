@@ -50,6 +50,7 @@ struct emsmdbp_context {
 	char					*szDisplayName;
 	uint32_t				userLanguage;
 	char					*username;
+	char					*szDNPrefix;
 	struct loadparm_context			*lp_ctx;
 	struct openchangedb_context		*oc_ctx;
 	struct ldb_context			*samdb_ctx;

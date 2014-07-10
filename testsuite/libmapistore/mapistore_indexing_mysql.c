@@ -353,14 +353,44 @@ END_TEST
 
 /* get_uri */
 
-START_TEST (test_backend_get_uri_unknown) {
-	enum mapistore_error	ret;
-	char			*uri = NULL;
-	bool			softDel = false;
+START_TEST(test_get_uri_sanity)
+{
+	enum mapistore_error	retval;
+	char			*uri;
+	bool			soft_deleted;
 
-	ret = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, 0x13, &uri, &softDel);
-	ck_assert(ret == MAPISTORE_ERR_NOT_FOUND);
-} END_TEST
+	/* missing indexing context */
+	retval = g_ictx->get_uri(NULL, g_test_username, g_ictx, INDEXING_EXIST_FMID, &uri, &soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	/* missing username */
+	retval = g_ictx->get_uri(g_ictx, NULL, g_ictx, INDEXING_EXIST_FMID, &uri, &soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* invalid FMID */
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_TEST_FMID_NOK, &uri, &soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* invalid delete flags */
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_EXIST_FMID, NULL, &soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* invalid pointer for soft_deleted */
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_EXIST_FMID, &uri, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+}
+END_TEST
+
+START_TEST(test_get_uri_uknown_fmid)
+{
+	enum mapistore_error	retval;
+	char			*uri = NULL;
+	bool			soft_deleted = false;
+
+	retval = g_ictx->get_uri(g_ictx, g_test_username, g_ictx, INDEXING_TEST_FMID, &uri, &soft_deleted);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+}
+END_TEST
 
 
 /* get_fmid */
@@ -503,7 +533,8 @@ Suite *indexing_mysql_suite(void)
 	tcase_add_test(tc_interface, test_del_fmid_unknown_fmid);
 	tcase_add_test(tc_interface, test_del_fmid_soft);
 	tcase_add_test(tc_interface, test_del_fmid_permanent);
-	tcase_add_test(tc_interface, test_backend_get_uri_unknown);
+	tcase_add_test(tc_interface, test_get_uri_sanity);
+	tcase_add_test(tc_interface, test_get_uri_uknown_fmid);
 	tcase_add_test(tc_interface, test_backend_get_fmid);
 	tcase_add_test(tc_interface, test_backend_allocate_fmid);
 

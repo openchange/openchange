@@ -292,7 +292,22 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+  \details Get FMID by mapistore URI.
 
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param uri mapistore URI or pattern to search for
+  \param partia if true, uri is pattern to search for
+  \param fmidp pointer to valid location to store found FMID
+  \param soft_deletedp Pointer to bool var to return Soft Deleted state
+
+  \return MAPISTORE_SUCCESS on success
+	  MAPISTORE_ERR_NOT_FOUND if uri does not exists in DB
+	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
+	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
+	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
+ */
 static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 						  const char *username,
 						  const char *uri,
@@ -300,17 +315,18 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 						  uint64_t *fmidp,
 						  bool *soft_deletedp)
 {
-	enum MYSQLRESULT ret;
-	char *sql, *uri_like;
-	MYSQL_RES *res;
-	MYSQL_ROW row;
-	TALLOC_CTX *mem_ctx;
+	enum MYSQLRESULT	ret;
+	char			*sql, *uri_like;
+	MYSQL_RES		*res;
+	MYSQL_ROW		row;
+	TALLOC_CTX		*mem_ctx;
 
 	// Sanity checks
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mysql_record_get_fmid");
 
@@ -328,8 +344,8 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 	}
 
 	ret = select_without_fetch(MYSQL(ictx), sql, &res);
+	MAPISTORE_RETVAL_IF(ret == MYSQL_NOT_FOUND, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
-	MAPISTORE_RETVAL_IF(!mysql_num_rows(res), MAPISTORE_ERR_NOT_FOUND, mem_ctx);
 
 	row = mysql_fetch_row(res);
 

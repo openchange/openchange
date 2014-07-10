@@ -240,12 +240,26 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+  \details Get mapistore URI by FMID.
+
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param mem_ctx TALLOC_CTX to allocate mapistore URI
+  \param fmid FMID to search for
+  \param soft_deletedp Pointer to bool var to return Soft Deleted state
+
+  \return MAPISTORE_SUCCESS on success
+	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
+	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
+	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
+ */
 static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
-					       const char *username,
-					       TALLOC_CTX *mem_ctx,
-					       uint64_t fmid,
-					       char **urip,
-					       bool *soft_deletedp)
+						 const char *username,
+						 TALLOC_CTX *mem_ctx,
+						 uint64_t fmid,
+						 char **urip,
+						 bool *soft_deletedp)
 {
 	int		ret;
 	char		*sql;
@@ -254,9 +268,10 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 
 	sql = talloc_asprintf(mem_ctx,

@@ -1871,15 +1871,15 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-/* Get the legazyExchangeDN for the administrative group . */
-static enum MAPISTATUS mapiserver_get_administrative_group_legazyexchangedn(TALLOC_CTX *mem_ctx,
+/* Get the legacyExchangeDN for the administrative group . */
+static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALLOC_CTX *mem_ctx,
 									    struct emsmdbp_context *emsmdbp_ctx,
-									    char **legazyexchangedn)
+									    char **legacyexchangedn)
 {
 	int			ret;
 	enum MAPISTATUS		retval;
 	struct  ldb_result	*res = NULL;
-	const char * const	attrs[] = { "legazyExchangeDN", NULL };
+	const char * const	attrs[] = { "legacyExchangeDN", NULL };
 	struct ldb_dn		*basedn = 0;
 	char			*group_name;
 
@@ -1899,7 +1899,9 @@ static enum MAPISTATUS mapiserver_get_administrative_group_legazyexchangedn(TALL
 		return MAPI_E_NOT_FOUND;
 	}
 
-	*legazyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "legazyExchangeDN", NULL));
+	*legacyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL));
+	OPENCHANGE_RETVAL_IF(!*legacyexchangedn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -1920,7 +1922,7 @@ static struct mapistore_freebusy_properties *emsmdbp_fetch_freebusy(TALLOC_CTX *
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	fb_props = NULL;
 
-	retval = mapiserver_get_administrative_group_legazyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
+	retval = mapiserver_get_administrative_group_legacyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
 	if (retval != MAPI_E_SUCCESS) {
 		goto end;
 	}
@@ -2328,7 +2330,7 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 	fb_props = object->object.message->fb_properties;
 
 	owner = emsmdbp_get_owner(object);
-	retval = mapiserver_get_administrative_group_legazyexchangedn(mem_ctx, emsmdbp_ctx, &administrativegroup);
+	retval = mapiserver_get_administrative_group_legacyexchangedn(mem_ctx, emsmdbp_ctx, &administrativegroup);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
 	/* FIXME: this is wrong, as the CN attribute may differ from the user's username (sAMAccountName) */

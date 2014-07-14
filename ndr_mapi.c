@@ -1087,7 +1087,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDNPrefix, ndr_charset_length(*r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
 		}
 		if (r->out.szDisplayName == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: szDisplayName");
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDisplayName));
 		if (*r->out.szDisplayName) {
@@ -1103,7 +1103,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwBestVersion[cntr_rgwBestVersion_0]));
 		}
 		if (r->out.pulTimeStamp == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pulTimeStamp");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
@@ -1115,7 +1115,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		}
 
 		if (r->out.pcbAuxOut == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pcbAuxOut");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
 		NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->out.result));

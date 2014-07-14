@@ -1190,6 +1190,9 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 			ndr->flags = _flags_save_mapi2k7_AuxInfo;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.cbAuxIn));
+		if (r->in.cbAuxIn > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "[in] cbAuxIn value out of range: 0x%x\n", r->in.cbAuxIn);
+		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.pcbAuxOut);
 		}

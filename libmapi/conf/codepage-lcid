@@ -205,6 +205,7 @@ Swedish		      Finland		 sv_FI		  0x081d	    1252	CP_WESTERN_EUROPE_AND_US	FIN
 Tajik		      NULL	 	 tg_Cyrl_TJ	  0x0428	    1251	CP_CYRILLIC			NULL
 Tamil		      NULL		 ta_IN		  0x0449	    0		CP_INDIC			IND
 Tatar		      NULL		 tt_RU		  0x0444	    1251	CP_CYRILLIC			RUS
+Teletex	      	      NULL		 t61		  0x0409	    20261	CP_WESTERN_EUROPE_AND_US	NULL
 Telegu		      NULL		 te_IN		  0x044a	    0		CP_INDIC			IND
 Thai		      NULL		 th_TH		  0x041e	    874		CP_THAI				THA
 Tibetan	      	      NULL		 bo_CN		  0x0451	    0		CP_UNICODE_ONLY			NULL

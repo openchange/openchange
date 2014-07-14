@@ -182,7 +182,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
 _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 				 struct emsabp_context *emsabp_ctx)
 {
-	enum MAPISTATUS		ret;
+	enum MAPISTATUS		retval;
 	TALLOC_CTX		*mem_ctx;
 	const char		*username = NULL, *exdn = NULL;
 	char			*exdn0, *exdn1;
@@ -191,17 +191,19 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	username = dcesrv_call_account_name(dce_call);
 
 	mem_ctx = talloc_named(emsabp_ctx->mem_ctx, 0, __FUNCTION__);
+	if (!mem_ctx) {
+		return false;
+	}
 
-	ret = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
-
-	if (ret != MAPI_E_SUCCESS) goto end;
+	retval = emsabp_get_account_info(mem_ctx, emsabp_ctx, username, &ldb_msg);
+	if (retval != MAPI_E_SUCCESS) goto end;
 
 	// cache both account_name and organization upon success
 	exdn = ldb_msg_find_attr_as_string(ldb_msg, "legacyExchangeDN", NULL);
 	if (exdn == NULL) {
 		DEBUG(0, ("[%s:%d]: User %s doesn't have legacyExchangeDN attribute\n",
 			  __FUNCTION__, __LINE__, username));
-		ret = MAPI_E_NOT_FOUND;
+		retval = MAPI_E_NOT_FOUND;
 		goto end;
 	}
 	exdn0 = strstr(exdn, "/o=");
@@ -209,15 +211,17 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	if (!exdn0 || !exdn1) {
 		DEBUG(0, ("[%s:%d]: User %s has bad formed legacyExchangeDN attribute: %s\n",
 			  __FUNCTION__, __LINE__, username, exdn));
-		ret = MAPI_E_NOT_FOUND;
+		retval = MAPI_E_NOT_FOUND;
 		goto end;
 	}
 	emsabp_ctx->organization_name = talloc_strndup(emsabp_ctx->mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
 	emsabp_ctx->account_name = talloc_strdup(emsabp_ctx->mem_ctx, username);
-
+	if (!emsabp_ctx->organization_name || !emsabp_ctx->account_name) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+	}
 end:
 	talloc_free(mem_ctx);
-	return ret == MAPI_E_SUCCESS;
+	return retval == MAPI_E_SUCCESS;
 }
 
 

@@ -225,9 +225,11 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		}
 	}
 
+	r->out.handle->uuid = GUID_zero();
+	r->out.handle->handle_type = 0;
 	r->out.result = (enum MAPISTATUS) 1;
 
-	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+	DCESRV_NSP_RETURN(r, 1, NULL);
 }
 
 

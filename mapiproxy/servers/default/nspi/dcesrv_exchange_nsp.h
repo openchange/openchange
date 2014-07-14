@@ -107,7 +107,26 @@ struct EphemeralEntryID {
 #define	EMSABP_TDB_TMP_MID_START	0x5000
 #define	EMSABP_TDB_DATA_REC		"MId_index"
 
-#define DCESRV_NSP_RETURN(r,c,ctx) { r->out.result = c; return; if (ctx) talloc_free(ctx); }
+#define DCESRV_NSP_RETURN_IF(x,r,c,ctx)		\
+do {						\
+	if (x) {				\
+		r->out.result = c;		\
+		if (ctx) {			\
+			talloc_free(ctx);	\
+		}				\
+		return;				\
+	}					\
+} while (0);
+
+#define DCESRV_NSP_RETURN(r,c,ctx)	\
+do {					\
+	r->out.result = c;		\
+	if (ctx) {			\
+		talloc_free(ctx);	\
+	}				\
+	return;				\
+} while (0);
+
 
 __BEGIN_DECLS
 

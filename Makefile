@@ -1410,7 +1410,7 @@ clean:: schemaIDGUID-clean
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 ###################
 # check_fasttransfer test app.

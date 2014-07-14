@@ -1199,8 +1199,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.pcbAuxOut));
-		if (*r->in.pcbAuxOut > 0x1008) {
-			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		if (r->in.pcbAuxOut && *r->in.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "[in] pcbAuxOut value out of range: 0x%x\n", *r->in.pcbAuxOut);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.handle);
@@ -1341,8 +1341,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcbAuxOut));
-		if (*r->out.pcbAuxOut > 0x1008) {
-			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		if (r->out.pcbAuxOut && *r->out.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range !!");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_MAPISTATUS(ndr, NDR_SCALARS, &r->out.result));

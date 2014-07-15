@@ -96,16 +96,20 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 	MAPISTORE_RETVAL_IF(rmctx, MAPISTORE_SUCCESS, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_replica_mapping_init");
-	rmctx = talloc_zero(mstore_ctx->replica_mapping_list, struct replica_mapping_context_list);
 
 	/* ensure the user mapistore directory exists before any mapistore operation occurs */
 	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s",
 					mapistore_get_mapping_path(), username);
+	MAPISTORE_RETVAL_IF(!mapistore_dir, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
 	mkdir(mapistore_dir, 0700);
 
 	/* Step 1. Open/Create the replica_mapping database */
 	dbpath = talloc_asprintf(mem_ctx, "%s/%s/" MAPISTORE_DB_REPLICA_MAPPING, 
 				 mapistore_get_mapping_path(), username);
+	MAPISTORE_RETVAL_IF(!dbpath, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	rmctx = talloc_zero(mstore_ctx->replica_mapping_list, struct replica_mapping_context_list);
+	MAPISTORE_RETVAL_IF(!rmctx, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	rmctx->tdb = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!rmctx->tdb) {
 		DEBUG(3, ("[%s:%d]: %s (%s)\n", __FUNCTION__, __LINE__, strerror(errno), dbpath));

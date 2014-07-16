@@ -405,7 +405,7 @@ struct namedprops_context;
 
 /* definitions from mapistore_namedprops.c */
 enum mapistore_error mapistore_namedprops_get_mapped_id(struct namedprops_context *, struct MAPINAMEID, uint16_t *);
-uint16_t mapistore_namedprops_next_unused_id(struct namedprops_context *);
+enum mapistore_error mapistore_namedprops_next_unused_id(struct namedprops_context *, uint16_t *);
 enum mapistore_error mapistore_namedprops_create_id(struct namedprops_context *, struct MAPINAMEID, uint16_t);
 enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_context *, uint16_t, TALLOC_CTX *mem_ctx, struct MAPINAMEID **);
 enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_context *, uint16_t, uint16_t *);

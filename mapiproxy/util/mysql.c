@@ -1,3 +1,24 @@
+/*
+   MySQL util functions
+
+   OpenChange Project
+
+   Copyright (C) Jesús García Sáez 2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mysql.h"
 
 #include <time.h>
@@ -140,7 +161,9 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = execute_query(conn, sql);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	*res = mysql_store_result(conn);
 	if (*res == NULL) {
@@ -164,7 +187,7 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 {
 	MYSQL_RES *res;
 	struct StringArrayW_r *results;
-	uint32_t i, num_rows;
+	uint32_t i, num_rows = 0;
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -221,7 +244,9 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	MYSQL_ROW row = mysql_fetch_row(res);
 	if (row == NULL) {
@@ -245,7 +270,10 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = select_first_string(mem_ctx, conn, sql, &result);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, mem_ctx);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	ret = MYSQL_ERROR;
 	if (convert_string_to_ull(result, n)) {

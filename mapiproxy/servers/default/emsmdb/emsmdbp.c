@@ -32,6 +32,12 @@
 
 #include <ldap_ndr.h>
 
+/* Expose samdb_connect prototype */
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
+				  struct loadparm_context *,
+				  struct auth_session_info *,
+				  unsigned int);
+
 static struct GUID MagicGUID = {
 	.time_low = 0xbeefface,
 	.time_mid = 0xcafe,

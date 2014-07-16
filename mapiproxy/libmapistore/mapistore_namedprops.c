@@ -185,6 +185,8 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedp
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
 
 	switch (*propTypeP) {
+	case PT_UNSPECIFIED:
+	case PT_NULL:
 	case PT_SHORT:
 	case PT_LONG:
 	case PT_FLOAT:

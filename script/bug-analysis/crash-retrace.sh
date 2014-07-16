@@ -26,7 +26,7 @@ shift $(($OPTIND - 1))
 
 crashes=$1
 if [ -z "$crashes" ]; then
-    echo "Usage: $0 [-v] crash_dir_or_file"
+    echo "Usage: $0 [-svg] crash_dir_or_file"
     exit 1
 fi
 

@@ -4,6 +4,8 @@
    OpenChange Project
 
    Copyright (C) Julien Kerihuel 2010
+   Copyright (C) Carlos Pérez-Aradros Herce 2014
+   Copyright (C) Jesús García Sáez 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by

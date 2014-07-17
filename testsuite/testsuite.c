@@ -1,10 +1,7 @@
 /*
-   MAPI Proxy - Indexing backend MySQL implementation
+   OpenChange MAPI implementation.
 
-   OpenChange Project
-
-   Copyright (C) Carlos Pérez-Aradros Herce 2014
-   Copyright (C) Jesús García Sáez 2014
+   Copyright (C) Julien Kerihuel 2014.
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -20,13 +17,21 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef __INDEXING_MYSQL_H__
-#define __INDEXING_MYSQL_H__
+#include "testsuite.h"
 
+int main(int ac, const char *av[])
+{
+	SRunner	*sr;
+	int	nf;
 
-enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *,
-						   const char *, const char *,
-						   struct indexing_context **);
+	sr = srunner_create(suite_create("OpenChange unit testing"));
 
+	/* libmapistore */
+	srunner_add_suite(sr, mapistore_namedprops_suite());
+	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());
 
-#endif /* __INDEXING_MYSQL_H__ */
+	srunner_run_all(sr, CK_NORMAL);
+	nf = srunner_ntests_failed(sr);
+	srunner_free(sr);
+	return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
+}

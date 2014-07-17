@@ -1126,10 +1126,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 							    struct EcDoRpc_MAPI_REPL *mapi_repl,
 							    uint32_t *handles, uint16_t *size)
 {
-	int		i, ret;
-	struct GUID	*lpguid;
-	bool		has_transaction = false;
-	uint16_t	mapped_id;
+	enum mapistore_error	retval;
+	int			i;
+	int			ret;
+	struct GUID		*lpguid;
+	bool			has_transaction = false;
+	uint16_t		mapped_id = 0;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
 
@@ -1157,14 +1159,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 		if (mapi_req->u.mapi_GetIDsFromNames.ulFlags == GetIDsFromNames_GetOrCreate) {
 			if (!has_transaction) {
 				has_transaction = true;
-				enum mapistore_error e =
-					mapistore_namedprops_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-				if (e != MAPISTORE_SUCCESS)
+				retval = mapistore_namedprops_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
+				if (retval != MAPISTORE_SUCCESS) {
 					return MAPI_E_UNABLE_TO_COMPLETE;
+				}
 
-				mapped_id = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-				if (mapped_id == 0)
+				retval = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, &mapped_id);
+				if (retval != MAPISTORE_SUCCESS) {
+					DEBUG(0, ("[%s:%d] ERROR: No remaining namedprops ID available\n",
+						  __FUNCTION__, __LINE__));
 					abort();
+				}
 			} else {
 				mapped_id++;
 			}

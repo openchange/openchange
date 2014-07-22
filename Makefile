@@ -1403,7 +1403,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_errorchecks.c	\
 	utils/mapitest/modules/module_lcid.c		\
 	utils/mapitest/modules/module_mapidump.c	\
-	utils/mapitest/modules/module_lzxpress.c
+	utils/mapitest/modules/module_lzxpress.c	\
+	utils/mapitest/modules/module_zentyal.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 

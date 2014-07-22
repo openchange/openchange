@@ -376,7 +376,8 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct PropertyRowSet_r		*pRows;
-	uint32_t			i, j, count;
+	uint32_t			count = 0;
+	uint32_t			i, j;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -424,7 +425,12 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 	
-		count = ldb_res->count - r->in.pStat->NumPos;
+		if ((ldb_res->count - r->in.pStat->NumPos) < 0) {
+			count = 0;
+		} else {
+			count = ldb_res->count - r->in.pStat->NumPos;
+		}
+
 		if (r->in.Count < count) {
 			count = r->in.Count;
 		}

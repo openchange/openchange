@@ -1320,6 +1320,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxcperm.o		\
 		utils/mapitest/modules/module_nspi.o		\
+		utils/mapitest/modules/module_zentyal.o		\
 		utils/mapitest/modules/module_noserver.o	\
 		utils/mapitest/modules/module_errorchecks.o	\
 		utils/mapitest/modules/module_lcid.o		\
@@ -1351,7 +1352,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_errorchecks.c	\
 	utils/mapitest/modules/module_lcid.c		\
 	utils/mapitest/modules/module_mapidump.c	\
-	utils/mapitest/modules/module_lzxpress.c
+	utils/mapitest/modules/module_lzxpress.c	\
+	utils/mapitest/modules/module_zentyal.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 

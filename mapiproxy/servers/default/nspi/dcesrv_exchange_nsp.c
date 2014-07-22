@@ -225,9 +225,11 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		}
 	}
 
+	r->out.handle->uuid = GUID_zero();
+	r->out.handle->handle_type = 0;
 	r->out.result = (enum MAPISTATUS) 1;
 
-	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+	DCESRV_NSP_RETURN(r, 1, NULL);
 }
 
 
@@ -898,21 +900,12 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
 
-	switch (r->in.dwFlags) {
-	case NspiAddressCreationTemplates:
-	case NspiAddressCreationTemplates|NspiUnicodeStrings:
+	if (r->in.dwFlags & NspiAddressCreationTemplates) {
 		DEBUG(5, ("CreationTemplates Table requested\n"));
 		r->out.result = emsabp_get_CreationTemplatesTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
-		break;
-	case NspiUnicodeStrings:
-	case 0x0:
+	} else {
 		DEBUG(5, ("Hierarchy Table requested\n"));
 		r->out.result = emsabp_get_HierarchyTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
-		break;
-	default:
-		talloc_free(r->out.ppRows);
-		talloc_free(r->out.ppRows[0]);
-		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 }
 

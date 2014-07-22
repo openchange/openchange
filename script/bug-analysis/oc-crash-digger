@@ -248,11 +248,22 @@ class CrashDigger(object):
 
                 stacktrace_file_name = "%s.stacktrace" % crash_file_basename
                 # FIXME: Test to override?
+
+                # Guessing components
+                comps = guess_components(report)
                 with open(stacktrace_file_name, 'wb') as f:
+                    if comps:
+                        f.write("Guessed application components: %s\n\n" % ', '.join(comps))
+
                     if isinstance(report['Stacktrace'], unicode):
                         f.write(report['Stacktrace'].encode('utf-8'))
                     else:
                         f.write(report['Stacktrace'])
+
+                if comps:
+                    self.log("Guessed application components: %s" % ', '.join(comps))
+                else:
+                    self.log("Impossible to guess app components from the crash, review it manually")
                 self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
 
             # Delete temporary file once it is uploaded

@@ -29,13 +29,13 @@
  */
 
 /**
-   \details Test #1876 NspiQueryRows
+   \details Test #1872 NspiQueryRows
 
    \param mt pointer to the top level mapitest structure
 
    \return true on success, otherwise false
  */
-_PUBLIC_ bool mapitest_zentyal_1876(struct mapitest *mt)
+_PUBLIC_ bool mapitest_zentyal_1872(struct mapitest *mt)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct nspi_context		*nspi_ctx;
@@ -44,7 +44,7 @@ _PUBLIC_ bool mapitest_zentyal_1876(struct mapitest *mt)
 	enum MAPISTATUS	retval;
 
 	/* Sanity checks */
-	mem_ctx = talloc_named(NULL, 0, "mapitest_zentyal_1876");
+	mem_ctx = talloc_named(NULL, 0, "mapitest_zentyal_1872");
 	if (!mem_ctx) return false;
 
 	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
@@ -61,7 +61,7 @@ _PUBLIC_ bool mapitest_zentyal_1876(struct mapitest *mt)
 
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
 	MAPIFreeBuffer(RowSet);
-	mapitest_print_retval_clean(mt, "1876", retval);
+	mapitest_print_retval_clean(mt, "1872", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);

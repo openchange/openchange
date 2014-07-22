@@ -43,7 +43,7 @@ class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
                  crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
-                 component=False, crash_ids=[]):
+                 component=False, crash_ids=[], stacktrace_file=False):
         """
         Initialize pools.
 
@@ -63,6 +63,7 @@ class CrashDigger(object):
         self.crashes_dir = crashes_dir
         self.crashes_files = dict()
         self.oc_cd_conf = oc_cd_conf
+        self.stacktrace_file = stacktrace_file
         self.stdout = stdout
         self.gdb = gdb
         self.upload = upload
@@ -219,23 +220,40 @@ class CrashDigger(object):
 
         self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages)
 
-        if self.upload:
+        if self.upload or self.stacktrace_file:
             report = Report()
             report.load(self.file_to_upload)
-            # Check for duplicates here...
-            known_report = self.crashdb.known(report)
-            if not known_report:  # Client-side
-                crash_id = self.crashdb.upload(report)
-                ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
-                if ret_dup_check is not None:
-                    self.log('This report is a duplicated of #%i' % ret_dup_check[0])
-                    if ret_dup_check[1] is not None:
-                        self.log('This report is fixed in %s version' % ret_dup_check[1])
+
+            if self.upload:
+                # Check for duplicates here...
+                known_report = self.crashdb.known(report)
+                if not known_report:  # Client-side
+                    crash_id = self.crashdb.upload(report)
+                    ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
+                    if ret_dup_check is not None:
+                        self.log('This report is a duplicated of #%i' % ret_dup_check[0])
+                        if ret_dup_check[1] is not None:
+                            self.log('This report is fixed in %s version' % ret_dup_check[1])
+                    else:
+                        self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+                        self.set_components(crash_id, report)
                 else:
-                    self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
-                    self.set_components(crash_id, report)
+                    self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
             else:
-                self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+                # Put the stacktrace in a file
+                if crash_file.endswith('.crash'):
+                    crash_file_basename = crash_file
+                else:
+                    crash_file_basename, _ = os.path.splitext(crash_file)
+
+                stacktrace_file_name = "%s.stacktrace" % crash_file_basename
+                # FIXME: Test to override?
+                with open(stacktrace_file_name, 'wb') as f:
+                    if isinstance(report['Stacktrace'], unicode):
+                        f.write(report['Stacktrace'].encode('utf-8'))
+                    else:
+                        f.write(report['Stacktrace'])
+                self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
 
             # Delete temporary file once it is uploaded
             os.unlink(self.file_to_upload.name)
@@ -256,7 +274,7 @@ class CrashDigger(object):
         else:
             argv.extend(['--auth', 'foo'])
 
-        if self.upload:
+        if self.upload or self.stacktrace_file:
             # Retrace the result, store it in a file to upload it afterwards
             self.file_to_upload = NamedTemporaryFile(delete=False)
             argv.extend(['--output', self.file_to_upload.name])
@@ -395,6 +413,8 @@ def parse_options():
     optparser.add_option('-s', '--stdout',
                          help="Print the trace to stdout",
                          action='store_true', dest='stdout', default=False)
+    optparser.add_option('-f', '--stacktrace-file', action='store_true',
+                         default=False, help="Put the stacktrace to a file.")
     optparser.add_option('-g', '--gdb',
                          help="Launch GDB with the trace",
                          action='store_true', dest='gdb', default=False)
@@ -413,6 +433,9 @@ def parse_options():
 
     if opts.stdout and opts.gdb:
         apport.fatal('Error: --stdout and --gdb are incompatible')
+
+    if opts.upload and opts.stacktrace_file:
+        apport.fatal('Error: --upload and --stacktrace-file are incompatible')
 
     if opts.upload and not opts.dup_db:
         apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')
@@ -448,7 +471,7 @@ try:
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
                 opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
-                opts.component, opts.ids).run()
+                opts.component, opts.ids, opts.stacktrace_file).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

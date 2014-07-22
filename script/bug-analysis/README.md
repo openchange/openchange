@@ -28,12 +28,14 @@ Here you are the steps to retrace a crash report:
 
  3. Run the following script
  
-        $ bash crash-retrace.sh -v [-g|-s] crash_file
+        $ bash crash-retrace.sh -v [-g|-s|-f] crash_file
  
     If we set the *-g* flag, then the GDB application is launched to
     examine the crash. If omitted or *-s* flag is set, then the full
     backtrace is shown in the standard output. The *-v* flag indicates the
-    retrace process to be verbose.
+    retrace process to be verbose. If you use *-f* flag, then crash
+    full backtrace with symbols is stored in `crash_file.stacktrace`
+    in the same directory the crash file is generated.
 
 Crash mining tool
 =================

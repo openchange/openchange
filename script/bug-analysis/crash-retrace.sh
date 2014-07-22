@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OPTIND=1
-while getopts "vsg" OPTION ; do # set $o to the next passed option
+while getopts "vsgf" OPTION ; do # set $o to the next passed option
   case $OPTION in
     v)
        verbose=-v
@@ -11,6 +11,9 @@ while getopts "vsg" OPTION ; do # set $o to the next passed option
        ;;
     s)
        out=--stdout
+       ;;
+    f)
+       out=--stacktrace-file
        ;;
     ?) echo "Invalid option $OPTION"
        exit 1;
@@ -26,7 +29,7 @@ shift $(($OPTIND - 1))
 
 crashes=$1
 if [ -z "$crashes" ]; then
-    echo "Usage: $0 [-svg] crash_dir_or_file"
+    echo "Usage: $0 [-svgf] crash_dir_or_file"
     exit 1
 fi
 

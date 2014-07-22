@@ -417,6 +417,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
 
+	if (!mapi_req->u.mapi_CreateFolder.ulFolderType ||
+	    mapi_req->u.mapi_CreateFolder.ulFolderType > 0x2) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
@@ -427,6 +433,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	parent_object = (struct emsmdbp_object *)data;
 	if (!parent_object) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder null object\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}

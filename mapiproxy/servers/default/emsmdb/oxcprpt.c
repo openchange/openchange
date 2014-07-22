@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -605,6 +605,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	object = emsmdbp_object_stream_init(NULL, emsmdbp_ctx, parent_object);
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
 	object->object.stream->property = request->PropertyTag;
 	object->object.stream->stream.position = 0;
 	object->object.stream->stream.buffer.length = 0;
@@ -613,8 +617,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		object->object.stream->read_write = (mode == OpenStream_ReadWrite);
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
-			object->object.stream->stream.buffer = stream_data->data;
-			(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
+			object->object.stream->stream.buffer.length = stream_data->data.length;
+			object->object.stream->stream.buffer.data = talloc_memdup(object->object.stream, stream_data->data.data, stream_data->data.length);
 			DLIST_REMOVE(parent_object->stream_data, stream_data);
 			talloc_free(stream_data);
 		}

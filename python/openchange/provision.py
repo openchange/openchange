@@ -536,24 +536,24 @@ def checkusage(names, lp, creds):
             raise NotProvisionedError
 
         server_uses = []
-        # Check if we are the primary folder store server.
-        our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
-                                                        names.firstorgdn)
-        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
-        assert len(ret) == 1
-        siteFolderName = ret[0]["siteFolderServer"][0]
-        if our_siteFolderName.lower() == siteFolderName.lower():
-            server_uses.append("primary folder store server")
+        # # Check if we are the primary folder store server.
+        # our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+        # dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+        #                                                 names.firstorgdn)
+        # ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+        # assert len(ret) == 1
+        # siteFolderName = ret[0]["siteFolderServer"][0]
+        # if our_siteFolderName.lower() == siteFolderName.lower():
+        #     server_uses.append("primary folder store server")
 
-        # Check if we are the primary receipt update service
-        our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
-        dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
-        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
-        assert len(ret) == 1
-        addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
-        if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-            server_uses.append("primary receipt update service server")
+        # # Check if we are the primary receipt update service
+        # our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+        # dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+        # ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+        # assert len(ret) == 1
+        # addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+        # if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+        #     server_uses.append("primary receipt update service server")
 
         # Check if we handle any mailbox.
         db = Ldb(
@@ -608,7 +608,7 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     """Remove all configuration entries added by the OpenChange
     installation.
 
-    :param setup_path: Path to the setup directory.
+    :param setup_path: Path to the wasetup directory.
     :param names: provision names object.
     :param lp: Loadparm context
     :param creds: Credentials Context
@@ -618,9 +618,10 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     if reporter is None:
         reporter = TextProgressReporter()
 
-    server_uses = checkusage(names, lp, creds)
-    if (len(server_uses) > 0):
-        raise ServerInUseError(', '.join(server_uses))
+# XXX
+#    server_uses = checkusage(names, lp, creds)
+#    if (len(server_uses) > 0):
+#        raise ServerInUseError(', '.join(server_uses))
 
     session_info = system_session()
 

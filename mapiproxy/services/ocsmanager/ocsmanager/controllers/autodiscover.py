@@ -14,8 +14,8 @@ from pylons import config
 from pylons.decorators.rest import restrict
 
 import ldb
-
 from ocsmanager.lib.base import BaseController
+
 
 REQUEST_XMLNS = ("http://schemas.microsoft.com/exchange/autodiscover/outlook"
                  "/requestschema/2006")
@@ -44,7 +44,7 @@ class AutodiscoverHandler(object):
                                  "HTTP_X_FORWARDED_SERVER",
                                  "HTTP_HOST"])
         try:
-            while self.http_server_name == None:
+            while self.http_server_name is None:
                 env_name = server_env_names.next()
                 if env_name in self.environ:
                     self.http_server_name \
@@ -151,7 +151,7 @@ class AutodiscoverHandler(object):
         resp_element.append(account_element)
 
         self._append_elements(account_element, {"AccountType": "email",
-                                                 "Action": "settings"})
+                                                "Action": "settings"})
 
         mdb_dn = self._fetch_mdb_dn(ldb_record)
 
@@ -168,12 +168,12 @@ class AutodiscoverHandler(object):
              "ServerVersion": "720082AD",  # TODO: that is from ex2010
              "MdbDN": mdb_dn,
              "Server": self.http_server_name,
-             "ASUrl": "https://%s/ews/as" \
-                 % self.http_server_name,  # availability
-             "OOFUrl": "https://%s/ews/oof" \
-                 % self.http_server_name,  # out-of-office
-             "OABUrl": "https://%s/ews/oab" \
-                 % self.http_server_name,  # offline address book
+             "ASUrl": "https://%s/ews/as"
+                      % self.http_server_name,  # availability
+             "OOFUrl": "https://%s/ews/oof"
+                       % self.http_server_name,  # out-of-office
+             "OABUrl": "https://%s/ews/oab"
+                       % self.http_server_name,  # offline address book
              }
         self._append_elements(prot_element, response_tree)
 
@@ -202,12 +202,12 @@ class AutodiscoverHandler(object):
 
     def _append_error(self, resp_element, error_code):
         error_messages = {500: "Unknown e-mail address",
-                          501: "No configuration information available" \
-                              " for e-mail address",
+                          501: "No configuration information available"
+                               " for e-mail address",
                           600: "Invalid request",
                           601: "Configuration information not available",
-                          602: "Error in configuration information for" \
-                              " e-mail address",
+                          602: "Error in configuration information for"
+                               " e-mail address",
                           603: "An internal error occurred",
                           0: "An unknown error occurred"}
 

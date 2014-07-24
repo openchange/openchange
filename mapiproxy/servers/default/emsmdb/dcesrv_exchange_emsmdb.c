@@ -32,7 +32,7 @@
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
-void					*openchange_ldb_ctx = NULL;
+void					*openchange_db_ctx = NULL;
 
 static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
 {
@@ -123,7 +123,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, 
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
 		smb_panic("unable to initialize emsmdbp context");
 		return MAPI_E_FAILONEPROVIDER;
@@ -1108,7 +1108,13 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */
 		/* op_MAPI_CopyProperties: 0x67 */
-		/* op_MAPI_GetReceiveFolderTable: 0x68 */
+		case op_MAPI_GetReceiveFolderTable: /* 0x68 */
+			retval = EcDoRpc_RopGetReceiveFolderTable(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
+
 		/* op_MAPI_GetCollapseState: 0x6b */
 		/* op_MAPI_SetCollapseState: 0x6c */
 		case op_MAPI_GetTransportFolder: /* 0x6d */
@@ -1236,9 +1242,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
-			retval = MAPI_E_NOT_IMPLEMENTED;
 		}
-		if (retval != MAPI_E_SUCCESS) return NULL;
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			idx++;
@@ -1614,7 +1618,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx,
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
 		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
 		r->out.result = MAPI_E_LOGON_FAILED;
@@ -1787,7 +1791,14 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;
 	rgbIn.length = r->in.cbIn;
+
 	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+	if (ndr_pull->data_size > *r->in.pcbOut) {
+		r->out.result = ecBufferTooSmall;
+		talloc_free(ndr_pull);
+		return ecBufferTooSmall;
+	}
+
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
@@ -1795,11 +1806,6 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	if (ndr_err != NDR_ERR_SUCCESS) {
 		r->out.result = ecRpcFormat;
 		return ecRpcFormat;
-	}
-
-	if (ndr_pull->data_size > *r->in.pcbOut) {
-		r->out.result = ecBufferTooSmall;
-		return ecBufferTooSmall;
 	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
@@ -1995,9 +2001,9 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	emsmdb_session->session = NULL;
 
 	/* Open read/write context on OpenChange dispatcher database */
-	openchange_ldb_ctx = emsmdbp_openchange_ldb_init(dce_ctx->lp_ctx);
-	if (!openchange_ldb_ctx) {
-		smb_panic("unable to initialize 'openchange.ldb' context");
+	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
+	if (!openchange_db_ctx) {
+		smb_panic("unable to initialize 'openchange db' context");
 	}
 
 	return NT_STATUS_OK;

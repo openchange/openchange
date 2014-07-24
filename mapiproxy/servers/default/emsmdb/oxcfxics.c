@@ -2298,12 +2298,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		folder_was_open = true;
 	}
 	else {
-		/* TODO: check return code */
-		emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
+		ret = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
+		if (ret != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("Failed to open parent folder with FID=[0x%016"PRIx64"]: %s", parentFolderID, mapistore_errstr(ret)));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+		}
 		folder_was_open = false;
 	}
 
-	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
+	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
@@ -2623,7 +2627,7 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_check_cnset(struct ldb_context *oc_ctx, struct idset *parsed_idset, const char *label)
+static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct idset *parsed_idset, const char *label)
 {
 	uint64_t next_cn, high_cn;
 
@@ -3031,7 +3035,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_GetLocalReplicaIds;
 
 	emsmdbp_replid_to_guid(emsmdbp_ctx, mailbox_object->object.mailbox->owner_username, 0x0001, &mapi_repl->u.mapi_GetLocalReplicaIds.ReplGuid);
-	openchangedb_reserve_fmid_range(emsmdbp_ctx->oc_ctx, request->IdCount, &new_id);
+	mapistore_indexing_reserve_fmid_range(emsmdbp_ctx->mstore_ctx, request->IdCount, &new_id);
 	new_id >>= 16;
 	for (i = 0; i < 6 ; i++) {
 		mapi_repl->u.mapi_GetLocalReplicaIds.GlobalCount[i] = new_id & 0xff;

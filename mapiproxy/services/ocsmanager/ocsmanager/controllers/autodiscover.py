@@ -120,6 +120,8 @@ class AutodiscoverHandler(object):
                 record["DisplayName"] = ldb_record["displayName"][0]
             if "legacyExchangeDN" in ldb_record:
                 record["LegacyDN"] = ldb_record["legacyExchangeDN"][0]
+            if "mail" in ldb_record:
+                record["AutoDiscoverSMTPAddress"] = ldb_record["mail"][0]
             self._fill_deployment_id(record)
         else:
             raise RuntimeError("samba config not loaded")

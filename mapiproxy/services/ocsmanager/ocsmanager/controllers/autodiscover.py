@@ -203,7 +203,13 @@ class AutodiscoverHandler(object):
 
         response_tree = {"Type": "EXPR",
                          "Server": rpcproxy_server_name,
-                         "AuthPackage": "Ntlm"}
+                         "AuthPackage": "Ntlm",
+                         "ASUrl": "https://%s/ews/as"
+                                  % rpcproxy_server_name,  # availability
+                         "OOFUrl": "https://%s/ews/oof"
+                                   % rpcproxy_server_name,  # out-of-office
+                         "OABUrl": "https://%s/ews/oab"
+                                   % rpcproxy_server_name}  # offline address book
 
         response_tree.update(ssl_opts)
         self._append_elements(prot_element, response_tree)

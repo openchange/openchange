@@ -606,7 +606,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	uint32_t	ulPropTag;
 	int		i;
 
-	OPENCHANGE_RETVAL_IF(pPropTags == NULL, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!emsabp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_msg, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Create MId if necessary */
 	if (MId == 0) {

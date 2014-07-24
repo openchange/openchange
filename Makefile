@@ -51,25 +51,27 @@ all: 		$(OC_IDL)		\
 		$(OC_TOOLS)		\
 		$(OC_SERVER)		\
 		$(PYOPENCHANGEALL)	\
+		$(OC_TESTSUITE)		\
 		$(COVERAGE_INIT)	\
 		$(OPENCHANGE_QT4)
 
-install: 	all 			\
+install:: 	all 			\
 		installlib 		\
 		installpc 		\
 		installheader 		\
 		$(OC_TOOLS_INSTALL) 	\
+		$(OC_TESTSUITE_INSTALL)	\
 		$(OC_SERVER_INSTALL) 	\
-		$(PYOPENCHANGEINSTALL)	\
-		installnagios
+		$(PYOPENCHANGEINSTALL)
 
 installlib:	$(OC_LIBS_INSTALL)
 installpc:	$(OC_LIBS_INSTALLPC)
 installheader:	$(OC_LIBS_INSTALLHEADERS)
 
-uninstall:: 	$(OC_LIBS_UNINSTALL) 	\
-		$(OC_TOOLS_UNINSTALL) 	\
-		$(OC_SERVER_UNINSTALL) 	\
+uninstall:: 	$(OC_LIBS_UNINSTALL)		\
+		$(OC_TOOLS_UNINSTALL)		\
+		$(OC_TESTSUITE_UNINSTALL)	\
+		$(OC_SERVER_UNINSTALL)		\
 		$(PYOPENCHANGEUNINSTALL)
 
 dist:: distclean
@@ -735,7 +737,8 @@ mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 # libmapiproxy
 ###############
 
-libmapiproxy: mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapiproxy: 	mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 
 libmapiproxy-install:
 	$(INSTALL) -m 0755 mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) $(DESTDIR)$(libdir)
@@ -747,6 +750,7 @@ endif
 	$(INSTALL) -m 0644 mapiproxy/libmapiproxy.pc $(DESTDIR)$(libdir)/pkgconfig
 
 libmapiproxy-clean:
+	rm -f libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
@@ -781,7 +785,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
 
-mapiproxy/libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
 
 
@@ -857,9 +861,10 @@ mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.h mapiproxy/libmapistore/mgmt/gen_ndr/
 
 libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
-		setup/mapistore/named_properties_schema.sql \
-		setup/mapistore/indexing_schema.sql		\
+		setup/mapistore/named_properties_schema.sql		\
+		setup/mapistore/indexing_schema.sql			\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 
@@ -892,12 +897,13 @@ endif
 	@$(SED) $(DESTDIR)$(includedir)/mapistore/*.h
 
 libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
+	rm -f libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)
 	rm -f mapiproxy/libmapistore/*.po mapiproxy/libmapistore/*.o
 	rm -f mapiproxy/libmapistore/mgmt/*.po mapiproxy/libmapistore/mgmt/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
 	rm -f setup/mapistore/mapistore_namedprops.ldif
-	rmdir setup/mapistore
+	rm -f setup/mapistore/mapistore_namedprops_v2.ldif
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 
@@ -933,11 +939,11 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(DL_LIBS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) $(MYSQL_LIBS)
+	@$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) -o $@ $^ $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
 
 mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
 
-mapiproxy/libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
+libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
 
 #####################
@@ -963,6 +969,19 @@ mapistore_clean:
 	rm -f bin/mapistore_test
 
 clean:: mapistore_clean
+
+#######################
+# mapistore test tools
+#######################
+
+mapistore_check: bin/mapistore_check
+
+bin/mapistore_check: 	testprogs/mapistore_check.o		\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
 
 ####################
 # mapiproxy modules
@@ -1286,6 +1305,37 @@ bin/exchange2ical:	utils/exchange2ical_tool.o	\
 	@echo "Linking $@"
 	@$(CC) $(LDFLAGS) -o $@ $^ $(LIBS) $(ICAL_LIBS) -lpopt
 
+######################
+# testsuite
+######################
+
+testsuite:	bin/openchange-testsuite
+
+testsuite-install: testsuite
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/openchange-testsuite $(DESTDIR)$(bindir)
+
+testsuite-uninstall:
+	rm -f $(DESTDIR)$(bindir)/openchange-testsuite
+
+testsuite-clean:
+	rm -f bin/openchange-testsuite
+	rm -f testsuite/*.o
+
+clean:: testsuite-clean
+
+bin/openchange-testsuite: 	testsuite/testsuite.o					\
+				testsuite/libmapistore/mapistore_namedprops.c		\
+				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
+				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+testsuite-check:	testsuite
+	@./bin/openchange-testsuite
+
+check::	$(OC_TESTSUITE_CHECK)
 
 ###################
 # mapitest
@@ -1341,6 +1391,7 @@ bin/mapitest:	utils/mapitest/mapitest.o			\
 		utils/mapitest/modules/module_oxcfxics.o	\
 		utils/mapitest/modules/module_oxcperm.o		\
 		utils/mapitest/modules/module_nspi.o		\
+		utils/mapitest/modules/module_zentyal.o		\
 		utils/mapitest/modules/module_noserver.o	\
 		utils/mapitest/modules/module_errorchecks.o	\
 		utils/mapitest/modules/module_lcid.o		\
@@ -1372,7 +1423,8 @@ utils/mapitest/proto.h:					\
 	utils/mapitest/modules/module_errorchecks.c	\
 	utils/mapitest/modules/module_lcid.c		\
 	utils/mapitest/modules/module_mapidump.c	\
-	utils/mapitest/modules/module_lzxpress.c
+	utils/mapitest/modules/module_lzxpress.c	\
+	utils/mapitest/modules/module_zentyal.c
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 
@@ -1477,7 +1529,7 @@ clean:: schemaIDGUID-clean
 
 bin/schemaIDGUID: utils/schemaIDGUID.o
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS)
+	@$(CC) $(CFLAGS) -o $@ $^ $(LIBS) $(LDFLAGS)
 
 ###################
 # check_fasttransfer test app.
@@ -1500,9 +1552,9 @@ check_fasttransfer-clean::
 
 clean:: check_fasttransfer-clean
 
-bin/check_fasttransfer:	testprogs/check_fasttransfer.o			\
-			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)		\
-			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION) \
+bin/check_fasttransfer:	testprogs/check_fasttransfer.o				\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)			\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
@@ -1630,6 +1682,8 @@ nagiosdir = $(libdir)/nagios
 installnagios:
 	$(INSTALL) -d $(DESTDIR)$(nagiosdir)
 	$(INSTALL) -m 0755 script/check_exchange $(DESTDIR)$(nagiosdir)
+
+install:: installnagios
 
 ###################
 # libmapi examples
@@ -1779,3 +1833,11 @@ qt/demo/demoapp: qt/demo/demoapp.o 				\
 # need config.mk
 distclean::
 	rm -f config.mk
+
+ocsmanager-install::
+	cd $(srcdir)/mapiproxy/services/ocsmanager && ./setup.py install --root="$(DESTDIR)" --prefix=$(prefix)
+
+# TODO: detect pylons and paste in configure, and if they are available,
+# add ocsmanager-install to the install target.
+#
+# install:: ocsmanager-install

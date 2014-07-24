@@ -1,0 +1,493 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
+# Copyright (C) 2007 - 2011 Canonical Ltd.
+# Copyright (C) 2014 Zentyal S.L.
+# Author: Based on Martin Pitt <martin.pitt@ubuntu.com> work
+# Author: Enrique J. Hernández <ejhernandez@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify it
+# under the terms of the GNU General Public License as published by the
+# Free Software Foundation; either version 2 of the License, or (at your
+# option) any later version.  See http://www.gnu.org/copyleft/gpl.html for
+# the full text of the license.
+
+"""
+This is an enhancement version of crash-digger available with apport-retrace
+"""
+
+import errno
+import gzip
+from io import BytesIO
+import optparse
+import os
+import shutil
+import subprocess
+import sys
+import time
+from tempfile import NamedTemporaryFile
+import zlib
+
+
+import apport
+from apport.crashdb import get_crashdb
+from apport.report import Report
+from buganalysis.pkgshelper import map_package, map_dependencies
+from buganalysis.analysis import guess_components
+
+
+#
+# classes
+#
+class CrashDigger(object):
+    def __init__(self, config_dir, cache_dir, apport_retrace,
+                 verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
+                 crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
+                 component=False, crash_ids=[], stacktrace_file=False):
+        """
+        Initialize pools.
+
+        :param str crashes_dir: the directory to collect crashes from
+        :param str oc_cd_conf: the configuration file with specific options for this digger
+        """
+        self.retrace_pool = set()
+        self.dupcheck_pool = set()
+        self.config_dir = config_dir
+        self.cache_dir = cache_dir
+        self.verbose = verbose
+        self.dup_db = dup_db
+        self.dupcheck_mode = dupcheck_mode
+        self.crashdb = get_crashdb(None)
+        self.apport_retrace = apport_retrace
+        self.publish_dir = publish_dir
+        self.crashes_dir = crashes_dir
+        self.crashes_files = dict()
+        self.oc_cd_conf = oc_cd_conf
+        self.stacktrace_file = stacktrace_file
+        self.stdout = stdout
+        self.gdb = gdb
+        self.upload = upload
+        self.guess_component = component
+        self.crash_ids = crash_ids
+        if config_dir:
+            self.releases = os.listdir(config_dir)
+            self.releases.sort()
+            self.log('Available releases: %s' % str(self.releases))
+        else:
+            self.releases = None
+
+        if self.dup_db:
+            self.crashdb.init_duplicate_db(self.dup_db)
+            # this verified DB integrity; make a backup now
+            shutil.copy2(self.dup_db, self.dup_db + '.backup')
+
+        if self.oc_cd_conf:
+            oc_cd_conf_settings = dict()
+            with open(self.oc_cd_conf) as f:
+                exec(compile(f.read(), self.oc_cd_conf, 'exec'), oc_cd_conf_settings)
+                self.oc_cd_conf = {}
+                if 'extra_packages' in oc_cd_conf_settings:
+                    self.oc_cd_conf['extra_packages'] = oc_cd_conf_settings['extra_packages']
+
+    def log(self, str):
+        """
+        If verbosity is enabled, log the given string to stdout, and prepend
+        the current date and time.
+        """
+        sys.stdout.write('%s: %s\n' % (time.strftime('%x %X'), str))
+        sys.stdout.flush()
+
+    def fill_pool(self):
+        """
+        Query crash db for new IDs to process.
+        """
+        if self.crashes_dir:
+            self.load_crashes()
+        elif self.dupcheck_mode:
+            self.dupcheck_pool.update(self.crashdb.get_dup_unchecked())
+            self.log('fill_pool: dup check pool now: %s' % str(self.dupcheck_pool))
+        elif not self.guess_component:
+            self.retrace_pool.update(self.crashdb.get_unretraced())
+            self.log('fill_pool: retrace pool now: %s' % str(self.retrace_pool))
+
+    def load_crashes(self):
+        """
+        Go through crashes argument and check if it can be loaded into memory
+        """
+        crashes_files = []
+        if os.path.isdir(self.crashes_dir):
+            for fname in os.listdir(self.crashes_dir):
+                crashes_files.append(os.path.join(self.crashes_dir, fname))
+        elif os.path.isfile(self.crashes_dir):
+            crashes_files = [self.crashes_dir]
+        else:
+            raise SystemError("%s is not a directory neither a file" % self.crashes_dir)
+
+        report_id = 1
+        for fpath in crashes_files:
+            # This may lead to bad guesses...
+            if fpath.endswith('.gz'):
+                # As gzip set its own mode attribute, we have to store
+                # the report in BytesIO...
+                f = BytesIO()
+                with gzip.open(fpath, 'rb') as gzip_file:
+                    f.write(gzip_file.read())
+                f.flush()
+                f.seek(0)
+            else:
+                f = open(fpath, 'rb')
+
+            try:
+                report = Report()
+                report.load(f)
+                self.crashes_files[report_id] = {'path': fpath,
+                                                 'distro_release': report['DistroRelease'],
+                                                 'map_required': ('Package' not in report or
+                                                                  'Dependencies' not in report)}
+                self.log('%s loaded.' % fpath)
+                report_id += 1
+            except Exception as exc:
+                self.log("Cannot load %s: %s" % (fpath, exc))
+            finally:
+                f.close()
+
+    def retrace_next(self):
+        """
+        Grab an ID from the retrace pool and retrace it.
+        """
+
+        id = self.retrace_pool.pop()
+        self.log('retracing #%i (left in pool: %i)' % (id, len(self.retrace_pool)))
+
+        try:
+            rel = self.crashdb.get_distro_release(id)
+        except ValueError:
+            self.log('could not determine release -- no DistroRelease field?')
+            self.crashdb.mark_retraced(id)
+            return
+        if rel not in self.releases:
+            self.log('crash is release %s which does not have a config available, skipping' % rel)
+            return
+
+        self.__call_retrace(id, rel)
+
+        self.crashdb.mark_retraced(id)
+
+    def retrace_file(self, id):
+        """
+        Retrace a file and upload to the crashdb if flag says so
+        """
+        crash_file = self.crashes_files[id]['path']
+        self.log('retracing %s' % crash_file)
+
+        rel = self.crashes_files[id]['distro_release']
+        if rel not in self.releases:
+            self.log('crash is release %s which does not have a config available, skipping' % rel)
+            return
+
+        # This may lead to bad guesses...
+        temp_file_name = None
+        if crash_file.endswith('.gz'):
+            temp_file = NamedTemporaryFile()
+            temp_file_name = temp_file.name
+            f_in = gzip.open(crash_file, 'rb')
+            f_out = open(temp_file.name, 'wb')
+            f_out.writelines(f_in)
+            f_out.close()
+            f_in.close()
+
+            self.log('Tracing temp_file %s' % temp_file.name)
+
+        extra_packages = None
+        if self.crashes_files[id]['map_required']:
+            report = Report()
+            if temp_file_name is None:
+                temp_file = NamedTemporaryFile()
+                temp_file_name = temp_file.name
+
+                with open(crash_file, 'rb') as f:
+                    report.load(f)
+            else:
+                with open(temp_file.name, 'rb') as f:
+                    report.load(f)
+
+            # Origin set the requirement to download the packages
+            report['Package'] = '%s %s [origin: Zentyal]' % map_package(report)
+            # Set as extra packages as we don't have the version from the crash
+            extra_packages = map_dependencies(report)
+            with open(temp_file.name, 'wb') as f:
+                report.write(f)
+
+        self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages)
+
+        if self.upload or self.stacktrace_file:
+            report = Report()
+            report.load(self.file_to_upload)
+
+            if self.upload:
+                # Check for duplicates here...
+                known_report = self.crashdb.known(report)
+                if not known_report:  # Client-side
+                    crash_id = self.crashdb.upload(report)
+                    ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
+                    if ret_dup_check is not None:
+                        self.log('This report is a duplicated of #%i' % ret_dup_check[0])
+                        if ret_dup_check[1] is not None:
+                            self.log('This report is fixed in %s version' % ret_dup_check[1])
+                    else:
+                        self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+                        self.set_components(crash_id, report)
+                else:
+                    self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+            else:
+                # Put the stacktrace in a file
+                if crash_file.endswith('.crash'):
+                    crash_file_basename = crash_file
+                else:
+                    crash_file_basename, _ = os.path.splitext(crash_file)
+
+                stacktrace_file_name = "%s.stacktrace" % crash_file_basename
+                # FIXME: Test to override?
+
+                # Guessing components
+                comps = guess_components(report)
+                with open(stacktrace_file_name, 'wb') as f:
+                    if comps:
+                        f.write("Guessed application components: %s\n\n" % ', '.join(comps))
+
+                    if isinstance(report['Stacktrace'], unicode):
+                        f.write(report['Stacktrace'].encode('utf-8'))
+                    else:
+                        f.write(report['Stacktrace'])
+
+                if comps:
+                    self.log("Guessed application components: %s" % ', '.join(comps))
+                else:
+                    self.log("Impossible to guess app components from the crash, review it manually")
+                self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
+
+            # Delete temporary file once it is uploaded
+            os.unlink(self.file_to_upload.name)
+
+    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None):
+        argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
+        if self.cache_dir:
+            argv += ['--cache', self.cache_dir]
+        if self.dup_db:
+            argv += ['--duplicate-db', self.dup_db]
+        if self.verbose:
+            argv.append('-v')
+
+        if self.stdout:
+            argv.append('-s')
+        elif self.gdb:
+            argv.append('--gdb')
+        else:
+            argv.extend(['--auth', 'foo'])
+
+        if self.upload or self.stacktrace_file:
+            # Retrace the result, store it in a file to upload it afterwards
+            self.file_to_upload = NamedTemporaryFile(delete=False)
+            argv.extend(['--output', self.file_to_upload.name])
+
+        if self.oc_cd_conf and 'extra_packages' in self.oc_cd_conf and rel in self.oc_cd_conf['extra_packages']:
+            for package in self.oc_cd_conf['extra_packages'][rel]:
+                argv.extend(['--extra-package', package])
+        if extra_packages is not None:
+            for package in extra_packages:
+                argv.extend(['--extra-package', package])
+
+        if temp_file:
+            argv.append(temp_file)
+        elif self.crashes_dir and id in self.crashes_files:
+            argv.append(self.crashes_files[id]['path'])
+        else:
+            argv.append(str(id))
+
+        self.log(' '.join(argv))
+        result = subprocess.call(argv, stdout=sys.stdout,
+                                 stderr=subprocess.STDOUT)
+        if result != 0:
+            self.log('retracing #%i failed with status: %i' % (id, result))
+            if result == 99:
+                self.retrace_pool = set()
+                self.log('transient error reported; halting')
+                return
+            raise SystemError('retracing #%i failed' % id)
+
+    def dupcheck_next(self):
+        """
+        Grab an ID from the dupcheck pool and process it.
+        """
+
+        id = self.dupcheck_pool.pop()
+        self.log('checking #%i for duplicate (left in pool: %i)' % (id, len(self.dupcheck_pool)))
+
+        try:
+            report = self.crashdb.download(id)
+        except (MemoryError, TypeError, ValueError, IOError, zlib.error) as e:
+            self.log('Cannot download report: ' + str(e))
+            apport.error('Cannot download report %i: %s', id, str(e))
+            return
+
+        res = self.crashdb.check_duplicate(id, report)
+        if res:
+            if res[1] is None:
+                self.log('Report is a duplicate of #%i (not fixed yet)' % res[0])
+            elif res[1] == '':
+                self.log('Report is a duplicate of #%i (fixed in latest version)' % res[0])
+            else:
+                self.log('Report is a duplicate of #%i (fixed in version %s)' % res)
+        else:
+            self.log('Duplicate check negative')
+
+    def set_components(self, id, report=None):
+        """
+        Set the application components for a report
+        """
+        if report is None:
+            try:
+                report = self.crashdb.download(id)
+            except (MemoryError, TypeError, ValueError, IOError, zlib.error) as e:
+                self.log('Cannot download report: ' + str(e))
+                apport.error('Cannot download report %i: %s', id, str(e))
+                return
+
+        comps = guess_components(report)
+        if comps:
+            self.log("Set app components: %s to crash %d" % (', '.join(comps), id))
+            self.crashdb.set_app_components(id, comps)
+        else:
+            self.log("Impossible to guess app components to crash %d" % id)
+
+    def run(self):
+        """
+        Process the work pools until they are empty.
+        """
+
+        self.fill_pool()
+        while self.dupcheck_pool:
+            self.dupcheck_next()
+        while self.retrace_pool:
+            self.retrace_next()
+        for id in self.crashes_files.keys():
+            self.retrace_file(id)
+        if self.guess_component:
+            if self.crash_ids:
+                ids = self.crash_ids
+            else:
+                ids = self.crashdb.get_unfixed()
+            for id in ids:
+                self.set_components(id)
+
+        if self.publish_dir and self.dup_db:
+            self.crashdb.duplicate_db_publish(self.publish_dir)
+
+
+#
+# functions
+#
+def parse_options():
+    """
+    Parse command line options and return (options, args) tuple.
+    """
+
+    optparser = optparse.OptionParser('%prog [options]')
+    optparser.add_option('-c', '--config-dir', metavar='DIR',
+                         help='Packaging system configuration base directory.')
+    optparser.add_option('-C', '--cache', metavar='DIR',
+                         help='Cache directory for packages downloaded in the sandbox')
+    optparser.add_option('-l', '--lock',
+                         help='Lock file; will be created and removed on successful exit, and '
+                         'program immediately aborts if it already exists',
+                         action='store', dest='lockfile', default=None)
+    optparser.add_option('-d', '--duplicate-db',
+                         help='Path to the duplicate sqlite database (default: disabled)',
+                         action='store', type='string', dest='dup_db', metavar='PATH',
+                         default=None)
+    optparser.add_option('-D', '--dupcheck',
+                         help='Only check duplicates for architecture independent crashes (like Python exceptions)',
+                         action='store_true', dest='dupcheck_mode', default=False)
+    optparser.add_option('-v', '--verbose',
+                         help='Verbose operation (also passed to apport-retrace)',
+                         action='store_true', dest='verbose', default=False)
+    optparser.add_option('--apport-retrace', metavar='PATH',
+                         help='Path to apport-retrace script (default: directory of crash-digger or $PATH)')
+    optparser.add_option('--publish-db',
+                         help='After processing all reports, publish duplicate database to given directory',
+                         metavar='DIR', default=None)
+    # OC crash digger specific options
+    optparser.add_option('-S', '--crashes', metavar='DIR_OR_FILE',
+                         help="Directory or file to look for crashes to fill")
+    optparser.add_option('-O', '--oc-cd-conf', metavar='FILE',
+                         help='oc-crash-digger specific configuration')
+    optparser.add_option('-s', '--stdout',
+                         help="Print the trace to stdout",
+                         action='store_true', dest='stdout', default=False)
+    optparser.add_option('-f', '--stacktrace-file', action='store_true',
+                         default=False, help="Put the stacktrace to a file.")
+    optparser.add_option('-g', '--gdb',
+                         help="Launch GDB with the trace",
+                         action='store_true', dest='gdb', default=False)
+    optparser.add_option('-u', '--upload',
+                         help="Upload the retraced crashes",
+                         action='store_true', dest='upload', default=False)
+    optparser.add_option('-m', '--set-components',
+                         help="Guess components for the stored unfixed crashes",
+                         action='store_true', dest='component', default=False)
+    optparser.add_option('-i', '--ids', action="append", type="int")
+
+    (opts, args) = optparser.parse_args()
+
+    if not opts.config_dir and not opts.dupcheck_mode and not opts.component:
+        apport.fatal('Error: --config-dir or --dupcheck or --set-components needs to be given')
+
+    if opts.stdout and opts.gdb:
+        apport.fatal('Error: --stdout and --gdb are incompatible')
+
+    if opts.upload and opts.stacktrace_file:
+        apport.fatal('Error: --upload and --stacktrace-file are incompatible')
+
+    if opts.upload and not opts.dup_db:
+        apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')
+
+    return (opts, args)
+
+
+#
+# main
+#
+opts, args = parse_options()
+
+
+# support running from tree, then fall back to $PATH
+if not opts.apport_retrace:
+    opts.apport_retrace = os.path.join(os.path.dirname(sys.argv[0]),
+                                       'apport-retrace')
+    if not os.access(opts.apport_retrace, os.X_OK):
+        opts.apport_retrace = 'apport-retrace'
+
+if opts.lockfile:
+    try:
+        f = os.open(opts.lockfile, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o666)
+        os.close(f)
+    except OSError as e:
+        if e.errno == errno.EEXIST:
+            sys.exit(0)
+        else:
+            raise
+
+try:
+    CrashDigger(opts.config_dir, opts.cache,
+                opts.apport_retrace, opts.verbose, opts.dup_db,
+                opts.dupcheck_mode, opts.publish_db, opts.crashes,
+                opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
+                opts.component, opts.ids, opts.stacktrace_file).run()
+except SystemExit as exit:
+    if exit.code == 99:
+        pass  # fall through lock cleanup
+    else:
+        raise
+
+if opts.lockfile:
+    os.unlink(opts.lockfile)

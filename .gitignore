@@ -69,7 +69,6 @@ mapiproxy/services/ocsmanager/ocsmanager.egg-info/
 mapiproxy/services/web/rpcproxy/build/
 pyopenchange/mapistore/errors.c
 setup/mapistore/mapistore_namedprops.ldif
-setup/mapistore/named_properties_schema.sql
 stamp-h1
 utils/mapitest/Doxyfile
 utils/mapitest/mapitest_proto.h

@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -605,6 +605,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	object = emsmdbp_object_stream_init(NULL, emsmdbp_ctx, parent_object);
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
 	object->object.stream->property = request->PropertyTag;
 	object->object.stream->stream.position = 0;
 	object->object.stream->stream.buffer.length = 0;
@@ -613,8 +617,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		object->object.stream->read_write = (mode == OpenStream_ReadWrite);
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
-			object->object.stream->stream.buffer = stream_data->data;
-			(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
+			object->object.stream->stream.buffer.length = stream_data->data.length;
+			object->object.stream->stream.buffer.data = talloc_memdup(object->object.stream, stream_data->data.data, stream_data->data.length);
 			DLIST_REMOVE(parent_object->stream_data, stream_data);
 			talloc_free(stream_data);
 		}
@@ -1126,10 +1130,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 							    struct EcDoRpc_MAPI_REPL *mapi_repl,
 							    uint32_t *handles, uint16_t *size)
 {
-	int		i, ret;
-	struct GUID	*lpguid;
-	bool		has_transaction = false;
-	uint16_t	mapped_id;
+	enum mapistore_error	retval;
+	int			i;
+	int			ret;
+	struct GUID		*lpguid;
+	bool			has_transaction = false;
+	uint16_t		mapped_id = 0;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
 
@@ -1157,14 +1163,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 		if (mapi_req->u.mapi_GetIDsFromNames.ulFlags == GetIDsFromNames_GetOrCreate) {
 			if (!has_transaction) {
 				has_transaction = true;
-				enum mapistore_error e =
-					mapistore_namedprops_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-				if (e != MAPISTORE_SUCCESS)
+				retval = mapistore_namedprops_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
+				if (retval != MAPISTORE_SUCCESS) {
 					return MAPI_E_UNABLE_TO_COMPLETE;
+				}
 
-				mapped_id = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-				if (mapped_id == 0)
+				retval = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, &mapped_id);
+				if (retval != MAPISTORE_SUCCESS) {
+					DEBUG(0, ("[%s:%d] ERROR: No remaining namedprops ID available\n",
+						  __FUNCTION__, __LINE__));
 					abort();
+				}
 			} else {
 				mapped_id++;
 			}

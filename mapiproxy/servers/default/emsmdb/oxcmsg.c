@@ -399,8 +399,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This should be handled differently here: temporary hack */
-	retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-	if (retval) {
+	ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+	if (ret) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -1517,8 +1517,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
                 if (request->OpenModeFlags == MAPI_CREATE) {
-                        retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-                        if (retval) {
+                        ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+                        if (ret) {
                                 mapi_repl->error_code = MAPI_E_NO_SUPPORT;
                                 goto end;
                         }

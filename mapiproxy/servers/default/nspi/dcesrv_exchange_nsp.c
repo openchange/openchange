@@ -250,9 +250,11 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		}
 	}
 
+	r->out.handle->uuid = GUID_zero();
+	r->out.handle->handle_type = 0;
 	r->out.result = (enum MAPISTATUS) 1;
 
-	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+	DCESRV_NSP_RETURN(r, 1, NULL);
 }
 
 
@@ -374,7 +376,8 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct PropertyRowSet_r		*pRows;
-	uint32_t			i, j, count;
+	uint32_t			count = 0;
+	uint32_t			i, j;
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
@@ -422,7 +425,12 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 	
-		count = ldb_res->count - r->in.pStat->NumPos;
+		if ((ldb_res->count - r->in.pStat->NumPos) < 0) {
+			count = 0;
+		} else {
+			count = ldb_res->count - r->in.pStat->NumPos;
+		}
+
 		if (r->in.Count < count) {
 			count = r->in.Count;
 		}
@@ -909,21 +917,12 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
 
-	switch (r->in.dwFlags) {
-	case NspiAddressCreationTemplates:
-	case NspiAddressCreationTemplates|NspiUnicodeStrings:
+	if (r->in.dwFlags & NspiAddressCreationTemplates) {
 		DEBUG(5, ("CreationTemplates Table requested\n"));
 		r->out.result = emsabp_get_CreationTemplatesTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
-		break;
-	case NspiUnicodeStrings:
-	case 0x0:
+	} else {
 		DEBUG(5, ("Hierarchy Table requested\n"));
 		r->out.result = emsabp_get_HierarchyTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
-		break;
-	default:
-		talloc_free(r->out.ppRows);
-		talloc_free(r->out.ppRows[0]);
-		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 }
 

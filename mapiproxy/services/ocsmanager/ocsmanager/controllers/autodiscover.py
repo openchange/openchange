@@ -186,12 +186,24 @@ class AutodiscoverHandler(object):
         """
         prot_element = Element("Protocol")
         account_element.append(prot_element)
-        samba_server_name = "%(hostname)s.%(dnsdomain)s" % config["samba"]
+
+        rpcproxy_server_name = self.http_server_name
+        autodiscover_rpcproxy_conf = config['ocsmanager']['autodiscover:rpcproxy']
+        if autodiscover_rpcproxy_conf['external_hostname'] != '__none__':  # Default value
+            rpcproxy_server_name = autodiscover_rpcproxy_conf['external_hostname']
+
+        if autodiscover_rpcproxy_conf['ssl']:
+            ssl_opts = {"SSL": "On",
+                        # This option can be implemented for increased security
+                        "CertPrincipalName": "none"}
+        else:
+            ssl_opts = {"SSL": "Off"}
 
         response_tree = {"Type": "EXPR",
-                         "Server": samba_server_name,
-                         "SSL": "Off",
+                         "Server": rpcproxy_server_name,
                          "AuthPackage": "Ntlm"}
+
+        response_tree.update(ssl_opts)
         self._append_elements(prot_element, response_tree)
 
         """

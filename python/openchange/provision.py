@@ -632,6 +632,8 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     try:
         # This is the unique server, remove full schema
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+        # NOTE: AD schema objects cannot be deleted (it's a feature!)
+        # So we can't remove all object added on provision
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
@@ -640,25 +642,6 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects: %s" % err)
         raise err
-
-    ## NOTE: AD schema objects cannot be deleted (it's a feature!)
-    # try:
-    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Remove exchange attributes from existing Samba classes")
-    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Remove possSuperior attributes to Exchange classes")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Remove Exchange classes from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Remove Exchange mailGateway subcontainers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Remove Exchange CfgProtocol subcontainers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Remove Exchange *sub* containers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Remove Exchange containers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Remove Exchange objectCategory from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Remove Exchange auxiliary classes from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Remove Exchange attributes from Samba schema")
-    #     print "[SUCCESS] Done!"
-    # except LdbError, ldb_error:
-    #     print ("[!] error while deprovisioning the Exchange"
-    #            " schema classes (%d): %s"
-               # % ldb_error.args)
-
 
 def register(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as a valid Exchange server.

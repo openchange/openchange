@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2013.
+   Copyright (C) Julien Kerihuel 2006-2014.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -486,14 +486,14 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin = talloc(mem_ctx, struct Binary_r);
 		if (dwFlags & fEphID) {
 			retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
-			if (retval) {
+			if (retval != MAPI_E_SUCCESS) {
 				talloc_free(bin);
 				return NULL;
 			}
 			retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
 		} else {
 			retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_MAILUSER, msg, &permEntryID);
-			if (retval) {
+			if (retval != MAPI_E_SUCCESS) {
 				talloc_free(bin);
 				return NULL;
 			}

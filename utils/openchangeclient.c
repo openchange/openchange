@@ -1683,7 +1683,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 				printf("|   ");
 			}
 			printf("|---+ %-15s [FID: 0x%016"PRIx64"]\n", name, *fid);
-			if (*child) {
+			if (child && *child) {
 				ret = get_child_folders_pf(mem_ctx, &obj_folder, *fid, count + 1);
 				if (ret == false) return ret;
 			}

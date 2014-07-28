@@ -31,6 +31,7 @@
 
 #define	NAMEDPROPS_MYSQL_HOST		"127.0.0.1"
 #define	NAMEDPROPS_MYSQL_USER		"root"
+#define	NAMEDPROPS_MYSQL_PASS		""
 #define	NAMEDPROPS_MYSQL_DB		"myapp_test"
 #define	NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
 #define	NAMEDPROPS_MYSQL_TMPDIR		"/tmp"
@@ -126,7 +127,7 @@ static void checked_mysql_setup(void)
 	ck_assert(conn != NULL);
 
 	rconn = mysql_real_connect(conn, NAMEDPROPS_MYSQL_HOST,
-			   NAMEDPROPS_MYSQL_USER, NULL,
+			   NAMEDPROPS_MYSQL_USER, NAMEDPROPS_MYSQL_PASS,
 			   NULL, 0, NULL, 0);
 	ck_assert(rconn != NULL);
 
@@ -266,7 +267,7 @@ static void checked_mysql_query_setup(void)
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_data", NAMEDPROPS_MYSQL_SCHEMA_PATH) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_host", NAMEDPROPS_MYSQL_HOST) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_user", NAMEDPROPS_MYSQL_USER) == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", "") == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", NAMEDPROPS_MYSQL_PASS) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_port", "3306") == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_db", NAMEDPROPS_MYSQL_DB) == true));
 

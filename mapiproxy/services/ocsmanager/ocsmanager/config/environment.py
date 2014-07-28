@@ -35,7 +35,6 @@ import openchange.mapistore as mapistore
 
 # samba
 import samba.param
-from samba.samdb import SamDB
 from samba.auth import system_session, admin_session
 from samba.credentials import Credentials
 from samba.samdb import SamDB

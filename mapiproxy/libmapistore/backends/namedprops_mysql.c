@@ -363,12 +363,12 @@ static enum mapistore_error create_schema(MYSQL *conn, const char *schema_path)
 	MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
 	MAPISTORE_RETVAL_IF(sb.st_size == 0, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 
+	query = talloc_zero_array(mem_ctx, char, sb.st_size + 1);
+	MAPISTORE_RETVAL_IF(!query, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
 	f = fopen(filename, "r");
 	talloc_free(filename);
 	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
-
-	query = talloc_zero_array(mem_ctx, char, sb.st_size + 1);
-	MAPISTORE_RETVAL_IF(!query, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	len = fread(query, sizeof(char), sb.st_size, f);
 	if (len != sb.st_size) {

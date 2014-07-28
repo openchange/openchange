@@ -29,6 +29,7 @@ int main(int ac, const char *av[])
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());
+	srunner_add_suite(sr, indexing_mysql_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	nf = srunner_ntests_failed(sr);

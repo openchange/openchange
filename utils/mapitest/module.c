@@ -378,7 +378,8 @@ _PUBLIC_ uint32_t module_zentyal_init(struct mapitest *mt)
 
 	suite = mapitest_suite_init(mt, "ZENTYAL", "Functional Testing for Zentyal", true);
 
-	mapitest_suite_add_test(suite, "NSPI-1876", "Test pStat overflow in QueryRows", mapitest_zentyal_1876);
+	mapitest_suite_add_test(suite, "NSPI-1872", "Test pStat overflow in QueryRows", mapitest_zentyal_1872);
+	mapitest_suite_add_test(suite, "NSPI-1863", "Test PR_ENTRYID retrieval on non OpenChange user", mapitest_zentyal_1863);
 
 	mapitest_suite_register(mt, suite);
 

@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2013.
+   Copyright (C) Julien Kerihuel 2006-2014.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -347,9 +347,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 	memcpy(permEntryID->ProviderUID.ab, GUID_NSPI, 16);
 	permEntryID->R4 = 0x1;
 	permEntryID->DisplayType = DisplayType;
+	permEntryID->dn = NULL;
 
 	if (!msg) {
 		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, "/");
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	} else if (DisplayType == DT_CONTAINER) {
 		ldb_value = ldb_msg_find_ldb_val(msg, "objectGUID");
 		OPENCHANGE_RETVAL_IF(!ldb_value, MAPI_E_CORRUPT_STORE, NULL);
@@ -364,12 +366,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 						  guid->node[0], guid->node[1],
 						  guid->node[2], guid->node[3],
 						  guid->node[4], guid->node[5]);
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_RESOURCES, guid);
 		talloc_free(guid);
 
 	}  else {
 		dn_str = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
 		OPENCHANGE_RETVAL_IF(!dn_str, MAPI_E_CORRUPT_STORE, NULL);
 		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, dn_str);
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -491,9 +495,17 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin = talloc(mem_ctx, struct Binary_r);
 		if (dwFlags & fEphID) {
 			retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
+			if (retval != MAPI_E_SUCCESS) {
+				talloc_free(bin);
+				return NULL;
+			}
 			retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
 		} else {
 			retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_MAILUSER, msg, &permEntryID);
+			if (retval != MAPI_E_SUCCESS) {
+				talloc_free(bin);
+				return NULL;
+			}
 			retval = emsabp_PermanentEntryID_to_Binary_r(mem_ctx, &permEntryID, bin);
 		}
 		return bin;

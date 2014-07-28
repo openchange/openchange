@@ -120,7 +120,6 @@ _PUBLIC_ bool mapitest_zentyal_1863(struct mapitest *mt)
 	MAPIFreeBuffer(SPropTagArray);
 	mapitest_print_retval_clean(mt, "NspiGetMatches", retval);
 	if (retval != MAPI_E_SUCCESS) {
-		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
 	}

@@ -95,6 +95,12 @@ class OCSConfig(object):
         self.__get_option('rpcproxy:ldap', 'port', 'rpcproxy', 'ldap_port')
         self.__get_option('rpcproxy:ldap', 'basedn', 'rpcproxy', 'ldap_basedn')
 
+    def __parse_autodiscover_rpcproxy(self):
+        self.__get_section('autodiscover:rpcproxy')
+        # Have to set a default value to avoid missing option exception
+        self.__get_option('autodiscover:rpcproxy', 'external_hostname', dflt="__none__")
+        self.__get_option('autodiscover:rpcproxy', 'ssl', dflt=False)
+
     def load(self):
         """Load the configuration file.
         """
@@ -116,5 +122,6 @@ class OCSConfig(object):
         self.__parse_main()
         self.__parse_auth()
         self.__parse_rpcproxy()
+        self.__parse_autodiscover_rpcproxy()
         
         return self.d

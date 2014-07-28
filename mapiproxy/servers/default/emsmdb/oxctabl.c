@@ -230,7 +230,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSortTable(TALLOC_CTX *mem_ctx,
 		/* Parent folder doesn't have any mapistore context associated */
 		status = TBLSTAT_COMPLETE;
 		mapi_repl->u.mapi_SortTable.TableStatus = status;
-		retval = openchangedb_table_set_sort_order(object->backend_object, &request->lpSortCriteria);
+		retval = openchangedb_table_set_sort_order(emsmdbp_ctx->oc_ctx, object->backend_object, &request->lpSortCriteria);
 		if (retval) {
 			mapi_repl->error_code = retval;
 			goto end;
@@ -429,7 +429,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	count = 0;
 	if (table->ulType == MAPISTORE_RULE_TABLE) {
 		DEBUG(5, ("  query on rules table are all faked right now\n"));
-		i = table->numerator;
 		goto finish;
 	}
 
@@ -778,6 +777,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	case true:
 		/* Restrict rows to be fetched */
 		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+		}
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 
@@ -829,6 +831,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		}
 
 		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+		}
 
 		/* Adjust parameters */
 		if (found) {
@@ -846,7 +851,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		memset (&row, 0, sizeof(DATA_BLOB));
 		DEBUG(0, ("FindRow for openchangedb\n"));
 		/* Restrict rows to be fetched */
-		retval = openchangedb_table_set_restrictions(object->backend_object, &request.res);
+		retval = openchangedb_table_set_restrictions(emsmdbp_ctx->oc_ctx, object->backend_object, &request.res);
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 		while (!found && table->numerator < table->denominator) {
@@ -895,7 +900,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 			}
 		}
 		/* Reset restrictions */
-		openchangedb_table_set_restrictions(object->backend_object, NULL);
+		openchangedb_table_set_restrictions(emsmdbp_ctx->oc_ctx, object->backend_object, NULL);
 
 		/* Adjust parameters */
 		if (found) {
@@ -1004,6 +1009,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 		if (emsmdbp_is_mapistore(object)) {
 			contextID = emsmdbp_get_contextID(object);
 			mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, NULL, &status);
+			if (mretval != MAPISTORE_SUCCESS) {
+				DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+			}
 			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));

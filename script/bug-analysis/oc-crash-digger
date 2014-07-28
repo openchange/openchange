@@ -33,7 +33,7 @@ import apport
 from apport.crashdb import get_crashdb
 from apport.report import Report
 from buganalysis.pkgshelper import map_package, map_dependencies
-from buganalysis.analysis import guess_components
+from buganalysis.analysis import guess_components, readable_stacktrace
 
 
 #
@@ -75,6 +75,15 @@ class CrashDigger(object):
             self.log('Available releases: %s' % str(self.releases))
         else:
             self.releases = None
+
+        self.backup_config_dir = None
+        if config_dir:
+            # The backup apport configuration just in case we have it
+            # to test against them
+            backup_config_dir = "%s.backup" % config_dir
+            if os.path.isdir(backup_config_dir):
+                self.log("Having %s as backup to apport on retry" % backup_config_dir)
+                self.backup_config_dir = backup_config_dir
 
         if self.dup_db:
             self.crashdb.init_duplicate_db(self.dup_db)
@@ -218,59 +227,74 @@ class CrashDigger(object):
             with open(temp_file.name, 'wb') as f:
                 report.write(f)
 
-        self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages)
+        report = None
+        valid_stacktrace = False
+        for config_dir in (self.config_dir, self.backup_config_dir):
+            if config_dir is None:
+                continue
+
+            self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages, config_dir=config_dir)
+            if self.upload or self.stacktrace_file:
+                report = Report()
+                report.load(self.file_to_upload)
+
+                # Check to see if the retrace has worked or not to call retrace with a backup apport configuration
+                if readable_stacktrace(report):
+                    valid_stacktrace = True
 
         if self.upload or self.stacktrace_file:
-            report = Report()
-            report.load(self.file_to_upload)
-
-            if self.upload:
-                # Check for duplicates here...
-                known_report = self.crashdb.known(report)
-                if not known_report:  # Client-side
-                    crash_id = self.crashdb.upload(report)
-                    ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
-                    if ret_dup_check is not None:
-                        self.log('This report is a duplicated of #%i' % ret_dup_check[0])
-                        if ret_dup_check[1] is not None:
-                            self.log('This report is fixed in %s version' % ret_dup_check[1])
-                    else:
-                        self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
-                        self.set_components(crash_id, report)
-                else:
-                    self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+            if not valid_stacktrace:
+                self.log('It is not a readable stacktrace, try using a different apport configuration %s.backup' % self.config_dir)
             else:
-                # Put the stacktrace in a file
-                if crash_file.endswith('.crash'):
-                    crash_file_basename = crash_file
-                else:
-                    crash_file_basename, _ = os.path.splitext(crash_file)
-
-                stacktrace_file_name = "%s.stacktrace" % crash_file_basename
-                # FIXME: Test to override?
-
-                # Guessing components
-                comps = guess_components(report)
-                with open(stacktrace_file_name, 'wb') as f:
-                    if comps:
-                        f.write("Guessed application components: %s\n\n" % ', '.join(comps))
-
-                    if isinstance(report['Stacktrace'], unicode):
-                        f.write(report['Stacktrace'].encode('utf-8'))
+                if self.upload:
+                    # Check for duplicates here...
+                    known_report = self.crashdb.known(report)
+                    if not known_report:  # Client-side
+                        crash_id = self.crashdb.upload(report)
+                        ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
+                        if ret_dup_check is not None:
+                            self.log('This report is a duplicated of #%i' % ret_dup_check[0])
+                            if ret_dup_check[1] is not None:
+                                self.log('This report is fixed in %s version' % ret_dup_check[1])
+                        else:
+                            self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+                            self.set_components(crash_id, report)
                     else:
-                        f.write(report['Stacktrace'])
-
-                if comps:
-                    self.log("Guessed application components: %s" % ', '.join(comps))
+                        self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
                 else:
-                    self.log("Impossible to guess app components from the crash, review it manually")
-                self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
+                    # Put the stacktrace in a file
+                    if crash_file.endswith('.crash'):
+                        crash_file_basename = crash_file
+                    else:
+                        crash_file_basename, _ = os.path.splitext(crash_file)
+
+                    stacktrace_file_name = "%s.stacktrace" % crash_file_basename
+                    # FIXME: Test to override?
+
+                    # Guessing components
+                    comps = guess_components(report)
+                    with open(stacktrace_file_name, 'wb') as f:
+                        if comps:
+                            f.write("Guessed application components: %s\n\n" % ', '.join(comps))
+
+                        if isinstance(report['Stacktrace'], unicode):
+                            f.write(report['Stacktrace'].encode('utf-8'))
+                        else:
+                            f.write(report['Stacktrace'])
+
+                    if comps:
+                        self.log("Guessed application components: %s" % ', '.join(comps))
+                    else:
+                        self.log("Impossible to guess app components from the crash, review it manually")
+                    self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
 
             # Delete temporary file once it is uploaded
             os.unlink(self.file_to_upload.name)
 
-    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None):
-        argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
+    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None, config_dir=None):
+        if config_dir is None:
+            config_dir = self.config_dir
+        argv = [self.apport_retrace, '-S', config_dir, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
         if self.dup_db:

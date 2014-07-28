@@ -29,10 +29,9 @@ def guess_components(report):
     """
     Guess components from a given report.
 
-    It is usually done using the stacktrace.
+    It is usually done using the stacktrace and parsed.
 
-    For now, it only inspects StacktraceTop.
-
+    :param Apport report: the crash report
     :returns: a list of components related to this crash report
     :rtype: set
     """
@@ -85,6 +84,25 @@ def guess_components(report):
     # TODO: Check only samba4 crashes
 
     return comps
+
+
+def readable_stacktrace(report):
+    """
+    Parse the stacktrace and check the stacktrace has no ???? on every frame
+
+    :param Apport report: the crash report
+    :returns: boolean indicating if the stacktrace is readable
+    :rtype: bool
+    """
+    if 'Stacktrace' not in report:
+        return False
+
+    full_stacktrace = parse_stacktrace(report['Stacktrace'])
+
+    if not full_stacktrace:
+        # Invalid stacktrace
+        return False
+    return True
 
 
 def parse_stacktrace(stacktrace):

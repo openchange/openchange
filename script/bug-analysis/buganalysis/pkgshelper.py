@@ -223,6 +223,7 @@ def map_dependencies(report):
             'libsasl2-2',
             'libsasl2-modules',
             'libsasl2-modules-db',
+            'libsasl2-modules-gssapi-heimdal',
             'libsbjson2.3',
             'libselinux1',
             'libsemanage-common',

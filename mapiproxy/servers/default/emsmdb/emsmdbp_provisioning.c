@@ -65,26 +65,48 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
+/**
+   \details Provision the Local FreeBusy message for the user in
+   Public Folder store.
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param EssDN pointer to enterprise distinguished name (X500 DN)
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdbp_context *emsmdbp_ctx, const char *EssDN)
 {
-	enum MAPISTATUS		ret;
-	char			*dn_root, *dn_user, *cn_ptr;
-	uint64_t		public_fb_fid, group_fid, fb_mid, change_num;
+	TALLOC_CTX		*mem_ctx;
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	char			*dn_root = NULL;
+	char			*dn_user = NULL;
+	char			*cn_ptr = NULL;
+	uint64_t		public_fb_fid;
+	uint64_t		group_fid;
+	uint64_t		fb_mid;
+	uint64_t		change_num;
 	size_t			i, max;
 	void			*message_object;
 	struct SRow		property_row;
-	TALLOC_CTX		*mem_ctx;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!EssDN, MAPI_E_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	dn_root = talloc_asprintf(mem_ctx, "EX:%s", EssDN);
+	OPENCHANGE_RETVAL_IF(!dn_root, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	cn_ptr = strstr(dn_root, "/cn");
 	if (!cn_ptr) {
-		ret = MAPI_E_INVALID_PARAMETER;
+		retval = MAPI_E_INVALID_PARAMETER;
 		goto end;
 	}
 
 	dn_user = talloc_asprintf(mem_ctx, "USER-%s", cn_ptr);
+	OPENCHANGE_RETVAL_IF(!dn_user, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	*cn_ptr = 0;
 
 	/* convert dn_root to lowercase */
@@ -99,38 +121,37 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		dn_user[i] = toupper(dn_user[i]);
 	}
 
-	ret = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
-	if (ret != MAPI_E_SUCCESS) {
+	retval = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(5, ("provisioning: freebusy root folder not found in openchange.ldb\n"));
 		goto end;
 	}
 
-	ret = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, dn_root, &group_fid);
-	if (ret != MAPI_E_SUCCESS) {
+	retval = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, dn_root, &group_fid);
+	if (retval != MAPI_E_SUCCESS) {
 		openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &group_fid);
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
 		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, group_fid, change_num, NULL, -1);
 	}
 
-	ret = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
-	if (ret != MAPI_E_SUCCESS) {
+	retval = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
+	if (retval != MAPI_E_SUCCESS) {
 		openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fb_mid);
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
 		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
 		property_row.cValues = 1;
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
+		OPENCHANGE_RETVAL_IF(!property_row.lpProps, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;
 		property_row.lpProps[0].value.lpszW = dn_user;
 		openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);
 		openchangedb_message_save(emsmdbp_ctx->oc_ctx, message_object, 0);
 	}
 
-	ret = MAPI_E_SUCCESS;
-
 end:
 	talloc_free(mem_ctx);
 
-	return ret;
+	return retval;
 }
 
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision(struct emsmdbp_context *emsmdbp_ctx, const char *username)

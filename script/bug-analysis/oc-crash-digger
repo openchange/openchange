@@ -241,6 +241,7 @@ class CrashDigger(object):
                 # Check to see if the retrace has worked or not to call retrace with a backup apport configuration
                 if readable_stacktrace(report):
                     valid_stacktrace = True
+                    break
 
         if self.upload or self.stacktrace_file:
             if not valid_stacktrace:

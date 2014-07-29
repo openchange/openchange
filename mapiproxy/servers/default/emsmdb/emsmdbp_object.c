@@ -2042,6 +2042,9 @@ static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_objec
 		goto end;
 	}
 	subject = data_pointers[0];
+	if (subject == NULL) {
+		goto end;
+	}
 	/* FIXME: this is wrong, as the CN attribute may differ from the user's username (sAMAccountName) */
 	// format is "..../CN="
 	username = strrchr(subject, '/');

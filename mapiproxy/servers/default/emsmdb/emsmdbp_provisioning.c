@@ -75,9 +75,16 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	struct SRow		property_row;
 	TALLOC_CTX		*mem_ctx;
 
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!EssDN, MAPI_E_INVALID_PARAMETER, NULL);
+
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	dn_root = talloc_asprintf(mem_ctx, "EX:%s", EssDN);
+	OPENCHANGE_RETVAL_IF(!dn_root, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
 	cn_ptr = strstr(dn_root, "/cn");
 	if (!cn_ptr) {
 		ret = MAPI_E_INVALID_PARAMETER;
@@ -85,6 +92,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	}
 
 	dn_user = talloc_asprintf(mem_ctx, "USER-%s", cn_ptr);
+	OPENCHANGE_RETVAL_IF(!dn_user, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	*cn_ptr = 0;
 
 	/* convert dn_root to lowercase */
@@ -119,6 +127,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
 		property_row.cValues = 1;
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
+		OPENCHANGE_RETVAL_IF(!property_row.lpProps, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;
 		property_row.lpProps[0].value.lpszW = dn_user;
 		openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);

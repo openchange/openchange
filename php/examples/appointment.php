@@ -19,10 +19,7 @@
 */
 
 include('./test-helpers.php');
-
-$dbPath = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$id = "0x2500000000000001";
+include('./config.php');
 
 # values to be set
 $tagBody1 = "body1";
@@ -52,9 +49,9 @@ diag("Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType(
 ok($calendar, "Get calendar");
 
 
-$message = $calendar->openMessage($id, MAPIMessage::RW);
-ok($message, "Appointment $id opened in RW mode");
-is($message->getID(), $id, "Check opened message Id (msut be $id)");
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RW);
+ok($message, "Appointment $appointmentId opened in RW mode");
+is($message->getID(), $appointmentId, "Check opened message Id (msut be $appointment_id)");
 
 diag("Changing PidTagBody to '$tagBody1'");
 $message->set(PidTagBody, $tagBody1);
@@ -66,7 +63,7 @@ $message->save();
 unset($message);
 
 diag("--After saving changes:");
-$message = $calendar->openMessage($id, MAPIMessage::RW);
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
 is($message->get(PidTagBody), $tagBody1, "Checking that PidTagBody has correctly been changed");
 is($message->get(PidLidAppointmentEndWhole), $unixtime1, "Checking that PidLidAppointmentEndWhole has correctly been changed");
@@ -80,7 +77,7 @@ $message->save();
 unset($message);
 
 diag("--After last changes:");
-$message = $calendar->openMessage($id, MAPIMessage::RO);
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RO);
 ok($message, "Reopen message in RO mode after saving the last changes");
 is($message->get(PidTagBody), $tagBody2, "Checking that PidTagBody has changed again");
 is($message->get(PidLidAppointmentEndWhole), $unixtime2, "Checking that PidLidAppointmentEndWhole has changed again");

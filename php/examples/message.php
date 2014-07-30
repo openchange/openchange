@@ -19,14 +19,7 @@
 */
 
 include('./test-helpers.php');
-
-# System dependent varialbes:
-$path = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$contactMessageId = '0x7500000000000001';
-$roContactId = $contactMessageId;
-$inexistentMesageId = '0x7500000CAAA00001';
-# END system dependent variables
+include('./config.php');
 
 $pidTagBody1 = 'body1';
 $pidTagDisplayName1 = 'displayName1';
@@ -37,8 +30,8 @@ $pidTagDisplayName2 = 'displayName2';
 $pidLidWorkAddressStreet2 = 'street2';
 $pidLidEmail1EmailAddress2 = 'jk2@example2.org';
 
-$mapi = new MAPIProfileDB($path);
-ok($mapi, "MAPIProfileDB opened from $path");
+$mapi = new MAPIProfileDB($dbPath);
+ok($mapi, "MAPIProfileDB opened from $dbPath");
 
 $mapiProfile = $mapi->getProfile($profileName);
 ok($mapiProfile, "Profile $profileName");

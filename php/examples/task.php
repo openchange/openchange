@@ -19,6 +19,7 @@
 */
 
 include('./test-helpers.php');
+include('./config.php');
 
 $PidNameKeywords = 0xa064101f;
 
@@ -33,10 +34,6 @@ function dumpTask($message) {
   echo "PidNameKeywords" . var_dump($message->get($PidNameKeywords)) . "\n";
 }
 
-$dbPath = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-#$id = "0xC1E000000000001";
-$id = "0x3500000000000001";
 $folder = 'tasks';
 
 # values to be set
@@ -66,9 +63,9 @@ $session = $mapiProfile->logon();
 $mailbox = $session->mailbox();
 $ocFolder = $mailbox->$folder();
 
-$message = $ocFolder->openMessage($id, MAPIMessage::RW);
-ok($message, "Appointment $id opened in RW mode");
-is($message->getID(), $id, "Check opened message Id (must be $id)");
+$message = $ocFolder->openMessage($taskId, MAPIMessage::RW);
+ok($message, "Appointment $taskId opened in RW mode");
+is($message->getID(), $taskId, "Check opened message Id (must be $taskId)");
 dumpTask($message);
 
 
@@ -87,7 +84,7 @@ $message->save();
 unset($message);
 
 diag("--After saving changes:");
-$message = $ocFolder->openMessage($id, MAPIMessage::RW);
+$message = $ocFolder->openMessage($taskId, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
 
 is($message->get(PidTagBody), $tagBody1, "Checking change in PidTagBody");

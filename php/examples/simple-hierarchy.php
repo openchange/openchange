@@ -19,12 +19,7 @@
 */
 
 include('./test-helpers.php');
-
-# environment settings
-$pathDB = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$messageId = '0x7500000000000001';
-# END
+include('./config.php');
 
 $mapi = new MAPIProfileDB($pathDB);
 ok($mapi, "MAPIProfileDB open for path $pathDB");

@@ -19,14 +19,7 @@
 */
 
 include('./test-helpers.php');
-# System dependent varialbes:
-$path = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$contactMessageId = '0xA4010E0000000001';
-$inexistentContactId = '0xA4010E0000ABCDEF';
-# END system dependent vatriables
-
-
+include('./config.php');
 $mapi = new MAPIProfileDB($path);
 ok($mapi, "Opened MAPIProfile with path $path");
 $mapiProfile = $mapi->getProfile($profileName);

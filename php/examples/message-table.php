@@ -19,10 +19,7 @@
 */
 
 include('./test-helpers.php');
-# System dependent variables
-  $dbPath      = "/home/jag/.openchange/profiles.ldb";
-  $profileName = "u2";
-# END system dependent variables
+include('./config.php');
 
 $mapi = new MAPIProfileDB($dbPath);
 ok($mapi, "Opened MAPIProfileDB with path $dbPath");

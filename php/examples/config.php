@@ -2,6 +2,8 @@
 /*
    OpenChange PHP bindings examples
 
+   Configuration file for examples. Modify it to match your system.
+
    Copyright (C) 2013-2014 Zentyal S.L.
 
    This program is free software; you can redistribute it and/or modify
@@ -18,26 +20,24 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-include('./test-helpers.php');
-include('./config.php');
+$dbPath = "/home/jag/.openchange/profiles.ldb";
+$profileName = 'u2';
+$username='u2';
+$password = 'a';
+$domain = 'zentyal-domain';
+$realm = 'zentyal-domain.lan';
+$server =  '192.168.56.51';
 
-diag("Test disabled for now");
-exit(0);
+$appointmentId = "0x2500000000000001";
+$eventId = "0x3A08010000000001";
+$draftFolderId =  "0x1a00000000000001";
+$inexistentFolderId = '0xFFFF0d0000000001';
+$contactMessageId = '0x7500000000000001';
+$roContactId = $contactMessageId;
+$inexistentContactId = '0xA4010E0000ABCDEF';
+$messageId = '0x7500000000000001';
+$inexistentMesageId = '0x7500000CAAA00001';
+$taskId = "0x3500000000000001";
 
-$mapi = new MAPIProfileDB($dbPath);
-echo "=> MAPI Profile Database Path: '", $mapi->path(), "'\n";
-$mapiProfile = $mapi->getProfile($profileName);
-$session = $mapiProfile->logon();
-$mailbox = $session->mailbox();
-
-
-$inbox = $mailbox->inbox();
-echo "=> Opening calensdar Folder\n";
-$calendar = $mailbox->calendar();
-
-$event = $calendar->openMessage($eventId);
-$recur = $event->getRecurrence(PidLidAppointmentRecur);
-
-var_dump($recur);
-
+$mailboxName = 'OpenChange Mailbox: u2';
 ?>

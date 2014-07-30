@@ -19,12 +19,8 @@
 */
 
 include('./test-helpers.php');
+include('./config.php');
 
-$dbPath = "/home/jag/.openchange/profiles.ldb";
-$profileName = "u2";
-$draftFolderId =  "0x1a00000000000001";
-$inexistentFolderId = '0xFFFF0d0000000001';
-$mailboxName = 'OpenChange Mailbox: u2';
 $inboxName = 'INBOX';
 $calendarName = "Personal Calendar (c)";
 $tasksName = "Personal Calendar (t)";

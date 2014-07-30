@@ -55,7 +55,6 @@ PHP_METHOD(MAPIMailbox, openFolder);
 void MAPIMailboxRegisterClass(TSRMLS_D);
 zval *create_mailbox_object(zval *session, char *username TSRMLS_DC);
 
-// XXX to be removed
 void init_message_store(mapi_object_t *store,
 			       struct mapi_session *session,
 			bool public_folder, char *username);

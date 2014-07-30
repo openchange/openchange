@@ -36,15 +36,6 @@ zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_
 	appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
 	mapi_message_request_all_properties(appointment TSRMLS_CC);
 
-	/* obj = (mapi_message_object_t *) zend_object_store_get_object(appointment TSRMLS_CC); */
-	/* SPropTagArray = set_SPropTagArray(obj->talloc_ctx, 13, */
-	/* 				  PidTagOriginalSubject, PidTagHasAttachments, PidLidBusyStatus, PidLidLocation, */
-	/* 				  PidLidAppointmentStartWhole, PidLidAppointmentEndWhole, PidNameKeywords,  PidLidAppointmentSubType, */
-	/* 				  PidTagLastModificationTime, PidLidAllAttendeesString,	PidTagBody, PidTagSensitivity, */
-	/* 				  PidTagPriority); */
-	/* mapi_message_so_request_properties(obj, SPropTagArray TSRMLS_CC); */
-	/* MAPIFreeBuffer(SPropTagArray); */
-
 	return appointment;
 }
 
@@ -254,8 +245,6 @@ zval* appointment_recurrence_pattern_to_zval(struct AppointmentRecurrencePattern
 	MAKE_STD_ZVAL(zrp);
 	array_init(zrp);
 
-
-//add_assoc_string(zval *aval, char *key, char *strval, int dup);
 	switch(rp->RecurFrequency) {
 	case 0x200A:
 		add_assoc_string(zrp, "RecurFrequency", "daily", 1);

@@ -43,11 +43,6 @@ PHP_METHOD(MAPIAttachment, __construct)
 
 PHP_METHOD(MAPIAttachment, __destruct)
 {
-	/* zval			*php_this_obj; */
-	/* mapi_message_object_t	*this_obj; */
-	/* php_this_obj = getThis(); */
-	/* this_obj = (mapi_attachment_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); */
-
 }
 
 PHP_METHOD(MAPIAttachment, save)

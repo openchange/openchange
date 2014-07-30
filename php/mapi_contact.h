@@ -20,14 +20,6 @@
 #ifndef MAPI_CONTACT_H
 #define MAPI_CONTACT_H
 
-/* typedef struct mapi_contact_object */
-/* { */
-/* 	zend_object	std; */
-/* 	mapi_object_t	*message; */
-/* 	TALLOC_CTX	*talloc_ctx; */
-/* 	struct mapi_SPropValue_array	properties; */
-/* } mapi_contact_object_t; */
-
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {

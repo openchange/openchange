@@ -97,9 +97,9 @@ end:
 
 static void openchange_ldb_init(const char *syspath)
 {
-	TALLOC_CTX *mem_ctx;
+	TALLOC_CTX 		*mem_ctx;
 	struct loadparm_context *lp_ctx;
-	const char *openchangedb_backend;
+	const char		*openchangedb_backend;
 
 	if (globals.ocdb_ctx) return;
 

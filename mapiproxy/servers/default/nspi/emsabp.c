@@ -75,7 +75,12 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Retrieve samdb url (local or external) */
 	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
 	if (!samdb_url) {
-		samdb_url = "sam.ldb";
+		samdb_url = lpcfg_sam_name(lp_ctx);
+		if (!samdb_url) {
+			talloc_free(mem_ctx);
+			DEBUG(0, ("[%s:%d]: Cannot retrieve samba url", __FUNCTION__, __LINE__));
+			return NULL;
+		}
 	}
 
 	/* return an opaque context pointer on samDB database */

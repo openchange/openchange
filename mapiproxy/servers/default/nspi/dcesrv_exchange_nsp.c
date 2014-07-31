@@ -270,6 +270,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r)
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+        enum MAPISTATUS                 ret;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row, row_max;
 	TALLOC_CTX			*local_mem_ctx;
@@ -297,8 +298,17 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	}
 
 	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
-	if (emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0) != MAPI_E_SUCCESS) {
+        if (!mids) {
+                DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+        }
+
+        ret = emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
+	if (ret != MAPI_E_SUCCESS) {
 		row_max = 0;
+                if (ret == MAPI_E_CALL_FAILED) {
+                        retval = ret;
+                        goto end;
+                }
 	}
 	else {
 		row_max = mids->cValues;

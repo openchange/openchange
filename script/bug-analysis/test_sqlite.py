@@ -233,3 +233,35 @@ No symbol table info available."""
         cb.set_app_components(crash_id, ['sand'])
         self.assertIsNone(cb.remove_app_component(crash_id))
         self.assertEqual(cb.get_app_components(crash_id), [])
+
+    # Tests related with client side duplicates
+    def test_client_side_duplicates_get_add(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        crash_id = cb.upload(self.r)
+
+        self.assertEqual(cb.get_client_side_duplicates(crash_id), [])
+        self.assertEqual(cb.n_client_side_duplicates(crash_id), 0)
+
+        cb.add_client_side_duplicate(crash_id, 'file:///foo')
+        self.assertEqual(cb.get_client_side_duplicates(crash_id), ['file:///foo'])
+        self.assertEqual(cb.n_client_side_duplicates(crash_id), 1)
+
+        cb.add_client_side_duplicate(crash_id, 'https://foobar.org')
+        self.assertEqual(cb.get_client_side_duplicates(crash_id), ['file:///foo', 'https://foobar.org'])
+        self.assertEqual(cb.n_client_side_duplicates(crash_id), 2)
+
+    def test_client_side_duplicates_remove(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        crash_id = cb.upload(self.r)
+
+        self.assertRaises(ValueError, cb.remove_client_side_duplicate, *(crash_id, 'file:///foo'))
+        self.assertIsNone(cb.remove_client_side_duplicate(crash_id))
+
+        cb.add_client_side_duplicate(crash_id, 'file:///foo')
+        self.assertIsNone(cb.remove_client_side_duplicate(crash_id, 'file:///foo'))
+        self.assertEqual(cb.get_client_side_duplicates(crash_id), [])
+
+        cb.add_client_side_duplicate(crash_id, 'file:///foo')
+        self.assertIsNone(cb.remove_client_side_duplicate(crash_id))
+        self.assertEqual(cb.get_client_side_duplicates(crash_id), [])
+        self.assertEqual(cb.n_client_side_duplicates(crash_id), 0)

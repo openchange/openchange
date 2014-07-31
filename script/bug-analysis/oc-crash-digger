@@ -21,6 +21,7 @@ import gzip
 from io import BytesIO
 import optparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -262,6 +263,11 @@ class CrashDigger(object):
                             self.set_components(crash_id, report)
                     else:
                         self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+                        # Parse #<id>: title
+                        match = re.match('#([0-9]+):', known_report)
+                        if match:
+                            self.crashdb.add_client_side_duplicate(match.group(1),
+                                                                   'file://' + os.path.abspath(crash_file))
                 else:
                     # Put the stacktrace in a file
                     if crash_file.endswith('.crash'):

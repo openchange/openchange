@@ -90,7 +90,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         The report is not uploaded but the pointer indicated by _URL attribute in the report.
 
-        :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set
+        :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set.
         """
         cur = self.db.cursor()
         app, version = report['Package'].split(' ', 1)
@@ -346,7 +346,10 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         return fixed_version
 
     """
-    This set of methods are exclusive for OpenChange mining tool
+    This set of methods are exclusive for OpenChange mining tool (oc-crash-digger)
+
+    * Set/Get application components from a crash
+    * Set/Get client side duplicates (URLs)
     """
     def set_app_components(self, id, components):
         """
@@ -369,7 +372,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
     def get_app_components(self, id):
         """
-        Set the component for a crash
+        Get the components for a crash
 
         :returns: the components for a crash
         :rtype: list
@@ -399,6 +402,69 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                                WHERE crash_id = ? AND component = ?""", [id, component])
                 if cur.rowcount == 0:
                     raise ValueError("%s is not an application component of crash %d" % (component, id))
+
+    def add_client_side_duplicate(self, id, crash_url):
+        """
+        Add a client side duplicate
+
+        :param int id: the crash id to set the duplicate from
+        :param str crash_url: the original crash url duplicate
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""INSERT INTO client_side_duplicates (crash_id, url)
+                           VALUES (?, ?)""",
+                        [id, crash_url])
+
+    def get_client_side_duplicates(self, id):
+        """
+        Get the client side duplicates for a crash id
+
+        :param int id: the crash id to get the duplicates from
+        :returns: the urls from the duplicated crashes
+        :rtype: list
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT url
+                           FROM client_side_duplicates
+                           WHERE crash_id = ?""", [id])
+            urls = [row[0] for row in cur.fetchall()]
+        return urls
+
+    def remove_client_side_duplicate(self, id, crash_url=None):
+        """
+        Remove client side duplicates for a crash
+
+        :param int id: the crash id to remove the client side duplicates from
+        :param str crash_url: if it is None, all crash urls are deleted
+        :raise ValueError: if the component is not None but it is not a crash app component
+        """
+        with self.db:
+            cur = self.db.cursor()
+            if crash_url is None:
+                cur.execute("""DELETE FROM client_side_duplicates
+                               WHERE crash_id = ?""", [id])
+            else:
+                cur.execute("""DELETE FROM client_side_duplicates
+                               WHERE crash_id = ? AND url = ?""", [id, crash_url])
+                if cur.rowcount == 0:
+                    raise ValueError("%s is not an crash URL duplicate of crash %d" % (crash_url, id))
+
+    def n_client_side_duplicates(self, id):
+        """
+        Get the number of client side duplicates
+
+        :param int id: the crash id to get the stats
+        :returns: the number of client side duplicates
+        :rtype: int
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT COUNT(*) FROM client_side_duplicates
+                           WHERE crash_id = ?""", [id])
+            n_dups = cur.fetchone()[0]
+        return n_dups
 
     def __create_db(self):
         """
@@ -435,6 +501,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             cur.execute("""CREATE TABLE crash_app_components (
             crash_id INTEGER NOT NULL,
             component VARCHAR(64) NOT NULL,
+            CONSTRAINT crashes_fk FOREIGN KEY(crash_id) REFERENCES crashes(crash_id)
+            )""")
+
+            cur.execute("""CREATE TABLE client_side_duplicates (
+            crash_id INTEGER NOT NULL,
+            url VARCHAR(1024) NOT NULL,
             CONSTRAINT crashes_fk FOREIGN KEY(crash_id) REFERENCES crashes(crash_id)
             )""")
 

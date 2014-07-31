@@ -56,6 +56,13 @@ __frob (x=4) at crash.c:30"""
         self.assertIn('Signal', report)
         self.assertEqual(report['Signal'], '11')
 
+    def test_upload_suggested_name(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+
+        crash_id = cb.upload(self.r, suggested_file_name='paca.crash')
+        self.assertEqual(crash_id, 1)
+        self.assertTrue(os.path.isfile(os.path.join(self.crash_base, 'paca.crash')))
+
     def test_failed_upload_no_URL(self):
         cb = CrashDatabase(None, {'dbfile': ':memory:'})
         self.assertRaises(ValueError, cb.upload, self.r)

@@ -82,7 +82,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 else:
                     self.last_crash_id = 0
 
-    def upload(self, report, progress_callback=None):
+    def upload(self, report, suggested_file_name=None, progress_callback=None):
         """
         Upload the report to the database.
 
@@ -92,16 +92,18 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         If we receive _OrigURL attribute in the report, we store it as well in the DB.
 
+        :param str suggested_file_name: the suggested file name where to store the report
         :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set.
         """
         cur = self.db.cursor()
         app, version = report['Package'].split(' ', 1)
 
         if '_URL' not in report and self.base_url is None:
-            raise ValueError('This backend requires _URL attribute to upload a crash report or crashes_base_url configuration option')
+            raise ValueError('This backend requires _URL attribute to upload a crash report '
+                             'or crashes_base_url configuration option')
 
         if '_URL' not in report:
-            report['_URL'] = urljoin(self.base_url, self._report_file_name(report))
+            report['_URL'] = urljoin(self.base_url, self._report_file_name(report, suggested_file_name))
 
         stacktrace = None
         if 'Stacktrace' in report:
@@ -541,10 +543,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         '''Update the report file based on scheme'''
         self._upload_report_file(report)
 
-    def _report_file_name(self, report):
-        sep = '_'
-        exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
-        return str(self.last_crash_id + 1) + sep + exe_path
+    def _report_file_name(self, report, suggested_file_name):
+        if suggested_file_name:
+            return suggested_file_name
+        else:
+            sep = '_'
+            exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
+            return str(self.last_crash_id + 1) + sep + exe_path
 
 
 def post_multipart(host, port, selector, fields, files):

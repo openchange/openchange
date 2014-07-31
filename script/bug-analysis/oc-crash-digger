@@ -238,6 +238,7 @@ class CrashDigger(object):
             if self.upload or self.stacktrace_file:
                 report = Report()
                 report.load(self.file_to_upload)
+                report['_OrigURL'] = 'file://' + os.path.abspath(crash_file)  # To be stored in the DB
 
                 # Check to see if the retrace has worked or not to call retrace with a backup apport configuration
                 if readable_stacktrace(report):

@@ -90,6 +90,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         The report is not uploaded but the pointer indicated by _URL attribute in the report.
 
+        If we receive _OrigURL attribute in the report, we store it as well in the DB.
+
         :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set.
         """
         cur = self.db.cursor()
@@ -112,10 +114,11 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         self._upload_report_file(report)
 
         cur.execute("""INSERT INTO crashes
-                       (crash_id, crash_url, title, app, version, sym_stacktrace, distro_release)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                       (crash_id, crash_url, title, app, version, sym_stacktrace, distro_release, orig_crash_url)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                     (self.last_crash_id + 1, report['_URL'], report.standard_title(),
-                     app, version, stacktrace, report.get('DistroRelease', None)))
+                     app, version, stacktrace, report.get('DistroRelease', None),
+                     report.get('_OrigURL', None)))
         self.db.commit()
         self.last_crash_id = cur.lastrowid
         return self.last_crash_id
@@ -489,6 +492,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             fixed_version VARCHAR(64),
             state VARCHAR(64),
             master_id INTEGER,
+            orig_crash_url VARCHAR(1024),
             CONSTRAINT master_fk FOREIGN KEY(master_id) REFERENCES crashes(crash_id),
             CONSTRAINT crashes_pk PRIMARY KEY(crash_id))""")
 

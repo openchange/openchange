@@ -549,7 +549,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         else:
             sep = '_'
             exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
-            return str(self.last_crash_id + 1) + sep + exe_path
+            return str(self.last_crash_id + 1) + sep + exe_path + '.crash'
 
 
 def post_multipart(host, port, selector, fields, files):

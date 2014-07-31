@@ -195,6 +195,14 @@ class CrashDigger(object):
             self.log('crash is release %s which does not have a config available, skipping' % rel)
             return
 
+        # Set the suggested_file_name if any
+        # Use the same name if it starts with a number removing .gz if there
+        suggested_file_name = None
+        if re.match('\d+_', os.path.basename(crash_file)):
+            suggested_file_name = os.path.basename(crash_file)
+            if suggested_file_name.endswith('.gz'):
+                suggested_file_name, _ = os.path.splitext(suggested_file_name)
+
         # This may lead to bad guesses...
         temp_file_name = None
         if crash_file.endswith('.gz'):
@@ -253,7 +261,7 @@ class CrashDigger(object):
                     # Check for duplicates here...
                     known_report = self.crashdb.known(report)
                     if not known_report:  # Client-side
-                        crash_id = self.crashdb.upload(report)
+                        crash_id = self.crashdb.upload(report, suggested_file_name=suggested_file_name)
                         ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
                         if ret_dup_check is not None:
                             self.log('This report is a duplicated of #%i' % ret_dup_check[0])

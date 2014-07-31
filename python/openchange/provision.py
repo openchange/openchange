@@ -531,29 +531,31 @@ def checkusage(names, lp, creds):
         mapi_servers = samdb.search(
             base=config_dn, scope=ldb.SCOPE_SUBTREE,
             expression="(&(objectClass=msExchExchangeServer)(cn=%s))" % names.netbiosname)
-        if len(mapi_servers) != 1:
+        server_uses = []
+
+        if len(mapi_servers) == 0:
             # The server is not provisioned.
             raise NotProvisionedError
 
-        server_uses = []
-        # Check if we are the primary folder store server.
-        our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
-        dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
+        if len(mapi_servers) > 1:
+            # Check if we are the primary folder store server.
+            our_siteFolderName = "CN=Public Folder Store (%s),CN=First Storage Group,CN=InformationStore,CN=%s,CN=Servers,CN=%s,CN=AdministrativeGroups,%s" % (names.netbiosname, names.netbiosname, names.firstou, names.firstorgdn)
+            dn = "CN=%s,CN=Administrative Groups,%s" % (names.firstou,
                                                         names.firstorgdn)
-        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
-        assert len(ret) == 1
-        siteFolderName = ret[0]["siteFolderServer"][0]
-        if our_siteFolderName.lower() == siteFolderName.lower():
-            server_uses.append("primary folder store server")
+            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['siteFolderServer'])
+            assert len(ret) == 1
+            siteFolderName = ret[0]["siteFolderServer"][0]
+            if our_siteFolderName.lower() == siteFolderName.lower():
+                server_uses.append("primary folder store server")
 
-        # Check if we are the primary receipt update service
-        our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
-        dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
-        ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
-        assert len(ret) == 1
-        addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
-        if our_addressListServiceLink.lower() == addressListServiceLink.lower():
-            server_uses.append("primary receipt update service server")
+            # Check if we are the primary receipt update service
+            our_addressListServiceLink = "CN=%s,CN=Servers,CN=%s,CN=Administrative Groups,%s" % (names.netbiosname, names.firstou, names.firstorgdn)
+            dn = "CN=Recipient Update Service (%s),CN=Recipient Update Services,CN=Address Lists Container,%s" % (names.domain, names.firstorgdn)
+            ret = samdb.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['msExchAddressListServiceLink'])
+            assert len(ret) == 1
+            addressListServiceLink = ret[0]['msExchAddressListServiceLink'][0]
+            if our_addressListServiceLink.lower() == addressListServiceLink.lower():
+                server_uses.append("primary receipt update service server")
 
         # Check if we handle any mailbox.
         db = Ldb(
@@ -613,14 +615,12 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     :param lp: Loadparm context
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+
+    It is assumed that checkusage has been used before to assure that the server is ready for deprovision
     """
 
     if reporter is None:
         reporter = TextProgressReporter()
-
-    server_uses = checkusage(names, lp, creds)
-    if (len(server_uses) > 0):
-        raise ServerInUseError(', '.join(server_uses))
 
     session_info = system_session()
 
@@ -632,6 +632,8 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
     try:
         # This is the unique server, remove full schema
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
+        # NOTE: AD schema objects cannot be deleted (it's a feature!)
+        # So we can't remove all object added on provision
     except LdbError, ldb_error:
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
@@ -640,25 +642,6 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects: %s" % err)
         raise err
-
-    ## NOTE: AD schema objects cannot be deleted (it's a feature!)
-    # try:
-    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Remove exchange attributes from existing Samba classes")
-    #     unmodify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Remove possSuperior attributes to Exchange classes")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Remove Exchange classes from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Remove Exchange mailGateway subcontainers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Remove Exchange CfgProtocol subcontainers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Remove Exchange *sub* containers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Remove Exchange containers from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Remove Exchange objectCategory from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Remove Exchange auxiliary classes from Samba schema")
-    #     deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Remove Exchange attributes from Samba schema")
-    #     print "[SUCCESS] Done!"
-    # except LdbError, ldb_error:
-    #     print ("[!] error while deprovisioning the Exchange"
-    #            " schema classes (%d): %s"
-               # % ldb_error.args)
-
 
 def register(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as a valid Exchange server.

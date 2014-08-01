@@ -21,6 +21,7 @@ from cStringIO import StringIO
 from time import time, strftime, localtime
 from pwd import getpwnam
 from ocsmanager.lib.base import BaseController, render
+from string import Template
 
 log = logging.getLogger(__name__)
 
@@ -253,6 +254,7 @@ class OofHandler(object):
 
         # Retrieve OOF settings
         oof = OofSettings()
+        log.debug("Loading OOF settings from sieve script")
         oof.from_sieve(mailbox)
 
         # Build the command response
@@ -341,27 +343,57 @@ class OofSettings(object):
         self._config['internal_reply_message'] = None
         self._config['external_reply_message'] = None
 
+    def _mkdir(self, path):
+        """Make directory and set mode, owner and group"""
+        if os.path.isdir(path):
+            pass
+        elif os.path.isfile(path):
+            raise OSError("a file with the same name as the desired "
+                          "dir, '%s', already exists." % newdir)
+        else:
+            (head, tail) = os.path.split(path)
+            if head and not os.path.isdir(head):
+                self._mkdir(head)
+            if tail:
+                sinfo = os.stat(head)
+                log.debug("Making directory '%s'" % path)
+                os.mkdir(path)
+                os.chmod(path, sinfo.st_mode)
+                os.chown(path, sinfo.st_uid, sinfo.st_gid)
+
     def _sieve_path(self, mailbox):
-        ebox_uid = getpwnam('ebox').pw_uid
-        ebox_gid = getpwnam('ebox').pw_gid
-        sieve_path_base = '/var/vmail/sieve'
-        sieve_path_vdomain = os.path.join(sieve_path_base,
-                                          mailbox.split('@')[1])
-        sieve_path_mailbox = os.path.join(sieve_path_vdomain, mailbox)
-        sieve_path_script = os.path.join(sieve_path_mailbox, 'sieve-script')
-        sieve_path_config = os.path.join(sieve_path_mailbox, 'oof-settings')
+        """Retrieve the sieve script path for a mailbox
+
+           The default value if not configured is ~/.dovecot.sieve
+        """
+        # Read the sieve script path template from config
+        oof_conf = config['ocsmanager']['outofoffice']
+        sieve_script_path_template = oof_conf['sieve_script_path']
+        sieve_script_path_mkdir = oof_conf['sieve_script_path_mkdir']
+        log.debug("Sieve script path template is '%s'" %
+                  sieve_script_path_template)
+
+        # Build the expansion variables for template
+        (user, domain) = mailbox.split('@')
+
+        # Substitute in template
+        t = Template(sieve_script_path_template)
+        sieve_path_script = t.substitute(domain=domain, user=user,
+                                         fulluser=mailbox)
+        log.debug("Expanded sieve script path for mailbox '%s' is '%s'" %
+                  (mailbox, sieve_path_script))
+
+        # If sieve script path mkdir enabled create hierarchy if not exists
+        (head, tail) = os.path.split(sieve_path_script)
+        if (sieve_script_path_mkdir):
+            self._mkdir(head)
+        else:
+            if not os.path.isdir(head):
+                raise Exception("Sieve script directory '%s' not exists" %
+                                head)
+
+        sieve_path_config = os.path.join(head, 'oof-settings')
         sieve_path_backup = None
-
-        if not os.path.isdir(sieve_path_base):
-            raise Exception("Sieve path base dir not exists")
-
-        if not os.path.isdir(sieve_path_vdomain):
-            os.mkdir(sieve_path_vdomain, 0770)
-        os.chown(sieve_path_vdomain, ebox_uid, ebox_gid)
-
-        if not os.path.isdir(sieve_path_mailbox):
-            os.mkdir(sieve_path_mailbox, 0770)
-        os.chown(sieve_path_mailbox, ebox_uid, ebox_gid)
 
         if os.path.isfile(sieve_path_script):
             if not self._isOofScript(sieve_path_script):
@@ -369,8 +401,8 @@ class OofSettings(object):
                 shutil.copyfile(sieve_path_script, sieve_path_backup)
                 shutil.copystat(sieve_path_script, sieve_path_backup)
         elif os.path.exists(sieve_path_script):
-            raise Exception(sieve_path_script +
-                            " exists and it is not a regular file")
+            raise Exception("Sieve script path '%s' exists and it is "
+                            "not a regular file" % sieve_script_path)
 
         return (sieve_path_script, sieve_path_backup, sieve_path_config)
 
@@ -475,20 +507,21 @@ class OofSettings(object):
             internal_message=internal_message
         )
 
-        ebox_uid = getpwnam('ebox').pw_uid
-        ebox_gid = getpwnam('ebox').pw_gid
         if sieve_path_config is not None:
-            f = open(sieve_path_config, 'w')
-            f.write(self._to_json())
-            f.close()
-            os.chmod(sieve_path_config, 0660)
-            os.chown(sieve_path_config, ebox_uid, ebox_gid)
+            (head, tail) = os.path.split(sieve_path_config)
+            sinfo = os.stat(head)
+            with open(sieve_path_config, 'w') as f:
+                f.write(self._to_json())
+                os.chmod(sieve_path_config, 0640)
+                os.chown(sieve_path_config, sinfo.st_uid, sinfo.st_gid)
 
-        f = open(sieve_path_script, 'w')
-        f.write(script.encode('utf8'))
-        f.close()
-        os.chmod(sieve_path_script, 0770)
-        os.chown(sieve_path_script, ebox_uid, ebox_gid)
+        log.info("\n\n\nSIEVE_PATH_SCRIPT %s" % sieve_path_script)
+        (head, tail) = os.path.split(sieve_path_script)
+        sinfo = os.stat(head)
+        with open(sieve_path_script, 'w') as f:
+            f.write(script.encode('utf8'))
+            os.chmod(sieve_path_script, 0755)
+            os.chown(sieve_path_script, sinfo.st_uid, sinfo.st_gid)
 
     def from_xml(self, settings_element):
         """

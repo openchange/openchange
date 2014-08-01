@@ -48,6 +48,18 @@ class OCSConfig(object):
         if shash is None and ohash is not None:
             self.d[section][ohash] = cfg_option
 
+    def __get_bool_option(self, section=None, option=None, dflt=None):
+        if dflt is None and not self.cfg.has_option(section, option):
+            log.error("%s: Missing %s option in [%s] section", self.config, option, section)
+            sys.exit()
+
+        if dflt is not None and not self.cfg.has_option(section, option):
+            cfg_option = dflt
+        else:
+            cfg_option = self.cfg.getboolean(section, option)
+
+        self.d[section][option] = cfg_option
+
     def __parse_main(self):
         """Parse [main] configuration section.
         """
@@ -101,6 +113,12 @@ class OCSConfig(object):
         self.__get_option('autodiscover:rpcproxy', 'external_hostname', dflt="__none__")
         self.__get_option('autodiscover:rpcproxy', 'ssl', dflt=False)
 
+    def __parse_outofoffice(self):
+        self.__get_section('outofoffice')
+        self.__get_option('outofoffice', 'sieve_script_path')
+        self.__get_bool_option('outofoffice', 'sieve_script_path_mkdir',
+                               dflt=False)
+
     def load(self):
         """Load the configuration file.
         """
@@ -123,5 +141,6 @@ class OCSConfig(object):
         self.__parse_auth()
         self.__parse_rpcproxy()
         self.__parse_autodiscover_rpcproxy()
+        self.__parse_outofoffice()
         
         return self.d

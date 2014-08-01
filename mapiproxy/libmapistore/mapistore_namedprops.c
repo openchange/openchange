@@ -63,6 +63,11 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!nprops, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "namedproperties");
+	if (!backend) {
+		DEBUG(0, ("[WARN][%s]: Missing mapistore:namedproperties option\n", __location__));
+		DEBUG(0, ("[WARN][%s]: Assigned by default to '%s'\n", __location__, NAMEDPROPS_BACKEND_LDB));
+		backend = NAMEDPROPS_BACKEND_LDB;
+	}
 	if (!strncmp(backend, NAMEDPROPS_BACKEND_LDB, strlen(NAMEDPROPS_BACKEND_LDB))) {
 		return mapistore_namedprops_ldb_init(mem_ctx, lp_ctx, nprops);
 	} else if (!strncmp(backend, NAMEDPROPS_BACKEND_MYSQL, strlen(NAMEDPROPS_BACKEND_MYSQL))) {

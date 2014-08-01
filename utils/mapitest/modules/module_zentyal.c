@@ -4,6 +4,7 @@
    OpenChange Project - Zentyal functional testing tests
 
    Copyright (C) Julien Kerihuel 2014
+                 Enrique J. Hernandez 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -62,7 +63,7 @@ _PUBLIC_ bool mapitest_zentyal_1872(struct mapitest *mt)
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
 	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "1872", retval);
-	if (retval != MAPI_E_SUCCESS) {
+	if (retval != MAPI_E_INVALID_PARAMETER) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;
@@ -139,5 +140,47 @@ _PUBLIC_ bool mapitest_zentyal_1863(struct mapitest *mt)
 
 	talloc_free(mem_ctx);
 
+	return true;
+}
+
+
+/**
+   \details Test #1645 NspiUpdateStat and try to sort the result
+   with an, for now, unsupported sorting type SortTypePhoneticDisplayName
+
+   \param mt pointer to the top level mapitest structure
+
+   \return true on success, otherwise false
+ */
+_PUBLIC_ bool mapitest_zentyal_1645(struct mapitest *mt)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct nspi_context		*nspi_ctx;
+	uint32_t        		plDelta = 1;
+	enum MAPISTATUS	retval;
+
+	/* Sanity checks */
+	mem_ctx = talloc_named(NULL, 0, "mapitest_zentyal_1645");
+	if (!mem_ctx) return false;
+
+	nspi_ctx = (struct nspi_context *) mt->session->nspi->ctx;
+	if (!nspi_ctx) return false;
+
+	/* Update pStat with unsupported SortTypePhoneticDisplayName */
+	nspi_ctx->pStat->ContainerID = 0;  // Global Access List
+	nspi_ctx->pStat->CurrentRec = MID_END_OF_TABLE;
+        nspi_ctx->pStat->Delta = -46;
+        nspi_ctx->pStat->NumPos = 3;
+        nspi_ctx->pStat->TotalRecs = 3;
+	nspi_ctx->pStat->SortType = SortTypePhoneticDisplayName;
+
+	retval = nspi_UpdateStat(nspi_ctx, mem_ctx, &plDelta);
+	mapitest_print_retval_clean(mt, "NspiUpdateStat", retval);
+	if (retval != MAPI_E_CALL_FAILED) {
+		talloc_free(mem_ctx);
+		return false;
+	}
+
+	talloc_free(mem_ctx);
 	return true;
 }

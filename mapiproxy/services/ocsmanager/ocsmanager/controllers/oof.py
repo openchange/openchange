@@ -5,7 +5,9 @@ import urllib
 import base64
 import struct
 import ldb
-import os, os.path, shutil
+import os
+import os.path
+import shutil
 import string
 import json
 
@@ -13,7 +15,8 @@ from pylons import request, response, session, tmpl_context as c, url
 from pylons.controllers.util import abort, redirect
 from pylons.decorators.rest import restrict
 from pylons import config
-from xml.etree.ElementTree import Element, ElementTree, tostring, register_namespace
+from xml.etree.ElementTree import Element, ElementTree, tostring
+from xml.etree.ElementTree import register_namespace
 from cStringIO import StringIO
 from time import time, strftime, localtime
 from pwd import getpwnam
@@ -28,17 +31,22 @@ namespaces = {
     'e': 'http://schemas.microsoft.com/exchange/services/2006/errors',
 }
 
+
 class ServerException(Exception):
     pass
+
 
 class InvalidRequestException(Exception):
     pass
 
+
 class AccessDeniedException(Exception):
     pass
 
+
 class DbException(Exception):
     pass
+
 
 class OofHandler(object):
     """
@@ -59,7 +67,7 @@ class OofHandler(object):
                                  "HTTP_X_FORWARDED_HOST",
                                  "HTTP_HOST"])
         try:
-            while self.http_server_name == None:
+            while self.http_server_name is None:
                 env_name = server_env_names.next()
                 if env_name in env:
                     self.http_server_name = (env[env_name].split(":"))[0]
@@ -67,35 +75,39 @@ class OofHandler(object):
             pass
 
     def decode_ntlm_auth(self, env):
-        """
-        Decode the HTTP_AUTHORIZATION header and extract the target domain,
-        the username and the workstation
+        """Decode the HTTP_AUTHORIZATION header
+
+        Extract the target domain, the username and the workstation from
+        HTTP_AUTHORIZATION header
         """
         header = env['HTTP_AUTHORIZATION']
         if header.startswith('NTLM '):
-            blob_b64 = header[5:];
+            blob_b64 = header[5:]
             blob = base64.b64decode(blob_b64)
             (signature, msgtype) = struct.unpack('@ 8s I', blob[0:12])
             if (msgtype == 3):
-                (tgt_len, tgt_alloc, tgt_offset) = struct.unpack('@h h I', blob[28:36])
+                (tgt_len, tgt_alloc, tgt_offset) = \
+                    struct.unpack('@h h I', blob[28:36])
                 if tgt_len > 0:
                     self.target = blob[tgt_offset:tgt_offset + tgt_len]
                     self.target = self.target.decode('UTF-16')
 
-                (user_len, user_alloc, user_offset) = struct.unpack('@h h I', blob[36:44])
+                (user_len, user_alloc, user_offset) = \
+                    struct.unpack('@h h I', blob[36:44])
                 if user_len > 0:
                     self.username = blob[user_offset:user_offset + user_len]
                     self.username = self.username.decode('UTF-16')
                     self.username = self.username.split('@')[0]
 
-                (wks_len, wks_alloc, wks_offset) = struct.unpack('@h h I', blob[44:52])
+                (wks_len, wks_alloc, wks_offset) = \
+                    struct.unpack('@h h I', blob[44:52])
                 if wks_len > 0:
                     self.workstation = blob[wks_offset:wks_offset + wks_len]
                     self.workstation = self.workstation.decode('UTF-16')
 
         if self.username is None:
-            raise ServerException('User name not found in request NTLM authorization token')
-
+            raise ServerException('User name not found in request NTLM '
+                                  'authorization token')
 
     def fetch_ldb_record(self, ldb_filter):
         """
@@ -108,17 +120,21 @@ class OofHandler(object):
         if len(res) == 1:
             ldb_record = res[0]
         else:
-            raise DbException('Error fetching database entry. Expected one result but got %s' % len(res))
+            raise DbException('Error fetching database entry. Expected '
+                              'one result but got %s' % len(res))
 
         return ldb_record
 
     def check_mailbox(self, request_mailbox):
-        """
+        """Check the mailbox belongs to user
+
         Checks that the mailbox specified in the request belongs to the user
         who is making the request
         """
-        user_ldb_record = self.fetch_ldb_record("(&(objectClass=user)(samAccountName=%s))" % self.username)
-        mbox_ldb_record = self.fetch_ldb_record("(&(objectClass=user)(mail=%s))" % request_mailbox)
+        user_ldb_record = self.fetch_ldb_record(
+            "(&(objectClass=user)(samAccountName=%s))" % self.username)
+        mbox_ldb_record = self.fetch_ldb_record(
+            "(&(objectClass=user)(mail=%s))" % request_mailbox)
 
         user_sid = user_ldb_record['objectSID'][0]
         mbox_sid = mbox_ldb_record['objectSID'][0]
@@ -131,9 +147,10 @@ class OofHandler(object):
         user_sid = samdb.schema_format_value('objectSid', user_sid)
         # Mailbox ID of the mailbox for which the attempt was made
         mbox_sid = samdb.schema_format_value('objectSid', mbox_sid)
-        raise AccessDeniedException('Microsoft.Exchange.Data.Storage.AccessDeniedException: '
-                                    'User is not mailbox owner. User = %s, MailboxGuid = %s '
-                                    '---> User is not mailbox owner.' % (user_sid, mbox_sid))
+        raise AccessDeniedException(
+            'Microsoft.Exchange.Data.Storage.AccessDeniedException: '
+            'User is not mailbox owner. User = %s, MailboxGuid = %s '
+            '---> User is not mailbox owner.' % (user_sid, mbox_sid))
 
     def process(self, request):
         """
@@ -145,15 +162,17 @@ class OofHandler(object):
             envelope = tree.getroot()
             if envelope is None:
                 raise InvalidRequestException('Invalid syntax')
-            body = envelope.find("q:Body", namespaces = namespaces)
+            body = envelope.find("q:Body", namespaces=namespaces)
             if body is None:
                 raise InvalidRequestException('Invalid syntax')
 
-            soap_req = body.find("m:GetUserOofSettingsRequest", namespaces=namespaces)
+            soap_req = body.find("m:GetUserOofSettingsRequest",
+                                 namespaces=namespaces)
             if soap_req is not None:
                 return self.process_get_request(soap_req)
 
-            soap_req = body.find("m:SetUserOofSettingsRequest", namespaces=namespaces)
+            soap_req = body.find("m:SetUserOofSettingsRequest",
+                                 namespaces=namespaces)
             if soap_req is not None:
                 return self.process_set_request(soap_req)
 
@@ -202,12 +221,14 @@ class OofHandler(object):
 
     def _address_from_request(self, elem):
         mailbox_element = elem.find("t:Mailbox", namespaces=namespaces)
-        address_element = mailbox_element.find("t:Address", namespaces=namespaces)
+        address_element = mailbox_element.find("t:Address",
+                                               namespaces=namespaces)
         return address_element.text
 
     def _response_string(self,  envelope_element):
         response_string = "<?xml version='1.0' encoding='utf-8'?>\n"
-        response_string += tostring(envelope_element, encoding='utf-8', method='xml')
+        response_string += tostring(envelope_element,
+                                    encoding='utf-8', method='xml')
         return response_string
 
     def process_get_request(self, elem):
@@ -235,7 +256,8 @@ class OofHandler(object):
         oof.from_sieve(mailbox)
 
         # Build the command response
-        response_element = Element("{%s}GetUserOofSettingsResponse" % namespaces['m'])
+        response_element = Element("{%s}GetUserOofSettingsResponse" %
+                                   namespaces['m'])
         body_element.append(response_element)
 
         # Attach info to response
@@ -274,9 +296,11 @@ class OofHandler(object):
             body_element.append(fault_element)
             return self._response_string(envelope_element)
 
-        settings_element = elem.find("t:UserOofSettings", namespaces=namespaces)
+        settings_element = elem.find("t:UserOofSettings",
+                                     namespaces=namespaces)
 
-        response_element = Element("{%s}SetUserOofSettingsResponse" % namespaces['m'])
+        response_element = Element("{%s}SetUserOofSettingsResponse" %
+                                   namespaces['m'])
         body_element.append(response_element)
 
         response_message_element = Element("ResponseMessage")
@@ -304,7 +328,9 @@ class OofHandler(object):
         return self._response_string(envelope_element)
 
 
-class OofSettings:
+class OofSettings(object):
+    """Converts xml request to sieve script and vice versa"""
+
     def __init__(self):
         self._sieve_script_header = "# OpenChange OOF script\n"
         self._config = {}
@@ -319,7 +345,8 @@ class OofSettings:
         ebox_uid = getpwnam('ebox').pw_uid
         ebox_gid = getpwnam('ebox').pw_gid
         sieve_path_base = '/var/vmail/sieve'
-        sieve_path_vdomain = os.path.join(sieve_path_base, mailbox.split('@')[1])
+        sieve_path_vdomain = os.path.join(sieve_path_base,
+                                          mailbox.split('@')[1])
         sieve_path_mailbox = os.path.join(sieve_path_vdomain, mailbox)
         sieve_path_script = os.path.join(sieve_path_mailbox, 'sieve-script')
         sieve_path_config = os.path.join(sieve_path_mailbox, 'oof-settings')
@@ -342,7 +369,8 @@ class OofSettings:
                 shutil.copyfile(sieve_path_script, bakup)
                 shutil.copystat(sieve_path_script, bakup)
         elif os.path.exists(sieve_path_script):
-            raise Exception(sieve_path_script + " exists and it is not a regular file")
+            raise Exception(sieve_path_script +
+                            " exists and it is not a regular file")
 
         return (sieve_path_script, sieve_path_backup, sieve_path_config)
 
@@ -377,62 +405,73 @@ class OofSettings:
             self._config['external_audience'] = 'All'
             self._config['duration_start_time'] = '1970-01-01T00:00:00Z'
             self._config['duration_end_time'] = '2099-12-12T00:00:00Z'
-            self._config['internal_reply_message'] = base64.b64encode('I am out of office.')
-            self._config['external_reply_message'] = base64.b64encode('I am out of office.')
+            self._config['internal_reply_message'] = \
+                base64.b64encode('I am out of office.')
+            self._config['external_reply_message'] = \
+                base64.b64encode('I am out of office.')
 
     def to_sieve(self, mailbox):
-        (sieve_path_script, sieve_path_user, sieve_path_config) = self._sieve_path(mailbox)
+        (sieve_path_script, sieve_path_user, sieve_path_config) = \
+            self._sieve_path(mailbox)
 
         template = """$header\n\n"""
         template += """require ["date","relational","vacation"];\n\n"""
 
         if self._config['state'] == 'Scheduled':
-            template += """if allof(currentdate :value "ge" "date" "$start", currentdate :value "le" "date" "$end") {\n"""
+            template += ("if allof(currentdate :value "
+                         "\"ge\" \"date\" \"$start\", "
+                         "currentdate :value \"le\" \"date\" \"$end\") {\n")
 
         internal_domain = mailbox.split('@')[1]
         external_message = ''
-        external_message += base64.b64decode(self._config['external_reply_message'])
+        external_message += base64.b64decode(
+            self._config['external_reply_message'])
         external_message = external_message.replace('"', '\\"')
         external_message = external_message.replace(';', '\\;')
         internal_message = ''
-        internal_message += base64.b64decode(self._config['internal_reply_message'])
+        internal_message += base64.b64decode(
+            self._config['internal_reply_message'])
         internal_message = internal_message.replace('"', '\\"')
         internal_message = internal_message.replace(';', '\\;')
 
-        if self._config['state'] == 'Scheduled' or self._config['state'] == 'Enabled':
-            template += """if address :matches :domain "from" "$internal_domain" {\n"""
-            template += """vacation\n"""
-            template += """    :subject "$subject"\n"""
-            template += """    :days    0\n"""
-            template += """    :mime    "MIME-Version: 1.0\r\n"""
-            template += """Content-Type: text/html; charset=UTF-8\r\n"""
-            template += """<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\">\r\n"""
-            template += """$internal_message";\n"""
+        if ((self._config['state'] == 'Scheduled') or
+                (self._config['state'] == 'Enabled')):
+            template += ("if address :matches :domain"
+                         "\"from\" \"$internal_domain\" {\n")
+            template += "vacation\n"
+            template += "    :subject \"$subject\"\n"
+            template += "    :days    0\n"
+            template += "    :mime    \"MIME-Version: 1.0\r\n"
+            template += "Content-Type: text/html; charset=UTF-8\r\n"
+            template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
+                         "4.0 Transitional//EN\\\">\r\n")
+            template += "$internal_message\";\n"
         if self._config['external_audience'] == 'All':
-            template += """} else {\n"""
-            template += """vacation\n"""
-            template += """    :subject "$subject"\n"""
-            template += """    :days    0\n"""
-            template += """    :mime    "MIME-Version: 1.0\r\n"""
-            template += """Content-Type: text/html; charset=UTF-8\r\n"""
-            template += """<!DOCTYPE HTML PUBLIC \\"-//W3C//DTD HTML 4.0 Transitional//EN\\">\r\n"""
-            template += """$external_message";\n"""
-        template += """}\n"""
+            template += "} else {\n"
+            template += "vacation\n"
+            template += "    :subject \"$subject\"\n"
+            template += "    :days    0\n"
+            template += "    :mime    \"MIME-Version: 1.0\r\n"
+            template += "Content-Type: text/html; charset=UTF-8\r\n"
+            template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
+                         "4.0 Transitional//EN\\\">\r\n")
+            template += "$external_message\";\n"
+        template += "}\n"
 
         if self._config['state'] == 'Scheduled':
-            template += """}\n\n"""
+            template += "}\n\n"
 
         if sieve_path_user is not None:
             template += 'include :personal "' + include + '";\n\n'
 
         script = string.Template(template).substitute(
-            header = self._sieve_script_header,
-            start = self._config['duration_start_time'],
-            end = self._config['duration_end_time'],
-            subject = "Out of office automatic reply",
-            internal_domain = internal_domain,
-            external_message = external_message,
-            internal_message = internal_message
+            header=self._sieve_script_header,
+            start=self._config['duration_start_time'],
+            end=self._config['duration_end_time'],
+            subject="Out of office automatic reply",
+            internal_domain=internal_domain,
+            external_message=external_message,
+            internal_message=internal_message
         )
 
         ebox_uid = getpwnam('ebox').pw_uid
@@ -454,29 +493,38 @@ class OofSettings:
         """
         Load settings from XML root element
         """
-        oof_state_element = settings_element.find('t:OofState', namespaces=namespaces)
+        oof_state_element = settings_element.find('t:OofState',
+                                                  namespaces=namespaces)
         if oof_state_element is not None:
             self._config['state'] = oof_state_element.text
 
-        external_audience_element = settings_element.find('t:ExternalAudience', namespaces=namespaces)
+        external_audience_element = settings_element.find(
+            't:ExternalAudience', namespaces=namespaces)
         if external_audience_element is not None:
             self._config['external_audience'] = external_audience_element.text
             if self._config['external_audience'] == 'Known':
                 raise Exception("Reply to external contacts not implemented")
 
-        duration_element = settings_element.find('t:Duration', namespaces=namespaces)
+        duration_element = settings_element.find(
+            't:Duration', namespaces=namespaces)
         if duration_element is not None:
-            start_time_element = duration_element.find('t:StartTime', namespaces=namespaces)
+            start_time_element = duration_element.find(
+                't:StartTime', namespaces=namespaces)
             if start_time_element is not None:
-                self._config['duration_start_time'] = start_time_element.text.split('T')[0]
+                self._config['duration_start_time'] = \
+                    start_time_element.text.split('T')[0]
 
-            end_time_element = duration_element.find('t:EndTime', namespaces=namespaces)
+            end_time_element = duration_element.find(
+                't:EndTime', namespaces=namespaces)
             if end_time_element is not None:
-                self._config['duration_end_time'] = end_time_element.text.split('T')[0]
+                self._config['duration_end_time'] = \
+                    end_time_element.text.split('T')[0]
 
-        internal_reply_element = settings_element.find('t:InternalReply', namespaces=namespaces)
+        internal_reply_element = settings_element.find(
+            't:InternalReply', namespaces=namespaces)
         if internal_reply_element is not None:
-            message_element = internal_reply_element.find('t:Message', namespaces=namespaces)
+            message_element = internal_reply_element.find(
+                't:Message', namespaces=namespaces)
             if message_element is not None:
                 text = message_element.text
                 bom = unicode(codecs.BOM_UTF16_LE, "UTF-16LE")
@@ -485,9 +533,11 @@ class OofSettings:
                 text = text.encode('UTF-8')
                 self._config['internal_reply_message'] = base64.b64encode(text)
 
-        external_reply_element = settings_element.find('t:ExternalReply', namespaces=namespaces)
+        external_reply_element = settings_element.find(
+            't:ExternalReply', namespaces=namespaces)
         if external_reply_element is not None:
-            message_element = external_reply_element.find('t:Message', namespaces=namespaces)
+            message_element = external_reply_element.find(
+                't:Message', namespaces=namespaces)
             if message_element is not None:
                 text = message_element.text
                 bom = unicode(codecs.BOM_UTF16_LE, "UTF-16LE")
@@ -528,7 +578,8 @@ class OofSettings:
 
         if self._config['internal_reply_message'] is not None:
             MessageInternal = Element("Message")
-            MessageInternal.text = base64.b64decode(self._config['internal_reply_message'])
+            MessageInternal.text = base64.b64decode(
+                self._config['internal_reply_message'])
             InternalReply.append(MessageInternal)
 
         ExternalReply = Element("ExternalReply")
@@ -536,11 +587,12 @@ class OofSettings:
 
         if self._config['external_reply_message'] is not None:
             MessageExternal = Element("Message")
-            MessageExternal.text = base64.b64decode(self._config['external_reply_message'])
+            MessageExternal.text = base64.b64decode(
+                self._config['external_reply_message'])
             ExternalReply.append(MessageExternal)
 
         AllowExternalOof = Element("AllowExternalOof")
-        AllowExternalOof.text = 'All' #self._config['external_audience']
+        AllowExternalOof.text = 'All'  # self._config['external_audience']
         response_element.append(AllowExternalOof)
 
     def dump(self):
@@ -548,8 +600,11 @@ class OofSettings:
         log.info("External audience: %s" % self._config['external_audience'])
         log.info("Duration start: %s" % self._config['duration_start_time'])
         log.info("Duration end: %s" % self._config['duration_end_time'])
-        log.info("Internal reply msg: %s" % self._config['internal_reply_message'])
-        log.info("External reply msg: %s" % self._config['external_reply_message'])
+        log.info("Internal reply msg: %s" %
+                 self._config['internal_reply_message'])
+        log.info("External reply msg: %s" %
+                 self._config['external_reply_message'])
+
 
 class OofController(BaseController):
     """The constroller class for OutOfOffice requests."""
@@ -565,7 +620,7 @@ class OofController(BaseController):
             rqh = OofHandler(environ)
             response.headers["content-type"] = "text/xml"
             body = rqh.process(request)
-        except:
+        except Exception as e:
             response.status = 500
             response.headers["content-type"] = "text/plain"
             # TODO: disable the showing of exception in prod

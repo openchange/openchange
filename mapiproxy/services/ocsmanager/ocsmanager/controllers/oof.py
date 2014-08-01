@@ -366,8 +366,8 @@ class OofSettings(object):
         if os.path.isfile(sieve_path_script):
             if not self._isOofScript(sieve_path_script):
                 sieve_path_backup = sieve_path_script + '.user'
-                shutil.copyfile(sieve_path_script, bakup)
-                shutil.copystat(sieve_path_script, bakup)
+                shutil.copyfile(sieve_path_script, sieve_path_backup)
+                shutil.copystat(sieve_path_script, sieve_path_backup)
         elif os.path.exists(sieve_path_script):
             raise Exception(sieve_path_script +
                             " exists and it is not a regular file")

@@ -379,9 +379,11 @@ class OofSettings(object):
         Checks if the sieve script is the Zentyal OOF script, looking for the
         header
         """
-        f = open(path, 'r')
-        line = f.readline()
-        return line == self._sieve_script_header
+        isOof = False
+        with open(path, 'r') as f:
+            line = f.readline()
+            isOof = (line == self._sieve_script_header)
+        return isOof
 
     def _to_json(self):
         """
@@ -395,10 +397,9 @@ class OofSettings(object):
         """
         (script_path, user_path, settings_path) = self._sieve_path(mailbox)
         if os.path.isfile(settings_path):
-            f = open(settings_path, 'r')
-            line = f.readline()
-            self._config = json.loads(line)
-            f.close()
+            with open(settings_path, 'r') as f:
+                line = f.readline()
+                self._config = json.loads(line)
         else:
             # Load default settings
             self._config['state'] = 'Disabled'

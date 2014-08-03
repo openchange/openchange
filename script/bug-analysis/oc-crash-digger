@@ -91,6 +91,7 @@ class CrashDigger(object):
             # this verified DB integrity; make a backup now
             shutil.copy2(self.dup_db, self.dup_db + '.backup')
 
+        self.tracker = None  # It will be only if oc_cd_conf file
         if self.oc_cd_conf:
             oc_cd_conf_settings = dict()
             with open(self.oc_cd_conf) as f:
@@ -98,6 +99,18 @@ class CrashDigger(object):
                 self.oc_cd_conf = {}
                 if 'extra_packages' in oc_cd_conf_settings:
                     self.oc_cd_conf['extra_packages'] = oc_cd_conf_settings['extra_packages']
+                if 'tracker_auth' in oc_cd_conf_settings:
+                    self.oc_cd_conf['tracker_auth'] = oc_cd_conf_settings['tracker_auth']
+                    tracker_auth_conf = self.oc_cd_conf['tracker_auth']
+                    if 'tracker' in tracker_auth_conf and tracker_auth_conf['tracker'] == 'redmine':
+                        try:
+                            from buganalysis.redmine_client import RedmineClient
+                            self.tracker = RedmineClient(tracker_auth_conf['url'],
+                                                         tracker_auth_conf['key'],
+                                                         tracker_auth_conf['project_id'])
+                        except ImportError:
+                            self.log("WARNING: python-redmine module is not installed")
+                            # No redmine
 
     def log(self, str):
         """
@@ -258,6 +271,7 @@ class CrashDigger(object):
                 self.log('It is not a readable stacktrace, try using a different apport configuration %s.backup' % self.config_dir)
             else:
                 if self.upload:
+                    master_id = None
                     # Check for duplicates here...
                     known_report = self.crashdb.known(report)
                     if not known_report:  # Client-side
@@ -267,16 +281,24 @@ class CrashDigger(object):
                             self.log('This report is a duplicated of #%i' % ret_dup_check[0])
                             if ret_dup_check[1] is not None:
                                 self.log('This report is fixed in %s version' % ret_dup_check[1])
+                            master_id = ret_dup_check[0]
                         else:
                             self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
                             self.set_components(crash_id, report)
+                            self.upload_tracker(crash_id, report)
                     else:
                         self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
                         # Parse #<id>: title
                         match = re.match('#([0-9]+):', known_report)
                         if match:
-                            self.crashdb.add_client_side_duplicate(match.group(1),
-                                                                   'file://' + os.path.abspath(crash_file))
+                            master_id = match.group(1)
+
+                    if master_id:
+                        crash_file_url = 'file://' + os.path.abspath(crash_file)
+                        self.crashdb.add_client_side_duplicate(master_id,
+                                                               crash_file_url)
+                        self.add_duplicate_tracker(master_id, crash_file_url)
+
                 else:
                     # Put the stacktrace in a file
                     if crash_file.endswith('.crash'):
@@ -399,6 +421,36 @@ class CrashDigger(object):
             self.crashdb.set_app_components(id, comps)
         else:
             self.log("Impossible to guess app components to crash %d" % id)
+
+    def upload_tracker(self, crash_id, report):
+        """Upload to a tracker the crash report information using tracker_auth
+        configuration available in oc-cd-conf parameter.
+
+        :param int crash_id: the crash identifier in the DB
+        :param Report report: the crash report object
+        """
+        if self.tracker:
+            issue = self.tracker.create_issue(crash_id, report,
+                                              self.crashdb.get_app_components(crash_id))
+            self.crashdb.set_tracker_url(crash_id, issue.url)
+            self.log("Create a new issue: %s" % issue.url)
+
+    def add_duplicate_tracker(self, crash_id, dup_crash_url):
+        """Add a duplicate note entry to the tracker using tracker_auth
+        configuration available in oc-cd-conf parameter.
+
+        :param int crash_id: the crash identifier in the DB
+        :param str dup_crash_url: the duplicated crash URL
+        """
+        if self.tracker:
+            issue_url = self.crashdb.get_tracker_url(crash_id)
+            if issue_url:  # Check there is a tracker issue
+                _, issue_id = issue_url.rsplit('/', 1)
+                ret = self.tracker.add_duplicate(issue_id, dup_crash_url)
+                if ret:
+                    self.log("Adding duplicate to: %s" % issue_url)
+                else:
+                    self.log("WARNING: Cannot add the duplicate to %s" % issue_url)
 
     def run(self):
         """

@@ -120,3 +120,8 @@ argument with the following configuration:
         # project_id: the project where to create the issues
         'project_id': 'openchange',
     }
+
+It requires `python-redmine` package to work. In order to install it,
+run the following command:
+
+    $ sudo pip install python-redmine

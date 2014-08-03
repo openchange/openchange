@@ -272,3 +272,13 @@ No symbol table info available."""
         self.assertIsNone(cb.remove_client_side_duplicate(crash_id))
         self.assertEqual(cb.get_client_side_duplicates(crash_id), [])
         self.assertEqual(cb.n_client_side_duplicates(crash_id), 0)
+
+    def test_set_get_tracker_url(self):
+        cb = CrashDatabase(None, {'dbfile': ':memory:', 'crashes_base_url': self.crash_base_url})
+        crash_id = cb.upload(self.r)
+
+        self.assertIsNone(cb.get_tracker_url(crash_id))
+        self.assertIsNone(cb.get_tracker_url(22))
+
+        self.assertIsNone(cb.set_tracker_url(crash_id, 'https://tracker.org/122'))
+        self.assertEqual(cb.get_tracker_url(crash_id), 'https://tracker.org/122')

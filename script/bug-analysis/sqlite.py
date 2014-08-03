@@ -355,6 +355,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
     * Set/Get application components from a crash
     * Set/Get client side duplicates (URLs)
+    * Management of tracker URL for a crash
     """
     def set_app_components(self, id, components):
         """
@@ -471,6 +472,35 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             n_dups = cur.fetchone()[0]
         return n_dups
 
+    def set_tracker_url(self, id, url):
+        """Set the tracker URL to track the crash report resolution.
+
+        It is assumed the issue is properly set.
+
+        :param int id: the crash identifier
+        :param str url: the tracker URL
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""UPDATE crashes SET tracker_url = ?
+                           WHERE crash_id = ?""", [url, id])
+
+    def get_tracker_url(self, id):
+        """Get the tracker URL to track the crash report resolution.
+
+        :param int id: the crash identifier
+        :returns: the crash tracker URL, None if not found
+        :rtype: Str
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT tracker_url FROM crashes
+                           WHERE crash_id = ?""", [id])
+            row = cur.fetchone()
+            if row:
+                return row[0]
+            return None
+
     def __create_db(self):
         """
         Create the DB
@@ -495,6 +525,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             state VARCHAR(64),
             master_id INTEGER,
             orig_crash_url VARCHAR(1024),
+            tracker_url VARCHAR(1024),
             CONSTRAINT master_fk FOREIGN KEY(master_id) REFERENCES crashes(crash_id),
             CONSTRAINT crashes_pk PRIMARY KEY(crash_id))""")
 

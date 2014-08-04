@@ -61,7 +61,7 @@ class RedmineClient(object):
 
         description = ""
         if comps:
-            description += "Components: %s" % ', '.join(comps)
+            description += "Components: %s\n\n" % ', '.join(comps)
 
         if 'StacktraceTop' in report:
             description += "Stacktrace top 5 functions:\n<pre>%s</pre>\n\n" % report['StacktraceTop']

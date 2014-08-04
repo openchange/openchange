@@ -53,8 +53,6 @@ def notificate_user_email(from_addr, email, tracker_url,
     msg['From'] = from_addr
     msg['To'] = to_addr
 
-    import pdb; pdb.set_trace()
-
     s = smtplib.SMTP(smtp_addr)
     # sendmail function takes 3 arguments: sender's address, recipient's address
     # and message to send - here it is sent as one string.

@@ -196,7 +196,7 @@ static enum mapistore_error next_unused_id(struct namedprops_context *nprops, ui
 	MAPISTORE_RETVAL_IF(!highest_id, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ldb_ctx = (struct ldb_context *) nprops->data;
-	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_named(NULL, 0, "next_unused_id");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);

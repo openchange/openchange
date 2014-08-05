@@ -42,14 +42,15 @@ def notificate_user_email(from_addr, email, tracker_url,
     else:
         text = """The crash report was created at {0}.""".format(tracker_url)
 
-    text += """\nYou can follow the crash report fixing status there.\n\n
-               Thanks very much for reporting it!\n\n
-               ----\n
-               OpenChange team"""
+    text += """
+\n\nYou can follow the crash report fixing status there.\n\n
+Thanks very much for reporting it!\n
+----
+OpenChange team"""
 
     msg = MIMEText(text, 'plain')
 
-    msg['Subject'] = 'Thanks for sending the crash report!'
+    msg['Subject'] = '[OpenChange crash report] Your crash report were uploaded!'
     msg['From'] = from_addr
     msg['To'] = to_addr
 

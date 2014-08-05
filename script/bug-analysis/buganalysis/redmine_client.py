@@ -66,7 +66,8 @@ class RedmineClient(object):
         if 'StacktraceTop' in report:
             description += "Stacktrace top 5 functions:\n<pre>%s</pre>\n\n" % report['StacktraceTop']
         if '_OrigURL' in report:
-            description += "Crash file: %s\n" % report['_OrigURL']
+            _, base_name = report['_OrigURL'].rsplit('/', 1)
+            description += "Crash file: %s\n" % base_name
 
         issue.description = description
         # TODO: Custom fields, ie. crash id
@@ -81,7 +82,8 @@ class RedmineClient(object):
         :returns: if the action of adding was successful
         :rtype: bool
         """
-        note = 'A new duplicate has been found: {0}'.format(dup_crash_url)
+        _, base_name = dup_crash_url.rsplit('/', 1)
+        note = 'A new duplicate has been found: {0}'.format(base_name)
         try:
             self.redmine.issue.update(issue_id,
                                       notes=note)

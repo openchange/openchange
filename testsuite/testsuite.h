@@ -46,7 +46,9 @@ __BEGIN_DECLS
 /* libmapistore */
 Suite *mapistore_namedprops_suite(void);
 Suite *mapistore_namedprops_mysql_suite(void);
-Suite *indexing_mysql_suite(void);
+Suite *mapistore_namedprops_tdb_suite(void);
+Suite *mapistore_indexing_mysql_suite(void);
+Suite *mapistore_indexing_tdb_suite(void);
 
 __END_DECLS
 

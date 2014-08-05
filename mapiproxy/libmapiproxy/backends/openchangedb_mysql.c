@@ -3001,11 +3001,13 @@ static const char *openchangedb_data_dir(void)
 
 _PUBLIC_
 enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
-					      const char *connection_string,
+					      struct loadparm_context *lp_ctx,
 					      struct openchangedb_context **ctx)
 {
-	struct openchangedb_context *oc_ctx;
-	char *schema_file;
+	struct openchangedb_context 	*oc_ctx;
+	char 				*schema_file;
+	const char			*connection_string;
+	const char			*schema_dir;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
 	// Initialize context with function pointers
@@ -3066,6 +3068,12 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->set_locale = set_locale;
 	oc_ctx->get_folders_names = get_folders_names;
 
+	connection_string = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
+	if (!connection_string) {
+		DEBUG(0, ("[%s:%d] mapiproxy:openchangedb must be defined",
+			  __FUNCTION__, __LINE__));
+		OPENCHANGE_RETVAL_ERR(MAPI_E_INVALID_PARAMETER, oc_ctx);
+	}
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);
 	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
@@ -3074,7 +3082,9 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Creating schema for openchangedb on mysql %s",
 			  connection_string));
 
+		schema_dir = lpcfg_parm_string(lp_ctx, NULL, "openchangedb", "data");
 		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
+					      schema_dir ? schema_dir :
 					      openchangedb_data_dir());
 		schema_created = create_schema(oc_ctx->data, schema_file);
 		talloc_free(schema_file);

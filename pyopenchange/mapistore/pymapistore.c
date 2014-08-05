@@ -108,7 +108,7 @@ static void openchange_ldb_init(const char *syspath)
 	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
 
 	if (openchangedb_backend) {
-		openchangedb_mysql_initialize(mem_ctx, openchangedb_backend, &globals.ocdb_ctx);
+		openchangedb_mysql_initialize(mem_ctx, lp_ctx, &globals.ocdb_ctx);
 	} else {
 		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
 	}

@@ -277,7 +277,11 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
 	emsmdb_retry:
-		binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		if (profile->server_name != NULL) {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server_name, profile);
+		} else {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		}
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

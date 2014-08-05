@@ -97,12 +97,9 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 	if (!mapi_ctx) return NULL;
 
 	if (profile->roh == true) {
-		/* When using RPC over HTTP, the server is the address of the RPC
-		 * proxy */
-		const char *proxy = profile->server;
-		uint32_t proxy_port = profile->roh_proxy_port;
 		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,",
-				rpcserver, proxy, proxy_port);
+				rpcserver, profile->roh_rpc_proxy_server,
+				profile->roh_rpc_proxy_port);
 		if (profile->roh_tls == true) {
 			binding = talloc_strdup_append(binding, "tls,");
 		}
@@ -280,7 +277,11 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 	switch(provider_id) {
 	case PROVIDER_ID_EMSMDB:
 	emsmdb_retry:
-		binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		if (profile->server_name != NULL) {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server_name, profile);
+		} else {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		}
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, mapi_ctx->lp_ctx);
 		talloc_free(binding);
 		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);

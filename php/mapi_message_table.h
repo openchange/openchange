@@ -20,13 +20,6 @@
 #ifndef MAPI_MESSAGE_TABLE_H
 #define MAPI_MESSAGE_TABLE_H
 
-/* typedef struct mapi_message_table_object */
-/* { */
-/* 	zend_object	std; */
-/* 	mapi_object_t	*message_table; */
-/* 	TALLOC_CTX	*talloc_ctx; */
-/* } mapi_message_table_object_t; */
-
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
 #define __BEGIN_DECLS		extern "C" {

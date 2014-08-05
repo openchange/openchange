@@ -46,7 +46,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	TALLOC_CTX		*mem_ctx;
 	struct emsabp_context	*emsabp_ctx;
 	struct tevent_context	*ev;
-	char			*samdb_url;
+	const char		*samdb_url;
 
 	/* Sanity checks */
 	if (!lp_ctx) return NULL;

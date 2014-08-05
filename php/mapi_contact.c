@@ -38,9 +38,4 @@ PHP_METHOD(MAPIContact, __construct)
 
 PHP_METHOD(MAPIContact, __destruct)
 {
-	/* zval			*php_this_obj; */
-	/* mapi_contact_object_t	*this_obj; */
-	/* php_this_obj = getThis(); */
-	/* this_obj = (mapi_contact_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); */
-
 }

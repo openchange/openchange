@@ -89,8 +89,6 @@ void MAPIMailboxRegisterClass(TSRMLS_D)
 	mapi_mailbox_object_handlers.clone_obj = NULL;
 }
 
-
-// static  XXX became static/prvate when get rid of sesion deprecated funcions
 void init_message_store(mapi_object_t *store,
 			       struct mapi_session *session,
 			       bool public_folder, char *username)

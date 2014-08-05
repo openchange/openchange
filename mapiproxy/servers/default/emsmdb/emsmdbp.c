@@ -103,7 +103,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	struct emsmdbp_context	*emsmdbp_ctx;
 	struct tevent_context	*ev;
 	enum mapistore_error	ret;
-	char			*samdb_url;
+	const char		*samdb_url;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;

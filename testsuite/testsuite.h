@@ -43,6 +43,8 @@
 
 __BEGIN_DECLS
 
+/* libmapi */
+Suite *libmapi_property_suite(void);
 /* libmapistore */
 Suite *mapistore_namedprops_suite(void);
 Suite *mapistore_namedprops_mysql_suite(void);

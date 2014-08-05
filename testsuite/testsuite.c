@@ -26,11 +26,13 @@ int main(int ac, const char *av[])
 
 	sr = srunner_create(suite_create("OpenChange unit testing"));
 
+	/* libmapi */
+	srunner_add_suite(sr, libmapi_property_suite());
+
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());
 	srunner_add_suite(sr, mapistore_namedprops_tdb_suite());
-
 	srunner_add_suite(sr, mapistore_indexing_mysql_suite());
 	srunner_add_suite(sr, mapistore_indexing_tdb_suite());
 

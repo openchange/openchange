@@ -28,7 +28,9 @@ int main(int ac, const char *av[])
 
 	/* libmapi */
 	srunner_add_suite(sr, libmapi_property_suite());
-
+	/* libmapiproxy */
+	srunner_add_suite(sr, mapiproxy_openchangedb_mysql_suite());
+	srunner_add_suite(sr, mapiproxy_openchangedb_ldb_suite());
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());

@@ -386,6 +386,7 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 	int				ret;
 	struct namedprops_context	*nprops = NULL;
 	const char			*database;
+	const char			*data_path;
 	struct stat			sb;
 	struct ldb_context		*ldb_ctx = NULL;
 	struct ldb_ldif			*ldif;
@@ -410,7 +411,9 @@ enum mapistore_error mapistore_namedprops_ldb_init(TALLOC_CTX *mem_ctx,
 		ldb_ctx = mapistore_ldb_wrap_connect(mem_ctx, ev, database, 0);
 		MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
+		data_path = lpcfg_parm_string(lp_ctx, NULL, "namedproperties", "ldb_data");
 		filename = talloc_asprintf(mem_ctx, "%s/mapistore_namedprops.ldif",
+					   data_path ? data_path :
 					   mapistore_namedprops_get_ldif_path());
 		f = fopen(filename, "r");
 		talloc_free(filename);

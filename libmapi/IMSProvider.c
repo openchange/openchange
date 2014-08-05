@@ -97,12 +97,9 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 	if (!mapi_ctx) return NULL;
 
 	if (profile->roh == true) {
-		/* When using RPC over HTTP, the server is the address of the RPC
-		 * proxy */
-		const char *proxy = profile->server;
-		uint32_t proxy_port = profile->roh_proxy_port;
 		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,",
-				rpcserver, proxy, proxy_port);
+				rpcserver, profile->roh_rpc_proxy_server,
+				profile->roh_rpc_proxy_port);
 		if (profile->roh_tls == true) {
 			binding = talloc_strdup_append(binding, "tls,");
 		}

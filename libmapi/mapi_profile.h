@@ -48,6 +48,7 @@ struct mapi_profile
 	const char	*realm;
 	const char	*server;
 	const char	*localaddr;
+	const char	*server_name;
 	bool		seal;
 	uint32_t	codepage;
 	uint32_t	language;
@@ -56,7 +57,8 @@ struct mapi_profile
 	const char	*kerberos;
 	bool		roh;
 	bool		roh_tls;
-	uint32_t	roh_proxy_port;
+	const char	*roh_rpc_proxy_server;
+	uint32_t	roh_rpc_proxy_port;
 };
 
 typedef int (*mapi_profile_callback_t)(struct PropertyRowSet_r *, const void *);

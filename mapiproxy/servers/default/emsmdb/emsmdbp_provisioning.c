@@ -65,6 +65,22 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
+static enum MAPISTATUS get_new_public_folder_id(struct emsmdbp_context *emsmdbp_ctx, uint64_t parent_fid, uint64_t *fid)
+{
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	enum mapistore_error	ret;
+
+	if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
+		retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+	} else {
+		ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, fid);
+		if (ret != MAPISTORE_SUCCESS) {
+			retval = MAPI_E_CALL_FAILED;
+		}
+	}
+
+	return retval;
+}
 /**
    \details Provision the Local FreeBusy message for the user in
    Public Folder store.
@@ -78,7 +94,6 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 {
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
-	enum mapistore_error	ret;
 	char			*dn_root = NULL;
 	char			*dn_user = NULL;
 	char			*cn_ptr = NULL;
@@ -130,19 +145,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 
 	retval = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, dn_root, &group_fid);
 	if (retval != MAPI_E_SUCCESS) {
-		if (openchangedb_is_public_folder_id(public_fb_fid)) {
-			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &group_fid);
-			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
-				goto end;
-			}
-		} else {
-			ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &group_fid);
-			if (ret != MAPISTORE_SUCCESS) {
-				retval = MAPI_E_CALL_FAILED;
-				DEBUG(0, ("[%s:%d] Cannot get new folder id\n", __FUNCTION__, __LINE__));
-				goto end;
-			}
+		retval = get_new_public_folder_id(emsmdbp_ctx, public_fb_fid, &group_fid);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
+			goto end;
 		}
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
 		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, group_fid, change_num, NULL, -1);
@@ -150,18 +156,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 
 	retval = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
 	if (retval != MAPI_E_SUCCESS) {
-		if (openchangedb_is_public_folder_id(group_fid)) {
-			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fb_mid);
-			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
-				goto end;
-		} else {
-			ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fb_mid);
-			if (ret != MAPISTORE_SUCCESS) {
-				retval = MAPI_E_CALL_FAILED;
-				DEBUG(0, ("[%s:%d] Cannot get new folder id\n", __FUNCTION__, __LINE__));
-				goto end;
-			}
+		retval = get_new_public_folder_id(emsmdbp_ctx, group_fid, &fb_mid);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
+			goto end;
 		}
 		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
 		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);

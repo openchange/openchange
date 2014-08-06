@@ -27,7 +27,7 @@
 
 static TALLOC_CTX 			*g_mem_ctx;
 static struct openchangedb_context 	*g_oc_ctx;
-static enum MAPISTATUS 			retval;
+static enum MAPISTATUS			retval;
 static struct loadparm_context		*g_lp_ctx;
 
 // v Unit test ----------------------------------------------------------------

@@ -1327,14 +1327,17 @@ clean:: testsuite-clean
 bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapistore/mapistore_namedprops.c		\
 				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
-				testsuite/libmapistore/mapistore_indexing_mysql.c	\
+				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
+				testsuite/libmapistore/mapistore_indexing.c		\
+				testsuite/libmapi/mapi_property.c			\
+				testsuite/libmapiproxy/openchangedb.c			\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 testsuite-check:	testsuite
-	@./bin/openchange-testsuite
+	@LD_LIBRARY_PATH=. CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite
 
 check::	$(OC_TESTSUITE_CHECK)
 
@@ -1429,51 +1432,6 @@ utils/mapitest/proto.h:					\
 	@echo "Generating $@"
 	@./script/mkproto.pl --private=utils/mapitest/mapitest_proto.h --public=utils/mapitest/proto.h $^
 
-
-###################
-# unittest
-###################
-
-unittest: bin/unittest
-
-unittest: CFLAGS += -fprofile-arcs -ftest-coverage -Itest
-unittest: LDFLAGS += -lcheck -lgcov -coverage -g -rdynamic -lpthread -lm -ldl -ltdb
-
-bin/unittest: test/test_suites/libmapistore/indexing.o \
-	test/test_suites/libmapi/property.o \
-	test/test_suites/libmapistore/namedprops_mysql.o \
-	test/test_suites/libmapistore/namedprops_ldb.o \
-	test/test_suites/libmapiproxy/openchangedb.o \
-	test/openchange_test_suite.o \
-	test/test_common.c \
-	mapiproxy/util/mysql.o \
-	mapiproxy/libmapiproxy/openchangedb.o \
-	mapiproxy/libmapiproxy/openchangedb_table.o \
-	mapiproxy/libmapiproxy/openchangedb_message.o \
-	mapiproxy/libmapiproxy/openchangedb_property.o \
-	mapiproxy/libmapiproxy/backends/openchangedb_ldb.o \
-	mapiproxy/libmapiproxy/backends/openchangedb_mysql.o \
-	mapiproxy/libmapistore/mapistore_interface.o \
-	mapiproxy/libmapistore/mapistore_processing.o \
-	mapiproxy/libmapistore/mapistore_backend.o \
-	mapiproxy/libmapistore/mapistore_backend_defaults.o \
-	mapiproxy/libmapistore/mapistore_tdb_wrap.o \
-	mapiproxy/libmapistore/mapistore_indexing.o \
-	mapiproxy/libmapistore/mapistore_replica_mapping.o \
-	mapiproxy/libmapistore/mapistore_namedprops.o \
-	mapiproxy/libmapistore/mapistore_notification.o \
-	mapiproxy/libmapistore/backends/indexing_tdb.o \
-	mapiproxy/libmapistore/backends/indexing_mysql.o \
-	libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
-	@echo "$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)"
-	@$(CC) -o $@ $^ $(CFLAGS) $(LDFLAGS) $(LIBS) -lpopt $(SUBUNIT_LIBS) $(MYSQL_LIBS)
-
-
-unittest-clean:
-	rm -f bin/unittest
-	find test -name *.o | xargs -r rm
-
-clean:: unittest-clean
 
 #####################
 # openchangemapidump

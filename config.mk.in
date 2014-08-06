@@ -43,7 +43,6 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"						\
-	   -DRESOURCES_DIR=\"$(top_builddir)/test/resources\" \
        -DHAVE_ICAL_0_46=@have_libical_0_46@
 
 # This value should be determined by configure at some point

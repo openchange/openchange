@@ -1,11 +1,31 @@
-#include "test_property.h"
-#include "test_common.h"
+/*
+   OpenChange Unit Testing
 
+   OpenChange Project
+
+   copyright (C) Kamen Mazdrashki 2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "testsuite.h"
 #include "libmapi/libmapi.h"
 
 /* Global test variables */
 static TALLOC_CTX *mem_ctx;
 struct SRow *test_srow;
+
 
 static int SPropValue_cmp(const struct SPropValue *left, const struct SPropValue *right)
 {
@@ -114,8 +134,7 @@ static int SPropValue_cmp(const struct SPropValue *left, const struct SPropValue
 
 // v Unit test ----------------------------------------------------------------
 
-START_TEST (test_mapi_copy_spropvalues)
-{
+START_TEST (test_mapi_copy_spropvalues) {
 	int i;
 	struct SRow *dest_row;
 
@@ -179,7 +198,7 @@ static void tc_mapi_copy_spropvalues_teardown(void)
 	talloc_free(mem_ctx);
 }
 
-Suite *libmapi_property_create_suite(void)
+Suite *libmapi_property_suite(void)
 {
 	Suite *s = suite_create("libmapi property");
 
@@ -192,4 +211,3 @@ Suite *libmapi_property_create_suite(void)
 
 	return s;
 }
-

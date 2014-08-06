@@ -1,5 +1,4 @@
-#include "test_common.h"
-#include "openchangedb.h"
+#include "testsuite.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
@@ -7,40 +6,47 @@
 #include <inttypes.h>
 #include <mysql/mysql.h>
 
-// According to the initial sample data
-#define NEXT_CHANGE_NUMBER 402
+/* According to the initial sample data */
+#define NEXT_CHANGE_NUMBER 		402
 
-#define CHECK_SUCCESS ck_assert_int_eq(ret, MAPI_E_SUCCESS)
-#define CHECK_FAILURE ck_assert_int_ne(ret, MAPI_E_SUCCESS)
+#define	OPENCHANGEDB_MYSQL_HOST		"127.0.0.1"
+#define	OPENCHANGEDB_MYSQL_USER		"root"
+#define	OPENCHANGEDB_MYSQL_PASS		""
+#define	OPENCHANGEDB_MYSQL_DB		"openchange_openchangedb_test"
+#define	OPENCHANGEDB_MYSQL_SCHEMA_PATH	"setup/openchangedb"
 
-#define OPENCHANGEDB_SAMPLE_SQL RESOURCES_DIR "/openchangedb_sample.sql"
-#define OPENCHANGEDB_LDB         RESOURCES_DIR "/openchange.ldb"
-#define OPENCHANGEDB_SAMPLE_LDIF RESOURCES_DIR "/openchangedb_sample.ldif"
-#define LDB_DEFAULT_CONTEXT "CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"
-#define LDB_ROOT_CONTEXT "CN=ZENTYAL,DC=zentyal-domain,DC=lan"
+#define RESOURCES_DIR 			"testsuite/resources"
+#define OPENCHANGEDB_SAMPLE_SQL		RESOURCES_DIR "/openchangedb_sample.sql"
+#define OPENCHANGEDB_LDB		RESOURCES_DIR "/openchange.ldb"
+#define OPENCHANGEDB_SAMPLE_LDIF	RESOURCES_DIR "/openchangedb_sample.ldif"
+#define LDB_DEFAULT_CONTEXT 		"CN=First Administrative Group,CN=First Organization,CN=ZENTYAL,DC=zentyal-domain,DC=lan"
+#define LDB_ROOT_CONTEXT 		"CN=ZENTYAL,DC=zentyal-domain,DC=lan"
 
+#define CHECK_SUCCESS ck_assert_int_eq(retval, MAPI_E_SUCCESS)
+#define CHECK_FAILURE ck_assert_int_ne(retval, MAPI_E_SUCCESS)
 
-static TALLOC_CTX *mem_ctx;
-static struct openchangedb_context *oc_ctx;
-static enum MAPISTATUS ret;
+static TALLOC_CTX 			*g_mem_ctx;
+static struct openchangedb_context 	*g_oc_ctx;
+static enum MAPISTATUS			retval;
+static struct loadparm_context		*g_lp_ctx;
 
 // v Unit test ----------------------------------------------------------------
 
 START_TEST (test_get_SystemFolderID) {
 	uint64_t folder_id = 0;
 
-	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 2, &folder_id);
+	retval = openchangedb_get_SystemFolderID(g_oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 17510839776146620417ul);
 
-	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 14, &folder_id);
+	retval = openchangedb_get_SystemFolderID(g_oc_ctx, "paco", 14, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 18375530904601755649ul);
 
-	ret = openchangedb_get_SystemFolderID(oc_ctx, "chuck", 14, &folder_id);
+	retval = openchangedb_get_SystemFolderID(g_oc_ctx, "chuck", 14, &folder_id);
 	CHECK_FAILURE;
 
-	ret = openchangedb_get_SystemFolderID(oc_ctx, "paco", 15, &folder_id);
+	retval = openchangedb_get_SystemFolderID(g_oc_ctx, "paco", 15, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 1125899906842625ul);
 } END_TEST
@@ -48,38 +54,38 @@ START_TEST (test_get_SystemFolderID) {
 START_TEST (test_get_SpecialFolderID) {
 	uint64_t folder_id = 0;
 
-	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 2, &folder_id);
+	retval = openchangedb_get_SpecialFolderID(g_oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 289356276058554369);
 
-	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 5, &folder_id);
+	retval = openchangedb_get_SpecialFolderID(g_oc_ctx, "paco", 5, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 505529058172338177);
 
-	ret = openchangedb_get_SpecialFolderID(oc_ctx, "paco", 6, &folder_id);
+	retval = openchangedb_get_SpecialFolderID(g_oc_ctx, "paco", 6, &folder_id);
 	CHECK_FAILURE;
 } END_TEST
 
 START_TEST (test_get_PublicFolderID) {
 	uint64_t folder_id = 0;
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 14, &folder_id);
+	retval = openchangedb_get_PublicFolderID(g_oc_ctx, 14, &folder_id);
 	CHECK_FAILURE;
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 5, &folder_id);
+	retval = openchangedb_get_PublicFolderID(g_oc_ctx, 5, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 504403158265495553);
 
-	ret = openchangedb_get_PublicFolderID(oc_ctx, 6, &folder_id);
+	retval = openchangedb_get_PublicFolderID(g_oc_ctx, 6, &folder_id);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(folder_id, 360287970189639681);
 } END_TEST
 
 START_TEST (test_get_MailboxGuid) {
-	struct GUID *guid = talloc_zero(mem_ctx, struct GUID);
-	struct GUID *expected_guid = talloc_zero(mem_ctx, struct GUID);
+	struct GUID *guid = talloc_zero(g_mem_ctx, struct GUID);
+	struct GUID *expected_guid = talloc_zero(g_mem_ctx, struct GUID);
 
-	ret = openchangedb_get_MailboxGuid(oc_ctx, "paco", guid);
+	retval = openchangedb_get_MailboxGuid(g_oc_ctx, "paco", guid);
 	CHECK_SUCCESS;
 
 	GUID_from_string("13c54881-02f6-4ade-ba7d-8b28c5f638c6", expected_guid);
@@ -95,7 +101,7 @@ START_TEST (test_get_MailboxReplica) {
 	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
 	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
 
-	ret = openchangedb_get_MailboxReplica(oc_ctx, "paco", repl_id, repl);
+	retval = openchangedb_get_MailboxReplica(g_oc_ctx, "paco", repl_id, repl);
 	CHECK_SUCCESS;
 
 	GUID_from_string("d87292c1-1bc3-4370-a734-98b559b69a52", expected_repl);
@@ -112,7 +118,7 @@ START_TEST (test_get_PublicFolderReplica) {
 	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
 	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
 
-	ret = openchangedb_get_PublicFolderReplica(oc_ctx, repl_id, repl);
+	retval = openchangedb_get_PublicFolderReplica(g_oc_ctx, repl_id, repl);
 	CHECK_SUCCESS;
 
 	GUID_from_string("c4898b91-da9d-4f3e-9ae4-8a8bd5051b89", expected_repl);
@@ -128,17 +134,17 @@ START_TEST (test_get_mapistoreURI) {
 	uint64_t fid;
 
 	fid = 577586652210266113ul;
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco",
 					    fid, &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderSpam/");
 
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco",
 					    fid, &mapistoreURI, false);
 	CHECK_FAILURE;
 
 	fid = 145241087982698497ul;
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco",
 					    fid, &mapistoreURI, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(mapistoreURI, "sogo://paco:paco@mail/folderDrafts/");
@@ -148,18 +154,18 @@ START_TEST (test_set_mapistoreURI) {
 	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
 	char *uri;
 	uint64_t fid = 13980299143264862209ul;
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, initial_uri);
 
-	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, "foobar");
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, "paco", fid, "foobar");
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_mapistoreURI(mem_ctx, oc_ctx, "paco", fid, &uri, true);
+	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, "foobar");
 
-	ret = openchangedb_set_mapistoreURI(oc_ctx, "paco", fid, initial_uri);
+	retval = openchangedb_set_mapistoreURI(g_oc_ctx, "paco", fid, initial_uri);
 	CHECK_SUCCESS;
 } END_TEST
 
@@ -167,18 +173,18 @@ START_TEST (test_get_parent_fid) {
 	uint64_t pfid = 0ul, fid;
 
 	fid = 13980299143264862209ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
+	retval = openchangedb_get_parent_fid(g_oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(18231415716525899777ul, pfid);
 
 	fid = 216172782113783809ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
+	retval = openchangedb_get_parent_fid(g_oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(72057594037927937ul, pfid);
 
 	fid = 504403158265495553ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, "user doesn't matter", fid,
+	retval = openchangedb_get_parent_fid(g_oc_ctx, "user doesn't matter", fid,
 					  &pfid, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(216172782113783809ul, pfid);
@@ -188,7 +194,7 @@ START_TEST (test_get_parent_fid_which_is_the_mailbox) {
 	uint64_t pfid = 0ul, fid = 0ul;
 
 	fid = 18159358122487971841ul;
-	ret = openchangedb_get_parent_fid(oc_ctx, "paco", fid, &pfid, true);
+	retval = openchangedb_get_parent_fid(g_oc_ctx, "paco", fid, &pfid, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(17438782182108692481ul, pfid);
 } END_TEST
@@ -197,18 +203,18 @@ START_TEST (test_get_fid) {
 	uint64_t fid;
 	char *uri;
 
-	uri = talloc_strdup(mem_ctx, "sogo://paco@contacts/personal/");
-	ret = openchangedb_get_fid(oc_ctx, uri, &fid);
+	uri = talloc_strdup(g_mem_ctx, "sogo://paco@contacts/personal/");
+	retval = openchangedb_get_fid(g_oc_ctx, uri, &fid);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, 289356276058554369ul);
 } END_TEST
 
 START_TEST (test_get_MAPIStoreURIs) {
-	struct StringArrayW_r *uris = talloc_zero(mem_ctx, struct StringArrayW_r);
+	struct StringArrayW_r *uris = talloc_zero(g_mem_ctx, struct StringArrayW_r);
 	bool found = false;
 	int i;
 
-	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	retval = openchangedb_get_MAPIStoreURIs(g_oc_ctx, "paco", g_mem_ctx, &uris);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(uris->cValues, 23);
 
@@ -223,21 +229,21 @@ START_TEST (test_get_ReceiveFolder) {
 	uint64_t fid = 0, expected_fid = 18303473310563827713ul;
 	const char *explicit;
 
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco",
 					     "Report.IPM", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, expected_fid);
 	ck_assert_str_eq(explicit, "Report.IPM");
 
 	fid = 0;
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "IPM",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco", "IPM",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, expected_fid);
 	ck_assert_str_eq(explicit, "IPM");
 
 	fid = 0;
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco", "all",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco", "all",
 					     &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, expected_fid);
@@ -246,23 +252,23 @@ START_TEST (test_get_ReceiveFolder) {
 
 START_TEST (test_get_TransportFolder) {
 	uint64_t fid;
-	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
+	retval = openchangedb_get_TransportFolder(g_oc_ctx, "paco", &fid);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, 18375530904601755649ul);
 } END_TEST
 
 START_TEST (test_get_Transport_folder_when_has_unusual_display_name) {
 	uint64_t fid = 0, transport_fid = 18375530904601755649ul;
-	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 
 	row->cValues = 1;
-	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
-	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "wH4t3v3r mate");
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", transport_fid, row);
+	row->lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "wH4t3v3r mate");
+	retval = openchangedb_set_folder_properties(g_oc_ctx, "paco", transport_fid, row);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_TransportFolder(oc_ctx, "paco", &fid);
+	retval = openchangedb_get_TransportFolder(g_oc_ctx, "paco", &fid);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, transport_fid);
 } END_TEST
@@ -272,12 +278,12 @@ START_TEST (test_get_folder_count) {
 	uint64_t fid;
 
 	fid = 18231415716525899777ul;
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
 	fid = 17438782182108692481ul;
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", fid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", fid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 12);
 } END_TEST
@@ -285,17 +291,17 @@ START_TEST (test_get_folder_count) {
 START_TEST (test_get_folder_count_public_folder) {
 	uint32_t count;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco",
 					    216172782113783809ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 4);
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco",
 					    648518346341351425ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 0);
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco",
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco",
 					    72057594037927937ul, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 2);
@@ -305,7 +311,7 @@ START_TEST (test_get_new_changeNumber) {
 	uint64_t cn = 0, new_cn;
 	int i;
 	for (i = 0; i < 5; i++) {
-		ret = openchangedb_get_new_changeNumber(oc_ctx, &cn);
+		retval = openchangedb_get_new_changeNumber(g_oc_ctx, &cn);
 		CHECK_SUCCESS;
 		new_cn = ((exchange_globcnt(NEXT_CHANGE_NUMBER+i) << 16) | 0x0001);
 		ck_assert(cn == new_cn);
@@ -317,7 +323,7 @@ START_TEST (test_get_new_changeNumbers) {
 	int i;
 	struct UI8Array_r *cns;
 
-	ret = openchangedb_get_new_changeNumbers(oc_ctx, mem_ctx, 10, &cns);
+	retval = openchangedb_get_new_changeNumbers(g_oc_ctx, g_mem_ctx, 10, &cns);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(10, cns->cValues);
 	for (i = 0; i < 10; i++) {
@@ -330,9 +336,9 @@ START_TEST (test_get_next_changeNumber) {
 	uint64_t new_cn = 0, next_cn = 0;
 	int i;
 	for (i = 0; i < 5; i++) {
-		ret = openchangedb_get_next_changeNumber(oc_ctx, &next_cn);
+		retval = openchangedb_get_next_changeNumber(g_oc_ctx, &next_cn);
 		CHECK_SUCCESS;
-		ret = openchangedb_get_new_changeNumber(oc_ctx, &new_cn);
+		retval = openchangedb_get_new_changeNumber(g_oc_ctx, &new_cn);
 		CHECK_SUCCESS;
 		ck_assert(next_cn == new_cn);
 	}
@@ -346,7 +352,7 @@ START_TEST (test_get_folder_property) {
 	// PT_LONG
 	proptag = PidTagAccess;
 	fid = 17871127746336260097ul;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(63, *(int *)data);
@@ -354,12 +360,12 @@ START_TEST (test_get_folder_property) {
 	// PT_UNICODE
 	proptag = PidTagDisplayName;
 	fid = 14124414331340718081ul;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("A3", (char *)data);
 	proptag = PidTagRights;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(2043, *(int *)data);
@@ -367,7 +373,7 @@ START_TEST (test_get_folder_property) {
 	// PT_SYSTIME
 	proptag = PidTagLastModificationTime;
 	fid = 17438782182108692481ul;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(130268260180000000 >> 32,
@@ -377,14 +383,14 @@ START_TEST (test_get_folder_property) {
 
 	// Mailbox display name
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("OpenChange Mailbox: paco", (char *)data);
 
 	// PT_BINARY
 	proptag = PidTagIpmDraftsEntryId;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	ck_assert_int_eq(46, ((struct Binary_r *)data)->cb);
 } END_TEST
@@ -396,19 +402,19 @@ START_TEST (test_get_public_folder_property) {
 
 	fid = 216172782113783809ul;
 	proptag = PidTagAttributeReadOnly;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(0, *(int *)data);
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("NON_IPM_SUBTREE", (char *)data);
 
 	proptag = PidTagCreationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, &data);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(130264095410000000 >> 32,
@@ -422,42 +428,42 @@ START_TEST (test_set_folder_properties) {
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
 	uint64_t change_number, change_number_after;
-	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	char *display_name;
 
 	// We have to check that last_modification_time and change_number have
 	// changed (besides the property we are setting)
 	fid = 14124414331340718081ul;
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number);
 	CHECK_SUCCESS;
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "A3");
 
 	row->cValues = 1;
-	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
-	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foo");
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	row->lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "foo");
+	retval = openchangedb_set_folder_properties(g_oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification_after);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number_after);
 	CHECK_SUCCESS;
 
@@ -468,7 +474,7 @@ START_TEST (test_set_folder_properties) {
 		  != last_modification_after->dwLowDateTime);
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "foo");
@@ -477,24 +483,24 @@ START_TEST (test_set_folder_properties) {
 START_TEST (test_set_folder_properties_on_mailbox) {
 	uint64_t fid;
 	uint32_t proptag;
-	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	struct Binary_r *s1, *s2;
 
 	fid = 18303473310563827713ul;
 	proptag = PidTagIpmTaskEntryId;
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&s1);
 	CHECK_SUCCESS;
 	row->cValues = 1;
-	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = proptag;
-	row->lpProps[0].value.bin.lpb = (uint8_t *)talloc_strdup(mem_ctx, "foo");
+	row->lpProps[0].value.bin.lpb = (uint8_t *)talloc_strdup(g_mem_ctx, "foo");
 	row->lpProps[0].value.bin.cb = 3;
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	retval = openchangedb_set_folder_properties(g_oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&s2);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(s2->cb, 3);
@@ -505,42 +511,42 @@ START_TEST (test_set_public_folder_properties) {
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
 	uint64_t change_number, change_number_after, fid;
-	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	char *display_name;
 
 	fid = 648518346341351425ul;
 	// We have to check that last_modification_time and change_number have
 	// changed (besides the property we are setting)
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number);
 	CHECK_SUCCESS;
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "Events Root");
 
 	row->cValues = 1;
-	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
-	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foo public");
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	row->lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "foo public");
+	retval = openchangedb_set_folder_properties(g_oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
 	proptag = PidTagLastModificationTime;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&last_modification_after);
 	CHECK_SUCCESS;
 
 	proptag = PidTagChangeNumber;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&change_number_after);
 	CHECK_SUCCESS;
 
@@ -551,7 +557,7 @@ START_TEST (test_set_public_folder_properties) {
 		  != last_modification_after->dwLowDateTime);
 
 	proptag = PidTagDisplayName;
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "paco", proptag,
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "paco", proptag,
 					       fid, (void **)&display_name);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(display_name, "foo public");
@@ -561,12 +567,12 @@ START_TEST (test_get_fid_by_name) {
 	uint64_t pfid, fid = 0;
 
 	pfid = 18231415716525899777ul;
-	ret = openchangedb_get_fid_by_name(oc_ctx, "paco", pfid, "A2", &fid);
+	retval = openchangedb_get_fid_by_name(g_oc_ctx, "paco", pfid, "A2", &fid);
 	CHECK_SUCCESS;
 	ck_assert(fid == 14052356737302790145ul);
 
 	pfid = 216172782113783809ul;
-	ret = openchangedb_get_fid_by_name(oc_ctx, "doesnt matter", pfid,
+	retval = openchangedb_get_fid_by_name(g_oc_ctx, "doesnt matter", pfid,
 					   "EFORMS REGISTRY", &fid);
 	CHECK_SUCCESS;
 	ck_assert(fid == 288230376151711745ul);
@@ -575,7 +581,7 @@ START_TEST (test_get_fid_by_name) {
 START_TEST (test_get_mid_by_subject) {
 	uint64_t pfid, mid = 0;
 	pfid = 145241087982698497ul;
-	ret = openchangedb_get_mid_by_subject(oc_ctx, "paco", pfid,
+	retval = openchangedb_get_mid_by_subject(g_oc_ctx, "paco", pfid,
 					      "Sample message on system folder",
 					      true, &mid);
 	CHECK_SUCCESS;
@@ -585,7 +591,7 @@ START_TEST (test_get_mid_by_subject) {
 START_TEST (test_get_mid_by_subject_on_public_folder) {
 	uint64_t pfid, mid = 0;
 	pfid = 576460752303423489ul;
-	ret = openchangedb_get_mid_by_subject(oc_ctx, "does not matter", pfid,
+	retval = openchangedb_get_mid_by_subject(g_oc_ctx, "does not matter", pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
 					      false, &mid);
 	CHECK_SUCCESS;
@@ -598,14 +604,14 @@ START_TEST (test_delete_folder) {
 
 	fid = 10233304253292609537ul;
 	pfid = 18231415716525899777ul;
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 15);
 
-	ret = openchangedb_delete_folder(oc_ctx, "paco", fid);
+	retval = openchangedb_delete_folder(g_oc_ctx, "paco", fid);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 14);
 } END_TEST
@@ -618,14 +624,14 @@ START_TEST (test_delete_public_folder) {
 	fid = 288230376151711745ul;
 	pfid = 216172782113783809ul;
 	n = 4;
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, n);
 
-	ret = openchangedb_delete_folder(oc_ctx, "paco", fid);
+	retval = openchangedb_delete_folder(g_oc_ctx, "paco", fid);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, n - 1);
 } END_TEST
@@ -635,27 +641,27 @@ START_TEST (test_set_ReceiveFolder) {
 	const char *explicit;
 
 	fid_1 = 13980299143264862209ul;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_1);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "trash1", fid_1);
 	CHECK_SUCCESS;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_1);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "whatever", fid_1);
 	CHECK_SUCCESS;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_1);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "trash2", fid_1);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco",
 					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_1);
 	ck_assert_str_eq(explicit, "whatever");
 
 	fid_2 = 14052356737302790145ul;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash1", fid_2);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "trash1", fid_2);
 	CHECK_SUCCESS;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "whatever", fid_2);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "whatever", fid_2);
 	CHECK_SUCCESS;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "trash2", fid_2);
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "trash2", fid_2);
 	CHECK_SUCCESS;
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco",
 					     "whatever", &fid, &explicit);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, fid_2);
@@ -667,10 +673,10 @@ START_TEST (test_get_users_from_partial_uri) {
 	char **uris, **users;
 	const char *partial = "sogo://*";
 
-	ret = openchangedb_get_users_from_partial_uri(mem_ctx, oc_ctx, partial,
+	retval = openchangedb_get_users_from_partial_uri(g_mem_ctx, g_oc_ctx, partial,
 						      &count, &uris, &users);
 	// FIXME mailboxDN bug?
-	ck_assert_int_ne(ret, MAPI_E_SUCCESS);
+	ck_assert_int_ne(retval, MAPI_E_SUCCESS);
 } END_TEST
 
 START_TEST (test_create_mailbox) {
@@ -678,22 +684,22 @@ START_TEST (test_create_mailbox) {
 	uint32_t *data_int;
 	uint64_t fid = 14989949884725985281ul;
 
-	ret = openchangedb_create_mailbox(oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
+	retval = openchangedb_create_mailbox(g_oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "chuck",
 					       PidTagDisplayName, fid,
 					       (void **)&data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("OpenChange Mailbox: chuck", (char *)data);
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "chuck",
 					       PidTagAccess, fid,
 					       (void **)&data_int);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(63, *data_int);
 
-	ret = openchangedb_get_folder_property(mem_ctx, oc_ctx, "chuck",
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, "chuck",
 					       PidTagRights, fid,
 					       (void **)&data_int);
 	CHECK_SUCCESS;
@@ -706,16 +712,16 @@ START_TEST (test_create_folder) {
 
 	pfid = 18231415716525899777ul;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
 	fid = 10524912329164849153ul;
 	changenumber = 424242;
-	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+	retval = openchangedb_create_folder(g_oc_ctx, "paco", pfid, fid, changenumber,
 					 "sogo://paco@mail/folderOhlala", 100);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count_after);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count + 1, count_after);
 } END_TEST
@@ -723,61 +729,61 @@ START_TEST (test_create_folder) {
 START_TEST (test_create_folder_without_mapistore_uri) {
 	uint64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
-	struct StringArrayW_r *uris = talloc_zero(mem_ctx, struct StringArrayW_r);
+	struct StringArrayW_r *uris = talloc_zero(g_mem_ctx, struct StringArrayW_r);
 	int uris_before;
 
-	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	retval = openchangedb_get_MAPIStoreURIs(g_oc_ctx, "paco", g_mem_ctx, &uris);
 	CHECK_SUCCESS;
 	uris_before = uris->cValues;
 
 	pfid = 18231415716525899777ul;
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
 	fid = 10596969923202777089ul;
 	changenumber = 424243;
-	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+	retval = openchangedb_create_folder(g_oc_ctx, "paco", pfid, fid, changenumber,
 					 NULL, 100);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count_after);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count + 1, count_after);
 
 	// Check this has not changed
-	ret = openchangedb_get_MAPIStoreURIs(oc_ctx, "paco", mem_ctx, &uris);
+	retval = openchangedb_get_MAPIStoreURIs(g_oc_ctx, "paco", g_mem_ctx, &uris);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(uris->cValues, uris_before);
 } END_TEST
 
 START_TEST (test_create_folder_and_display_name) {
-	struct SRow *row = talloc_zero(mem_ctx, struct SRow);
+	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	uint64_t pfid, fid, fid2, changenumber;
 	uint32_t count, count_after;
 
 	pfid = 18231415716525899777ul;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
 	fid = 10669027517240705025ul;
 	changenumber = 424244;
-	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+	retval = openchangedb_create_folder(g_oc_ctx, "paco", pfid, fid, changenumber,
 					 "sogo://paco@mail/folderOhlala", 100);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count_after);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count + 1, count_after);
 
 	row->cValues = 1;
-	row->lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row->lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row->lpProps[0].ulPropTag = PidTagDisplayName;
-	row->lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "some name");
-	ret = openchangedb_set_folder_properties(oc_ctx, "paco", fid, row);
+	row->lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "some name");
+	retval = openchangedb_set_folder_properties(g_oc_ctx, "paco", fid, row);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_fid_by_name(oc_ctx, "paco", pfid, "some name",
+	retval = openchangedb_get_fid_by_name(g_oc_ctx, "paco", pfid, "some name",
 					   &fid2);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid2, fid);
@@ -789,16 +795,16 @@ START_TEST (test_create_public_folder) {
 
 	pfid = 216172782113783809ul;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count);
 	CHECK_SUCCESS;
 
 	fid = 42;
 	changenumber = 4242;
-	ret = openchangedb_create_folder(oc_ctx, "paco", pfid, fid, changenumber,
+	retval = openchangedb_create_folder(g_oc_ctx, "paco", pfid, fid, changenumber,
 					 NULL, 2);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_folder_count(oc_ctx, "paco", pfid, &count_after);
+	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", pfid, &count_after);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count + 1, count_after);
 } END_TEST
@@ -806,11 +812,11 @@ START_TEST (test_create_public_folder) {
 START_TEST (test_get_message_count) {
 	uint32_t count = 0;
 	uint64_t fid = 145241087982698497ul;
-	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
+	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
 
-	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, true);
+	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 0);
 } END_TEST
@@ -818,15 +824,15 @@ START_TEST (test_get_message_count) {
 START_TEST (test_get_message_count_from_public_folder) {
 	uint32_t count = 0;
 	uint64_t fid = 576460752303423489ul;
-	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, false);
+	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
 
-	ret = openchangedb_get_message_count(oc_ctx, "paco", 1, &count, false);
+	retval = openchangedb_get_message_count(g_oc_ctx, "paco", 1, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 0);
 
-	ret = openchangedb_get_message_count(oc_ctx, "paco", fid, &count, true);
+	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, true);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 0);
 } END_TEST
@@ -834,12 +840,12 @@ START_TEST (test_get_message_count_from_public_folder) {
 START_TEST (test_get_system_idx) {
 	int system_idx = 0;
 	uint64_t fid = 17582897370184548353ul;
-	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(3, system_idx);
 
 	fid = 1125899906842625ul;
-	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(15, system_idx);
 } END_TEST
@@ -847,12 +853,12 @@ START_TEST (test_get_system_idx) {
 START_TEST (test_get_system_idx_from_public_folder) {
 	int system_idx = 0;
 	uint64_t fid = 504403158265495553ul;
-	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(5, system_idx);
 
 	fid = 216172782113783809ul;
-	ret = openchangedb_get_system_idx(oc_ctx, "paco", fid, &system_idx);
+	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(3, system_idx);
 } END_TEST
@@ -866,55 +872,55 @@ START_TEST (test_create_and_edit_message) {
 
 	fid = 17438782182108692481ul;
 	mid = 10;
-	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_create(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					  false, &msg);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					&msg, NULL);
 	CHECK_SUCCESS;
 
 	prop = PidTagParentFolderId;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert(fid == *(uint64_t *)data);
 
 	row.cValues = 2;
-	row.lpProps = talloc_zero_array(mem_ctx, struct SPropValue, 2);
+	row.lpProps = talloc_zero_array(g_mem_ctx, struct SPropValue, 2);
 	row.lpProps[0].ulPropTag = PidTagDisplayName;
-	row.lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foobar");
+	row.lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "foobar");
 	row.lpProps[1].ulPropTag = PidTagNormalizedSubject;
-	row.lpProps[1].value.lpszW = talloc_strdup(mem_ctx, "subject foo'foo");
-	ret = openchangedb_message_set_properties(mem_ctx, oc_ctx, msg, &row);
+	row.lpProps[1].value.lpszW = talloc_strdup(g_mem_ctx, "subject foo'foo");
+	retval = openchangedb_message_set_properties(g_mem_ctx, g_oc_ctx, msg, &row);
 	CHECK_SUCCESS;
 
 	prop = PidTagDisplayName;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar", (char *)data);
 
 	prop = PidTagNormalizedSubject;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("subject foo'foo", (char *)data);
 
-	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
 	CHECK_SUCCESS;
 
 	// Now reopen message and read again the property
-	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					&msg, 0);
 	CHECK_SUCCESS;
 	prop = PidTagDisplayName;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar", (char *)data);
 
 	prop = PidTagNormalizedSubject;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("subject foo'foo", (char *)data);
 } END_TEST
@@ -928,43 +934,43 @@ START_TEST (test_create_and_edit_message_on_public_folder) {
 
 	fid = 648518346341351425ul;
 	mid = 1234512345ul;
-	ret = openchangedb_message_create(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_create(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					  true, &msg);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					&msg, 0);
 	CHECK_SUCCESS;
 
 	prop = PidTagParentFolderId;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert(fid == *(uint64_t *)data);
 
 	row.cValues = 1;
-	row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
+	row.lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
 	row.lpProps[0].ulPropTag = PidTagDisplayName;
-	row.lpProps[0].value.lpszW = talloc_strdup(mem_ctx, "foobar 'foo'");
-	ret = openchangedb_message_set_properties(mem_ctx, oc_ctx, msg, &row);
+	row.lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "foobar 'foo'");
+	retval = openchangedb_message_set_properties(g_mem_ctx, g_oc_ctx, msg, &row);
 	CHECK_SUCCESS;
 
 	prop = PidTagDisplayName;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar 'foo'", (char *)data);
 
-	ret = openchangedb_message_save(oc_ctx, msg, 0);
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
 	CHECK_SUCCESS;
 
 	// Now reopen message and read again the property
-	ret = openchangedb_message_open(mem_ctx, oc_ctx, "paco", mid, fid,
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, "paco", mid, fid,
 					&msg, 0);
 	CHECK_SUCCESS;
 	prop = PidTagDisplayName;
-	ret = openchangedb_message_get_property(mem_ctx, oc_ctx, msg, prop, &data);
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar 'foo'", (char *)data);
 } END_TEST
@@ -976,35 +982,35 @@ START_TEST (test_build_table_folders) {
 	uint32_t i;
 
 	fid = 17438782182108692481ul;
-	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 	prop = PidTagFolderId;
 	for (i = 0; i < 13; i++) {
 		CHECK_SUCCESS;
-		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+		retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 						      prop, i, false, &data);
 	}
-	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+	ck_assert_int_eq(retval, MAPI_E_INVALID_OBJECT);
 
-	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 	prop = PidTagRights;
 	for (i = 0; i < 13; i++) {
 		CHECK_SUCCESS;
-		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+		retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 						      prop, i, false, &data);
 	}
-	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+	ck_assert_int_eq(retval, MAPI_E_INVALID_OBJECT);
 
-	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 	prop = PidTagDisplayName;
 	for (i = 0; i < 13; i++) {
 		CHECK_SUCCESS;
-		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+		retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 						      prop, i, false, &data);
 	}
-	ck_assert_int_eq(ret, MAPI_E_INVALID_OBJECT);
+	ck_assert_int_eq(retval, MAPI_E_INVALID_OBJECT);
 } END_TEST
 
 START_TEST (test_build_table_folders_with_restrictions) {
@@ -1014,18 +1020,18 @@ START_TEST (test_build_table_folders_with_restrictions) {
 	struct mapi_SRestriction res;
 
 	fid = 17438782182108692481ul;
-	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 
 	res.rt = RES_PROPERTY;
 	res.res.resProperty.ulPropTag = PidTagDisplayName;
 	res.res.resProperty.lpProp.ulPropTag = PidTagDisplayName;
 	res.res.resProperty.lpProp.value.lpszW = "Schedule";
-	openchangedb_table_set_restrictions(oc_ctx, table, &res);
+	openchangedb_table_set_restrictions(g_oc_ctx, table, &res);
 	CHECK_SUCCESS;
 
 	prop = PidTagDisplayName;
-	ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+	retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 					      prop, 0, false, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("Schedule", (char *)data);
@@ -1040,21 +1046,21 @@ START_TEST (test_build_table_folders_live_filtering) {
 	int ok = 0, bad = 0, idx;
 
 	fid = 17438782182108692481ul;
-	ret = openchangedb_table_init(mem_ctx, oc_ctx, "paco", 1, fid, &table);
+	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, "paco", 1, fid, &table);
 	CHECK_SUCCESS;
 
 	res.rt = RES_PROPERTY;
 	res.res.resProperty.ulPropTag = PidTagDisplayName;
 	res.res.resProperty.lpProp.ulPropTag = PidTagDisplayName;
 	res.res.resProperty.lpProp.value.lpszW = "Schedule";
-	openchangedb_table_set_restrictions(oc_ctx, table, &res);
+	openchangedb_table_set_restrictions(g_oc_ctx, table, &res);
 	CHECK_SUCCESS;
 
 	prop = PidTagDisplayName;
 	for (i = 0; i < 13; i++) {
-		ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+		retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 						      prop, i, true, &data);
-		if (ret == MAPI_E_SUCCESS) {
+		if (retval == MAPI_E_SUCCESS) {
 			ok++;
 			idx = i;
 		} else {
@@ -1062,32 +1068,32 @@ START_TEST (test_build_table_folders_live_filtering) {
 		}
 	}
 	ck_assert_int_eq(1, ok);
-	ret = openchangedb_table_get_property(mem_ctx, oc_ctx, table,
+	retval = openchangedb_table_get_property(g_mem_ctx, g_oc_ctx, table,
 					      prop, idx, true, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("Schedule", (char *)data);
 } END_TEST
 
 START_TEST (test_set_locale) {
-	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x1001));
-	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x1001));
-	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x040c));
-	ck_assert(openchangedb_set_locale(oc_ctx, "paco", 0x0422));
-	ck_assert(!openchangedb_set_locale(oc_ctx, "paco", 0x0422));
+	ck_assert(openchangedb_set_locale(g_oc_ctx, "paco", 0x1001));
+	ck_assert(!openchangedb_set_locale(g_oc_ctx, "paco", 0x1001));
+	ck_assert(openchangedb_set_locale(g_oc_ctx, "paco", 0x040c));
+	ck_assert(openchangedb_set_locale(g_oc_ctx, "paco", 0x0422));
+	ck_assert(!openchangedb_set_locale(g_oc_ctx, "paco", 0x0422));
 } END_TEST
 
 START_TEST (test_get_folders_names) {
-	const char **names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "folders");
+	const char **names = openchangedb_get_folders_names(g_mem_ctx, g_oc_ctx, "en", "folders");
 	ck_assert(names != NULL);
 	ck_assert_str_eq(names[15], "Deleted Items");
 
-	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "en", "special_folders");
+	names = openchangedb_get_folders_names(g_mem_ctx, g_oc_ctx, "en", "special_folders");
 	ck_assert(names != NULL);
 	ck_assert_str_eq(names[0], "Drafts");
 	ck_assert_str_eq(names[4], "Notes");
 	ck_assert_str_eq(names[5], "Journal");
 
-	names = openchangedb_get_folders_names(mem_ctx, oc_ctx, "fr", "special_folders");
+	names = openchangedb_get_folders_names(g_mem_ctx, g_oc_ctx, "fr", "special_folders");
 	ck_assert(names == NULL);
 } END_TEST
 
@@ -1096,11 +1102,11 @@ START_TEST (test_set_receive_folder_to_mailbox) {
 	const char *explicit;
 
 	mailbox_fid = 17438782182108692481ul;
-	ret = openchangedb_set_ReceiveFolder(oc_ctx, "paco", "IPC",
+	retval = openchangedb_set_ReceiveFolder(g_oc_ctx, "paco", "IPC",
 					     mailbox_fid);
 	CHECK_SUCCESS;
 
-	ret = openchangedb_get_ReceiveFolder(mem_ctx, oc_ctx, "paco",
+	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco",
 					     "IPC", &fid, &explicit);
 	CHECK_SUCCESS;
 
@@ -1112,13 +1118,56 @@ START_TEST (test_set_receive_folder_to_mailbox) {
 
 // v Suite definition ---------------------------------------------------------
 
+static void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path,
+				 const char *default_context, const char *root_context)
+{
+	FILE *f;
+	struct ldb_ldif *ldif;
+	struct ldb_context *ldb_ctx = NULL;
+	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	struct ldb_message *msg;
+
+	ldb_ctx = ldb_init(local_mem_ctx, NULL);
+	ldb_connect(ldb_ctx, ldb_path, 0, 0);
+	f = fopen(ldif_path, "r");
+
+	msg = ldb_msg_new(local_mem_ctx);
+	msg->dn = ldb_dn_new(msg, ldb_ctx, "@INDEXLIST");
+	ldb_msg_add_string(msg, "@IDXATTR", "cn");
+	ldb_msg_add_string(msg, "@IDXATTR", "oleguid");
+	ldb_msg_add_string(msg, "@IDXATTR", "mappedId");
+	msg->elements[0].flags = LDB_FLAG_MOD_ADD;
+	ldb_add(ldb_ctx, msg);
+
+	while ((ldif = ldb_ldif_read_file(ldb_ctx, f))) {
+		struct ldb_message *normalized_msg;
+		ldb_msg_normalize(ldb_ctx, local_mem_ctx, ldif->msg,
+				  &normalized_msg);
+		ldb_add(ldb_ctx, normalized_msg);
+		talloc_free(normalized_msg);
+		ldb_ldif_read_free(ldb_ctx, ldif);
+	}
+
+	if (default_context && root_context) {
+		msg = ldb_msg_new(local_mem_ctx);
+		msg->dn = ldb_dn_new(msg, ldb_ctx, "@ROOTDSE");
+		ldb_msg_add_string(msg, "defaultNamingContext", default_context);
+		ldb_msg_add_string(msg, "rootDomainNamingContext", root_context);
+		msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
+		ldb_add(ldb_ctx, msg);
+	}
+
+	fclose(f);
+	talloc_free(local_mem_ctx);
+}
+
 static void ldb_setup(void)
 {
 	create_ldb_from_ldif(OPENCHANGEDB_LDB, OPENCHANGEDB_SAMPLE_LDIF,
 			     LDB_DEFAULT_CONTEXT, LDB_ROOT_CONTEXT);
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	int ret = openchangedb_ldb_initialize(mem_ctx, RESOURCES_DIR, &oc_ctx);
+	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	int ret = openchangedb_ldb_initialize(g_mem_ctx, RESOURCES_DIR, &g_oc_ctx);
 	if (ret != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
 		ck_abort();
@@ -1127,7 +1176,7 @@ static void ldb_setup(void)
 
 static void ldb_teardown(void)
 {
-	talloc_free(mem_ctx);
+	talloc_free(g_mem_ctx);
 	unlink(OPENCHANGEDB_LDB);
 }
 
@@ -1142,24 +1191,29 @@ static void mysql_setup(void)
 	bool inserts_to_execute;
 	MYSQL *conn;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	if (strlen(MYSQL_PASS) == 0) {
-		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER "@"
-					   MYSQL_HOST "/" MYSQL_DB);
+	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (strlen(OPENCHANGEDB_MYSQL_PASS) == 0) {
+		database = talloc_asprintf(g_mem_ctx, "mysql://" OPENCHANGEDB_MYSQL_USER "@"
+					   OPENCHANGEDB_MYSQL_HOST "/" OPENCHANGEDB_MYSQL_DB);
 	} else {
-		database = talloc_asprintf(mem_ctx, "mysql://" MYSQL_USER ":"
-					   MYSQL_PASS "@" MYSQL_HOST "/"
-					   MYSQL_DB);
+		database = talloc_asprintf(g_mem_ctx, "mysql://" OPENCHANGEDB_MYSQL_USER ":"
+					   OPENCHANGEDB_MYSQL_PASS "@" OPENCHANGEDB_MYSQL_HOST "/"
+					   OPENCHANGEDB_MYSQL_DB);
 	}
-	ret = openchangedb_mysql_initialize(mem_ctx, database, &oc_ctx);
+	g_lp_ctx = loadparm_init(g_mem_ctx);
+	ck_assert(g_lp_ctx != NULL);
 
-	if (ret != MAPI_E_SUCCESS) {
-		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "mapiproxy:openchangedb", database) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "openchangedb:data", OPENCHANGEDB_MYSQL_SCHEMA_PATH) == true));
+	retval = openchangedb_mysql_initialize(g_mem_ctx, g_lp_ctx, &g_oc_ctx);
+
+	if (retval != MAPI_E_SUCCESS) {
+		fprintf(stderr, "Error initializing openchangedb %d\n", retval);
 		ck_abort();
 	}
 
 	// Populate database with sample data
-	conn = oc_ctx->data;
+	conn = g_oc_ctx->data;
 	f = fopen(OPENCHANGEDB_SAMPLE_SQL, "r");
 	if (!f) {
 		fprintf(stderr, "file %s not found", OPENCHANGEDB_SAMPLE_SQL);
@@ -1168,7 +1222,7 @@ static void mysql_setup(void)
 	fseek(f, 0, SEEK_END);
 	sql_size = ftell(f);
 	rewind(f);
-	sql = talloc_zero_array(mem_ctx, char, sql_size + 1);
+	sql = talloc_zero_array(g_mem_ctx, char, sql_size + 1);
 	bytes_read = fread(sql, sizeof(char), sql_size, f);
 	if (bytes_read != sql_size) {
 		fprintf(stderr, "error reading file %s", OPENCHANGEDB_SAMPLE_SQL);
@@ -1177,25 +1231,24 @@ static void mysql_setup(void)
 	insert = strtok(sql, ";");
 	inserts_to_execute = insert != NULL;
 	while (inserts_to_execute) {
-		ret = mysql_query(conn, insert) ? false : true;
-		if (!ret) break;
+		retval = mysql_query(conn, insert) ? false : true;
+		if (!retval) break;
 		insert = strtok(NULL, ";");
-		inserts_to_execute = ret && insert && strlen(insert) > 10;
+		inserts_to_execute = retval && insert && strlen(insert) > 10;
 	}
 }
 
 static void mysql_teardown(void)
 {
-	mysql_query(oc_ctx->data, "DROP DATABASE " MYSQL_DB);
-	talloc_free(mem_ctx);
+	mysql_query(g_oc_ctx->data, "DROP DATABASE " OPENCHANGEDB_MYSQL_DB);
+	talloc_free(g_mem_ctx);
 }
 
 static Suite *openchangedb_create_suite(const char *backend_name,
 					SFun setup, SFun teardown)
 {
 	char *suite_name = talloc_asprintf(talloc_autofree_context(),
-					   "Openchangedb %s backend",
-					   backend_name);
+					   "Openchangedb %s backend", backend_name);
 	Suite *s = suite_create(suite_name);
 
 	TCase *tc = tcase_create(suite_name);
@@ -1262,12 +1315,12 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	return s;
 }
 
-Suite *openchangedb_ldb_suite(void)
+Suite *mapiproxy_openchangedb_ldb_suite(void)
 {
 	return openchangedb_create_suite("LDB", ldb_setup, ldb_teardown);
 }
 
-Suite *openchangedb_mysql_suite(void)
+Suite *mapiproxy_openchangedb_mysql_suite(void)
 {
 	return openchangedb_create_suite("MySQL", mysql_setup, mysql_teardown);
 }

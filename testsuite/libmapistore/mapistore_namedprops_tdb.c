@@ -1,38 +1,74 @@
-#include "namedprops_backends.h"
-#include "test_common.h"
+/*
+   OpenChange Unit Testing
 
+   OpenChange Project
+
+   copyright (C) Jesús García Sáez 2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "testsuite.h"
 #include "mapiproxy/libmapistore/backends/namedprops_ldb.c"
 
+#define NAMEDPROPS_LDB_PATH 		"/tmp/nprops.ldb"
+#define	NAMEDPROPS_LDB_SCHEMA_PATH	"setup/mapistore"
+/* According to the initial ldif file we insert into database */
+#define NEXT_UNUSED_ID 			38392
 
-#define NAMEDPROPS_LDB_PATH "/tmp/nprops.ldb"
+static TALLOC_CTX 			*g_mem_ctx;
+static struct namedprops_context 	*g_nprops;
+static struct loadparm_context		*g_lp_ctx;
+static enum mapistore_error		retval;
 
 
-static TALLOC_CTX *mem_ctx;
-static struct namedprops_context *nprops;
-static int ret;
-
-
-static void ldb_q_setup(void)
+static void ldb_setup(void)
 {
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	ret = mapistore_namedprops_ldb_init(mem_ctx, NAMEDPROPS_LDB_PATH, &nprops);
-
-	if (ret != MAPISTORE_SUCCESS) {
-		fprintf(stderr, "Error initializing namedprops %d", errno);
-		ck_abort();
-	}
+	g_lp_ctx = loadparm_init(g_mem_ctx);
+	ck_assert(g_lp_ctx != NULL);
+	unlink(NAMEDPROPS_LDB_PATH);
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "mapistore:namedproperties", "ldb") == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:ldb_url", NAMEDPROPS_LDB_PATH) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:ldb_data", NAMEDPROPS_LDB_SCHEMA_PATH) == true));
+	retval = mapistore_namedprops_ldb_init(g_mem_ctx, g_lp_ctx, &g_nprops);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	fail_if(retval != MAPISTORE_SUCCESS);
+	fail_if(!g_nprops);
 }
 
-static void ldb_q_teardown(void)
+static void ldb_teardown(void)
 {
 	unlink(NAMEDPROPS_LDB_PATH);
-	talloc_free(mem_ctx);
+	talloc_free(g_mem_ctx);
 }
 
 
 START_TEST (test_next_unused_id) {
-	ck_assert_int_eq(next_unused_id(nprops), NEXT_UNUSED_ID);
+	enum mapistore_error	retval;
+	uint16_t		highest_id = 0;
+
+	/* test sanity checks */
+	retval = next_unused_id(NULL, &highest_id);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = next_unused_id(g_nprops, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = next_unused_id(g_nprops, &highest_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 } END_TEST
 
 START_TEST (test_get_mapped_id_MNID_ID) {
@@ -56,20 +92,17 @@ START_TEST (test_get_mapped_id_MNID_ID) {
 	nameid.kind.lid = 33026;
 	uint16_t prop;
 
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop, 37153);
 
 	// A couple more...
 	nameid.lpguid.time_low = 0x62004;
 	nameid.kind.lid = 32978;
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop, 37524);
 
 	nameid.kind.lid = 32901;
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop, 37297);
 
 } END_TEST
@@ -95,14 +128,12 @@ START_TEST (test_get_mapped_id_MNID_STRING) {
 	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/smallicon";
 	uint16_t prop;
 
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop, 38342);
 
 	// Another...
 	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/searchfolder";
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_SUCCESS);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop, 38365);
 } END_TEST
 
@@ -110,18 +141,17 @@ START_TEST (test_get_mapped_id_not_found) {
 	struct MAPINAMEID nameid = {0};
 	uint16_t prop;
 
-	ck_assert_int_eq(get_mapped_id(nprops, nameid, &prop),
-			 MAPISTORE_ERROR);
+	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_ERROR);
 } END_TEST
 
 START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = 0;
 
-	ret = get_nameid_type(nprops, 38306, &prop_type);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = get_nameid_type(g_nprops, 38306, &prop_type);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop_type, PT_NULL);
 
-	get_nameid_type(nprops, 37975, &prop_type);
+	get_nameid_type(g_nprops, 37975, &prop_type);
 	ck_assert_int_eq(prop_type, PT_UNICODE);
 
 	/* mappedId should be unique? It's not
@@ -133,28 +163,27 @@ START_TEST (test_get_nameid_type) {
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop_type, PT_LONG);*/
 
-	ret = get_nameid_type(nprops, 37090, &prop_type);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = get_nameid_type(g_nprops, 37090, &prop_type);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop_type, PT_SYSTIME);
 } END_TEST
 
 START_TEST (test_get_nameid_type_not_found) {
 	uint16_t prop_type = -1;
 
-	ret = get_nameid_type(nprops, 42, &prop_type);
-	ck_assert_int_eq(ret, MAPISTORE_ERROR);
+	retval = get_nameid_type(g_nprops, 42, &prop_type);
+	ck_assert_int_eq(retval, MAPISTORE_ERROR);
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_STRING) {
 	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(nprops, 38306, mem_ctx, &nameid);
+	get_nameid(g_nprops, 38306, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("urn:schemas:httpmail:junkemail",
-			 nameid->kind.lpwstr.Name);
+	ck_assert_str_eq("urn:schemas:httpmail:junkemail", nameid->kind.lpwstr.Name);
 
-	get_nameid(nprops, 38344, mem_ctx, &nameid);
+	get_nameid(g_nprops, 38344, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_str_eq("http://schemas.microsoft.com/exchange/mailbox-owner-name",
 			 nameid->kind.lpwstr.Name);
@@ -166,11 +195,11 @@ START_TEST (test_get_nameid_MNID_ID) {
 	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(nprops, 38212, mem_ctx, &nameid);
+	get_nameid(g_nprops, 38212, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_int_eq(32778, nameid->kind.lid);
 
-	get_nameid(nprops, 38111, mem_ctx, &nameid);
+	get_nameid(g_nprops, 38111, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
 	ck_assert_int_eq(34063, nameid->kind.lid);
 
@@ -181,8 +210,8 @@ START_TEST (test_get_nameid_not_found) {
 	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
 	struct MAPINAMEID *nameid = NULL;
 
-	ret = get_nameid(nprops, 42, mem_ctx, &nameid);
-	ck_assert_int_eq(ret, MAPISTORE_ERROR);
+	retval = get_nameid(g_nprops, 42, mem_ctx, &nameid);
+	ck_assert_int_eq(retval, MAPISTORE_ERROR);
 	ck_assert(nameid == NULL);
 } END_TEST
 
@@ -193,12 +222,12 @@ START_TEST (test_create_id_MNID_ID) {
 	nameid.ulKind = MNID_ID;
 	nameid.kind.lid = 42;
 
-	ret = create_id(nprops, nameid, mapped_id);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = create_id(g_nprops, nameid, mapped_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	mapped_id = 0;
-	ret = get_mapped_id(nprops, nameid, &mapped_id);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = get_mapped_id(g_nprops, nameid, &mapped_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(mapped_id, 42);
 } END_TEST
 
@@ -210,24 +239,27 @@ START_TEST (test_create_id_MNID_STRING) {
 	nameid.ulKind = MNID_STRING;
 	nameid.kind.lpwstr.Name = talloc_strdup(mem_ctx, "foobar");
 
-	ret = create_id(nprops, nameid, mapped_id);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = create_id(g_nprops, nameid, mapped_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	mapped_id = 0;
-	ret = get_mapped_id(nprops, nameid, &mapped_id);
-	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
+	retval = get_mapped_id(g_nprops, nameid, &mapped_id);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(mapped_id, 41);
 
 	talloc_free(mem_ctx);
 } END_TEST
 
 
-Suite *namedprops_ldb_suite(void)
+Suite *mapistore_namedprops_tdb_suite(void)
 {
-	Suite *s = suite_create("Named Properties LDB Backend");
+	Suite	*s;
+	TCase	*tc_ldb_q;
 
-	TCase *tc_ldb_q = tcase_create("LDB queries");
-	tcase_add_unchecked_fixture(tc_ldb_q, ldb_q_setup, ldb_q_teardown);
+	s = suite_create("libmapistore named properties: TDB backend");
+
+	tc_ldb_q = tcase_create("LDB queries");
+	tcase_add_unchecked_fixture(tc_ldb_q, ldb_setup, ldb_teardown);
 	tcase_add_test(tc_ldb_q, test_next_unused_id);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_STRING);

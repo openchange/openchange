@@ -26,13 +26,21 @@ int main(int ac, const char *av[])
 
 	sr = srunner_create(suite_create("OpenChange unit testing"));
 
+	/* libmapi */
+	srunner_add_suite(sr, libmapi_property_suite());
+	/* libmapiproxy */
+	srunner_add_suite(sr, mapiproxy_openchangedb_mysql_suite());
+	srunner_add_suite(sr, mapiproxy_openchangedb_ldb_suite());
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());
-	srunner_add_suite(sr, indexing_mysql_suite());
+	srunner_add_suite(sr, mapistore_namedprops_tdb_suite());
+	srunner_add_suite(sr, mapistore_indexing_mysql_suite());
+	srunner_add_suite(sr, mapistore_indexing_tdb_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	nf = srunner_ntests_failed(sr);
 	srunner_free(sr);
+
 	return (nf == 0) ? EXIT_SUCCESS : EXIT_FAILURE;
 }

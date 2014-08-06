@@ -44,8 +44,10 @@ static enum mapistore_error tdb_search_existing_fmid(struct indexing_context *ic
 	TDB_DATA	key;
 
 	/* Sanity */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!IsSoftDeleted, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
 	key.dsize = strlen((const char *)key.dptr);
@@ -82,8 +84,10 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	bool		IsSoftDeleted = false;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid doesn't already exist within the database */
 	ret = tdb_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
@@ -119,8 +123,10 @@ static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
 	TDB_DATA	dbuf;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Add the record given its fid and mapistore_uri */
 	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
@@ -136,7 +142,7 @@ static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
 	if (ret == -1) {
 		DEBUG(3, ("[%s:%d]: Unable to update 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
 			  fmid, mapistore_URI));
-		return MAPISTORE_ERR_DATABASE_OPS;
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	return MAPISTORE_SUCCESS;
@@ -154,8 +160,9 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 	bool				IsSoftDeleted = false;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid still exists within the database */
 	ret = tdb_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
@@ -192,6 +199,8 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 		talloc_free(key.dptr);
 		MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERR_DATABASE_OPS, NULL);
 		break;
+	default:
+		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	return MAPISTORE_SUCCESS;
@@ -209,9 +218,10 @@ static enum mapistore_error tdb_record_get_uri(struct indexing_context *ictx,
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fmid exists within the database */
 	key.dptr = (unsigned char *) talloc_asprintf(ictx, "0x%.16"PRIx64, fmid);
@@ -337,9 +347,10 @@ static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 
 	/* SANITY checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fmid exists within the database */
 	tdb_data.found = false;

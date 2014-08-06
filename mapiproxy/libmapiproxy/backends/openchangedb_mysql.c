@@ -391,24 +391,36 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 	return ret;
 }
 
-static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *_mem_ctx,
 					 struct openchangedb_context *self,
 					 const char *recipient,
 					 const char *MessageClass,
 					 uint64_t *fid,
 					 const char **ExplicitMessageClass)
 {
-	TALLOC_CTX *local_mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
-	MYSQL *conn = self->data;
-	char *sql, *explicit = NULL;
-	enum MAPISTATUS ret;
-	MYSQL_RES *res;
-	my_ulonglong nrows, i;
-	size_t length;
+	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS retval = MAPI_E_SUCCESS;
+	MYSQL		*conn = NULL;
+	char		*sql = NULL;
+	char		*explicit = NULL;
+	MYSQL_RES	*res = NULL;
+	my_ulonglong	nrows, i;
+	size_t		length;
 
-	// Check PidTagMessageClass from mailbox and folders
-	// TODO ou_id
-	sql = talloc_asprintf(local_mem_ctx,
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!self, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!self->data, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ExplicitMessageClass, MAPI_E_INVALID_PARAMETER, NULL);
+
+	conn = self->data;
+
+	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Check PidTagMessageClass from mailbox and folders */
+	/* TODO: ou_id */
+	sql = talloc_asprintf(mem_ctx,
 		"SELECT fp.value, f.folder_id FROM folders f "
 		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
 		"JOIN folders_properties fp ON fp.folder_id = f.id AND"
@@ -417,23 +429,27 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 		"SELECT mp.value, m2.folder_id FROM mailboxes m2 "
 		"JOIN mailboxes_properties mp ON mp.mailbox_id = m2.id AND"
 		"     mp.name = 'PidTagMessageClass' "
-		"WHERE m2.name = '%s'", _sql(mem_ctx, recipient),
-		_sql(mem_ctx, recipient));
+		"WHERE m2.name = '%s'", _sql(_mem_ctx, recipient),
+		_sql(_mem_ctx, recipient));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
-	ret = status(select_without_fetch(conn, sql, &res));
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, local_mem_ctx);
+	retval = status(select_without_fetch(conn, sql, &res));
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
 	nrows = mysql_num_rows(res);
 	for (i = 0, length = 0; i < nrows; i++) {
-		MYSQL_ROW row = mysql_fetch_row(res);
-		const char *message_class;
-		size_t message_class_length;
-		if (row == NULL) {
-			DEBUG(0, ("Error getting row %d of `%s`: %s", (int) i,
-				  sql, mysql_error(conn)));
+		MYSQL_ROW	row;
+		const char	*message_class = NULL;
+		size_t		message_class_length = 0;
+
+		row = mysql_fetch_row(res);
+		if (row == NULL || row[0] == NULL) {
+			DEBUG(0, ("[ERR][%s]: Error getting row %d of `%s`: %s", __location__,
+				  (int) i, sql, mysql_error(conn)));
 			mysql_free_result(res);
 			return MAPI_E_CALL_FAILED;
 		}
+
 		message_class = row[0];
 		message_class_length = strlen(message_class);
 		if (!strncasecmp(MessageClass, message_class, message_class_length) &&
@@ -444,22 +460,24 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 			if (MessageClass && !strcmp(MessageClass, "All")) {
 				explicit = "";
 			} else {
-				explicit = talloc_strdup(mem_ctx, message_class);
+				explicit = talloc_strdup(_mem_ctx, message_class);
+				OPENCHANGE_RETVAL_IF(!explicit, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 			}
 			*ExplicitMessageClass = explicit;
 
-			ret = MAPI_E_CALL_FAILED;
+			retval = MAPI_E_CALL_FAILED;
 			if (convert_string_to_ull(row[1], fid)) {
-				ret = MAPI_E_SUCCESS;
+				retval = MAPI_E_SUCCESS;
 			}
 
 			length = message_class_length;
 		}
 	}
 
+	talloc_free(mem_ctx);
 	mysql_free_result(res);
 
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,

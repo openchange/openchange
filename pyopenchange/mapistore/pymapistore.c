@@ -139,6 +139,30 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	return Py_BuildValue("i", ret);
 }
 
+static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
+{
+	bool				ret;
+	bool 				show_defaults = false;
+	const char			*option = NULL;
+	const char			*value = NULL;
+
+	if (!PyArg_ParseTuple(args, "ss", &option, &value)) {
+		return NULL;
+	}
+
+	/* Set the value in the specified parameter */
+	ret = lpcfg_set_cmdline(self->lp_ctx, option, value);
+	if (ret == false) {
+		PyErr_SetString(PyExc_SystemError,
+				"error in lpcfg_set_cmdline");
+		return Py_BuildValue("i", 1);
+	}
+
+	lpcfg_dump(self->lp_ctx, stdout, show_defaults, lpcfg_numservices(self->lp_ctx));
+
+	return Py_BuildValue("i", 0);
+}
+
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 {
 	PyMAPIStoreMGMTObject	*obj;
@@ -366,6 +390,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 
 static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
+	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

@@ -67,11 +67,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
-	mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
-	mkdir(mapping_path, 0700);
+	if (mapistore_get_mapping_path() == NULL) {
+		mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
+		mkdir(mapping_path, 0700);
 
-	mapistore_set_mapping_path(mapping_path);
-	talloc_free(mapping_path);
+		mapistore_set_mapping_path(mapping_path);
+		talloc_free(mapping_path);
+	}
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {

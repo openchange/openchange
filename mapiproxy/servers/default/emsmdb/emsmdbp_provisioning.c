@@ -65,6 +65,22 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
+static enum MAPISTATUS get_new_public_folder_id(struct emsmdbp_context *emsmdbp_ctx, uint64_t parent_fid, uint64_t *fid)
+{
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	enum mapistore_error	ret;
+
+	if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
+		retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fid);
+	} else {
+		ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, fid);
+		if (ret != MAPISTORE_SUCCESS) {
+			retval = MAPI_E_CALL_FAILED;
+		}
+	}
+
+	return retval;
+}
 /**
    \details Provision the Local FreeBusy message for the user in
    Public Folder store.
@@ -100,10 +116,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	OPENCHANGE_RETVAL_IF(!dn_root, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
 	cn_ptr = strstr(dn_root, "/cn");
-	if (!cn_ptr) {
-		retval = MAPI_E_INVALID_PARAMETER;
-		goto end;
-	}
+	OPENCHANGE_RETVAL_IF(!cn_ptr, MAPI_E_INVALID_PARAMETER, mem_ctx);
 
 	dn_user = talloc_asprintf(mem_ctx, "USER-%s", cn_ptr);
 	OPENCHANGE_RETVAL_IF(!dn_user, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
@@ -123,29 +136,61 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 
 	retval = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(5, ("provisioning: freebusy root folder not found in openchange.ldb\n"));
+		DEBUG(5, ("[%s:%d] provisioning: freebusy root folder not found in openchange.ldb\n", __FUNCTION__, __LINE__));
 		goto end;
 	}
 
 	retval = openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, dn_root, &group_fid);
 	if (retval != MAPI_E_SUCCESS) {
-		openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &group_fid);
-		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
+		retval = get_new_public_folder_id(emsmdbp_ctx, public_fb_fid, &group_fid);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new change number\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
 		openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, public_fb_fid, group_fid, change_num, NULL, -1);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot create new folder\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
 	}
 
 	retval = openchangedb_get_mid_by_subject(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, group_fid, dn_user, false, &fb_mid);
 	if (retval != MAPI_E_SUCCESS) {
-		openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fb_mid);
-		openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
-		openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
+		retval = get_new_public_folder_id(emsmdbp_ctx, group_fid, &fb_mid);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new public folder id\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &change_num);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot get new change number\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
+		retval = openchangedb_message_create(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, fb_mid, group_fid, false, &message_object);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot create new message\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
 		property_row.cValues = 1;
 		property_row.lpProps = talloc_zero(mem_ctx, struct SPropValue);
 		OPENCHANGE_RETVAL_IF(!property_row.lpProps, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		property_row.lpProps[0].ulPropTag = PR_NORMALIZED_SUBJECT_UNICODE;
 		property_row.lpProps[0].value.lpszW = dn_user;
-		openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);
-		openchangedb_message_save(emsmdbp_ctx->oc_ctx, message_object, 0);
+		retval = openchangedb_message_set_properties(mem_ctx, emsmdbp_ctx->oc_ctx, message_object, &property_row);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot set properties on new message\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
+		retval = openchangedb_message_save(emsmdbp_ctx->oc_ctx, message_object, 0);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(0, ("[%s:%d] Cannot save message\n", __FUNCTION__, __LINE__));
+			goto end;
+		}
 	}
 
 end:

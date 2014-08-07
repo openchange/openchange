@@ -108,6 +108,9 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	mapi_object_set_session(obj_message, session);
 	mapi_object_set_handle(obj_message, mapi_response->handles[1]);
 	mapi_object_set_logon_id(obj_message, logon_id);
+	if (mapi_response->mapi_repl->u.mapi_CreateMessage.HasMessageId) {
+		mapi_object_set_id(obj_message, mapi_response->mapi_repl->u.mapi_CreateMessage.MessageId.MessageId);
+	}
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);

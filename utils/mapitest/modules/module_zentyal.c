@@ -241,7 +241,7 @@ _PUBLIC_ bool mapitest_zentyal_1804(struct mapitest *mt)
 
 
 	/* Step 4. Resolve the recipients and call ModifyRecipients */
-	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xB,
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
 					  PR_ENTRYID,
 					  PR_DISPLAY_NAME_UNICODE,
 					  PR_OBJECT_TYPE,
@@ -251,8 +251,7 @@ _PUBLIC_ bool mapitest_zentyal_1804(struct mapitest *mt)
 					  PR_ADDRTYPE_UNICODE,
 					  PR_SEND_RICH_INFO,
 					  PR_7BIT_DISPLAY_NAME_UNICODE,
-					  PR_SMTP_ADDRESS_UNICODE,
-					  PidTagUserX509Certificate);
+					  PR_SMTP_ADDRESS_UNICODE);
 
 	username = talloc_array(mt->mem_ctx, char *, 2);
 	username[0] = (char *)mt->profile->username;
@@ -281,9 +280,24 @@ _PUBLIC_ bool mapitest_zentyal_1804(struct mapitest *mt)
 	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
 
 	/* Fake multi-value property on RecipientRow */
+	/* PT_MV_STRING8 */
+	value.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES;
+	value.value.MVszA.cValues = 2;
+	value.value.MVszA.lppszA = talloc_array(mt->mem_ctx, const char *, value.value.MVszA.cValues);
+	value.value.MVszA.lppszA[0] = "smtp:user@test.com";
+	value.value.MVszA.lppszA[1] = "X400:c=US;a= ;p=First Organizati;o=Exchange;s=test";
+	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
+	/* PT_MV_UNICODE - same layout as PT_MV_STRING8 */
+	value.ulPropTag = PR_EMS_AB_PROXY_ADDRESSES_UNICODE;
+	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
+	/* PT_MV_BINARY */
 	value.ulPropTag = PidTagUserX509Certificate;
-	value.value.bin.cb = 0x0;
-	value.value.bin.lpb = NULL;
+	value.value.MVbin.cValues = 2;
+	value.value.MVbin.lpbin = talloc_array(mt->mem_ctx, struct Binary_r, value.value.MVbin.cValues);
+	value.value.MVbin.lpbin[0].cb = 9;
+	value.value.MVbin.lpbin[0].lpb = (uint8_t *)"string 1";
+	value.value.MVbin.lpbin[1].cb = 9;
+	value.value.MVbin.lpbin[1].lpb = (uint8_t *)"string 2";
 	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
 
 	SRowSet = talloc_zero(RowSet, struct SRowSet);

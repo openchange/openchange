@@ -42,33 +42,6 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 	return &globals;
 }
 
-static void openchange_ldb_init(const char *syspath)
-{
-	TALLOC_CTX 		*mem_ctx;
-	struct loadparm_context *lp_ctx;
-	const char		*openchangedb_backend;
-
-	if (globals.ocdb_ctx) return;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	lp_ctx = loadparm_init_global(true);
-	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
-
-	if (openchangedb_backend) {
-		openchangedb_mysql_initialize(mem_ctx, lp_ctx, &globals.ocdb_ctx);
-	} else {
-		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
-	}
-
-	if (!globals.ocdb_ctx) {
-		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");
-		goto end;
-	}
-	(void) talloc_reference(NULL, globals.ocdb_ctx);
-end:
-	talloc_free(mem_ctx);
-}
-
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -89,8 +62,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	/* Initialize ldb context on openchange.ldb */
-	openchange_ldb_init(syspath);
 	if (globals.ocdb_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
 				"error in openchange_ldb_init");

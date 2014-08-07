@@ -97,12 +97,41 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 
 static void py_MAPIStore_dealloc(PyObject *_self)
 {
+
 	PyMAPIStoreObject *self = (PyMAPIStoreObject *)_self;
 
 	mapistore_release(self->mstore_ctx);
 	talloc_free(self->mem_ctx);
 	PyObject_Del(_self);
 }
+
+static PyObject *py_MAPIStore_getdebuglevel(PyMAPIStoreObject *self, void *closure)
+{
+	return PyInt_FromLong(self->debuglevel);
+}
+
+static int py_MAPIStore_setdebuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
+{
+	int 				ret = 0;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Cannot delete the debuglevel attribute");
+		ret = 1;
+		return ret;
+	}
+
+	if (! PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError,
+				"The debuglevel attribute must be an integer");
+		ret = 1;
+		return ret;
+	}
+
+	self->debuglevel = PyInt_AsLong(value);
+
+	return ret;
+}
+
 
 static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args)
 {
@@ -387,6 +416,10 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 
 /* 	return PyInt_FromLong(RowCount); */
 /* } */
+static PyGetSetDef mapistore_getsetters[] = {
+    {"debuglevel", (getter)py_MAPIStore_getdebuglevel, (setter)py_MAPIStore_setdebuglevel, "Debug level"},
+    {NULL}  /* Sentinel */
+};
 
 static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
@@ -409,7 +442,7 @@ PyTypeObject PyMAPIStore = {
 	.tp_basicsize = sizeof (PyMAPIStoreObject),
 	.tp_doc = "mapistore object",
 	.tp_methods = mapistore_methods,
-	/* .tp_getset = mapistore_getsetters, */
+	.tp_getset = mapistore_getsetters,
 	.tp_new = py_MAPIStore_new,
 	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,

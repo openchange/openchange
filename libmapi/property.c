@@ -666,8 +666,6 @@ _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *sour
 	for (i = 0; i < count; i++) {
 		source_value = source_values + i;
 		dest_value = dest_values + i;
-
-		// binary copy the value
 		*dest_value = *source_value;
 
 		prop_type = (source_value->ulPropTag & 0xFFFF);

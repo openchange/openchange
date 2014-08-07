@@ -37,6 +37,12 @@ void PyErr_SetMAPIStoreError(uint32_t retval)
 			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
 }
 
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval)
+{
+	PyErr_SetObject(PyExc_RuntimeError,
+			Py_BuildValue("(i, s)", retval, mapi_get_errstr(retval)));
+}
+
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 {
 	return &globals;
@@ -370,9 +376,21 @@ static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 	return PyString_FromString(mapistore_errstr(ret));
 }
 
+static PyObject *py_mapistatus_errstr(PyObject *mod, PyObject *args)
+{
+	int		ret;
+
+	if (!PyArg_ParseTuple(args, "k", &ret)) {
+		return NULL;
+	}
+
+	return PyString_FromString(mapi_get_errstr(ret));
+}
+
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
 	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
+	{ "mapistatus_errstr", (PyCFunction)py_mapistatus_errstr, METH_VARARGS },
 	{ NULL },
 };
 

@@ -107,6 +107,7 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
 
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);

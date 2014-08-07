@@ -75,6 +75,7 @@ static enum mapistore_error get_mapped_id(struct namedprops_context *self,
 	return MAPISTORE_SUCCESS;
 }
 
+
 /**
    \details Return the next unused namedprops ID
 
@@ -266,6 +267,7 @@ static int mapistore_namedprops_mysql_destructor(struct namedprops_context *self
 	mysql_close(conn);
 	return 0;
 }
+
 
 /**
    \details Retrieve MySQL backend parametric options from
@@ -531,6 +533,7 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 	talloc_free(mem_ctx);
 	return true;
 }
+
 
 /**
   \details Initialize the database and provision it

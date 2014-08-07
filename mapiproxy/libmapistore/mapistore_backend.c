@@ -523,7 +523,11 @@ enum mapistore_error mapistore_backend_get_path(struct backend_context *bctx, TA
 
 	ret = bctx->backend->context.get_path(bctx->backend_object, mem_ctx, fmid, &bpath);
 
-	if (!ret) {
+	if (ret == MAPISTORE_SUCCESS) {
+		if (!bpath) {
+			DEBUG(3, ("%s: Mapistore backend return SUCCESS, but path url is NULL\n", __location__));
+			return MAPISTORE_ERR_INVALID_DATA;
+		}
 		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->backend.namespace, bpath);
 	} else {
 		*path = NULL;

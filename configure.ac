@@ -5,7 +5,12 @@ AC_PREREQ(2.57)
 AC_INIT(openchange, 2.0, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
-AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
+
+AH_VERBATIM([_GNU_SOURCE],
+[#ifndef _GNU_SOURCE
+#define _GNU_SOURCE 1
+#endif])
+
 
 PKG_PROG_PKG_CONFIG([0.20])
 
@@ -15,6 +20,26 @@ then
 fi
 
 CFLAGS="-I. $CFLAGS"
+
+dnl #################################################################
+dnl MySQL
+dnl #################################################################
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+	AC_MSG_WARN([No version of mysql_config was found!])
+	AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
 
 dnl #################################################################
 dnl Check for OS dependent options

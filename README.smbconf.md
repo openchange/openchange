@@ -18,6 +18,9 @@ mapistore named properties backend
 - __namedproperties:ldb_url = STRING__ This option specifies the LDB
   database URL of the LDB named properties backend.
 
+- __namedproperties:ldb_data = STRING__ This option specifies
+  the path where provisioning content is located.
+
 - __namedproperties:mysql_sock = STRING__ This option is mandatory
   unless _namedproperties:mysql_host_ is specified. The option defines
   the UNIX socket path of the MySQL named properties backend.
@@ -46,3 +49,22 @@ mapistore named properties backend
 - __namedproperties:mysql_data = STRING__ This option specifies
   the path where MySQL schema file and provisioning content is
   located.
+
+mapistore indexing backend
+--------------------------
+
+- __mapistore:indexing_backend = STRING__ This option specified the
+  database URL to be used for indexing backend. If not present LDB
+  backend will be use. The URL must have a format like:
+  mysql://user:pass@hostname/database
+
+mapiproxy openchangedb backend
+------------------------------
+
+- __mapiproxy:openchangedb = STRING__ This option specified the
+  database URL to be used for openchangedb backend. If not present LDB
+  backend will be use. The URL must have a format like:
+  mysql://user:pass@hostname/database
+
+- __openchangedb:data = STRING__ This option specifies the path where
+  provisioning content is located.

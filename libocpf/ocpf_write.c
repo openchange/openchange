@@ -212,7 +212,7 @@ static char *ocpf_write_mv_long(struct ocpf_context *ctx, const struct LongArray
 		if (i != value->cValues - 1) {
 			str = talloc_asprintf_append_buffer(str, "%d, ", value->lpl[i]);
 		} else {
-			str = talloc_asprintf_append_buffer(str, "%d }", value->lpl[i]);
+			str = talloc_asprintf_append_buffer(str, "%d", value->lpl[i]);
 		}
 	}
 

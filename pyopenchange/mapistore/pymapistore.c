@@ -112,24 +112,20 @@ static PyObject *py_MAPIStore_getdebuglevel(PyMAPIStoreObject *self, void *closu
 
 static int py_MAPIStore_setdebuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
 {
-	int 				ret = 0;
-
 	if (value == NULL) {
 		PyErr_SetString(PyExc_TypeError, "Cannot delete the debuglevel attribute");
-		ret = 1;
-		return ret;
+		return 1;
 	}
 
 	if (! PyInt_Check(value)) {
 		PyErr_SetString(PyExc_TypeError,
 				"The debuglevel attribute must be an integer");
-		ret = 1;
-		return ret;
+		return 1;
 	}
 
 	self->debuglevel = PyInt_AsLong(value);
 
-	return ret;
+	return 0;
 }
 
 
@@ -139,7 +135,6 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	struct mapistore_context	*mstore_ctx;
 	enum MAPISTATUS			ret_ocdb;
 	const char			*path = NULL;
-	int				ret = MAPISTORE_SUCCESS;
 
 	if (!PyArg_ParseTuple(args, "|s", &path)) {
 		return NULL;
@@ -149,8 +144,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	ret_ocdb = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
 	if (ret_ocdb != MAPI_E_SUCCESS) {
 		PyErr_SetMAPISTATUSError(ret_ocdb);
-
-		return PyInt_FromLong(ret);
+		return NULL;
 	}
 	globals.ocdb_ctx = ocdb_ctx;
 
@@ -164,12 +158,11 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 
 	self->mstore_ctx = mstore_ctx;
 
-	return PyInt_FromLong(ret);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 {
-	int				ret = MAPISTORE_SUCCESS;
 	bool				set_success;
 	const char			*option = NULL;
 	const char			*value = NULL;
@@ -186,13 +179,12 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 		return NULL;
 	}
 
-	return PyInt_FromLong(ret);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
 {
 	bool 				show_defaults = false;
-	int 				ret = MAPISTORE_SUCCESS;
 
 	if (self->lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
@@ -202,7 +194,7 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
 
 	lpcfg_dump(self->lp_ctx, stdout, show_defaults, lpcfg_numservices(self->lp_ctx));
 
-	return PyInt_FromLong(ret);
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)

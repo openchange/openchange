@@ -52,13 +52,12 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 {
 	TALLOC_CTX			*mem_ctx;
 	struct loadparm_context		*lp_ctx;
-	struct mapistore_context	*mstore_ctx;
 	PyMAPIStoreObject		*msobj;
-	char				*kwnames[] = { "syspath", "path", NULL };
-	const char			*path = NULL;
+	bool				ret_lp;
+	char				*kwnames[] = { "syspath", NULL };
 	const char			*syspath = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", kwnames, &syspath, &path)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
 		return NULL;
 	}
 
@@ -68,29 +67,30 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	if (globals.ocdb_ctx == NULL) {
+	/* Initialize configuration */
+	lp_ctx = loadparm_init(mem_ctx);
+	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"error in openchange_ldb_init");
+				"error in loadparm_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	/* Initialize configuration */
-	lp_ctx = loadparm_init(mem_ctx);
-	lpcfg_load_default(lp_ctx);
+	if ((syspath != NULL) && (file_exist(syspath) == true)) {
+		ret_lp = lpcfg_load(lp_ctx, syspath);
+	} else {
+		ret_lp = lpcfg_load_default(lp_ctx);
+	}
 
-	/* Initialize mapistore */
-	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, path);
-	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in mapistore_init");
-		talloc_free(mem_ctx);
-		return NULL;
+	if (ret_lp == false) {
+		PySys_WriteStderr("lpcfg_load unable to load content from path\n");
 	}
 
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
 	msobj->mem_ctx = mem_ctx;
-	msobj->mstore_ctx = mstore_ctx;
+	msobj->debuglevel = 0;
+	msobj->lp_ctx = lp_ctx;
+	msobj->mstore_ctx = NULL;
 
 	return (PyObject *) msobj;
 }
@@ -102,6 +102,41 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 	mapistore_release(self->mstore_ctx);
 	talloc_free(self->mem_ctx);
 	PyObject_Del(_self);
+}
+
+static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args)
+{
+	struct openchangedb_context 	*ocdb_ctx;
+	struct mapistore_context	*mstore_ctx;
+	enum MAPISTATUS			ret_ocdb;
+	const char			*path = NULL;
+	int				ret = 0;
+
+	if (!PyArg_ParseTuple(args, "|s", &path)) {
+		return NULL;
+	}
+
+	/* Initialize ldb context on openchange.ldb */
+	ret_ocdb = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
+	if (ret_ocdb != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret_ocdb);
+		ret = (int) ret_ocdb;
+		return Py_BuildValue("i", ret);
+	}
+	globals.ocdb_ctx = ocdb_ctx;
+
+	/* Initialize mapistore */
+	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
+	if (mstore_ctx == NULL) {
+		PyErr_SetString(PyExc_SystemError,
+				"error in mapistore_init");
+		ret = 1;
+		return Py_BuildValue("i", ret);
+	}
+
+	self->mstore_ctx = mstore_ctx;
+
+	return Py_BuildValue("i", ret);
 }
 
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
@@ -330,6 +365,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 /* } */
 
 static PyMethodDef mapistore_methods[] = {
+	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

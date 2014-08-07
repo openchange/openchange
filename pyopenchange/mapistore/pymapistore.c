@@ -222,7 +222,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	/* printf("Add context: %s\n", uri); */
 
 	/* Initialize connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
+	ret = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(ret);
 		return NULL;

@@ -71,7 +71,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	lp_ctx = loadparm_init(mem_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"error in loadparm_init");
+				"Error in loadparm_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -139,7 +139,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	struct mapistore_context	*mstore_ctx;
 	enum MAPISTATUS			ret_ocdb;
 	const char			*path = NULL;
-	int				ret = 0;
+	int				ret = MAPISTORE_SUCCESS;
 
 	if (!PyArg_ParseTuple(args, "|s", &path)) {
 		return NULL;
@@ -149,8 +149,8 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	ret_ocdb = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
 	if (ret_ocdb != MAPI_E_SUCCESS) {
 		PyErr_SetMAPISTATUSError(ret_ocdb);
-		ret = (int) ret_ocdb;
-		return Py_BuildValue("i", ret);
+
+		return PyInt_FromLong(ret);
 	}
 	globals.ocdb_ctx = ocdb_ctx;
 
@@ -158,19 +158,19 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"error in mapistore_init");
-		ret = 1;
-		return Py_BuildValue("i", ret);
+				"Error in mapistore_init");
+		return NULL;
 	}
 
 	self->mstore_ctx = mstore_ctx;
 
-	return Py_BuildValue("i", ret);
+	return PyInt_FromLong(ret);
 }
 
 static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 {
-	bool				ret;
+	int				ret = MAPISTORE_SUCCESS;
+	bool				set_success;
 	const char			*option = NULL;
 	const char			*value = NULL;
 
@@ -179,8 +179,16 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	}
 
 	/* Set the value in the specified parameter */
-	ret = lpcfg_set_cmdline(self->lp_ctx, option, value);
-	if (ret == false) {
+	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
+	if (set_success == false) {
+		PyErr_SetString(PyExc_SystemError,
+				"Error in lpcfg_set_cmdline");
+		return NULL;
+	}
+
+	return PyInt_FromLong(ret);
+}
+
 static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
 {
 	bool 				show_defaults = false;

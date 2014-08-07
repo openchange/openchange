@@ -171,7 +171,6 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 {
 	bool				ret;
-	bool 				show_defaults = false;
 	const char			*option = NULL;
 	const char			*value = NULL;
 
@@ -182,14 +181,20 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	/* Set the value in the specified parameter */
 	ret = lpcfg_set_cmdline(self->lp_ctx, option, value);
 	if (ret == false) {
+static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
+{
+	bool 				show_defaults = false;
+	int 				ret = MAPISTORE_SUCCESS;
+
+	if (self->lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"error in lpcfg_set_cmdline");
-		return Py_BuildValue("i", 1);
+				"Parameters not initialized");
+		return NULL;
 	}
 
 	lpcfg_dump(self->lp_ctx, stdout, show_defaults, lpcfg_numservices(self->lp_ctx));
 
-	return Py_BuildValue("i", 0);
+	return PyInt_FromLong(ret);
 }
 
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
@@ -424,6 +429,7 @@ static PyGetSetDef mapistore_getsetters[] = {
 static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
+	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

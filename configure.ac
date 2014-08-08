@@ -5,12 +5,7 @@ AC_PREREQ(2.57)
 AC_INIT(openchange, 2.2, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
-
-AH_VERBATIM([_GNU_SOURCE],
-[#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif])
-
+AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 

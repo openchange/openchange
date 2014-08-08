@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 2.0, [openchange@openchange.org])
+AC_INIT(openchange, 2.2, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 

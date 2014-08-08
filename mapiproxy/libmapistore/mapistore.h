@@ -31,10 +31,6 @@
    users of the store (rather than storage providers).
  */
 
-#ifndef	_GNU_SOURCE
-#define	_GNU_SOURCE
-#endif
-
 #ifndef	_PUBLIC_
 #define	_PUBLIC_
 #endif

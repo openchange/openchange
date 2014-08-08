@@ -22,10 +22,6 @@
 #ifndef	__DCESRV_MAPIPROXY_H__
 #define	__DCESRV_MAPIPROXY_H__
 
-#ifndef	_GNU_SOURCE
-#define	_GNU_SOURCE 1
-#endif
-
 #include <sys/types.h>
 
 #include <stdio.h>

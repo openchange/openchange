@@ -242,7 +242,8 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
-	int				ret;
+	enum mapistore_error		ret_mstore;
+	enum MAPISTATUS			ret_mstatus;
 	PyMAPIStoreContextObject	*context;
 	uint32_t			context_id = 0;
 	const char			*uri;
@@ -257,22 +258,22 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	/* printf("Add context: %s\n", uri); */
 
 	/* Initialize connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	ret_mstore = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
+	if (ret_mstore != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret_mstore);
 		return NULL;
 	}
 
 	/* Get FID given mapistore_uri and username */
-	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	ret_mstatus = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
+	if (ret_mstatus != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret_mstatus);
 		return NULL;
 	}
 
-	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	ret_mstore = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
+	if (ret_mstore != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret_mstore);
 		return NULL;
 	}
 

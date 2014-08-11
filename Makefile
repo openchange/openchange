@@ -1781,7 +1781,7 @@ distclean::
 	rm -f config.mk
 
 ocsmanager-install::
-	cd $(srcdir)/mapiproxy/services/ocsmanager && ./setup.py install --root="$(DESTDIR)" --prefix=$(prefix)
+	cd mapiproxy/services/ocsmanager && ./setup.py install --root="$(DESTDIR)/" --prefix=$(prefix)
 
 # TODO: detect pylons and paste in configure, and if they are available,
 # add ocsmanager-install to the install target.

@@ -200,16 +200,20 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
             ldif_function = setup_modify_ldif
         else:
             ldif_function = setup_add_ldif
-        ldif_function(db, setup_path(ldif), {"FIRSTORG": names.firstorg,
-                                             "FIRSTORGDN": names.firstorgdn,
-                                             "FIRSTOU": names.firstou,
-                                             "CONFIGDN": names.configdn,
-                                             "SCHEMADN": names.schemadn,
-                                             "DOMAINDN": names.domaindn,
-                                             "DOMAIN": names.domain,
-                                             "DNSDOMAIN": names.dnsdomain,
-                                             "NETBIOSNAME": names.netbiosname,
-                                             "HOSTNAME": names.hostname})
+        ldif_params = {
+            "FIRSTORG": names.firstorg,
+            "FIRSTORGDN": names.firstorgdn,
+            "FIRSTOU": names.firstou,
+            "CONFIGDN": names.configdn,
+            "SCHEMADN": names.schemadn,
+            "DOMAINDN": names.domaindn,
+            "DOMAIN": names.domain,
+            "DNSDOMAIN": names.dnsdomain,
+            "NETBIOSNAME": names.netbiosname,
+            "HOSTNAME": names.hostname
+        }
+        ldif_function(db, setup_path(ldif), ldif_params)
+        setup_modify_ldif(db, setup_path("AD/oc_provision_schema_update.ldif"), ldif_params)
     except:
         db.transaction_cancel()
         raise
@@ -369,6 +373,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
             # We don't actually add this ldif, just parse it
             prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
+            prefixmap_ldif += "dn:\nchangetype: modify\nreplace: schemaupdatenow\nschemaupdatenow: 1\n\n"
             dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
     except RuntimeError as err:
         print ("[!] error while provisioning the prefixMap: %s"

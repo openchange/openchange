@@ -31,6 +31,12 @@
 #include "dcesrv_exchange_nsp.h"
 #include "ldb.h"
 
+/* Expose samdb_connect prototype */
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
+				  struct loadparm_context *,
+				  struct auth_session_info *,
+				  unsigned int);
+
 /**
    \details Initialize the EMSABP context and open connections to
    Samba databases.

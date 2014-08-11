@@ -69,8 +69,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 	PySys_SetPath((char *)mapistore_python_get_installdir());
 	module = PyImport_ImportModule(module_name);
 	if (module == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to load python module: ",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
+			  module_name, __location__));
 		PyErr_Print();
 		return MAPISTORE_ERR_BACKEND_INIT;
 	}
@@ -78,8 +78,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 	/* Retrieve the backend object */
 	backend = PyObject_GetAttrString(module, "BackendObject");
 	if (backend == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve BackendObject\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve BackendObject\n",
+			  module_name, __location__));
 		Py_DECREF(module);
 		return MAPISTORE_ERR_BACKEND_INIT;
 	}
@@ -87,8 +87,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 	/* Instantiate BackenObject and implicitly call __init__ */
 	pinst = PyObject_CallFunction(backend, NULL);
 	if (pinst == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: __init__ failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(backend);
 		Py_DECREF(module);
@@ -98,8 +98,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 	/* Call init function */
 	pres = PyObject_CallMethod(pinst, "init", NULL);
 	if (pres == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: init failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: init failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pinst);
 		Py_DECREF(backend);
@@ -109,8 +109,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 
 	retval = PyLong_AsLong(pres);
 	if (retval == -1) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: overflow error\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
@@ -161,8 +161,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	PySys_SetPath((char *)mapistore_python_get_installdir());
 	module = PyImport_ImportModule(module_name);
 	if (module == NULL) {
-		DEBUG(0, ("[%s:%d][%s]: ERROR: unable to load python module: ",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
+			  module_name, __location__));
 		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -170,8 +170,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Retrieve backend object */
 	backend = PyObject_GetAttrString(module, "BackendObject");
 	if (backend == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve BackendObject\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve BackendObject\n",
+			  module_name, __location__));
 		Py_DECREF(module);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -179,8 +179,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Instantiate BackendObject and implicitly call __init__ */
 	pinst = PyObject_CallFunction(backend, NULL);
 	if (pinst == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: __init__ failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(backend);
 		Py_DECREF(module);
@@ -190,8 +190,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Call create_context function */
 	pres = PyObject_CallMethod(pinst, "create_context", "s", uri);
 	if (pres == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: create_context failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: create_context failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pinst);
 		Py_DECREF(backend);
@@ -201,8 +201,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 
 	/* Ensure a tuple was returned */
 	if (PyTuple_Check(pres) == false) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Tupled expected to be returned in create_context\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Tupled expected to be returned in create_context\n",
+			  module_name, __location__));
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
 		Py_DECREF(backend);
@@ -213,8 +213,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Retrieve return value (item 0 of the tuple) */
 	res = PyTuple_GetItem(pres, 0);
 	if (res == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: PyTuple_GetItem failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
@@ -226,8 +226,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	retval = PyLong_AsLong(res);
 	if (retval != MAPISTORE_SUCCESS) {
 		if (retval == -1) {
-			DEBUG(0, ("[%s:%d][%s] ERROR: Overflow error\n",
-				  __FUNCTION__, __LINE__, module_name));
+			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
+				  module_name, __location__));
 		}
 		Py_DECREF(res);
 		Py_DECREF(pres);
@@ -241,8 +241,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Retrieve private object (item 1 of the tuple) */
 	robj = PyTuple_GetItem(pres, 1);
 	if (robj == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: PyTuple_GetItem failed\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
@@ -288,8 +288,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Import the module */
 	module = PyImport_ImportModule(module_name);
 	if (module == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to load python module: ",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
+			  module_name, __location__));
 		PyErr_Print();
 		return MAPISTORE_ERR_BACKEND_REGISTER;
 	}
@@ -297,8 +297,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Retrieve the backend object */
 	mod_backend = PyObject_GetAttrString(module, "BackendObject");
 	if (mod_backend == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve BackendObject\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve BackendObject\n",
+			  module_name, __location__));
 		Py_DECREF(module);
 		return MAPISTORE_ERR_BACKEND_REGISTER;
 	}
@@ -306,16 +306,16 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Retrieve backend name attribute */
 	pname = PyObject_GetAttrString(mod_backend, "name");
 	if (pname == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute name\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute name\n",
+			  module_name, __location__));
 		Py_DECREF(mod_backend);
 		Py_DECREF(module);
 		return MAPISTORE_ERR_BACKEND_REGISTER;
 	}
 	backend.backend.name = PyString_AsString(pname);
 	if (backend.backend.name == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute name\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute name\n",
+			  module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pname);
 		Py_DECREF(mod_backend);
@@ -327,16 +327,16 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Retrieve backend description attribute */
 	pdesc = PyObject_GetAttrString(mod_backend, "description");
 	if (pdesc == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute description\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute description\n",
+			  module_name, __location__));
 		Py_DECREF(mod_backend);
 		Py_DECREF(module);
 		return MAPISTORE_ERR_BACKEND_REGISTER;
 	}
 	backend.backend.description = PyString_AsString(pdesc);
 	if (backend.backend.description == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute description\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute description\n",
+			  module_name, __location__));
 		Py_DECREF(pdesc);
 		Py_DECREF(mod_backend);
 		Py_DECREF(module);
@@ -347,16 +347,16 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Retrieve backend namespace attribute */
 	pns = PyObject_GetAttrString(mod_backend, "namespace");
 	if (pns == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute namespace\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute namespace\n",
+			  module_name, __location__));
 		Py_DECREF(mod_backend);
 		Py_DECREF(module);
 		return MAPISTORE_ERR_BACKEND_REGISTER;
 	}
 	backend.backend.namespace = PyString_AsString(pns);
 	if (backend.backend.namespace == NULL) {
-		DEBUG(0, ("[%s:%d][%s] ERROR: Unable to retrieve attribute namespace\n",
-			  __FUNCTION__, __LINE__, module_name));
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve attribute namespace\n",
+			  module_name, __location__));
 		Py_DECREF(pns);
 		Py_DECREF(mod_backend);
 		Py_DECREF(module);
@@ -442,8 +442,8 @@ static enum mapistore_error mapistore_python_load_backends(TALLOC_CTX *mem_ctx,
 
 	dir = opendir(path);
 	if (dir == NULL) {
-		DEBUG(0, ("[%s:%d]: ERROR opening mapistore python backend directory: ",
-			  __FUNCTION__, __LINE__));
+		DEBUG(0, ("[ERR][%s]: Unable to open mapistore python backend directory: ",
+			  __location__));
 		err(1, "%s\n", path);
 		return MAPISTORE_ERR_BACKEND_INIT;
 	}
@@ -456,7 +456,7 @@ static enum mapistore_error mapistore_python_load_backends(TALLOC_CTX *mem_ctx,
 		if ((strlen(entry->d_name) > 3) &&
 		    !strcmp(&entry->d_name[strlen(entry->d_name) - 3], ".py")) {
 			filename = talloc_strndup(mem_ctx, entry->d_name, strlen(entry->d_name) - 3);
-			DEBUG(0, ("[%s:%d]: Found a python backend: %s\n", __FUNCTION__, __LINE__, filename));
+			DEBUG(0, ("[INFO][%s]: Found a python backend: %s\n", __location__, filename));
 			retval = mapistore_python_load_backend(filename);
 			talloc_free(filename);
 			if (retval != MAPISTORE_SUCCESS) {
@@ -489,7 +489,7 @@ _PUBLIC_ enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *mem_ctx,
 	}
 
 	Py_Initialize();
-	DEBUG(0, ("path = %s\n", path));
+	DEBUG(0, ("[INFO][%s]: Loading from '%s'\n", __location__, path));
 	PySys_SetPath((char *)path);
 
 	return mapistore_python_load_backends(mem_ctx, path);

@@ -369,6 +369,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
             # We don't actually add this ldif, just parse it
             prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
+            prefixmap_ldif += "dn:\nchangetype: modify\nreplace: schemaupdatenow\nschemaupdatenow: 1\n\n"
             dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
     except RuntimeError as err:
         print ("[!] error while provisioning the prefixMap: %s"
@@ -379,15 +380,25 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Add Exchange objectCategory to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Add Exchange containers to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Add Exchange *sub* containers to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Add Exchange CfgProtocol subcontainers to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Add Exchange mailGateway subcontainers to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange"
                " schema classes (%d): %s"

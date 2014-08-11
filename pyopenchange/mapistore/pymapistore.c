@@ -172,6 +172,57 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, PyObject *args)
+{
+	TALLOC_CTX 			*mem_ctx;
+	enum mapistore_error		ret;
+	const char 			*username;
+	PyObject			*py_ret = NULL;
+	PyObject			*py_dict;
+	struct mapistore_contexts_list 	*contexts_list;
+
+	if (!PyArg_ParseTuple(args, "s", &username)) {
+		return NULL;
+	}
+
+	DEBUG(0, ("List contexts for user: %s\n", username));
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* set connection info */
+	ret = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
+	if (ret != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	/* list contexts */
+	ret = mapistore_list_contexts_for_user(self->mstore_ctx, username, mem_ctx, &contexts_list);
+	if (ret != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	py_ret = Py_BuildValue("[]");
+
+	while (contexts_list) {
+		py_dict = Py_BuildValue("{s:s, s:s, s:i, s:i}",
+				"name", contexts_list->name,
+				"url", contexts_list->url,
+				"role", contexts_list->role,
+				"main_folder", contexts_list->main_folder);
+		PyList_Append(py_ret, py_dict);
+		contexts_list = contexts_list->next;
+	}
+
+	return (PyObject *) py_ret;
+}
+
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 {
 	PyMAPIStoreMGMTObject	*obj;
@@ -401,6 +452,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
 	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
+	{ "list_contexts_for_user", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_VARARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

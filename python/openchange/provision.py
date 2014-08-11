@@ -200,16 +200,20 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
             ldif_function = setup_modify_ldif
         else:
             ldif_function = setup_add_ldif
-        ldif_function(db, setup_path(ldif), {"FIRSTORG": names.firstorg,
-                                             "FIRSTORGDN": names.firstorgdn,
-                                             "FIRSTOU": names.firstou,
-                                             "CONFIGDN": names.configdn,
-                                             "SCHEMADN": names.schemadn,
-                                             "DOMAINDN": names.domaindn,
-                                             "DOMAIN": names.domain,
-                                             "DNSDOMAIN": names.dnsdomain,
-                                             "NETBIOSNAME": names.netbiosname,
-                                             "HOSTNAME": names.hostname})
+        ldif_params = {
+            "FIRSTORG": names.firstorg,
+            "FIRSTORGDN": names.firstorgdn,
+            "FIRSTOU": names.firstou,
+            "CONFIGDN": names.configdn,
+            "SCHEMADN": names.schemadn,
+            "DOMAINDN": names.domaindn,
+            "DOMAIN": names.domain,
+            "DNSDOMAIN": names.dnsdomain,
+            "NETBIOSNAME": names.netbiosname,
+            "HOSTNAME": names.hostname
+        }
+        ldif_function(db, setup_path(ldif), ldif_params)
+        setup_modify_ldif(db, setup_path("AD/oc_provision_schema_update.ldif"), ldif_params)
     except:
         db.transaction_cancel()
         raise
@@ -380,25 +384,15 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_attributes.ldif", "Add Exchange attributes to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_auxiliary_class.ldif", "Add Exchange auxiliary classes to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_objectCategory.ldif", "Add Exchange objectCategory to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_container.ldif", "Add Exchange containers to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_subcontainer.ldif", "Add Exchange *sub* containers to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_CfgProtocol.ldif", "Add Exchange CfgProtocol subcontainers to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_sub_mailGateway.ldif", "Add Exchange mailGateway subcontainers to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema.ldif", "Add Exchange classes to Samba schema")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_possSuperior.ldif", "Add possSuperior attributes to Exchange classes")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_modify.ldif", "Extend existing Samba classes and attributes")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_schema_update.ldif", "Update schema")
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange"
                " schema classes (%d): %s"

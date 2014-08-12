@@ -838,9 +838,6 @@ OpenChange Configuration (Please review)
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy
 
-	   * OpenChange mapistore backends:
-	     - backends dependencies goes here
-
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
@@ -859,6 +856,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Documentation:	$enable_doxygen
 
 	   * OpenChange Bindings:
+	     - Python:			$enable_pyopenchange
 	     - Qt4:			$enable_openchange_qt4
 
 	   * Installation prefix:	$prefix

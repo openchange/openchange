@@ -156,18 +156,15 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
-							    struct ldb_context *sam_ctx, struct openchangedb_context *oc_ctx, const char *username)
+							    struct openchangedb_context *oc_ctx, const char *username)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	/* FIXME */
-	/* MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL); */
 	MAPISTORE_RETVAL_IF(!oc_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mstore_ctx->conn_info = talloc_zero(mstore_ctx, struct mapistore_connection_info);
 	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
-	mstore_ctx->conn_info->sam_ctx = sam_ctx;
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	(void) talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);

@@ -458,13 +458,44 @@ static PyMethodDef mapistore_methods[] = {
 	{ NULL },
 };
 
+static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
+{
+	char	*debuglevel = NULL;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
+		return -1;
+	}
+
+	if (!PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError,
+				"The debuglevel attribute value must be an integer");
+		return -1;
+	}
+
+	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
+	if (!debuglevel) {
+		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		return -1;
+	}
+	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
+	talloc_free(debuglevel);
+
+	return 0;
+}
+
+static PyGetSetDef mapistore_getsetters[] = {
+	{ "debuglevel", NULL, (setter)py_mapistore_set_debuglevel, "The level of debug."},
+	{ NULL }
+};
+
 PyTypeObject PyMAPIStore = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "mapistore.MAPIStore",
 	.tp_basicsize = sizeof (PyMAPIStoreObject),
 	.tp_doc = "mapistore object",
 	.tp_methods = mapistore_methods,
-//	.tp_getset = mapistore_getsetters,
+	.tp_getset = mapistore_getsetters,
 	.tp_new = py_MAPIStore_new,
 	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,

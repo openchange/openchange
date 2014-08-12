@@ -223,6 +223,9 @@ class CrashDigger(object):
         if self.upload or self.stacktrace_file:
             report = Report()
             report.load(self.file_to_upload)
+            if 'Stacktrace' not in report:
+                self.log("There is no stacktrace on the report")
+                return
 
             if self.upload:
                 # Check for duplicates here...

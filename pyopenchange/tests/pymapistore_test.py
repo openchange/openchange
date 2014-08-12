@@ -7,7 +7,7 @@ mst = mapistore.MAPIStore()
 #ret = mst.set_parm("mapiproxy:openchangedb", "foo")
 #print ret
 
-mst.initialize()
+mst.initialize("u1")
 
-print mst.list_contexts_for_user("u1")
-notes_ctx_u2 = mst.add_context("sogo://u1:u1@mail/folderINBOX", "u2")
+print mst.capabilities()
+u1_inbox_ctx = mst.add_context("sogo://u1:u1@mail/folderDrafts")

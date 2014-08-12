@@ -42,6 +42,7 @@ typedef struct {
 	TALLOC_CTX			*mem_ctx;
 	struct loadparm_context		*lp_ctx;
 	struct mapistore_context	*mstore_ctx;
+	char				*username;
 } PyMAPIStoreObject;
 
 typedef struct {

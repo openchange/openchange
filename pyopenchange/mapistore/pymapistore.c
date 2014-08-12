@@ -90,6 +90,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	msobj->mem_ctx = mem_ctx;
 	msobj->lp_ctx = lp_ctx;
 	msobj->mstore_ctx = NULL;
+	msobj->username = NULL;
 
 	return (PyObject *) msobj;
 }
@@ -109,9 +110,11 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	struct openchangedb_context 	*ocdb_ctx;
 	struct mapistore_context	*mstore_ctx;
 	enum MAPISTATUS			ret_ocdb;
+	enum mapistore_error		ret;
 	const char			*path = NULL;
+	const char			*username = NULL;
 
-	if (!PyArg_ParseTuple(args, "|s", &path)) {
+	if (!PyArg_ParseTuple(args, "s|s", &username, &path)) {
 		return NULL;
 	}
 
@@ -131,7 +134,15 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 		return NULL;
 	}
 
+	/* set connection info */
+	ret = mapistore_set_connection_info(mstore_ctx, globals.ocdb_ctx, username);
+	if (ret != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
 	self->mstore_ctx = mstore_ctx;
+	self->username = talloc_strdup(self->mem_ctx, username);
 
 	Py_RETURN_NONE;
 }
@@ -157,7 +168,7 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 {
 	bool 				show_defaults = false;
 
@@ -172,20 +183,15 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self, PyObject *args)
 	Py_RETURN_NONE;
 }
 
-static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 {
-	TALLOC_CTX 			*mem_ctx;
 	enum mapistore_error		ret;
-	const char 			*username;
+	TALLOC_CTX 			*mem_ctx;
 	PyObject			*py_ret = NULL;
 	PyObject			*py_dict;
 	struct mapistore_contexts_list 	*contexts_list;
 
-	if (!PyArg_ParseTuple(args, "s", &username)) {
-		return NULL;
-	}
-
-	DEBUG(0, ("List contexts for user: %s\n", username));
+	DEBUG(0, ("List contexts for user: %s\n", self->username));
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -193,15 +199,8 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, Py
 		return NULL;
 	}
 
-	/* set connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
-		return NULL;
-	}
-
 	/* list contexts */
-	ret = mapistore_list_contexts_for_user(self->mstore_ctx, username, mem_ctx, &contexts_list);
+	ret = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, mem_ctx, &contexts_list);
 	if (ret != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(ret);
@@ -220,6 +219,7 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, Py
 		contexts_list = contexts_list->next;
 	}
 
+	talloc_free(mem_ctx);
 	return (PyObject *) py_ret;
 }
 
@@ -247,22 +247,14 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	PyMAPIStoreContextObject	*context;
 	uint32_t			context_id = 0;
 	const char			*uri;
-	const char			*username;
 	void				*folder_object;
         uint64_t			fid = 0;
 
-	if (!PyArg_ParseTuple(args, "ss", &uri, &username)) {
+	if (!PyArg_ParseTuple(args, "s", &uri)) {
 		return NULL;
 	}
 
 	/* printf("Add context: %s\n", uri); */
-
-	/* Initialize connection info */
-	ret_mstore = mapistore_set_connection_info(self->mstore_ctx, globals.ocdb_ctx, username);
-	if (ret_mstore != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret_mstore);
-		return NULL;
-	}
 
 	/* Get FID given mapistore_uri and username */
 	ret_mstatus = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
@@ -271,7 +263,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 		return NULL;
 	}
 
-	ret_mstore = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
+	ret_mstore = mapistore_add_context(self->mstore_ctx, self->username, uri, fid, &context_id, &folder_object);
 	if (ret_mstore != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(ret_mstore);
 		return NULL;

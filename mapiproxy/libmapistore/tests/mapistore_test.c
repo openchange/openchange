@@ -98,7 +98,7 @@ int main(int argc, const char *argv[])
 
 	openchangedb_ctx = mapiproxy_server_openchangedb_init(lp_ctx);
 
-	retval = mapistore_set_connection_info(mstore_ctx, NULL, openchangedb_ctx, "openchange");
+	retval = mapistore_set_connection_info(mstore_ctx, openchangedb_ctx, "openchange");
 
 	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &backend_obj);
 	if (retval != MAPISTORE_SUCCESS) {

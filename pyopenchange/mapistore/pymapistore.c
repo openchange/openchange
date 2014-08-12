@@ -445,7 +445,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
 	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
-	{ "list_contexts_for_user", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_VARARGS },
+	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

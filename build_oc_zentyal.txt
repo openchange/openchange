@@ -1,5 +1,0 @@
-*** BEFORE BUILDING ***
-LDFLAGS=-Wl,--as-needed ./configure  --prefix=/usr --mandir=/usr/share/man --with-modulesdir=/usr/lib/x86_64-linux-gnu/openchange --enable-pyopenchange --libdir=/usr/lib/x86_64-linux-gnu; sed -i -e 's/site-packages/dist-packages/' config.mk
-
-*** FOR PYTHON SCRIPTS ***
-PYTHONPATH=$PWD/python

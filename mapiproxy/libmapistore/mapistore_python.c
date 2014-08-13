@@ -45,9 +45,30 @@
 
    \return full path for mapistore python backends folder
  */
-_PUBLIC_ const char *mapistore_python_get_installdir(void)
+static const char *mapistore_python_get_installdir(void)
 {
 	return MAPISTORE_PYTHON_INSTALLDIR;
+}
+
+static enum mapistore_error mapistore_set_pypath(char *path)
+{
+	TALLOC_CTX	*mem_ctx;
+	char		*env_path = NULL;
+
+	mem_ctx = talloc_named(NULL, 0, "mapistore_set_pypath");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	env_path = talloc_asprintf(mem_ctx, "%s:%s:%s/site-packages:%s:%s", path,
+				   MAPISTORE_PYTHON_STDDIR,
+				   MAPISTORE_PYTHON_STDDIR,
+				   MAPISTORE_PYTHON_OTHERDIR,
+				   Py_GetPath());
+	MAPISTORE_RETVAL_IF(!env_path, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	PySys_SetPath(env_path);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
 }
 
 /**
@@ -66,7 +87,6 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 	PyObject		*pres;
 
 	/* Import the module */
-	PySys_SetPath((char *)mapistore_python_get_installdir());
 	module = PyImport_ImportModule(module_name);
 	if (module == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
@@ -158,7 +178,6 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	MAPISTORE_RETVAL_IF(!context_obj, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	/* Import the module */
-	PySys_SetPath((char *)mapistore_python_get_installdir());
 	module = PyImport_ImportModule(module_name);
 	if (module == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
@@ -484,13 +503,17 @@ end:
 _PUBLIC_ enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *mem_ctx,
 							    const char *path)
 {
+	enum mapistore_error	retval;
+
 	if (!path) {
 		path = mapistore_python_get_installdir();
 	}
 
 	Py_Initialize();
 	DEBUG(0, ("[INFO][%s]: Loading from '%s'\n", __location__, path));
-	PySys_SetPath((char *)path);
+
+	retval = mapistore_set_pypath((char *)path);
+	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	return mapistore_python_load_backends(mem_ctx, path);
 }

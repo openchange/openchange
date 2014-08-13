@@ -32,6 +32,8 @@ includedir=@includedir@
 mandir=@mandir@
 top_builddir=@builddir@
 pythondir=@pythondir@
+stdpythondir=@stdpythondir@
+otherpythondir=@otherpythondir@
 
 sambaprefix=@sambaprefix@
 
@@ -44,7 +46,9 @@ CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DMAPISTORE_PYTHON_INSTALLDIR=\"$(pythondir)/openchange/backends\"			\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"						\
-       -DHAVE_ICAL_0_46=@have_libical_0_46@
+       -DHAVE_ICAL_0_46=@have_libical_0_46@							\
+       -DMAPISTORE_PYTHON_STDDIR=\"$(stdpythondir)\"						\
+       -DMAPISTORE_PYTHON_OTHERDIR=\"$(otherpythondir)\"
 
 # This value should be determined by configure at some point
 SHLIBEXT=so

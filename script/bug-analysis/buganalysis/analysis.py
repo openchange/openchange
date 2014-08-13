@@ -45,7 +45,8 @@ def guess_components(report):
     if 'StacktraceTop' not in report:
         report._gen_stacktrace_top()  # Generate the stacktrace top to start debugging
 
-    if re.search(r'waitpid', report.stacktrace_top_function()) and report['Signal'] == '6':
+    top_function = report.stacktrace_top_function()
+    if top_function and re.search(r'waitpid', top_function) and report['Signal'] == '6':
         # Manually killed, no component
         return comps
 

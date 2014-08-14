@@ -1,11 +1,9 @@
 #!/usr/bin/python
 
 import os,sys
-root = os.path.abspath(os.path.dirname(__file__))
-print root
-sys.path.append(os.sep.join((root, '..', '..')))
 
-#from openchange import mapistore
+root = os.path.abspath(os.path.dirname(__file__))
+sys.path.append(os.sep.join((root, '..', '..')))
 
 class BackendObject(object):
 

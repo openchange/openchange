@@ -119,7 +119,7 @@ int main(int argc, const char *argv[])
 	};
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_test");
-	lp_ctx = loadparm_init_global(true);
+	lp_ctx = loadparm_init_global(false);
 	setup_logging(NULL, DEBUG_STDOUT);
 	
 	pc = poptGetContext("mapistore_test", argc, argv, long_options, 0);
@@ -151,6 +151,10 @@ int main(int argc, const char *argv[])
 	if (!opt_username) {
 		opt_username = getenv("USER");
 		DEBUG(0, ("[WARN]: No username specified - default to %s\n", opt_username));
+	}
+
+	if (!lpcfg_load_default(lp_ctx)) {
+		DEBUG(0, ("[WARN]: lpcfg_load_default failed\n"));
 	}
 
 	retval = mapistore_set_mapping_path("/tmp");

@@ -378,7 +378,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx,
 
 	context->backend_object = backend_object;
 	context->backend = backends[i].backend;
-	retval = context->backend->context.get_root_folder(backend_object, context, fid, &context->root_folder_object);
+	retval = context->backend->context.get_root_folder(context, backend_object, fid, &context->root_folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		goto end;
 	}

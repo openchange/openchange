@@ -180,7 +180,7 @@ struct mapistore_backend {
 	/** context operations */
 	struct {
 		enum mapistore_error	(*get_path)(void *, TALLOC_CTX *, uint64_t, char **);
-		enum mapistore_error	(*get_root_folder)(void *, TALLOC_CTX *, uint64_t, void **);
+		enum mapistore_error	(*get_root_folder)(TALLOC_CTX *, void *, uint64_t, void **);
 	} context;
 
         /** oxcfold operations */

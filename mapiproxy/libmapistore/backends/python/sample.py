@@ -21,6 +21,12 @@ class BackendObject(object):
         print '[PYTHON]: %s backend.init: init()' % self.name
         return 0
 
+    def list_contexts(self, username):
+        """ List context capabilities of this backend.
+        """
+        print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
+        contexts = [{ "inbox", "INBOX", "calendar", "CALENDAR" }]
+        return (0, contexts)
 
     def create_context(self, uri):
         """ Create a context.

@@ -313,7 +313,7 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
 	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
-		retval = backends[i].backend->backend.list_contexts(username, ictx, mem_ctx, &current_contexts_list);
+		retval = backends[i].backend->backend.list_contexts(mem_ctx, backends[i].backend->backend.name, username, ictx, &current_contexts_list);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}

@@ -148,10 +148,135 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 
 
 /**
+   \details List available contexts (capabilities) for the backend
+
+   \param mem_ctx pointer to the memory context
+   \param module_name the name of the mapistore python backend
+   \param username the name of the user
+   \param ictx pointer to the indexing context
+   \param capabilities pointer on pointer to the list of available
+   mapistore contexts to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *mem_ctx,
+								   const char *module_name,
+								   const char *username,
+								   struct indexing_context *ictx,
+								   struct mapistore_contexts_list **mclist)
+{
+	enum mapistore_error		retval;
+	PyObject			*module;
+	PyObject			*backend, *pres, *pinst;
+	PyObject			*res;
+	PyObject			*dict;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!module_name, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(!mclist, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Import the module */
+	module = PyImport_ImportModule(module_name);
+	if (module == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ",
+			  module_name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve backend object */
+	backend = PyObject_GetAttrString(module, "BackendObject");
+	if (backend == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve BackendObject\n",
+			  module_name, __location__));
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Instantiate BackendObject and implicitly call __init__ */
+	pinst = PyObject_CallFunction(backend, NULL);
+	if (pinst == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Call list_contexts function */
+	pres = PyObject_CallMethod(pinst, "list_contexts", "s", username);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: create_context failed\n", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in list_contexts\n",
+			  module_name, __location__));
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve return value (item 0 of the tuple) */
+	res = PyTuple_GetItem(pres, 0);
+	if (res == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
+			  module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(res);
+	if (retval != MAPISTORE_SUCCESS) {
+		if (retval == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", module_name, __location__));
+		}
+		Py_DECREF(res);
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+	Py_DECREF(res);
+
+	/* Retrieve dictionary object (item 1 of the tuple) */
+	dict = PyTuple_GetItem(pres, 1);
+	if (dict == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* FIXME: Unpack the dictionary and map it to mapistore_contexts_list */
+
+	return MAPISTORE_ERR_NOT_FOUND;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Create a context
 
-   \param module_name the name of the mapistore python backend
    \param mem_ctx pointer to the memory context
+   \param module_name the name of the mapistore python backend
    \param conn pointer to mapistore connection information structure
    \param ictx pointer to the indexing context
    \param uri point to the URI to create a context for
@@ -385,7 +510,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 
 	/* backend */
 	backend.backend.init = mapistore_python_backend_init;
-	/* backend.backend.list_contexts = mapistore_python_backend_list_contexts; */
+	backend.backend.list_contexts = mapistore_python_backend_list_contexts;
 	backend.backend.create_context = mapistore_python_backend_create_context;
 #if 0
 	backend.backend.create_root_folder = mapistore_python_backend_create_root_folder;

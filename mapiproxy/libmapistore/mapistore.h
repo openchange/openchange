@@ -172,7 +172,7 @@ struct mapistore_backend {
 		const char	*namespace;
 
 		enum mapistore_error	(*init)(const char *);
-		enum mapistore_error	(*list_contexts)(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
+		enum mapistore_error	(*list_contexts)(TALLOC_CTX *, const char *, const char *, struct indexing_context *, struct mapistore_contexts_list **);
 		enum mapistore_error	(*create_context)(TALLOC_CTX *, const char *, struct mapistore_connection_info *, struct indexing_context *, const char *, void **);
 		enum mapistore_error	(*create_root_folder)(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 	} backend;

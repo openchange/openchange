@@ -88,16 +88,19 @@ def upload(crash_file, server_url, email=None):
         with gzip.open(gzip_temp_file, 'wb') as f_out:
             f_out.writelines(f_in)
 
-    # Upload using curl
-    curl_args = ['curl', '-F', 'file=@{0}'.format(gzip_temp_file)]
-    if email:
-        curl_args.extend(['-F', 'email={0}'.format(email)])
-    curl_args.append(server_url)
+    try:
+        # Upload using curl
+        curl_args = ['curl', '-F', 'file=@{0}'.format(gzip_temp_file)]
+        if email:
+            curl_args.extend(['-F', 'email={0}'.format(email)])
+        curl_args.append(server_url)
 
-    p = subprocess.Popen(curl_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    stdout, stderr = p.communicate()
-    if stdout.strip() != b'OK':
-        sys.stderr.write("Error in {0} call. Stderr: {1}\n".format(' '.join(curl_args), stderr))
+        p = subprocess.Popen(curl_args, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        stdout, stderr = p.communicate()
+        if stdout.strip() != b'OK':
+            sys.stderr.write("Error in {0} call. Stderr: {1}\n".format(' '.join(curl_args), stderr))
+    finally:
+        os.unlink(gzip_temp_file)
 
 
 if __name__ == '__main__':

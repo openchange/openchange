@@ -323,8 +323,7 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	/* Instantiate BackendObject and implicitly call __init__ */
 	pinst = PyObject_CallFunction(backend, NULL);
 	if (pinst == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n",
-			  module_name, __location__));
+		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n", module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(backend);
 		Py_DECREF(module);
@@ -345,7 +344,7 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 
 	/* Ensure a tuple was returned */
 	if (PyTuple_Check(pres) == false) {
-		DEBUG(0, ("[ERR][%s][%s]: Tupled expected to be returned in create_context\n",
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in create_context\n",
 			  module_name, __location__));
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
@@ -559,9 +558,6 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	PyObject			*pname;
 	PyObject			*pdesc;
 	PyObject			*pns;
-
-	/* Sanity checks */
-	/* MAPISTORE_RETVAL_IF(!module_name, MAPISTORE_ERR_BACKEND_REGISTER, NULL); */
 
 	/* Initialize backend with default settings */
 	mapistore_backend_init_defaults(&backend);

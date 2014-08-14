@@ -12,13 +12,13 @@ class BackendObject(object):
     namespace = "sample://"
 
     def __init__(self):
-        print '[PYTHON]: backend class __init__'
+        print '[PYTHON]: %s backend class __init__' % self.name
         return
 
     def init(self):
         """ Initialize sample backend
         """
-        print '[PYTHON]: backend.init: init()'
+        print '[PYTHON]: %s backend.init: init()' % self.name
         return 0
 
 

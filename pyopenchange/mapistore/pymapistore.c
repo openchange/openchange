@@ -188,7 +188,7 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	enum mapistore_error		ret;
 	TALLOC_CTX 			*mem_ctx;
 	PyObject			*py_ret = NULL;
-	char				**backend_names;
+	const char			**backend_names;
 	int 				i, list_size;
 
 	DEBUG(0, ("List backends for user: %s\n", self->username));

@@ -130,6 +130,7 @@ int main(int argc, const char *argv[])
 			break;
 		case OPT_USERNAME:
 			opt_username = poptGetOptArg(pc);
+			break;
 		case OPT_URI:
 			opt_uri = poptGetOptArg(pc);
 			break;

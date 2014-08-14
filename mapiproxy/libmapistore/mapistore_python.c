@@ -392,6 +392,15 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 		Py_DECREF(backend);
 		Py_DECREF(module);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp("ContextObject", robj->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected ContextObject and got '%s'\n",
+			  module_name, __location__, robj->ob_type->tp_name));
+		Py_DECREF(robj);
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
 	pyobj = talloc_zero(mem_ctx, struct mapistore_python_object);
@@ -429,7 +438,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	struct mapistore_python_object	*pyobj;
 	struct mapistore_python_object	*fobj = NULL;
 	PyObject			*context;
-	PyObject			*pinst;
 	PyObject			*pres;
 	PyObject			*res;
 	PyObject			*folder;
@@ -444,35 +452,19 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	pyobj = (struct mapistore_python_object *) backend_object;
 	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-	/* Retrieve context object */
-	context = PyObject_GetAttrString(pyobj->module, "ContextObject");
-	if (context == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyObject_GetAttrString of ContextObject failed: ",
-			  pyobj->name, __location__));
-		PyErr_Print();
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
-
-	/* Instantiate ContextObject and implicitly call __init__ */
-	pinst = PyObject_CallFunction(context, NULL);
-	if (pinst == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallFunction failed: ",
-			  pyobj->name, __location__));
-		PyErr_Print();
-		Py_DECREF(context);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
+	/* Retrieve the context object */
+	context = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!pyobj->private_object, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	/* FIXME: Retrieve the indexing URI */
 	/* FIXME: Replace "OK" with string */
 
 	/* Call get_root_folder function */
-	pres = PyObject_CallMethod(context, "get_root_folder", "OK", pinst, fid);
+	pres = PyObject_CallMethod(context, "get_root_folder", "K", fid);
 	if (pres == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
 			  pyobj->name, __location__));
 		PyErr_Print();
-		Py_DECREF(pinst);
 		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -482,7 +474,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in get_root_folder\n",
 			  pyobj->name, __location__));
 		Py_DECREF(pres);
-		Py_DECREF(pinst);
 		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -493,7 +484,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed: ", pyobj->name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
-		Py_DECREF(pinst);
 		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -506,7 +496,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 		Py_DECREF(pres);
-		Py_DECREF(pinst);
 		Py_DECREF(context);
 		return retval;
 	}
@@ -517,16 +506,19 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed: ", pyobj->name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
-		Py_DECREF(pinst);
-		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp(folder->ob_type->tp_name, "FolderObject")) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject but got '%s'\n", pyobj->name,
+			  __location__, folder->ob_type->tp_name));
+		Py_DECREF(folder);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
+	Py_DECREF(pres);
+
 	fobj = talloc_zero(mem_ctx, struct mapistore_python_object);
-	if (!fobj) {
-		retval = MAPISTORE_ERR_NO_MEMORY;
-		goto end;
-	}
+	MAPISTORE_RETVAL_IF(!fobj, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	fobj->name = talloc_strdup(fobj, pyobj->name);
 	fobj->conn = pyobj->conn;
@@ -534,11 +526,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	fobj->module = pyobj->module;
 	fobj->private_object = folder;
 	*folder_object = fobj;
-
-end:
-	Py_DECREF(pres);
-	Py_DECREF(pinst);
-	Py_DECREF(context);
 
 	return retval;
 }

@@ -271,6 +271,9 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME_UNICODE);
 	if (!value) {
+		value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME);
+	}
+	if (!value) {
 		DEBUG(5, (__location__": display name not set yet\n"));
 		goto end;
 	}

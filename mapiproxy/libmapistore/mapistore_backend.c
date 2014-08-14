@@ -295,6 +295,29 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 }
 
 /**
+   \details List backend names for given user
+
+   \param mem_ctx pointer to the memory context
+
+   \return a valid backend_context pointer on success, otherwise NULL
+ */
+enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, char ***backend_namesP)
+{
+	char				**backend_names;
+	int 				i;
+
+	MAPISTORE_RETVAL_IF(!backend_namesP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	backend_names = talloc_array(mem_ctx, /*const*/ char *, num_backends);
+	for (i = 0; i < num_backends; i++) {
+		backend_names[i] = backends[i].backend->backend.name;
+	}
+
+	*backend_namesP = backend_names;
+	return MAPISTORE_SUCCESS;
+}
+
+/**
    \details List backend contexts for given user
 
    \param mem_ctx pointer to the memory context

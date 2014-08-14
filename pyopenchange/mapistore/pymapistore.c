@@ -183,6 +183,42 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
+{
+	enum mapistore_error		ret;
+	TALLOC_CTX 			*mem_ctx;
+	PyObject			*py_ret = NULL;
+	char				**backend_names;
+	int 				i, list_size;
+
+	DEBUG(0, ("List backends for user: %s\n", self->username));
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* list backends */
+	ret = mapistore_list_backends_for_user(self->mstore_ctx, self->username, mem_ctx, &backend_names);
+	if (ret != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	/* Build the list */
+	list_size = talloc_array_length(backend_names);
+	py_ret = PyList_New(list_size);
+
+	for (i = 0; i < list_size; i++) {
+		PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+	}
+
+	talloc_free(mem_ctx);
+	return (PyObject *) py_ret;
+}
+
 static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 {
 	enum mapistore_error		ret;
@@ -445,6 +481,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
 	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
+	{ "list_backends", (PyCFunction)py_MAPIStore_list_backends_for_user, METH_NOARGS },
 	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },

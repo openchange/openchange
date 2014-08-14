@@ -316,6 +316,7 @@ enum mapistore_error mapistore_del_context(struct mapistore_context *, uint32_t)
 enum mapistore_error mapistore_search_context_by_uri(struct mapistore_context *, const char *, uint32_t *, void **);
 const char *mapistore_errstr(enum mapistore_error);
 
+enum mapistore_error mapistore_list_backends_for_user(struct mapistore_context *, const char *, TALLOC_CTX *, char ***);
 enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *, const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
 enum mapistore_error mapistore_create_root_folder(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 

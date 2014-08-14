@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 # -*- coding: utf-8 -*-
 
 # Copyright (C) Enrique J. Hernandez 2014
@@ -38,7 +38,7 @@ def parse_options():
     parser.add_argument('crash_file', type=str, help='crash_file')
     parser.add_argument('server_url', type=str, help='URL to POST the crash report',
                         nargs='?', default=None)  # Uploading is optional
-    parser.add_argument('--email', '-n', help="Be notified by the crash report action by email")
+    parser.add_argument('--email', '-n', help="Be notified about crash report action by email")
 
     opts = parser.parse_args()
 

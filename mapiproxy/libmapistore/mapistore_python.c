@@ -206,7 +206,7 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 	/* Call list_contexts function */
 	pres = PyObject_CallMethod(pinst, "list_contexts", "s", username);
 	if (pres == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: create_context failed\n", module_name, __location__));
+		DEBUG(0, ("[ERR][%s][%s]: list_contexts failed\n", module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pinst);
 		Py_DECREF(backend);

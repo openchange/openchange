@@ -47,7 +47,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_debug = NULL;
 	const char			*opt_uri = NULL;
 	uint32_t			context_id = 0;
-	void				*backend_obj;
+	void				*folder_object;
 
 	enum { OPT_DEBUG=1000, OPT_URI };
 
@@ -100,7 +100,7 @@ int main(int argc, const char *argv[])
 
 	retval = mapistore_set_connection_info(mstore_ctx, openchangedb_ctx, "openchange");
 
-	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &backend_obj);
+	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);

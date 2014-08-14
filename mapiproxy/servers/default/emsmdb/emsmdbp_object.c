@@ -1187,16 +1187,18 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
+enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
 {
-	int		retval;
-	uint64_t	folderID;
+	uint64_t		folderID;
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 
 	if (emsmdbp_is_mapistore(folder)) {
-		retval = (int) mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, 
+		ret = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx,
 								emsmdbp_get_contextID(folder),
-								folder->backend_object, 
+								folder->backend_object,
 								MAPISTORE_FOLDER_TABLE, row_countp);
+		retval = mapistore_error_to_mapi(ret);
 	}
 	else {
 		if (folder->type == EMSMDBP_OBJECT_FOLDER) {
@@ -1207,10 +1209,10 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 		}
 		else {
 			DEBUG(5, ("unsupported object type\n"));
-			return MAPISTORE_ERROR;
+			return MAPI_E_INVALID_OBJECT;
 		}
 		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
-		retval = (int) openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, row_countp);
+		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, row_countp);
 	}
 
 	return retval;

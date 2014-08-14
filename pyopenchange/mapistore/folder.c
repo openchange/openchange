@@ -41,7 +41,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 {
 	int			ret;
 	/* PyMAPIStoreFolderObject	*folder; */
-	char			*kwnames[] = { "name", "description", "foldertype", "flags" };
+	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
 	const char		*name;
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
@@ -78,7 +78,7 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 {
 	uint32_t			RowCount;
 	enum mapistore_table_type	table_type;
-	char				*kwnames[] = { "table_type" };
+	char				*kwnames[] = { "table_type", NULL };
 	int				retval;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {

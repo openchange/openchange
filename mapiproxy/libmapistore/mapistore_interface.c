@@ -472,13 +472,13 @@ _PUBLIC_ enum mapistore_error mapistore_list_backends_for_user(struct mapistore_
 	return MAPISTORE_SUCCESS;
 }
 
-_PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
+_PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, const char *backend_name, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
 {
 	struct indexing_context		*ictx;
 
 	mapistore_indexing_add(mstore_ctx, owner, &ictx);
 	/* TODO change backend definition to accept indexing_context instead of tdb_wrap */
-	return mapistore_backend_list_contexts(owner, ictx, mem_ctx, contexts_listp);
+	return mapistore_backend_list_contexts(owner, backend_name, ictx, mem_ctx, contexts_listp);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)

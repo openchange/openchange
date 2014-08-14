@@ -216,7 +216,6 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
 /* definitions from mapistore_python.c */
 enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *, const char *);
-const char *mapistore_python_get_installdir(void);
 
 __END_DECLS
 

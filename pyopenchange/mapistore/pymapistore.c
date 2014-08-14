@@ -200,7 +200,7 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	}
 
 	/* list backends */
-	ret = mapistore_list_backends_for_user(self->mstore_ctx, self->username, mem_ctx, &backend_names);
+	ret = mapistore_list_backends_for_user(mem_ctx, &backend_names);
 	if (ret != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(ret);

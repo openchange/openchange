@@ -330,7 +330,7 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, const
 {
 	enum mapistore_error		retval;
 	int				i;
-	struct mapistore_contexts_list	*contexts_list = NULL
+	struct mapistore_contexts_list	*contexts_list = NULL;
 
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);

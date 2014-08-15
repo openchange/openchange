@@ -1940,3 +1940,29 @@ adminDisplayName: Spanish
 name: C0A
 legacyExchangeDN: /o=${FIRSTORG}/CN=Configuration/CN=Addressing/CN=Display-Templates/CN=C0A
 objectCategory: CN=Container,${SCHEMADN}
+
+#
+# Transport Settings
+#
+dn: CN=Transport Settings,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchTransportSettings
+cn: Transport Settings
+distinguishedName: CN=Transport Settings,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+name: Transport Settings
+objectCategory: CN=ms-Exch-Transport-Settings,${SCHEMADN}
+
+#
+# Accepted Domains
+#
+dn: CN=Accepted Domains,CN=Transport Settings,${FIRSTORGDN}
+objectClass: top
+objectClass: container
+objectClass: msExchContainer
+cn: Accepted Domains
+distinguishedName: CN=Accepted Domains,CN=Transport Settings,${FIRSTORGDN}
+showInAdvancedViewOnly: TRUE
+name: Accepted Domains
+objectCategory: CN=ms-Exch-Container,${SCHEMADN}

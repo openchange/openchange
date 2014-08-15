@@ -197,7 +197,7 @@ int main(int argc, const char *argv[])
 		// TODO: Fail here when we start to support list_contexts
 	}
 
-	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, -1, &context_id, &folder_object);
+	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		exit (1);

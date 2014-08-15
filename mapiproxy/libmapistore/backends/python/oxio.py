@@ -157,8 +157,7 @@ class FolderObject(object):
 
     def create_folder(self, properties, folderID):
         print '[PYTHON]: [%s] folder.create_folder(%s)' % (BackendObject.name, folderID)
-        json = json.dumps(properties, indent=4)
-        print '[PYTHON]: %s ' % json
+        print '[PYTHON]: %s ' % json.dumps(properties, indent=4)
         return (MAPISTORE_ERR_NOT_IMPLEMENTED, None)
 
     def delete(self):

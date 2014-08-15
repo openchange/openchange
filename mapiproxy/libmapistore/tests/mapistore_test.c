@@ -89,6 +89,74 @@ end:
 }
 
 
+static uint64_t _find_first_child_folder(TALLOC_CTX *mem_ctx, struct mapistore_context *mstore_ctx,
+					 uint32_t context_id, void *folder_object)
+{
+	uint32_t			i;
+	uint32_t			count = 0;
+	uint64_t			child_fmid = 0;
+	enum mapistore_error		retval;
+	void				*table_object;
+	struct SPropTagArray		*SPropTagArray;
+	struct mapistore_property_data	*row_data;
+
+	retval = mapistore_folder_open_table(mstore_ctx, context_id, folder_object,
+					     mem_ctx, MAPISTORE_FOLDER_TABLE, 0,
+					     &table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_open_table: %s\n", mapistore_errstr(retval)));
+		return 0;
+	}
+	DEBUG(0, ("open_table: count = %d\n", count));
+
+	SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+					  PR_DISPLAY_NAME_UNICODE,
+					  PR_FID,
+					  PR_COMMENT_UNICODE,
+					  PR_CONTENT_UNREAD,
+					  PR_CONTENT_COUNT,
+					  PR_FOLDER_CHILD_COUNT);
+	retval = mapistore_table_set_columns(mstore_ctx, context_id, table_object,
+					     (uint16_t)SPropTagArray->cValues,
+					     SPropTagArray->aulPropTag);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_table_set_columns: %s\n", mapistore_errstr(retval)));
+		return 0;
+	}
+
+	row_data = talloc_array(mem_ctx, struct mapistore_property_data, 6);
+	retval = mapistore_table_get_row(mstore_ctx, context_id, table_object,
+					 mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0,
+					 &row_data);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_table_get_row: %s\n", mapistore_errstr(retval)));
+		return 0;
+	}
+
+	for (i = 0; i < SPropTagArray->cValues; i++) {
+		if (row_data[i].error != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("0x%x: MAPI_E_NOT_FOUND\n", SPropTagArray->aulPropTag[i]));
+			continue;
+		}
+
+		struct SPropValue prop_value;
+
+		prop_value.ulPropTag = SPropTagArray->aulPropTag[i];
+		prop_value.dwAlignPad = 0;
+		set_SPropValue(&prop_value, row_data[i].data);
+		mapidump_SPropValue(prop_value, NULL);
+
+		if (prop_value.ulPropTag == PR_FID) {
+			child_fmid = prop_value.value.d;
+		}
+	}
+
+	talloc_free(row_data);
+
+	return child_fmid;
+}
+
+
 int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
@@ -103,6 +171,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_debug = NULL;
 	const char			*opt_uri = NULL;
 	const char			*opt_username = NULL;
+	uint64_t			fmid;
 	uint32_t			context_id = 0;
 	void				*folder_object;
 	void				*child_folder_object;
@@ -226,7 +295,15 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	retval = mapistore_folder_open_folder(mstore_ctx, context_id, folder_object, NULL, 0x1,
+	/* try to get first child for test Context or fallback to FMID for context folder */
+	DEBUG(0, ("Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeefL));
+	fmid = _find_first_child_folder(mem_ctx, mstore_ctx, context_id, folder_object);
+	if (!fmid) {
+		/* use root context FMID, should work */
+		fmid = 0xdeadbeef;
+	}
+
+	retval = mapistore_folder_open_folder(mstore_ctx, context_id, folder_object, NULL, fmid,
 					      &child_folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("mapistore_folder_open_folder: %s\n", mapistore_errstr(retval)));

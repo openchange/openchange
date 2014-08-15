@@ -2365,7 +2365,7 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 	/* Look over properties */
 	for (i = 0; i < properties->cValues; i++) {
 		if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.message->folderID,
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.message->messageID,
 						     &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;

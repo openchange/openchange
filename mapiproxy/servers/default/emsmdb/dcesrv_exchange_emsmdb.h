@@ -134,7 +134,6 @@ struct emsmdbp_object_folder {
 };
 
 struct emsmdbp_object_message {
-	uint64_t				folderID;
 	uint64_t				messageID;
 	bool					read_write;
 	struct mapistore_freebusy_properties	*fb_properties;

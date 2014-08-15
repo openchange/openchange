@@ -94,6 +94,7 @@ int main(int argc, const char *argv[])
 	TALLOC_CTX			*mem_ctx;
 	int				retval;
 	struct mapistore_context	*mstore_ctx;
+	struct mapistore_contexts_list	*mstore_contexts;
 	struct loadparm_context		*lp_ctx;
 	void				*openchangedb_ctx;
 	struct ldb_context		*samdb_ctx;
@@ -188,6 +189,12 @@ int main(int argc, const char *argv[])
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		exit (1);
+	}
+
+	retval = mapistore_list_contexts_for_user(mstore_ctx, opt_username, mem_ctx, &mstore_contexts);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[ERR]: mapistore_list_contexts_for_user: %s\n", mapistore_errstr(retval)));
+		// TODO: Fail here when we start to support list_contexts
 	}
 
 	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, -1, &context_id, &folder_object);

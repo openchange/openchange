@@ -457,9 +457,10 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	/* Retrieve the context object */
 	context = (PyObject *)pyobj->private_object;
 	MAPISTORE_RETVAL_IF(!pyobj->private_object, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("ContextObject", context->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	/* FIXME: Retrieve the indexing URI */
-	/* FIXME: Replace "OK" with string */
 
 	/* Call get_root_folder function */
 	pres = PyObject_CallMethod(context, "get_root_folder", "K", fid);

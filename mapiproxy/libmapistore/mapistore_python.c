@@ -517,7 +517,7 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
-
+	Py_INCREF(folder);
 	Py_DECREF(pres);
 
 	fobj = talloc_zero(mem_ctx, struct mapistore_python_object);

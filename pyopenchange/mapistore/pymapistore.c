@@ -261,7 +261,7 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	}
 
 	/* list backends */
-	ret = mapistore_list_backends_for_user(mem_ctx, &backend_names);
+	ret = mapistore_list_backends_for_user(mem_ctx, &list_size, &backend_names);
 	if (ret != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(ret);
@@ -269,7 +269,6 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	}
 
 	/* Build the list */
-	list_size = talloc_array_length(backend_names);
 	py_ret = PyList_New(list_size);
 
 	for (i = 0; i < list_size; i++) {

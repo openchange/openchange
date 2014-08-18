@@ -456,11 +456,11 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 	return "Unknown error";
 }
 
-_PUBLIC_ enum mapistore_error mapistore_list_backends_for_user(TALLOC_CTX *mem_ctx, const char ***backend_namesP)
+_PUBLIC_ enum mapistore_error mapistore_list_backends_for_user(TALLOC_CTX *mem_ctx, int * backend_countP, const char ***backend_namesP)
 {
 	enum mapistore_error		retval;
 
-	retval = mapistore_backend_list_backend_names(mem_ctx, backend_namesP);
+	retval = mapistore_backend_list_backend_names(mem_ctx, backend_countP, backend_namesP);
 	if (retval != MAPISTORE_SUCCESS){
 		return retval;
 	}

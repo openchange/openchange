@@ -297,11 +297,11 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 /**
    \details List backend names for given user
 
-   \param mem_ctx pointer to the memory context
+   \param mem_ctx pointer to the memory context the list of backends will hang off
 
-   \return a valid backend_context pointer on success, otherwise NULL
+   \return valid pointers to a list of strings with the backend names and the number of backends on success, otherwise NULL
  */
-enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, const char ***backend_namesP)
+enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, int *backend_countP, const char ***backend_namesP)
 {
 	const char			**backend_names;
 	int 				i;
@@ -313,6 +313,7 @@ enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, c
 		backend_names[i] = backends[i].backend->backend.name;
 	}
 
+	*backend_countP = num_backends;
 	*backend_namesP = backend_names;
 	return MAPISTORE_SUCCESS;
 }
@@ -322,7 +323,7 @@ enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, c
 
    \param mem_ctx pointer to the memory context
    \param namespace the backend namespace
-   \param uri the backend parameters which can be passes inline
+   \param uri the backend parameters which can be passed inline
 
    \return a valid backend_context pointer on success, otherwise NULL
  */

@@ -56,7 +56,7 @@ class ContextObject(BackendObject):
         return (0, folder)
 
 
-class FolderObject(BackendObject):
+class FolderObject(ContextObject):
 
     def __init__(self, folderID):
         print '[PYTHON]: %s folder.__init__(%s)' % (self.name, folderID)

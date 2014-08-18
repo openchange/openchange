@@ -405,6 +405,7 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	Py_INCREF(robj);
 
 	pyobj = talloc_zero(mem_ctx, struct mapistore_python_object);
+	pyobj->obj_type = MAPISTORE_PYTHON_OBJECT_CONTEXT;
 	pyobj->name = talloc_strdup(pyobj, module_name);
 	pyobj->conn = conn;
 	pyobj->ictx = ictx;
@@ -521,6 +522,7 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	fobj = talloc_zero(mem_ctx, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!fobj, MAPISTORE_ERR_NO_MEMORY, NULL);
 
+	fobj->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
 	fobj->name = talloc_strdup(fobj, pyobj->name);
 	fobj->conn = pyobj->conn;
 	fobj->ictx = pyobj->ictx;

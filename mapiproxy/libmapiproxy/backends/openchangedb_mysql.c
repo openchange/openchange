@@ -1,3 +1,24 @@
+/*
+   MAPI Proxy - OpenchangeDB backend MySQL implementation
+
+   OpenChange Project
+
+   Copyright (C) Jesús García Sáez 2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "openchangedb_mysql.h"
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
@@ -372,23 +393,35 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 	return ret;
 }
 
-static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *_mem_ctx,
 					 struct openchangedb_context *self,
 					 const char *recipient,
 					 const char *MessageClass,
 					 uint64_t *fid,
 					 const char **ExplicitMessageClass)
 {
-	TALLOC_CTX *local_mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
-	MYSQL *conn = self->data;
-	char *sql, *explicit = NULL;
-	enum MAPISTATUS ret;
-	MYSQL_RES *res;
-	my_ulonglong nrows, i;
-	size_t length;
+	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS retval = MAPI_E_SUCCESS;
+	MYSQL		*conn = NULL;
+	char		*sql = NULL;
+	char		*explicit = NULL;
+	MYSQL_RES	*res = NULL;
+	my_ulonglong	nrows, i;
+	size_t		length;
 
-	// Check PidTagMessageClass from mailbox and folders
-	sql = talloc_asprintf(local_mem_ctx,
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!self, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!self->data, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ExplicitMessageClass, MAPI_E_INVALID_PARAMETER, NULL);
+
+	conn = self->data;
+
+	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Check PidTagMessageClass from mailbox and folders */
+	sql = talloc_asprintf(mem_ctx,
 		"SELECT fp.value, f.folder_id FROM folders f "
 		"JOIN mailboxes m ON m.id = f.mailbox_id AND m.name = '%s' "
 		"JOIN folders_properties fp ON fp.folder_id = f.id AND"
@@ -397,23 +430,27 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 		"SELECT mp.value, m2.folder_id FROM mailboxes m2 "
 		"JOIN mailboxes_properties mp ON mp.mailbox_id = m2.id AND"
 		"     mp.name = 'PidTagMessageClass' "
-		"WHERE m2.name = '%s'", _sql(mem_ctx, recipient),
-		_sql(mem_ctx, recipient));
+		"WHERE m2.name = '%s'", _sql(_mem_ctx, recipient),
+		_sql(_mem_ctx, recipient));
+	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
-	ret = status(select_without_fetch(conn, sql, &res));
-	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, ret, local_mem_ctx);
+	retval = status(select_without_fetch(conn, sql, &res));
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
 	nrows = mysql_num_rows(res);
 	for (i = 0, length = 0; i < nrows; i++) {
-		MYSQL_ROW row = mysql_fetch_row(res);
-		const char *message_class;
-		size_t message_class_length;
-		if (row == NULL) {
-			DEBUG(0, ("Error getting row %d of `%s`: %s", (int) i,
-				  sql, mysql_error(conn)));
+		MYSQL_ROW	row;
+		const char	*message_class = NULL;
+		size_t		message_class_length = 0;
+
+		row = mysql_fetch_row(res);
+		if (row == NULL || row[0] == NULL) {
+			DEBUG(0, ("[ERR][%s]: Error getting row %d of `%s`: %s", __location__,
+				  (int) i, sql, mysql_error(conn)));
 			mysql_free_result(res);
 			return MAPI_E_CALL_FAILED;
 		}
+
 		message_class = row[0];
 		message_class_length = strlen(message_class);
 		if (!strncasecmp(MessageClass, message_class, message_class_length) &&
@@ -424,22 +461,24 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *mem_ctx,
 			if (MessageClass && !strcmp(MessageClass, "All")) {
 				explicit = "";
 			} else {
-				explicit = talloc_strdup(mem_ctx, message_class);
+				explicit = talloc_strdup(_mem_ctx, message_class);
+				OPENCHANGE_RETVAL_IF(!explicit, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 			}
 			*ExplicitMessageClass = explicit;
 
-			ret = MAPI_E_CALL_FAILED;
+			retval = MAPI_E_CALL_FAILED;
 			if (convert_string_to_ull(row[1], fid)) {
-				ret = MAPI_E_SUCCESS;
+				retval = MAPI_E_SUCCESS;
 			}
 
 			length = message_class_length;
 		}
 	}
 
+	talloc_free(mem_ctx);
 	mysql_free_result(res);
 
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,
@@ -3032,11 +3071,13 @@ static int openchangedb_mysql_destructor(struct openchangedb_context *self)
 
 _PUBLIC_
 enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
-					      const char *connection_string,
+					      struct loadparm_context *lp_ctx,
 					      struct openchangedb_context **ctx)
 {
-	struct openchangedb_context *oc_ctx;
-	char *schema_file;
+	struct openchangedb_context 	*oc_ctx;
+	char 				*schema_file;
+	const char			*connection_string;
+	const char			*schema_dir;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
 	// Initialize context with function pointers
@@ -3097,6 +3138,12 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->set_locale = set_locale;
 	oc_ctx->get_folders_names = get_folders_names;
 
+	connection_string = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
+	if (!connection_string) {
+		DEBUG(0, ("[%s:%d] mapiproxy:openchangedb must be defined",
+			  __FUNCTION__, __LINE__));
+		OPENCHANGE_RETVAL_ERR(MAPI_E_INVALID_PARAMETER, oc_ctx);
+	}
 	// Connect to mysql
 	oc_ctx->data = create_connection(connection_string, &conn);
 	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
@@ -3105,7 +3152,9 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("Creating schema for openchangedb on mysql %s",
 			  connection_string));
 
+		schema_dir = lpcfg_parm_string(lp_ctx, NULL, "openchangedb", "data");
 		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
+					      schema_dir ? schema_dir :
 					      openchangedb_data_dir());
 		schema_created = create_schema(oc_ctx->data, schema_file);
 		talloc_free(schema_file);

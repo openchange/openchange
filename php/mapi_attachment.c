@@ -1,3 +1,22 @@
+/*
+   OpenChange MAPI PHP bindings
+
+   Copyright (C) 2013 Javier Amor Garcia.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <php_mapi.h>
 
 static zend_function_entry mapi_attachment_class_functions[] = {
@@ -43,11 +62,6 @@ PHP_METHOD(MAPIAttachment, __construct)
 
 PHP_METHOD(MAPIAttachment, __destruct)
 {
-	/* zval			*php_this_obj; */
-	/* mapi_message_object_t	*this_obj; */
-	/* php_this_obj = getThis(); */
-	/* this_obj = (mapi_attachment_object_t *) zend_object_store_get_object(php_this_obj TSRMLS_CC); */
-
 }
 
 PHP_METHOD(MAPIAttachment, save)

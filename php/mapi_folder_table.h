@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI PHP bindings
 
-   Copyright (C) 2013 Zentyal S.L.
+   Copyright (C) 2013 Javier Amor Garcia
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -18,20 +18,6 @@
  */
 #ifndef MAPI_FOLDER_TABLE_H
 #define MAPI_FOLDER_TABLE_H
-
-
-/* enum table_type {CONTACTS, APPOINTMENTS, TASKS, FOLDERS}; */
-
-/* typedef struct mapi_table_object */
-/* { */
-/* 	zend_object	std; */
-/* 	mapi_object_t	*table; */
-/* 	zval		*parent; */
-/* 	uint32_t count; */
-/* 	enum table_type	type; */
-/* 	TALLOC_CTX	*talloc_ctx; */
-/* 	struct SPropTagArray	*tag_array; */
-/* } mapi_table_object_t; */
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

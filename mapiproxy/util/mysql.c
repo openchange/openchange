@@ -1,3 +1,24 @@
+/*
+   MySQL util functions
+
+   OpenChange Project
+
+   Copyright (C) Jesús García Sáez 2014
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+   
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+   
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include "mysql.h"
 
 #include <time.h>
@@ -80,7 +101,7 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	parsed = parse_connection_string(mem_ctx, connection_string,
 					 &host, &user, &passwd, &db);
 	if (!parsed) {
-		DEBUG(0, ("Wrong connection string to mysql %s", connection_string));
+		DEBUG(0, ("Wrong connection string to mysql %s\n", connection_string));
 		*conn = NULL;
 		goto end;
 	}
@@ -92,13 +113,13 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	// Try to create database
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, 0, NULL, 0)) {
 		// Nop
-		DEBUG(0, ("Can't connect to mysql using %s", connection_string));
+		DEBUG(0, ("Can't connect to mysql using %s\n", connection_string));
 		*conn = NULL;
 	} else {
 		// Connect it!, let's try to create database
 		sql = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", db);
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
-			DEBUG(0, ("Can't connect to mysql using %s",
+			DEBUG(0, ("Can't connect to mysql using %s\n",
 				  connection_string));
 			*conn = NULL;
 		}
@@ -118,7 +139,7 @@ enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (mysql_query(conn, sql) != 0) {
 		printf("Error on query `%s`: %s\n", sql, mysql_error(conn));
-		DEBUG(5, ("Error on query `%s`: %s", sql, mysql_error(conn)));
+		DEBUG(5, ("Error on query `%s`: %s\n", sql, mysql_error(conn)));
 		return MYSQL_ERROR;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &end);
@@ -140,11 +161,13 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = execute_query(conn, sql);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	*res = mysql_store_result(conn);
 	if (*res == NULL) {
-		DEBUG(0, ("Error getting results of `%s`: %s", sql,
+		DEBUG(0, ("Error getting results of `%s`: %s\n", sql,
 			  mysql_error(conn)));
 		return MYSQL_ERROR;
 	}
@@ -164,7 +187,7 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 {
 	MYSQL_RES *res;
 	struct StringArrayW_r *results;
-	uint32_t i, num_rows;
+	uint32_t i, num_rows = 0;
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
@@ -196,7 +219,7 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 		for (i = 0; i < results->cValues; i++) {
 			MYSQL_ROW row = mysql_fetch_row(res);
 			if (row == NULL) {
-				DEBUG(0, ("Error getting row %d of `%s`: %s", i, sql,
+				DEBUG(0, ("Error getting row %d of `%s`: %s\n", i, sql,
 					  mysql_error(conn)));
 				mysql_free_result(res);
 				return MYSQL_ERROR;
@@ -221,11 +244,13 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 	enum MYSQLRESULT ret;
 
 	ret = select_without_fetch(conn, sql, &res);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, NULL);
+	if (ret != MYSQL_SUCCESS) {
+		return ret;
+	}
 
 	MYSQL_ROW row = mysql_fetch_row(res);
 	if (row == NULL) {
-		DEBUG(0, ("Error getting row of `%s`: %s", sql,
+		DEBUG(0, ("Error getting row of `%s`: %s\n", sql,
 			  mysql_error(conn)));
 		return MYSQL_ERROR;
 	}
@@ -245,7 +270,10 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	ret = select_first_string(mem_ctx, conn, sql, &result);
-	OPENCHANGE_RETVAL_IF(ret != MYSQL_SUCCESS, ret, mem_ctx);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
 
 	ret = MYSQL_ERROR;
 	if (convert_string_to_ull(result, n)) {
@@ -282,7 +310,7 @@ bool create_schema(MYSQL *conn, char *schema_file)
 
 	f = fopen(schema_file, "r");
 	if (!f) {
-		DEBUG(0, ("schema file %s not found", schema_file));
+		DEBUG(0, ("schema file %s not found\n", schema_file));
 		ret = false;
 		goto end;
 	}
@@ -293,7 +321,7 @@ bool create_schema(MYSQL *conn, char *schema_file)
 	schema = talloc_zero_array(mem_ctx, char, sql_size + 1);
 	bytes_read = fread(schema, sizeof(char), sql_size, f);
 	if (bytes_read != sql_size) {
-		DEBUG(0, ("error reading schema file %s", schema_file));
+		DEBUG(0, ("error reading schema file %s\n", schema_file));
 		ret = false;
 		goto end;
 	}

@@ -51,8 +51,8 @@ parser.add_option("--openchangedb-uri", type="string", default="",
                        "inside samba private directory is used but you can use mysql as backend "
                        "specifying a connection string like mysql://user:passwd@host/db_name")
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
-parser.add_option("--full-deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 parser.add_option("--migrate", action="store_true", help="Migrate MySQL schema of an existing OpenChange installation")
+
 opts,args = parser.parse_args()
 if len(args) != 0:
     parser.print_help()
@@ -74,13 +74,6 @@ provisionnames = openchange.guess_names_from_smbconf(
 
 if not opts.openchangedb:
     if opts.deprovision:
-        try:
-            openchange.unregister(setup_path, provisionnames, lp, creds)
-            openchange.openchangedb_deprovision(provisionnames, lp)
-        except openchange.ServerInUseError, e:
-            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
-            sys.exit(1)
-    elif opts.full_deprovision:
         try:
             openchange.unregister(setup_path, provisionnames, lp, creds)
             openchange.deprovision(setup_path, provisionnames, lp, creds)

@@ -126,39 +126,44 @@ enum mapistore_error {
 	MAPISTORE_ERR_INVALID_NAMESPACE = 13,
 
 /**
+   The specified URI is invalid
+*/
+	MAPISTORE_ERR_INVALID_URI = 14,
+
+/**
    The function failed to find requested record/data
 */
-	MAPISTORE_ERR_NOT_FOUND = 14,
+	MAPISTORE_ERR_NOT_FOUND = 15,
 
 /**
    The function still has a reference count
 */
-	MAPISTORE_ERR_REF_COUNT = 15,
+	MAPISTORE_ERR_REF_COUNT = 16,
 
 /**
    The function already have record/data for the searched element
 */
-	MAPISTORE_ERR_EXIST = 16,
+	MAPISTORE_ERR_EXIST = 17,
 
 /**
    The function failed to generate requested data/payload
 */
-	MAPISTORE_ERR_INVALID_DATA = 17,
+	MAPISTORE_ERR_INVALID_DATA = 18,
 
 /**
    The function failed to send message
 */
-	MAPISTORE_ERR_MSG_SEND = 18,
+	MAPISTORE_ERR_MSG_SEND = 19,
 
 /**
    The function failed to receive message
 */
-	MAPISTORE_ERR_MSG_RCV = 19,
+	MAPISTORE_ERR_MSG_RCV = 20,
 
 /** 
     The operation required privileges that the user does not have
 */
-	MAPISTORE_ERR_DENIED = 20,
+	MAPISTORE_ERR_DENIED = 21,
 
 /**
    The function is not implemented

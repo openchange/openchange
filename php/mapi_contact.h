@@ -1,7 +1,7 @@
 /*
    OpenChange MAPI PHP bindings
 
-   Copyright (C) 2013 Zentyal S.L.
+   Copyright (C) 2013 Javier Amor Garcia
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -19,14 +19,6 @@
 
 #ifndef MAPI_CONTACT_H
 #define MAPI_CONTACT_H
-
-/* typedef struct mapi_contact_object */
-/* { */
-/* 	zend_object	std; */
-/* 	mapi_object_t	*message; */
-/* 	TALLOC_CTX	*talloc_ctx; */
-/* 	struct mapi_SPropValue_array	properties; */
-/* } mapi_contact_object_t; */
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus

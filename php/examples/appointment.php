@@ -1,9 +1,25 @@
 <?php
-include('./test-helpers.php');
+/*
+   OpenChange PHP bindings examples
 
-$dbPath = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$id = "0x2500000000000001";
+   Copyright (C) 2013-2014 Javier Amor Garcia
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+include('./test-helpers.php');
+include('./config.php');
 
 # values to be set
 $tagBody1 = "body1";
@@ -33,9 +49,9 @@ diag("Calendar folder " . $calendar->getName() . "/" . $calendar->getFolderType(
 ok($calendar, "Get calendar");
 
 
-$message = $calendar->openMessage($id, MAPIMessage::RW);
-ok($message, "Appointment $id opened in RW mode");
-is($message->getID(), $id, "Check opened message Id (msut be $id)");
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RW);
+ok($message, "Appointment $appointmentId opened in RW mode");
+is($message->getID(), $appointmentId, "Check opened message Id (msut be $appointment_id)");
 
 diag("Changing PidTagBody to '$tagBody1'");
 $message->set(PidTagBody, $tagBody1);
@@ -47,7 +63,7 @@ $message->save();
 unset($message);
 
 diag("--After saving changes:");
-$message = $calendar->openMessage($id, MAPIMessage::RW);
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
 is($message->get(PidTagBody), $tagBody1, "Checking that PidTagBody has correctly been changed");
 is($message->get(PidLidAppointmentEndWhole), $unixtime1, "Checking that PidLidAppointmentEndWhole has correctly been changed");
@@ -61,7 +77,7 @@ $message->save();
 unset($message);
 
 diag("--After last changes:");
-$message = $calendar->openMessage($id, MAPIMessage::RO);
+$message = $calendar->openMessage($appointmentId, MAPIMessage::RO);
 ok($message, "Reopen message in RO mode after saving the last changes");
 is($message->get(PidTagBody), $tagBody2, "Checking that PidTagBody has changed again");
 is($message->get(PidLidAppointmentEndWhole), $unixtime2, "Checking that PidLidAppointmentEndWhole has changed again");

@@ -39,11 +39,10 @@ DSOOPT=-shared -fPIC
 CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
-	   -DOPENCHANGEDB_DATA_DIR=\"$(datadir)/setup/openchangedb\" \
+       -DOPENCHANGEDB_DATA_DIR=\"$(datadir)/setup/openchangedb\"				\
        -DMAPISTORE_BACKEND_INSTALLDIR=\"$(libdir)/mapistore_backends\"				\
        -DLZXPRESS_DATADIR=\"$(datadir)/mapitest/lzxpress\"					\
        -DLZFU_DATADIR=\"$(datadir)/mapitest/lzfu\"						\
-	   -DRESOURCES_DIR=\"$(top_builddir)/test/resources\" \
        -DHAVE_ICAL_0_46=@have_libical_0_46@
 
 # This value should be determined by configure at some point
@@ -114,7 +113,14 @@ OC_MAPISTORE_UNINSTALL=@OC_MAPISTORE_UNINSTALL@
 
 MAPISTORE_TEST=@MAPISTORE_TEST@
 
+# UNIT AND FUNCTIONAL TESTING
 SUBUNIT_LIBS=@SUBUNIT_LIBS@
+CHECK_CFLAGS=@CHECK_CFLAGS@
+CHECK_LIBS=@CHECK_LIBS@
+OC_TESTSUITE=@OC_TESTSUITE@
+OC_TESTSUITE_INSTALL=@OC_TESTSUITE_INSTALL@
+OC_TESTSUITE_UNINSTALL=@OC_TESTSUITE_UNINSTALL@
+OC_TESTSUITE_CHECK=@OC_TESTSUITE_CHECK@
 
 # Python
 PYOPENCHANGEALL=@PYOPENCHANGEALL@

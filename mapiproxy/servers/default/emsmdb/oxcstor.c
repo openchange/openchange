@@ -508,6 +508,7 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Step 4. Search for the specified MessageClass substring within user mailbox */
+	mapi_repl->u.mapi_GetReceiveFolder.MessageClass = NULL;
 	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
 						MessageClass, &mapi_repl->u.mapi_GetReceiveFolder.folder_id,
 						&mapi_repl->u.mapi_GetReceiveFolder.MessageClass);

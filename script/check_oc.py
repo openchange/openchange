@@ -4,10 +4,7 @@ import sys
 
 def getSambaProcess():
     ps = subprocess.Popen("ps -U 0", shell=True, stdout=subprocess.PIPE)
-    psbuffer = ps.stdout.read()
-    ps.stdout.close()
-    ps.wait()
-    return psbuffer
+    return ps.communicate()[0]
 
 def main():
     psbuffer = getSambaProcess()

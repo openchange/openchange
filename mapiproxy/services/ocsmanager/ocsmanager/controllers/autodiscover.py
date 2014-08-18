@@ -1,7 +1,25 @@
-"""This module provides an implementation of the autodiscovery protocol.
-
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2012-2014  Julien Kerihuel <jkerihuel@openchange.org>
+#                          Jean Raby <jraby@inverse.ca>
+#                          Enrique J. Hernández <ejhernandez@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 """
-
+This module provides an implementation of the HTTP autodiscover protocol.
+"""
 from cStringIO import StringIO
 from time import time, strftime, localtime
 import traceback
@@ -14,8 +32,8 @@ from pylons import config
 from pylons.decorators.rest import restrict
 
 import ldb
-
 from ocsmanager.lib.base import BaseController
+
 
 REQUEST_XMLNS = ("http://schemas.microsoft.com/exchange/autodiscover/outlook"
                  "/requestschema/2006")
@@ -40,11 +58,11 @@ class AutodiscoverHandler(object):
         self._parse_request(req.body)
 
         self.http_server_name = None
-        server_env_names = iter(["HTTP_X_FORWARDED_SERVER",
-                                 "HTTP_X_FORWARDED_HOST",
+        server_env_names = iter(["HTTP_X_FORWARDED_HOST",
+                                 "HTTP_X_FORWARDED_SERVER",
                                  "HTTP_HOST"])
         try:
-            while self.http_server_name == None:
+            while self.http_server_name is None:
                 env_name = server_env_names.next()
                 if env_name in self.environ:
                     self.http_server_name \
@@ -120,6 +138,8 @@ class AutodiscoverHandler(object):
                 record["DisplayName"] = ldb_record["displayName"][0]
             if "legacyExchangeDN" in ldb_record:
                 record["LegacyDN"] = ldb_record["legacyExchangeDN"][0]
+            if "mail" in ldb_record:
+                record["AutoDiscoverSMTPAddress"] = ldb_record["mail"][0]
             self._fill_deployment_id(record)
         else:
             raise RuntimeError("samba config not loaded")
@@ -151,7 +171,7 @@ class AutodiscoverHandler(object):
         resp_element.append(account_element)
 
         self._append_elements(account_element, {"AccountType": "email",
-                                                 "Action": "settings"})
+                                                "Action": "settings"})
 
         mdb_dn = self._fetch_mdb_dn(ldb_record)
 
@@ -168,12 +188,12 @@ class AutodiscoverHandler(object):
              "ServerVersion": "720082AD",  # TODO: that is from ex2010
              "MdbDN": mdb_dn,
              "Server": self.http_server_name,
-             "ASUrl": "https://%s/ews/as" \
-                 % self.http_server_name,  # availability
-             "OOFUrl": "https://%s/ews/oof" \
-                 % self.http_server_name,  # out-of-office
-             "OABUrl": "https://%s/ews/oab" \
-                 % self.http_server_name,  # offline address book
+             "ASUrl": "https://%s/ews/as"
+                      % self.http_server_name,  # availability
+             "OOFUrl": "https://%s/ews/oof"
+                       % self.http_server_name,  # out-of-office
+             "OABUrl": "https://%s/ews/oab"
+                       % self.http_server_name,  # offline address book
              }
         self._append_elements(prot_element, response_tree)
 
@@ -186,12 +206,30 @@ class AutodiscoverHandler(object):
         """
         prot_element = Element("Protocol")
         account_element.append(prot_element)
-        samba_server_name = "%(hostname)s.%(dnsdomain)s" % config["samba"]
+
+        rpcproxy_server_name = self.http_server_name
+        autodiscover_rpcproxy_conf = config['ocsmanager']['autodiscover:rpcproxy']
+        if autodiscover_rpcproxy_conf['external_hostname'] != '__none__':  # Default value
+            rpcproxy_server_name = autodiscover_rpcproxy_conf['external_hostname']
+
+        if autodiscover_rpcproxy_conf['ssl']:
+            ssl_opts = {"SSL": "On",
+                        # This option can be implemented for increased security
+                        "CertPrincipalName": "none"}
+        else:
+            ssl_opts = {"SSL": "Off"}
 
         response_tree = {"Type": "EXPR",
-                         "Server": samba_server_name,
-                         "SSL": "Off",
-                         "AuthPackage": "Ntlm"}
+                         "Server": rpcproxy_server_name,
+                         "AuthPackage": "Ntlm",
+                         "ASUrl": "https://%s/ews/as"
+                                  % rpcproxy_server_name,  # availability
+                         "OOFUrl": "https://%s/ews/oof"
+                                   % rpcproxy_server_name,  # out-of-office
+                         "OABUrl": "https://%s/ews/oab"
+                                   % rpcproxy_server_name}  # offline address book
+
+        response_tree.update(ssl_opts)
         self._append_elements(prot_element, response_tree)
 
         """
@@ -202,12 +240,12 @@ class AutodiscoverHandler(object):
 
     def _append_error(self, resp_element, error_code):
         error_messages = {500: "Unknown e-mail address",
-                          501: "No configuration information available" \
-                              " for e-mail address",
+                          501: "No configuration information available"
+                               " for e-mail address",
                           600: "Invalid request",
                           601: "Configuration information not available",
-                          602: "Error in configuration information for" \
-                              " e-mail address",
+                          602: "Error in configuration information for"
+                               " e-mail address",
                           603: "An internal error occurred",
                           0: "An unknown error occurred"}
 

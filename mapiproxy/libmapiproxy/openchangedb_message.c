@@ -4,6 +4,7 @@
    OpenChangeDB message object implementation
 
    Copyright (C) Julien Kerihuel 2011
+   Copyright (C) Jesús García Sáez 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -67,7 +68,7 @@ enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx,
 /**
    \details Save (commit) message in openchangedb database
 
-   \param _msg the message object
+   \param msg the message object
    \param SaveFlags flags associated to the save operation
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error

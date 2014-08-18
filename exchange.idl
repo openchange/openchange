@@ -4631,7 +4631,7 @@ System Attendant Private Interface
 		[out]				uint16					rgwBestVersion[3],
 		[in,out]			uint32					*pulTimeStamp,
 		[in,subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi2k7_AuxInfo	*rgbAuxIn,
-		[in]				uint32					cbAuxIn,
+		[in][range(0,0x1008)]		uint32					cbAuxIn,
 		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] mapi2k7_AuxInfo	*rgbAuxOut,
 		[in,out][range(0,0x1008)]	uint32					*pcbAuxOut
 		);

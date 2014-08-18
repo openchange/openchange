@@ -1,5 +1,25 @@
 <?php
+/*
+   OpenChange PHP bindings examples
+
+   Copyright (C) 2013-2014 Javier Amor Garcia
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
 include('./test-helpers.php');
+include('./config.php');
 
 $PidNameKeywords = 0xa064101f;
 
@@ -14,10 +34,6 @@ function dumpTask($message) {
   echo "PidNameKeywords" . var_dump($message->get($PidNameKeywords)) . "\n";
 }
 
-$dbPath = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-#$id = "0xC1E000000000001";
-$id = "0x3500000000000001";
 $folder = 'tasks';
 
 # values to be set
@@ -47,9 +63,9 @@ $session = $mapiProfile->logon();
 $mailbox = $session->mailbox();
 $ocFolder = $mailbox->$folder();
 
-$message = $ocFolder->openMessage($id, MAPIMessage::RW);
-ok($message, "Appointment $id opened in RW mode");
-is($message->getID(), $id, "Check opened message Id (must be $id)");
+$message = $ocFolder->openMessage($taskId, MAPIMessage::RW);
+ok($message, "Appointment $taskId opened in RW mode");
+is($message->getID(), $taskId, "Check opened message Id (must be $taskId)");
 dumpTask($message);
 
 
@@ -68,7 +84,7 @@ $message->save();
 unset($message);
 
 diag("--After saving changes:");
-$message = $ocFolder->openMessage($id, MAPIMessage::RW);
+$message = $ocFolder->openMessage($taskId, MAPIMessage::RW);
 ok($message, "Reopen message in RW mode after saving changes");
 
 is($message->get(PidTagBody), $tagBody1, "Checking change in PidTagBody");

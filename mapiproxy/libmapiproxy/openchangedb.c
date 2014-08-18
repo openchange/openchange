@@ -4,6 +4,7 @@
    EMSMDBP: EMSMDB Provider implementation
 
    Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Jesús García Sáez 2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -46,11 +47,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 	const char *openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
 							     "openchangedb");
 	if (openchangedb_backend) {
-		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n",
-			  openchangedb_backend));
-		return openchangedb_mysql_initialize(mem_ctx,
-						     openchangedb_backend,
-						     oc_ctx);
+		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n", openchangedb_backend));
+		return openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
 	} else {
 		DEBUG(0, ("Using default backend for openchangedb\n"));
 		return openchangedb_ldb_initialize(mem_ctx,

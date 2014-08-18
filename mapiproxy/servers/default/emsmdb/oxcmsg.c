@@ -399,8 +399,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	/* This should be handled differently here: temporary hack */
-	retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-	if (retval) {
+	ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+	if (ret) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -701,17 +701,14 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRecipientRow *recipient_row, uint16_t prop_count, enum MAPITAGS *properties, struct mapistore_message_recipient *recipient)
+static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx,
+						       struct ModifyRecipientRow *recipient_row,
+						       uint16_t prop_count, enum MAPITAGS *properties,
+						       struct mapistore_message_recipient *recipient)
 {
-	int			i, data_pos;
-	uint8_t			*src_value;
-	void			*dest_value;
-	char			*uni_value;
-	struct Binary_r		*bin_value;
-	struct FILETIME		*ft_value;
-	size_t			value_size = 0;
-	const uint16_t		*unicode_char;
-	size_t			dest_size, dest_len;
+	int			i;
+	uint32_t		data_pos;
+	const void		*prop_value;
 
 	recipient->type = recipient_row->RecipClass;
 
@@ -747,13 +744,9 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 	default:
 		recipient->data[1] = NULL;
 	}
-      
+
 	data_pos = 0;
 	for (i = 0; i < prop_count; i++) {
-		if (properties[i] & MV_FLAG) {
-			DEBUG(0, ("multivalue not supported yet\n"));
-			abort();
-		}
 
 		if (recipient_row->RecipientRow.layout) {
 			data_pos++;
@@ -766,60 +759,19 @@ static void oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct ModifyRe
 			}
 		}
 
-		dest_value = src_value = recipient_row->RecipientRow.prop_values.data + data_pos;
-		switch (properties[i] & 0xffff) {
-		case PT_BOOLEAN:
-			value_size = sizeof(uint8_t);
-			break;
-		case PT_I2:
-			value_size = sizeof(uint16_t);
-			break;
-		case PT_LONG:
-		case PT_ERROR:
-			value_size = sizeof(uint32_t);
-			break;
-		case PT_DOUBLE:
-			value_size = sizeof(double);
-			break;
-		case PT_I8:
-			value_size = sizeof(uint64_t);
-			break;
-		case PT_STRING8:
-			value_size = strlen(dest_value) + 1;
-			break;
-		case PT_SYSTIME:
-			ft_value = talloc_zero(recipient->data, struct FILETIME);
-			ft_value->dwLowDateTime = *(uint32_t *) src_value;
-			ft_value->dwHighDateTime = *(uint32_t *) (src_value + 4);
-			value_size = sizeof(uint64_t);
-			dest_value = ft_value;
-			break;
-		case PT_UNICODE:
-			unicode_char = (const uint16_t *) src_value;
-			value_size = 0;
-			while (*unicode_char++)
-				value_size += 2;
-			dest_size = value_size * 3 + 3;
-			uni_value = talloc_array(recipient->data, char, dest_size);
-			convert_string(CH_UTF16LE, CH_UTF8,
-				       src_value, value_size,
-				       uni_value, dest_size,
-				       &dest_len);
-			uni_value[dest_len] = 0;
-			dest_value = uni_value;
-			value_size += 2;
-			break;
-		case PT_BINARY:
-			bin_value = talloc_zero(recipient->data, struct Binary_r);
-			bin_value->cb = *(uint16_t *) src_value;
-			bin_value->lpb = src_value + 2;
-			value_size = (bin_value->cb + sizeof(uint16_t));
-			dest_value = bin_value;
-			break;
+		prop_value = pull_emsmdb_property(recipient->data, &data_pos, properties[i],
+						  &recipient_row->RecipientRow.prop_values);
+		if (prop_value == NULL) {
+			DEBUG(0, ("%s: Failed to convert RecipientProperty with tag [%s]. "
+				  "We are going to save it as-is.\n",
+				  __PRETTY_FUNCTION__, get_proptag_name(properties[i])));
+			TALLOC_FREE(recipient->data);
+			return MAPI_E_TYPE_NO_SUPPORT;
 		}
-		recipient->data[i+2] = dest_value;
-		data_pos += value_size;
+		recipient->data[i+2] = discard_const(prop_value);
 	}
+
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -895,7 +847,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 		recipients = talloc_array(mem_ctx, struct mapistore_message_recipient, mapi_req->u.mapi_ModifyRecipients.cValues);
 		for (i = 0; i < mapi_req->u.mapi_ModifyRecipients.cValues; i++) {
-			oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i, mapi_req->u.mapi_ModifyRecipients.prop_count, mapi_req->u.mapi_ModifyRecipients.properties, recipients + i);
+			retval = oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i,
+								 mapi_req->u.mapi_ModifyRecipients.prop_count,
+								 mapi_req->u.mapi_ModifyRecipients.properties,
+								 recipients + i);
+			if (retval != MAPI_E_SUCCESS) {
+				mapi_repl->error_code = retval;
+				goto end;
+			}
 		}
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
 	}
@@ -1517,8 +1476,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
                 if (request->OpenModeFlags == MAPI_CREATE) {
-                        retval = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-                        if (retval) {
+                        ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+                        if (ret) {
                                 mapi_repl->error_code = MAPI_E_NO_SUPPORT;
                                 goto end;
                         }

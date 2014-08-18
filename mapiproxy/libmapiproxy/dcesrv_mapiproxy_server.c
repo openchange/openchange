@@ -333,8 +333,8 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
  */
 _PUBLIC_ void *mapiproxy_server_openchangedb_init(struct loadparm_context *lp_ctx)
 {
-	TALLOC_CTX *mem_ctx;
-	enum MAPISTATUS ret;
+	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS	ret;
 
 	/* Sanity checks */
 	if (openchange_ldb_ctx) return openchange_ldb_ctx;

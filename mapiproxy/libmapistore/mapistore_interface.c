@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -49,7 +49,6 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	const char			*private_dir;
 	char				*mapping_path;
 	const char			*indexing_url;
-	const char			*nprops_backend;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -68,11 +67,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
-	mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
-	mkdir(mapping_path, 0700);
+	if (mapistore_get_mapping_path() == NULL) {
+		mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
+		mkdir(mapping_path, 0700);
 
-	mapistore_set_mapping_path(mapping_path);
-	talloc_free(mapping_path);
+		mapistore_set_mapping_path(mapping_path);
+		talloc_free(mapping_path);
+	}
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -99,24 +100,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mapistore_set_default_indexing_url(indexing_url);
 
 	mstore_ctx->nprops_ctx = NULL;
-	nprops_backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "nprops_backend");
-	if (nprops_backend) {
-		DEBUG(0, ("Using custom backend for named properties: %s\n",
-			  nprops_backend));
-		retval = mapistore_namedprops_init(mstore_ctx, nprops_backend,
-						   &(mstore_ctx->nprops_ctx));
-	} else {
-		// Use default ldb backend
-		char *nprops_default_db = talloc_asprintf(mstore_ctx, "ldb://%s/%s",
-				mapistore_get_mapping_path(), MAPISTORE_DB_NAMED);
-		DEBUG(0, ("Using default backend for named properties: %s\n",
-			  nprops_default_db));
-		retval = mapistore_namedprops_init(mstore_ctx, nprops_default_db,
-						   &(mstore_ctx->nprops_ctx));
-		talloc_free(nprops_default_db);
-	}
+	retval = mapistore_namedprops_init(mstore_ctx, lp_ctx, &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -443,6 +429,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Failed creating the context";
 	case MAPISTORE_ERR_INVALID_NAMESPACE:
 		return "Invalid Namespace";
+	case MAPISTORE_ERR_INVALID_URI:
+		return "Invalid URI";
 	case MAPISTORE_ERR_NOT_FOUND:
 		return "Not Found";
 	case MAPISTORE_ERR_REF_COUNT:
@@ -1395,14 +1383,14 @@ end:
 }
 
 /**
-   \details Get message data for a message in mapistore
+   \details Modify recipients of a message in mapistore
 
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param message the message
-   \param mem_ctx talloc context to use for the result message
-   \param msg the message data for the message
+   \param mid the identifier referencing the message
+   \rows the array of recipient rows
+   \count the number of elements in the array
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
@@ -1427,10 +1415,9 @@ enum mapistore_error mapistore_message_get_message_data(struct mapistore_context
    \param mstore_ctx pointer to the mapistore context
    \param context_id the context identifier referencing the backend
    where properties will be stored
-   \param message the message
-   \param columns properties array 
-   \param count the number of elements in the array
-   \param recipients the receipients
+   \param mid the identifier referencing the message
+   \rows the array of recipient rows
+   \count the number of elements in the array
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */

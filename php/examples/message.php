@@ -1,13 +1,25 @@
 <?php
-include('./test-helpers.php');
+/*
+   OpenChange PHP bindings examples
 
-# System dependent varialbes:
-$path = "/home/jag/.openchange/profiles.ldb";
-$profileName = 'u2';
-$contactMessageId = '0x7500000000000001';
-$roContactId = $contactMessageId;
-$inexistentMesageId = '0x7500000CAAA00001';
-# END system dependent variables
+   Copyright (C) 2013-2014 Javier Amor Garcia
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+*/
+
+include('./test-helpers.php');
+include('./config.php');
 
 $pidTagBody1 = 'body1';
 $pidTagDisplayName1 = 'displayName1';
@@ -18,8 +30,8 @@ $pidTagDisplayName2 = 'displayName2';
 $pidLidWorkAddressStreet2 = 'street2';
 $pidLidEmail1EmailAddress2 = 'jk2@example2.org';
 
-$mapi = new MAPIProfileDB($path);
-ok($mapi, "MAPIProfileDB opened from $path");
+$mapi = new MAPIProfileDB($dbPath);
+ok($mapi, "MAPIProfileDB opened from $dbPath");
 
 $mapiProfile = $mapi->getProfile($profileName);
 ok($mapiProfile, "Profile $profileName");

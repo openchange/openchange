@@ -28,11 +28,11 @@ void yyerror(struct ocpf_context *, void *, char *);
 
 %}
 
-%pure_parser
+%pure-parser
 %parse-param {struct ocpf_context *ctx}
 %parse-param {void *scanner}
 %lex-param {yyscan_t *scanner}
-%name-prefix="ocpf_yy"
+%name-prefix "ocpf_yy"
 
 %union {
 	uint8_t				i;

@@ -2,15 +2,10 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 2.0, [openchange@openchange.org])
+AC_INIT(openchange, 2.2, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
-
-AH_VERBATIM([_GNU_SOURCE],
-[#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif])
-
+AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
 
 PKG_PROG_PKG_CONFIG([0.20])
 
@@ -147,6 +142,14 @@ if test "x${$1}set" != "xset"; then
 		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
    		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
 	;;
+	TESTSUITE)
+		OC_$2="$OC_$2 $1"
+		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
+		OC_$2_CHECK="$OC_$2_CHECK $1-check"
+
+		AC_SUBST(OC_$2_CHECK)
+	;;
 	SERVER|MAPISTORE)
 		OC_$2="$OC_$2 $1"
 		OC_$2_CLEAN="$OC_$2_CLEAN $1-clean"
@@ -246,6 +249,14 @@ if test "x$use_cov" = x"yes"; then
    COVERAGE_INIT="coverage-init"
 fi
 AC_SUBST(COVERAGE_INIT)
+
+dnl ---------------------------------------------------------------------------
+dnl Check for check (unittest library)
+dnl ---------------------------------------------------------------------------
+PKG_CHECK_MODULES(CHECK, check, [testsuite=1], [AC_MSG_WARN(Conditions unmet for unit testing support)])
+AC_SUBST(CHECK_CFLAGS)
+AC_SUBST(CHECK_LIBS)
+OC_RULE_ADD(testsuite, TESTSUITE)
 
 dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
@@ -356,6 +367,26 @@ AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
 AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
+
+dnl ----------------------------------------------------------------------------
+dnl Check for MYSQL client libraries
+dnl ----------------------------------------------------------------------------
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+   AC_MSG_WARN([No version of mysql_config was found!])
+   AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
 
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex
@@ -788,6 +819,8 @@ OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(mapiproxy)
 
+OC_SETVAL(testsuite)
+
 OC_SETVAL(doxygen)
 
 AC_MSG_RESULT([
@@ -814,15 +847,16 @@ OpenChange Configuration (Please review)
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical
-	     - mapitest:		$enable_mapitest
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
-	   * subunit format (mapitest):	$have_subunit
+	   * Unit and functional testing
+	     - mapitest:		$enable_mapitest
+	     - mapitest (subunit):      $have_subunit
+	     - openchange-testsuite:    $enable_testsuite
+	     - coverage tests:		$use_cov
 
 	   * OpenChange Documentation:	$enable_doxygen
-
-	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
 	     - Qt4:			$enable_openchange_qt4

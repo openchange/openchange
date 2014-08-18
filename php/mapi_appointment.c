@@ -1,3 +1,22 @@
+/*
+   OpenChange MAPI PHP bindings
+
+   Copyright (C) 2013 Javier Amor Garcia.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <php_mapi.h>
 #define SEC_TO_UNIX_EPOCH 11644473600LL
 #define MIN_TO_UNIX_EPOCH 194074560LL
@@ -35,15 +54,6 @@ zval *create_appointment_object(zval *folder, mapi_object_t *message, char open_
 
 	appointment =  create_message_object("mapiappointment", folder, message, open_mode TSRMLS_CC);
 	mapi_message_request_all_properties(appointment TSRMLS_CC);
-
-	/* obj = (mapi_message_object_t *) zend_object_store_get_object(appointment TSRMLS_CC); */
-	/* SPropTagArray = set_SPropTagArray(obj->talloc_ctx, 13, */
-	/* 				  PidTagOriginalSubject, PidTagHasAttachments, PidLidBusyStatus, PidLidLocation, */
-	/* 				  PidLidAppointmentStartWhole, PidLidAppointmentEndWhole, PidNameKeywords,  PidLidAppointmentSubType, */
-	/* 				  PidTagLastModificationTime, PidLidAllAttendeesString,	PidTagBody, PidTagSensitivity, */
-	/* 				  PidTagPriority); */
-	/* mapi_message_so_request_properties(obj, SPropTagArray TSRMLS_CC); */
-	/* MAPIFreeBuffer(SPropTagArray); */
 
 	return appointment;
 }
@@ -254,8 +264,6 @@ zval* appointment_recurrence_pattern_to_zval(struct AppointmentRecurrencePattern
 	MAKE_STD_ZVAL(zrp);
 	array_init(zrp);
 
-
-//add_assoc_string(zval *aval, char *key, char *strval, int dup);
 	switch(rp->RecurFrequency) {
 	case 0x200A:
 		add_assoc_string(zrp, "RecurFrequency", "daily", 1);

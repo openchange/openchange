@@ -779,8 +779,15 @@ static void *get_property_data_message(TALLOC_CTX *mem_ctx, struct ldb_message *
 	case PT_STRING8:
 	case PT_UNICODE:
 		str = ldb_msg_find_attr_as_string(msg, PidTagAttr, NULL);
+		if (!str) return NULL;
+
 		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 		val = ldb_binary_decode(local_mem_ctx, str);
+		if (val.length == 0) {
+			talloc_free(local_mem_ctx);
+			return NULL;
+		}
+
 		data = (char *) talloc_strndup(mem_ctx, (char *) val.data, val.length);
 		talloc_free(local_mem_ctx);
 		break;

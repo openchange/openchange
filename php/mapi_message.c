@@ -1,3 +1,22 @@
+/*
+   OpenChange MAPI PHP bindings
+
+   Copyright (C) 2013 Javier Amor Garcia.
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 3 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #include <php_mapi.h>
 
 static zend_function_entry mapi_message_class_functions[] = {
@@ -238,11 +257,9 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	zval *zprop;
 	uint32_t prop_type;
 
-//	php_printf("Property 0x%" PRIX64 " value %p\n", prop_id, prop_value); //DDD
 
 	MAKE_STD_ZVAL(zprop);
 	if (prop_value == NULL) {
-//		php_printf("Property 0x%" PRIX64 " NULL\n", prop_id); //DDD
 		ZVAL_NULL(zprop);
 		return zprop;
 	}
@@ -251,11 +268,8 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	if ((prop_type == PT_UNICODE) || (prop_type == PT_STRING8)) {
 		ZVAL_STRING(zprop, (char *) prop_value , 1);
 	} else if (prop_type == PT_LONG) {
-//		php_printf("DDD LONG \n"); //DDD
 		ZVAL_LONG(zprop, *((long *) prop_value));
-//		php_printf("Property 0x%" PRIX64 " long value %i\n", prop_id, *((long *) prop_value)); //DDD
 	} else if (prop_type == PT_BOOLEAN) {
-//		php_printf("Property 0x%" PRIX64 " bool value %i\n", prop_id, *((bool *) prop_value)); //DDD
 		ZVAL_BOOL(zprop, *((bool *) prop_value));
 	} else if (prop_type == PT_I8) {
 		mapi_id_t id = *((mapi_id_t*) prop_value);
@@ -275,8 +289,6 @@ zval* mapi_message_property_to_zval(TALLOC_CTX *talloc_ctx, mapi_id_t prop_id, v
 	} else if (prop_type == PT_BINARY) {
 		int i;
 		struct Binary_r *bin = ((struct Binary_r*) prop_value);
-//		php_printf("Binary prop 0x%" PRIX64 " length %i\n", prop_id, bin->cb);
-
 		array_init(zprop);
 		for (i=0; i < bin->cb; i++) {
 			uint8_t value = bin->lpb[i];
@@ -390,7 +402,6 @@ bool mapi_message_types_compatibility(zval *zv, mapi_id_t mapi_type)
 		return false;
 	}
 
-//	php_printf("Incorrect zval type %i for MAPI type  0x%" PRIX64  "\n", type, mapi_type);
 	return false;
 }
 
@@ -433,7 +444,6 @@ void *mapi_message_fill_unicode_array(TALLOC_CTX *mem_ctx, zval *src, struct Str
 		if (found != SUCCESS) {
 			php_error(E_ERROR, "Cannot find string in array position %i", i);
 		}
-//		php_printf("Fill pos %i with %s\n", i, Z_STRVAL_PP(value));
 		string_array->lppszW[i] = talloc_strdup(mem_ctx, Z_STRVAL_PP(value));
 	}
 }
@@ -474,7 +484,6 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 			php_error(E_ERROR, "Incorrect PHP long variable for mapi type  0x%" PRIX64 "", mapi_type);
 		}
 
-//		php_printf( "zval to long: %p -> %ld\n", data, *((long*)data)); //DDD
 	} else if (type == IS_DOUBLE) {
 		if (mapi_type == PT_DOUBLE) {
 			double *ddata =  talloc_ptrtype(mem_ctx, ddata);
@@ -489,7 +498,6 @@ void *mapi_message_zval_to_mapi_value(TALLOC_CTX *mem_ctx, mapi_id_t mapi_type, 
 		bool *bdata =  talloc_ptrtype(mem_ctx, bdata);
 		*bdata = Z_BVAL_P(val);
 		data = (void*) bdata;
-//		php_printf( "zval to bdata: %p -> %i\n", data, *((bool*)data)); //DDD
 	} else if ((type == IS_ARRAY) && (mapi_type == PT_BINARY)) {
 		struct Binary_r *bidata = talloc_ptrtype(mem_ctx, bidata);
 		mapi_message_fill_binary_array(mem_ctx, val, bidata);
@@ -545,7 +553,6 @@ PHP_METHOD(MAPIMessage, get)
 		zval *prop;
 		zval **temp_prop;
 		mapi_id_t prop_id = (mapi_id_t) Z_LVAL_P(args[i]);
-//		php_printf("get 0x%" PRIX64  "\n", prop_id); //DDD
 		prop  = mapi_message_get_property(this_obj, prop_id);
 
 		if (argc == 1) {
@@ -600,14 +607,10 @@ void mapi_message_set_properties(zval *message_zval, int argc, zval **args TSRML
 		void *data;
 		if (mapi_message_types_compatibility(val, prop_type) == false) {
 			php_log_err("mapi_message_set_properties: trying to set invalid zval type to a property" TSRMLS_CC);
-//			php_printf("Property with id 0x%" PRIX64 " with type 0x%" PRIX64  " has a incorrect zval type. Skipping\n", id, prop_type);
 			continue;
 		}
 
-//		php_printf("TO SET with id 0x%" PRIX64 " with type 0x%" PRIX64  " \n", id, prop_type); // DDD
-
 		data = mapi_message_zval_to_mapi_value(message_obj->talloc_ctx, prop_type, val);
-
 		mapi_message_so_set_prop(message_obj->talloc_ctx, message_obj->message, id, data TSRMLS_CC);
 	}
 
@@ -736,10 +739,9 @@ PHP_METHOD(MAPIMessage, getAttachmentTable)
 	z_table = create_attachment_table_object(z_this_obj, obj_table  TSRMLS_CC);
 
 	RETVAL_ZVAL(z_table, 0, 1);
-//	ADD_CHILD(this_obj, z_table);
 }
 
-// XXXX tyr to generalize to all kinds of messages
+// TODO generalize to all kinds of messages
 zval *mapi_message_dump(zval *z_message TSRMLS_DC)
 {
 	mapi_message_object_t		*message_obj;

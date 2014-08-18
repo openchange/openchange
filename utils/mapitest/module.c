@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2008
+   Copyright (C) Julien Kerihuel 2008-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -42,6 +42,7 @@ _PUBLIC_ uint32_t mapitest_register_modules(struct mapitest *mt)
 	ret += module_lcid_init(mt);
 	ret += module_mapidump_init(mt);
 	ret += module_lzxpress_init(mt);
+	ret += module_zentyal_init(mt);
 
 	return ret;
 }
@@ -364,6 +365,28 @@ _PUBLIC_ uint32_t module_nspi_init(struct mapitest *mt)
 	return MAPITEST_SUCCESS;
 }
 
+/**
+   \details Register the Functional Testing NSPI test suite
+
+   \param mt pointer on the top-level mapitest structure
+
+   \return MAPITEST_SUCCESS on success, otherwise MAPITEST_ERROR
+ */
+_PUBLIC_ uint32_t module_zentyal_init(struct mapitest *mt)
+{
+	struct mapitest_suite	*suite = NULL;
+
+	suite = mapitest_suite_init(mt, "ZENTYAL", "Functional Testing for Zentyal", true);
+
+	mapitest_suite_add_test(suite, "NSPI-1872", "Test pStat overflow in QueryRows", mapitest_zentyal_1872);
+	mapitest_suite_add_test(suite, "NSPI-1863", "Test PR_ENTRYID retrieval on non OpenChange user", mapitest_zentyal_1863);
+	mapitest_suite_add_test(suite, "NSPI-1645", "Test SortTypePhoneticDisplayName is not supported in UpdateStat", mapitest_zentyal_1645);
+	mapitest_suite_add_test(suite, "OXCMSG-1804", "Test multi-value properties in ModifyRecipients", mapitest_zentyal_1804);
+
+	mapitest_suite_register(mt, suite);
+
+	return MAPITEST_SUCCESS;
+}
 
 /**
    \details Return the no server test suite

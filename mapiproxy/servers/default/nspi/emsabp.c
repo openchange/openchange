@@ -3,7 +3,7 @@
 
    EMSABP: Address Book Provider implementation
 
-   Copyright (C) Julien Kerihuel 2006-2013.
+   Copyright (C) Julien Kerihuel 2006-2014.
    Copyright (C) Pauline Khun 2006.
 
    This program is free software; you can redistribute it and/or modify
@@ -30,6 +30,12 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_nsp.h"
 #include "ldb.h"
+
+/* Expose samdb_connect prototype */
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
+				  struct loadparm_context *,
+				  struct auth_session_info *,
+				  unsigned int);
 
 /**
    \details Initialize the EMSABP context and open connections to
@@ -74,12 +80,14 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 
 	/* Retrieve samdb url (local or external) */
 	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-	if (!samdb_url) {
-		samdb_url = "sam.ldb";
-	}
 
 	/* return an opaque context pointer on samDB database */
-	emsabp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
+	if (!samdb_url) {
+		emsabp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+	} else {
+		emsabp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
+	}
+
 	if (!emsabp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
@@ -369,9 +377,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 	memcpy(permEntryID->ProviderUID.ab, GUID_NSPI, 16);
 	permEntryID->R4 = 0x1;
 	permEntryID->DisplayType = DisplayType;
+	permEntryID->dn = NULL;
 
 	if (!msg) {
 		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, "/");
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	} else if (DisplayType == DT_CONTAINER) {
 		ldb_value = ldb_msg_find_ldb_val(msg, "objectGUID");
 		OPENCHANGE_RETVAL_IF(!ldb_value, MAPI_E_CORRUPT_STORE, NULL);
@@ -386,12 +396,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 						  guid->node[0], guid->node[1],
 						  guid->node[2], guid->node[3],
 						  guid->node[4], guid->node[5]);
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_RESOURCES, guid);
 		talloc_free(guid);
 
 	}  else {
 		dn_str = ldb_msg_find_attr_as_string(msg, "legacyExchangeDN", NULL);
 		OPENCHANGE_RETVAL_IF(!dn_str, MAPI_E_CORRUPT_STORE, NULL);
 		permEntryID->dn = talloc_strdup(emsabp_ctx->mem_ctx, dn_str);
+		OPENCHANGE_RETVAL_IF(!permEntryID->dn, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -513,9 +525,17 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		bin = talloc(mem_ctx, struct Binary_r);
 		if (dwFlags & fEphID) {
 			retval = emsabp_set_EphemeralEntryID(emsabp_ctx, DT_MAILUSER, MId, &ephEntryID);
+			if (retval != MAPI_E_SUCCESS) {
+				talloc_free(bin);
+				return NULL;
+			}
 			retval = emsabp_EphemeralEntryID_to_Binary_r(mem_ctx, &ephEntryID, bin);
 		} else {
 			retval = emsabp_set_PermanentEntryID(emsabp_ctx, DT_MAILUSER, msg, &permEntryID);
+			if (retval != MAPI_E_SUCCESS) {
+				talloc_free(bin);
+				return NULL;
+			}
 			retval = emsabp_PermanentEntryID_to_Binary_r(mem_ctx, &permEntryID, bin);
 		}
 		return bin;
@@ -628,7 +648,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 	uint32_t	ulPropTag;
 	int		i;
 
-	OPENCHANGE_RETVAL_IF(pPropTags == NULL, MAPI_E_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!emsabp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!aRow, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!ldb_msg, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Create MId if necessary */
 	if (MId == 0) {

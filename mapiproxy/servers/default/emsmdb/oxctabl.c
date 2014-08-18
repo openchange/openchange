@@ -777,6 +777,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 	case true:
 		/* Restrict rows to be fetched */
 		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, &request.res, &status);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+		}
 		/* Then fetch rows */
 		/* Lookup the properties and check if we need to flag the PropertyRow blob */
 
@@ -828,6 +831,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 		}
 
 		mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, NULL, &status);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+		}
 
 		/* Adjust parameters */
 		if (found) {
@@ -1003,6 +1009,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopResetTable(TALLOC_CTX *mem_ctx,
 		if (emsmdbp_is_mapistore(object)) {
 			contextID = emsmdbp_get_contextID(object);
 			mretval = mapistore_table_set_restrictions(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, NULL, &status);
+			if (mretval != MAPISTORE_SUCCESS) {
+				DEBUG(5, ("[%s:%d] mapistore_table_set_restrictions: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(mretval)));
+			}
 			mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		} else {
 			DEBUG(0, ("  mapistore Restrict: Not implemented yet\n"));

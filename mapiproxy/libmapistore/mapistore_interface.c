@@ -296,6 +296,8 @@ _PUBLIC_ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_c
    \param mstore_ctx pointer to the mapistore context
    \param uri the URI to lookup
    \param context_id pointer to the context identifier to return
+   \param backend_object pointer on pointer to the backend folder
+   object to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */

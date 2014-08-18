@@ -40,7 +40,10 @@ class BackendObject(object):
 
 class ContextObject(BackendObject):
 
+    mapping = {}
+
     def __init__(self):
+        self.mapping[0xdeadbeef] = "sample://deadbeef"
         print '[PYTHON]: %s context class __init__' % self.name
         return
 

@@ -119,6 +119,7 @@ struct mapistore_connection_info {
 	struct GUID			replica_guid;
 	uint16_t			repl_id;
 	struct mapistore_context	*mstore_ctx;
+	struct ldb_context		*sam_ctx; /* samdb */
 	struct openchangedb_context	*oc_ctx; /* openchangedb */
 };
 
@@ -309,7 +310,7 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, struct loadparm_context *, const char *);
 void mapistore_set_default_indexing_url(const char *);
 enum mapistore_error mapistore_release(struct mapistore_context *);
-enum mapistore_error mapistore_set_connection_info(struct mapistore_context *, struct openchangedb_context *, const char *);
+enum mapistore_error mapistore_set_connection_info(struct mapistore_context *, struct ldb_context *, struct openchangedb_context *, const char *);
 enum mapistore_error mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);
 enum mapistore_error mapistore_add_context_ref_count(struct mapistore_context *, uint32_t);
 enum mapistore_error mapistore_del_context(struct mapistore_context *, uint32_t);

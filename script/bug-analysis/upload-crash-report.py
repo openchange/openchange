@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/python
 # -*- coding: utf-8 -*-
 
 # Copyright (C) Enrique J. Hernandez 2014

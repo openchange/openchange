@@ -25,9 +25,9 @@ from email.mime.text import MIMEText
 import smtplib
 
 
-def notificate_user_email(from_addr, email, tracker_url,
+def notify_user_email(from_addr, email, tracker_url,
                           smtp_addr='localhost', duplicated=False):
-    """Notificate a user after sending a report to know track the issue later.
+    """Notify a user after sending a report to know track the issue later.
 
     :param str from_addr: the from email address
     :param str email: the user's email address
@@ -38,7 +38,7 @@ def notificate_user_email(from_addr, email, tracker_url,
     to_addr = email
 
     if duplicated:
-        text = """This crash report is a duplicated from {0}.""".format(tracker_url)
+        text = """This crash report is a duplicate from {0}.""".format(tracker_url)
     else:
         text = """The crash report was created at {0}.""".format(tracker_url)
 
@@ -50,7 +50,7 @@ OpenChange team"""
 
     msg = MIMEText(text, 'plain')
 
-    msg['Subject'] = '[OpenChange crash report] Your crash report were uploaded!'
+    msg['Subject'] = '[OpenChange crash report] Your crash report was uploaded!'
     msg['From'] = from_addr
     msg['To'] = to_addr
 

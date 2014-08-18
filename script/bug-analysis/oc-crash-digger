@@ -34,7 +34,7 @@ import apport
 from apport.crashdb import get_crashdb
 from apport.report import Report
 from buganalysis.analysis import guess_components, readable_stacktrace
-from buganalysis.mail import notificate_user_email
+from buganalysis.mail import notify_user_email
 from buganalysis.pkgshelper import map_package, map_dependencies
 
 
@@ -45,7 +45,7 @@ class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
                  crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
-                 component=False, crash_ids=[], stacktrace_file=False, notificated_email=None):
+                 component=False, crash_ids=[], stacktrace_file=False, notified_email=None):
         """
         Initialize pools.
 
@@ -71,7 +71,7 @@ class CrashDigger(object):
         self.upload = upload
         self.guess_component = component
         self.crash_ids = crash_ids
-        self.notificated_email = notificated_email
+        self.notified_email = notified_email
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -307,16 +307,16 @@ class CrashDigger(object):
                                                                crash_file_url)
                         self.add_duplicate_tracker(master_id, crash_file_url)
 
-                    if self.notificated_email and self.tracker and 'email' in self.oc_cd_conf:
+                    if self.notified_email and self.tracker and 'email' in self.oc_cd_conf:
                         if master_id:
                             tracker_url = self.crashdb.get_tracker_url(master_id)
                         else:
                             tracker_url = self.crashdb.get_tracker_url(crash_id)
                         if tracker_url:
-                            notificate_user_email(self.oc_cd_conf['email']['from_addr'],
-                                                  self.notificated_email, tracker_url,
-                                                  duplicated=master_id is not None,
-                                                  smtp_addr=self.oc_cd_conf['email']['smtp_addr'])
+                            notify_user_email(self.oc_cd_conf['email']['from_addr'],
+                                              self.notified_email, tracker_url,
+                                              duplicated=master_id is not None,
+                                              smtp_addr=self.oc_cd_conf['email']['smtp_addr'])
 
                 else:
                     # Put the stacktrace in a file
@@ -548,8 +548,8 @@ def parse_options():
                          help="Guess components for the stored unfixed crashes",
                          action='store_true', dest='component', default=False)
     optparser.add_option('-i', '--ids', action="append", type="int")
-    optparser.add_option('-n', '--notificate', metavar='NOTIFICATED_EMAIL',
-                         help='notificate when uploading a new retraced crash report when integrated with a tracker')
+    optparser.add_option('-n', '--notify', metavar='NOTIFIED_EMAIL',
+                         help='notify when uploading a new retraced crash report when integrated with a tracker')
 
     (opts, args) = optparser.parse_args()
 
@@ -565,8 +565,8 @@ def parse_options():
     if opts.upload and not opts.dup_db:
         apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')
 
-    if opts.notificate and not opts.upload:
-        apport.fatal('Error: --notificate only works with upload option')
+    if opts.notify and not opts.upload:
+        apport.fatal('Error: --notify only works with upload option')
 
     return (opts, args)
 
@@ -599,7 +599,7 @@ try:
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
                 opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
-                opts.component, opts.ids, opts.stacktrace_file, opts.notificate).run()
+                opts.component, opts.ids, opts.stacktrace_file, opts.notify).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

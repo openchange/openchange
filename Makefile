@@ -959,7 +959,7 @@ libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION): mapiproxy/libmapistore.$(SH
 
 mapistore_test: bin/mapistore_test
 
-bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.o		\
+bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.po		\
 			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

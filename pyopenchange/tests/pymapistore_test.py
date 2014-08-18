@@ -35,5 +35,6 @@ if opts.openchangedb is not None:
 mstore.dump()
 
 mstore.initialize(opts.username)
+backend_names = mstore.list_backends();
+print backend_names
 print mstore.capabilities()
-

@@ -37,8 +37,8 @@ static enum mapistore_error mapistore_op_defaults_init(const char *module_name)
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owner, struct indexing_context *indexing,
-								TALLOC_CTX *mem_ctx, 
+static enum mapistore_error mapistore_op_defaults_list_contexts(TALLOC_CTX *mem_ctx, const char *backend_name,
+								const char *owner, struct indexing_context *indexing,
 								struct mapistore_contexts_list **contexts_listp)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));

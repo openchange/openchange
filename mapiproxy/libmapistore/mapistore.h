@@ -172,7 +172,7 @@ struct mapistore_backend {
 		const char	*namespace;
 
 		enum mapistore_error	(*init)(const char *);
-		enum mapistore_error	(*list_contexts)(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
+		enum mapistore_error	(*list_contexts)(TALLOC_CTX *, const char *, const char *, struct indexing_context *, struct mapistore_contexts_list **);
 		enum mapistore_error	(*create_context)(TALLOC_CTX *, const char *, struct mapistore_connection_info *, struct indexing_context *, const char *, void **);
 		enum mapistore_error	(*create_root_folder)(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 	} backend;
@@ -180,7 +180,7 @@ struct mapistore_backend {
 	/** context operations */
 	struct {
 		enum mapistore_error	(*get_path)(void *, TALLOC_CTX *, uint64_t, char **);
-		enum mapistore_error	(*get_root_folder)(void *, TALLOC_CTX *, uint64_t, void **);
+		enum mapistore_error	(*get_root_folder)(TALLOC_CTX *, void *, uint64_t, void **);
 	} context;
 
         /** oxcfold operations */
@@ -317,7 +317,7 @@ enum mapistore_error mapistore_search_context_by_uri(struct mapistore_context *,
 const char *mapistore_errstr(enum mapistore_error);
 
 enum mapistore_error mapistore_list_backends_for_user(TALLOC_CTX *, const char ***);
-enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *, const char *, const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
+enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *, const char *, TALLOC_CTX *, struct mapistore_contexts_list **);
 enum mapistore_error mapistore_create_root_folder(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 
 enum mapistore_error mapistore_folder_open_folder(struct mapistore_context *, uint32_t, void *, TALLOC_CTX *, uint64_t, void **);

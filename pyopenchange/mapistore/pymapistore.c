@@ -219,20 +219,15 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	return (PyObject *) py_ret;
 }
 
-static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, PyObject *args)
+static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 {
 	enum mapistore_error		ret;
 	TALLOC_CTX 			*mem_ctx;
-	const char			*backend_name;
 	PyObject			*py_ret = NULL;
 	PyObject			*py_dict;
 	struct mapistore_contexts_list 	*contexts_list;
 
-	if (!PyArg_ParseTuple(args, "s", &backend_name)) {
-		return NULL;
-	}
-
-	DEBUG(0, ("List contexts in backend %s for user %s\n", backend_name, self->username));
+	DEBUG(0, ("List contexts for user %s\n", self->username));
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -241,7 +236,7 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self, Py
 	}
 
 	/* list contexts */
-	ret = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, backend_name, mem_ctx, &contexts_list);
+	ret = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, mem_ctx, &contexts_list);
 	if (ret != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(ret);
@@ -487,7 +482,7 @@ static PyMethodDef mapistore_methods[] = {
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
 	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
 	{ "list_backends", (PyCFunction)py_MAPIStore_list_backends_for_user, METH_NOARGS },
-	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_VARARGS },
+	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */

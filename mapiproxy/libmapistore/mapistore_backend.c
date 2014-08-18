@@ -326,22 +326,21 @@ enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *mem_ctx, c
 
    \return a valid backend_context pointer on success, otherwise NULL
  */
-enum mapistore_error mapistore_backend_list_contexts(const char *username, const char *backend_name, struct indexing_context *ictx, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
+enum mapistore_error mapistore_backend_list_contexts(const char *username, struct indexing_context *ictx, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listP)
 {
 	enum mapistore_error		retval;
 	int				i;
-	struct mapistore_contexts_list	*contexts_list = NULL;
+	struct mapistore_contexts_list	*contexts_list = NULL, *current_contexts_list;
 
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!contexts_listP, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < num_backends; i++) {
-		if( strcmp(backend_name, backends[i].backend->backend.name) != 0) continue;
-		retval = backends[i].backend->backend.list_contexts(username, ictx, mem_ctx, &contexts_list);
+		retval = backends[i].backend->backend.list_contexts(mem_ctx, backends[i].backend->backend.name, username, ictx, &current_contexts_list);
 		if (retval != MAPISTORE_SUCCESS) {
 			return retval;
 		}
-		break;
+		DLIST_CONCATENATE(contexts_list, current_contexts_list, void);
 	}
 
 	*contexts_listP = contexts_list;

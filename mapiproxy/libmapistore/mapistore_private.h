@@ -157,7 +157,7 @@ enum mapistore_error mapistore_free_context_id(struct processing_context *, uint
 enum mapistore_error mapistore_backend_init(TALLOC_CTX *, const char *);
 enum mapistore_error mapistore_backend_registered(const char *);
 enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *, const char ***);
-enum mapistore_error mapistore_backend_list_contexts(const char *, const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
+enum mapistore_error mapistore_backend_list_contexts(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
 enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, struct indexing_context *, const char *, const char *, uint64_t, struct backend_context **);
 enum mapistore_error mapistore_backend_create_root_folder(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 enum mapistore_error mapistore_backend_add_ref_count(struct backend_context *);
@@ -217,7 +217,6 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
 /* definitions from mapistore_python.c */
 enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *, const char *);
-const char *mapistore_python_get_installdir(void);
 
 __END_DECLS
 

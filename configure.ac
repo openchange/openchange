@@ -368,6 +368,17 @@ pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_pyth
 AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
 
+AC_MSG_CHECKING(Standard python library detector)
+stdpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 1)"`
+AC_MSG_RESULT($stdpythondir)
+AC_SUBST(stdpythondir)
+
+AC_MSG_CHECKING(3rd Party python library detector)
+otherpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0)"`
+AC_MSG_RESULT($otherpythondir)
+AC_SUBST(otherpythondir)
+
+
 dnl ----------------------------------------------------------------------------
 dnl Check for MYSQL client libraries
 dnl ----------------------------------------------------------------------------

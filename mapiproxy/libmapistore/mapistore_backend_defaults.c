@@ -67,7 +67,7 @@ static enum mapistore_error mapistore_op_defaults_create_root_folder(const char 
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC_CTX *mem_ctx,
+static enum mapistore_error mapistore_op_defaults_get_path(TALLOC_CTX *mem_ctx, void *ctx_obj,
 							   uint64_t fmid, char **path)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));

@@ -530,7 +530,7 @@ enum mapistore_error mapistore_backend_get_path(TALLOC_CTX *mem_ctx, struct back
 	enum mapistore_error	ret;
 	char			*bpath = NULL;
 
-	ret = bctx->backend->context.get_path(bctx->backend_object, mem_ctx, fmid, &bpath);
+	ret = bctx->backend->context.get_path(mem_ctx, bctx->backend_object, fmid, &bpath);
 
 	if (ret == MAPISTORE_SUCCESS) {
 		if (!bpath) {

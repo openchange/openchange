@@ -525,7 +525,7 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_name(TALLOC_CTX *me
 }
 
 
-enum mapistore_error mapistore_backend_get_path(struct backend_context *bctx, TALLOC_CTX *mem_ctx, uint64_t fmid, char **path)
+enum mapistore_error mapistore_backend_get_path(TALLOC_CTX *mem_ctx, struct backend_context *bctx, uint64_t fmid, char **path)
 {
 	enum mapistore_error	ret;
 	char			*bpath = NULL;

@@ -176,7 +176,7 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	/* Retrieve the mapistore URI given context_id and fmid */
-	mapistore_backend_get_path(backend_ctx, NULL, fmid, &mapistore_URI);
+	mapistore_backend_get_path(NULL, backend_ctx, fmid, &mapistore_URI);
 	/* DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI)); */
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
 

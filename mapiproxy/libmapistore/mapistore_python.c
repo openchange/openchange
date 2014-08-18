@@ -524,6 +524,7 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 
 	fobj->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
 	fobj->name = talloc_strdup(fobj, pyobj->name);
+	MAPISTORE_RETVAL_IF(!fobj->name, MAPISTORE_ERR_NO_MEMORY, fobj);
 	fobj->conn = pyobj->conn;
 	fobj->ictx = pyobj->ictx;
 	fobj->module = pyobj->module;

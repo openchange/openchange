@@ -177,13 +177,18 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context
+   \param owner the owner of the context
    \param uri the connection context URI
+   \param fid the folder identifier of the root folder to open
    \param context_id pointer to the context identifier the function returns
+   \param folder_object pointer on pointer to the private folder object to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
-						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
+_PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx,
+						    const char *owner, const char *uri,
+						    uint64_t fid, uint32_t *context_id,
+						    void **folder_object)
 {
 	TALLOC_CTX				*mem_ctx;
 	int					retval;
@@ -232,7 +237,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 		*context_id = backend_list->ctx->context_id;
-		*backend_object = backend_list->ctx->root_folder_object;
+		*folder_object = backend_list->ctx->root_folder_object;
 		DLIST_ADD_END(mstore_ctx->context_list, backend_list, struct backend_context_list *);
 	} else {
 		DEBUG(0, ("[%s:%d]: Error - Invalid URI '%s'\n", __FUNCTION__, __LINE__, uri));

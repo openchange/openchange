@@ -22,6 +22,7 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
 #include <talloc.h>
 #include <core/ntstatus.h>
 #include <popt.h>
@@ -104,6 +105,29 @@ int main(int argc, const char *argv[])
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
+	}
+
+
+	{
+		char			*mapistore_URI = NULL;
+		struct backend_context	*backend_ctx;
+
+		backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+		if (!backend_ctx || !backend_ctx->indexing) {
+			DEBUG(0, ("Invalid backend_ctx\n"));
+			exit (1);
+		}
+		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xdeadbeef, &mapistore_URI);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_backend_get_path: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+
+		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xbeefdead, &mapistore_URI);
+		if (retval == MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_backend_get_path: error expected!\n"));
+			exit (1);
+		}
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

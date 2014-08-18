@@ -536,6 +536,69 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 }
 
 /**
+   \details Retrieve the MAPIStore URI associated to given temporary
+   Folder ID/Message ID
+
+   \param mem_ctx pointer to the memory context
+   \param context_object pointer to the mapistore_python_object
+   backend object
+   \param fmid the folderID/messageID associated to the mapistore URI
+   to return
+   \param mapistore_uri pointer on pointer to the MAPIStore URI to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_context_get_path(TALLOC_CTX *mem_ctx,
+							      void *backend_object,
+							      uint64_t fmid,
+							      char **mapistore_uri)
+{
+	struct mapistore_python_object	*pyobj;
+	PyObject			*context;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!backend_object, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the backend object */
+	pyobj = (struct mapistore_python_object *) backend_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_CONTEXT),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Retrieve the context object */
+	context = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!context, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("ContextObject", context->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call get_path function */
+	pres = PyObject_CallMethod(context, "get_path", "K", fmid);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	if (PyString_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected string but got '%s'\n", pyobj->name,
+			  __location__, pres->ob_type->tp_name));
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
+	*mapistore_uri = talloc_strdup(mem_ctx, PyString_AsString(pres));
+
+	Py_DECREF(pres);
+
+	return MAPISTORE_SUCCESS;
+}
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -640,8 +703,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 #if 0
 	backend.backend.create_root_folder = mapistore_python_backend_create_root_folder;
 	/* context */
-	backend.context.get_path = mapistore_python_context_get_path;
 #endif
+	backend.context.get_path = mapistore_python_context_get_path;
 	backend.context.get_root_folder = mapistore_python_context_get_root_folder;
 #if 0
 	/* folder */

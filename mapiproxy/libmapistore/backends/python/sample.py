@@ -47,11 +47,14 @@ class ContextObject(BackendObject):
         print '[PYTHON]: %s context class __init__' % self.name
         return
 
-    def get_path(self, context, fmid):
+    def get_path(self, fmid):
         print '[PYTHON]: %s context.get_path' % self.name
-        print '[PYTHON]: context class __init__'
-        print '[PYTHON]: get_path URI:    %s' % pathURI
-        return (0, "sample://Nan")
+        if fmid in self.mapping:
+            print '[PYTHON]: %s get_path URI: %s' % (self.name, self.mapping[fmid])
+            return self.mapping[fmid]
+        else:
+            print '[Python]: %s get_path URI: None' % (self.name)
+            return None
 
     def get_root_folder(self, folderID):
         print '[PYTHON]: %s context.get_root_folder' % self.name

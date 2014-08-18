@@ -402,6 +402,7 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 		Py_DECREF(module);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
+	Py_INCREF(robj);
 
 	pyobj = talloc_zero(mem_ctx, struct mapistore_python_object);
 	pyobj->name = talloc_strdup(pyobj, module_name);

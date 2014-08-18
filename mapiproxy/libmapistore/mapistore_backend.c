@@ -355,16 +355,15 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx,
 
 	DEBUG(5, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
 
-	context = talloc_zero(NULL, struct backend_context);
+	context = talloc_zero(mem_ctx, struct backend_context);
+	MAPISTORE_RETVAL_IF(!context, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	for (i = 0; i < num_backends; i++) {
 		if (backends[i].backend->backend.namespace && 
 		    !strcmp(namespace, backends[i].backend->backend.namespace)) {
 			found = true;
 			retval = backends[i].backend->backend.create_context(context, backends[i].backend->backend.name, conn_info, ictx, uri, &backend_object);
-			if (retval != MAPISTORE_SUCCESS) {
-				goto end;
-			}
+			MAPISTORE_RETVAL_IF(retval, retval, context);
 
 			break;
 		}
@@ -372,25 +371,20 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx,
 
 	if (found == false) {
 		DEBUG(0, ("MAPISTORE: no backend with namespace '%s' is available\n", namespace));
-		retval = MAPISTORE_ERR_NOT_FOUND; 
-		goto end;
+		talloc_free(context);
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	context->backend_object = backend_object;
 	context->backend = backends[i].backend;
-	retval = context->backend->context.get_root_folder(context, backend_object, fid, &context->root_folder_object);
-	if (retval != MAPISTORE_SUCCESS) {
-		goto end;
-	}
+	retval = context->backend->context.get_root_folder(context, backend_object,
+							   fid, &context->root_folder_object);
+	MAPISTORE_RETVAL_IF(retval, retval, context);
 
 	context->ref_count = 1;
 	context->uri = talloc_asprintf(context, "%s%s", namespace, uri);
+	MAPISTORE_RETVAL_IF(!context->uri, MAPISTORE_ERR_NO_MEMORY, context);
 	*context_p = context;
-
-	(void) talloc_reference(mem_ctx, context);
-
-end:
-	talloc_unlink(NULL, context);
 
 	return retval;
 }

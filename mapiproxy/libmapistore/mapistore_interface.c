@@ -156,15 +156,17 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
-							    struct openchangedb_context *oc_ctx, const char *username)
+							    struct ldb_context *sam_ctx, struct openchangedb_context *oc_ctx, const char *username)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!sam_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!oc_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mstore_ctx->conn_info = talloc_zero(mstore_ctx, struct mapistore_connection_info);
 	mstore_ctx->conn_info->mstore_ctx = mstore_ctx;
+	mstore_ctx->conn_info->sam_ctx = sam_ctx;
 	mstore_ctx->conn_info->oc_ctx = oc_ctx;
 	(void) talloc_reference(mstore_ctx->conn_info, mstore_ctx->conn_info->oc_ctx);
 	mstore_ctx->conn_info->username = talloc_strdup(mstore_ctx->conn_info, username);
@@ -459,6 +461,18 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 	}
 
 	return "Unknown error";
+}
+
+_PUBLIC_ enum mapistore_error mapistore_list_backends_for_user(TALLOC_CTX *mem_ctx, int * backend_countP, const char ***backend_namesP)
+{
+	enum mapistore_error		retval;
+
+	retval = mapistore_backend_list_backend_names(mem_ctx, backend_countP, backend_namesP);
+	if (retval != MAPISTORE_SUCCESS){
+		return retval;
+	}
+
+	return MAPISTORE_SUCCESS;
 }
 
 _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)

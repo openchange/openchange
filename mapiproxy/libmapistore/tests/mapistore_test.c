@@ -100,7 +100,8 @@ int main(int argc, const char *argv[])
 
 	openchangedb_ctx = mapiproxy_server_openchangedb_init(lp_ctx);
 
-	retval = mapistore_set_connection_info(mstore_ctx, openchangedb_ctx, "openchange");
+	/*FIXME: Update the code so it takes a sambdb_ctx)
+	/*retval = mapistore_set_connection_info(mstore_ctx, openchangedb_ctx, "openchange");*/
 
 	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {

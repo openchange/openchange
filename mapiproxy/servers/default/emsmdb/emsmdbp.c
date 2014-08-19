@@ -156,7 +156,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 		return NULL;
 	}
 
-	ret = mapistore_set_connection_info(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->oc_ctx, username);
+	ret = mapistore_set_connection_info(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->samdb_ctx, emsmdbp_ctx->oc_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[%s:%d]: MAPISTORE connection info initialization failed\n", __FUNCTION__, __LINE__));
 		talloc_free(mem_ctx);

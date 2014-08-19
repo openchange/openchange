@@ -422,6 +422,7 @@ PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent samba-cre
 PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb, [], [AC_MSG_WARN(No mapiproxy support)])
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
+PKG_CHECK_MODULES(SAMDB, samdb)
 
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision

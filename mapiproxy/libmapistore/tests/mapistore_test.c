@@ -28,12 +28,65 @@
 #include <popt.h>
 #include <param.h>
 #include <util/debug.h>
+#include <samba/session.h>
 
 /**
    \file mapistore_test.c
 
    \brief Test mapistore implementation
  */
+
+
+extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
+
+static struct ldb_context *sam_ldb_init(void)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct loadparm_context *lp_ctx;
+	struct ldb_context	*samdb_ctx = NULL;
+	struct tevent_context	*ev;
+	int			ret;
+	struct ldb_result	*res;
+	struct ldb_dn		*tmp_dn = NULL;
+	static const char	*attrs[] = {
+		"rootDomainNamingContext",
+		"defaultNamingContext",
+		NULL
+	};
+
+	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (!mem_ctx) return NULL;
+
+	ev = tevent_context_init(talloc_autofree_context());
+	if (!ev) goto end;
+
+	/* Step 2. Connect to the database */
+	lp_ctx = loadparm_init_global(true);
+	if (!lp_ctx) goto end;
+
+	samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
+	if (!samdb_ctx) goto end;
+
+	/* Step 3. Search for rootDSE record */
+	ret = ldb_search(samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, samdb_ctx, "@ROOTDSE"),
+			 LDB_SCOPE_BASE, attrs, NULL);
+	if (ret != LDB_SUCCESS) goto end;
+	if (res->count != 1) goto end;
+
+	/* Step 4. Set opaque naming */
+	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+					 res->msgs[0], "rootDomainNamingContext");
+	ldb_set_opaque(samdb_ctx, "rootDomainNamingContext", tmp_dn);
+
+	tmp_dn = ldb_msg_find_attr_as_dn(samdb_ctx, samdb_ctx,
+					 res->msgs[0], "defaultNamingContext");
+	ldb_set_opaque(samdb_ctx, "defaultNamingContext", tmp_dn);
+
+end:
+	talloc_free(mem_ctx);
+
+	return samdb_ctx;
+}
 
 
 int main(int argc, const char *argv[])
@@ -43,19 +96,22 @@ int main(int argc, const char *argv[])
 	struct mapistore_context	*mstore_ctx;
 	struct loadparm_context		*lp_ctx;
 	void				*openchangedb_ctx;
+	struct ldb_context		*samdb_ctx;
 	poptContext			pc;
 	int				opt;
 	const char			*opt_debug = NULL;
 	const char			*opt_uri = NULL;
+	const char			*opt_username = NULL;
 	uint32_t			context_id = 0;
 	void				*folder_object;
 	void				*child_folder_object;
 
-	enum { OPT_DEBUG=1000, OPT_URI };
+	enum { OPT_DEBUG=1000, OPT_USERNAME, OPT_URI };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "debuglevel",	'd', POPT_ARG_STRING, NULL, OPT_DEBUG,	"set the debug level", NULL },
+		{ "username", 'u', POPT_ARG_STRING, NULL, OPT_USERNAME, "set mapistore backend user", NULL },
 		{ "uri", 'U', POPT_ARG_STRING, NULL, OPT_URI, "set the backend URI", NULL},
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
@@ -70,6 +126,8 @@ int main(int argc, const char *argv[])
 		case OPT_DEBUG:
 			opt_debug = poptGetOptArg(pc);
 			break;
+		case OPT_USERNAME:
+			opt_username = poptGetOptArg(pc);
 		case OPT_URI:
 			opt_uri = poptGetOptArg(pc);
 			break;
@@ -87,25 +145,44 @@ int main(int argc, const char *argv[])
 		lpcfg_set_cmdline(lp_ctx, "log level", opt_debug);
 	}
 	
+	if (!opt_username) {
+		opt_username = getenv("USER");
+		DEBUG(0, ("[WARN]: No username specified - default to %s\n", opt_username));
+	}
+
 	retval = mapistore_set_mapping_path("/tmp");
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
 	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!mstore_ctx) {
+		DEBUG(0, ("[ERR]: Unable to initialize mapistore context\n"));
 		exit (1);
 	}
 
 	openchangedb_ctx = mapiproxy_server_openchangedb_init(lp_ctx);
+	if (!openchangedb_ctx) {
+		DEBUG(0, ("[ERR]: Unable to initialize openchange database\n"));
+		exit (1);
+	}
 
-	/*FIXME: Update the code so it takes a sambdb_ctx)
-	/*retval = mapistore_set_connection_info(mstore_ctx, openchangedb_ctx, "openchange");*/
+	samdb_ctx = sam_ldb_init();
+	if (!samdb_ctx) {
+		DEBUG(0, ("[ERR]: Unable to open SAM database\n"));
+		exit (1);
+	}
 
-	retval = mapistore_add_context(mstore_ctx, "openchange", opt_uri, -1, &context_id, &folder_object);
+	retval = mapistore_set_connection_info(mstore_ctx, samdb_ctx, openchangedb_ctx, opt_username);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
+		exit (1);
+	}
+
+	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, -1, &context_id, &folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 

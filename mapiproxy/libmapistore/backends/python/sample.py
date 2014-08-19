@@ -44,6 +44,7 @@ class ContextObject(BackendObject):
 
     def __init__(self):
         self.mapping[0xdeadbeef] = "sample://deadbeef"
+        self.mapping[0x1] = "sample://deadbeef/subfolder_1"
         print '[PYTHON]: %s context class __init__' % self.name
         return
 
@@ -58,13 +59,23 @@ class ContextObject(BackendObject):
 
     def get_root_folder(self, folderID):
         print '[PYTHON]: %s context.get_root_folder' % self.name
-        folder = FolderObject(folderID)
+        folder = FolderObject(folderID, 0x0)
         return (0, folder)
 
 
 class FolderObject(ContextObject):
 
-    def __init__(self, folderID):
-        print '[PYTHON]: %s folder.__init__(%s)' % (self.name, folderID)
-        self.folderID = folderID
+    def __init__(self, folderID, parentFID):
+        print '[PYTHON]: %s folder.__init__(fid=%s)' % (self.name, folderID)
+        self.parentFID = parentFID;
+        self.folderID = folderID;
         return
+
+    def open_folder(self, folderID):
+        print '[PYTHON]: %s folder.open_folder(%s)' % (self.name, folderID)
+
+        if folderID in self.mapping:
+            print '[PYTHON]: folderID %s found\n' % (folderID)
+            return FolderObject(folderID, self.folderID)
+
+        return None

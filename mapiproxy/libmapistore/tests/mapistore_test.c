@@ -49,6 +49,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_uri = NULL;
 	uint32_t			context_id = 0;
 	void				*folder_object;
+	void				*child_folder_object;
 
 	enum { OPT_DEBUG=1000, OPT_URI };
 
@@ -128,6 +129,13 @@ int main(int argc, const char *argv[])
 			DEBUG(0, ("mapistore_backend_get_path: error expected!\n"));
 			exit (1);
 		}
+	}
+
+	retval = mapistore_folder_open_folder(mstore_ctx, context_id, folder_object, NULL, 0x1,
+					      &child_folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_open_folder: %s\n", mapistore_errstr(retval)));
+		exit (1);
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

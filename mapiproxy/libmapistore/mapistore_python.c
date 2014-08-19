@@ -402,16 +402,20 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 		Py_DECREF(module);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
-	Py_INCREF(robj);
 
 	pyobj = talloc_zero(mem_ctx, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pyobj, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	pyobj->obj_type = MAPISTORE_PYTHON_OBJECT_CONTEXT;
 	pyobj->name = talloc_strdup(pyobj, module_name);
+	MAPISTORE_RETVAL_IF(!pyobj->name, MAPISTORE_ERR_NO_MEMORY, NULL);
 	pyobj->conn = conn;
 	pyobj->ictx = ictx;
 	pyobj->module = module;
 	pyobj->private_object = robj;
 	*context_obj = pyobj;
+
+	Py_INCREF(robj);
 
 	Py_DECREF(pres);
 	Py_DECREF(pinst);
@@ -517,8 +521,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
-	Py_INCREF(folder);
-	Py_DECREF(pres);
 
 	fobj = talloc_zero(mem_ctx, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!fobj, MAPISTORE_ERR_NO_MEMORY, NULL);
@@ -531,6 +533,9 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	fobj->module = pyobj->module;
 	fobj->private_object = folder;
 	*folder_object = fobj;
+
+	Py_INCREF(folder);
+	Py_DECREF(pres);
 
 	return retval;
 }

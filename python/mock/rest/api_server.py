@@ -35,13 +35,13 @@ app.config.from_object(__name__)
 @app.route('/index.html', methods=['GET'])
 def index():
     """Default is to show documentation"""
-    return send_from_directory(os.path.abspath('./doc/'), 'index.html')
+    return send_from_directory(os.path.abspath('./www/'), 'index.html')
 
 
 @app.route('/_static/<path:filename>', methods=['GET'])
 def static_file(filename):
     """Server resources for documentation"""
-    return send_from_directory('./doc/_static', filename)
+    return send_from_directory('./www/_static', filename)
 
 
 @app.route('/info/', methods=['GET'])

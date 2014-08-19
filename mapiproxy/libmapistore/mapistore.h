@@ -185,7 +185,7 @@ struct mapistore_backend {
 
         /** oxcfold operations */
         struct {
-		enum mapistore_error	(*open_folder)(void *, TALLOC_CTX *, uint64_t, void **);
+		enum mapistore_error	(*open_folder)(TALLOC_CTX *, void *, uint64_t, void **);
 		enum mapistore_error	(*create_folder)(void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
 		enum mapistore_error	(*delete)(void *);
 		enum mapistore_error	(*open_message)(void *, TALLOC_CTX *, uint64_t, bool, void **);

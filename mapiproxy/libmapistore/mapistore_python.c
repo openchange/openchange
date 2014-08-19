@@ -604,6 +604,73 @@ static enum mapistore_error mapistore_python_context_get_path(TALLOC_CTX *mem_ct
 }
 
 /**
+   \details Open a folder
+
+   \param mem_ctx pointer to the memory context
+   \param folder_object the mapistore python parent object
+   \param fid the folder identifier to lookup
+   \param child_object pointer on pointer to the folder object to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_ctx,
+								void *folder_object,
+								uint64_t fid,
+								void **child_object)
+{
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pyfold;
+	PyObject			*folder;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!child_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call open_folder function */
+	pres = PyObject_CallMethod(folder, "open_folder", "K", fid);
+	MAPISTORE_RETVAL_IF(!pres, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	if (strcmp("FolderObject", pres->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject but got '%s'\n", pyobj->name,
+			  __location__, pres->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	pyfold = talloc_zero(mem_ctx, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pyfold, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pyfold->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
+	pyfold->name = talloc_strdup(pyfold, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pyfold, MAPISTORE_ERR_NO_MEMORY, NULL);
+	pyfold->conn = pyobj->conn;
+	pyfold->ictx = pyobj->ictx;
+	pyfold->module = pyobj->module;
+	pyfold->private_object = pres;
+	*child_object = pyfold;
+
+	Py_INCREF(pres);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -705,15 +772,15 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.backend.init = mapistore_python_backend_init;
 	backend.backend.list_contexts = mapistore_python_backend_list_contexts;
 	backend.backend.create_context = mapistore_python_backend_create_context;
-#if 0
-	backend.backend.create_root_folder = mapistore_python_backend_create_root_folder;
+	/* backend.backend.create_root_folder = mapistore_python_backend_create_root_folder; */
+
 	/* context */
-#endif
 	backend.context.get_path = mapistore_python_context_get_path;
 	backend.context.get_root_folder = mapistore_python_context_get_root_folder;
-#if 0
+
 	/* folder */
 	backend.folder.open_folder = mapistore_python_folder_open_folder;
+#if 0
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
 	backend.folder.delete = mapistore_python_folder_delete;
 	backend.folder.open_message = mapistore_python_folder_open_message;

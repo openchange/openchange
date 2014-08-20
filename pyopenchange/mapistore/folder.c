@@ -86,8 +86,7 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	}
 
 	retval = mapistore_folder_get_child_count(self->context->mstore_ctx, self->context->context_id,
-						  (self->folder_object ? self->folder_object : 
-						   self->context->folder_object), table_type, &RowCount);
+						  self->folder_object, table_type, &RowCount);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;

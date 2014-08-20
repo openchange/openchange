@@ -47,7 +47,7 @@ class kissDB(object):
         """@:return dict: Dictionary {folder_id -> data}"""
         return self._get_data('folders')
 
-    def create_folder(self, parent_id, name, comment):
+    def create_folder(self, folder_props):
         """Create new folder and return a folder record
         :param parent_id:
         :param name:
@@ -55,12 +55,12 @@ class kissDB(object):
         :return dict: Create folder record
         """
         next_id = self._get_data('next_id')
-        folder = self._folder_rec(next_id, name, comment, parent_id)
+        folder_props['id'] = next_id
         folders = self._get_data('folders')
-        folders[next_id] = folder
+        folders[next_id] = folder_props
         self._set_data('next_id', next_id + 1)
         self._set_data('folders', folders, True)
-        return folder
+        return folder_props
 
     def get_messages(self):
         """@:return dict: Dictionary {message_id -> data}"""

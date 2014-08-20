@@ -87,7 +87,7 @@ def module_folders_create():
         folder_name = data.get('name')
         if folder_name is None:
             abort(422, "name is a required parameter")
-        ret_val = handler.folders_create(parent_id, folder_name, data.get('comment'))
+        ret_val = handler.folders_create(parent_id, folder_name, data)
     except KeyError, ke:
         abort(404, ke.message)
     finally:

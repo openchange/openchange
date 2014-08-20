@@ -51,11 +51,8 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 	return &globals;
 }
 
-static void sam_ldb_init(const char *syspath)
+static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *syspath)
 {
-	TALLOC_CTX		*mem_ctx;
-	/* char			*ldb_path; */
-	struct loadparm_context *lp_ctx;
 	struct tevent_context	*ev;
 	int			ret;
 	struct ldb_result	*res;
@@ -67,28 +64,24 @@ static void sam_ldb_init(const char *syspath)
 	};
 
 	/* Sanity checks */
-	if (globals.samdb_ctx) return;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (globals.samdb_ctx) {
+		return MAPISTORE_SUCCESS;
+	}
 
 	ev = tevent_context_init(talloc_autofree_context());
 	if (!ev) goto end;
 
-	/* /\* Step 1. Retrieve a LDB context pointer on sam.ldb database *\/ */
-	/* ldb_path = talloc_asprintf(mem_ctx, "%s/sam.ldb", syspath); */
-
-	/* Step 2. Connect to the database */
-	lp_ctx = loadparm_init_global(true);
+	/* Step 1. Connect to the database */
 	globals.samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
 	if (!globals.samdb_ctx) goto end;
 
-	/* Step 3. Search for rootDSE record */
+	/* Step 2. Search for rootDSE record */
 	ret = ldb_search(globals.samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, globals.samdb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
 	if (ret != LDB_SUCCESS) goto end;
 	if (res->count != 1) goto end;
 
-	/* Step 4. Set opaque naming */
+	/* Step 3. Set opaque naming */
 	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "rootDomainNamingContext", tmp_dn);
@@ -97,8 +90,10 @@ static void sam_ldb_init(const char *syspath)
 					 res->msgs[0], "defaultNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "defaultNamingContext", tmp_dn);
 
+	return MAPISTORE_SUCCESS;
+
 end:
-	talloc_free(mem_ctx);
+	return MAPISTORE_ERR_DATABASE_INIT;
 }
 
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
@@ -107,18 +102,11 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	struct loadparm_context		*lp_ctx;
 	PyMAPIStoreObject		*msobj;
 	bool				ret_lp;
+	enum mapistore_error		ret_sam;
 	char				*kwnames[] = { "syspath", NULL };
 	const char			*syspath = NULL;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
-		return NULL;
-	}
-
-	/* Initialize ldb context on sam.ldb */
-	sam_ldb_init(syspath);
-	if (globals.samdb_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in sam_ldb_init");
 		return NULL;
 	}
 
@@ -133,6 +121,14 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
 				"Error in loadparm_init");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Initialize ldb context on sam.ldb */
+	ret_sam = sam_ldb_init(mem_ctx, lp_ctx, syspath);
+	if (ret_sam != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret_sam);
 		talloc_free(mem_ctx);
 		return NULL;
 	}

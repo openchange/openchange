@@ -39,7 +39,7 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 
 static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	int			ret;
+	int			retval;
 	/* PyMAPIStoreFolderObject	*folder; */
 	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
 	const char		*name;
@@ -53,13 +53,13 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	}
 
 	/* Step 1. Check if the folder already exists */
-	ret = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx,
+	retval = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx,
 						     self->context->context_id,
 						     self->context->folder_object, 
 						     name, &fid);
-	if (ret == MAPISTORE_SUCCESS) {
+	if (retval == MAPISTORE_SUCCESS) {
 		if (flags != OPEN_IF_EXISTS) {
-			PyErr_SetMAPIStoreError(ret);
+			PyErr_SetMAPIStoreError(retval);
 			return NULL;
 		}
 	}

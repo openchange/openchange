@@ -976,19 +976,22 @@ _PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_c
 /**
    \details Get the indexing url backend for the user given as parameter. The
    user represents a mailbox.
-   By default a tdb backend file per user will be used in case NULL is returned.
+   By default a tdb backend file per user will be used in case an error is
+   returned.
 
    \param oc_ctx pointer to the openchange DB context
    \param username Name of the mailbox
+   \param indexing_url pointer to the result returned
  */
-_PUBLIC_ const char *openchangedb_get_indexing_url(struct openchangedb_context *oc_ctx,
-						   const char *username)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *oc_ctx,
+						       const char *username,
+						       const char **indexing_url)
 {
-	if (!oc_ctx || !username) {
-		DEBUG(0, ("Bad parameters when calling openchangedb_get_indexing_url\n"));
-		return NULL;
-	}
-	return oc_ctx->get_indexing_url(oc_ctx, username);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!indexing_url, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->get_indexing_url(oc_ctx, username, indexing_url);
 }
 
 /**

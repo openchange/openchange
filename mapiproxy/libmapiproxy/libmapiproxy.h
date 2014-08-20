@@ -241,7 +241,7 @@ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *);
 enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context *, const char *, uint64_t *);
 bool		openchangedb_is_public_folder_id(struct openchangedb_context *, uint64_t);
 
-const char *	openchangedb_get_indexing_url(struct openchangedb_context *, const char *);
+enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *, const char *, const char **);
 bool 		openchangedb_set_locale(struct openchangedb_context*, const char *, uint32_t);
 const char **	openchangedb_get_folders_names(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
 

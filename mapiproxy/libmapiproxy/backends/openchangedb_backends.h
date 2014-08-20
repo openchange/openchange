@@ -79,7 +79,7 @@ struct openchangedb_context {
 	enum MAPISTATUS (*get_new_public_folderID)(struct openchangedb_context *, const char *, uint64_t *);
 	bool (*is_public_folder_id)(struct openchangedb_context *, uint64_t);
 
-	const char * (*get_indexing_url)(struct openchangedb_context *, const char *);
+	enum MAPISTATUS (*get_indexing_url)(struct openchangedb_context *, const char *, const char **);
 
 	bool (*set_locale)(struct openchangedb_context *, const char *, uint32_t);
 

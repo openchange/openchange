@@ -596,7 +596,7 @@ end:
 	talloc_free(mem_ctx);
 	fclose(f);
 
-	return retval;;
+	return retval;
 }
 
 

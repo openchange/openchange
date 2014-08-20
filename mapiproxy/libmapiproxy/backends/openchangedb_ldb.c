@@ -1717,9 +1717,9 @@ static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 	return false;
 }
 
-static const char *get_indexing_url(struct openchangedb_context *self, const char *username)
+static enum MAPISTATUS get_indexing_url(struct openchangedb_context *self, const char *username, const char **indexing_uri)
 {
-	return NULL;
+	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static bool set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)

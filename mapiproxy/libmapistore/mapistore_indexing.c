@@ -100,8 +100,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 						     const char *username,
 						     struct indexing_context **ictxp)
 {
-	struct indexing_context_list *ictx;
-	const char *indexing_url;
+	struct indexing_context_list	*ictx;
+	const char			*indexing_url;
+	enum MAPISTATUS			retval;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -112,9 +113,8 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 	MAPISTORE_RETVAL_IF(*ictxp, MAPISTORE_SUCCESS, NULL);
 
 	// indexing context has not been found, let's create it.
-	indexing_url = openchangedb_get_indexing_url(mstore_ctx->conn_info->oc_ctx,
-						     username);
-	if (indexing_url == NULL) {
+	retval = openchangedb_get_indexing_url(mstore_ctx->conn_info->oc_ctx, username, &indexing_url);
+	if (retval != MAPI_E_SUCCESS) {
 		indexing_url = default_indexing_url;
 	}
 

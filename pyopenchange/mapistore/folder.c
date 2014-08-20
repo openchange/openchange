@@ -89,7 +89,8 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 						  (self->folder_object ? self->folder_object : 
 						   self->context->folder_object), table_type, &RowCount);
 	if (retval != MAPISTORE_SUCCESS) {
-		return PyInt_FromLong(-1);
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
 	}
 
 	return PyInt_FromLong(RowCount);

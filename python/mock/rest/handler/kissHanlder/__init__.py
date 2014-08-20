@@ -73,13 +73,18 @@ class ApiHandler(object):
         return [self._folder_rec(f, fold_dict)
                 for f in fold_dict.values() if f['parent_id'] == parent_folder_id]
 
-    def folders_create(self, parent_id, name, comment):
+    def folders_create(self, parent_id, name, props):
+        # we rely on API server to check preconditions
+        # but anyway, assert here too
+        assert 'parent_id' in props, 'parent_id is required'
+        assert 'name' in props, 'name is required'
+        # load what we have
         folders = self._db.get_folders()
         # check parent ID
         if parent_id not in folders:
             raise KeyError('No folder with id = %d' % parent_id)
         # crate new folder
-        new_folder = self._db.create_folder(parent_id, name, comment)
+        new_folder = self._db.create_folder(props)
         return new_folder
 
     @staticmethod
@@ -94,8 +99,5 @@ class ApiHandler(object):
         for f in fold_dict.values():
             if f['parent_id'] == folder_id:
                 child_count += 1
-        return {
-            'id': fval['id'],
-            'name': fval['name'],
-            'item_count': child_count
-        }
+        fval['item_count'] = child_count
+        return fval

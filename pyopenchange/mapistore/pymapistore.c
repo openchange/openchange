@@ -69,17 +69,17 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 	}
 
 	ev = tevent_context_init(talloc_autofree_context());
-	if (!ev) goto end;
+	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 	/* Step 1. Connect to the database */
 	globals.samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
-	if (!globals.samdb_ctx) goto end;
+	MAPISTORE_RETVAL_IF(!globals.samdb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 	/* Step 2. Search for rootDSE record */
 	retval = ldb_search(globals.samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, globals.samdb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
-	if (retval != LDB_SUCCESS) goto end;
-	if (res->count != 1) goto end;
+	MAPISTORE_RETVAL_IF((retval != LDB_SUCCESS), MAPISTORE_ERR_DATABASE_INIT, NULL);
+	MAPISTORE_RETVAL_IF((res->count != 1), MAPISTORE_ERR_DATABASE_INIT, NULL);
 
 	/* Step 3. Set opaque naming */
 	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
@@ -91,9 +91,6 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 	ldb_set_opaque(globals.samdb_ctx, "defaultNamingContext", tmp_dn);
 
 	return MAPISTORE_SUCCESS;
-
-end:
-	return MAPISTORE_ERR_DATABASE_INIT;
 }
 
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)

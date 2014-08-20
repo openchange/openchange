@@ -105,6 +105,7 @@ int main(int argc, const char *argv[])
 	uint32_t			context_id = 0;
 	void				*folder_object;
 	void				*child_folder_object;
+	void				*subfold;
 
 	enum { OPT_DEBUG=1000, OPT_USERNAME, OPT_URI };
 
@@ -214,6 +215,48 @@ int main(int argc, const char *argv[])
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("mapistore_folder_open_folder: %s\n", mapistore_errstr(retval)));
 		exit (1);
+	}
+
+	/* folder creation */
+	{
+		struct SRow *aRow;
+
+		aRow = talloc_array(mem_ctx, struct SRow, 1);
+		aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
+		aRow->cValues = 0;
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PidTagDisplayName, (void *)("FolderToCreate"));
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PidTagComment, (void *)("This is a good comment"));
+
+		retval = mapistore_folder_create_folder(mstore_ctx, context_id, folder_object, NULL,
+							0x123456, aRow, &child_folder_object);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+	}
+
+
+	/* folder creation */
+	{
+		struct SRow *aRow;
+
+		aRow = talloc_array(mem_ctx, struct SRow, 1);
+		aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
+		aRow->cValues = 0;
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PidTagDisplayName, (void *)("FolderToCreate 2"));
+		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PidTagComment, (void *)("This is a good comment 2"));
+
+		retval = mapistore_folder_create_folder(mstore_ctx, context_id,
+							child_folder_object, NULL, 0x456789, aRow,
+							&subfold);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

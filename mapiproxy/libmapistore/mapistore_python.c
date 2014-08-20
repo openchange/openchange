@@ -29,6 +29,7 @@
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
+#include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include <dlinklist.h>
 
 /**
@@ -69,6 +70,123 @@ static enum mapistore_error mapistore_set_pypath(char *path)
 
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
+}
+
+
+static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
+{
+	uint32_t	count;
+	PyObject	*pydict;
+	const void	*data;
+	const char	*skey;
+	PyObject	*key;
+	PyObject	*val;
+
+	/* Sanity checks */
+	if (!aRow) return NULL;
+
+	/* Initialize Dictionary */
+	pydict = PyDict_New();
+	if (pydict == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python Dictionary\n", __location__));
+		return NULL;
+	}
+
+	for (count = 0; count < aRow->cValues; count++) {
+
+		/* Set the key of the dictionary entry */
+		skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);
+		if (skey == NULL) {
+			key = PyLong_FromLong(aRow->lpProps[count].ulPropTag);
+		} else {
+			key = PyString_FromString(skey);
+		}
+
+		/* Retrieve SPropValue data */
+		data = get_SPropValue_data(&(aRow->lpProps[count]));
+		if (data == NULL) {
+			return NULL;
+		}
+
+		val = NULL;
+		switch (aRow->lpProps[count].ulPropTag & 0xFFFF) {
+		case PT_I2:
+			DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
+			break;
+		case PT_LONG:
+			val = PyLong_FromLong(*((uint32_t *)data));
+			break;
+		case PT_DOUBLE:
+			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
+			break;
+		case PT_BOOLEAN:
+			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
+			break;
+		case PT_I8:
+			DEBUG(5, ("[WARN][%s]: PT_I8 case not implemented\n", __location__));
+			break;
+		case PT_STRING8:
+		case PT_UNICODE:
+			val = PyString_FromString((const char *)data);
+			break;
+		case PT_SYSTIME:
+			DEBUG(5, ("[WARN][%s]: PT_SYSTIME case not implemented\n", __location__));
+			break;
+		case PT_CLSID:
+			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
+			break;
+		case PT_SVREID:
+			DEBUG(5, ("[WARN][%s]: PT_SRVEID case not implemented\n", __location__));
+			break;
+		case PT_BINARY:
+			DEBUG(5, ("[WARN][%s]: PT_BINARY case not implemented\n", __location__));
+			break;
+		case PT_MV_SHORT:
+			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
+			break;
+		case PT_MV_LONG:
+			DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
+			break;
+		case PT_MV_I8:
+			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
+			break;
+		case PT_MV_STRING8:
+			DEBUG(5, ("[WARN][%s]: PT_MV_STRING8 case not implemented\n", __location__));
+			break;
+		case PT_MV_UNICODE:
+			DEBUG(5, ("[WARN][%s]: PT_MV_UNICODE case not implemented\n", __location__));
+			break;
+		case PT_MV_SYSTIME:
+			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
+			break;
+		case PT_MV_CLSID:
+			DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
+			break;
+		case PT_MV_BINARY:
+			DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
+			break;
+		case PT_NULL:
+			DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
+			break;
+		case PT_OBJECT:
+			DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
+			break;
+		default:
+			DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__,
+				  (aRow->lpProps[count].ulPropTag & 0xFFFF)));
+			break;
+		}
+
+		if (val) {
+			if (PyDict_SetItem(pydict, key, val) == -1) {
+				DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
+					  __location__));
+				return NULL;
+			}
+		}
+	}
+
+	return pydict;
 }
 
 /**
@@ -671,6 +789,127 @@ static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_
 
 
 /**
+   \details Create a folder
+
+   \param mem_ctx pointer to the memory context
+   \param folder_object the mapistore python parent object
+   \param fid the folder identifier to associate to the folder to
+   create
+   \param aRow pointer to a SRow structure holding folder properties
+   to associate to the folder to create
+   \param new_folder pointer on pointer to the new folder object to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *mem_ctx,
+								  void *folder_object,
+								  uint64_t fid,
+								  struct SRow *aRow,
+								  void **new_folder)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pynobj;
+	PyObject			*folder;
+	PyObject			*pydict;
+	PyObject			*pynew;
+	PyObject			*pres;
+	PyObject			*res;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!new_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Build PyDict from aRow */
+	pydict = mapistore_python_dict_from_SRow(aRow);
+	MAPISTORE_RETVAL_IF(!pydict, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Call create_folder function */
+	pres = PyObject_CallMethod(folder, "create_folder", "OK", pydict, fid);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in create_folder\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve return value (item 0 of the tuple) */
+	res = PyTuple_GetItem(pres, 0);
+	if (res == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	retval = PyLong_AsLong(res);
+	if (retval != MAPISTORE_SUCCESS) {
+		if (retval == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
+		}
+		Py_DECREF(res);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	Py_DECREF(res);
+
+	pynew = PyTuple_GetItem(pres, 1);
+	if (pynew == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp("FolderObject", pynew->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject and got '%s'\n",
+			  pyobj->name, __location__, pynew->ob_type->tp_name));
+		Py_DECREF(pynew);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	pynobj = talloc_zero(mem_ctx, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pynobj, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pynobj->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
+	pynobj->name = talloc_strdup(pynobj, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pynobj->name, MAPISTORE_ERR_NO_MEMORY, NULL);
+	pynobj->conn = pyobj->conn;
+	pynobj->ictx = pyobj->ictx;
+	pynobj->module = pyobj->module;
+	pynobj->private_object = pynew;
+	*new_folder = pynobj;
+
+	Py_INCREF(pynew);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -780,8 +1019,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 
 	/* folder */
 	backend.folder.open_folder = mapistore_python_folder_open_folder;
-#if 0
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
+#if 0
 	backend.folder.delete = mapistore_python_folder_delete;
 	backend.folder.open_message = mapistore_python_folder_open_message;
 	backend.folder.create_message = mapistore_python_folder_create_message;

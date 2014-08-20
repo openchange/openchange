@@ -577,7 +577,7 @@ enum mapistore_error mapistore_backend_folder_open_folder(struct backend_context
 enum mapistore_error mapistore_backend_folder_create_folder(struct backend_context *bctx, void *folder,
 					   TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *aRow, void **child_folder)
 {
-	return bctx->backend->folder.create_folder(folder, mem_ctx, fid, aRow, child_folder);
+	return bctx->backend->folder.create_folder(mem_ctx, folder, fid, aRow, child_folder);
 }
 
 enum mapistore_error mapistore_backend_folder_delete(struct backend_context *bctx, void *folder)

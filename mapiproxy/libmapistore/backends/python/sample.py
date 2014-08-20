@@ -22,6 +22,7 @@ import os,sys
 root = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.sep.join((root, '..', '..')))
 
+import json
 from openchange import mapistore
 
 class BackendObject(object):
@@ -96,5 +97,12 @@ class FolderObject(ContextObject):
         if folderID in self.mapping:
             print '[PYTHON]: folderID %s found\n' % (folderID)
             return FolderObject(folderID, self.folderID)
-
         return None
+
+    def create_folder(self, properties, folderID):
+        print '[PYTHON]: %s folder.create_folder(%s)' % (self.name, folderID)
+        j = json.dumps(properties, indent=4)
+        print '[PYTHON]: %s ' % j
+        folder = FolderObject(folderID, self.folderID)
+
+        return (0, folder)

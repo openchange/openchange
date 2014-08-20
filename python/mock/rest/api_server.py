@@ -58,6 +58,8 @@ def _module_folders_dir_impl(parent_id):
     handler = ApiHandler(user_id='any')
     ret_val = ''
     try:
+        if parent_id is None:
+            abort(422, "parent_id is required parameter")
         ret_val = handler.folders_dir(parent_id)
     except KeyError:
         abort(404)
@@ -79,9 +81,15 @@ def module_folders_create():
     handler = ApiHandler(user_id='any')
     ret_val = ''
     try:
-        ret_val = handler.folders_create(data.get('parent_id'), data.get('name'), data.get('comment'))
-    except KeyError:
-        abort(404)
+        parent_id = data.get('parent_id', None)
+        if parent_id is None:
+            abort(422, "parent_id is required parameter")
+        folder_name = data.get('name')
+        if folder_name is None:
+            abort(422, "name is a required parameter")
+        ret_val = handler.folders_create(parent_id, folder_name, data.get('comment'))
+    except KeyError, ke:
+        abort(404, ke.message)
     finally:
         handler.close_context()
     return jsonify(ret_val)
@@ -105,8 +113,8 @@ def module_folders_get(folder_id):
     ret_val = ''
     try:
         ret_val = handler.folders_get_folder(folder_id)
-    except KeyError:
-        abort(404)
+    except KeyError, ke:
+        abort(404, ke.message)
     finally:
         handler.close_context()
     return jsonify(ret_val)

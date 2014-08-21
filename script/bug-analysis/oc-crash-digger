@@ -109,7 +109,9 @@ class CrashDigger(object):
                             from buganalysis.redmine_client import RedmineClient
                             self.tracker = RedmineClient(tracker_auth_conf['url'],
                                                          tracker_auth_conf['key'],
-                                                         tracker_auth_conf['project_id'])
+                                                         project=tracker_auth_conf.get('project_id', None),
+                                                         component_conf=tracker_auth_conf.get('component_conf', {}),
+                                                         custom_fields=tracker_auth_conf.get('custom_fields', []))
                         except ImportError:
                             self.log("WARNING: python-redmine module is not installed")
                             # No redmine

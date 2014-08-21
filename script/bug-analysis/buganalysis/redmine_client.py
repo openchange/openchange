@@ -27,16 +27,23 @@ import redmine
 class RedmineClient(object):
     """Wrapper to manage redmine integration"""
 
-    def __init__(self, url, key, project=None):
+    def __init__(self, url, key, project=None, component_conf={},
+                 custom_fields=[]):
         """Initialise the client
 
         :param str url: the URL where the redmine is hosted
         :param str key: the authentication API REST key
         :param int or str project: the project identifier.
                                    It is None, then it takes the default one.
+        :param dict component_conf: the component configuration to set
+                                    the component based on the configuration file.
+        :param list custom_fields: the custom fields that are mandatory to set
+                                   when creating the issue.
         """
         self.redmine = redmine.Redmine(url, key=key)
         self.project = project
+        self.component_conf = component_conf
+        self.custom_fields = custom_fields
 
         # Use Bug by now, we can look for Crash Report tracker as well
         tracker_elems = filter(lambda t: t['name'] == 'Bug', self.redmine.tracker.all())
@@ -46,7 +53,17 @@ class RedmineClient(object):
             self.tracker_id = None
 
     def create_issue(self, id, report, comps=None):
-        """Create a new issue based on a report
+        """Create a new issue based on a report.
+
+        It sets:
+
+          * the tracker as Bug
+          * the subject with the crash_id and the crash report title
+          * the description with the StacktraceTop, Components, Crash file, Distro Release
+            and OpenChange server package.
+
+        If there is a configuration to set the component based on OC app components,
+        it uses it.
 
         :param int id: the crash identifier
         :param Report report: the crash report object
@@ -68,8 +85,37 @@ class RedmineClient(object):
         if '_OrigURL' in report:
             _, base_name = report['_OrigURL'].rsplit('/', 1)
             description += "Crash file: %s\n" % base_name
+        if 'DistroRelease' in report:
+            description += '\nDistro Release: {0}\n'.format(report['DistroRelease'])
+        if 'Dependencies' in report:
+            pkgs = (e for e in report['Dependencies'].split('\n') if e.startswith('openchangeserver'))
+            for pkg in pkgs:
+                description += '\nPackage: {0}\n'.format(pkg)
 
         issue.description = description
+        custom_fields = []
+
+        if comps and self.component_conf:
+            match = None
+            for app_comp in comps:
+                if app_comp in self.component_conf:
+                    match = self.component_conf[app_comp]
+                    break
+
+            if match is None and 'default' in self.component_conf:
+                match = self.component_conf['default']
+
+            if match:
+                if '_custom_field_id' in self.component_conf:
+                    custom_fields.append({'id': self.component_conf['_custom_field_id'], 'value': match})
+                else:
+                    issue.category_id = match
+
+        if self.custom_fields:
+            custom_fields.extend(self.custom_fields)
+
+        issue.custom_fields = custom_fields
+
         # TODO: Custom fields, ie. crash id
         issue.save()
         return issue

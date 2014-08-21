@@ -97,7 +97,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 		/* Set the key of the dictionary entry */
 		skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);
 		if (skey == NULL) {
-			key = PyLong_FromLong(aRow->lpProps[count].ulPropTag);
+			key = PyString_FromFormat("0x%x", aRow->lpProps[count].ulPropTag);
 		} else {
 			key = PyString_FromString(skey);
 		}
@@ -1177,7 +1177,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 	for (i = 0; i < count; i++) {
 		value = openchangedb_property_get_attribute(properties[i]);
 		if (value == NULL) {
-			item = PyLong_FromLong(properties[i]);
+			item = PyString_FromFormat("0x%x", properties[i]);
 		} else {
 			item = PyString_FromString(value);
 		}

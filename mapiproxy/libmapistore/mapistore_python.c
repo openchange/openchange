@@ -960,6 +960,118 @@ static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Create a table object
+
+   \param mem_ctx pointer to the memory context
+   \param folder_object the mapistore python parent object
+   \param table_type the type of mapistore table to create
+   \param handle_id the handle of the table *deprecated*
+   \param table_object pointer on pointer to the table object to create
+   \param row_count pointer on the number of elements in the table
+   created
+
+   \note handle_id is only used by SOGo backend to uniquely identify
+   tables
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_ctx,
+							       void *folder_object,
+							       enum mapistore_table_type table_type,
+							       uint32_t handle_id,
+							       void **table_object,
+							       uint32_t *row_count)
+{
+	struct mapistore_python_object		*pyobj;
+	struct mapistore_python_object		*pytable;
+	PyObject				*folder;
+	PyObject				*table;
+	PyObject				*pres;
+	PyObject				*res;
+	uint32_t				count = 0;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!row_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call open_table function */
+	pres = PyObject_CallMethod(folder, "open_table", "H", table_type);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in open_table\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve table object (item 0 of the tuple) */
+	table = PyTuple_GetItem(pres, 0);
+	if (table == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp("TableObject", table->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected TableObject and got '%s'\n",
+			  pyobj->name, __location__, table->ob_type->tp_name));
+		Py_DECREF(table);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Retrieve table count (item 0 of the tuple) */
+	res = PyTuple_GetItem(pres, 1);
+	if (res == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(table);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	count = PyLong_AsLong(res);
+	Py_DECREF(res);
+
+	pytable = talloc_zero(mem_ctx, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pytable, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pytable->obj_type = MAPISTORE_PYTHON_OBJECT_TABLE;
+	pytable->name = talloc_strdup(pytable, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pytable->name, MAPISTORE_ERR_NO_MEMORY, NULL);
+	pytable->conn = pyobj->conn;
+	pytable->ictx = pyobj->ictx;
+	pytable->module = pyobj->module;
+	pytable->private_object = table;
+
+	*table_object = pytable;
+	*row_count = count;
+
+	Py_INCREF(table);
+
+	return MAPISTORE_SUCCESS;
+}
+
 
 /**
    \details Load specified mapistore python backend
@@ -1073,14 +1185,14 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.open_folder = mapistore_python_folder_open_folder;
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
 	backend.folder.delete = mapistore_python_folder_delete;
-#if 0
-	backend.folder.open_message = mapistore_python_folder_open_message;
-	backend.folder.create_message = mapistore_python_folder_create_message;
-	backend.folder.delete_message = mapistore_python_folder_delete_message;
-	backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages;
-	backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids;
-	backend.folder.get_child_count = mapistore_python_folder_get_child_count;
+	/* backend.folder.open_message = mapistore_python_folder_open_message; */
+	/* backend.folder.create_message = mapistore_python_folder_create_message; */
+	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
+	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */
+	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
+	/* backend.folder.get_child_count = mapistore_python_folder_get_child_count; */
 	backend.folder.open_table = mapistore_python_folder_open_table;
+#if 0
 	backend.folder.modify_permissions = mapistore_python_folder_modify_permissions;
 
 	/* message */

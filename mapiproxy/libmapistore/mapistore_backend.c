@@ -671,7 +671,7 @@ enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backe
 enum mapistore_error mapistore_backend_folder_open_table(struct backend_context *bctx, void *folder,
 							 TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint32_t handle_id, void **table, uint32_t *row_count)
 {
-        return bctx->backend->folder.open_table(folder, mem_ctx, table_type, handle_id, table, row_count);
+        return bctx->backend->folder.open_table(mem_ctx, folder, table_type, handle_id, table, row_count);
 }
 
 enum mapistore_error mapistore_backend_folder_modify_permissions(struct backend_context *bctx, void *folder,

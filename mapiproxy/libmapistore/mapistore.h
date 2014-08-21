@@ -197,7 +197,7 @@ struct mapistore_backend {
  		enum mapistore_error	(*copy_folder)(void *, void *, TALLOC_CTX *, bool, const char *);
 		enum mapistore_error	(*get_deleted_fmids)(void *, TALLOC_CTX *, enum mapistore_table_type, uint64_t, struct UI8Array_r **, uint64_t *);
 		enum mapistore_error	(*get_child_count)(void *, enum mapistore_table_type, uint32_t *);
-                enum mapistore_error	(*open_table)(void *, TALLOC_CTX *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
+                enum mapistore_error	(*open_table)(TALLOC_CTX *, void *, enum mapistore_table_type, uint32_t, void **, uint32_t *);
 		enum mapistore_error	(*modify_permissions)(void *, uint8_t, uint16_t, struct PermissionData *);
 
 		enum mapistore_error	(*preload_message_bodies)(void *, enum mapistore_table_type, const struct UI8Array_r *);

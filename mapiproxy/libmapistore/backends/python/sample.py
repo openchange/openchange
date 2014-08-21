@@ -110,3 +110,37 @@ class FolderObject(ContextObject):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
         del self.mapping[self.folderID]
         return 0
+
+    def open_table(self, table_type):
+        print '[PYTHON]: %s folder.open_table' % (self.name)
+        table = TableObject(self, table_type)
+        return (table, table.get_count())
+
+    def count_folders(self):
+        print '[PYTHON][INTERNAL]: %s folder.list_folders(%s)' % (self.name, self.folderID)
+        return 2
+
+class TableObject(BackendObject):
+
+    def __init__(self, folder, tableType):
+        print '[PYTHON]: %s table.__init__()' % (self.name)
+        self.folder = folder
+        self.tableType = tableType
+
+        return
+
+    def get_count(self):
+        print '[PYTHON]: %s table.get_count()' % (self.name)
+
+        counters = {1 : self.folder.count_folders,
+                    2 : self.get_count_zero,
+                    3 : self.get_count_zero,
+                    4 : self.get_count_zero,
+                    5 : self.get_count_zero,
+                    6 : self.get_count_zero,
+                }
+
+        return counters[self.tableType]()
+
+    def get_count_zero(self):
+        return 0

@@ -106,6 +106,7 @@ int main(int argc, const char *argv[])
 	void				*folder_object;
 	void				*child_folder_object;
 	void				*subfold;
+	void				*table_object;
 
 	enum { OPT_DEBUG=1000, OPT_USERNAME, OPT_URI };
 
@@ -272,6 +273,20 @@ int main(int argc, const char *argv[])
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_folder_delete: %s\n", mapistore_errstr(retval)));
 		}
+	}
+
+	/* open table */
+	{
+		uint32_t	count = 0;
+
+		retval = mapistore_folder_open_table(mstore_ctx, context_id, subfold,
+						     mem_ctx, MAPISTORE_FOLDER_TABLE, 0,
+						     &table_object, &count);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_open_table: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+		DEBUG(0, ("open_table: count = %d\n", count));
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

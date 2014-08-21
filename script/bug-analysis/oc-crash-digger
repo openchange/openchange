@@ -321,7 +321,7 @@ class CrashDigger(object):
                                               duplicated=master_id is not None,
                                               smtp_addr=self.oc_cd_conf['email']['smtp_addr'])
 
-                else:
+                if self.stacktrace_file:
                     # Put the stacktrace in a file
                     if crash_file.endswith('.crash'):
                         crash_file_basename = crash_file
@@ -562,9 +562,6 @@ def parse_options():
 
     if opts.stdout and opts.gdb:
         apport.fatal('Error: --stdout and --gdb are incompatible')
-
-    if opts.upload and opts.stacktrace_file:
-        apport.fatal('Error: --upload and --stacktrace-file are incompatible')
 
     if opts.upload and not opts.dup_db:
         apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')

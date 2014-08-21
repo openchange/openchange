@@ -1871,116 +1871,102 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-/* Get the organisation name (like "First Organization") as a DN. */
-static bool mapiserver_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
-                                  struct ldb_dn **basedn)
+/* Get the legacyExchangeDN for the administrative group . */
+static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALLOC_CTX *mem_ctx,
+									    struct emsmdbp_context *emsmdbp_ctx,
+									    char **legacyexchangedn)
 {
-    int                 ret;
-    struct ldb_result   *res = NULL;
+	int			ret;
+	enum MAPISTATUS		retval;
+	struct  ldb_result	*res = NULL;
+	const char * const	attrs[] = { "legacyExchangeDN", NULL };
+	struct ldb_dn		*basedn = 0;
+	char			*group_name = NULL;
 
-    ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-                     ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
-                     LDB_SCOPE_SUBTREE, NULL,
-                     "(|(objectClass=msExchOrganizationContainer))");
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!legacyexchangedn, MAPI_E_INVALID_PARAMETER, NULL);
 
-    /* If the search failed */
-    if (ret != LDB_SUCCESS) {
-        DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn ldb_search failure.\n"));
-        return false;
-    }
-    /* If we didn't get the expected entry */
-    if (res->count != 1) {
-        DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn unexpected entry count: %i (expected 1).\n", res->count));
-        return false;
-    }
+	retval = emsmdbp_get_org_dn(emsmdbp_ctx, &basedn);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+	retval = emsmdbp_fetch_organizational_units(mem_ctx, emsmdbp_ctx, NULL, &group_name);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
-    *basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
-                         ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-    return true;
-}
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
+			 basedn, LDB_SCOPE_SUBTREE, attrs,
+			 "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
+			 group_name);
 
-/* Get the legazyExchangeDN for the administrative group . */
-static bool mapiserver_get_administrative_group_legazyexchangedn(
-    TALLOC_CTX *mem_ctx,
-    struct emsmdbp_context *emsmdbp_ctx,
-    char ** legazyexchangedn)
-{
-    int                 ret;
-    struct  ldb_result  *res = NULL;
-    const char * const  attrs[] = { "legazyExchangeDN", NULL };
-    struct ldb_dn       *basedn = 0;
+	/* If the search failed */
+	if (ret != LDB_SUCCESS) {
+		DEBUG(1, ("[emsmdbp_object][%s:%d]: ldb_search failure.\n", __FUNCTION__, __LINE__));
+		return MAPI_E_NOT_FOUND;
+	}
 
-    mapiserver_get_org_dn(emsmdbp_ctx, &basedn);
-    ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-                     basedn, LDB_SCOPE_SUBTREE, attrs,
-                     "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))");
+	*legacyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL));
+	OPENCHANGE_RETVAL_IF(!*legacyexchangedn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
-    /* If the search failed */
-    if (ret != LDB_SUCCESS) {
-        DEBUG(1, ("exchange_emsmdb: [emsmdbp_object] mapiserver_get_administrative_group_legazyexchangedn ldb_search failure.\n"));
-        return false;
-    }
-    /* If we didn't get the expected entry */
-    if (res->count != 1) {
-        DEBUG(1, ("exchange_emsmdb: [emsmdbp_object] mapiserver_get_administrative_group_legazyexchangedn: %i (expected 1).\n", res->count));
-        return false;
-    }
-
-    *legazyexchangedn = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(
-                                      res->msgs[0], "legazyExchangeDN", NULL));
-    return true;
+	return MAPI_E_SUCCESS;
 }
 
 
-static struct mapistore_freebusy_properties *emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *username, struct tm *start_tm, struct tm *end_tm)
+static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
+					      struct emsmdbp_context *emsmdbp_ctx,
+					      const char *username,
+					      struct tm *start_tm,
+					      struct tm *end_tm,
+					      struct mapistore_freebusy_properties **fb_props_p)
 {
-	TALLOC_CTX				*local_mem_ctx;
-	struct mapistore_freebusy_properties	*fb_props;
-	char					*email, *tmp, *administrativegroup;
-	struct SPropTagArray			*props;
-        void					**data_pointers;
-        enum MAPISTATUS				*retvals = NULL;
-	struct emsmdbp_object			*mailbox, *inbox, *calendar;
-	uint64_t				inboxFID, calendarFID;
-	uint32_t				contextID;
-	int					i;
+	TALLOC_CTX		*local_mem_ctx;
+	char			*email, *tmp, *administrativegroup;
+	struct SPropTagArray	*props;
+	void			**data_pointers;
+	enum MAPISTATUS		*retvals = NULL;
+	enum MAPISTATUS		retval;
+	enum mapistore_error	retval_mapistore;
+	struct emsmdbp_object	*mailbox, *inbox, *calendar;
+	uint64_t		inboxFID, calendarFID;
+	uint32_t		contextID;
+	int			i;
 
-	fb_props = NULL;
-    mapiserver_get_administrative_group_legazyexchangedn(mem_ctx, emsmdbp_ctx,
-                                                         &administrativegroup);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fb_props_p, MAPI_E_INVALID_PARAMETER, NULL);
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	retval = mapiserver_get_administrative_group_legacyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	// WARNING: the mechanism here will fail if username is not all lower-case, as LDB does not support case-insensitive queries
 	tmp = talloc_strdup(local_mem_ctx, username);
+	OPENCHANGE_RETVAL_IF(!tmp, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	while (*tmp) {
 		*tmp = tolower(*tmp);
 		tmp++;
 	}
-    email = talloc_asprintf(fb_props, "%s/cn=Recipients/cn=%s",
-                            administrativegroup, username);
+	email = talloc_asprintf(local_mem_ctx, "%s/cn=Recipients/cn=%s", administrativegroup, username);
+	OPENCHANGE_RETVAL_IF(!email, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	/* open user mailbox */
 	mailbox = emsmdbp_object_mailbox_init(local_mem_ctx, emsmdbp_ctx, email, true);
-	if (!mailbox) {
-		goto end;
-	}
+	OPENCHANGE_RETVAL_IF(!mailbox, MAPI_E_NOT_FOUND, local_mem_ctx);
 
 	/* open Inbox */
-	openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &inboxFID);
-	if (emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox) != MAPISTORE_SUCCESS) {
-		goto end;
-	}
+	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &inboxFID);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
+	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox);
+	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 
 	/* retrieve Calendar entry id */
 	props = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!props, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	props->cValues = 1;
 	props->aulPropTag = talloc_zero(props, enum MAPITAGS);
 	props->aulPropTag[0] = PR_IPM_APPOINTMENT_ENTRYID;
-	
+
 	data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, inbox, props, &retvals);
-	if (!data_pointers || retvals[0] != MAPI_E_SUCCESS) {
-		goto end;
-	}
+	OPENCHANGE_RETVAL_IF(!data_pointers || retvals[0] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+
 	calendarFID = 0;
 	for (i = 0; i < 6; i++) {
 		calendarFID <<= 8;
@@ -1990,24 +1976,25 @@ static struct mapistore_freebusy_properties *emsmdbp_fetch_freebusy(TALLOC_CTX *
 	calendarFID |= 1;
 
 	/* open user calendar */
-	if (emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar) != MAPISTORE_SUCCESS) {
-		goto end;
-	}
+	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar);
+	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+
 	if (!emsmdbp_is_mapistore(calendar)) {
-		DEBUG(5, ("non-mapistore calendars are not supported for freebusy\n"));
-		goto end;
+		DEBUG(5, ("[emsmdbp_object][%s:%d]: non-mapistore calendars are not supported for freebusy\n",
+			  __FUNCTION__, __LINE__));
+		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_IMPLEMENTED, local_mem_ctx);
 	}
 
 	contextID = emsmdbp_get_contextID(calendar);
-	mapistore_folder_fetch_freebusy_properties(emsmdbp_ctx->mstore_ctx, contextID, calendar->backend_object, start_tm, end_tm, mem_ctx, &fb_props);
+	retval_mapistore = mapistore_folder_fetch_freebusy_properties(emsmdbp_ctx->mstore_ctx, contextID, calendar->backend_object, start_tm, end_tm, mem_ctx, fb_props_p);
+	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 
-end:
 	talloc_free(local_mem_ctx);
 
-	return fb_props;
+	return MAPI_E_SUCCESS;
 }
 
-static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_object *message_object)
+static enum MAPISTATUS emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_object *message_object)
 {
 	/* freebusy mechanism:
 	   - lookup events in range now + 3 months, requesting end date, start date and PidLidBusyStatus
@@ -2027,40 +2014,39 @@ static void emsmdbp_object_message_fill_freebusy_properties(struct emsmdbp_objec
 	struct mapistore_freebusy_properties	*fb_props;
 	char					*subject, *username;
 	struct SPropTagArray			*props;
-        void					**data_pointers;
-        enum MAPISTATUS				*retvals = NULL;
+	void					**data_pointers;
+	enum MAPISTATUS				*retvals = NULL;
+	enum MAPISTATUS				retval;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* 1. retrieve subject and deduce username */
 	props = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!props, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	props->cValues = 1;
 	props->aulPropTag = talloc_zero(props, enum MAPITAGS);
+	OPENCHANGE_RETVAL_IF(!props->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	props->aulPropTag[0] = PR_NORMALIZED_SUBJECT_UNICODE;
 	data_pointers = emsmdbp_object_get_properties(mem_ctx, message_object->emsmdbp_ctx, message_object, props, &retvals);
-	if (!data_pointers || retvals[0] != MAPI_E_SUCCESS) {
-		goto end;
-	}
+	OPENCHANGE_RETVAL_IF(!data_pointers || retvals[0] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+
 	subject = data_pointers[0];
-	if (subject == NULL) {
-		goto end;
-	}
 	/* FIXME: this is wrong, as the CN attribute may differ from the user's username (sAMAccountName) */
 	// format is "..../CN="
 	username = strrchr(subject, '/');
-	if (!username) {
-		goto end;
-	}
-	username += 4;
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_BAD_VALUE, mem_ctx);
+	username += 4;  /* strlen("/CN=") == 4 */
 	username = talloc_strdup(mem_ctx, username);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 
-	fb_props = emsmdbp_fetch_freebusy(mem_ctx, message_object->emsmdbp_ctx, username, NULL, NULL);
+	retval = emsmdbp_fetch_freebusy(mem_ctx, message_object->emsmdbp_ctx, username, NULL, NULL, &fb_props);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	message_object->object.message->fb_properties = fb_props;
 
-end:
 	talloc_free(mem_ctx);
 
-	return;
+	return MAPI_E_SUCCESS;
 }
 
 _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, bool read_write, struct emsmdbp_object **messageP, struct mapistore_message **msgp)
@@ -2070,6 +2056,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	bool mapistore;
 	TALLOC_CTX *local_mem_ctx;
 	enum mapistore_error ret = MAPISTORE_SUCCESS;
+	enum MAPISTATUS retval;
 
 	if (!messageP) return MAPISTORE_ERROR;
 	if (!parent_object) return MAPISTORE_ERROR;
@@ -2092,7 +2079,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 			goto end;
 		}
 
-		emsmdbp_object_message_fill_freebusy_properties(message_object);
+		retval = emsmdbp_object_message_fill_freebusy_properties(message_object);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(5, ("[emsmdbp_object][%s:%d]: Error filling freebusy properties on %"PRIu64"\n",
+				  __FUNCTION__, __LINE__, messageID));
+			ret = MAPISTORE_ERROR;
+		}
 		break;
 	case true:
 		/* mapistore implementation goes here */
@@ -2358,8 +2350,9 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 	fb_props = object->object.message->fb_properties;
 
 	owner = emsmdbp_get_owner(object);
-    mapiserver_get_administrative_group_legazyexchangedn(mem_ctx, emsmdbp_ctx,
-                                                         &administrativegroup);
+	retval = mapiserver_get_administrative_group_legacyexchangedn(mem_ctx, emsmdbp_ctx, &administrativegroup);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+
 	/* FIXME: this is wrong, as the CN attribute may differ from the user's username (sAMAccountName) */
 	email_address = talloc_asprintf(data_pointers, "%s/cn=Recipients/cn=%s",
                                     administrativegroup, owner);

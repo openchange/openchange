@@ -20,7 +20,7 @@ Simple 'keep it simple' type of handler implementation.
 No fancy logic or caching - just store Folders and Messages
 as dictionaries and traverse them with every request.
 """
-from handler.kissHanlder.kissDB import kissDB
+from handler.kissHandler.kissDB import kissDB
 
 __author__ = 'kamenim'
 

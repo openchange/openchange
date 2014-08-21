@@ -51,7 +51,7 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 	return &globals;
 }
 
-static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx, const char *syspath)
+static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct tevent_context	*ev;
 	int			retval;
@@ -122,14 +122,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	/* Initialize ldb context on sam.ldb */
-	retval = sam_ldb_init(mem_ctx, lp_ctx, syspath);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
 	if ((syspath != NULL) && (file_exist(syspath) == true)) {
 		ret = lpcfg_load(lp_ctx, syspath);
 	} else {
@@ -172,7 +164,14 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 		return NULL;
 	}
 
-	/* Initialize ldb context on openchange.ldb */
+	/* Initialise ldb context on sam.ldb */
+	retval = sam_ldb_init(self->mem_ctx, self->lp_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Initialise ldb context on openchange.ldb */
 	ret = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
 	if (ret != MAPI_E_SUCCESS) {
 		PyErr_SetMAPISTATUSError(ret);

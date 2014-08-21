@@ -39,14 +39,17 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 
 static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	int			retval;
-	/* PyMAPIStoreFolderObject	*folder; */
+	TALLOC_CTX		mem_ctx;
+	PyMAPIStoreFolderObject	*folder;
 	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
 	const char		*name;
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
 	uint16_t		flags = NONE;
 	uint64_t		fid;
+	int			retval;
+	struct SRow 		*aRow;
+	void			*folder_object;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|shh", kwnames, &name, &desc, &foldertype, &flags)) {
 		return NULL;
@@ -55,7 +58,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	/* Step 1. Check if the folder already exists */
 	retval = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx,
 						     self->context->context_id,
-						     self->context->folder_object, 
+						     self->folder_object,
 						     name, &fid);
 	if (retval == MAPISTORE_SUCCESS) {
 		if (flags != OPEN_IF_EXISTS) {
@@ -63,10 +66,43 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 			return NULL;
 		}
 	}
-	
-	/* TODO: Complete the implementation */
 
-	Py_RETURN_NONE;
+	/* Set the properties */
+	mem_ctx = talloc_new(NULL);
+	
+	aRow = talloc_zero(mem_ctx, struct SRow);
+	aRow->lpProps = talloc_array(aRow, struct SPropValue, 3);
+	aRow->cValues = 0;
+
+	/* We consider the parameters passed by Python are UNICODE */
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PR_DISPLAY_NAME_UNICODE, (void *)name);
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PR_COMMENT_UNICODE, (void *)desc);
+
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PR_FOLDER_TYPE, (void *)&foldertype);
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+					       PR_FLAG_STATUS, (void *)&flags);
+
+	retval = mapistore_folder_create_folder(self->context->mstore_ctx, self->context->context_id,
+						self->folder_object, self, self->fid, aRow, folder_object);
+
+	if (retval != MAPISTORE_SUCCESS){
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	folder->context = self->context;
+	Py_INCREF(folder->context);
+
+	folder->folder_object = self->folder_object;
+	(void) talloc_reference(NULL, folder->folder_object);
+	folder->fid = fid;
+
+	talloc_free(mem_ctx);
+	return (PyObject *)folder;
 }
 
 static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)

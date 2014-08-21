@@ -44,15 +44,12 @@ class kissDB(object):
         pass
 
     def get_folders(self):
-        """@:return dict: Dictionary {folder_id -> data}"""
+        """:return dict: Dictionary {folder_id -> data}"""
         return self._get_data('folders')
 
     def create_folder(self, folder_props):
         """Create new folder and return a folder record
-        :param parent_id:
-        :param name:
-        :param comment:
-        :return dict: Create folder record
+        :param folder_props:
         """
         next_id = self._get_data('next_id')
         folder_props['id'] = next_id

@@ -20,7 +20,7 @@ Simple 'keep it simple' type of handler implementation.
 No fancy logic or caching - just store Folders and Messages
 as dictionaries and traverse them with every request.
 """
-from handler.kissHandler.kissDB import kissDB
+from .kissDB import kissDB
 
 
 class ApiHandler(object):
@@ -90,7 +90,7 @@ class ApiHandler(object):
         """Prepare a folder record suitable for jsonify
         :param dict fval: Folder record from DB
         :param dict fold_dict: All folders in DB
-        :return: Dictionary
+        :return dict: Dictionary
         """
         folder_id = fval['id']
         child_count = 0

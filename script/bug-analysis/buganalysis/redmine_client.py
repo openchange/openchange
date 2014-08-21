@@ -28,7 +28,7 @@ class RedmineClient(object):
     """Wrapper to manage redmine integration"""
 
     def __init__(self, url, key, project=None, component_conf={},
-                 custom_fields=[]):
+                 custom_fields=[], reporter_field=None):
         """Initialise the client
 
         :param str url: the URL where the redmine is hosted
@@ -39,11 +39,13 @@ class RedmineClient(object):
                                     the component based on the configuration file.
         :param list custom_fields: the custom fields that are mandatory to set
                                    when creating the issue.
+        :param dict reporter_field: field to set reporter email
         """
         self.redmine = redmine.Redmine(url, key=key)
         self.project = project
         self.component_conf = component_conf
         self.custom_fields = custom_fields
+        self.reporter_field = reporter_field
 
         # Use Bug by now, we can look for Crash Report tracker as well
         tracker_elems = filter(lambda t: t['name'] == 'Bug', self.redmine.tracker.all())
@@ -52,7 +54,7 @@ class RedmineClient(object):
         else:
             self.tracker_id = None
 
-    def create_issue(self, id, report, comps=None):
+    def create_issue(self, id, report, comps=None, reporter=None):
         """Create a new issue based on a report.
 
         It sets:
@@ -68,6 +70,7 @@ class RedmineClient(object):
         :param int id: the crash identifier
         :param Report report: the crash report object
         :param list comps: application components. Optional.
+        :param str reporter: the email from the reporter. Optional.
         :returns: the newly created issue
         :rtype: redmine.resource.Issue
         """
@@ -114,9 +117,12 @@ class RedmineClient(object):
         if self.custom_fields:
             custom_fields.extend(self.custom_fields)
 
+        if reporter and self.reporter_field:
+            if 'custom_field' in self.reporter_field:
+                custom_fields.append({'id': self.reporter_field['custom_field'], 'value': reporter})
+
         issue.custom_fields = custom_fields
 
-        # TODO: Custom fields, ie. crash id
         issue.save()
         return issue
 

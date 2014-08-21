@@ -259,6 +259,21 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* delete folder */
+	{
+		struct backend_context *backend_ctx;
+
+		backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+		if (!backend_ctx || !backend_ctx->indexing) {
+			DEBUG(0, ("Invalid backend_ctx\n"));
+			exit (1);
+		}
+		retval = mapistore_backend_folder_delete(backend_ctx, subfold);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_backend_folder_delete: %s\n", mapistore_errstr(retval)));
+		}
+	}
+
 	retval = mapistore_del_context(mstore_ctx, context_id);
 
 	retval = mapistore_release(mstore_ctx);

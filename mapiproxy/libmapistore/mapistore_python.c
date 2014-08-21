@@ -910,6 +910,58 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 
 
 /**
+   \details Delete a folder
+
+   \param folder_object pointer to the mapistore python object to
+   delete
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*folder;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	pres = PyObject_CallMethod(folder, "delete", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	if (retval != MAPISTORE_SUCCESS) {
+		Py_DECREF(pres);
+		return retval;
+	}
+
+	Py_DECREF(folder);
+	talloc_free(pyobj);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -1020,8 +1072,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* folder */
 	backend.folder.open_folder = mapistore_python_folder_open_folder;
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
-#if 0
 	backend.folder.delete = mapistore_python_folder_delete;
+#if 0
 	backend.folder.open_message = mapistore_python_folder_open_message;
 	backend.folder.create_message = mapistore_python_folder_create_message;
 	backend.folder.delete_message = mapistore_python_folder_delete_message;

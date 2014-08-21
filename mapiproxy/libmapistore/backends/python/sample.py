@@ -103,6 +103,10 @@ class FolderObject(ContextObject):
         print '[PYTHON]: %s folder.create_folder(%s)' % (self.name, folderID)
         j = json.dumps(properties, indent=4)
         print '[PYTHON]: %s ' % j
-        folder = FolderObject(folderID, self.folderID)
+        self.mapping[folderID] = "sample://%x" % folderID
+        return (0, FolderObject(folderID, self.folderID))
 
-        return (0, folder)
+    def delete(self):
+        print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
+        del self.mapping[self.folderID]
+        return 0

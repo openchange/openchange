@@ -16,88 +16,9 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Simple 'keep it simple' type of handler implementation.
-No fancy logic or caching - just store Folders and Messages
-as dictionaries and traverse them with every request.
+kissHandler package
 """
-from handler.kissHandler.kissDB import kissDB
 
-__author__ = 'kamenim'
+from .api_handler import ApiHandler
 
-
-class ApiHandler(object):
-    """Simple store implementation.
-        It just store/load Message/Folder objects.
-        No sessions, no user etc."""
-
-    NAME = 'OC rest api mock'
-    VERSION = '1.0'
-
-    def __init__(self, user_id):
-        """Simply load what we have and handle request"""
-        self._user_id = user_id
-        self._db = kissDB(user_id)
-        pass
-
-    def close_context(self):
-        if self._db is not None:
-            self._db.close()
-
-    def info_get(self):
-        """get static description for this handler implementation"""
-        return {
-            'name': ApiHandler.NAME,
-            'version': ApiHandler.VERSION,
-            'capabilities': {}
-        }
-
-    def folders_id_exists(self, folder_id):
-        fold_dict = self._db.get_folders()
-        return folder_id in fold_dict
-
-    def folders_get_folder(self, folder_id):
-        fold_dict = self._db.get_folders()
-        if folder_id not in fold_dict:
-            raise KeyError('No folder with id = %d' % folder_id)
-        return fold_dict[folder_id]
-
-    def folders_dir(self, parent_folder_id=0):
-        """List child folders for a given folder ID
-        :param int parent_folder_id: Folder to enumerate
-        :return list: List of folder records
-        """
-        fold_dict = self._db.get_folders()
-        if parent_folder_id != 0 and not (parent_folder_id in fold_dict):
-            raise KeyError('No folder with id = %d' % parent_folder_id)
-
-        return [self._folder_rec(f, fold_dict)
-                for f in fold_dict.values() if f['parent_id'] == parent_folder_id]
-
-    def folders_create(self, parent_id, name, props):
-        # we rely on API server to check preconditions
-        # but anyway, assert here too
-        assert 'parent_id' in props, 'parent_id is required'
-        assert 'name' in props, 'name is required'
-        # load what we have
-        folders = self._db.get_folders()
-        # check parent ID
-        if parent_id not in folders:
-            raise KeyError('No folder with id = %d' % parent_id)
-        # crate new folder
-        new_folder = self._db.create_folder(props)
-        return new_folder
-
-    @staticmethod
-    def _folder_rec(fval, fold_dict):
-        """Prepare a folder record suitable for jsonify
-        :param dict fval: Folder record from DB
-        :param dict fold_dict: All folders in DB
-        :return: Dictionary
-        """
-        folder_id = fval['id']
-        child_count = 0
-        for f in fold_dict.values():
-            if f['parent_id'] == folder_id:
-                child_count += 1
-        fval['item_count'] = child_count
-        return fval
+__all__ = ["ApiHandler"]

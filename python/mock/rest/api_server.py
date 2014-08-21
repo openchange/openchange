@@ -24,7 +24,7 @@ from flask import (Flask,
                    abort,
                    jsonify,
                    send_from_directory)
-from handler.kissHanlder import ApiHandler
+from handler.kissHandler import ApiHandler
 
 app = Flask(__name__)
 app.config.from_object(__name__)

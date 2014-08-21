@@ -1127,6 +1127,85 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 
 
 /**
+   \details Set columns on specified table
+
+   \param table the table object to set properties on
+   \param count the number of properties in the list
+   \param properties the list of properties to add to the table
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_table_set_columns(void *table_object,
+							       uint16_t count,
+							       enum MAPITAGS *properties)
+{
+	enum mapistore_error		retval = MAPISTORE_SUCCESS;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*table;
+	PyObject			*pres;
+	PyObject			*proplist;
+	const char			*value;
+	PyObject			*item;
+	uint16_t			i;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!properties, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) table_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	table = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!table, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Build a PyList from properties array */
+	proplist = PyList_New(count);
+	if (proplist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python List\n",
+			  pyobj->name, __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < count; i++) {
+		value = openchangedb_property_get_attribute(properties[i]);
+		if (value == NULL) {
+			item = PyLong_FromLong(properties[i]);
+		} else {
+			item = PyString_FromString(value);
+		}
+
+		if (PyList_SetItem(proplist, i, item) == -1) {
+			DEBUG(0, ("[ERR][[%s][%s]: Unable to append entry to Python list\n",
+				  pyobj->name, __location__));
+			return MAPISTORE_ERR_NO_MEMORY;
+		}
+	}
+
+	/* Call set_columns function */
+	pres = PyObject_CallMethod(table, "set_columns", "O", proplist);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -1245,10 +1324,10 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
 	backend.folder.get_child_count = mapistore_python_folder_get_child_count;
 	backend.folder.open_table = mapistore_python_folder_open_table;
-#if 0
-	backend.folder.modify_permissions = mapistore_python_folder_modify_permissions;
+	/* backend.folder.modify_permissions = mapistore_python_folder_modify_permissions; */
 
 	/* message */
+#if 0
 	backend.message.get_message_data = mapistore_python_message_get_message_data;
 	backend.message.modify_recipients = mapistore_python_message_modify_recipients;
 	backend.message.set_read_flag = mapistore_python_message_set_read_flag;
@@ -1257,24 +1336,27 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.open_attachment = mapistore_python_message_open_attachment;
 	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.open_embedded_message = mapistore_python_message_open_embedded_message;
+#endif
 
 	/* table */
-	backend.table.get_available_properties = mapistore_python_table_get_available_properties;
+	/* backend.table.get_available_properties = mapistore_python_table_get_available_properties; */
 	backend.table.set_columns = mapistore_python_table_set_columns;
-	backend.table.set_restrictions = mapistore_python_table_set_restrictions;
-	backend.table.set_sort_order = mapistore_python_table_set_sort_order;
-	backend.table.get_row = mapistore_python_table_get_row;
-	backend.table.get_row_count = mapistore_python_table_get_row_count;
-	backend.table.handle_destructor = mapistore_python_table_handle_destructor;
+	/* backend.table.set_restrictions = mapistore_python_table_set_restrictions; */
+	/* backend.table.set_sort_order = mapistore_python_table_set_sort_order; */
+	/* backend.table.get_row = mapistore_python_table_get_row; */
+	/* backend.table.get_row_count = mapistore_python_table_get_row_count; */
+	/* backend.table.handle_destructor = mapistore_python_table_handle_destructor; */
 
 	/* properties */
+#if 0
 	backend.properties.get_available_properties = mapistore_python_properties_get_available_properties;
 	backend.properties.get_properties = mapistore_python_properties_get_properties;
 	backend.properties.set_properties = mapistore_python_properties_set_properties;
+#endif
 
 	/* management */
-	backend.manager.generate_uri = mapistore_python_manager_generate_uri;
-#endif
+	/* backend.manager.generate_uri = mapistore_python_manager_generate_uri; */
+
 	mapistore_backend_register((const void *)&backend);
 
 	Py_DECREF(mod_backend);

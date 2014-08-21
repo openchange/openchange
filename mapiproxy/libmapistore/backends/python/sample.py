@@ -144,5 +144,11 @@ class TableObject(BackendObject):
         print '[PYTHON]: %s table.__init__()' % (self.name)
         self.folder = folder
         self.tableType = tableType
+        self.properties = None
         return
 
+    def set_columns(self, properties):
+        print '[PYTHON]: %s table.set_columns()' % (self.name)
+        self.properties = properties
+        print 'properties: [%s]\n' % ', '.join(map(str, properties))
+        return 0

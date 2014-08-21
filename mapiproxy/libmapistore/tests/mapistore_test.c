@@ -293,6 +293,7 @@ int main(int argc, const char *argv[])
 		}
 		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
 	}
+
 	/* open table */
 	{
 		uint32_t	count = 0;
@@ -305,6 +306,26 @@ int main(int argc, const char *argv[])
 			exit (1);
 		}
 		DEBUG(0, ("open_table: count = %d\n", count));
+	}
+
+	/* set columns */
+	{
+		struct SPropTagArray	*SPropTagArray;
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
+						  PR_DISPLAY_NAME_UNICODE,
+						  PR_FID,
+						  PR_COMMENT_UNICODE,
+						  PR_CONTENT_UNREAD,
+						  PR_CONTENT_COUNT,
+						  PR_FOLDER_CHILD_COUNT);
+		retval = mapistore_table_set_columns(mstore_ctx, context_id, table_object,
+						     (uint16_t)SPropTagArray->cValues,
+						     SPropTagArray->aulPropTag);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_table_set_columns: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

@@ -81,6 +81,8 @@ def module_folders_create():
     handler = ApiHandler(user_id='any')
     ret_val = ''
     try:
+        if data is None:
+            abort(422, "You must supply parent_id and name at least")
         parent_id = data.get('parent_id', None)
         if parent_id is None:
             abort(422, "parent_id is required parameter")

@@ -275,6 +275,24 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* get_child_count */
+	{
+		uint32_t	count = 0;
+
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, subfold,
+							  MAPISTORE_FOLDER_TABLE, &count);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
+		}
+		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
+
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, subfold,
+							  MAPISTORE_MESSAGE_TABLE, &count);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
+		}
+		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
+	}
 	/* open table */
 	{
 		uint32_t	count = 0;

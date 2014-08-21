@@ -114,11 +114,29 @@ class FolderObject(ContextObject):
     def open_table(self, table_type):
         print '[PYTHON]: %s folder.open_table' % (self.name)
         table = TableObject(self, table_type)
-        return (table, table.get_count())
+        return (table, self.get_child_count(table_type))
 
-    def count_folders(self):
-        print '[PYTHON][INTERNAL]: %s folder.list_folders(%s)' % (self.name, self.folderID)
-        return 2
+    def get_child_count(self, table_type):
+        print '[PYTHON]: %s folder.get_child_count' % (self.name)
+        counter = { 1: self._count_folders,
+                    2: self._count_messages,
+                    3: self._count_zero,
+                    4: self._count_zero,
+                    5: self._count_zero,
+                    6: self._count_zero
+                }
+        return counter[table_type]()
+
+    def _count_folders(self):
+        print '[PYTHON][INTERNAL]: %s folder._count_folders(%s)' % (self.name, self.folderID)
+        return 0
+
+    def _count_messages(self):
+        print '[PYTHON][INTERNAL]: %s folder._count_messages(%s)' % (self.name, self.folderID)
+        return 0
+
+    def _count_zero(self):
+        return 0
 
 class TableObject(BackendObject):
 
@@ -126,21 +144,5 @@ class TableObject(BackendObject):
         print '[PYTHON]: %s table.__init__()' % (self.name)
         self.folder = folder
         self.tableType = tableType
-
         return
 
-    def get_count(self):
-        print '[PYTHON]: %s table.get_count()' % (self.name)
-
-        counters = {1 : self.folder.count_folders,
-                    2 : self.get_count_zero,
-                    3 : self.get_count_zero,
-                    4 : self.get_count_zero,
-                    5 : self.get_count_zero,
-                    6 : self.get_count_zero,
-                }
-
-        return counters[self.tableType]()
-
-    def get_count_zero(self):
-        return 0

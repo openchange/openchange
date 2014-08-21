@@ -961,6 +961,59 @@ static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
 }
 
 /**
+   \details Retrieve the number of children object of a given type
+   within a folder
+
+   \param folder_object the mapistore python object
+   \param table_type the type of children object to lookup
+   \param row_count pointer on the number of children objects to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_get_child_count(void *folder_object,
+								    enum mapistore_table_type table_type,
+								    uint32_t *row_count)
+{
+	struct mapistore_python_object	*pyobj;
+	PyObject			*folder;
+	PyObject			*pres;
+	uint32_t			count = 0;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!row_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call open_table function */
+	pres = PyObject_CallMethod(folder, "get_child_count", "H", table_type);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	count = PyLong_AsLong(pres);
+	*row_count = count;
+
+	Py_DECREF(pres);
+	return MAPISTORE_SUCCESS;
+}
+
+/**
    \details Create a table object
 
    \param mem_ctx pointer to the memory context
@@ -1190,7 +1243,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
 	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
-	/* backend.folder.get_child_count = mapistore_python_folder_get_child_count; */
+	backend.folder.get_child_count = mapistore_python_folder_get_child_count;
 	backend.folder.open_table = mapistore_python_folder_open_table;
 #if 0
 	backend.folder.modify_permissions = mapistore_python_folder_modify_permissions;

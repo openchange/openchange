@@ -177,3 +177,27 @@ class MessageObject(BackendObject):
         self.mid = mid
         self.rw = rw
         return
+
+    def get_message_data(self):
+        print '[PYTHON]: %s message.get_message_data()' % (self.name)
+        DummyMessage = {}
+
+        # Common fields
+        DummyMessage["PidTagSubjectPrefix"] = "Re:"
+        DummyMessage["PidTagSubject"] = "Dummy Sample Email"
+        DummyMessage["PidTagNormalizedSubject"] = DummyMessage["PidTagSubject"]
+        DummyMessage["PidTagConversationTopic"] = DummyMessage["PidTagSubject"]
+        DummyMessage["PidTagBody"] = u"This is the content of this sample email"
+        DummyMessage["PidTagInstanceNum"] = 0
+
+        # Recipients
+        DummyTo = {}
+        DummyTo["PidTagRecipientType"] = 0x1
+        DummyTo["PidTagSmtpAddress"] = "dummy@openchange.org"
+        DummyTo["PidTagRecipientDisplayName"] = "Dummy User"
+        DummyTo["PidTagSentRepresentingName"] = "Dummy User"
+        DummyTo["PidTagDisplayTo"] = "dummy@openchange.org"
+
+        recipients = [DummyTo,]
+
+        return (recipients, DummyMessage)

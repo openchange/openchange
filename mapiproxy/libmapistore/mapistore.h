@@ -205,7 +205,7 @@ struct mapistore_backend {
 
         /** oxcmsg operations */
         struct {
-		enum mapistore_error	(*get_message_data)(void *, TALLOC_CTX *, struct mapistore_message **);
+		enum mapistore_error	(*get_message_data)(TALLOC_CTX *, void *, struct mapistore_message **);
 		enum mapistore_error	(*modify_recipients)(void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
                 enum mapistore_error	(*set_read_flag)(void *, uint8_t);
 		enum mapistore_error	(*save)(void *, TALLOC_CTX *);

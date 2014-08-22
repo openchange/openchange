@@ -456,6 +456,46 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* get_message_data */
+	{
+		struct mapistore_message	*msg_data;
+		uint32_t			i;
+		uint32_t			j;
+		struct SPropValue		lpProp;
+
+		retval = mapistore_message_get_message_data(mstore_ctx, context_id,
+							    message_object, mem_ctx,
+							    &msg_data);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_message_get_message_data: %s\n",
+				  mapistore_errstr(retval)));
+		}
+
+		DEBUG(0, ("Message properties:\n"));
+		DEBUG(0, (". subject_prefix     = %s\n",
+			  msg_data->subject_prefix ? msg_data->subject_prefix : "Nan"));
+		DEBUG(0, (". normalized_subject = %s\n",
+			  msg_data->normalized_subject ? msg_data->normalized_subject : "Nan"));
+		DEBUG(0, ("Recipients: (count=%d)\n", msg_data->recipients_count));
+		DEBUG(0, ("---- recipient columns ----\n"));
+		mapidump_SPropTagArray(msg_data->columns);
+		DEBUG(0, ("---------------------------\n"));
+
+		for (i = 0; i < msg_data->recipients_count; i++) {
+			DEBUG(0, (". [%d] type     = %d\n", i, msg_data->recipients[i].type));
+			DEBUG(0, (". [%d] username = %s\n", i,
+				  msg_data->recipients[i].username ? msg_data->recipients[i].username : "Nan"));
+
+			for (j = 0; j < msg_data->columns->cValues; j++) {
+				lpProp.ulPropTag = msg_data->columns->aulPropTag[j];
+				lpProp.dwAlignPad = 0;
+				set_SPropValue(&lpProp, msg_data->recipients[i].data[j]);
+				mapidump_SPropValue(lpProp, "\t.");
+			}
+
+		}
+	}
+
 	retval = mapistore_del_context(mstore_ctx, context_id);
 
 	retval = mapistore_release(mstore_ctx);

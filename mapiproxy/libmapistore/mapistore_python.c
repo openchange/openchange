@@ -1300,6 +1300,418 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 
 
 /**
+   \details Retrieve message general data and recipients
+
+   \param mem_ctx pointer to the memory context
+   \param message_object pointer to the message object
+   \param message_data pointer on pointer to the message data to return
+
+   \note the function is responsible for allocating message_data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX *mem_ctx,
+								      void *message_object,
+								      struct mapistore_message **message_data)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_message	*msgdata;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject			*rlist;
+	PyObject			*rdict;
+	PyObject			*dict;
+	PyObject			*ret;
+	PyObject			*key;
+	PyObject			*item;
+	uint32_t			i;
+	uint32_t			count;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!message_data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call get_message_data function */
+	pres = PyObject_CallMethod(message, "get_message_data", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in get_message_data\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve list of recipients (item 0 of the tuple) */
+	rlist = PyTuple_GetItem(pres, 0);
+	if (rlist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (PyList_Check(rlist) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: list expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, rlist->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve message properties (item 1 of the tuple) */
+	rdict = PyTuple_GetItem(pres, 1);
+	if (rdict == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (PyDict_Check(rdict) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, rdict->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Process message data */
+	msgdata = talloc_zero(mem_ctx, struct mapistore_message);
+	MAPISTORE_RETVAL_IF(!msgdata, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Message data */
+	ret = PyDict_GetItemString(rdict, "PidTagSubjectPrefix");
+	if (ret != NULL) {
+		if (PyString_Check(ret) == false) {
+			DEBUG(0, ("[ERR][%s][%s]: string expected to be returned but got '%s'\n",
+				  pyobj->name, __location__, ret->ob_type->tp_name));
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		msgdata->subject_prefix = talloc_strdup(mem_ctx, PyString_AsString(ret));
+		MAPISTORE_RETVAL_IF(!msgdata->subject_prefix, MAPISTORE_ERR_NO_MEMORY, msgdata);
+	} else {
+		msgdata->subject_prefix = NULL;
+	}
+
+	ret = PyDict_GetItemString(rdict, "PidTagNormalizedSubject");
+	if (ret != NULL) {
+		if (PyString_Check(ret) != true) {
+			DEBUG(0, ("[ERR][%s][%s]: string expected to be returned but got '%s'\n",
+				  pyobj->name, __location__, ret->ob_type->tp_name));
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		msgdata->normalized_subject = talloc_strdup(mem_ctx, PyString_AsString(ret));
+		MAPISTORE_RETVAL_IF(!msgdata->normalized_subject, MAPISTORE_ERR_NO_MEMORY, msgdata);
+	} else {
+		msgdata->normalized_subject = NULL;
+	}
+
+	/* Message recipients */
+	msgdata->columns = NULL;
+	msgdata->recipients = NULL;
+
+	msgdata->recipients_count = PyList_Size(rlist);
+	if (msgdata->recipients_count) {
+		msgdata->columns = set_SPropTagArray(msgdata, 0x8,
+						     PidTagObjectType,
+						     PidTagDisplayType,
+						     PidTagSmtpAddress,
+						     PidTagSendInternetEncoding,
+						     PidTagRecipientDisplayName,
+						     PidTagRecipientFlags,
+						     PidTagRecipientEntryId,
+						     PidTagRecipientTrackStatus);
+		msgdata->recipients = talloc_array(msgdata, struct mapistore_message_recipient,
+						   msgdata->recipients_count);
+	} else {
+		msgdata->columns = NULL;
+		msgdata->recipients = NULL;
+	}
+
+	for (i = 0; i < msgdata->recipients_count; i++) {
+		msgdata->recipients[i].username = NULL;
+
+		dict = PyList_GetItem(rlist, i);
+		if (dict == NULL) {
+			DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed ",
+				  pyobj->name, __location__));
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+
+		if (PyDict_Check(dict) != true) {
+			DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+				  pyobj->name, __location__, dict->ob_type->tp_name));
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+
+		/* Retrieve ulRecipClass - PidTagRecipientType */
+		key = PyString_FromString("PidTagRecipientType");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing PidTagRecipientType property for recipient %d\n",
+				  pyobj->name, __location__, i));
+			Py_DECREF(pres);
+			Py_DECREF(key);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			DEBUG(0, ("[ERR][%s][%s]: PyDict_GetItem failed\n", pyobj->name,
+				  __location__));
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		msgdata->recipients[i].type = PyLong_AsLong(item);
+		if ((msgdata->recipients[i].type < MAPI_ORIG) &&
+		    (msgdata->recipients[i].type > MAPI_BCC)) {
+			DEBUG(0, ("[ERR][%s][%s]: Overflow error: %d\n",
+				  pyobj->name, __location__, msgdata->recipients[i].type));
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+
+		/* Recipient properties */
+		msgdata->recipients[i].data = talloc_array(msgdata, void *, msgdata->columns->cValues);
+		memset(msgdata->recipients[i].data, 0, msgdata->columns->cValues * sizeof (void *));
+		count = 0;
+
+		/* PidTagObjectType */
+		key = PyString_FromString("PidTagObjectType");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = talloc_zero(msgdata->recipients[i].data, uint32_t);
+			*((uint32_t *)(msgdata->recipients[i].data[count])) = MAPI_MAILUSER;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagObjectType, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagObjectType\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagDisplayType */
+		key = PyString_FromString("PidTagDisplayType");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = talloc_zero(msgdata->recipients[i].data, uint32_t);
+			*((uint32_t *)(msgdata->recipients[i].data[count])) = 0;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagDisplayType, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagDisplayType\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagSmtpAddress */
+		key = PyString_FromString("PidTagSmtpAddress");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = NULL;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagSmtpAddress, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagSmtpAddress\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagSendInternetEncoding */
+		key = PyString_FromString("PidTagSendInternetEncoding");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = talloc_zero(msgdata->recipients[i].data, uint32_t);
+			*((uint32_t *)(msgdata->recipients[i].data[count])) = 0x00060000;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagSendInternetEncoding, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagSendInternetEncoding\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagRecipientDisplayName */
+		key = PyString_FromString("PidTagRecipientDisplayName");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = NULL;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagRecipientDisplayName, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagRecipientDisplayName\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagRecipientFlags */
+		key = PyString_FromString("PidTagRecipientFlags");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = talloc_zero(msgdata->recipients[i].data, uint32_t);
+			*((uint32_t *)(msgdata->recipients[i].data[count])) = 0x01;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagRecipientFlags, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagRecipientFlags\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagRecipientEntryId */
+		key = PyString_FromString("PidTagRecipientEntryId");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = NULL;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagRecipientEntryId, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagRecipientEntryId\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+
+		/* PidTagRecipientTrackStatus */
+		key = PyString_FromString("PidTagRecipientTrackStatus");
+		if (key == NULL) {
+			PyErr_Print();
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+		item = PyDict_GetItem(dict,key);
+		Py_DECREF(key);
+		if (item == NULL) {
+			msgdata->recipients[i].data[count] = talloc_zero(msgdata->recipients[i].data, uint32_t);
+			*((uint32_t *)(msgdata->recipients[i].data[count])) = 0;
+		} else {
+			retval = mapistore_data_from_pyobject(msgdata->recipients[i].data,
+							      PidTagRecipientTrackStatus, item,
+							      &msgdata->recipients[i].data[count]);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve PidTagRecipientTrackStatus\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		}
+		count++;
+	}
+	Py_DECREF(pres);
+
+	*message_data = msgdata;
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Set columns on specified table
 
    \param table the table object to set properties on
@@ -1662,16 +2074,14 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.folder.modify_permissions = mapistore_python_folder_modify_permissions; */
 
 	/* message */
-#if 0
 	backend.message.get_message_data = mapistore_python_message_get_message_data;
-	backend.message.modify_recipients = mapistore_python_message_modify_recipients;
-	backend.message.set_read_flag = mapistore_python_message_set_read_flag;
-	backend.message.save = mapistore_python_message_save;
-	backend.message.submit = mapistore_python_message_submit;
-	backend.message.open_attachment = mapistore_python_message_open_attachment;
-	backend.message.create_attachment = mapistore_python_message_create_attachment;
-	backend.message.open_embedded_message = mapistore_python_message_open_embedded_message;
-#endif
+	/* backend.message.modify_recipients = mapistore_python_message_modify_recipients; */
+	/* backend.message.set_read_flag = mapistore_python_message_set_read_flag; */
+	/* backend.message.save = mapistore_python_message_save; */
+	/* backend.message.submit = mapistore_python_message_submit; */
+	/* backend.message.open_attachment = mapistore_python_message_open_attachment; */
+	/* backend.message.create_attachment = mapistore_python_message_create_attachment; */
+	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */
 
 	/* table */
 	/* backend.table.get_available_properties = mapistore_python_table_get_available_properties; */

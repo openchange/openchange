@@ -225,7 +225,7 @@ struct mapistore_backend {
                 enum mapistore_error	(*set_columns)(void *, uint16_t, enum MAPITAGS *);
                 enum mapistore_error	(*set_restrictions)(void *, struct mapi_SRestriction *, uint8_t *);
                 enum mapistore_error	(*set_sort_order)(void *, struct SSortOrderSet *, uint8_t *);
-                enum mapistore_error	(*get_row)(void *, TALLOC_CTX *, enum mapistore_query_type, uint32_t, struct mapistore_property_data **);
+                enum mapistore_error	(*get_row)(TALLOC_CTX *, void *, enum mapistore_query_type, uint32_t, struct mapistore_property_data **);
                 enum mapistore_error	(*get_row_count)(void *, enum mapistore_query_type, uint32_t *);
 		enum mapistore_error	(*handle_destructor)(void *, uint32_t);
         } table;

@@ -759,7 +759,7 @@ enum mapistore_error mapistore_backend_table_get_row(struct backend_context *bct
 						     enum mapistore_query_type query_type, uint32_t rowid,
 						     struct mapistore_property_data **data)
 {
-        return bctx->backend->table.get_row(table, mem_ctx, query_type, rowid, data);
+        return bctx->backend->table.get_row(mem_ctx, table, query_type, rowid, data);
 }
 
 enum mapistore_error mapistore_backend_table_get_row_count(struct backend_context *bctx, void *table, enum mapistore_query_type query_type, uint32_t *row_countp)

@@ -108,7 +108,10 @@ class FolderObject(ContextObject):
 
     def delete(self):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
-        del self.mapping[self.folderID]
+        if self.folderID in self.mapping:
+            del self.mapping[self.folderID]
+        else:
+            return 17
         return 0
 
     def open_table(self, table_type):
@@ -152,3 +155,13 @@ class TableObject(BackendObject):
         self.properties = properties
         print 'properties: [%s]\n' % ', '.join(map(str, properties))
         return 0
+
+    def get_row(self, rowId, query_type):
+        print '[PYTHON]: %s table.get_row()' % (self.name)
+
+        fake = {}
+        fake["PidTagDisplayName"] = "FakeName%d" % rowId
+        fake["PidTagFolderId"] = 1
+        fake["PidTagSubject"] = "Very cool subject"
+        fake["PidTagComment"] = "This is a small comment"
+        return (self.properties, fake)

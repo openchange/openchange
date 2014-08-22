@@ -72,6 +72,109 @@ static enum mapistore_error mapistore_set_pypath(char *path)
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Convert Pyobject into C type and cast it to void
+
+   \param mem_ctx pointer to the memory context
+   \param proptag the property tag to lookup
+   \param value the PyObject value to map to C type
+   \param data pointer on pointer to the mapped value to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise
+   MAPISTORE_ERR_NOT_FOUND
+ */
+static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
+							 uint32_t proptag,
+							 PyObject *value,
+							 void **data)
+{
+	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
+	int			l;
+	char			*str;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!proptag, MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NOT_FOUND, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+	switch (proptag & 0xFFFF) {
+		case PT_I2:
+			DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
+			break;
+		case PT_LONG:
+			l = PyLong_AsLong(value);
+			MAPISTORE_RETVAL_IF(l == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+			*data = (void *)&l;
+			retval = MAPISTORE_SUCCESS;
+			break;
+		case PT_DOUBLE:
+			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
+			break;
+		case PT_BOOLEAN:
+			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
+			break;
+		case PT_I8:
+			DEBUG(5, ("[WARN][%s]: PT_I8 case not implemented\n", __location__));
+			break;
+		case PT_STRING8:
+		case PT_UNICODE:
+			str = PyString_AsString(value);
+			MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_NOT_FOUND, NULL);
+
+			*data = (void *)talloc_strdup(mem_ctx, str);
+			MAPISTORE_RETVAL_IF(!*data, MAPISTORE_ERR_NOT_FOUND, NULL);
+			retval = MAPISTORE_SUCCESS;
+			break;
+		case PT_SYSTIME:
+			DEBUG(5, ("[WARN][%s]: PT_SYSTIME case not implemented\n", __location__));
+			break;
+		case PT_CLSID:
+			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
+			break;
+		case PT_SVREID:
+			DEBUG(5, ("[WARN][%s]: PT_SRVEID case not implemented\n", __location__));
+			break;
+		case PT_BINARY:
+			DEBUG(5, ("[WARN][%s]: PT_BINARY case not implemented\n", __location__));
+			break;
+		case PT_MV_SHORT:
+			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
+			break;
+		case PT_MV_LONG:
+			DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
+			break;
+		case PT_MV_I8:
+			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
+			break;
+		case PT_MV_STRING8:
+			DEBUG(5, ("[WARN][%s]: PT_MV_STRING8 case not implemented\n", __location__));
+			break;
+		case PT_MV_UNICODE:
+			DEBUG(5, ("[WARN][%s]: PT_MV_UNICODE case not implemented\n", __location__));
+			break;
+		case PT_MV_SYSTIME:
+			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
+			break;
+		case PT_MV_CLSID:
+			DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
+			break;
+		case PT_MV_BINARY:
+			DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
+			break;
+		case PT_NULL:
+			DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
+			break;
+		case PT_OBJECT:
+			DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
+			break;
+		default:
+			DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__,
+				  (proptag & 0xFFFF)));
+			break;
+		}
+
+	return retval;
+}
 
 static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 {
@@ -1206,6 +1309,168 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 
 
 /**
+   \details Retrieve a particular row from a table
+
+   \param mem_ctx pointer to the memory context
+   \param table_object the table object to retrieve row from
+   \param query_type the query type
+   \param row_id the index of the row to return
+   \param data pointer on pointer to the data to return
+
+   \note data parameter must be allocated by the caller and sized to
+   the correct number of columns
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
+							   void *table_object,
+							   enum mapistore_query_type query_type,
+							   uint32_t row_id,
+							   struct mapistore_property_data **data)
+{
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_property_data	*propdata;
+	PyObject			*table;
+	PyObject			*pres;
+	PyObject			*pydict;
+	PyObject			*pylist;
+	PyObject			*item;
+	/* PyObject			*key; */
+	PyObject			*value;
+	char				*sproptag;
+	int				proptag = 0;
+	/* Py_ssize_t			pos = 0; */
+	uint32_t			count = 0;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the table object */
+	pyobj = (struct mapistore_python_object *) table_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	table = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!table, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call get_row method */
+	pres = PyObject_CallMethod(table, "get_row", "kH", row_id, query_type);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned but fot '%s'\n",
+			  pyobj->name, __location__, pres->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve properties list (item 0 of the tuple) */
+	pylist = PyTuple_GetItem(pres, 0);
+	if (pylist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (PyList_Check(pylist) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: list expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, pylist->ob_type->tp_name));
+		Py_DECREF(pylist);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve dictionary of properties (item 1 of the tuple) */
+	pydict = PyTuple_GetItem(pres, 1);
+	if (pydict == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pylist);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (PyDict_Check(pydict) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, pydict->ob_type->tp_name));
+		Py_DECREF(pylist);
+		Py_DECREF(pydict);
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Map row data */
+	propdata = *data;
+	for (count = 0; count < PyList_Size(pylist); count++) {
+		item = PyList_GetItem(pylist, count);
+		if (PyString_Check(item)) {
+			sproptag = PyString_AsString(item);
+			if (strcasestr(sproptag, "0x")) {
+				proptag = strtoul(sproptag, NULL, 16);
+			} else {
+				proptag = openchangedb_property_get_tag(sproptag);
+				if (proptag == 0xFFFFFFFF) {
+					proptag = strtoul(sproptag, NULL, 16);
+				}
+			}
+		} else if (PyLong_Check(item)) {
+			proptag = PyLong_AsLong(item);
+			if (proptag == -1) {
+				DEBUG(0, ("[ERR][%s][%s]: dict key is neither a string or int\n",
+					  pyobj->name, __location__));
+				Py_DECREF(item);
+				Py_DECREF(pydict);
+				Py_DECREF(pylist);
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
+		} else {
+			DEBUG(0, ("[ERR][%s][%s]: dict key is neither a string or int\n",
+				  pyobj->name, __location__));
+			Py_DECREF(item);
+			Py_DECREF(pydict);
+			Py_DECREF(pylist);
+			Py_DECREF(pres);
+			return MAPISTORE_ERR_CONTEXT_FAILED;
+		}
+
+		value = PyDict_GetItem(pydict, item);
+		if (value == NULL) {
+			propdata[count].error = MAPISTORE_ERR_NOT_FOUND;
+			propdata[count].data = NULL;
+		} else {
+			/* Map dict data to void * */
+			propdata[count].error = mapistore_data_from_pyobject(mem_ctx, proptag,
+									     value, &(propdata[count].data));
+			if (propdata[count].error != MAPISTORE_SUCCESS) {
+				propdata[count].data = NULL;
+			}
+		}
+	}
+
+	*data = propdata;
+
+	Py_DECREF(pres);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -1343,7 +1608,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.table.set_columns = mapistore_python_table_set_columns;
 	/* backend.table.set_restrictions = mapistore_python_table_set_restrictions; */
 	/* backend.table.set_sort_order = mapistore_python_table_set_sort_order; */
-	/* backend.table.get_row = mapistore_python_table_get_row; */
+	backend.table.get_row = mapistore_python_table_get_row;
 	/* backend.table.get_row_count = mapistore_python_table_get_row_count; */
 	/* backend.table.handle_destructor = mapistore_python_table_handle_destructor; */
 

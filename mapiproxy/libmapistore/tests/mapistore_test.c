@@ -107,6 +107,8 @@ int main(int argc, const char *argv[])
 	void				*child_folder_object;
 	void				*subfold;
 	void				*table_object;
+	struct SPropTagArray		*SPropTagArray;
+
 
 	enum { OPT_DEBUG=1000, OPT_USERNAME, OPT_URI };
 
@@ -266,18 +268,16 @@ int main(int argc, const char *argv[])
 	}
 
 	/* delete folder */
-	{
-		struct backend_context *backend_ctx;
+	retval = mapistore_folder_delete(mstore_ctx, context_id, subfold, 0);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
+		exit (1);
+	}
 
-		backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-		if (!backend_ctx || !backend_ctx->indexing) {
-			DEBUG(0, ("Invalid backend_ctx\n"));
-			exit (1);
-		}
-		retval = mapistore_backend_folder_delete(backend_ctx, subfold);
-		if (retval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("mapistore_backend_folder_delete: %s\n", mapistore_errstr(retval)));
-		}
+	retval = mapistore_folder_delete(mstore_ctx, context_id, subfold, 0);
+	if (retval != MAPISTORE_ERR_NOT_FOUND) {
+		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
+		exit (1);
 	}
 
 	/* get_child_count */
@@ -315,8 +315,6 @@ int main(int argc, const char *argv[])
 
 	/* set columns */
 	{
-		struct SPropTagArray	*SPropTagArray;
-
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 						  PR_DISPLAY_NAME_UNICODE,
 						  PR_FID,
@@ -331,6 +329,36 @@ int main(int argc, const char *argv[])
 			DEBUG(0, ("mapistore_table_set_columns: %s\n", mapistore_errstr(retval)));
 			exit (1);
 		}
+	}
+
+	/* get_row */
+	{
+		struct mapistore_property_data	*row_data;
+		uint32_t			i;
+
+		row_data = talloc_array(mem_ctx, struct mapistore_property_data, 6);
+		retval = mapistore_table_get_row(mstore_ctx, context_id, table_object,
+						 mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0,
+						 &row_data);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_table_get_row: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+
+		for (i = 0; i < SPropTagArray->cValues; i++) {
+			if (row_data[i].error != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("0x%x: MAPI_E_NOT_FOUND\n", SPropTagArray->aulPropTag[i]));
+			} else {
+				struct SPropValue lpProp;
+
+				lpProp.ulPropTag = SPropTagArray->aulPropTag[i];
+				lpProp.dwAlignPad = 0;
+				set_SPropValue(&lpProp, row_data[i].data);
+				mapidump_SPropValue(lpProp, NULL);
+			}
+		}
+
+		talloc_free(row_data);
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

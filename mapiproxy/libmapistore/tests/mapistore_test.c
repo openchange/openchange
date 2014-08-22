@@ -107,6 +107,7 @@ int main(int argc, const char *argv[])
 	void				*child_folder_object;
 	void				*subfold;
 	void				*table_object;
+	void				*message_object;
 	struct SPropTagArray		*SPropTagArray;
 
 
@@ -359,6 +360,16 @@ int main(int argc, const char *argv[])
 		}
 
 		talloc_free(row_data);
+	}
+
+	/* open_message */
+	{
+		retval = mapistore_folder_open_message(mstore_ctx, context_id, subfold, mem_ctx,
+						       0xdead0001, 0, &message_object);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_open_message: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

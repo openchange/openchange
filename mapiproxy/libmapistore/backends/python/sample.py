@@ -141,6 +141,9 @@ class FolderObject(ContextObject):
     def _count_zero(self):
         return 0
 
+    def open_message(self, mid, rw):
+        return MessageObject(self, mid, rw)
+
 class TableObject(BackendObject):
 
     def __init__(self, folder, tableType):
@@ -165,3 +168,12 @@ class TableObject(BackendObject):
         fake["PidTagSubject"] = "Very cool subject"
         fake["PidTagComment"] = "This is a small comment"
         return (self.properties, fake)
+
+class MessageObject(BackendObject):
+
+    def __init__(self, folder, mid, rw):
+        print '[PYTHON]: %s message.__init__()' % (self.name)
+        self.folder = folder
+        self.mid = mid
+        self.rw = rw
+        return

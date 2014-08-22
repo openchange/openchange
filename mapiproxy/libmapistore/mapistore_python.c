@@ -1063,6 +1063,76 @@ static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Open a message
+
+   \param mem_ctx pointer to the memory context
+   \param folder_object pointer to the parent folder object
+   \param mid the message identifier
+   \param read_write boolean value to control opening capabilities
+   \param message_object pointer on pointer to the message object to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem_ctx,
+								 void *folder_object,
+								 uint64_t mid,
+								 bool read_write,
+								 void **message_object)
+{
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pymsg;
+	PyObject			*folder;
+	PyObject			*msg;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call open_message function */
+	msg = PyObject_CallMethod(folder, "open_message", "Kb", mid, read_write);
+	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	if (strcmp("MessageObject", msg->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected MessageObject but got '%s'\n", pyobj->name,
+			  __location__, msg->ob_type->tp_name));
+		Py_DECREF(msg);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	pymsg = talloc_zero(mem_ctx, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pymsg, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pymsg->obj_type = MAPISTORE_PYTHON_OBJECT_MESSAGE;
+	pymsg->name = talloc_strdup(pymsg, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pymsg->name, MAPISTORE_ERR_NO_MEMORY, NULL);
+	pymsg->conn = pyobj->conn;
+	pymsg->ictx = pyobj->ictx;
+	pymsg->module = pyobj->module;
+	pymsg->private_object = msg;
+	*message_object = pymsg;
+
+	Py_INCREF(msg);
+	return MAPISTORE_SUCCESS;
+
+}
+
+
 /**
    \details Retrieve the number of children object of a given type
    within a folder
@@ -1582,7 +1652,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.open_folder = mapistore_python_folder_open_folder;
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
 	backend.folder.delete = mapistore_python_folder_delete;
-	/* backend.folder.open_message = mapistore_python_folder_open_message; */
+	backend.folder.open_message = mapistore_python_folder_open_message;
 	/* backend.folder.create_message = mapistore_python_folder_create_message; */
 	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
 	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */

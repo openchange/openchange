@@ -189,7 +189,7 @@ struct mapistore_backend {
 		enum mapistore_error	(*open_folder)(TALLOC_CTX *, void *, uint64_t, void **);
 		enum mapistore_error	(*create_folder)(TALLOC_CTX *, void *, uint64_t, struct SRow *, void **);
 		enum mapistore_error	(*delete)(void *);
-		enum mapistore_error	(*open_message)(void *, TALLOC_CTX *, uint64_t, bool, void **);
+		enum mapistore_error	(*open_message)(TALLOC_CTX *, void *, uint64_t, bool, void **);
 		enum mapistore_error	(*create_message)(void *, TALLOC_CTX *, uint64_t, uint8_t, void **);
 		enum mapistore_error	(*delete_message)(void *, uint64_t, uint8_t);
 		enum mapistore_error	(*move_copy_messages)(void *, void *, TALLOC_CTX *, uint32_t, uint64_t *, uint64_t *, struct Binary_r **, uint8_t);

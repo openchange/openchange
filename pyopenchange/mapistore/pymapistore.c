@@ -99,7 +99,6 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	struct loadparm_context		*lp_ctx;
 	PyMAPIStoreObject		*msobj;
 	bool				ret;
-	enum mapistore_error		retval;
 	char				*kwnames[] = { "syspath", NULL };
 	const char			*syspath = NULL;
 

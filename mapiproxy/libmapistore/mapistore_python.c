@@ -878,7 +878,7 @@ static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_
 
 	pyfold->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
 	pyfold->name = talloc_strdup(pyfold, pyobj->name);
-	MAPISTORE_RETVAL_IF(!pyfold, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!pyfold->name, MAPISTORE_ERR_NO_MEMORY, NULL);
 	pyfold->conn = pyobj->conn;
 	pyfold->ictx = pyobj->ictx;
 	pyfold->module = pyobj->module;

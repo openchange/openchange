@@ -1829,9 +1829,57 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 
 
 /**
+   \details Save message
+
+   \param mem_ctx pointer to the memory context
+   \param message_object pointer to the message object to save
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_save(TALLOC_CTX *mem_ctx,
+							  void *message_object)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*message;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call save function */
+	pres = PyObject_CallMethod(message, "save", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+
+/**
    \details Set columns on specified table
 
-   \param table the table object to set properties on
+   \param table_object the table object to set properties on
    \param count the number of properties in the list
    \param properties the list of properties to add to the table
 
@@ -2425,7 +2473,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.get_message_data = mapistore_python_message_get_message_data;
 	/* backend.message.modify_recipients = mapistore_python_message_modify_recipients; */
 	/* backend.message.set_read_flag = mapistore_python_message_set_read_flag; */
-	/* backend.message.save = mapistore_python_message_save; */
+	backend.message.save = mapistore_python_message_save;
 	/* backend.message.submit = mapistore_python_message_submit; */
 	/* backend.message.open_attachment = mapistore_python_message_open_attachment; */
 	/* backend.message.create_attachment = mapistore_python_message_create_attachment; */

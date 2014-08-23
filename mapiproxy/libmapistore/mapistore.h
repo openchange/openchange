@@ -208,7 +208,7 @@ struct mapistore_backend {
 		enum mapistore_error	(*get_message_data)(TALLOC_CTX *, void *, struct mapistore_message **);
 		enum mapistore_error	(*modify_recipients)(void *, struct SPropTagArray *, uint16_t, struct mapistore_message_recipient *);
                 enum mapistore_error	(*set_read_flag)(void *, uint8_t);
-		enum mapistore_error	(*save)(void *, TALLOC_CTX *);
+		enum mapistore_error	(*save)(TALLOC_CTX *, void *);
 		enum mapistore_error	(*submit)(void *, enum SubmitFlags);
                 enum mapistore_error	(*open_attachment)(void *, TALLOC_CTX *, uint32_t, void **);
                 enum mapistore_error	(*create_attachment)(void *, TALLOC_CTX *, void **, uint32_t *);

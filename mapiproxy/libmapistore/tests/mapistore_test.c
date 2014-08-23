@@ -601,13 +601,14 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	/* create_message / set_properties / savechangesmessage */
+	/* create_message / set_properties / child_count / savechangesmessage / child_count */
 	{
 		void			*newmsg_object;
 		struct SRow		aRow;
 		struct SPropValue	lpProps[2];
 		const char		*subject = "Sample subject for 0xdead0002";
 		const char		*body = "Hello world!";
+		uint32_t		count = 0;
 
 		DEBUG(0, ("*** mapistore_folder_create_message\n"));
 		retval = mapistore_folder_create_message(mstore_ctx, context_id,
@@ -634,6 +635,31 @@ int main(int argc, const char *argv[])
 				  mapistore_errstr(retval)));
 			goto end;
 		}
+
+		DEBUG(0, ("** mapistore_folder_get_child_count\n"));
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, child_folder_object,
+							  MAPISTORE_MESSAGE_TABLE, &count);
+
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
+		}
+		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
+
+		DEBUG(0, ("** mapistore_message_save\n"));
+		retval = mapistore_message_save(mstore_ctx, context_id, newmsg_object, mem_ctx);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_message_save: %s\n", mapistore_errstr(retval)));
+			goto end;
+		}
+
+		DEBUG(0, ("** mapistore_folder_get_child_count\n"));
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, child_folder_object,
+							  MAPISTORE_MESSAGE_TABLE, &count);
+
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
+		}
+		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
 	}
 
 	/* Test Folder Create/Delete */

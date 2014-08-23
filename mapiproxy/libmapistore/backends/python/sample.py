@@ -303,3 +303,13 @@ class MessageObject(BackendObject):
 
         print self.message["cache"]
         return 0
+
+    def save(self):
+        print '[PYTHON]: %s message.save()' % (self.name)
+
+        for item in self.folder.basedict["cache"]["messages"]:
+            if str(item["mid"]) == str(self.mid):
+                self.folder.basedict["messages"].append(item)
+                self.folder.basedict["cache"]["messages"].remove(item)
+                return 0
+        return 17

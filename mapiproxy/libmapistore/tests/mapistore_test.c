@@ -178,6 +178,8 @@ int main(int argc, const char *argv[])
 	void				*subfold;
 	void				*table_object;
 	void				*message_object;
+	uint32_t			i;
+	uint32_t			j;
 	struct SPropTagArray		*SPropTagArray;
 
 
@@ -459,8 +461,6 @@ int main(int argc, const char *argv[])
 	/* get_message_data */
 	{
 		struct mapistore_message	*msg_data;
-		uint32_t			i;
-		uint32_t			j;
 		struct SPropValue		lpProp;
 
 		retval = mapistore_message_get_message_data(mstore_ctx, context_id,

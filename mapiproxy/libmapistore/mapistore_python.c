@@ -1952,6 +1952,64 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details Retrieve the number of rows in this table view
+
+   \param table_object pointer to the mapistore table object
+   \param query_type the type of query
+   \param row_count pointer on the number of row to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_table_get_row_count(void *table_object,
+							   enum mapistore_query_type query_type,
+								 uint32_t *row_count)
+{
+	struct mapistore_python_object	*pyobj;
+	PyObject			*table;
+	PyObject			*pres;
+	int				count = 0;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!row_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the table object */
+	pyobj = (struct mapistore_python_object *) table_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	table = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!table, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call get_row method */
+	pres = PyObject_CallMethod(table, "get_row_count", "H", query_type);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	count = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+	if (count == -1) {
+		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	*row_count = count;
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Retrieve set of properties on a given object
 
    \param mem_ctx pointer to the memory context
@@ -2204,7 +2262,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.table.set_restrictions = mapistore_python_table_set_restrictions; */
 	/* backend.table.set_sort_order = mapistore_python_table_set_sort_order; */
 	backend.table.get_row = mapistore_python_table_get_row;
-	/* backend.table.get_row_count = mapistore_python_table_get_row_count; */
+	backend.table.get_row_count = mapistore_python_table_get_row_count;
 	/* backend.table.handle_destructor = mapistore_python_table_handle_destructor; */
 
 	/* properties */

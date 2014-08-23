@@ -448,6 +448,20 @@ int main(int argc, const char *argv[])
 		talloc_free(row_data);
 	}
 
+	/* get_row_count */
+	{
+		uint32_t	row_count = 0;
+
+		retval = mapistore_table_get_row_count(mstore_ctx, context_id, table_object,
+						       MAPISTORE_PREFILTERED_QUERY,
+						       &row_count);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_table_get_row_count: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+		DEBUG(0, ("get_row_count: row_count = %d\n", row_count));
+	}
+
 	/* open_message */
 	{
 		retval = mapistore_folder_open_message(mstore_ctx, context_id, subfold, mem_ctx,

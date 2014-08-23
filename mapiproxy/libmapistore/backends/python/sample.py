@@ -170,6 +170,10 @@ class TableObject(BackendObject):
         fake["PidTagComment"] = "This is a small comment"
         return (self.properties, fake)
 
+    def get_row_count(self, query_type):
+        print '[PYTHON]: %s table.get_row_count()' % (self.name)
+        return self.folder.get_child_count(self.tableType)
+
 class MessageObject(BackendObject):
 
     def __init__(self, folder, mid, rw):

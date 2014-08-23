@@ -92,7 +92,7 @@ class FolderObject(ContextObject):
         return
 
     def open_folder(self, folderID):
-        print '[PYTHON]: %s folder.open_folder(%s)' % (self.name, folderID)
+        print '[PYTHON]: %s folder.open_folder(0x%x)' % (self.name, folderID)
 
         if folderID in self.mapping:
             print '[PYTHON]: folderID %s found\n' % (folderID)
@@ -131,11 +131,11 @@ class FolderObject(ContextObject):
         return counter[table_type]()
 
     def _count_folders(self):
-        print '[PYTHON][INTERNAL]: %s folder._count_folders(%s)' % (self.name, self.folderID)
+        print '[PYTHON][INTERNAL]: %s folder._count_folders(0x%x)' % (self.name, self.folderID)
         return 0
 
     def _count_messages(self):
-        print '[PYTHON][INTERNAL]: %s folder._count_messages(%s)' % (self.name, self.folderID)
+        print '[PYTHON][INTERNAL]: %s folder._count_messages(0x%x)' % (self.name, self.folderID)
         return 0
 
     def _count_zero(self):

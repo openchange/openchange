@@ -828,8 +828,8 @@ static enum mapistore_error mapistore_python_context_get_path(TALLOC_CTX *mem_ct
 	}
 
 	*mapistore_uri = talloc_strdup(mem_ctx, PyString_AsString(pres));
-
 	Py_DECREF(pres);
+	MAPISTORE_RETVAL_IF(!*mapistore_uri, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	return MAPISTORE_SUCCESS;
 }

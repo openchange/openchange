@@ -349,10 +349,12 @@ int main(int argc, const char *argv[])
 			DEBUG(0, ("mapistore_backend_get_path: %s\n", mapistore_errstr(retval)));
 			exit (1);
 		}
+		talloc_free(mapistore_URI);
 
 		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xbeefdead, &mapistore_URI);
 		if (retval == MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_get_path: error expected!\n"));
+			talloc_free(mapistore_URI);
 			exit (1);
 		}
 	}

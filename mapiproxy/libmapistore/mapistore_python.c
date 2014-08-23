@@ -784,6 +784,9 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
    \param mapistore_uri pointer on pointer to the MAPIStore URI to
    return
 
+   \note It is the responsibility of the caller to free the string
+   returned in mapistore_uri upon success
+
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 static enum mapistore_error mapistore_python_context_get_path(TALLOC_CTX *mem_ctx,
@@ -825,6 +828,7 @@ static enum mapistore_error mapistore_python_context_get_path(TALLOC_CTX *mem_ct
 	if (PyString_Check(pres) == false) {
 		DEBUG(0, ("[WARN][%s][%s]: Expected string but got '%s'\n", pyobj->name,
 			  __location__, pres->ob_type->tp_name));
+		Py_DECREF(pres);
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 

@@ -157,6 +157,65 @@ static uint64_t _find_first_child_folder(TALLOC_CTX *mem_ctx, struct mapistore_c
 }
 
 
+static enum mapistore_error _test_folder_crate_delete(TALLOC_CTX *mem_ctx, struct mapistore_context *mstore_ctx,
+						      uint32_t context_id, void *parent_folder)
+{
+	struct SRow 		*aRow;
+	void			*child_folder;
+	void			*child_subfold;
+	enum mapistore_error	retval;
+
+	aRow = talloc_array(mem_ctx, struct SRow, 1);
+	aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
+	aRow->cValues = 0;
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PidTagDisplayName, (void *)("FolderToCreate"));
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PidTagComment, (void *)("This is a good comment"));
+
+	retval = mapistore_folder_create_folder(mstore_ctx, context_id, parent_folder, NULL,
+						0x123456, aRow, &child_folder);
+	TALLOC_FREE(aRow);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
+		return retval;
+	}
+
+
+	/* folder creation */
+	aRow = talloc_array(mem_ctx, struct SRow, 1);
+	aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
+	aRow->cValues = 0;
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PidTagDisplayName, (void *)("FolderToCreate 2"));
+	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+				       PidTagComment, (void *)("This is a good comment 2"));
+
+	retval = mapistore_folder_create_folder(mstore_ctx, context_id, child_folder, NULL,
+						0x456789, aRow, &child_subfold);
+	TALLOC_FREE(aRow);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
+		return retval;
+	}
+
+	/* delete folder */
+	retval = mapistore_folder_delete(mstore_ctx, context_id, child_subfold, 0);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
+		return retval;
+	}
+
+	retval = mapistore_folder_delete(mstore_ctx, context_id, child_folder, 0);
+	if (retval != MAPISTORE_ERR_NOT_FOUND) {
+		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
+		return retval;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
 int main(int argc, const char *argv[])
 {
 	TALLOC_CTX			*mem_ctx;
@@ -175,7 +234,6 @@ int main(int argc, const char *argv[])
 	uint32_t			context_id = 0;
 	void				*folder_object;
 	void				*child_folder_object;
-	void				*subfold;
 	void				*table_object;
 	void				*message_object;
 	uint32_t			i;
@@ -312,73 +370,18 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
-	/* folder creation */
-	{
-		struct SRow *aRow;
-
-		aRow = talloc_array(mem_ctx, struct SRow, 1);
-		aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
-		aRow->cValues = 0;
-		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
-					       PidTagDisplayName, (void *)("FolderToCreate"));
-		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
-					       PidTagComment, (void *)("This is a good comment"));
-
-		retval = mapistore_folder_create_folder(mstore_ctx, context_id, folder_object, NULL,
-							0x123456, aRow, &child_folder_object);
-		if (retval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
-			exit (1);
-		}
-	}
-
-
-	/* folder creation */
-	{
-		struct SRow *aRow;
-
-		aRow = talloc_array(mem_ctx, struct SRow, 1);
-		aRow->lpProps = talloc_array(aRow, struct SPropValue, 1);
-		aRow->cValues = 0;
-		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
-					       PidTagDisplayName, (void *)("FolderToCreate 2"));
-		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
-					       PidTagComment, (void *)("This is a good comment 2"));
-
-		retval = mapistore_folder_create_folder(mstore_ctx, context_id,
-							child_folder_object, NULL, 0x456789, aRow,
-							&subfold);
-		if (retval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("mapistore_folder_create_folder: %s\n", mapistore_errstr(retval)));
-			exit (1);
-		}
-	}
-
-	/* delete folder */
-	retval = mapistore_folder_delete(mstore_ctx, context_id, subfold, 0);
-	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
-		exit (1);
-	}
-
-	retval = mapistore_folder_delete(mstore_ctx, context_id, subfold, 0);
-	if (retval != MAPISTORE_ERR_NOT_FOUND) {
-		DEBUG(0, ("mapistore_folder_delete: %s\n", mapistore_errstr(retval)));
-		exit (1);
-	}
-
 	/* get_child_count */
 	{
 		uint32_t	count = 0;
 
-		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, subfold,
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, child_folder_object,
 							  MAPISTORE_FOLDER_TABLE, &count);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
 		}
 		DEBUG(0, ("mapistore_folder_get_child_count: count = %d\n", count));
 
-		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, subfold,
+		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, child_folder_object,
 							  MAPISTORE_MESSAGE_TABLE, &count);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_get_child_count: %s\n", mapistore_errstr(retval)));
@@ -390,7 +393,7 @@ int main(int argc, const char *argv[])
 	{
 		uint32_t	count = 0;
 
-		retval = mapistore_folder_open_table(mstore_ctx, context_id, subfold,
+		retval = mapistore_folder_open_table(mstore_ctx, context_id, child_folder_object,
 						     mem_ctx, MAPISTORE_FOLDER_TABLE, 0,
 						     &table_object, &count);
 		if (retval != MAPISTORE_SUCCESS) {
@@ -464,7 +467,7 @@ int main(int argc, const char *argv[])
 
 	/* open_message */
 	{
-		retval = mapistore_folder_open_message(mstore_ctx, context_id, subfold, mem_ctx,
+		retval = mapistore_folder_open_message(mstore_ctx, context_id, child_folder_object, mem_ctx,
 						       0xdead0001, 0, &message_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_open_message: %s\n", mapistore_errstr(retval)));
@@ -547,6 +550,14 @@ int main(int argc, const char *argv[])
 
 		MAPIFreeBuffer(SPropTagArray);
 		talloc_free(property_data);
+	}
+
+
+	/* Test Folder Create/Delete */
+	retval = _test_folder_crate_delete(mem_ctx, mstore_ctx, context_id, folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		DEBUG(0, ("_test_folder_crate_delete: %s\n", mapistore_errstr(retval)));
+		exit (1);
 	}
 
 	retval = mapistore_del_context(mstore_ctx, context_id);

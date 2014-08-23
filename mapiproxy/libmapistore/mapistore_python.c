@@ -1776,6 +1776,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 
 	/* Call set_columns function */
 	pres = PyObject_CallMethod(table, "set_columns", "O", proplist);
+	Py_DECREF(proplist);
 	if (pres == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
 			  pyobj->name, __location__));

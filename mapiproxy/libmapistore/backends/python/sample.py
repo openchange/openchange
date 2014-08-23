@@ -75,7 +75,7 @@ class ContextObject(BackendObject):
         message1 = {}
         message1["Recipients"] = [DummyTo, ]
         message1["mid"] = 0xdead0001
-        message1["_tmp"] = {}
+        message1["cache"] = {}
         message1["properties"] = {}
         message1["properties"]["PidTagMessageId"] = message1["mid"]
         message1["properties"]["PidTagSubjectPrefix"] = "Re:"
@@ -93,6 +93,7 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
+        subfolder["cache"] = {}
         subfolder["subfolders"] = []
         subfolder["messages"] = [message1,]
 
@@ -100,6 +101,7 @@ class ContextObject(BackendObject):
         self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef"
         self.mapping[0xdeadbeef]["properties"] = {}
         self.mapping[0xdeadbeef]["properties"]["PidTagFolderId"] = 0xdeadbeef
+        self.mapping[0xdeadbeef]["cache"] = {}
         self.mapping[0xdeadbeef]["subfolders"] = [subfolder, ]
         self.mapping[0xdeadbeef]["messages"] = []
 
@@ -205,6 +207,20 @@ class FolderObject(ContextObject):
                 return MessageObject(item, self, mid, rw)
         return None
 
+    def get_properties(self, properties):
+        print '[PYTHON]: %s folder.get_properties()' % (self.name)
+        return self.basedict["properties"]
+
+    def set_properties(self, properties):
+        print '[PYTHON]: %s folder.set_properties()' % (self.name)
+
+        tmpdict = self.basedict["cache"].copy()
+        tmpdict.update(properties)
+        self.basedict["cache"] = tmpdict
+
+        print self.basedict["cache"]
+        return 0
+
 class TableObject(BackendObject):
 
     def __init__(self, folder, tableType):
@@ -266,9 +282,9 @@ class MessageObject(BackendObject):
     def set_properties(self, properties):
         print '[PYTHON]: %s message.set_properties()' % (self.name)
 
-        tmpdict = self.message["_tmp"].copy()
+        tmpdict = self.message["cache"].copy()
         tmpdict.update(properties)
-        self.message["_tmp"] = tmpdict;
+        self.message["cache"] = tmpdict;
 
-        print self.message["_tmp"]
+        print self.message["cache"]
         return 0

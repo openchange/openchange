@@ -1151,6 +1151,11 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
+	if (msg == Py_None) {
+		Py_DECREF(msg);
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
 	pymsg = talloc_zero(pyobj, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!pymsg, MAPISTORE_ERR_NO_MEMORY, NULL);
 
@@ -1920,6 +1925,11 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 		PyErr_Print();
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (pydict == Py_None) {
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	if (PyDict_Check(pydict) != true) {

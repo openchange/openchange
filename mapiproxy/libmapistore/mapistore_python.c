@@ -115,7 +115,14 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
 			break;
 		case PT_I8:
-			ll = PyLong_AsUnsignedLongLong(value);
+			if (PyInt_Check(value)) {
+				ll = (unsigned long long)PyInt_AsLong(value);
+			} else if (PyLong_Check(value)) {
+				ll = PyLong_AsUnsignedLongLong(value);
+			} else {
+				PyErr_SetString(PyExc_TypeError, "an integer is required");
+				ll = -1;
+			}
 			MAPISTORE_RETVAL_IF(ll == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
 			*data = talloc_memdup(mem_ctx, &ll, sizeof(ll));
 			retval = MAPISTORE_SUCCESS;

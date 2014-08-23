@@ -1817,11 +1817,9 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 	PyObject			*pydict;
 	PyObject			*pylist;
 	PyObject			*item;
-	/* PyObject			*key; */
 	PyObject			*value;
 	char				*sproptag;
 	int				proptag = 0;
-	/* Py_ssize_t			pos = 0; */
 	uint32_t			count = 0;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));

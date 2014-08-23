@@ -1952,6 +1952,122 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 
 
 /**
+   \details Retrieve set of properties on a given object
+
+   \param mem_ctx pointer to the memory context
+   \param object pointer to the object to retreive properties from
+   \param count number of elements in properties array
+   \param properties array of property tags
+   \param data pointer on properties data to be returned
+
+   \note data is assumed to be allocated by the caller
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CTX *mem_ctx,
+								       void *object,
+								       uint16_t count,
+								       enum MAPITAGS *properties,
+								       struct mapistore_property_data *data)
+{
+	struct mapistore_python_object	*pyobj;
+	PyObject			*obj;
+	PyObject			*proplist;
+	PyObject			*value;
+	PyObject			*item;
+	PyObject			*pres;
+	const char			*sproptag;
+	uint16_t			i;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the object */
+	pyobj = (struct mapistore_python_object *) object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER) &&
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	obj = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!obj, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", obj->ob_type->tp_name) &&
+			    strcmp("MessageObject", obj->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Build a PyList from properties array */
+	proplist = PyList_New(count);
+	if (proplist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python list\n",
+			  pyobj->name, __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < count; i++) {
+		sproptag = openchangedb_property_get_attribute(properties[i]);
+		if (sproptag == NULL) {
+			item = PyString_FromFormat("0x%x", properties[i]);
+		} else {
+			item = PyString_FromString(sproptag);
+		}
+
+		if (PyList_SetItem(proplist, i, item) == -1) {
+			DEBUG(0, ("[ERR][[%s][%s]: Unable to append entry to Python list\n",
+				  pyobj->name, __location__));
+			return MAPISTORE_ERR_NO_MEMORY;
+		}
+	}
+
+	/* Call get_properties function */
+	pres = PyObject_CallMethod(obj, "get_properties", "O", proplist);
+	Py_DECREF(proplist);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve dictionary of properties */
+	if (PyDict_Check(pres) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, pres->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Map data */
+	for (i = 0; i < count; i++) {
+		sproptag = openchangedb_property_get_attribute(properties[i]);
+		if (sproptag == NULL) {
+			item = PyString_FromFormat("0x%x", properties[i]);
+		} else {
+			item = PyString_FromString(sproptag);
+		}
+		value = PyDict_GetItem(pres, item);
+		if (value == NULL) {
+			data[i].error = MAPISTORE_ERR_NOT_FOUND;
+			data[i].data = NULL;
+		} else {
+			/* Map dict data to void */
+			data[i].error = mapistore_data_from_pyobject(data, properties[i],
+								     value, &data[i].data);
+			if (data[i].error != MAPISTORE_SUCCESS) {
+				data[i].data = NULL;
+			}
+		}
+		Py_DECREF(item);
+	}
+	Py_DECREF(pres);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -2092,11 +2208,9 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.table.handle_destructor = mapistore_python_table_handle_destructor; */
 
 	/* properties */
-#if 0
-	backend.properties.get_available_properties = mapistore_python_properties_get_available_properties;
+	/* backend.properties.get_available_properties = mapistore_python_properties_get_available_properties; */
 	backend.properties.get_properties = mapistore_python_properties_get_properties;
-	backend.properties.set_properties = mapistore_python_properties_set_properties;
-#endif
+	/* backend.properties.set_properties = mapistore_python_properties_set_properties; */
 
 	/* management */
 	/* backend.manager.generate_uri = mapistore_python_manager_generate_uri; */

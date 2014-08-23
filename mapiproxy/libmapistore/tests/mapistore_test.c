@@ -496,6 +496,45 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* get_properties */
+	{
+		struct mapistore_property_data	*property_data = NULL;
+		uint32_t			i;
+
+		SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
+						  PidTagConversationTopic,
+						  PidTagBody,
+						  PidTagInstanceNum);
+		property_data = talloc_array(mem_ctx, struct mapistore_property_data,
+					     SPropTagArray->cValues);
+
+		retval = mapistore_properties_get_properties(mstore_ctx, context_id,
+							     message_object,
+							     mem_ctx, SPropTagArray->cValues,
+							     SPropTagArray->aulPropTag,
+							     property_data);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_properties_get_properties: %s\n", mapistore_errstr(retval)));
+			exit (1);
+		}
+
+		for (i = 0; i < SPropTagArray->cValues; i++) {
+			if (property_data[i].error != MAPISTORE_SUCCESS) {
+				DEBUG(0, ("0x%x: MAPI_E_NOT_FOUND\n", SPropTagArray->aulPropTag[i]));
+			} else {
+				struct SPropValue lpProp;
+
+				lpProp.ulPropTag = SPropTagArray->aulPropTag[i];
+				lpProp.dwAlignPad = 0;
+				set_SPropValue(&lpProp, property_data[i].data);
+				mapidump_SPropValue(lpProp, NULL);
+			}
+		}
+
+		MAPIFreeBuffer(SPropTagArray);
+		talloc_free(property_data);
+	}
+
 	retval = mapistore_del_context(mstore_ctx, context_id);
 
 	retval = mapistore_release(mstore_ctx);

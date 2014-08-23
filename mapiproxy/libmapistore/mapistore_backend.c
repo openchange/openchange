@@ -783,7 +783,7 @@ enum mapistore_error mapistore_backend_properties_get_properties(struct backend_
 						*properties,
 						struct mapistore_property_data *data)
 {
-        return bctx->backend->properties.get_properties(object, mem_ctx, count, properties, data);
+	return bctx->backend->properties.get_properties(mem_ctx, object, count, properties, data);
 }
 
 enum mapistore_error mapistore_backend_properties_set_properties(struct backend_context *bctx, void *object, struct SRow *aRow)

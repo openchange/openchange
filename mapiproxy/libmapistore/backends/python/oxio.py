@@ -153,6 +153,9 @@ class _Index(object):
 
     @classmethod
     def add_uri(cls, uri):
+        fid = cls.id_for_uri(uri)
+        if fid is not None:
+            return fid
         fid = cls.next_id()
         cls.mapping[fid] = uri
         return fid
@@ -165,6 +168,14 @@ class _Index(object):
     @classmethod
     def uri_by_id(cls, fid):
         return cls.mapping.get(fid)
+
+    @classmethod
+    def id_for_uri(cls, uri):
+        """a bit clumsy implementation but still"""
+        for entry in cls.mapping.items():
+            if uri == entry[1]:
+                return entry[0]
+        return None
 
 
 class BackendObject(object):

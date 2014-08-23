@@ -75,6 +75,7 @@ class ContextObject(BackendObject):
         message1 = {}
         message1["Recipients"] = [DummyTo, ]
         message1["mid"] = 0xdead0001
+        message1["_tmp"] = {}
         message1["properties"] = {}
         message1["properties"]["PidTagMessageId"] = message1["mid"]
         message1["properties"]["PidTagSubjectPrefix"] = "Re:"
@@ -264,5 +265,10 @@ class MessageObject(BackendObject):
 
     def set_properties(self, properties):
         print '[PYTHON]: %s message.set_properties()' % (self.name)
-        print properties
+
+        tmpdict = self.message["_tmp"].copy()
+        tmpdict.update(properties)
+        self.message["_tmp"] = tmpdict;
+
+        print self.message["_tmp"]
         return 0

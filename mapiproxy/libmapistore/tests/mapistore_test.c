@@ -569,7 +569,7 @@ int main(int argc, const char *argv[])
 		struct SRow		aRow;
 		struct SPropValue	lpProps[2];
 		uint32_t		importance = 2;
-		const char		*msgid = "X-MAPISTORE_ID: 4";
+		const char		*msgid = "X-MAPISTORE_ID: 1";
 
 		DEBUG(0, ("*** mapistore_properties_set_properties\n"));
 		set_SPropValue_proptag(&lpProps[0], PidTagImportance, (const void *)(&importance));
@@ -579,6 +579,19 @@ int main(int argc, const char *argv[])
 		aRow.cValues = 2;
 		aRow.lpProps = lpProps;
 
+		retval = mapistore_properties_set_properties(mstore_ctx, context_id,
+							     message_object, &aRow);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_properties_set_properties: %s\n",
+				  mapistore_errstr(retval)));
+			goto end;
+		}
+
+
+		importance = 0;
+		set_SPropValue_proptag(&lpProps[0], PidTagSensitivity, (const void *)(&importance));
+		msgid = "X-MAPISTORE_ID: 2";
+		set_SPropValue_proptag(&lpProps[1], PidTagInternetMessageId, (const void *)msgid);
 		retval = mapistore_properties_set_properties(mstore_ctx, context_id,
 							     message_object, &aRow);
 		if (retval != MAPISTORE_SUCCESS) {

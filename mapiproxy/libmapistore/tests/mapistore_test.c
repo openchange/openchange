@@ -157,7 +157,8 @@ static uint64_t _find_first_child_folder(TALLOC_CTX *mem_ctx, struct mapistore_c
 }
 
 
-static enum mapistore_error _test_folder_crate_delete(TALLOC_CTX *mem_ctx, struct mapistore_context *mstore_ctx,
+static enum mapistore_error _test_folder_create_delete(TALLOC_CTX *mem_ctx,
+						       struct mapistore_context *mstore_ctx,
 						      uint32_t context_id, void *parent_folder)
 {
 	struct SRow 		*aRow;
@@ -554,9 +555,9 @@ int main(int argc, const char *argv[])
 
 
 	/* Test Folder Create/Delete */
-	retval = _test_folder_crate_delete(mem_ctx, mstore_ctx, context_id, folder_object);
+	retval = _test_folder_create_delete(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("_test_folder_crate_delete: %s\n", mapistore_errstr(retval)));
+		DEBUG(0, ("_test_folder_create_delete: %s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 

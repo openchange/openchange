@@ -68,14 +68,15 @@ class _OxioConn(object):
         config-dbg.ini is just a separate file, so it will be
         more difficult to be committed by accidence"""
         from ConfigParser import (ConfigParser, NoOptionError)
+        base_dir = os.path.dirname(__file__)
         config = ConfigParser()
-        config.read('config.ini')
+        config.read(os.path.join(base_dir, 'config.ini'))
         try:
             username = config.get('oxio', 'username')
             password = config.get('oxio', 'password')
         except NoOptionError:
             try:
-                config.read('config-dbg.ini')
+                config.read(os.path.join(base_dir, 'config-dbg.ini'))
                 username = config.get('oxio', 'username')
                 password = config.get('oxio', 'password')
             except NoOptionError:

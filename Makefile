@@ -122,7 +122,7 @@ re:: clean install
 
 .c.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CC) $(CFLAGS) $(PYTHON_CFLAGS) -fPIC -c $< -o $@
+	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"

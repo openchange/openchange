@@ -64,6 +64,27 @@ class ContextObject(BackendObject):
 
     def __init__(self):
 
+        # Recipients
+        DummyTo = {}
+        DummyTo["PidTagRecipientType"] = 0x1
+        DummyTo["PidTagSmtpAddress"] = "dummy@openchange.org"
+        DummyTo["PidTagRecipientDisplayName"] = "Dummy User"
+        DummyTo["PidTagSentRepresentingName"] = "Dummy User"
+        DummyTo["PidTagDisplayTo"] = "dummy@openchange.org"
+
+        message1 = {}
+        message1["Recipients"] = [DummyTo, ]
+        message1["mid"] = 0xdead0001
+        message1["properties"] = {}
+        message1["properties"]["PidTagMessageId"] = message1["mid"]
+        message1["properties"]["PidTagSubjectPrefix"] = "Re:"
+        message1["properties"]["PidTagSubject"] = "Dummy Sample Email"
+        message1["properties"]["PidTagNormalizedSubject"] = message1["properties"]["PidTagSubject"]
+        message1["properties"]["PidTagConversationTopic"] = message1["properties"]["PidTagSubject"]
+        message1["properties"]["PidTagBody"] = u"This is the content of this sample email"
+        message1["properties"]["PidTagInstanceNum"] = 0
+
+
         subfolder = {}
         subfolder["uri"] = "sample://deadbeef/dead001"
         subfolder["fid"] = 0xdead1001
@@ -72,7 +93,7 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["subfolders"] = []
-        subfolder["messages"] = []
+        subfolder["messages"] = [message1,]
 
         self.mapping[0xdeadbeef] = {}
         self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef"
@@ -176,7 +197,12 @@ class FolderObject(ContextObject):
 
     def open_message(self, mid, rw):
         print '[PYTHON]: %s folder.open_message' % self.name
-        return MessageObject(self, mid, rw)
+
+        for item in self.basedict["messages"]:
+            if str(item["mid"]) == str(mid):
+                print '[PYTHON]: messageID 0x%x found\n' % (mid)
+                return MessageObject(item, self, mid, rw)
+        return None
 
 class TableObject(BackendObject):
 
@@ -196,13 +222,20 @@ class TableObject(BackendObject):
     def get_row(self, rowId, query_type):
         print '[PYTHON]: %s table.get_row()' % (self.name)
 
-        rowdata = {}
+        rowdata = None
         if self.tableType == 1:
             subfolders = self.folder.basedict["subfolders"]
+            print len(subfolders)
             if (len(subfolders) > rowId and
                 subfolders[rowId] and
                 subfolders[rowId].has_key("properties")):
                 rowdata = subfolders[rowId]["properties"]
+        elif self.tableType == 2:
+            messages = self.folder.basedict["messages"]
+            if (len(messages) > rowId and
+                messages[rowId] and
+                messages[rowId].has_key("properties")):
+                rowdata = messages[rowId]["properties"]
         return (self.properties, rowdata)
 
 
@@ -212,35 +245,19 @@ class TableObject(BackendObject):
 
 class MessageObject(BackendObject):
 
-    def __init__(self, folder, mid, rw):
+    def __init__(self, message, folder, mid, rw):
         print '[PYTHON]: %s message.__init__()' % (self.name)
         self.folder = folder
+        self.message = message
         self.mid = mid
         self.rw = rw
-
-        # Recipients
-        DummyTo = {}
-        DummyTo["PidTagRecipientType"] = 0x1
-        DummyTo["PidTagSmtpAddress"] = "dummy@openchange.org"
-        DummyTo["PidTagRecipientDisplayName"] = "Dummy User"
-        DummyTo["PidTagSentRepresentingName"] = "Dummy User"
-        DummyTo["PidTagDisplayTo"] = "dummy@openchange.org"
-
-        self.message = {}
-        self.message["Recipients"] = [DummyTo, ]
-        self.message["PidTagSubjectPrefix"] = "Re:"
-        self.message["PidTagSubject"] = "Dummy Sample Email"
-        self.message["PidTagNormalizedSubject"] = self.message["PidTagSubject"]
-        self.message["PidTagConversationTopic"] = self.message["PidTagSubject"]
-        self.message["PidTagBody"] = u"This is the content of this sample email"
-        self.message["PidTagInstanceNum"] = 0
 
         return
 
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
-        return (self.message["Recipients"], self.message)
+        return (self.message["Recipients"], self.message["properties"])
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
-        return self.message
+        return self.message["properties"]

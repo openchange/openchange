@@ -34,9 +34,112 @@ import requests
 import json
 from openchange import mapistore
 
+
 # few mapistore ERRORS until we expose them
 MAPISTORE_SUCCESS = 0
 MAPISTORE_ERR_NOT_IMPLEMENTED = 24
+
+
+class _OxioConn(object):
+
+    instance = None
+
+    def __init__(self):
+        self.so = requests.Session()
+        (username, password) = self._read_config()
+        payload = {
+            'action': 'login',
+            'client': 'open-xchange-appsuite',
+            'language': 'en_US',
+            'name': username,
+            'password': password,
+            'timeout': '10000',
+            'version': '7.6.0-7'
+        }
+        r = self.so.post('https://www.ox.io/appsuite/api/login', params=payload)
+        self.sess_info = r.json()
+        self.sess_id = self.sess_info['session']
+
+    @staticmethod
+    def _read_config():
+        """Try to read config.ini file. config.ini is under source
+        control, so if you want to keep your secret w/o disclosing
+        to the world, then config-dbg.ini is the plac to write it.
+        config-dbg.ini is just a separate file, so it will be
+        more difficult to be committed by accidence"""
+        from ConfigParser import (ConfigParser, NoOptionError)
+        config = ConfigParser()
+        config.read('config.ini')
+        try:
+            username = config.get('oxio', 'username')
+            password = config.get('oxio', 'password')
+        except NoOptionError:
+            try:
+                config.read('config-dbg.ini')
+                username = config.get('oxio', 'username')
+                password = config.get('oxio', 'password')
+            except NoOptionError:
+                raise Exception('No config.ini file or file is not valid')
+        return (username, password)
+
+    @classmethod
+    def get_instance(cls):
+        """
+        :return _OxioConn:
+        """
+        if cls.instance is None:
+            cls.instance = cls()
+        assert cls.instance is not None, "Unable to connect to oxio"
+        return cls.instance
+
+    def getFolder(self, folder_id):
+        """Fetch folder record from OX
+        :param folder_id: oxid for the folder to fetch
+        """
+        payload = {'action': 'get',
+                   'session': self.sess_id,
+                   'id': folder_id}
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/folders', params=payload)
+        self._dump_response(r)
+        return r.json()['data']
+
+    def getSubFolders(self, folder_id, columns):
+        """Fetch subfolders for folder_id
+        :param folder_id: oxid for parent folder
+        :param columns list: list of columns for fetch
+        """
+        payload = {"action": "list",
+                   "all": "1",
+                   "session": self.sess_id,
+                   "columns": "1,20,300,301,302,304",
+                   "parent": folder_id}
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/folders', params=payload)
+        self._dump_response(r)
+        return r.json()['data']
+
+    def getEmails(self, folder_id, columns):
+        """Fetch subfolders for folder_id
+        :param folder_id: oxid for parent folder
+        :param columns list: list of columns for fetch
+        """
+        payload = {"action": "all",
+                   "session": self.sess_id,
+                   "folder": folder_id,
+                   "columns": "600,601,603,604,605,607,610"}
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
+        self._dump_response(r)
+        return r.json()['data']
+
+    def _dump_request(self, payload):
+#         print json.dumps(payload, indent=4)
+        pass
+
+    def _dump_response(self, r):
+#         print json.dumps(r.json(), indent=4)
+        pass
 
 
 class _Index(object):

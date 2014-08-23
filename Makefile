@@ -967,6 +967,7 @@ bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.po		\
 
 mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
+	rm -f mapiproxy/libmapistore/tests/*.po
 	rm -f mapiproxy/libmapistore/tests/*.gcno
 	rm -f mapiproxy/libmapistore/tests/*.gcda
 	rm -f bin/mapistore_test

@@ -75,6 +75,7 @@ class ContextObject(BackendObject):
         message1 = {}
         message1["Recipients"] = [DummyTo, ]
         message1["mid"] = 0xdead0001
+        message1["fai"] = False
         message1["cache"] = {}
         message1["properties"] = {}
         message1["properties"]["PidTagMessageId"] = message1["mid"]
@@ -94,6 +95,8 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["cache"] = {}
+        subfolder["cache"]["properties"] = {}
+        subfolder["cache"]["messages"] = []
         subfolder["subfolders"] = []
         subfolder["messages"] = [message1,]
 
@@ -199,13 +202,25 @@ class FolderObject(ContextObject):
         return 0
 
     def open_message(self, mid, rw):
-        print '[PYTHON]: %s folder.open_message' % self.name
+        print '[PYTHON]: %s folder.open_message()' % self.name
 
         for item in self.basedict["messages"]:
             if str(item["mid"]) == str(mid):
                 print '[PYTHON]: messageID 0x%x found\n' % (mid)
                 return MessageObject(item, self, mid, rw)
         return None
+
+    def create_message(self, mid, associated):
+        print '[PYTHON]: %s folder.create_message()' % self.name
+        newmsg = {}
+        newmsg["Recipients"] = []
+        newmsg["mid"] = mid
+        newmsg["fai"] = associated
+        newmsg["cache"] = {}
+        newmsg["properties"] = {}
+        newmsg["properties"]["PidTagMessageId"] = newmsg["mid"]
+        self.basedict["cache"]["messages"].append(newmsg)
+        return MessageObject(newmsg, self, mid, 1)
 
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)

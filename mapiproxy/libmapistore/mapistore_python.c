@@ -1144,16 +1144,16 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 	msg = PyObject_CallMethod(folder, "open_message", "Kb", mid, read_write);
 	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
+	if (msg == Py_None) {
+		Py_DECREF(msg);
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
 	if (strcmp("MessageObject", msg->ob_type->tp_name)) {
 		DEBUG(0, ("[ERR][%s][%s]: Expected MessageObject but got '%s'\n", pyobj->name,
 			  __location__, msg->ob_type->tp_name));
 		Py_DECREF(msg);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
-
-	if (msg == Py_None) {
-		Py_DECREF(msg);
-		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
 	pymsg = talloc_zero(pyobj, struct mapistore_python_object);
@@ -1172,7 +1172,81 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 
 	Py_INCREF(msg);
 	return MAPISTORE_SUCCESS;
+}
 
+
+/**
+   \details Create a message
+
+   \param mem_ctx pointer to the memory context
+   \param folder_object pointer to the folder object
+   \param mid the message identifier
+   \param associated specify is it is a FAI message or not
+   \param message_object pointer on pointer to the message object to
+   return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_create_message(TALLOC_CTX *mem_ctx,
+								   void *folder_object,
+								   uint64_t mid,
+								   uint8_t associated,
+								   void **message_object)
+{
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pymsg;
+	PyObject			*folder;
+	PyObject			*msg;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the create_message function */
+	msg = PyObject_CallMethod(folder, "create_message", "Kb", mid, associated);
+	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	if (msg == Py_None) {
+		Py_DECREF(msg);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	if (strcmp("MessageObject", msg->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected MessageObject but got '%s'\n", pyobj->name,
+			  __location__, msg->ob_type->tp_name));
+		Py_DECREF(msg);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	pymsg = talloc_zero(pyobj, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pymsg, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pymsg->obj_type = MAPISTORE_PYTHON_OBJECT_MESSAGE;
+	pymsg->name = talloc_strdup(pymsg, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pymsg->name, MAPISTORE_ERR_NO_MEMORY, NULL);
+	pymsg->conn = pyobj->conn;
+	pymsg->ictx = pyobj->ictx;
+	pymsg->module = pyobj->module;
+	pymsg->private_object = msg;
+	*message_object = pymsg;
+
+	talloc_set_destructor((void *)pymsg, (int (*)(void *))mapistore_python_object_destructor);
+
+	Py_INCREF(msg);
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -2339,7 +2413,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.create_folder = mapistore_python_folder_create_folder;
 	backend.folder.delete = mapistore_python_folder_delete;
 	backend.folder.open_message = mapistore_python_folder_open_message;
-	/* backend.folder.create_message = mapistore_python_folder_create_message; */
+	backend.folder.create_message = mapistore_python_folder_create_message;
 	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
 	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */

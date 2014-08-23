@@ -601,6 +601,40 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	/* create_message / set_properties / savechangesmessage */
+	{
+		void			*newmsg_object;
+		struct SRow		aRow;
+		struct SPropValue	lpProps[2];
+		const char		*subject = "Sample subject for 0xdead0002";
+		const char		*body = "Hello world!";
+
+		DEBUG(0, ("*** mapistore_folder_create_message\n"));
+		retval = mapistore_folder_create_message(mstore_ctx, context_id,
+							 child_folder_object, mem_ctx,
+							 0xdead0002, false, &newmsg_object);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_folder_create_message: %s\n",
+				  mapistore_errstr(retval)));
+			goto end;
+		}
+
+		DEBUG(0, ("** mapistore_properties_set_properties\n"));
+		set_SPropValue_proptag(&lpProps[0], PidTagSubject, (const void *)subject);
+		set_SPropValue_proptag(&lpProps[1], PidTagBody, (const void *)body);
+
+		aRow.ulAdrEntryPad = 0;
+		aRow.cValues = 2;
+		aRow.lpProps = lpProps;
+
+		retval = mapistore_properties_set_properties(mstore_ctx, context_id,
+							     newmsg_object, &aRow);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_properties_set_properties: %s\n",
+				  mapistore_errstr(retval)));
+			goto end;
+		}
+	}
 
 	/* Test Folder Create/Delete */
 	retval = _test_folder_create_delete(mem_ctx, mstore_ctx, context_id, folder_object);

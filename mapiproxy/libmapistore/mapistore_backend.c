@@ -593,7 +593,7 @@ enum mapistore_error mapistore_backend_folder_open_message(struct backend_contex
 
 enum mapistore_error mapistore_backend_folder_create_message(struct backend_context *bctx, void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)
 {
-	return bctx->backend->folder.create_message(folder, mem_ctx, mid, associated, messagep);
+	return bctx->backend->folder.create_message(mem_ctx, folder, mid, associated, messagep);
 }
 
 enum mapistore_error mapistore_backend_folder_delete_message(struct backend_context *bctx, void *folder, uint64_t mid, uint8_t flags)

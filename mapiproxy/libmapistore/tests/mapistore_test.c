@@ -124,7 +124,6 @@ static uint64_t _find_first_child_folder(TALLOC_CTX *mem_ctx, struct mapistore_c
 		return 0;
 	}
 
-	row_data = talloc_array(mem_ctx, struct mapistore_property_data, 6);
 	retval = mapistore_table_get_row(mstore_ctx, context_id, table_object,
 					 mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0,
 					 &row_data);
@@ -427,7 +426,6 @@ int main(int argc, const char *argv[])
 		struct mapistore_property_data	*row_data;
 		uint32_t			i;
 
-		row_data = talloc_array(mem_ctx, struct mapistore_property_data, 6);
 		retval = mapistore_table_get_row(mstore_ctx, context_id, table_object,
 						 mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0,
 						 &row_data);

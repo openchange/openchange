@@ -1816,8 +1816,8 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
    \param row_id the index of the row to return
    \param data pointer on pointer to the data to return
 
-   \note data parameter must be allocated by the caller and sized to
-   the correct number of columns
+   \note It is the responsibility of the caller to free
+   mapistore_property_data
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -1886,7 +1886,6 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 	if (PyList_Check(pylist) != true) {
 		DEBUG(0, ("[ERR][%s][%s]: list expected to be returned but got '%s'\n",
 			  pyobj->name, __location__, pylist->ob_type->tp_name));
-		Py_DECREF(pylist);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -1897,7 +1896,6 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
 			  pyobj->name, __location__));
 		PyErr_Print();
-		Py_DECREF(pylist);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
@@ -1905,14 +1903,16 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 	if (PyDict_Check(pydict) != true) {
 		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
 			  pyobj->name, __location__, pydict->ob_type->tp_name));
-		Py_DECREF(pylist);
-		Py_DECREF(pydict);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
 	/* Map row data */
-	propdata = *data;
+	propdata = talloc_array(mem_ctx, struct mapistore_property_data, PyList_Size(pylist));
+	if (!propdata) {
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
 	for (count = 0; count < PyList_Size(pylist); count++) {
 		item = PyList_GetItem(pylist, count);
 		if (PyString_Check(item)) {
@@ -1930,19 +1930,15 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 			if (proptag == -1) {
 				DEBUG(0, ("[ERR][%s][%s]: dict key is neither a string or int\n",
 					  pyobj->name, __location__));
-				Py_DECREF(item);
-				Py_DECREF(pydict);
-				Py_DECREF(pylist);
 				Py_DECREF(pres);
+				talloc_free(propdata);
 				return MAPISTORE_ERR_CONTEXT_FAILED;
 			}
 		} else {
 			DEBUG(0, ("[ERR][%s][%s]: dict key is neither a string or int\n",
 				  pyobj->name, __location__));
-			Py_DECREF(item);
-			Py_DECREF(pydict);
-			Py_DECREF(pylist);
 			Py_DECREF(pres);
+			talloc_free(propdata);
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 

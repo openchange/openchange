@@ -911,16 +911,22 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_
 		goto end;
 	}
 
-	*child_fmid_count = row_count;
 	fmids = talloc_array(mem_ctx, uint64_t, row_count);
 	*child_fmids = fmids;
 	current_fmid = fmids;
 	for (i = 0; i < row_count; i++) {
-		mapistore_table_get_row(mstore_ctx, context_id, backend_table, local_mem_ctx,
-					MAPISTORE_PREFILTERED_QUERY, i, &row_data);
-		*current_fmid = *(uint64_t *) row_data->data;
-		current_fmid++;
+		ret = mapistore_table_get_row(mstore_ctx, context_id, backend_table,
+						 local_mem_ctx, MAPISTORE_PREFILTERED_QUERY,
+						 i, &row_data);
+		if ((ret == MAPISTORE_SUCCESS) && (row_data->error == MAPISTORE_SUCCESS) &&
+		    (row_data->data)) {
+			*current_fmid = *(uint64_t *) row_data->data;
+			current_fmid++;
+		} else {
+			row_count--;
+		}
 	}
+	*child_fmid_count = row_count;
 
 end:
 	talloc_free(local_mem_ctx);

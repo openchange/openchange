@@ -1277,7 +1277,6 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 	} else if (strcmp("TableObject", table->ob_type->tp_name)) {
 		DEBUG(0, ("[ERR][%s][%s]: Expected TableObject and got '%s'\n",
 			  pyobj->name, __location__, table->ob_type->tp_name));
-		Py_DECREF(table);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
@@ -1287,7 +1286,6 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 	if (res == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", pyobj->name, __location__));
 		PyErr_Print();
-		Py_DECREF(table);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}

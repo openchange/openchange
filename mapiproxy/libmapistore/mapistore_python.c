@@ -90,6 +90,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 {
 	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
 	int			l;
+	uint64_t		ll;
 	char			*str;
 
 	/* Sanity checks */
@@ -104,7 +105,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 		case PT_LONG:
 			l = PyLong_AsLong(value);
 			MAPISTORE_RETVAL_IF(l == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
-			*data = (void *)&l;
+			*data = talloc_memdup(mem_ctx, &l, sizeof(l));
 			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_DOUBLE:
@@ -114,7 +115,10 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
 			break;
 		case PT_I8:
-			DEBUG(5, ("[WARN][%s]: PT_I8 case not implemented\n", __location__));
+			ll = PyLong_AsUnsignedLongLong(value);
+			MAPISTORE_RETVAL_IF(ll == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
+			*data = talloc_memdup(mem_ctx, &ll, sizeof(ll));
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:

@@ -63,30 +63,48 @@ class ContextObject(BackendObject):
     mapping = {}
 
     def __init__(self):
-        self.mapping[0xdeadbeef] = "sample://deadbeef"
-        self.mapping[0x1] = "sample://deadbeef/subfolder_1"
+
+        subfolder = {}
+        subfolder["uri"] = "sample://deadbeef/dead001"
+        subfolder["fid"] = 0xdead1001
+        subfolder["properties"] = {}
+        subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
+        subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
+        subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
+        subfolder["subfolders"] = []
+        subfolder["messages"] = []
+
+        self.mapping[0xdeadbeef] = {}
+        self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef"
+        self.mapping[0xdeadbeef]["properties"] = {}
+        self.mapping[0xdeadbeef]["properties"]["PidTagFolderId"] = 0xdeadbeef
+        self.mapping[0xdeadbeef]["subfolders"] = [subfolder, ]
+        self.mapping[0xdeadbeef]["messages"] = []
+
         print '[PYTHON]: %s context class __init__' % self.name
         return
 
     def get_path(self, fmid):
         print '[PYTHON]: %s context.get_path' % self.name
         if fmid in self.mapping:
-            print '[PYTHON]: %s get_path URI: %s' % (self.name, self.mapping[fmid])
-            return self.mapping[fmid]
+            print '[PYTHON]: %s get_path URI: %s' % (self.name, self.mapping[fmid]["uri"])
+            return self.mapping[fmid]["uri"]
         else:
             print '[Python]: %s get_path URI: None' % (self.name)
             return None
 
     def get_root_folder(self, folderID):
         print '[PYTHON]: %s context.get_root_folder' % self.name
-        folder = FolderObject(folderID, 0x0)
+        folder = FolderObject(self.mapping[folderID], None, folderID, 0x0)
         return (0, folder)
 
 
 class FolderObject(ContextObject):
 
-    def __init__(self, folderID, parentFID):
+    def __init__(self, basedict, parentdict, folderID, parentFID):
         print '[PYTHON]: %s folder.__init__(fid=%s)' % (self.name, folderID)
+        self.basedict = basedict
+        self.parentdict = parentdict
         self.parentFID = parentFID;
         self.folderID = folderID;
         return
@@ -94,25 +112,40 @@ class FolderObject(ContextObject):
     def open_folder(self, folderID):
         print '[PYTHON]: %s folder.open_folder(0x%x)' % (self.name, folderID)
 
-        if folderID in self.mapping:
-            print '[PYTHON]: folderID %s found\n' % (folderID)
-            return FolderObject(folderID, self.folderID)
+        for item in self.basedict["subfolders"]:
+            if str(item["fid"]) == str(folderID):
+                print '[PYTHON]: folderID 0x%x found\n' % (folderID)
+                return FolderObject(item, self.basedict, folderID, self.folderID)
         return None
 
     def create_folder(self, properties, folderID):
         print '[PYTHON]: %s folder.create_folder(%s)' % (self.name, folderID)
         j = json.dumps(properties, indent=4)
         print '[PYTHON]: %s ' % j
-        self.mapping[folderID] = "sample://%x" % folderID
-        return (0, FolderObject(folderID, self.folderID))
+
+        folder = {}
+        folder["uri"] = "%s/0x%x" % (self.basedict["uri"], folderID)
+        folder["fid"] = folderID
+        folder["properties"] = {}
+        folder["properties"]["PidTagFolderId"] = folder["fid"]
+        if properties.has_key("PidTagDisplayName"):
+            folder["properties"]["PidTagDisplayName"] = properties["PidTagDisplayName"]
+        if properties.has_key("PidTagComment"):
+            folder["properties"]["PidTagComment"] = properties["PidTagComment"]
+        folder["subfolders"] = []
+        folder["messages"] = []
+
+        self.basedict["subfolders"].append(folder)
+
+        return (0, FolderObject(folder, self.basedict, folderID, self.folderID))
 
     def delete(self):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
-        if self.folderID in self.mapping:
-            del self.mapping[self.folderID]
-        else:
-            return 17
-        return 0
+        for item in self.parentdict["subfolders"]:
+            if str(item["fid"]) == str(self.folderID):
+                   self.parentdict["subfolders"].remove(item)
+                   return 0
+        return 17
 
     def open_table(self, table_type):
         print '[PYTHON]: %s folder.open_table' % (self.name)
@@ -132,11 +165,11 @@ class FolderObject(ContextObject):
 
     def _count_folders(self):
         print '[PYTHON][INTERNAL]: %s folder._count_folders(0x%x)' % (self.name, self.folderID)
-        return 0
+        return len(self.basedict["subfolders"])
 
     def _count_messages(self):
         print '[PYTHON][INTERNAL]: %s folder._count_messages(0x%x)' % (self.name, self.folderID)
-        return 0
+        return len(self.basedict["messages"])
 
     def _count_zero(self):
         return 0
@@ -151,24 +184,27 @@ class TableObject(BackendObject):
         print '[PYTHON]: %s table.__init__()' % (self.name)
         self.folder = folder
         self.tableType = tableType
-        self.properties = None
+        self.properties = []
         return
 
     def set_columns(self, properties):
         print '[PYTHON]: %s table.set_columns()' % (self.name)
         self.properties = properties
-        print 'properties: [%s]\n' % ', '.join(map(str, properties))
+        print 'properties: [%s]\n' % ', '.join(map(str, self.properties))
         return 0
 
     def get_row(self, rowId, query_type):
         print '[PYTHON]: %s table.get_row()' % (self.name)
 
-        fake = {}
-        fake["PidTagDisplayName"] = "FakeName%d" % rowId
-        fake["PidTagFolderId"] = 1
-        fake["PidTagSubject"] = "Very cool subject"
-        fake["PidTagComment"] = "This is a small comment"
-        return (self.properties, fake)
+        rowdata = {}
+        if self.tableType == 1:
+            subfolders = self.folder.basedict["subfolders"]
+            if (len(subfolders) > rowId and
+                subfolders[rowId] and
+                subfolders[rowId].has_key("properties")):
+                rowdata = subfolders[rowId]["properties"]
+        return (self.properties, rowdata)
+
 
     def get_row_count(self, query_type):
         print '[PYTHON]: %s table.get_row_count()' % (self.name)

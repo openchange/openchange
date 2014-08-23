@@ -564,6 +564,31 @@ int main(int argc, const char *argv[])
 	}
 
 
+	/* set_properties */
+	{
+		struct SRow		aRow;
+		struct SPropValue	lpProps[2];
+		uint32_t		importance = 2;
+		const char		*msgid = "X-MAPISTORE_ID: 4";
+
+		DEBUG(0, ("*** mapistore_properties_set_properties\n"));
+		set_SPropValue_proptag(&lpProps[0], PidTagImportance, (const void *)(&importance));
+		set_SPropValue_proptag(&lpProps[1], PidTagInternetMessageId, (const void *)msgid);
+
+		aRow.ulAdrEntryPad = 0;
+		aRow.cValues = 2;
+		aRow.lpProps = lpProps;
+
+		retval = mapistore_properties_set_properties(mstore_ctx, context_id,
+							     message_object, &aRow);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("mapistore_properties_set_properties: %s\n",
+				  mapistore_errstr(retval)));
+			goto end;
+		}
+	}
+
+
 	/* Test Folder Create/Delete */
 	retval = _test_folder_create_delete(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (retval != MAPISTORE_SUCCESS) {

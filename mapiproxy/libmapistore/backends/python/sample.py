@@ -261,3 +261,8 @@ class MessageObject(BackendObject):
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
         return self.message["properties"]
+
+    def set_properties(self, properties):
+        print '[PYTHON]: %s message.set_properties()' % (self.name)
+        print properties
+        return 0

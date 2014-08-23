@@ -2171,6 +2171,62 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 
 
 /**
+   \details Set properties on a given object
+
+   \param object pointer to the object to set properties on
+   \param aRow pointer to the SRow structure with properties to set
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_properties_set_properties(void *object,
+								       struct SRow *aRow)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*obj;
+	PyObject			*pydict;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!aRow, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the object */
+	pyobj = (struct mapistore_python_object *) object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER) &&
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	obj = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!obj, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", obj->ob_type->tp_name) &&
+			    strcmp("MessageObject", obj->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Build dictionary of properties */
+	pydict = mapistore_python_dict_from_SRow(aRow);
+	MAPISTORE_RETVAL_IF(!pydict, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Call set_properties function */
+	pres = PyObject_CallMethod(obj, "set_properties", "O", pydict);
+	Py_DECREF(pydict);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+/**
    \details Load specified mapistore python backend
 
    \param module_name the name of the mapistore python backend to load
@@ -2313,7 +2369,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* properties */
 	/* backend.properties.get_available_properties = mapistore_python_properties_get_available_properties; */
 	backend.properties.get_properties = mapistore_python_properties_get_properties;
-	/* backend.properties.set_properties = mapistore_python_properties_set_properties; */
+	backend.properties.set_properties = mapistore_python_properties_set_properties;
 
 	/* management */
 	/* backend.manager.generate_uri = mapistore_python_manager_generate_uri; */

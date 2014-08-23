@@ -962,9 +962,11 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 	if (pres == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
 			  pyobj->name, __location__));
+		Py_DECREF(pydict);
 		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
+	Py_DECREF(pydict);
 
 	/* Ensure a tuple was returned */
 	if (PyTuple_Check(pres) == false) {
@@ -989,7 +991,6 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 		if (retval == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
 		}
-		Py_DECREF(res);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
@@ -1004,7 +1005,6 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 	} else if (strcmp("FolderObject", pynew->ob_type->tp_name)) {
 		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject and got '%s'\n",
 			  pyobj->name, __location__, pynew->ob_type->tp_name));
-		Py_DECREF(pynew);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}

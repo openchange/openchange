@@ -1072,6 +1072,7 @@ static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
 		return retval;
 	}
 
+	/* TODO: handle Py_DECREF through destructor on pyobj */
 	Py_DECREF(folder);
 	talloc_free(pyobj);
 
@@ -2084,6 +2085,7 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 		if (PyList_SetItem(proplist, i, item) == -1) {
 			DEBUG(0, ("[ERR][[%s][%s]: Unable to append entry to Python list\n",
 				  pyobj->name, __location__));
+			Py_DECREF(proplist);
 			return MAPISTORE_ERR_NO_MEMORY;
 		}
 	}

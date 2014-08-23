@@ -704,7 +704,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
 			  pyobj->name, __location__));
 		PyErr_Print();
-		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
@@ -713,7 +712,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in get_root_folder\n",
 			  pyobj->name, __location__));
 		Py_DECREF(pres);
-		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
@@ -723,7 +721,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed: ", pyobj->name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
-		Py_DECREF(context);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
@@ -735,7 +732,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 		Py_DECREF(pres);
-		Py_DECREF(context);
 		return retval;
 	}
 
@@ -749,7 +745,6 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 	} else if (strcmp(folder->ob_type->tp_name, "FolderObject")) {
 		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject but got '%s'\n", pyobj->name,
 			  __location__, folder->ob_type->tp_name));
-		Py_DECREF(folder);
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}

@@ -877,6 +877,11 @@ static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_
 	pres = PyObject_CallMethod(folder, "open_folder", "K", fid);
 	MAPISTORE_RETVAL_IF(!pres, MAPISTORE_ERR_NOT_FOUND, NULL);
 
+	if (pres == Py_None) {
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NOT_FOUND;
+	}
+
 	if (strcmp("FolderObject", pres->ob_type->tp_name)) {
 		DEBUG(0, ("[ERR][%s][%s]: Expected FolderObject but got '%s'\n", pyobj->name,
 			  __location__, pres->ob_type->tp_name));

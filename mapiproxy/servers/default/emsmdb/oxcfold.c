@@ -323,14 +323,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Initialize Table object */
+	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	handles[mapi_repl->handle_idx] = rec->handle;
+
 	object = emsmdbp_folder_open_table(rec, parent_object, table_type, rec->handle);
 	if (!object) {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
-
-	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	handles[mapi_repl->handle_idx] = rec->handle;
 	mapi_handles_set_private_data(rec, object);
 	mapi_repl->u.mapi_GetContentsTable.RowCount = object->object.table->denominator;
 

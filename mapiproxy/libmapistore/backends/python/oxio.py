@@ -279,7 +279,7 @@ class FolderObject(object):
         pass
 
     def _index_subfolders(self, oxio_subfolders):
-        print json.dumps(oxio_subfolders, indent=4)
+        #print json.dumps(oxio_subfolders, indent=4)
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
                       'parent_uri': self.uri,
@@ -290,7 +290,7 @@ class FolderObject(object):
         pass
 
     def _index_messages(self, oxio_messages):
-        print json.dumps(oxio_messages, indent=4)
+        #print json.dumps(oxio_messages, indent=4)
         pass
 
     def open_folder(self, folderID):
@@ -364,6 +364,9 @@ class TableObject(object):
 
     def get_row(self, row_no, query_type):
         print '[PYTHON]: %s table.get_row(%s)' % (BackendObject.name, row_no)
+        if self.get_row_count(self.table_type) == 0:
+            return (self.properties, {})
+
         getter = {1: self._get_row_folders,
                   2: self._get_row_messages,
                   3: self._get_row_not_impl,

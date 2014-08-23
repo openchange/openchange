@@ -519,8 +519,8 @@ int main(int argc, const char *argv[])
 				set_SPropValue(&lpProp, msg_data->recipients[i].data[j]);
 				mapidump_SPropValue(lpProp, "\t.");
 			}
-
 		}
+		talloc_free(msg_data);
 	}
 
 	/* get_properties */

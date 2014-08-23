@@ -40,6 +40,22 @@
  */
 
 
+static int mapistore_python_object_destructor(void *data)
+{
+	struct mapistore_python_object	*pyobj = (struct mapistore_python_object *) data;
+
+	if (pyobj->private_object) {
+		PyObject	*obj;
+
+		obj = (PyObject *) pyobj->private_object;
+		DEBUG(5, ("[INFO] mapistore_python_object_destructor: %s\n", obj->ob_type->tp_name));
+		Py_DECREF(obj);
+	}
+
+	return 0;
+}
+
+
 /**
    \details Return the default installation path for mapistore python
    backends
@@ -647,6 +663,8 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 	pyobj->private_object = robj;
 	*context_obj = pyobj;
 
+	talloc_set_destructor((void *)pyobj, (int (*)(void *))mapistore_python_object_destructor);
+
 	Py_INCREF(robj);
 
 	Py_DECREF(pres);
@@ -888,7 +906,7 @@ static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-	pyfold = talloc_zero(mem_ctx, struct mapistore_python_object);
+	pyfold = talloc_zero(pyobj, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!pyfold, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	pyfold->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
@@ -899,6 +917,8 @@ static enum mapistore_error mapistore_python_folder_open_folder(TALLOC_CTX *mem_
 	pyfold->module = pyobj->module;
 	pyfold->private_object = pres;
 	*child_object = pyfold;
+
+	talloc_set_destructor((void *)pyfold, (int (*)(void *))mapistore_python_object_destructor);
 
 	Py_INCREF(pres);
 
@@ -1009,7 +1029,7 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-	pynobj = talloc_zero(mem_ctx, struct mapistore_python_object);
+	pynobj = talloc_zero(pyobj, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!pynobj, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	pynobj->obj_type = MAPISTORE_PYTHON_OBJECT_FOLDER;
@@ -1020,6 +1040,8 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 	pynobj->module = pyobj->module;
 	pynobj->private_object = pynew;
 	*new_folder = pynobj;
+
+	talloc_set_destructor((void *)pynobj, (int (*)(void *))mapistore_python_object_destructor);
 
 	Py_INCREF(pynew);
 
@@ -1072,8 +1094,6 @@ static enum mapistore_error mapistore_python_folder_delete(void *folder_object)
 		return retval;
 	}
 
-	/* TODO: handle Py_DECREF through destructor on pyobj */
-	Py_DECREF(folder);
 	talloc_free(pyobj);
 
 	return MAPISTORE_SUCCESS;
@@ -1131,7 +1151,7 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-	pymsg = talloc_zero(mem_ctx, struct mapistore_python_object);
+	pymsg = talloc_zero(pyobj, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!pymsg, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	pymsg->obj_type = MAPISTORE_PYTHON_OBJECT_MESSAGE;
@@ -1142,6 +1162,8 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 	pymsg->module = pyobj->module;
 	pymsg->private_object = msg;
 	*message_object = pymsg;
+
+	talloc_set_destructor((void *)pymsg, (int (*)(void *))mapistore_python_object_destructor);
 
 	Py_INCREF(msg);
 	return MAPISTORE_SUCCESS;
@@ -1293,7 +1315,7 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 	count = PyLong_AsLong(res);
 	Py_DECREF(res);
 
-	pytable = talloc_zero(mem_ctx, struct mapistore_python_object);
+	pytable = talloc_zero(pyobj, struct mapistore_python_object);
 	MAPISTORE_RETVAL_IF(!pytable, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	pytable->obj_type = MAPISTORE_PYTHON_OBJECT_TABLE;
@@ -1303,6 +1325,8 @@ static enum mapistore_error mapistore_python_folder_open_table(TALLOC_CTX *mem_c
 	pytable->ictx = pyobj->ictx;
 	pytable->module = pyobj->module;
 	pytable->private_object = table;
+
+	talloc_set_destructor((void *)pytable, (int (*)(void *))mapistore_python_object_destructor);
 
 	*table_object = pytable;
 	*row_count = count;

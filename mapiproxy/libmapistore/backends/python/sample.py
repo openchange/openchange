@@ -142,6 +142,7 @@ class FolderObject(ContextObject):
         return 0
 
     def open_message(self, mid, rw):
+        print '[PYTHON]: %s folder.open_message' % self.name
         return MessageObject(self, mid, rw)
 
 class TableObject(BackendObject):

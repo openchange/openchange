@@ -444,7 +444,7 @@ int main(int argc, const char *argv[])
 				mapidump_SPropValue(lpProp, NULL);
 			}
 		}
-
+		MAPIFreeBuffer(SPropTagArray);
 		talloc_free(row_data);
 	}
 

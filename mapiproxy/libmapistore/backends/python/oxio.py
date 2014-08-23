@@ -252,8 +252,45 @@ class FolderObject(object):
         print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s)' % (BackendObject.name, uri, hex(folderID))
         self.ctx = context
         self.uri = uri
-        self.parentFID = parentFID;
-        self.folderID = folderID;
+        self.parentFID = parentFID
+        self.folderID = folderID
+        # ox folder record
+        oxioConn = _OxioConn.get_instance()
+        self.oxio_folder = oxioConn.getFolder(self.uri)
+        self.parent_uri = self.oxio_folder['folder_id']
+        self.has_subfolders = self.oxio_folder['subfolders']
+        self.message_count = self.oxio_folder['total']
+        #print json.dumps(self.oxio_folder, indent=4)
+        # ox folder children folder records
+        self.subfolders = []
+        oxio_subfolders = []
+        if self.has_subfolders:
+            oxio_subfolders = oxioConn.getSubFolders(self.uri, [])
+        # ox records for messages
+        self.messages = []
+        oxio_messages = []
+        if self.message_count > 0:
+            oxio_messages = oxioConn.getEmails(self.uri, [])
+        # update Indexing
+        if len(self.parent_uri):
+            _Index.add_entry(parentFID, self.parent_uri)
+        self._index_subfolders(oxio_subfolders)
+        self._index_messages(oxio_messages)
+        pass
+
+    def _index_subfolders(self, oxio_subfolders):
+        print json.dumps(oxio_subfolders, indent=4)
+        for fr in oxio_subfolders:
+            folder = {'uri': fr[0],
+                      'parent_uri': self.uri,
+                      'PidTagDisplayName': fr[2],
+                      'has_subfolders': fr[5]}
+            folder['PidTagFolderId'] = _Index.add_uri(folder['uri'])
+            self.subfolders.append(folder)
+        pass
+
+    def _index_messages(self, oxio_messages):
+        print json.dumps(oxio_messages, indent=4)
         pass
 
     def open_folder(self, folderID):
@@ -285,7 +322,7 @@ class FolderObject(object):
         return (table, self.get_child_count(table_type))
 
     def get_child_count(self, table_type):
-        print '[PYTHON]: [%s] folder.get_child_count' % (BackendObject.name)
+        print '[PYTHON]: [%s] folder.get_child_count. table_type = %d' % (BackendObject.name, table_type)
         counter = { 1: self._count_folders,
                     2: self._count_messages,
                     3: self._count_zero,
@@ -296,12 +333,12 @@ class FolderObject(object):
         return counter[table_type]()
 
     def _count_folders(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_folders(%s)' % (BackendObject.name, hex(self.folderID))
-        return 0
+        print '[PYTHON][INTERNAL]: [%s] folder._count_folders(%s) = %d' % (BackendObject.name, hex(self.folderID), len(self.subfolders))
+        return len(self.subfolders)
 
     def _count_messages(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_messages(%s)' % (BackendObject.name, hex(self.folderID))
-        return 0
+        print '[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, hex(self.folderID), len(self.messages))
+        return len(self.messages)
 
     def _count_zero(self):
         return 0
@@ -309,10 +346,10 @@ class FolderObject(object):
 
 class TableObject(object):
 
-    def __init__(self, folder, tableType):
+    def __init__(self, folder, table_type):
         print '[PYTHON]: [%s] table.__init__()' % (BackendObject.name)
         self.folder = folder
-        self.tableType = tableType
+        self.table_type = table_type
         self.properties = None
 
     def set_columns(self, properties):
@@ -321,10 +358,30 @@ class TableObject(object):
         print 'properties: [%s]\n' % ', '.join(map(str, properties))
         return 0
 
-    def get_row(self, rowId, query_type):
-        print '[PYTHON]: %s table.get_row()' % (BackendObject.name)
-
+    def get_row(self, row_no, query_type):
+        print '[PYTHON]: %s table.get_row(%s)' % (BackendObject.name, row_no)
+        getter = {1: self._get_row_folders,
+                  2: self._get_row_messages,
+                  3: self._get_row_not_impl,
+                  4: self._get_row_not_impl,
+                  5: self._get_row_not_impl,
+                  6: self._get_row_not_impl
+                  }
+        return getter[self.table_type](row_no)
         # TODO: lazy load childs - messages or folders
         # TODO: create index
 
+    def _get_row_folders(self, row_no):
+        folder = self.folder.subfolders[row_no]
+        row = {}
+        for name in self.properties:
+            if name in folder:
+                row[name] = folder[name]
+        print json.dumps(row, indent=4)
+        return (self.properties, row)
+
+    def _get_row_messages(self, row_no):
+        return (self.properties, {})
+
+    def _get_row_not_impl(self, row_no):
         return (self.properties, {})

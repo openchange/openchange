@@ -326,17 +326,19 @@ int main(int argc, const char *argv[])
 		// TODO: Fail here when we start to support list_contexts
 	}
 
+	DEBUG(0, ("*** mapistore_add_context\n"));
 	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 
-
+	/* get_path */
 	{
 		char			*mapistore_URI = NULL;
 		struct backend_context	*backend_ctx;
 
+		DEBUG(0, ("*** mapistore_backend_get_path\n"));
 		backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 		if (!backend_ctx || !backend_ctx->indexing) {
 			DEBUG(0, ("Invalid backend_ctx\n"));
@@ -356,7 +358,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* try to get first child for test Context or fallback to FMID for context folder */
-	DEBUG(0, ("Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeefL));
+	DEBUG(0, ("*** Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeefL));
 	fmid = _find_first_child_folder(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (!fmid) {
 		/* use root context FMID, should work */
@@ -374,6 +376,7 @@ int main(int argc, const char *argv[])
 	{
 		uint32_t	count = 0;
 
+		DEBUG(0, ("*** mapistore_folder_get_child_count\n"));
 		retval = mapistore_folder_get_child_count(mstore_ctx, context_id, child_folder_object,
 							  MAPISTORE_FOLDER_TABLE, &count);
 		if (retval != MAPISTORE_SUCCESS) {
@@ -393,6 +396,7 @@ int main(int argc, const char *argv[])
 	{
 		uint32_t	count = 0;
 
+		DEBUG(0, ("*** mapistore_folder_open_table\n"));
 		retval = mapistore_folder_open_table(mstore_ctx, context_id, child_folder_object,
 						     mem_ctx, MAPISTORE_FOLDER_TABLE, 0,
 						     &table_object, &count);
@@ -405,6 +409,7 @@ int main(int argc, const char *argv[])
 
 	/* set columns */
 	{
+		DEBUG(0, ("*** mapistore_folder_set_columns\n"));
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
 						  PR_DISPLAY_NAME_UNICODE,
 						  PR_FID,
@@ -426,6 +431,7 @@ int main(int argc, const char *argv[])
 		struct mapistore_property_data	*row_data;
 		uint32_t			i;
 
+		DEBUG(0, ("*** mapistore_table_get_row\n"));
 		retval = mapistore_table_get_row(mstore_ctx, context_id, table_object,
 						 mem_ctx, MAPISTORE_PREFILTERED_QUERY, 0,
 						 &row_data);
@@ -454,6 +460,7 @@ int main(int argc, const char *argv[])
 	{
 		uint32_t	row_count = 0;
 
+		DEBUG(0, ("*** mapistore_table_get_row_count\n"));
 		retval = mapistore_table_get_row_count(mstore_ctx, context_id, table_object,
 						       MAPISTORE_PREFILTERED_QUERY,
 						       &row_count);
@@ -466,6 +473,7 @@ int main(int argc, const char *argv[])
 
 	/* open_message */
 	{
+		DEBUG(0, ("*** mapistore_folder_open_message\n"));
 		retval = mapistore_folder_open_message(mstore_ctx, context_id, child_folder_object, mem_ctx,
 						       0xdead0001, 0, &message_object);
 		if (retval != MAPISTORE_SUCCESS) {
@@ -479,6 +487,7 @@ int main(int argc, const char *argv[])
 		struct mapistore_message	*msg_data;
 		struct SPropValue		lpProp;
 
+		DEBUG(0, ("*** mapistore_message_get_message_data\n"));
 		retval = mapistore_message_get_message_data(mstore_ctx, context_id,
 							    message_object, mem_ctx,
 							    &msg_data);
@@ -517,6 +526,7 @@ int main(int argc, const char *argv[])
 		struct mapistore_property_data	*property_data = NULL;
 		uint32_t			i;
 
+		DEBUG(0, ("*** mapistore_properties_get_properties\n"));
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x3,
 						  PidTagConversationTopic,
 						  PidTagBody,

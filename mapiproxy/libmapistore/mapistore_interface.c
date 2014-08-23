@@ -871,13 +871,13 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t *child_fmids[], uint32_t *child_fmid_count)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t **child_fmids, uint32_t *child_fmid_count)
 {
 	TALLOC_CTX			*local_mem_ctx;
 	enum mapistore_error		ret;
 	void				*backend_table;
-	uint32_t			i, row_count;
-	uint64_t			*fmids, *current_fmid;
+	uint32_t			i, row_count, count;
+	uint64_t			*fmids;
 	enum MAPITAGS			fmid_column;
 	struct mapistore_property_data	*row_data;
 
@@ -911,21 +911,19 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_
 		goto end;
 	}
 
-	fmids = talloc_array(mem_ctx, uint64_t, row_count);
-	*child_fmids = fmids;
-	current_fmid = fmids;
-	for (i = 0; i < row_count; i++) {
+	fmids = talloc_array(mem_ctx, uint64_t, 2);
+	for (i = 0, count = 0; i < row_count; i++) {
 		ret = mapistore_table_get_row(mstore_ctx, context_id, backend_table,
 						 local_mem_ctx, MAPISTORE_PREFILTERED_QUERY,
 						 i, &row_data);
 		if ((ret == MAPISTORE_SUCCESS) && (row_data->error == MAPISTORE_SUCCESS) &&
 		    (row_data->data)) {
-			*current_fmid = *(uint64_t *) row_data->data;
-			current_fmid++;
-		} else {
-			row_count--;
+			fmids = talloc_realloc(mem_ctx, fmids, uint64_t, count + 2);
+			fmids[count] = *(uint64_t *) row_data->data;
+			count++;
 		}
 	}
+	*child_fmids = fmids;
 	*child_fmid_count = row_count;
 
 end:

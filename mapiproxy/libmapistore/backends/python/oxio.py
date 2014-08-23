@@ -358,6 +358,10 @@ class TableObject(object):
         print 'properties: [%s]\n' % ', '.join(map(str, properties))
         return 0
 
+    def get_row_count(self, query_type):
+        print '[PYTHON]: %s table.get_row_count()' % (BackendObject.name)
+        return self.folder.get_child_count(self.table_type)
+
     def get_row(self, row_no, query_type):
         print '[PYTHON]: %s table.get_row(%s)' % (BackendObject.name, row_no)
         getter = {1: self._get_row_folders,

@@ -330,7 +330,7 @@ int main(int argc, const char *argv[])
 	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
-		exit (1);
+		goto end;
 	}
 
 	/* get_path */
@@ -342,12 +342,12 @@ int main(int argc, const char *argv[])
 		backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 		if (!backend_ctx || !backend_ctx->indexing) {
 			DEBUG(0, ("Invalid backend_ctx\n"));
-			exit (1);
+			goto end;
 		}
 		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xdeadbeef, &mapistore_URI);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_get_path: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 		talloc_free(mapistore_URI);
 
@@ -355,7 +355,7 @@ int main(int argc, const char *argv[])
 		if (retval == MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_get_path: error expected!\n"));
 			talloc_free(mapistore_URI);
-			exit (1);
+			goto end;
 		}
 	}
 
@@ -371,7 +371,7 @@ int main(int argc, const char *argv[])
 					      &child_folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("mapistore_folder_open_folder: %s\n", mapistore_errstr(retval)));
-		exit (1);
+		goto end;
 	}
 
 	/* get_child_count */
@@ -399,12 +399,12 @@ int main(int argc, const char *argv[])
 		uint32_t	count = 0;
 
 		DEBUG(0, ("*** mapistore_folder_open_table\n"));
-		retval = mapistore_folder_open_table(mstore_ctx, context_id, child_folder_object,
+		retval = mapistore_folder_open_table(mstore_ctx, context_id, folder_object,
 						     mem_ctx, MAPISTORE_FOLDER_TABLE, 0,
 						     &table_object, &count);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_open_table: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 		DEBUG(0, ("open_table: count = %d\n", count));
 	}
@@ -424,7 +424,7 @@ int main(int argc, const char *argv[])
 						     SPropTagArray->aulPropTag);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_table_set_columns: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 	}
 
@@ -439,7 +439,7 @@ int main(int argc, const char *argv[])
 						 &row_data);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_table_get_row: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 
 		for (i = 0; i < SPropTagArray->cValues; i++) {
@@ -468,7 +468,7 @@ int main(int argc, const char *argv[])
 						       &row_count);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_table_get_row_count: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 		DEBUG(0, ("get_row_count: row_count = %d\n", row_count));
 	}
@@ -480,7 +480,7 @@ int main(int argc, const char *argv[])
 						       0xdead0001, 0, &message_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_open_message: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 	}
 
@@ -543,7 +543,7 @@ int main(int argc, const char *argv[])
 							     property_data);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_properties_get_properties: %s\n", mapistore_errstr(retval)));
-			exit (1);
+			goto end;
 		}
 
 		for (i = 0; i < SPropTagArray->cValues; i++) {
@@ -568,16 +568,17 @@ int main(int argc, const char *argv[])
 	retval = _test_folder_create_delete(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("_test_folder_create_delete: %s\n", mapistore_errstr(retval)));
-		exit (1);
+		goto end;
 	}
 
+ end:
 	retval = mapistore_del_context(mstore_ctx, context_id);
-
 	retval = mapistore_release(mstore_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
-		exit (1);
+		goto end;
 	}
 
+	talloc_free(mem_ctx);
 	return 0;
 }

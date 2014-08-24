@@ -46,7 +46,7 @@ class BackendObject(object):
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
         deadbeef = {}
-        deadbeef["url"] = "sample://deadbeef"
+        deadbeef["url"] = "sample://deadbeef/"
         deadbeef["name"] = "deadbeef"
         deadbeef["main_folder"] = True
         deadbeef["role"] = mapistore.ROLE_MAIL
@@ -95,7 +95,7 @@ class ContextObject(BackendObject):
 
 
         subfolder = {}
-        subfolder["uri"] = "sample://deadbeef/dead001"
+        subfolder["uri"] = "sample://deadbeef/dead001/"
         subfolder["fid"] = 0xdead1001
         subfolder["properties"] = {}
         subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
@@ -108,7 +108,7 @@ class ContextObject(BackendObject):
         subfolder["messages"] = [message1,]
 
         self.mapping[0xdeadbeef] = {}
-        self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef"
+        self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef/"
         self.mapping[0xdeadbeef]["properties"] = {}
         self.mapping[0xdeadbeef]["properties"]["PidTagFolderId"] = 0xdeadbeef
         self.mapping[0xdeadbeef]["cache"] = {}

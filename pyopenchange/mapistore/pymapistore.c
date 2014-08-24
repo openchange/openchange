@@ -679,6 +679,19 @@ void initmapistore(void)
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 
+	PyModule_AddObject(m, "ROLE_MAIL", PyInt_FromLong(MAPISTORE_MAIL_ROLE));
+	PyModule_AddObject(m, "ROLE_DRAFTS", PyInt_FromLong(MAPISTORE_DRAFTS_ROLE));
+	PyModule_AddObject(m, "ROLE_SENTITEMS", PyInt_FromLong(MAPISTORE_SENTITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_OUTBOX", PyInt_FromLong(MAPISTORE_OUTBOX_ROLE));
+	PyModule_AddObject(m, "ROLE_DELETEDITEMS", PyInt_FromLong(MAPISTORE_DELETEDITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_CALENDAR", PyInt_FromLong(MAPISTORE_CALENDAR_ROLE));
+	PyModule_AddObject(m, "ROLE_CONTACTS", PyInt_FromLong(MAPISTORE_CONTACTS_ROLE));
+	PyModule_AddObject(m, "ROLE_TASKS", PyInt_FromLong(MAPISTORE_TASKS_ROLE));
+	PyModule_AddObject(m, "ROLE_NOTES", PyInt_FromLong(MAPISTORE_NOTES_ROLE));
+	PyModule_AddObject(m, "ROLE_JOURNAL", PyInt_FromLong(MAPISTORE_JOURNAL_ROLE));
+	PyModule_AddObject(m, "ROLE_FALLBACK", PyInt_FromLong(MAPISTORE_FALLBACK_ROLE));
+	PyModule_AddObject(m, "ROLE_MAX_ROLES", PyInt_FromLong(MAPISTORE_MAX_ROLES));
+
 	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);

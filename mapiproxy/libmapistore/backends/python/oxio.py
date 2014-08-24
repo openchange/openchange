@@ -27,12 +27,8 @@ __all__ = ["BackendObject",
 import sysconfig
 sys.path.append(sysconfig.get_path('platlib'))
 
-root = os.path.abspath(os.path.dirname(__file__))
-sys.path.append(os.sep.join((root, '..', '..')))
-
 import requests
 import json
-from openchange import mapistore
 
 
 # few mapistore ERRORS until we expose them

@@ -413,7 +413,7 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 								   struct indexing_context *ictx,
 								   struct mapistore_contexts_list **mclist)
 {
-	struct mapistore_contexts_list	*clist;
+	struct mapistore_contexts_list	*clist = NULL;
 	struct mapistore_contexts_list	*entry;
 	PyObject			*module;
 	PyObject			*backend;
@@ -479,9 +479,6 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	clist = talloc_zero(mem_ctx, struct mapistore_contexts_list);
-	MAPISTORE_RETVAL_IF(!clist, MAPISTORE_ERR_NO_MEMORY, NULL);
-
 	count = PyList_Size(pylist);
 	for (i = 0; i < count; i++) {
 		dict = PyList_GetItem(pylist, i);
@@ -490,7 +487,6 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 				  module_name, __location__));
 			PyErr_Print();
 			Py_DECREF(pylist);
-			talloc_free(clist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 
@@ -498,66 +494,68 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
 			  module_name, __location__, dict->ob_type->tp_name));
 		Py_DECREF(pylist);
-		talloc_free(clist);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 
-		entry = talloc_zero(clist, struct mapistore_contexts_list);
+		entry = talloc_zero(mem_ctx, struct mapistore_contexts_list);
 		MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_NO_MEMORY, clist);
 
 		/* Retrieve url */
 		key = PyString_FromString("url");
 		if (key == NULL) {
 			PyErr_Print();
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		if (PyDict_Contains(dict, key) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing url key for entry %d\n",
 				  module_name, __location__, i));
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		item = PyDict_GetItem(dict, key);
 		Py_DECREF(key);
-		/* FIXME: Check string type */
-		entry->url = talloc_strdup(entry, PyString_AsString(item));
+		if (PyString_Check(item) != true) {
+			DEBUG(0, ("[ERR][%s][%s]: String expect but got '%s'\n",
+				  module_name, __location__, item->ob_type->tp_name));
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		entry->url = PyString_AsString(item);
 
 		/* name */
 		key = PyString_FromString("name");
 		if (key == NULL) {
 			PyErr_Print();
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		if (PyDict_Contains(dict, key) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing name key for entry %d\n",
 				  module_name, __location__, i));
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		item = PyDict_GetItem(dict, key);
 		Py_DECREF(key);
-		/* FIXME: Check string type */
-		entry->name = talloc_strdup(entry, PyString_AsString(item));
-		MAPISTORE_RETVAL_IF(!entry->name, MAPISTORE_ERR_NO_MEMORY, clist);
+		if (PyString_Check(item) != true) {
+			DEBUG(0, ("[ERR][%s][%s]: String expect but got '%s'\n",
+				  module_name, __location__, item->ob_type->tp_name));
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		entry->name = PyString_AsString(item);
 
 		/* main_folder */
 		key = PyString_FromString("main_folder");
 		if (key == NULL) {
 			PyErr_Print();
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		if (PyDict_Contains(dict, key) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing main_folder key for entry %d\n",
 				  module_name, __location__, i));
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
@@ -570,14 +568,12 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		key = PyString_FromString("role");
 		if (key == NULL) {
 			PyErr_Print();
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		if (PyDict_Contains(dict, key) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing role key for entry %d\n",
 				  module_name, __location__, i));
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
@@ -590,23 +586,26 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		key = PyString_FromString("tag");
 		if (key == NULL) {
 			PyErr_Print();
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		if (PyDict_Contains(dict, key) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing tag key for entry %d\n",
 				  module_name, __location__, i));
-			talloc_free(clist);
 			Py_DECREF(pylist);
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 		item = PyDict_GetItem(dict, key);
 		Py_DECREF(key);
-		/* FIXME: Check string type */
-		entry->tag = talloc_strdup(entry, PyString_AsString(item));
+		if (PyString_Check(item) != true) {
+			DEBUG(0, ("[ERR][%s][%s]: String expect but got '%s'\n",
+				  module_name, __location__, item->ob_type->tp_name));
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		entry->tag = PyString_AsString(item);
 
-		DLIST_ADD_END(clist, entry, struct mapistore_contexts_list *);
+		DLIST_ADD_END(clist, entry, void);
 	}
 	*mclist = clist;
 

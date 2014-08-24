@@ -312,6 +312,15 @@ class FolderObject(object):
         print '[PYTHON]: [%s] folder.delete(%s)' % (BackendObject.name, self.folderID)
         return MAPISTORE_ERR_NOT_IMPLEMENTED
 
+    def get_properties(self, properties):
+        print '[PYTHON][%s/%s]: folder.get_properties(%s)' % (BackendObject.name, self.uri, properties)
+        return {'PidTagFolderId': self.folderID,
+                'PidTagDisplayName': self.oxio_folder['title'],
+                'PidTagParentFolderId': self.parentFID,
+                'PidTagFolderType': 1, # GENERIC FOLDER
+                'PidTagAccess': 2043
+                }
+
     def open_table(self, table_type):
         print '[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type)
         table = TableObject(self, table_type)

@@ -177,8 +177,8 @@ class FolderObject(ContextObject):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
         for item in self.parentdict["subfolders"]:
             if str(item["fid"]) == str(self.folderID):
-                   self.parentdict["subfolders"].remove(item)
-                   return 0
+                self.parentdict["subfolders"].remove(item)
+                return 0
         return 17
 
     def open_table(self, table_type):

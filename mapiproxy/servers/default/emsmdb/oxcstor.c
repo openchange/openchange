@@ -73,7 +73,8 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!username, ecUnknownUser, NULL);
 
 	/* Step 2. Init and or update the user mailbox (auto-provisioning) */
-	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
+//	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
+	ret = MAPI_E_SUCCESS;
 	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
 	if (strncmp(username, emsmdbp_ctx->username, strlen(username)) == 0) {

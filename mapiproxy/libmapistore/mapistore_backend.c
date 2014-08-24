@@ -339,7 +339,10 @@ enum mapistore_error mapistore_backend_list_contexts(const char *username, struc
 	for (i = 0; i < num_backends; i++) {
 		retval = backends[i].backend->backend.list_contexts(mem_ctx, backends[i].backend->backend.name, username, ictx, &current_contexts_list);
 		if (retval != MAPISTORE_SUCCESS) {
-			return retval;
+			DEBUG(0, ("[WARN] list contexts for %s failed with %s\n",
+				  backends[i].backend->backend.name,
+				  mapistore_errstr(retval)));
+			continue;
 		}
 		DLIST_CONCATENATE(contexts_list, current_contexts_list, void);
 	}

@@ -325,6 +325,10 @@ class FolderObject(object):
                 'PidTagAccess': 2043
                 }
 
+    def set_properties(self, properties):
+        print '[PYTHON][%s/%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties)
+        return MAPISTORE_SUCCESS
+
     def open_table(self, table_type):
         print '[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type)
         table = TableObject(self, table_type)

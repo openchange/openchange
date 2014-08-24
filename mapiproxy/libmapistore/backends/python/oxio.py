@@ -349,7 +349,7 @@ class FolderObject(object):
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
                       'parent_uri': self.uri,
-                      'PidTagDisplayName': fr[2],
+                      'PidTagDisplayName': 'OXIO-' + fr[2],
                       'PidTagParentFolderId': self.folderID,
                       'PidTagFolderType': 1, # GENERIC FOLDER
                       'PidTagAccess': PidTagAccessFlag.Read |
@@ -396,7 +396,7 @@ class FolderObject(object):
     def get_properties(self, properties):
         logger.info('[PYTHON][%s/%s]: folder.get_properties(%s)' % (BackendObject.name, self.uri, properties))
         return {'PidTagFolderId': self.folderID,
-                'PidTagDisplayName': self.oxio_folder['title'],
+                'PidTagDisplayName': 'OXIO-' + self.oxio_folder['title'],
                 'PidTagParentFolderId': self.parentFID,
                 'PidTagFolderType': 1, # GENERIC FOLDER
                 'PidTagAccess': PidTagAccessFlag.Read |

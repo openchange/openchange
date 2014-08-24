@@ -362,9 +362,8 @@ class TableObject(object):
         self.properties = None
 
     def set_columns(self, properties):
-        print '[PYTHON]: [%s] table.set_columns()' % (BackendObject.name)
+        print '[PYTHON]: [%s] table.set_columns(%s)' % (BackendObject.name, properties)
         self.properties = properties
-        print 'properties: [%s]\n' % ', '.join(map(str, properties))
         return 0
 
     def get_row_count(self, query_type):

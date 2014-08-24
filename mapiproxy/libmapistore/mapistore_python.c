@@ -2371,7 +2371,7 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 			data[i].data = NULL;
 		} else {
 			/* Map dict data to void */
-			data[i].error = mapistore_data_from_pyobject(data, properties[i],
+			data[i].error = mapistore_data_from_pyobject(mem_ctx, properties[i],
 								     value, &data[i].data);
 			if (data[i].error != MAPISTORE_SUCCESS) {
 				data[i].data = NULL;

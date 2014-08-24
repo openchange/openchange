@@ -313,7 +313,7 @@ class FolderObject(object):
         return MAPISTORE_ERR_NOT_IMPLEMENTED
 
     def open_table(self, table_type):
-        print '[PYTHON]: [%s] folder.open_table' % (BackendObject.name)
+        print '[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type)
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
 
@@ -371,8 +371,6 @@ class TableObject(object):
                   6: self._get_row_not_impl
                   }
         return getter[self.table_type](row_no)
-        # TODO: lazy load childs - messages or folders
-        # TODO: create index
 
     def _get_row_folders(self, row_no):
         folder = self.folder.subfolders[row_no]

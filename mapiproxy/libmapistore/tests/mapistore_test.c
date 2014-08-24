@@ -320,11 +320,20 @@ int main(int argc, const char *argv[])
 		exit (1);
 	}
 
+	DEBUG(0, ("*** mapistore_backend_get_path\n"));
 	retval = mapistore_list_contexts_for_user(mstore_ctx, opt_username, mem_ctx, &mstore_contexts);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: mapistore_list_contexts_for_user: %s\n", mapistore_errstr(retval)));
 		// TODO: Fail here when we start to support list_contexts
 	}
+	for (; mstore_contexts->next; mstore_contexts = mstore_contexts->next) {
+		DEBUG(0, ("context %s\n", mstore_contexts->url));
+		DEBUG(0, ("\t.name %s\n", mstore_contexts->name));
+		DEBUG(0, ("\t.main_folder %d\n", mstore_contexts->main_folder));
+		DEBUG(0, ("\t.role %d\n", mstore_contexts->role));
+		DEBUG(0, ("\t.tag %s\n", mstore_contexts->tag));
+	}
+	talloc_free(mstore_contexts);
 
 	DEBUG(0, ("*** mapistore_add_context\n"));
 	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef, &context_id, &folder_object);

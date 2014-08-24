@@ -45,8 +45,15 @@ class BackendObject(object):
         """ List context capabilities of this backend.
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
-        contexts = [{ "inbox", "INBOX", "calendar", "CALENDAR" }]
-        return (0, contexts)
+        deadbeef = {}
+        deadbeef["url"] = "sample://deadbeef"
+        deadbeef["name"] = "deadbeef"
+        deadbeef["main_folder"] = True
+        deadbeef["role"] = mapistore.ROLE_MAIL
+        deadbeef["tag"] = "tag"
+
+        contexts = [deadbeef,]
+        return contexts
 
     def create_context(self, uri):
         """ Create a context.

@@ -413,11 +413,17 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 								   struct indexing_context *ictx,
 								   struct mapistore_contexts_list **mclist)
 {
-	enum mapistore_error		retval;
+	struct mapistore_contexts_list	*clist;
+	struct mapistore_contexts_list	*entry;
 	PyObject			*module;
-	PyObject			*backend, *pres, *pinst;
-	PyObject			*res;
+	PyObject			*backend;
+	PyObject			*pylist;
 	PyObject			*dict;
+	PyObject			*pinst;
+	PyObject			*key;
+	PyObject			*item;
+	uint32_t			i;
+	uint32_t			count;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!module_name, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
@@ -452,8 +458,8 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 	}
 
 	/* Call list_contexts function */
-	pres = PyObject_CallMethod(pinst, "list_contexts", "s", username);
-	if (pres == NULL) {
+	pylist = PyObject_CallMethod(pinst, "list_contexts", "s", username);
+	if (pylist == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: list_contexts failed\n", module_name, __location__));
 		PyErr_Print();
 		Py_DECREF(pinst);
@@ -462,59 +468,147 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Ensure a tuple was returned */
-	if (PyTuple_Check(pres) == false) {
+	/* Ensure a list was returned */
+	if (PyList_Check(pylist) == false) {
 		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in list_contexts\n",
 			  module_name, __location__));
-		Py_DECREF(pres);
+		Py_DECREF(pylist);
 		Py_DECREF(pinst);
 		Py_DECREF(backend);
 		Py_DECREF(module);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Retrieve return value (item 0 of the tuple) */
-	res = PyTuple_GetItem(pres, 0);
-	if (res == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n",
-			  module_name, __location__));
-		PyErr_Print();
-		Py_DECREF(pres);
-		Py_DECREF(pinst);
-		Py_DECREF(backend);
-		Py_DECREF(module);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
+	clist = talloc_zero(mem_ctx, struct mapistore_contexts_list);
+	MAPISTORE_RETVAL_IF(!clist, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	retval = PyLong_AsLong(res);
-	if (retval != MAPISTORE_SUCCESS) {
-		if (retval == -1) {
-			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", module_name, __location__));
+	count = PyList_Size(pylist);
+	for (i = 0; i < count; i++) {
+		dict = PyList_GetItem(pylist, i);
+		if (dict == NULL) {
+			DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed ",
+				  module_name, __location__));
+			PyErr_Print();
+			Py_DECREF(pylist);
+			talloc_free(clist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
-		Py_DECREF(res);
-		Py_DECREF(pres);
-		Py_DECREF(pinst);
-		Py_DECREF(backend);
-		Py_DECREF(module);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
+
+		if (PyDict_Check(dict) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
+			  module_name, __location__, dict->ob_type->tp_name));
+		Py_DECREF(pylist);
+		talloc_free(clist);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+
+		entry = talloc_zero(clist, struct mapistore_contexts_list);
+		MAPISTORE_RETVAL_IF(!entry, MAPISTORE_ERR_NO_MEMORY, clist);
+
+		/* Retrieve url */
+		key = PyString_FromString("url");
+		if (key == NULL) {
+			PyErr_Print();
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing url key for entry %d\n",
+				  module_name, __location__, i));
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		/* FIXME: Check string type */
+		entry->url = talloc_strdup(entry, PyString_AsString(item));
+
+		/* name */
+		key = PyString_FromString("name");
+		if (key == NULL) {
+			PyErr_Print();
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing name key for entry %d\n",
+				  module_name, __location__, i));
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		/* FIXME: Check string type */
+		entry->name = talloc_strdup(entry, PyString_AsString(item));
+		MAPISTORE_RETVAL_IF(!entry->name, MAPISTORE_ERR_NO_MEMORY, clist);
+
+		/* main_folder */
+		key = PyString_FromString("main_folder");
+		if (key == NULL) {
+			PyErr_Print();
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing main_folder key for entry %d\n",
+				  module_name, __location__, i));
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		/* FIXME: Check bool value */
+		entry->main_folder = (bool)PyInt_AsLong(item);
+
+		/* role */
+		key = PyString_FromString("role");
+		if (key == NULL) {
+			PyErr_Print();
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing role key for entry %d\n",
+				  module_name, __location__, i));
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		/* FIXME: Check int type */
+		entry->role = (bool)PyInt_AsLong(item);
+
+		/* tag */
+		key = PyString_FromString("tag");
+		if (key == NULL) {
+			PyErr_Print();
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		if (PyDict_Contains(dict, key) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Missing tag key for entry %d\n",
+				  module_name, __location__, i));
+			talloc_free(clist);
+			Py_DECREF(pylist);
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
+		item = PyDict_GetItem(dict, key);
+		Py_DECREF(key);
+		/* FIXME: Check string type */
+		entry->tag = talloc_strdup(entry, PyString_AsString(item));
+
+		DLIST_ADD_END(clist, entry, struct mapistore_contexts_list *);
 	}
-	Py_DECREF(res);
-
-	/* Retrieve dictionary object (item 1 of the tuple) */
-	dict = PyTuple_GetItem(pres, 1);
-	if (dict == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed\n", module_name, __location__));
-		PyErr_Print();
-		Py_DECREF(pres);
-		Py_DECREF(pinst);
-		Py_DECREF(backend);
-		Py_DECREF(module);
-		return MAPISTORE_ERR_CONTEXT_FAILED;
-	}
-
-	/* FIXME: Unpack the dictionary and map it to mapistore_contexts_list */
-
-	return MAPISTORE_ERR_NOT_FOUND;
+	*mclist = clist;
 
 	return MAPISTORE_SUCCESS;
 }

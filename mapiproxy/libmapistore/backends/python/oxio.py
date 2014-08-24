@@ -279,8 +279,12 @@ class FolderObject(object):
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
                       'parent_uri': self.uri,
+                      'has_subfolders': fr[5],
                       'PidTagDisplayName': fr[2],
-                      'has_subfolders': fr[5]}
+                      'PidTagParentFolderId': self.folderID,
+                      'PidTagFolderType': 1, # GENERIC FOLDER
+                      'PidTagAccess': 2043,
+                      }
             folder['PidTagFolderId'] = _Index.add_uri(folder['uri'])
             self.subfolders.append(folder)
         pass

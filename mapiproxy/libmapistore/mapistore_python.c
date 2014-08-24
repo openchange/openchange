@@ -2343,7 +2343,7 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	pres = PyObject_CallMethod(obj, "get_properties", "O", proplist);
 	Py_DECREF(proplist);
 	if (pres == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: \n",
 			  pyobj->name, __location__));
 		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;

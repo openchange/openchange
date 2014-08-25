@@ -258,7 +258,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			val = PyBool_FromLong(*((uint32_t *)data));
 			break;
 		case PT_I8:
-			DEBUG(5, ("[WARN][%s]: PT_I8 case not implemented\n", __location__));
+			val = PyLong_FromUnsignedLongLong(*((uint64_t *)data));
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:

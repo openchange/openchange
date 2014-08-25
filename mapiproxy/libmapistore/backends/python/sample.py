@@ -46,7 +46,7 @@ class BackendObject(object):
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
         deadbeef = {}
-        deadbeef["url"] = "sample://deadbeef/"
+        deadbeef["url"] = "sample://deadbeef00000001/"
         deadbeef["name"] = "deadbeef"
         deadbeef["main_folder"] = True
         deadbeef["role"] = mapistore.ROLE_MAIL
@@ -81,7 +81,7 @@ class ContextObject(BackendObject):
 
         message1 = {}
         message1["Recipients"] = [DummyTo, ]
-        message1["mid"] = 0xdead0001
+        message1["mid"] = 0xdead000100000001
         message1["fai"] = False
         message1["cache"] = {}
         message1["properties"] = {}
@@ -95,25 +95,28 @@ class ContextObject(BackendObject):
 
 
         subfolder = {}
-        subfolder["uri"] = "sample://deadbeef/dead001/"
-        subfolder["fid"] = 0xdead1001
+        subfolder["uri"] = "sample://deadbeef00000001/dead00100000001/"
+        subfolder["fid"] = 0xdead100100000001
+        subfolder["subfolders"] = []
+        subfolder["messages"] = [message1,]
         subfolder["properties"] = {}
         subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
+        subfolder["properties"]["PidTagContainerClass"] = "IPF.Note"
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
+        subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
+        subfolder["properties"]["PidTagChildFolderCount"] = len(subfolder["subfolders"])
         subfolder["cache"] = {}
         subfolder["cache"]["properties"] = {}
         subfolder["cache"]["messages"] = []
-        subfolder["subfolders"] = []
-        subfolder["messages"] = [message1,]
 
-        self.mapping[0xdeadbeef] = {}
-        self.mapping[0xdeadbeef]["uri"] = "sample://deadbeef/"
-        self.mapping[0xdeadbeef]["properties"] = {}
-        self.mapping[0xdeadbeef]["properties"]["PidTagFolderId"] = 0xdeadbeef
-        self.mapping[0xdeadbeef]["cache"] = {}
-        self.mapping[0xdeadbeef]["subfolders"] = [subfolder, ]
-        self.mapping[0xdeadbeef]["messages"] = []
+        self.mapping[0xdeadbeef00000001] = {}
+        self.mapping[0xdeadbeef00000001]["uri"] = "sample://deadbeef00000001/"
+        self.mapping[0xdeadbeef00000001]["properties"] = {}
+        self.mapping[0xdeadbeef00000001]["properties"]["PidTagFolderId"] = 0xdeadbeef00000001
+        self.mapping[0xdeadbeef00000001]["cache"] = {}
+        self.mapping[0xdeadbeef00000001]["subfolders"] = [subfolder, ]
+        self.mapping[0xdeadbeef00000001]["messages"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
         return
@@ -231,6 +234,7 @@ class FolderObject(ContextObject):
 
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)
+        print properties
         return self.basedict["properties"]
 
     def set_properties(self, properties):

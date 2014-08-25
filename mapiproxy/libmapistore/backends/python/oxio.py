@@ -316,7 +316,7 @@ class FolderObject(object):
     """
 
     def __init__(self, context, uri, folderID, parentFID):
-        print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s)' % (BackendObject.name, uri, hex(folderID))
+        print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, hex(folderID), parentFID)
         self.ctx = context
         self.uri = uri
         self.parentFID = parentFID
@@ -340,7 +340,10 @@ class FolderObject(object):
             oxio_messages = oxioConn.getEmails(self.uri, [])
         # update Indexing
         if len(self.parent_uri):
-            _Indexing.add_entry(parentFID, self.parent_uri)
+            if self.parentFID is not None:
+                _Indexing.add_entry(self.parentFID, self.parent_uri)
+            else:
+                self.parentFID = _Indexing.add_uri(self.parent_uri)
         self._index_subfolders(oxio_subfolders)
         self._index_messages(oxio_messages)
         pass

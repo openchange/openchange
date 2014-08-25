@@ -109,7 +109,8 @@ class _OxioConn(object):
         payload = {"action": "list",
                    "all": "1",
                    "session": self.sess_id,
-                   "columns": "1,20,300,301,302,304",
+                    # id, folder_id, title, module, type, subfolders?, total
+                   "columns": "1,20,300,301,302,304,309",
                    "parent": folder_id}
         self._dump_request(payload)
         r = self.so.get('https://www.ox.io/appsuite/api/folders', params=payload)
@@ -349,11 +350,14 @@ class FolderObject(object):
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
                       'parent_uri': self.uri,
-                      'has_subfolders': fr[5],
                       'PidTagDisplayName': fr[2],
                       'PidTagParentFolderId': self.folderID,
                       'PidTagFolderType': 1, # GENERIC FOLDER
                       'PidTagAccess': 2043,
+                      'PidTagContainerClass': 'IPF.Note',
+                      'PidTagDefaultPostMessageClass': 'IPM.Note',
+                      'PidTagSubfolders': fr[5],
+                      'PidTagContentCount': fr[6]
                       }
             folder['PidTagFolderId'] = _Indexing.add_uri(folder['uri'])
             self.subfolders.append(folder)
@@ -392,7 +396,11 @@ class FolderObject(object):
                 'PidTagDisplayName': self.oxio_folder['title'],
                 'PidTagParentFolderId': self.parentFID,
                 'PidTagFolderType': 1, # GENERIC FOLDER
-                'PidTagAccess': 2043
+                'PidTagAccess': 2043,
+                'PidTagContainerClass': 'IPF.Note',
+                'PidTagDefaultPostMessageClass': 'IPM.Note',
+                'PidTagSubfolders': bool(self.oxio_folder['subfolders']),
+                'PidTagContentCount': int(self.oxio_folder['total'])
                 }
 
     def set_properties(self, properties):

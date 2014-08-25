@@ -185,6 +185,9 @@ class FolderObject(ContextObject):
             folder["properties"]["PidTagComment"] = properties["PidTagComment"]
         folder["subfolders"] = []
         folder["messages"] = []
+        folder["cache"] = {}
+        folder["cache"]["properties"] = {}
+        folder["cache"]["messages"] = []
 
         self.basedict["subfolders"].append(folder)
 

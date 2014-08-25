@@ -94,3 +94,34 @@ following:
 
 The *crashdb* will be stored at `crash.sqlite` file and the processed
 crashes will be stored at `crashes-base` directory.
+
+Tracker management
+------------------
+
+You can manage the crash report database linked to a tracker platform
+such as [Redmine](http://redmine.org). Every time a new crash is
+created in the DB, then a new issue is created in the tracker. And
+every time a crash is duplicated, then the issue is updated with a new
+duplicate to know the availability of a crash report in the
+installation base.
+
+In order to configure the tracker authentication, you must edit
+`crash-digger.conf` file and remember to pass it as `--oc-cd-conf`
+argument with the following configuration:
+
+    # Redmine authentication to tracker integration
+    tracker_auth = {
+        # type: supported trackers, redmine by now
+        'tracker' : 'redmine',
+        # url: the url where the tracker is available
+        'url': 'http://redmine.org'
+        # key: the API key available on the setings
+        'key': '34e34234324e2b2321123213213b583839103e5',
+        # project_id: the project where to create the issues
+        'project_id': 'openchange',
+    }
+
+It requires `python-redmine` package to work. In order to install it,
+run the following command:
+
+    $ sudo pip install python-redmine

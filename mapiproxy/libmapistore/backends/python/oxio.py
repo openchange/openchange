@@ -183,9 +183,10 @@ class _Indexing(object):
 
     @classmethod
     def uri_by_id(cls, fid):
+        print '[PYTHON] _Indexing.uri_by_id(%s)' % fid
         db = cls._mysql_db()
         c = db.cursor()
-        c.execute("SELECT url FROM mapistore_indexing WHERE fmid = %d" % fid)
+        c.execute("SELECT url FROM mapistore_indexing WHERE fmid = '%d'" % fid)
         (mstore_url,) = c.fetchone()
         # prepare the URL for internal use
         #  remove oxio:// prefix

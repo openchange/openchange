@@ -130,7 +130,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			break;
 		case PT_BOOLEAN:
 			MAPISTORE_RETVAL_IF((PyBool_Check(value) == false), MAPISTORE_ERR_NOT_FOUND, NULL);
-			b = (value == Py_True) ? true : false;
+			b = (value == Py_True);
 			*data = talloc_memdup(mem_ctx, &b, sizeof(b));
 			retval = MAPISTORE_SUCCESS;
 			break;

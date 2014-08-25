@@ -336,7 +336,7 @@ int main(int argc, const char *argv[])
 	talloc_free(mstore_contexts);
 
 	DEBUG(0, ("*** mapistore_add_context\n"));
-	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef, &context_id, &folder_object);
+	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef00000001, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		goto end;
@@ -353,7 +353,7 @@ int main(int argc, const char *argv[])
 			DEBUG(0, ("Invalid backend_ctx\n"));
 			goto end;
 		}
-		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xdeadbeef, &mapistore_URI);
+		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xdeadbeef00000001, &mapistore_URI);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_get_path: %s\n", mapistore_errstr(retval)));
 			goto end;
@@ -369,7 +369,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* try to get first child for test Context or fallback to FMID for context folder */
-	DEBUG(0, ("*** Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeefL));
+	DEBUG(0, ("*** Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeef00000001L));
 	fmid = _find_first_child_folder(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (!fmid) {
 		/* use root context FMID, should work */
@@ -486,7 +486,7 @@ int main(int argc, const char *argv[])
 	{
 		DEBUG(0, ("*** mapistore_folder_open_message\n"));
 		retval = mapistore_folder_open_message(mstore_ctx, context_id, child_folder_object, mem_ctx,
-						       0xdead0001, 0, &message_object);
+						       0xdead000100000001, 0, &message_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_folder_open_message: %s\n", mapistore_errstr(retval)));
 			goto end;

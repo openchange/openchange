@@ -284,7 +284,7 @@ class ContextObject(object):
     def __init__(self, uri):
         self.uri = _Indexing.uri_mstore_to_oxio(uri)
         self.fmid = _Indexing.id_for_uri(self.uri)
-        print '[PYTHON]: [%s] context class __init__' % (self._log_marker(), uri)
+        print '[PYTHON]: [%s] context class __init__(%s)' % (self._log_marker(), uri)
 
     def get_path(self, fmid):
         print '[PYTHON]: [%s] context.get_path(%d)' % (self._log_marker(), fmid)

@@ -103,6 +103,7 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
         subfolder["properties"]["PidTagContainerClass"] = "IPF.Note"
+        subfolder["properties"]["PidTagSubfolders"] = False
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagChildFolderCount"] = len(subfolder["subfolders"])

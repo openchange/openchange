@@ -105,6 +105,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 							 void **data)
 {
 	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
+	bool			b;
 	int			l;
 	uint64_t		ll;
 	char			*str;
@@ -128,7 +129,10 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
 			break;
 		case PT_BOOLEAN:
-			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF((PyBool_Check(value) == false), MAPISTORE_ERR_NOT_FOUND, NULL);
+			b = (value == Py_True) ? true : false;
+			*data = talloc_memdup(mem_ctx, &b, sizeof(b));
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_I8:
 			if (PyInt_Check(value)) {
@@ -145,6 +149,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
+			MAPISTORE_RETVAL_IF((PyString_Check(value) == false), MAPISTORE_ERR_NOT_FOUND, NULL);
 			str = PyString_AsString(value);
 			MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_NOT_FOUND, NULL);
 
@@ -250,7 +255,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
 			break;
 		case PT_BOOLEAN:
-			DEBUG(5, ("[WARN][%s]: PT_BOOLEAN case not implemented\n", __location__));
+			val = PyBool_FromLong(*((uint32_t *)data));
 			break;
 		case PT_I8:
 			DEBUG(5, ("[WARN][%s]: PT_I8 case not implemented\n", __location__));

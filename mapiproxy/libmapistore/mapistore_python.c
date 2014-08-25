@@ -149,7 +149,8 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			break;
 		case PT_STRING8:
 		case PT_UNICODE:
-			MAPISTORE_RETVAL_IF((PyString_Check(value) == false), MAPISTORE_ERR_NOT_FOUND, NULL);
+			MAPISTORE_RETVAL_IF(!PyString_Check(value) && !PyUnicode_Check(value),
+					    MAPISTORE_ERR_NOT_FOUND, NULL);
 			str = PyString_AsString(value);
 			MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_NOT_FOUND, NULL);
 

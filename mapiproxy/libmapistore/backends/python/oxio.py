@@ -139,39 +139,105 @@ class _OxioConn(object):
         pass
 
 
-class _Index(object):
+class _Indexing(object):
 
     mapping = {}
+    # MySQLDb connection
+    _mysqldb = None
 
     @classmethod
     def add_entry(cls, fid, uri):
-        cls.mapping[fid] = uri
+        db = cls._mysql_db()
+        c = db.cursor()
+        c.execute("""INSERT INTO mapistore_indexing(username, fmid, url, soft_deleted)
+                     VALUES ('%s', '%s', '%s', 0)""" % (BackendObject.name, fid, uri))
+        db.commit()
+        return True
 
     @classmethod
     def add_uri(cls, uri):
-        fid = cls.id_for_uri(uri)
+        # convert to mapistore URI if needed
+        mstore_uri = uri
+        if not mstore_uri.startswith(BackendObject.namespace):
+            mstore_uri = cls.uri_oxio_to_mstore(mstore_uri)
+        # check if exists already
+        fid = cls.id_for_uri(mstore_uri)
         if fid is not None:
             return fid
+        # add new entry
         fid = cls.next_id()
-        cls.mapping[fid] = uri
+        cls.add_entry(fid, mstore_uri)
         return fid
 
     @classmethod
     def next_id(cls):
-        next_id = max(cls.mapping.keys())
-        return next_id + 1
+        db = cls._mysql_db()
+        c = db.cursor()
+        count = c.execute("select next_fmid from mapistore_indexes")
+        assert count > 0, "TODO: Make sure we have any MFIDs already in mapistore_indexes"
+        res = c.fetchone()
+        next_id = long(res[0])
+        c.execute("UPDATE mapistore_indexes SET next_fmid = %d" % (next_id + 1))
+        db.commit()
+        return cls._to_exchange_fmid(next_id)
 
     @classmethod
     def uri_by_id(cls, fid):
-        return cls.mapping.get(fid)
+        db = cls._mysql_db()
+        c = db.cursor()
+        c.execute("SELECT url FROM mapistore_indexing WHERE fmid = %d" % fid)
+        (mstore_url,) = c.fetchone()
+        # prepare the URL for internal use
+        #  remove oxio:// prefix
+        #  remove trailing /
+        return cls.uri_mstore_to_oxio(mstore_url)
 
     @classmethod
     def id_for_uri(cls, uri):
         """a bit clumsy implementation but still"""
-        for entry in cls.mapping.items():
-            if uri == entry[1]:
-                return entry[0]
+        if not uri.startswith(BackendObject.namespace):
+            uri = cls.uri_oxio_to_mstore(uri)
+        # fetch it
+        db = cls._mysql_db()
+        c = db.cursor()
+        count = c.execute("SELECT fmid FROM mapistore_indexing WHERE url = '%s'" % uri)
+        if count > 0:
+            (fmid,) = c.fetchone()
+            return long(fmid)
         return None
+
+    @staticmethod
+    def uri_mstore_to_oxio(uri):
+        return uri.replace(BackendObject.namespace, '').rstrip('/')
+
+    @staticmethod
+    def uri_oxio_to_mstore(uri):
+        return "%s%s/" % (BackendObject.namespace, uri.rstrip('/'))
+
+    @staticmethod
+    def _to_exchange_fmid(fmid):
+        return (((fmid & 0x00000000000000ffL)    << 40
+                | (fmid & 0x000000000000ff00L)    << 24
+                | (fmid & 0x0000000000ff0000L)    << 8
+                | (fmid & 0x00000000ff000000L)    >> 8
+                | (fmid & 0x000000ff00000000L)    >> 24
+                | (fmid & 0x0000ff0000000000L)    >> 40) | 0x0001)
+
+    @classmethod
+    def _mysql_db(cls):
+        if cls._mysqldb is not None:
+            return cls._mysqldb
+        # connect to MySQL
+        import MySQLdb
+        from samba.param import LoadParm
+        lp = LoadParm()
+        lp.load_default()
+        conn_url = lp.get('mapistore:indexing_backend').replace('mysql://', '')
+        (user_pass, host_db) = conn_url.replace('mysql://', '').split('@')
+        (username, password) = user_pass.split(':')
+        (host, database) = host_db.split('/')
+        cls._mysqldb = MySQLdb.connect(host=host, db=database, user=username, passwd=password)
+        return cls._mysqldb
 
 
 class BackendObject(object):
@@ -216,20 +282,23 @@ class ContextObject(object):
      """
 
     def __init__(self, uri):
-        self.uri = uri
-        print '[PYTHON]: [%s] context class __init__' % self._log_marker()
+        self.uri = _Indexing.uri_mstore_to_oxio(uri)
+        self.fmid = _Indexing.id_for_uri(self.uri)
+        print '[PYTHON]: [%s] context class __init__' % (self._log_marker(), uri)
 
     def get_path(self, fmid):
-        print '[PYTHON]: [%s] context.get_path' % self._log_marker()
-        uri = _Index.uri_by_id(fmid)
+        print '[PYTHON]: [%s] context.get_path(%d)' % (self._log_marker(), fmid)
+        uri = _Indexing.uri_by_id(fmid)
         print '[PYTHON]: [%s] get_path URI: %s' % (self._log_marker(), uri)
         return uri
 
     def get_root_folder(self, folderID):
-        print '[PYTHON]: [%s] context.get_root_folder' % self._log_marker()
-        # index our root uri, this is the first
-        _Index.add_entry(folderID, self.uri)
-        folder = FolderObject(self, self.uri, folderID, None)
+        print '[PYTHON]: [%s] context.get_root_folder(%s)' % (self._log_marker(), folderID)
+        if folderID != self.fmid:
+            uri = _Indexing.uri_by_id(folderID)
+        else:
+            uri = self.uri
+        folder = FolderObject(self, uri, folderID, None)
         return (0, folder)
 
     def _log_marker(self):
@@ -269,7 +338,7 @@ class FolderObject(object):
             oxio_messages = oxioConn.getEmails(self.uri, [])
         # update Indexing
         if len(self.parent_uri):
-            _Index.add_entry(parentFID, self.parent_uri)
+            _Indexing.add_entry(parentFID, self.parent_uri)
         self._index_subfolders(oxio_subfolders)
         self._index_messages(oxio_messages)
         pass
@@ -285,7 +354,7 @@ class FolderObject(object):
                       'PidTagFolderType': 1, # GENERIC FOLDER
                       'PidTagAccess': 2043,
                       }
-            folder['PidTagFolderId'] = _Index.add_uri(folder['uri'])
+            folder['PidTagFolderId'] = _Indexing.add_uri(folder['uri'])
             self.subfolders.append(folder)
         pass
 
@@ -300,7 +369,7 @@ class FolderObject(object):
         """
         print '[PYTHON]: [%s] folder.open_folder(%s)' % (BackendObject.name, hex(folderID))
 
-        child_uri = _Index.uri_by_id(folderID)
+        child_uri = _Indexing.uri_by_id(folderID)
         if child_uri is None:
             print '[PYTHON]:[ERR] child with id=%s not found' % hex(folderID)
             return None

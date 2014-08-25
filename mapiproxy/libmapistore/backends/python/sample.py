@@ -85,27 +85,40 @@ class ContextObject(BackendObject):
         message1["fai"] = False
         message1["cache"] = {}
         message1["properties"] = {}
-        message1["properties"]["PidTagMessageId"] = message1["mid"]
+        message1["properties"]["PidTagFolderId"] = 0xdeadbeef00000001
+        message1["properties"]["PidTagMid"] = message1["mid"]
+        message1["properties"]["PidTagInstID"] = 0xbabe000100000000
         message1["properties"]["PidTagSubjectPrefix"] = "Re:"
+        message1["properties"]["PidTagInstanceNum"] = 0
+        message1["properties"]["PidTagRowType"] = 1
+        message1["properties"]["PidTagDepth"] = 0
+        message1["properties"]["PidTagMessageClass"] = "IPM.Note"
+
         message1["properties"]["PidTagSubject"] = "Dummy Sample Email"
         message1["properties"]["PidTagNormalizedSubject"] = message1["properties"]["PidTagSubject"]
         message1["properties"]["PidTagConversationTopic"] = message1["properties"]["PidTagSubject"]
         message1["properties"]["PidTagBody"] = u"This is the content of this sample email"
-        message1["properties"]["PidTagInstanceNum"] = 0
+        message1["properties"]["PidTagImportance"] = 2
+        message1["properties"]["PidTagHasAttachments"] = False
+        message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
 
 
         subfolder = {}
         subfolder["uri"] = "sample://deadbeef00000001/dead00100000001/"
         subfolder["fid"] = 0xdead100100000001
         subfolder["subfolders"] = []
-        subfolder["messages"] = [message1,]
+        subfolder["messages"] = []
         subfolder["properties"] = {}
+        subfolder["properties"]["PidTagParentFolderId"] = 0xdeadbeef00000001
         subfolder["properties"]["PidTagFolderId"] = subfolder["fid"]
+        subfolder["properties"]["PidTagFolderType"] = 1
         subfolder["properties"]["PidTagDisplayName"] = "DEAD-1001"
         subfolder["properties"]["PidTagContainerClass"] = "IPF.Note"
+        subfolder["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Note"
         subfolder["properties"]["PidTagSubfolders"] = False
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
+        subfolder["properties"]["PidTagContentUnread"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagChildFolderCount"] = len(subfolder["subfolders"])
         subfolder["cache"] = {}
         subfolder["cache"]["properties"] = {}
@@ -117,7 +130,7 @@ class ContextObject(BackendObject):
         self.mapping[0xdeadbeef00000001]["properties"]["PidTagFolderId"] = 0xdeadbeef00000001
         self.mapping[0xdeadbeef00000001]["cache"] = {}
         self.mapping[0xdeadbeef00000001]["subfolders"] = [subfolder, ]
-        self.mapping[0xdeadbeef00000001]["messages"] = []
+        self.mapping[0xdeadbeef00000001]["messages"] = [message1, ]
 
         print '[PYTHON]: %s context class __init__' % self.name
         return
@@ -202,11 +215,11 @@ class FolderObject(ContextObject):
         return counter[table_type]()
 
     def _count_folders(self):
-        print '[PYTHON][INTERNAL]: %s folder._count_folders(0x%x)' % (self.name, self.folderID)
+        print '[PYTHON][INTERNAL]: %s folder._count_folders(0x%x): %d' % (self.name, self.folderID, len(self.basedict["subfolders"]))
         return len(self.basedict["subfolders"])
 
     def _count_messages(self):
-        print '[PYTHON][INTERNAL]: %s folder._count_messages(0x%x)' % (self.name, self.folderID)
+        print '[PYTHON][INTERNAL]: %s folder._count_messages(0x%x): %d' % (self.name, self.folderID, len(self.basedict["messages"]))
         return len(self.basedict["messages"])
 
     def _count_zero(self):

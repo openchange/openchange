@@ -381,6 +381,8 @@ class FolderObject(object):
 
     def _index_messages(self, oxio_messages):
         #print json.dumps(oxio_messages, indent=4)
+        for msg in oxio_messages:
+            self.messages.append(MessageObject(self, msg, None))
         pass
 
     def open_folder(self, folderID):
@@ -453,25 +455,103 @@ class FolderObject(object):
         return 0
 
 
+class MessageObject(object):
+
+    def __init__(self, folder, oxio_msg=None, mid=None):
+        print '[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg)
+        self.folder = folder
+        self.mid = mid
+        self.properties = {}
+        if oxio_msg is not None:
+            self.init_from_msg_list(oxio_msg)
+        print '[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties)
+
+    def init_from_msg_list(self, oxio_msg):
+        # msg[0] - message ID
+        # msg[1] - folder URL (ie folder_id)
+        # msg[2] - FROM list
+        # msg[3] - TO list
+        # msg[4] - CC list
+        # msg[5] - SUBJECT string
+        # msg[6] - received_date timestamp
+        print json.dumps(oxio_msg, indent=4)
+        subject = str(oxio_msg[5])
+        self.properties['PidTagFolderId'] = self.folder.folderID
+        self.properties['PidTagMid'] = long(oxio_msg[0])
+        self.properties['PidTagInstID'] = long(oxio_msg[0])
+        self.properties['PidTagSubjectPrefix'] = ''
+        self.properties['PidTagSubject'] = subject
+        self.properties['PidTagNormalizedSubject'] = subject
+        self.properties['PidTagConversationTopic'] = subject
+        self.properties['PidTagMessageClass'] = 'IPM.Note'
+        self.properties['PidTagDepth'] = 0
+        self.properties['PidTagRowType'] = 1
+        self.properties['PidTagInstanceNum'] = 0
+#         self.properties["PidTagBody"] = "This is the content of this sample email"
+#         self.properties["PidTagImportance"] = 2
+#         self.properties["PidTagHasAttachments"] = False
+#         self.properties["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
+
+        # build recipients
+        def _make_recipient(oxio_rcpt, recipient_type):
+            rcpt = {
+                    'PidTagRecipientType': recipient_type,
+                    'PidTagRecipientDisplayName': oxio_rcpt[0],
+                    'PidTagSmtpAddress': oxio_rcpt[1],
+                    }
+            return rcpt
+        self.recipients = []
+        # From
+        for oxio_rcpt in oxio_msg[2]:
+            self.recipients.append(_make_recipient(oxio_rcpt, 0x00000000))
+        # To
+        for oxio_rcpt in oxio_msg[3]:
+            self.recipients.append(_make_recipient(oxio_rcpt, 0x00000001))
+        # CC
+        for oxio_rcpt in oxio_msg[4]:
+            self.recipients.append(_make_recipient(oxio_rcpt, 0x00000002))
+
+    def get_message_data(self):
+        print '[PYTHON]:[%s] message.get_message_data(%s)' % (BackendObject.name, self.properties)
+        return (self.recipients, self.properties)
+
+    def get_properties(self, properties):
+        print '[PYTHON]:[%s] message.get_properties(%s)' % (BackendObject.name, self.properties)
+        return self.properties
+
+    def set_properties(self, properties):
+        print '[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, properties)
+
+        self.properties.update(properties)
+
+        print '[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, self.properties)
+        return 0
+
+    def save(self):
+        print '[PYTHON]:[%s] message.save(%s)' % (BackendObject.name, self.properties)
+
+        return MAPISTORE_ERR_NOT_IMPLEMENTED
+
+
 class TableObject(object):
 
     def __init__(self, folder, table_type):
-        print '[PYTHON]: [%s] table.__init__()' % (BackendObject.name)
+        print '[PYTHON]:[%s] table.__init__(%d, type=%s)' % (BackendObject.name, folder.folderID, table_type)
         self.folder = folder
         self.table_type = table_type
         self.properties = None
 
     def set_columns(self, properties):
-        print '[PYTHON]: [%s] table.set_columns(%s)' % (BackendObject.name, properties)
+        print '[PYTHON]:[%s] table.set_columns(%s)' % (BackendObject.name, properties)
         self.properties = properties
         return 0
 
     def get_row_count(self, query_type):
-        print '[PYTHON]: %s table.get_row_count()' % (BackendObject.name)
+        print '[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name)
         return self.folder.get_child_count(self.table_type)
 
     def get_row(self, row_no, query_type):
-        print '[PYTHON]: %s table.get_row(%s)' % (BackendObject.name, row_no)
+        print '[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no)
         if self.get_row_count(self.table_type) == 0:
             return (self.properties, {})
 
@@ -494,7 +574,9 @@ class TableObject(object):
         return (self.properties, row)
 
     def _get_row_messages(self, row_no):
-        return (self.properties, {})
+        assert row_no < len(self.folder.messages), "Index out of bounds for messages row=%s" % row_no
+        message = self.folder.messages[row_no]
+        return (self.properties, message.properties)
 
     def _get_row_not_impl(self, row_no):
         return (self.properties, {})

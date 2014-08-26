@@ -39,7 +39,6 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 
 static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	TALLOC_CTX		*mem_ctx;
 	PyMAPIStoreFolderObject	*folder;
 	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
 	const char		*name;
@@ -70,39 +69,36 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 		goto end;
 	}
 
-	/* Set the properties */
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
+	if (retval != MAPISTORE_SUCCESS) {
 		return NULL;
 	}
-	
-	aRow = talloc_zero(mem_ctx, struct SRow);
+
+	aRow = talloc_zero(self->mem_ctx, struct SRow);
 	aRow->lpProps = talloc_array(aRow, struct SPropValue, 3);
 	aRow->cValues = 0;
 
 	/* We assume the parameters passed by Python are UNICODE */
-	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+	aRow->lpProps = add_SPropValue(self->mem_ctx, aRow->lpProps, &(aRow->cValues),
 				       PR_DISPLAY_NAME_UNICODE, (void *)name);
-	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+	aRow->lpProps = add_SPropValue(self->mem_ctx, aRow->lpProps, &(aRow->cValues),
 				       PR_COMMENT_UNICODE, (void *)desc);
 
-	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
+	aRow->lpProps = add_SPropValue(self->mem_ctx, aRow->lpProps, &(aRow->cValues),
 				       PR_FOLDER_TYPE, (void *)&foldertype);
 
 	retval = mapistore_folder_create_folder(self->context->mstore_ctx, self->context->context_id,
-						self->folder_object, self, fid, aRow, &folder_object);
-
-	talloc_free(mem_ctx);
+						self->folder_object, self->mem_ctx, fid, aRow, &folder_object);
+	talloc_free(aRow);
 
 end:
-	if (retval != MAPISTORE_SUCCESS){
+	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 
+	folder->mem_ctx = self->mem_ctx;
 	folder->context = self->context;
 	Py_INCREF(folder->context);
 

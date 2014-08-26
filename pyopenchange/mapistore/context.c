@@ -38,6 +38,7 @@ static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self)
 
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 	
+	folder->mem_ctx = self->mem_ctx;
 	folder->context = self;
 	Py_INCREF(folder->context);
 

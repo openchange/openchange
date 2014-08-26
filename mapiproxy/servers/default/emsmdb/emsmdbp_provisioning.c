@@ -311,8 +311,6 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
-	openchangedb_transaction_start(emsmdbp_ctx->oc_ctx);
-
 	/* Retrieve list of folders from backends */
 	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -331,11 +329,14 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			/* DEBUG(5, ("received entry: '%s' (%p)\n", current_entry->url, current_entry)); */
 		}
 		else {
-			DEBUG(5, ("received entry without uri\n"));
-			abort();
+			DEBUG(3, ("[%s:%d] received entry without uri\n", __FUNCTION__, __LINE__));
+			talloc_free(mem_ctx);
+			return MAPI_E_CALL_FAILED;
 		}
 		current_entry = current_entry->next;
 	}
+
+	openchangedb_transaction_start(emsmdbp_ctx->oc_ctx);
 
 	/* Retrieve list of existing entries */
 	ret = openchangedb_get_MAPIStoreURIs(emsmdbp_ctx->oc_ctx, username, mem_ctx, &existing_uris);
@@ -345,7 +346,10 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			exists = false;
 			mapistore_url = existing_uris->lppszW[i];
 			if (mapistore_url[strlen(mapistore_url)-1] != '/') {
-				abort();
+				DEBUG(3, ("[%s:%d] Bad formed URI returned, this should never happen\n", __FUNCTION__, __LINE__));
+				openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
+				talloc_free(mem_ctx);
+				return MAPI_E_BAD_VALUE;
 			}
 			current_entry = contexts_list;
 			while (!exists && current_entry) {
@@ -401,7 +405,9 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 
 	/* Fallback role MUST exist */
 	if (!main_entries[MAPISTORE_FALLBACK_ROLE]) {
-		DEBUG(5, ("No fallback provisioning role was found while such role is mandatory. Provisiong must be done manually.\n"));
+		DEBUG(5, ("[%s:%d] No fallback provisioning role was found while such role is mandatory. "
+			  "Provisioning must be done manually.\n", __FUNCTION__, __LINE__));
+		openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
 		talloc_free(mem_ctx);
 		return MAPI_E_DISK_ERROR;
 	}
@@ -724,9 +730,12 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, context_id, backend_table, MAPISTORE_PREFILTERED_QUERY, &row_count);
 		if (row_count == 0) {
 			/* create the message */
-			mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_mid);
-			if (mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, context_id, backend_object, mem_ctx, current_mid, false, &backend_message) != MAPISTORE_SUCCESS) {
-				abort();
+			retval = mapistore_indexing_get_new_folderID_as_user(emsmdbp_ctx->mstore_ctx, username, &current_mid);
+			if (retval != MAPISTORE_SUCCESS) goto error;
+			retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, context_id, backend_object, mem_ctx, current_mid, false, &backend_message);
+			if (retval != MAPISTORE_SUCCESS) {
+				DEBUG(3, ("[%s:%d] Error creating a message in mapistore %d", __FUNCTION__, __LINE__, retval));
+				goto error;
 			}
 
 			property_row.cValues = 3;
@@ -776,4 +785,9 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
+
+error:
+	openchangedb_transaction_commit(emsmdbp_ctx->oc_ctx);
+	talloc_free(mem_ctx);
+	return MAPI_E_CALL_FAILED;
 }

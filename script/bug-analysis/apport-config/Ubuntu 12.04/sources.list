@@ -4,7 +4,7 @@
 #deb http://archive.zentyal.org/zentyal cloud main
 deb http://archive.zentyal.org/old precise main
 
-deb http://fr.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
-deb-src http://fr.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
-deb http://fr.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted
-deb-src http://fr.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted
+deb http://gb.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
+deb http://gb.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted

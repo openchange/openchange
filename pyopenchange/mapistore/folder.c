@@ -96,6 +96,48 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	return (PyObject *)folder;
 }
 
+static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	PyMAPIStoreFolderObject	*folder;
+	char			*kwnames[] = { "name", NULL };
+	const char		*name;
+	uint64_t		fid;
+	int			retval;
+	void			*folder_object;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwnames, &name)) {
+		return NULL;
+	}
+
+	/* Retrieve the folder FID FIXME: RESTRICTIONS NOT NECESSARILY SUPPORTED BY BACKENDS */
+	retval = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, name, &fid);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	retval = mapistore_folder_open_folder(self->context->mstore_ctx, self->context->context_id,
+						self->folder_object, self->mem_ctx, fid, &folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+
+	folder->mem_ctx = self->mem_ctx;
+	folder->context = self->context;
+	Py_INCREF(folder->context);
+
+	folder->folder_object = self->folder_object;
+	(void) talloc_reference(NULL, folder->folder_object);
+	folder->fid = fid;
+
+	return (PyObject *)folder;
+}
+
 static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
 {
 	return PyLong_FromLongLong(self->fid);
@@ -211,6 +253,7 @@ end:
 
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
+	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },

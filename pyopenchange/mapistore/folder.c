@@ -54,22 +54,11 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 		return NULL;
 	}
 
-	/* Step 1. Check if the folder already exists */
-	retval = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx,
-						     self->context->context_id,
-						     self->folder_object,
-						     name, &fid);
-	if (retval == MAPISTORE_SUCCESS) {
-		if (flags != OPEN_IF_EXISTS) {
-			PyErr_SetMAPIStoreError(retval);
-			return NULL;
-		}
-		retval = mapistore_folder_open_folder(self->context->mstore_ctx, self->context->context_id,
-				self->folder_object, self, fid, &folder_object);
-		goto end;
-	}
+	/* Get FID for the new folder (backend should care about not duplicating folders) */
+	retval = mapistore_indexing_get_new_folderID(self->context->mstore_ctx, &fid);
 
 	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
@@ -90,7 +79,6 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 						self->folder_object, self->mem_ctx, fid, aRow, &folder_object);
 	talloc_free(aRow);
 
-end:
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;

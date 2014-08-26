@@ -40,17 +40,16 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyMAPIStoreFolderObject	*folder;
-	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
+	char			*kwnames[] = { "name", "description", "foldertype", NULL };
 	const char		*name;
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
-	uint16_t		flags = NONE;
 	uint64_t		fid;
 	int			retval;
 	struct SRow 		*aRow;
 	void			*folder_object;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|shh", kwnames, &name, &desc, &foldertype, &flags)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|sh", kwnames, &name, &desc, &foldertype)) {
 		return NULL;
 	}
 

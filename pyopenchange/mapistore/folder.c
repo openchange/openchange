@@ -65,6 +65,9 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 			PyErr_SetMAPIStoreError(retval);
 			return NULL;
 		}
+		retval = mapistore_folder_open_folder(self->context->mstore_ctx, self->context->context_id,
+				self->folder_object, self, fid, &folder_object);
+		goto end;
 	}
 
 	/* Set the properties */
@@ -86,17 +89,19 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 
 	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
 				       PR_FOLDER_TYPE, (void *)&foldertype);
-	aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues),
-					       PR_FLAG_STATUS, (void *)&flags);
 
 	retval = mapistore_folder_create_folder(self->context->mstore_ctx, self->context->context_id,
-						self->folder_object, self, self->fid, aRow, &folder_object);
+						self->folder_object, self, fid, aRow, &folder_object);
 
+	talloc_free(mem_ctx);
+
+end:
 	if (retval != MAPISTORE_SUCCESS){
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
 		return NULL;
 	}
+
+	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 
 	folder->context = self->context;
 	Py_INCREF(folder->context);
@@ -105,7 +110,6 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = fid;
 
-	talloc_free(mem_ctx);
 	return (PyObject *)folder;
 }
 

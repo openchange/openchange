@@ -307,6 +307,17 @@ class ContextObject(object):
         return "%s:%s" % (BackendObject.name, self.uri)
 
 
+class PidTagAccessFlag(object):
+    """Define possible flags for PidTagAccess property"""
+
+    Modify              = 0x00000001
+    Read                = 0x00000002
+    Delete              = 0x00000004
+    HierarchyTable      = 0x00000008
+    ContentsTable       = 0x00000010
+    AssocContentsTable  = 0x00000020
+
+
 class FolderObject(object):
     """Folder object is responsible for mapping
     between MAPI folderID (64bit) and OXIO folderID (string).
@@ -356,7 +367,9 @@ class FolderObject(object):
                       'PidTagDisplayName': fr[2],
                       'PidTagParentFolderId': self.folderID,
                       'PidTagFolderType': 1, # GENERIC FOLDER
-                      'PidTagAccess': 2043,
+                      'PidTagAccess': PidTagAccessFlag.Read |
+                                      PidTagAccessFlag.HierarchyTable |
+                                      PidTagAccessFlag.ContentsTable,
                       'PidTagContainerClass': 'IPF.Note',
                       'PidTagDefaultPostMessageClass': 'IPM.Note',
                       'PidTagSubfolders': fr[5],
@@ -399,7 +412,9 @@ class FolderObject(object):
                 'PidTagDisplayName': self.oxio_folder['title'],
                 'PidTagParentFolderId': self.parentFID,
                 'PidTagFolderType': 1, # GENERIC FOLDER
-                'PidTagAccess': 2043,
+                'PidTagAccess': PidTagAccessFlag.Read |
+                                PidTagAccessFlag.HierarchyTable |
+                                PidTagAccessFlag.ContentsTable,
                 'PidTagContainerClass': 'IPF.Note',
                 'PidTagDefaultPostMessageClass': 'IPM.Note',
                 'PidTagSubfolders': bool(self.oxio_folder['subfolders']),

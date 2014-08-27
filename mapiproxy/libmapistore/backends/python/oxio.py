@@ -30,10 +30,7 @@ sys.path.append(sysconfig.get_path('platlib'))
 import requests
 import json
 
-
-# few mapistore ERRORS until we expose them
-MAPISTORE_SUCCESS = 0
-MAPISTORE_ERR_NOT_IMPLEMENTED = 24
+from openchange import mapistore
 
 
 class _OxioConn(object):
@@ -256,14 +253,14 @@ class BackendObject(object):
         """ Initialize sample backend
         """
         print '[PYTHON]: [%s] backend.init: init()' % self.name
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def list_contexts(self, username):
         """ List context capabilities of this backend.
         """
         print '[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username)
         contexts = [{ "inbox", "default0/INBOX", "calendar", "CALENDAR" }]
-        return (0, contexts)
+        return (mapistore.errors.MAPISTORE_SUCCESS, contexts)
 
     def create_context(self, uri):
         """ Create a context.
@@ -272,7 +269,7 @@ class BackendObject(object):
         print '[PYTHON]: [%s] backend.create_context: uri = %s' % (self.name, uri)
         context = ContextObject(uri)
 
-        return (0, context)
+        return (mapistore.errors.MAPISTORE_SUCCESS, context)
 
 
 class ContextObject(object):
@@ -301,7 +298,7 @@ class ContextObject(object):
         else:
             uri = self.uri
         folder = FolderObject(self, uri, folderID, None)
-        return (0, folder)
+        return (mapistore.errors.MAPISTORE_SUCCESS, folder)
 
     def _log_marker(self):
         return "%s:%s" % (BackendObject.name, self.uri)
@@ -402,11 +399,11 @@ class FolderObject(object):
     def create_folder(self, properties, folderID):
         print '[PYTHON]: [%s] folder.create_folder(%s)' % (BackendObject.name, folderID)
         print '[PYTHON]: %s ' % json.dumps(properties, indent=4)
-        return (MAPISTORE_ERR_NOT_IMPLEMENTED, None)
+        return (mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED, None)
 
     def delete(self):
         print '[PYTHON]: [%s] folder.delete(%s)' % (BackendObject.name, self.folderID)
-        return MAPISTORE_ERR_NOT_IMPLEMENTED
+        return mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED
 
     def get_properties(self, properties):
         print '[PYTHON][%s/%s]: folder.get_properties(%s)' % (BackendObject.name, self.uri, properties)
@@ -425,7 +422,7 @@ class FolderObject(object):
 
     def set_properties(self, properties):
         print '[PYTHON][%s/%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties)
-        return MAPISTORE_SUCCESS
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def open_table(self, table_type):
         print '[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type)
@@ -452,7 +449,7 @@ class FolderObject(object):
         return len(self.messages)
 
     def _count_zero(self):
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 
 class MessageObject(object):
@@ -525,12 +522,12 @@ class MessageObject(object):
         self.properties.update(properties)
 
         print '[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, self.properties)
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def save(self):
         print '[PYTHON]:[%s] message.save(%s)' % (BackendObject.name, self.properties)
 
-        return MAPISTORE_ERR_NOT_IMPLEMENTED
+        return mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED
 
 
 class TableObject(object):
@@ -544,7 +541,7 @@ class TableObject(object):
     def set_columns(self, properties):
         print '[PYTHON]:[%s] table.set_columns(%s)' % (BackendObject.name, properties)
         self.properties = properties
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_row_count(self, query_type):
         print '[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name)

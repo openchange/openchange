@@ -108,6 +108,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 	bool			b;
 	int			l;
 	uint64_t		ll;
+	struct Binary_r		*bin;
 	char			*str;
 
 	/* Sanity checks */
@@ -165,10 +166,15 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
 			break;
 		case PT_SVREID:
-			DEBUG(5, ("[WARN][%s]: PT_SRVEID case not implemented\n", __location__));
-			break;
 		case PT_BINARY:
-			DEBUG(5, ("[WARN][%s]: PT_BINARY case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyByteArray_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			bin = talloc_zero(mem_ctx, struct Binary_r);
+			MAPISTORE_RETVAL_IF(!bin, MAPISTORE_ERR_NOT_FOUND, NULL);
+			bin->cb = PyByteArray_Size(value);
+			bin->lpb = talloc_memdup(bin, PyByteArray_AsString(value), bin->cb);
+			MAPISTORE_RETVAL_IF(!bin->lpb, MAPISTORE_ERR_NOT_FOUND, bin);
+			*data = (void *) bin;
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_MV_SHORT:
 			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
@@ -217,6 +223,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	const char	*skey;
 	PyObject	*key;
 	PyObject	*val;
+	struct Binary_r	*bin;
 
 	/* Sanity checks */
 	if (!aRow) return NULL;
@@ -272,10 +279,9 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
 			break;
 		case PT_SVREID:
-			DEBUG(5, ("[WARN][%s]: PT_SRVEID case not implemented\n", __location__));
-			break;
 		case PT_BINARY:
-			DEBUG(5, ("[WARN][%s]: PT_BINARY case not implemented\n", __location__));
+			bin = (struct Binary_r *)data;
+			val = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
 			break;
 		case PT_MV_SHORT:
 			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));

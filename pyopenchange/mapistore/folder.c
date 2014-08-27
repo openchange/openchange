@@ -172,6 +172,45 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	return PyInt_FromLong(RowCount);
 }
 
+static PyObject *py_MAPIStoreFolder_get_child_fmids(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "table_type", NULL };
+	TALLOC_CTX 			*mem_ctx;
+	uint16_t			table_type;
+	enum mapistore_error		retval;
+	uint64_t			*fmid_list;
+	uint32_t			i, list_size;
+	PyObject			*py_ret = NULL;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Get the children FMIDs */
+	retval = mapistore_folder_get_child_fmids(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, table_type, mem_ctx, &fmid_list, &list_size);
+	if (retval != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Build the list */
+	py_ret = PyList_New(list_size);
+	for (i = 0; i < list_size; i++) {
+		PyList_SetItem(py_ret, i, PyLong_FromUnsignedLongLong(fmid_list[i]));
+	}
+
+	talloc_free(mem_ctx);
+	return (PyObject *) py_ret;
+}
+
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
 {
 	PyObject *value;
@@ -263,6 +302,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
+	{ "get_child_fmids", (PyCFunction)py_MAPIStoreFolder_get_child_fmids, METH_VARARGS|METH_KEYWORDS },
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };

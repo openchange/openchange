@@ -612,29 +612,45 @@ static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 {
 	int		ret;
+	const char	*errstr;
 
 	if (!PyArg_ParseTuple(args, "k", &ret)) {
 		return NULL;
 	}
 
-	return PyString_FromString(mapistore_errstr(ret));
+	errstr = mapistore_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
 }
 
 static PyObject *py_mapistatus_errstr(PyObject *mod, PyObject *args)
 {
 	int		ret;
+	const char	*errstr;
 
 	if (!PyArg_ParseTuple(args, "k", &ret)) {
 		return NULL;
 	}
 
-	return PyString_FromString(mapi_get_errstr(ret));
+	errstr = mapi_get_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
-	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
-	{ "mapistatus_errstr", (PyCFunction)py_mapistatus_errstr, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS,
+		"Returns mapistore_error string presentation\n\n"
+		":param status: mapistore_error code\n"
+		":return string: String" },
+	{ "mapistatus_errstr", (PyCFunction)py_mapistatus_errstr, METH_VARARGS,
+		"Returns MAPISTATUS string presentation\n\n"
+		":param status: MAPISTATUS code\n"
+		":return string: String or None if MAPISTATUS is unknown" },
 	{ NULL },
 };
 

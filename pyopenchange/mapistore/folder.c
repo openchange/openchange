@@ -146,11 +146,6 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	return (PyObject *)folder;
 }
 
-static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
-{
-	return PyLong_FromLongLong(self->fid);
-}
-
 static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	uint32_t			RowCount;
@@ -306,6 +301,11 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
+
+static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
+{
+	return PyLong_FromLongLong(self->fid);
+}
 
 static PyGetSetDef mapistore_folder_getsetters[] = {
 	{ (char *)"fid", (getter)py_MAPIStoreFolder_get_fid, NULL, NULL },

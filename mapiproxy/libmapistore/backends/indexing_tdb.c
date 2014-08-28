@@ -472,7 +472,7 @@ static enum mapistore_error tdb_record_allocate_fmid(struct indexing_context *ic
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 
-_PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_context *mstore_ctx,
+_PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(TALLOC_CTX *mem_ctx,
 							  const char *username,
 							  struct indexing_context **ictxp)
 {
@@ -482,11 +482,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	struct indexing_context		*ictx;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
 
 	/* Allocate contexts - local_ctx is child for ictx for easy cleanup */
-	ictx = talloc_zero(mstore_ctx, struct indexing_context);
+	ictx = talloc_zero(mem_ctx, struct indexing_context);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, NULL);
 	local_ctx = talloc_named(ictx, 0, "mapistore_indexing_init");
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, ictx);

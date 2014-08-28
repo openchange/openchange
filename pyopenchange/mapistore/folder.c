@@ -363,10 +363,10 @@ static void py_MAPIStoreFolders_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-//static PyObject *py_MAPIStoreFolders_iter(PyMAPIStoreFoldersObject *self)
-//{
-//	return self;
-//}
+static PyObject *py_MAPIStoreFolders_iter(PyMAPIStoreFoldersObject *self)
+{
+	return (PyObject *)self;
+}
 
 static PyObject *py_MAPIStoreFolders_next(PyMAPIStoreFoldersObject *self)
 {
@@ -413,7 +413,7 @@ PyTypeObject PyMAPIStoreFolders = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "child folders",
 	.tp_basicsize = sizeof (PyMAPIStoreFoldersObject),
-//	.tp_iter = py_MAPIStoreFolders_iter,
+	.tp_iter = py_MAPIStoreFolders_iter,
 	.tp_iternext = py_MAPIStoreFolders_next,
 	.tp_doc = "iterator over folder child folders",
 	.tp_dealloc = (destructor)py_MAPIStoreFolders_dealloc,

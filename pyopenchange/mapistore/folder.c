@@ -107,25 +107,34 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyMAPIStoreFolderObject	*folder;
-	char			*kwnames[] = { "name", NULL };
-	const char		*name;
+	char			*kwnames[] = { "uri", NULL };
+	const char		*uri;
 	uint64_t		fid;
+	bool			soft_deleted, partial;
 	int			retval;
 	void			*folder_object;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwnames, &name)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwnames, &uri)) {
 		return NULL;
 	}
 
-	/* Retrieve the folder FID FIXME: RESTRICTIONS NOT NECESSARILY SUPPORTED BY BACKENDS */
-	retval = mapistore_folder_get_child_fid_by_name(self->context->mstore_ctx, self->context->context_id,
-			self->folder_object, name, &fid);
+	/* Get the FID from the URI */
+	partial = false;	// A full URI is needed
+	retval = mapistore_indexing_record_get_fmid(self->context->mstore_ctx, self->context->parent->username,
+			uri, partial, &fid, &soft_deleted);
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
+	if (soft_deleted == true) {
+		PyErr_SetString(PyExc_SystemError,
+				"Soft-deleted folder.");
+		return NULL;
+	}
+
+	/* Open the folder */
 	retval = mapistore_folder_open_folder(self->context->mstore_ctx, self->context->context_id,
 						self->folder_object, self->mem_ctx, fid, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -133,6 +142,7 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 		return NULL;
 	}
 
+	/* Return the folder object */
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 
 	folder->mem_ctx = self->mem_ctx;

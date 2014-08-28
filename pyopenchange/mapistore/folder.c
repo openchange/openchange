@@ -206,6 +206,35 @@ static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *s
 	return (PyObject *) folder_list;
 }
 
+static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
+{
+	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error 		retval;
+	char				*uri;
+	bool				soft_deleted;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Retrieve the URI from the indexing */
+	retval = mapistore_indexing_record_get_uri(self->context->mstore_ctx, self->context->parent->username,
+			self->mem_ctx, self->fid, &uri, &soft_deleted);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* TODO: Do something with the soft_deleted flag */
+
+	/* Return the URI */
+	return (PyObject *) Py_BuildValue("s", uri);
+}
+
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
 {
 	PyObject *value;
@@ -298,6 +327,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
+	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };

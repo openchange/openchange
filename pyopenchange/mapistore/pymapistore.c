@@ -267,7 +267,7 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	}
 
 	talloc_free(mem_ctx);
-	return (PyObject *) py_ret;
+	return py_ret;
 }
 
 static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)

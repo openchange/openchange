@@ -167,43 +167,43 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	return PyInt_FromLong(RowCount);
 }
 
-static PyObject *py_MAPIStoreFolder_get_child_fmids(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *self)
 {
-	char				*kwnames[] = { "table_type", NULL };
-	TALLOC_CTX 			*mem_ctx;
-	uint16_t			table_type;
+	TALLOC_CTX			*mem_ctx;
 	enum mapistore_error		retval;
-	uint64_t			*fmid_list;
-	uint32_t			i, list_size;
-	PyObject			*py_ret = NULL;
+	uint64_t			*fid_list;
+	uint32_t			list_size;
+	PyMAPIStoreFoldersObject	*folder_list;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
-		return NULL;
-	}
-
+	/* Get the child folders' FIDs */
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
 		return NULL;
 	}
 
-	/* Get the children FMIDs */
 	retval = mapistore_folder_get_child_fmids(self->context->mstore_ctx, self->context->context_id,
-			self->folder_object, table_type, mem_ctx, &fmid_list, &list_size);
+			self->folder_object, MAPISTORE_FOLDER_TABLE, mem_ctx, &fid_list, &list_size);
 	if (retval != MAPISTORE_SUCCESS) {
-		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	/* Build the list */
-	py_ret = PyList_New(list_size);
-	for (i = 0; i < list_size; i++) {
-		PyList_SetItem(py_ret, i, PyLong_FromUnsignedLongLong(fmid_list[i]));
-	}
+	/* Return the PyMAPIStoreFolders object*/
+	folder_list = PyObject_New(PyMAPIStoreFoldersObject, &PyMAPIStoreFolders);
+
+	talloc_reference(self->mem_ctx, fid_list);
+	folder_list->mem_ctx = self->mem_ctx;
+	folder_list->folder = self;
+	Py_INCREF(folder_list->folder);
+
+	folder_list->fids = fid_list;
+	folder_list->count = list_size;
+	folder_list->curr_index = 0;
 
 	talloc_free(mem_ctx);
-	return (PyObject *) py_ret;
+	return (PyObject *) folder_list;
 }
 
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
@@ -297,7 +297,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
-	{ "get_child_fmids", (PyCFunction)py_MAPIStoreFolder_get_child_fmids, METH_VARARGS|METH_KEYWORDS },
+	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
@@ -323,12 +323,84 @@ PyTypeObject PyMAPIStoreFolder = {
 	.tp_flags = Py_TPFLAGS_DEFAULT,
 };
 
+static void py_MAPIStoreFolders_dealloc(PyObject *_self)
+{
+	PyMAPIStoreFoldersObject *self = (PyMAPIStoreFoldersObject *)_self;
+
+	talloc_free(self->fids);
+	Py_XDECREF(self->folder);
+
+	PyObject_Del(_self);
+}
+
+//static PyObject *py_MAPIStoreFolders_iter(PyMAPIStoreFoldersObject *self)
+//{
+//	return self;
+//}
+
+static PyObject *py_MAPIStoreFolders_next(PyMAPIStoreFoldersObject *self)
+{
+	uint64_t			fid;
+	enum mapistore_error		retval;
+	void 				*folder_object;
+	PyMAPIStoreFolderObject		*folder;
+
+	/* Check if there are remaining folders */
+	if(self->curr_index >= self->count) {
+		    PyErr_SetNone(PyExc_StopIteration);
+		    return NULL;
+	}
+
+	/* Retrieve FID and increment curr_index*/
+	fid = self->fids[self->curr_index];
+	self->curr_index += 1;
+
+	/* Use FID to open folder */
+	retval = mapistore_folder_open_folder(self->folder->context->mstore_ctx,
+						self->folder->context->context_id,
+						self->folder->folder_object,
+						self->mem_ctx, fid, &folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Return the MAPIStoreFolder object */
+	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+
+	folder->mem_ctx = self->mem_ctx;
+	folder->context = self->folder->context;
+	Py_INCREF(folder->context);
+
+	folder->folder_object = folder_object;
+	(void) talloc_reference(NULL, folder->folder_object);
+	folder->fid = fid;
+
+	return (PyObject *)folder;
+}
+
+PyTypeObject PyMAPIStoreFolders = {
+	PyObject_HEAD_INIT(NULL) 0,
+	.tp_name = "child folders",
+	.tp_basicsize = sizeof (PyMAPIStoreFoldersObject),
+//	.tp_iter = py_MAPIStoreFolders_iter,
+	.tp_iternext = py_MAPIStoreFolders_next,
+	.tp_doc = "iterator over folder child folders",
+	.tp_dealloc = (destructor)py_MAPIStoreFolders_dealloc,
+	.tp_flags = Py_TPFLAGS_DEFAULT | Py_TPFLAGS_HAVE_ITER,
+};
+
 void initmapistore_folder(PyObject *m)
 {
 	if (PyType_Ready(&PyMAPIStoreFolder) < 0) {
 		return;
 	}
 	Py_INCREF(&PyMAPIStoreFolder);
+
+	if (PyType_Ready(&PyMAPIStoreFolders) < 0) {
+		return;
+	}
+	Py_INCREF(&PyMAPIStoreFolders);
 
 	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));

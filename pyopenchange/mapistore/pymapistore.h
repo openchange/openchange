@@ -72,6 +72,15 @@ typedef struct {
 } PyMAPIStoreFolderObject;
 
 typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFolderObject		*folder;
+	size_t				curr_index;
+	size_t				count;
+	uint64_t			*fids;
+} PyMAPIStoreFoldersObject;
+
+typedef struct {
 	PyObject_HEAD	
 
 	PyObject *timestamp;
@@ -103,6 +112,7 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolders;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 

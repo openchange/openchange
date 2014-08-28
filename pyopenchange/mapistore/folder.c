@@ -97,7 +97,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	folder->context = self->context;
 	Py_INCREF(folder->context);
 
-	folder->folder_object = self->folder_object;
+	folder->folder_object = folder_object;
 	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = fid;
 
@@ -139,7 +139,7 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	folder->context = self->context;
 	Py_INCREF(folder->context);
 
-	folder->folder_object = self->folder_object;
+	folder->folder_object = folder_object;
 	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = fid;
 

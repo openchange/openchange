@@ -210,6 +210,27 @@ _PUBLIC_ uint16_t libmapiserver_RopSetMessageReadFlag_size(struct EcDoRpc_MAPI_R
 
 
 /**
+   \details Calculate GetMessageStatus (0x1f) Rop size
+
+   \param response pointer to the GetMessageStatus EcDoRpc_MAPI_REPL
+
+   \return Size of the GetMessageStatus response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetMessageStatus_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETMESSAGESTATUS;
+
+	return size;
+}
+
+
+/**
    \details Calculate GetAttachmentTable (0x21) Rop size
 
    \param response pointer to the GetAttachmentTable EcDoRpc_MAPI_REPL

@@ -1,8 +1,8 @@
 deb http://archive.zentyal.org/old saucy main
 deb http://archive.zentyal.org/zentyal 3.4 main
 deb-src http://archive.zentyal.org/zentyal 3.4 main
-deb http://fr.archive.ubuntu.com/ubuntu/ saucy main universe multiverse restricted
-deb-src http://fr.archive.ubuntu.com/ubuntu/ saucy main universe multiverse restricted
-deb http://fr.archive.ubuntu.com/ubuntu/ saucy-updates main universe multiverse restricted
-deb-src http://fr.archive.ubuntu.com/ubuntu/ saucy-updates main universe multiverse restricted
+deb http://gb.archive.ubuntu.com/ubuntu/ saucy main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ saucy main universe multiverse restricted
+deb http://gb.archive.ubuntu.com/ubuntu/ saucy-updates main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ saucy-updates main universe multiverse restricted
 

@@ -1986,12 +1986,6 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x1f  */
-	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		msgid;
-	} GetMessageStatus_req;
-
-	/**************************/
-	/* EcDoRpc Function 0x20  */
 	typedef [bitmap32bit] bitmap {
 		MSGSTATUS_HIGHLIGHTED		= 0x1,
 		MSGSTATUS_TAGGED		= 0x2,
@@ -2001,7 +1995,16 @@ System Attendant Private Interface
 		MSGSTATUS_REMOTE_DELETE		= 0x2000
 	} ulMessageStatus;
 
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		msgid;
+	} GetMessageStatus_req;
 
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulMessageStatus	MessageStatusFlags;
+	} GetMessageStatus_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x20  */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		msgid;
 		uint32		ulNewStatus;
@@ -4037,6 +4040,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CreateFolder)] CreateFolder_repl mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_repl mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_repl mapi_DeleteMessages;
+		[case(op_MAPI_GetMessageStatus)] GetMessageStatus_repl mapi_GetMessageStatus;
 		[case(op_MAPI_SetMessageStatus)] SetMessageStatus_repl mapi_SetMessageStatus;
 		[case(op_MAPI_GetAttachmentTable)] GetAttachmentTable_repl mapi_GetAttachmentTable;
 		[case(op_MAPI_OpenAttach)] OpenAttach_repl mapi_OpenAttach;

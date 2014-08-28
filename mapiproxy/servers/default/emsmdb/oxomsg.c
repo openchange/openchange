@@ -232,34 +232,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-/* Get the organisation name (like "First Organization") as a DN. */
-static bool mapiserver_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
-					    struct ldb_dn **basedn)
-{
-	int			ret;
-	struct ldb_result	*res = NULL;
-
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
-                         LDB_SCOPE_SUBTREE, NULL,
-			 "(|(objectClass=msExchOrganizationContainer))");
-
-	/* If the search failed */
-        if (ret != LDB_SUCCESS) {
-	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn ldb_search failure.\n"));
-		return false;
-        }
-        /* If we didn't get the expected entry */
-	if (res->count != 1) {
-	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn unexpected entry count: %i (expected 1).\n", res->count));
-		return false;
-	}
-	
-	*basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
-			     ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	return true;
-}
-
 
 /**
    \details EcDoRpc SetSpooler (0x47) Rop. This operation informs the
@@ -335,12 +307,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapiserver_get_org_dn(emsmdbp_ctx, &basedn);
+	retval = emsmdbp_get_org_dn(emsmdbp_ctx, &basedn);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESSING");
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESS-TEMPLATES");
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
                          LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
+	talloc_free(basedn);
         /* If the search failed */
         if (ret != LDB_SUCCESS) {
 	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] AddressTypes ldb_search failure.\n"));

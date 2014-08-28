@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009-2013
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -1069,6 +1069,87 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 end:
 	*size += libmapiserver_RopSetMessageReadFlag_size(mapi_repl);
 
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details EcDoRpc GetMessageStatus (0x1c) Rop. This operation
+   returns the status of a message in a folder.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetMessageStatus EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the GetMessageStatus EcDoRpc_MAPI_REPL
+   structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \todo Replace Stub implementation with mapistore calls
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *mem_ctx,
+						     struct emsmdbp_context *emsmdbp_ctx,
+						     struct EcDoRpc_MAPI_REQ *mapi_req,
+						     struct EcDoRpc_MAPI_REPL *mapi_repl,
+						     uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*folder_object = NULL;
+	void			*folder_private_data;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] GetMessageStatus (0x1c)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = ecNullObject;
+		DEBUG(5, ("[ERR][RopGetMessageStatus]: handle 0x%x not found\n", handle));
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &folder_private_data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("[ERR][RopGetMessageStatus]: data associated to handle 0x%x not found\n", handle));
+		goto end;
+	}
+
+	folder_object = (struct emsmdbp_object *) folder_private_data;
+	if (!folder_object || folder_object->type != EMSMDBP_OBJECT_FOLDER) {
+		mapi_repl->error_code = ecNullObject;
+		DEBUG(5, ("[ERR][RopGetMessageStatus]: Invalid or NULL folder object\n"));
+		goto end;
+	}
+
+	switch ((int)emsmdbp_is_mapistore(folder_object)) {
+	case false:
+		DEBUG(0, ("[WARN][GetMessageStatus]: Not implemented\n"));
+		mapi_repl->error_code = ecNullObject;
+		break;
+	case true:
+		/* TODO: Retrieve the PidTagMessageStatus property from the message */
+		mapi_repl->u.mapi_GetMessageStatus.MessageStatusFlags = 0x0;
+		break;
+	}
+
+end:
+	*size += libmapiserver_RopGetMessageStatus_size(mapi_repl);
 	return MAPI_E_SUCCESS;
 }
 

@@ -156,6 +156,28 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	return (PyObject *)folder;
 }
 
+static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "flags", NULL };
+	uint8_t				flags;
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "H", kwnames, &flags)) {
+		return NULL;
+	}
+
+	/* Delete the folder (soft or hard deletion depending on the flags) */
+	retval = mapistore_folder_delete(self->context->mstore_ctx, self->context->context_id, self->folder_object, flags);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* TODO: Handle the Python object */
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	uint32_t			RowCount;
@@ -344,6 +366,7 @@ end:
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
+	{ "delete", (PyCFunction)py_MAPIStoreFolder_delete, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},
@@ -459,4 +482,7 @@ void initmapistore_folder(PyObject *m)
 	PyModule_AddObject(m, "FOLDER_TABLE", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "MESSAGE_TABLE", PyInt_FromLong(0x2));
 
+	/* Deletion flags */
+	PyModule_AddObject(m, "SOFT_DELETE", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "PERMANENT_DELETE", PyInt_FromLong(0x2));
 }

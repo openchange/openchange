@@ -405,17 +405,24 @@ static void py_MAPIStoreFolders_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStoreFolders_iter(PyMAPIStoreFoldersObject *self)
+static PyObject *py_MAPIStoreFolders_iter(PyObject *_self)
 {
-	return (PyObject *)self;
+	return (PyObject *)_self;
 }
 
-static PyObject *py_MAPIStoreFolders_next(PyMAPIStoreFoldersObject *self)
+static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 {
 	uint64_t			fid;
 	enum mapistore_error		retval;
 	void 				*folder_object;
 	PyMAPIStoreFolderObject		*folder;
+	PyMAPIStoreFoldersObject 	*self;
+
+	self = (PyMAPIStoreFoldersObject *)_self;
+	if (!self) {
+		PyErr_SetString(PyExc_TypeError, "Expected object of type MAPIStoreFolders");
+		return NULL;
+	}
 
 	/* Check if there are remaining folders */
 	if(self->curr_index >= self->count) {

@@ -222,6 +222,7 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 	enum mapistore_error 		retval;
 	char				*uri;
 	bool				soft_deleted;
+	PyObject			*py_ret;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -239,10 +240,18 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 		return NULL;
 	}
 
-	/* TODO: Do something with the soft_deleted flag */
+	if (soft_deleted == true) {
+		PyErr_SetString(PyExc_SystemError,
+				"Soft-deleted folder.");
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	/* Return the URI */
-	return (PyObject *) Py_BuildValue("s", uri);
+	py_ret = PyString_FromString(uri);
+	talloc_free(mem_ctx);
+
+	return py_ret;
 }
 
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)

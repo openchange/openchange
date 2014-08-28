@@ -714,4 +714,5 @@ void initmapistore(void)
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
 	initmapistore_table(m);
+	initmapistore_indexing(m);
 }

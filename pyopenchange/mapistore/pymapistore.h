@@ -91,11 +91,20 @@ typedef struct {
 	PyObject_HEAD	
 } PyMAPIStoreTableObject;
 
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	const char			*username;
+	struct loadparm_context		*lp_ctx;
+	struct indexing_context		*ictx;
+} PyMAPIStoreIndexingObject;
+
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -121,6 +130,7 @@ void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_table(PyObject *);
 void initmapistore_errors(PyObject *);
+void initmapistore_indexing(PyObject *);
 
 PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapistore_freebusy_properties *);
 

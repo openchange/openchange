@@ -451,12 +451,12 @@ void initmapistore_folder(PyObject *m)
 	}
 	Py_INCREF(&PyMAPIStoreFolders);
 
+	/* Folder types */
 	PyModule_AddObject(m, "FOLDER_GENERIC", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "FOLDER_SEARCH", PyInt_FromLong(0x2));
 
-	PyModule_AddObject(m, "NONE", PyInt_FromLong(0x0));
-	PyModule_AddObject(m, "OPEN_IF_EXISTS", PyInt_FromLong(0x1));
+	/* Table types */
+	PyModule_AddObject(m, "FOLDER_TABLE", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "MESSAGE_TABLE", PyInt_FromLong(0x2));
 
-	PyModule_AddObject(m, "MAPISTORE_FOLDER_TABLE", PyInt_FromLong(0x1));
-	PyModule_AddObject(m, "MAPISTORE_MESSAGE_TABLE", PyInt_FromLong(0x2));
 }

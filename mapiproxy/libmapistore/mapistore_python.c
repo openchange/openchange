@@ -105,10 +105,14 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 							 void **data)
 {
 	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
+	PyObject		*item;
+	uint32_t		count;
 	bool			b;
 	int			l;
 	uint64_t		ll;
 	struct Binary_r		*bin;
+	struct StringArray_r	*MVszA;
+	struct StringArrayW_r	*MVszW;
 	char			*str;
 
 	/* Sanity checks */
@@ -186,10 +190,36 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
 			break;
 		case PT_MV_STRING8:
-			DEBUG(5, ("[WARN][%s]: PT_MV_STRING8 case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyList_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVszA = talloc_zero(mem_ctx, struct StringArray_r);
+			MAPISTORE_RETVAL_IF(!MVszA, MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVszA->cValues = PyList_Size(value);
+			MVszA->lppszA = (const char **) talloc_array(MVszA, char *, MVszA->cValues + 1);
+			for (count = 0; count < MVszA->cValues; count++) {
+				item = PyList_GetItem(value, count);
+				MAPISTORE_RETVAL_IF(!item, MAPISTORE_ERR_INVALID_PARAMETER, MVszA);
+				str = PyString_AsString(item);
+				MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_INVALID_PARAMETER, MVszA);
+				MVszA->lppszA[count] = talloc_strdup(MVszA->lppszA, str);
+			}
+			*data = (void *) MVszA;
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_MV_UNICODE:
-			DEBUG(5, ("[WARN][%s]: PT_MV_UNICODE case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyList_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVszW = talloc_zero(mem_ctx, struct StringArrayW_r);
+			MAPISTORE_RETVAL_IF(!MVszW, MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVszW->cValues = PyList_Size(value);
+			MVszW->lppszW = (const char **) talloc_array(MVszW, char *, MVszW->cValues + 1);
+			for (count = 0; count < MVszW->cValues; count++) {
+				item = PyList_GetItem(value, count);
+				MAPISTORE_RETVAL_IF(!item, MAPISTORE_ERR_INVALID_PARAMETER, MVszW);
+				str = PyString_AsString(item);
+				MAPISTORE_RETVAL_IF(!str, MAPISTORE_ERR_INVALID_PARAMETER, MVszW);
+				MVszW->lppszW[count] = talloc_strdup(MVszW->lppszW, str);
+			}
+			*data = (void *) MVszW;
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_MV_SYSTIME:
 			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
@@ -217,13 +247,17 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 
 static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 {
-	uint32_t	count;
-	PyObject	*pydict;
-	const void	*data;
-	const char	*skey;
-	PyObject	*key;
-	PyObject	*val;
-	struct Binary_r	*bin;
+	uint32_t		count;
+	uint32_t		i;
+	PyObject		*pydict;
+	const void		*data;
+	const char		*skey;
+	PyObject		*key;
+	PyObject		*val;
+	PyObject		*item;
+	struct Binary_r		*bin;
+	struct StringArrayW_r	*MVszW;
+	struct StringArray_r	*MVszA;
 
 	/* Sanity checks */
 	if (!aRow) return NULL;
@@ -293,10 +327,39 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
 			break;
 		case PT_MV_STRING8:
-			DEBUG(5, ("[WARN][%s]: PT_MV_STRING8 case not implemented\n", __location__));
+			MVszA = (struct StringArray_r *)data;
+			val = PyList_New(MVszA->cValues);
+			if (val == NULL) {
+				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
+					  __location__));
+				return NULL;
+			}
+			for (i = 0; i < MVszA->cValues; i++) {
+				item = PyString_FromString(MVszA->lppszA[i]);
+				if (PyList_SetItem(val, i, item) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
+						  __location__));
+					return NULL;
+				}
+			}
 			break;
 		case PT_MV_UNICODE:
-			DEBUG(5, ("[WARN][%s]: PT_MV_UNICODE case not implemented\n", __location__));
+			MVszW = (struct StringArrayW_r *)data;
+			val = PyList_New(MVszW->cValues);
+			if (val == NULL) {
+				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
+					  __location__));
+				return NULL;
+			}
+
+			for (i = 0; i < MVszW->cValues; i++) {
+				item = PyString_FromString(MVszW->lppszW[i]);
+				if (PyList_SetItem(val, i, item) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
+						  __location__));
+					return NULL;
+				}
+			}
 			break;
 		case PT_MV_SYSTIME:
 			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
@@ -2038,7 +2101,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 		}
 
 		if (PyList_SetItem(proplist, i, item) == -1) {
-			DEBUG(0, ("[ERR][[%s][%s]: Unable to append entry to Python list\n",
+			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
 				  pyobj->name, __location__));
 			return MAPISTORE_ERR_NO_MEMORY;
 		}

@@ -21,6 +21,8 @@
 This module provides an implementation of the HTTP autodiscover protocol.
 """
 from cStringIO import StringIO
+import socket
+import struct
 from time import time, strftime, localtime
 import traceback
 import urllib
@@ -33,6 +35,8 @@ from pylons.decorators.rest import restrict
 
 import ldb
 from ocsmanager.lib.base import BaseController
+import logging
+logger = logging.getLogger(__name__)
 
 
 REQUEST_XMLNS = ("http://schemas.microsoft.com/exchange/autodiscover/outlook"
@@ -67,6 +71,19 @@ class AutodiscoverHandler(object):
                 if env_name in self.environ:
                     self.http_server_name \
                         = (self.environ[env_name].split(":"))[0]
+        except StopIteration:
+            pass
+
+        self.client_addr = None
+        client_addr_env_names = iter(('HTTP_X_FORWARDED_FOR',
+                                      'REMOTE_ADDR'))
+        try:
+            while self.client_addr is None:
+                env_name = client_addr_env_names.next()
+                if env_name in self.environ:
+                    env_value = self.environ[env_name].split(',')[0]
+                    if env_value != '127.0.0.1':
+                        self.client_addr = env_value
         except StopIteration:
             pass
 
@@ -162,6 +179,44 @@ class AutodiscoverHandler(object):
 
         return mdb_dn
 
+    def _address_in_network(self, ip, network):
+        "Is an address in a network"
+        if network.find('/') == -1:  # Invalid network CIDR address
+            return False
+        ipaddr = struct.unpack('>L', socket.inet_aton(ip))[0]
+        netaddr, bits = network.split('/')
+        netmask = struct.unpack('>L', socket.inet_aton(netaddr))[0]
+        # Logical AND of IP address and mask will equal the network address if it matches
+        ipaddr_masked = ipaddr & (4294967295 << (32-int(bits)))
+        # Validate network address is valid for mask
+        if netmask == netmask & (4294967295 << (32-int(bits))):
+            return ipaddr_masked == netmask
+        else:
+            logger.warn("{0} is not valid with mask /{1}".format(netaddr, bits))
+            return ipaddr_masked == netmask
+
+    def _available_protocols(self):
+        # Get the available and prioritised protocols we want
+        # depending on the client request
+        # Rules:
+        #  1) RPC/Proxy is enabled or not
+        #  2) If the request does not come from internal network, then EXPR is prioritised
+        # Default to 0.0.0.0/0 to match
+        available_proto = {'EXCH': True, 'EXPR': True}
+
+        autodiscover_rpcproxy_conf = config['ocsmanager']['autodiscover:rpcproxy']
+        if autodiscover_rpcproxy_conf['enabled']:
+            autodiscover_conf = config['ocsmanager']['autodiscover']
+            if self.client_addr and autodiscover_conf['internal_networks']:
+                # Check the client addr is in internal network
+                if not any([self._address_in_network(self.client_addr, int_network) for int_network in autodiscover_conf['internal_networks']]):
+                    available_proto['EXPR'] = 'prio'
+        else:
+            # If RPC/Proxy is disabled, then, at least, return RPC, no matter what
+            available_proto['EXPR'] = False
+
+        return available_proto
+
     def _append_user_found_response(self, resp_element, ldb_record):
         #TODO: check user_record
         response_tree = {"User": self._get_user_record(ldb_record)}
@@ -175,62 +230,71 @@ class AutodiscoverHandler(object):
 
         mdb_dn = self._fetch_mdb_dn(ldb_record)
 
-        """
-        EXCH: The Protocol element contains information that the Autodiscover
-        client can use to communicate with the mailbox via a remote procedure
-        call (RPC). For details, see [MS- OXCRPC]. The AuthPackage element,
-        the ServerVersion element, or the ServerDN element can be used. """
-        prot_element = Element("Protocol")
-        account_element.append(prot_element)
-        response_tree = \
-            {"Type": "EXCH",
-             "ServerDN": config["samba"]["legacyserverdn"],
-             "ServerVersion": "720082AD",  # TODO: that is from ex2010
-             "MdbDN": mdb_dn,
-             "Server": self.http_server_name,
-             "ASUrl": "https://%s/ews/as"
-                      % self.http_server_name,  # availability
-             "OOFUrl": "https://%s/ews/oof"
-                       % self.http_server_name,  # out-of-office
-             "OABUrl": "https://%s/ews/oab"
-                       % self.http_server_name,  # offline address book
-             }
-        self._append_elements(prot_element, response_tree)
+        # Get the available and prioritised protocols depending on
+        # the request and the configuration
+        avail_protocols = self._available_protocols()
 
-        """
-        EXPR: The Protocol element contains information that the Autodiscover
-        client can use to communicate when outside the firewall, including
-        RPC/HTTP connections. For details, see [MS- RPCH]. The AccountType
-        element MUST be set to email. The AuthPackage element or the
-        ServerVersion element can be used.
-        """
-        prot_element = Element("Protocol")
-        account_element.append(prot_element)
+        if avail_protocols['EXCH']:
+            """
+            EXCH: The Protocol element contains information that the Autodiscover
+            client can use to communicate with the mailbox via a remote procedure
+            call (RPC). For details, see [MS- OXCRPC]. The AuthPackage element,
+            the ServerVersion element, or the ServerDN element can be used. """
+            prot_element = Element("Protocol")
+            account_element.append(prot_element)
+            response_tree = \
+                {"Type": "EXCH",
+                 "ServerDN": config["samba"]["legacyserverdn"],
+                 "ServerVersion": "720082AD",  # TODO: that is from ex2010
+                 "MdbDN": mdb_dn,
+                 "Server": self.http_server_name,
+                 "ASUrl": "https://%s/ews/as"
+                 % self.http_server_name,  # availability
+                 "OOFUrl": "https://%s/ews/oof"
+                 % self.http_server_name,  # out-of-office
+                 "OABUrl": "https://%s/ews/oab"
+                 % self.http_server_name,  # offline address book
+                 }
+            self._append_elements(prot_element, response_tree)
 
-        rpcproxy_server_name = self.http_server_name
-        autodiscover_rpcproxy_conf = config['ocsmanager']['autodiscover:rpcproxy']
-        if autodiscover_rpcproxy_conf['external_hostname'] != '__none__':  # Default value
-            rpcproxy_server_name = autodiscover_rpcproxy_conf['external_hostname']
+        if avail_protocols['EXPR']:
+            """
+            EXPR: The Protocol element contains information that the Autodiscover
+            client can use to communicate when outside the firewall, including
+            RPC/HTTP connections. For details, see [MS- RPCH]. The AccountType
+            element MUST be set to email. The AuthPackage element or the
+            ServerVersion element can be used.
+            """
+            prot_element = Element("Protocol")
+            account_element.append(prot_element)
 
-        if autodiscover_rpcproxy_conf['ssl']:
-            ssl_opts = {"SSL": "On",
-                        # This option can be implemented for increased security
-                        "CertPrincipalName": "none"}
-        else:
-            ssl_opts = {"SSL": "Off"}
+            rpcproxy_server_name = self.http_server_name
+            autodiscover_rpcproxy_conf = config['ocsmanager']['autodiscover:rpcproxy']
+            if autodiscover_rpcproxy_conf['external_hostname'] != '__none__':  # Default value
+                rpcproxy_server_name = autodiscover_rpcproxy_conf['external_hostname']
 
-        response_tree = {"Type": "EXPR",
-                         "Server": rpcproxy_server_name,
-                         "AuthPackage": "Ntlm",
-                         "ASUrl": "https://%s/ews/as"
-                                  % rpcproxy_server_name,  # availability
-                         "OOFUrl": "https://%s/ews/oof"
-                                   % rpcproxy_server_name,  # out-of-office
-                         "OABUrl": "https://%s/ews/oab"
-                                   % rpcproxy_server_name}  # offline address book
+            if autodiscover_rpcproxy_conf['ssl']:
+                ssl_opts = {"SSL": "On",
+                            # This option can be implemented for increased security
+                            "CertPrincipalName": "none"}
+            else:
+                ssl_opts = {"SSL": "Off"}
 
-        response_tree.update(ssl_opts)
-        self._append_elements(prot_element, response_tree)
+            response_tree = {"Type": "EXPR",
+                             "Server": rpcproxy_server_name,
+                             "AuthPackage": "Ntlm",
+                             "ASUrl": "https://%s/ews/as"
+                             % rpcproxy_server_name,  # availability
+                             "OOFUrl": "https://%s/ews/oof"
+                             % rpcproxy_server_name,  # out-of-office
+                             "OABUrl": "https://%s/ews/oab"
+                             % rpcproxy_server_name}  # offline address book
+
+            if avail_protocols['EXPR'] == 'prio':
+                response_tree['ServerExclusiveConnect'] = 'On'
+
+            response_tree.update(ssl_opts)
+            self._append_elements(prot_element, response_tree)
 
         """
         WEB: The Protocol element contains settings the client can use to

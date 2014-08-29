@@ -117,6 +117,7 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagContainerClass"] = "IPF.Note"
         subfolder["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Note"
         subfolder["properties"]["PidTagSubfolders"] = False
+        subfolder["properties"]["PidTagAttributeHidden"] = False
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagContentUnread"] = len(subfolder["messages"])

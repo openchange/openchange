@@ -282,7 +282,7 @@ class FolderObject(object):
     """
 
     def __init__(self, context, uri, folderID, parentFID):
-        print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, hex(folderID), parentFID)
+        print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, folderID, parentFID)
         self.ctx = context
         self.uri = uri
         self.parentFID = parentFID
@@ -345,11 +345,11 @@ class FolderObject(object):
         Note: it must be indexed previously
         :param folderID int: child folder ID
         """
-        print '[PYTHON]: [%s] folder.open_folder(%s)' % (BackendObject.name, hex(folderID))
+        print '[PYTHON]: [%s] folder.open_folder(%s)' % (BackendObject.name, folderID)
 
-        child_uri = _Indexing.uri_by_id(folderID)
+        child_uri = self.ctx.indexing.uri_by_id(folderID)
         if child_uri is None:
-            print '[PYTHON]:[ERR] child with id=%s not found' % hex(folderID)
+            print '[PYTHON]:[ERR] child with id=%s not found' % folderID
             return None
 
         return FolderObject(self.ctx, child_uri, folderID, self.folderID)
@@ -399,11 +399,11 @@ class FolderObject(object):
         return counter[table_type]()
 
     def _count_folders(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_folders(%s) = %d' % (BackendObject.name, hex(self.folderID), len(self.subfolders))
+        print '[PYTHON][INTERNAL]: [%s] folder._count_folders(%s) = %d' % (BackendObject.name, self.folderID, len(self.subfolders))
         return len(self.subfolders)
 
     def _count_messages(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, hex(self.folderID), len(self.messages))
+        print '[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, self.folderID, len(self.messages))
         return len(self.messages)
 
     def _count_zero(self):

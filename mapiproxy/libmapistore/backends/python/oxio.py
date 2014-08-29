@@ -182,6 +182,8 @@ class _Indexing(object):
 
     def uri_by_id(self, fid):
         mstore_uri = self.ictx.uri_for_fmid(fid)
+        if mstore_uri is None:
+            return None
         return self.uri_mstore_to_oxio(mstore_uri)
 
     def id_for_uri(self, uri):

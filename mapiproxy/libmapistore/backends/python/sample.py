@@ -97,7 +97,8 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagSubject"] = "Dummy Sample Email"
         message1["properties"]["PidTagNormalizedSubject"] = message1["properties"]["PidTagSubject"]
         message1["properties"]["PidTagConversationTopic"] = message1["properties"]["PidTagSubject"]
-        message1["properties"]["PidTagBody"] = u"This is the content of this sample email"
+        message1["properties"]["PidTagBody"] = "This is the content of this sample email"
+        message1["properties"]["PidTagHtml"] = bytearray("<html><head></head><h1>"+ message1["properties"]["PidTagBody"] + "</h1></body></html>"
         message1["properties"]["PidTagImportance"] = 2
         message1["properties"]["PidTagHasAttachments"] = False
         message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"

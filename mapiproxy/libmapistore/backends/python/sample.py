@@ -104,6 +104,8 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagHasAttachments"] = False
         message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
         message1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        message1["properties"]["PidTagMessageStatus"] = 0
+        message1["properties"]["PidTagMessageFlags"] = 0
 
         subfolder = {}
         subfolder["uri"] = "sample://deadbeef0000001/dead0010000001/"

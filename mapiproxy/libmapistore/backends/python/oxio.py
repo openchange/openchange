@@ -193,6 +193,9 @@ class BackendObject(object):
     description = "open-xchange backend"
     namespace = "oxio://"
 
+    # FIXME: Very hacky - store last username we've seen here
+    hack_username = None
+
     def __init__(self):
         print '[PYTHON]: [%s] backend class __init__' % self.name
         return
@@ -207,16 +210,21 @@ class BackendObject(object):
         """ List context capabilities of this backend.
         """
         print '[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username)
+        BackendObject.hack_username = username
         contexts = [{ "inbox", "default0/INBOX", "calendar", "CALENDAR" }]
         return (mapistore.errors.MAPISTORE_SUCCESS, contexts)
 
     def create_context(self, uri):
-        """ Create a context.
         """
-
+        Create a context for given URL.
+        Note: Username is deduced from Backend.list_contexts() call
+        """
         print '[PYTHON]: [%s] backend.create_context: uri = %s' % (self.name, uri)
-        context = ContextObject(uri)
+        if BackendObject.hack_username is None:
+            print '[PYTHON]: [%s] create_context() called but we have no username!' % (self.name,)
+            return (mapistore.errors.MAPISTORE_ERR_INVALID_CONTEXT, None)
 
+        context = ContextObject(BackendObject.hack_username, uri)
         return (mapistore.errors.MAPISTORE_SUCCESS, context)
 
 
@@ -228,24 +236,26 @@ class ContextObject(object):
      * get_path() lookup directly into our local Indexing
      """
 
-    def __init__(self, uri):
-        self.uri = _Indexing.uri_mstore_to_oxio(uri)
-        self.fmid = _Indexing.id_for_uri(self.uri)
+    def __init__(self, username, uri):
+        self.username = username
+        self.indexing = _Indexing(username)
+        self.uri = self.indexing.uri_mstore_to_oxio(uri)
+        self.fmid = self.indexing.id_for_uri(self.uri)
         print '[PYTHON]: [%s] context class __init__(%s)' % (self._log_marker(), uri)
 
     def get_path(self, fmid):
-        print '[PYTHON]: [%s] context.get_path(%d)' % (self._log_marker(), fmid)
-        uri = _Indexing.uri_by_id(fmid)
+        print '[PYTHON]: [%s] context.get_path(%d/%x)' % (self._log_marker(), fmid, fmid)
+        uri = self.indexing.uri_by_id(fmid)
         print '[PYTHON]: [%s] get_path URI: %s' % (self._log_marker(), uri)
         return uri
 
     def get_root_folder(self, folderID):
         print '[PYTHON]: [%s] context.get_root_folder(%s)' % (self._log_marker(), folderID)
-        if folderID != self.fmid:
-            uri = _Indexing.uri_by_id(folderID)
-        else:
-            uri = self.uri
-        folder = FolderObject(self, uri, folderID, None)
+        if self.fmid != folderID:
+            print '[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID)
+            return (mapistore.errors.MAPISTORE_ERR_INVALID_PARAMETER, None)
+
+        folder = FolderObject(self, self.uri, folderID, None)
         return (mapistore.errors.MAPISTORE_SUCCESS, folder)
 
     def _log_marker(self):
@@ -297,9 +307,9 @@ class FolderObject(object):
         # update Indexing
         if len(self.parent_uri):
             if self.parentFID is not None:
-                _Indexing.add_entry(self.parentFID, self.parent_uri)
+                self.ctx.indexing.add_entry(self.parentFID, self.parent_uri)
             else:
-                self.parentFID = _Indexing.add_uri(self.parent_uri)
+                self.parentFID = self.ctx.indexing.add_uri(self.parent_uri)
         self._index_subfolders(oxio_subfolders)
         self._index_messages(oxio_messages)
         pass
@@ -320,7 +330,7 @@ class FolderObject(object):
                       'PidTagSubfolders': fr[5],
                       'PidTagContentCount': fr[6]
                       }
-            folder['PidTagFolderId'] = _Indexing.add_uri(folder['uri'])
+            folder['PidTagFolderId'] = self.ctx.indexing.add_uri(folder['uri'])
             self.subfolders.append(folder)
         pass
 

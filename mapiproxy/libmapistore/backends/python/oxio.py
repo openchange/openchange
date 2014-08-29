@@ -211,8 +211,13 @@ class BackendObject(object):
         """
         print '[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username)
         BackendObject.hack_username = username
-        contexts = [{ "inbox", "default0/INBOX", "calendar", "CALENDAR" }]
-        return (mapistore.errors.MAPISTORE_SUCCESS, contexts)
+        inbox = {'name': 'INBOX',
+                 'url': _Indexing.uri_oxio_to_mstore('default0/INBOX'),
+                 'main_folder': True,
+                 'role': mapistore.ROLE_MAIL,
+                 'tag': 'tag',
+                 }
+        return [inbox,]
 
     def create_context(self, uri):
         """

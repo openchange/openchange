@@ -185,6 +185,9 @@ static PyObject *py_MAPIStoreIndexing_allocate_fmid(PyMAPIStoreIndexingObject *s
 		return NULL;
 	}
 
+	/* Transform to Exchange format - whatever that means */
+	fmid = (exchange_globcnt(fmid) << 16) | 0x0001;
+
 	return PyLong_FromLongLong(fmid);
 }
 

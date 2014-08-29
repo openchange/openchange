@@ -120,7 +120,7 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagAttributeHidden"] = False
         subfolder["properties"]["PidTagComment"] = "WALKING COMMENT"
         subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
-        subfolder["properties"]["PidTagContentUnread"] = len(subfolder["messages"])
+        subfolder["properties"]["PidTagContentUnreadCount"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagChildFolderCount"] = len(subfolder["subfolders"])
         subfolder["cache"] = {}
         subfolder["cache"]["properties"] = {}

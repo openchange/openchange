@@ -196,7 +196,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	}
 
 	/* set connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
+	ret = mapistore_set_connection_info(mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(ret);
 		return NULL;

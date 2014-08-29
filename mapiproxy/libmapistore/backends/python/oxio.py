@@ -309,12 +309,7 @@ class FolderObject(object):
         oxio_messages = []
         if self.message_count > 0:
             oxio_messages = oxioConn.getEmails(self.uri, [])
-        # update Indexing
-        if len(self.parent_uri):
-            if self.parentFID is not None:
-                self.ctx.indexing.add_entry(self.parentFID, self.parent_uri)
-            else:
-                self.parentFID = self.ctx.indexing.add_uri(self.parent_uri)
+        # preload subfolders and messages
         self._index_subfolders(oxio_subfolders)
         self._index_messages(oxio_messages)
         pass

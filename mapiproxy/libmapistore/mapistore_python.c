@@ -20,6 +20,7 @@
  */
 
 #include <Python.h>
+#include <datetime.h>
 
 #include <sys/types.h>
 #include <string.h>
@@ -113,6 +114,8 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 	struct Binary_r		*bin;
 	struct StringArray_r	*MVszA;
 	struct StringArrayW_r	*MVszW;
+	NTTIME			nt;
+	struct FILETIME		*ft;
 	char			*str;
 
 	/* Sanity checks */
@@ -164,7 +167,14 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_SYSTIME:
-			DEBUG(5, ("[WARN][%s]: PT_SYSTIME case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyFloat_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			unix_to_nt_time(&nt, PyFloat_AsDouble(value));
+			ft = talloc_zero(mem_ctx, struct FILETIME);
+			MAPISTORE_RETVAL_IF(!ft, MAPISTORE_ERR_NOT_FOUND, NULL);
+			ft->dwLowDateTime = (nt << 32) >> 32;
+			ft->dwHighDateTime = nt >> 32;
+			*data = (void *) ft;
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_CLSID:
 			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
@@ -258,6 +268,9 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	struct Binary_r		*bin;
 	struct StringArrayW_r	*MVszW;
 	struct StringArray_r	*MVszA;
+	NTTIME			nt;
+	struct FILETIME		*ft;
+	struct timeval		t;
 
 	/* Sanity checks */
 	if (!aRow) return NULL;
@@ -307,7 +320,12 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			val = PyString_FromString((const char *)data);
 			break;
 		case PT_SYSTIME:
-			DEBUG(5, ("[WARN][%s]: PT_SYSTIME case not implemented\n", __location__));
+			ft = (struct FILETIME *) data;
+			nt = ft->dwHighDateTime;
+			nt = nt << 32;
+			nt |= ft->dwLowDateTime;
+			nttime_to_timeval(&t, nt);
+			val = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
 			break;
 		case PT_CLSID:
 			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
@@ -2741,6 +2759,8 @@ _PUBLIC_ enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *mem_ctx,
 
 	Py_Initialize();
 	DEBUG(0, ("[INFO][%s]: Loading from '%s'\n", __location__, path));
+
+	PyDateTime_IMPORT;
 
 	retval = mapistore_set_pypath((char *)path);
 	MAPISTORE_RETVAL_IF(retval, retval, NULL);

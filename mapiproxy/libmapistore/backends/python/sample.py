@@ -24,6 +24,7 @@ sys.path.append(os.sep.join((root, '..', '..')))
 
 import json
 import uuid
+from datetime import datetime
 from openchange import mapistore
 
 class BackendObject(object):
@@ -106,6 +107,8 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         message1["properties"]["PidTagMessageStatus"] = 0
         message1["properties"]["PidTagMessageFlags"] = 0
+        message1["properties"]["PidTagLastModificationTime"] = float(datetime.now().strftime("%s.%f"))
+        message1["properties"]["PidTagMessageDeliveryTime"] = float(datetime.now().strftime("%s.%f"))
 
         subfolder = {}
         subfolder["uri"] = "sample://deadbeef0000001/dead0010000001/"

@@ -23,6 +23,7 @@ root = os.path.abspath(os.path.dirname(__file__))
 sys.path.append(os.sep.join((root, '..', '..')))
 
 import json
+import uuid
 from openchange import mapistore
 
 class BackendObject(object):
@@ -102,7 +103,7 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagImportance"] = 2
         message1["properties"]["PidTagHasAttachments"] = False
         message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
-
+        message1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
 
         subfolder = {}
         subfolder["uri"] = "sample://deadbeef00000001/dead00100000001/"

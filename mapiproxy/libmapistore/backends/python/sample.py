@@ -87,7 +87,7 @@ class ContextObject(BackendObject):
         message1["properties"] = {}
         message1["properties"]["PidTagFolderId"] = 0xdeadbeef00000001
         message1["properties"]["PidTagMid"] = message1["mid"]
-        message1["properties"]["PidTagInstID"] = 0xbabe000100000000
+        message1["properties"]["PidTagInstID"] =  message1["mid"]
         message1["properties"]["PidTagSubjectPrefix"] = "Re:"
         message1["properties"]["PidTagInstanceNum"] = 0
         message1["properties"]["PidTagRowType"] = 1

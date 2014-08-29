@@ -32,6 +32,25 @@ import json
 
 from openchange import mapistore
 
+import logging
+
+# create logger with 'spam_application'
+logger = logging.getLogger('OXIO')
+logger.setLevel(logging.DEBUG)
+# create file handler which logs even debug messages
+fh = logging.FileHandler('/tmp/oxio.log')
+fh.setLevel(logging.DEBUG)
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setLevel(logging.ERROR)
+# create formatter and add it to the handlers
+formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+fh.setFormatter(formatter)
+ch.setFormatter(formatter)
+# add the handlers to the logger
+logger.addHandler(fh)
+logger.addHandler(ch)
+
 
 class _OxioConn(object):
 
@@ -197,19 +216,19 @@ class BackendObject(object):
     hack_username = None
 
     def __init__(self):
-        print '[PYTHON]: [%s] backend class __init__' % self.name
+        logger.info('[PYTHON]: [%s] backend class __init__' % self.name)
         return
 
     def init(self):
         """ Initialize sample backend
         """
-        print '[PYTHON]: [%s] backend.init: init()' % self.name
+        logger.info('[PYTHON]: [%s] backend.init: init()' % self.name)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def list_contexts(self, username):
         """ List context capabilities of this backend.
         """
-        print '[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username)
+        logger.info('[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username))
         BackendObject.hack_username = username
         inbox = {'name': 'INBOX',
                  'url': _Indexing.uri_oxio_to_mstore('default0/INBOX'),
@@ -224,9 +243,9 @@ class BackendObject(object):
         Create a context for given URL.
         Note: Username is deduced from Backend.list_contexts() call
         """
-        print '[PYTHON]: [%s] backend.create_context: uri = %s' % (self.name, uri)
+        logger.info('[PYTHON]: [%s] backend.create_context: uri = %s' % (self.name, uri))
         if BackendObject.hack_username is None:
-            print '[PYTHON]: [%s] create_context() called but we have no username!' % (self.name,)
+            logger.error('[PYTHON]: [%s] create_context() called but we have no username!' % (self.name,))
             return (mapistore.errors.MAPISTORE_ERR_INVALID_CONTEXT, None)
 
         context = ContextObject(BackendObject.hack_username, uri)
@@ -246,18 +265,18 @@ class ContextObject(object):
         self.indexing = _Indexing(username)
         self.uri = self.indexing.uri_mstore_to_oxio(uri)
         self.fmid = self.indexing.id_for_uri(self.uri)
-        print '[PYTHON]: [%s] context class __init__(%s)' % (self._log_marker(), uri)
+        logger.info('[PYTHON]: [%s] context class __init__(%s)' % (self._log_marker(), uri))
 
     def get_path(self, fmid):
-        print '[PYTHON]: [%s] context.get_path(%d/%x)' % (self._log_marker(), fmid, fmid)
+        logger.info('[PYTHON]: [%s] context.get_path(%d/%x)' % (self._log_marker(), fmid, fmid))
         uri = self.indexing.uri_by_id(fmid)
-        print '[PYTHON]: [%s] get_path URI: %s' % (self._log_marker(), uri)
+        logger.info('[PYTHON]: [%s] get_path URI: %s' % (self._log_marker(), uri))
         return uri
 
     def get_root_folder(self, folderID):
-        print '[PYTHON]: [%s] context.get_root_folder(%s)' % (self._log_marker(), folderID)
+        logger.info('[PYTHON]: [%s] context.get_root_folder(%s)' % (self._log_marker(), folderID))
         if self.fmid != folderID:
-            print '[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID)
+            logger.error('[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID))
             return (mapistore.errors.MAPISTORE_ERR_INVALID_PARAMETER, None)
 
         folder = FolderObject(self, self.uri, folderID, None)
@@ -287,7 +306,7 @@ class FolderObject(object):
     """
 
     def __init__(self, context, uri, folderID, parentFID):
-        print '[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, folderID, parentFID)
+        logger.info('[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, folderID, parentFID))
         self.ctx = context
         self.uri = uri
         self.parentFID = parentFID
@@ -345,26 +364,26 @@ class FolderObject(object):
         Note: it must be indexed previously
         :param folderID int: child folder ID
         """
-        print '[PYTHON]: [%s] folder.open_folder(%s)' % (BackendObject.name, folderID)
+        logger.info('[PYTHON]: [%s] folder.open_folder(%s)' % (BackendObject.name, folderID))
 
         child_uri = self.ctx.indexing.uri_by_id(folderID)
         if child_uri is None:
-            print '[PYTHON]:[ERR] child with id=%s not found' % folderID
+            logger.error('[PYTHON]:[ERR] child with id=%s not found' % folderID)
             return None
 
         return FolderObject(self.ctx, child_uri, folderID, self.folderID)
 
     def create_folder(self, properties, folderID):
-        print '[PYTHON]: [%s] folder.create_folder(%s)' % (BackendObject.name, folderID)
-        print '[PYTHON]: %s ' % json.dumps(properties, indent=4)
+        logger.info('[PYTHON]: [%s] folder.create_folder(%s)' % (BackendObject.name, folderID))
+        logger.info('[PYTHON]: %s ' % json.dumps(properties, indent=4))
         return (mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED, None)
 
     def delete(self):
-        print '[PYTHON]: [%s] folder.delete(%s)' % (BackendObject.name, self.folderID)
+        logger.info('[PYTHON]: [%s] folder.delete(%s)' % (BackendObject.name, self.folderID))
         return mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED
 
     def get_properties(self, properties):
-        print '[PYTHON][%s/%s]: folder.get_properties(%s)' % (BackendObject.name, self.uri, properties)
+        logger.info('[PYTHON][%s/%s]: folder.get_properties(%s)' % (BackendObject.name, self.uri, properties))
         return {'PidTagFolderId': self.folderID,
                 'PidTagDisplayName': self.oxio_folder['title'],
                 'PidTagParentFolderId': self.parentFID,
@@ -379,16 +398,16 @@ class FolderObject(object):
                 }
 
     def set_properties(self, properties):
-        print '[PYTHON][%s/%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties)
+        logger.info('[PYTHON][%s/%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties))
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def open_table(self, table_type):
-        print '[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type)
+        logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
 
     def get_child_count(self, table_type):
-        print '[PYTHON]: [%s] folder.get_child_count. table_type = %d' % (BackendObject.name, table_type)
+        logger.info('[PYTHON]: [%s] folder.get_child_count. table_type = %d' % (BackendObject.name, table_type))
         counter = { 1: self._count_folders,
                     2: self._count_messages,
                     3: self._count_zero,
@@ -399,11 +418,11 @@ class FolderObject(object):
         return counter[table_type]()
 
     def _count_folders(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_folders(%s) = %d' % (BackendObject.name, self.folderID, len(self.subfolders))
+        logger.info('[PYTHON][INTERNAL]: [%s] folder._count_folders(%s) = %d' % (BackendObject.name, self.folderID, len(self.subfolders)))
         return len(self.subfolders)
 
     def _count_messages(self):
-        print '[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, self.folderID, len(self.messages))
+        logger.info('[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, self.folderID, len(self.messages)))
         return len(self.messages)
 
     def _count_zero(self):
@@ -413,13 +432,13 @@ class FolderObject(object):
 class MessageObject(object):
 
     def __init__(self, folder, oxio_msg=None, mid=None):
-        print '[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg)
+        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg))
         self.folder = folder
         self.mid = mid
         self.properties = {}
         if oxio_msg is not None:
             self.init_from_msg_list(oxio_msg)
-        print '[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties)
+        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties))
 
     def init_from_msg_list(self, oxio_msg):
         # msg[0] - message ID
@@ -429,7 +448,7 @@ class MessageObject(object):
         # msg[4] - CC list
         # msg[5] - SUBJECT string
         # msg[6] - received_date timestamp
-        print json.dumps(oxio_msg, indent=4)
+        logger.info(json.dumps(oxio_msg, indent=4))
         subject = str(oxio_msg[5])
         self.properties['PidTagFolderId'] = self.folder.folderID
         self.properties['PidTagMid'] = long(oxio_msg[0])
@@ -467,23 +486,23 @@ class MessageObject(object):
             self.recipients.append(_make_recipient(oxio_rcpt, 0x00000002))
 
     def get_message_data(self):
-        print '[PYTHON]:[%s] message.get_message_data(%s)' % (BackendObject.name, self.properties)
+        logger.info('[PYTHON]:[%s] message.get_message_data(%s)' % (BackendObject.name, self.properties))
         return (self.recipients, self.properties)
 
     def get_properties(self, properties):
-        print '[PYTHON]:[%s] message.get_properties(%s)' % (BackendObject.name, self.properties)
+        logger.info('[PYTHON]:[%s] message.get_properties(%s)' % (BackendObject.name, self.properties))
         return self.properties
 
     def set_properties(self, properties):
-        print '[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, properties)
+        logger.info('[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, properties))
 
         self.properties.update(properties)
 
-        print '[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, self.properties)
+        logger.info('[PYTHON]:[%s] message.set_properties(%s)' % (BackendObject.name, self.properties))
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def save(self):
-        print '[PYTHON]:[%s] message.save(%s)' % (BackendObject.name, self.properties)
+        logger.info('[PYTHON]:[%s] message.save(%s)' % (BackendObject.name, self.properties))
 
         return mapistore.errors.MAPISTORE_ERR_NOT_IMPLEMENTED
 
@@ -491,22 +510,22 @@ class MessageObject(object):
 class TableObject(object):
 
     def __init__(self, folder, table_type):
-        print '[PYTHON]:[%s] table.__init__(%d, type=%s)' % (BackendObject.name, folder.folderID, table_type)
+        logger.info('[PYTHON]:[%s] table.__init__(%d, type=%s)' % (BackendObject.name, folder.folderID, table_type))
         self.folder = folder
         self.table_type = table_type
         self.properties = None
 
     def set_columns(self, properties):
-        print '[PYTHON]:[%s] table.set_columns(%s)' % (BackendObject.name, properties)
+        logger.info('[PYTHON]:[%s] table.set_columns(%s)' % (BackendObject.name, properties))
         self.properties = properties
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_row_count(self, query_type):
-        print '[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name)
+        logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
         return self.folder.get_child_count(self.table_type)
 
     def get_row(self, row_no, query_type):
-        print '[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no)
+        logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))
         if self.get_row_count(self.table_type) == 0:
             return (self.properties, {})
 
@@ -521,11 +540,14 @@ class TableObject(object):
 
     def _get_row_folders(self, row_no):
         folder = self.folder.subfolders[row_no]
+        logger.debug('*** _get_row_folders')
+        logger.debug(json.dumps(self.properties, indent=4))
+        logger.debug(json.dumps(folder, indent=4))
         row = {}
         for name in self.properties:
             if name in folder:
                 row[name] = folder[name]
-        print json.dumps(row, indent=4)
+#         print json.dumps(row, indent=4)
         return (self.properties, row)
 
     def _get_row_messages(self, row_no):

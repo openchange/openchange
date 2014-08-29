@@ -231,6 +231,7 @@ int main(int argc, const char *argv[])
 	const char			*opt_uri = NULL;
 	const char			*opt_username = NULL;
 	uint64_t			fmid;
+	uint64_t			root_fmid;
 	uint32_t			context_id = 0;
 	void				*folder_object;
 	void				*child_folder_object;
@@ -334,7 +335,15 @@ int main(int argc, const char *argv[])
 		DEBUG(0, ("\t.tag %s\n", mstore_contexts->tag));
 	}
 	DEBUG(0, ("*** mapistore_add_context\n"));
-	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, 0xdeadbeef00000001, &context_id, &folder_object);
+	{
+		bool soft_deleted;
+		retval = mapistore_indexing_record_get_fmid(mstore_ctx, opt_username, opt_uri, false,
+							    &root_fmid, &soft_deleted);
+		if (retval != MAPISTORE_SUCCESS || !root_fmid) {
+			root_fmid = 0xdeadbeef00000001L;
+		}
+	}
+	retval = mapistore_add_context(mstore_ctx, opt_username, opt_uri, root_fmid, &context_id, &folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[ERR]: %s\n", mapistore_errstr(retval)));
 		goto end;
@@ -351,7 +360,7 @@ int main(int argc, const char *argv[])
 			DEBUG(0, ("Invalid backend_ctx\n"));
 			goto end;
 		}
-		retval = mapistore_backend_get_path(NULL, backend_ctx, 0xdeadbeef00000001, &mapistore_URI);
+		retval = mapistore_backend_get_path(NULL, backend_ctx, root_fmid, &mapistore_URI);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("mapistore_backend_get_path: %s\n", mapistore_errstr(retval)));
 			goto end;
@@ -367,7 +376,7 @@ int main(int argc, const char *argv[])
 	}
 
 	/* try to get first child for test Context or fallback to FMID for context folder */
-	DEBUG(0, ("*** Find any children of folder with id 0x%.16"PRIx64"\n", 0xdeadbeef00000001L));
+	DEBUG(0, ("*** Find any children of folder with id 0x%.16"PRIx64"\n", root_fmid));
 	fmid = _find_first_child_folder(mem_ctx, mstore_ctx, context_id, folder_object);
 	if (!fmid) {
 		/* use root context FMID, should work */

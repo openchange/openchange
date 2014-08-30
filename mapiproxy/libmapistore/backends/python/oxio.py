@@ -27,6 +27,7 @@ __all__ = ["BackendObject",
 import sysconfig
 sys.path.append(sysconfig.get_path('platlib'))
 
+import datetime
 import requests
 import json
 
@@ -148,7 +149,7 @@ class _OxioConn(object):
         payload = {"action": "all",
                    "session": self.sess_id,
                    "folder": folder_id,
-                   "columns": "600,601,603,604,605,607,610"}
+                   "columns": "600,601,603,604,605,607,609,610"}
         self._dump_request(payload)
         r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
         self._dump_response(r)
@@ -310,16 +311,17 @@ class FolderObject(object):
     """Folder object is responsible for mapping
     between MAPI folderID (64bit) and OXIO folderID (string).
     Mapping is done as:
-     * self.folderID -> 64bit MAPI forlder ID
-     * self.uri      -> string OXIO ID (basically a path to the object
+     * self.folderID   -> 64bit MAPI forlder ID
+     * self.uri        -> string OXIO ID (basically a path to the object
+     * self.parentFID  ->  64bit MAPI folder ID for parent Folder
     """
 
     def __init__(self, context, uri, folderID, parentFID):
         logger.info('[PYTHON]: [%s] folder.__init__(uri=%s, fid=%s, parent=%s)' % (BackendObject.name, uri, folderID, parentFID))
         self.ctx = context
         self.uri = uri
-        self.parentFID = parentFID
-        self.folderID = folderID
+        self.parentFID = long(parentFID) if parentFID is not None else None
+        self.folderID = long(folderID)
         # ox folder record
         oxioConn = _OxioConn.get_instance()
         self.oxio_folder = oxioConn.getFolder(self.uri)
@@ -437,13 +439,27 @@ class FolderObject(object):
     def _count_zero(self):
         return mapistore.errors.MAPISTORE_SUCCESS
 
+    def open_message(self, mid, rw):
+        logger.info('[PYTHON]: folder.open_message(mid=%s, rw=%s)' % (mid, rw))
+
+        for msg in self.messages:
+            if mid == msg.mid:
+                msg.fetch()
+                return msg;
+        logger.warn('No message with id %d found. messages -> %s' % (mid, self.messages))
+        return None
+
+    def create_message(self, mid, associated):
+        logger.info('[PYTHON]: %s folder.create_message()' % BackendObject.name)
+        return MessageObject(folder=self, mid=mid)
+
 
 class MessageObject(object):
 
     def __init__(self, folder, oxio_msg=None, mid=None):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg))
         self.folder = folder
-        self.mid = mid
+        self.mid = mid or long(oxio_msg[0])
         self.properties = {}
         if oxio_msg is not None:
             self.init_from_msg_list(oxio_msg)
@@ -456,7 +472,8 @@ class MessageObject(object):
         # msg[3] - TO list
         # msg[4] - CC list
         # msg[5] - SUBJECT string
-        # msg[6] - received_date timestamp
+        # msg[6] - sent_date timestamp => use this for modification date
+        # msg[7] - received_date timestamp
         logger.info(json.dumps(oxio_msg, indent=4))
         subject = str(oxio_msg[5])
         self.properties['PidTagFolderId'] = self.folder.folderID
@@ -470,6 +487,10 @@ class MessageObject(object):
         self.properties['PidTagDepth'] = 0
         self.properties['PidTagRowType'] = 1
         self.properties['PidTagInstanceNum'] = 0
+        self.properties['PidTagBody'] = "This is the content of this sample email"
+        self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
+        self.properties['PidTagLastModificationTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[6] / 1000)).strftime("%s.%f"))
+        self.properties['PidTagMessageDeliveryTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[7] / 1000)).strftime("%s.%f"))
 #         self.properties["PidTagBody"] = "This is the content of this sample email"
 #         self.properties["PidTagImportance"] = 2
 #         self.properties["PidTagHasAttachments"] = False
@@ -479,7 +500,7 @@ class MessageObject(object):
         def _make_recipient(oxio_rcpt, recipient_type):
             rcpt = {
                     'PidTagRecipientType': recipient_type,
-                    'PidTagRecipientDisplayName': oxio_rcpt[0],
+                    'PidTagRecipientDisplayName': oxio_rcpt[0] or oxio_rcpt[1],
                     'PidTagSmtpAddress': oxio_rcpt[1],
                     }
             return rcpt
@@ -494,8 +515,15 @@ class MessageObject(object):
         for oxio_rcpt in oxio_msg[4]:
             self.recipients.append(_make_recipient(oxio_rcpt, 0x00000002))
 
+    def fetch(self):
+        pass
+
     def get_message_data(self):
-        logger.info('[PYTHON]:[%s] message.get_message_data(%s)' % (BackendObject.name, self.properties))
+        logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
+        logger.debug('recipients: %s', json.dumps(self.recipients, indent=4))
+        log_props = self.properties.copy()
+        del log_props['PidTagHtml']
+        logger.debug('properties: %s', json.dumps(log_props, indent=4))
         return (self.recipients, self.properties)
 
     def get_properties(self, properties):
@@ -562,7 +590,8 @@ class TableObject(object):
     def _get_row_messages(self, row_no):
         assert row_no < len(self.folder.messages), "Index out of bounds for messages row=%s" % row_no
         message = self.folder.messages[row_no]
-        return (self.properties, message.properties)
+        (recipients, properties) = message.get_message_data()
+        return (self.properties, properties)
 
     def _get_row_not_impl(self, row_no):
         return (self.properties, {})

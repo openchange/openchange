@@ -1328,7 +1328,10 @@ static enum mapistore_error mapistore_python_folder_open_message(TALLOC_CTX *mem
 
 	/* Call open_message function */
 	msg = PyObject_CallMethod(folder, "open_message", "Kb", mid, read_write);
-	MAPISTORE_RETVAL_IF(!msg, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	if (!msg) {
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
 
 	if (msg == Py_None) {
 		Py_DECREF(msg);

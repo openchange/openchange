@@ -153,7 +153,7 @@ class _OxioConn(object):
         return r.json()['data']
 
 
-    def getEmails(self, folder_id, columns):
+    def listEmails(self, folder_id, columns):
         """Fetch subfolders for folder_id
         :param folder_id: oxid for parent folder
         :param columns list: list of columns for fetch
@@ -166,6 +166,21 @@ class _OxioConn(object):
         r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
         self._dump_response(r)
         return r.json()['data']
+
+    def getMessageBody(self, folder_id, message_id, need_html=False):
+        payload = {"action": "get",
+                   "session": self.sess_id,
+                   "id": message_id,
+                   "folder": folder_id,
+                   "view": "html" if need_html else "text",
+                   }
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
+        self._dump_response(r)
+        data = r.json()['data']
+        # find the body
+        body = data['attachments'][0]['content']
+        return body
 
     def _dump_request(self, payload):
 #         print json.dumps(payload, indent=4)
@@ -441,7 +456,7 @@ class FolderObject(object):
     def _open_table_messages(self, table_type):
         # Refresh messages
         oxioConn = _OxioConn.get_instance()
-        oxio_messages = oxioConn.getEmails(self.uri, [])
+        oxio_messages = oxioConn.listEmails(self.uri, [])
         self._index_messages(oxio_messages)
         # now go on with usual open_table implementation
         return self._open_table_any(table_type)
@@ -490,6 +505,8 @@ class MessageObject(object):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg))
         self.folder = folder
         self.mid = mid or long(oxio_msg[0])
+        self.oxio_id = oxio_msg[0]
+        self.oxio_folder_id = oxio_msg[1]
         self.properties = {}
         if oxio_msg is not None:
             self.init_from_msg_list(oxio_msg)
@@ -507,8 +524,8 @@ class MessageObject(object):
         logger.info(json.dumps(oxio_msg, indent=4))
         subject = str(oxio_msg[5])
         self.properties['PidTagFolderId'] = self.folder.folderID
-        self.properties['PidTagMid'] = long(oxio_msg[0])
-        self.properties['PidTagInstID'] = long(oxio_msg[0])
+        self.properties['PidTagMid'] = self.mid
+        self.properties['PidTagInstID'] = self.mid
         self.properties['PidTagSubjectPrefix'] = ''
         self.properties['PidTagSubject'] = subject
         self.properties['PidTagNormalizedSubject'] = subject
@@ -517,11 +534,10 @@ class MessageObject(object):
         self.properties['PidTagDepth'] = 0
         self.properties['PidTagRowType'] = 1
         self.properties['PidTagInstanceNum'] = 0
-        self.properties['PidTagBody'] = "This is the content of this sample email"
-        self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
         self.properties['PidTagLastModificationTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[6] / 1000)).strftime("%s.%f"))
         self.properties['PidTagMessageDeliveryTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[7] / 1000)).strftime("%s.%f"))
-#         self.properties["PidTagBody"] = "This is the content of this sample email"
+#         self.properties['PidTagBody'] = "This is the content of this sample email"
+#         self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
 #         self.properties["PidTagImportance"] = 2
 #         self.properties["PidTagHasAttachments"] = False
 #         self.properties["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
@@ -546,13 +562,16 @@ class MessageObject(object):
             self.recipients.append(_make_recipient(oxio_rcpt, 0x00000002))
 
     def fetch(self):
+        self.properties['PidTagBody'] = _OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False)
+        self.properties['PidTagHtml'] = bytearray(_OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False), 'utf8')
         pass
 
     def get_message_data(self):
         logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
         logger.debug('recipients: %s', json.dumps(self.recipients, indent=4))
         log_props = self.properties.copy()
-        del log_props['PidTagHtml']
+        if 'PidTagHtml' in log_props:
+            del log_props['PidTagHtml']
         logger.debug('properties: %s', json.dumps(log_props, indent=4))
         return (self.recipients, self.properties)
 

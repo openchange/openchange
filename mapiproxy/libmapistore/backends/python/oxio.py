@@ -239,7 +239,8 @@ class BackendObject(object):
         """ List context capabilities of this backend.
         """
         logger.info('[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username))
-        BackendObject.hack_username = username
+        if BackendObject.hack_username is None:
+            BackendObject.hack_username = username
         inbox = {'name': 'INBOX',
                  'url': _Indexing.uri_oxio_to_mstore('default0/INBOX'),
                  'main_folder': True,

@@ -141,6 +141,18 @@ class _OxioConn(object):
         self._dump_response(r)
         return r.json()['data']
 
+    def getEmailsCount(self, folder_id):
+        """Just ping the server for message count in folder"""
+        payload = {'action': 'count',
+                   'session': self.sess_id,
+                   'folder': folder_id,
+                   }
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
+        self._dump_response(r)
+        return r.json()['data']
+
+
     def getEmails(self, folder_id, columns):
         """Fetch subfolders for folder_id
         :param folder_id: oxid for parent folder
@@ -337,15 +349,12 @@ class FolderObject(object):
             oxio_subfolders = oxioConn.getSubFolders(self.uri, [])
         # ox records for messages
         self.messages = []
-        oxio_messages = []
-        if self.message_count > 0:
-            oxio_messages = oxioConn.getEmails(self.uri, [])
         # preload subfolders and messages
         self._index_subfolders(oxio_subfolders)
-        self._index_messages(oxio_messages)
         pass
 
     def _index_subfolders(self, oxio_subfolders):
+        self.subfolders = []
         #print json.dumps(oxio_subfolders, indent=4)
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
@@ -367,6 +376,7 @@ class FolderObject(object):
 
     def _index_messages(self, oxio_messages):
         #print json.dumps(oxio_messages, indent=4)
+        self.messages = []
         for msg in oxio_messages:
             self.messages.append(MessageObject(self, msg, None))
         pass
@@ -415,8 +425,26 @@ class FolderObject(object):
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
+        factory = {1: self._open_table_any,
+                   2: self._open_table_messages,
+                   3: self._open_table_any,
+                   4: self._open_table_any,
+                   5: self._open_table_any,
+                   6: self._open_table_any
+                   }
+        return factory[table_type](table_type)
+
+    def _open_table_any(self, table_type):
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
+
+    def _open_table_messages(self, table_type):
+        # Refresh messages
+        oxioConn = _OxioConn.get_instance()
+        oxio_messages = oxioConn.getEmails(self.uri, [])
+        self._index_messages(oxio_messages)
+        # now go on with usual open_table implementation
+        return self._open_table_any(table_type)
 
     def get_child_count(self, table_type):
         logger.info('[PYTHON]: [%s] folder.get_child_count. table_type = %d' % (BackendObject.name, table_type))
@@ -435,7 +463,8 @@ class FolderObject(object):
 
     def _count_messages(self):
         logger.info('[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, self.folderID, len(self.messages)))
-        return len(self.messages)
+#         return len(self.messages)
+        return _OxioConn.get_instance().getEmailsCount(self.uri)
 
     def _count_zero(self):
         return mapistore.errors.MAPISTORE_SUCCESS

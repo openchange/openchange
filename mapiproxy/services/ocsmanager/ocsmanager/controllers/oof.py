@@ -499,17 +499,19 @@ class OofSettings(object):
             template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
                          "4.0 Transitional//EN\\\">\r\n")
             template += "$internal_message\";\n"
-        if self._config['external_audience'] == 'All':
-            template += "} else {\n"
-            template += "vacation\n"
-            template += "    :subject \"$subject\"\n"
-            template += "    :days    0\n"
-            template += "    :mime    \"MIME-Version: 1.0\r\n"
-            template += "Content-Type: text/html; charset=UTF-8\r\n"
-            template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
-                         "4.0 Transitional//EN\\\">\r\n")
-            template += "$external_message\";\n"
-        template += "}\n"
+
+            if self._config['external_audience'] == 'All':
+                template += "} else {\n"
+                template += "vacation\n"
+                template += "    :subject \"$subject\"\n"
+                template += "    :days    0\n"
+                template += "    :mime    \"MIME-Version: 1.0\r\n"
+                template += "Content-Type: text/html; charset=UTF-8\r\n"
+                template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
+                             "4.0 Transitional//EN\\\">\r\n")
+                template += "$external_message\";\n"
+
+            template += "}\n"
 
         if self._config['state'] == 'Scheduled':
             template += "}\n\n"

@@ -702,6 +702,7 @@ void initmapistore(void)
 	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);
+	initmapistore_message(m);
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
 	initmapistore_table(m);

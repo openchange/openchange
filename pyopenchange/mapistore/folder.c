@@ -362,6 +362,98 @@ end:
 	return result;
 }
 
+static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	PyMAPIStoreMessageObject	*message;
+	char				*kwnames[] = { "uri", "read_write", NULL };
+	const char			*uri;
+	int				read_write = 0;
+	uint64_t			mid;
+	bool				soft_deleted, partial;
+	enum mapistore_error		retval;
+	void				*message_object;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwnames, &uri, &read_write)) {
+		return NULL;
+	}
+
+	/* Get the MID from the URI */
+	partial = false;	// A full URI is needed
+	retval = mapistore_indexing_record_get_fmid(self->context->mstore_ctx, self->context->parent->username,
+			uri, partial, &mid, &soft_deleted);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	if (soft_deleted == true) {
+		PyErr_SetString(PyExc_SystemError,
+				"Soft-deleted message.");
+		return NULL;
+	}
+
+	/* Open the message (read-only by default) */
+	retval = mapistore_folder_open_message(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, self->mem_ctx, mid, (bool) read_write, &message_object);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Return the message object */
+	message = PyObject_New(PyMAPIStoreMessageObject, &PyMAPIStoreMessage);
+
+	message->mem_ctx = self->mem_ctx;
+	message->context = self->context;
+	Py_INCREF(message->context);
+
+	message->message_object = message_object;
+	(void) talloc_reference(NULL, message->message_object);
+	message->mid = mid;
+
+	return (PyObject *)message;
+}
+
+static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *self)
+{
+	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error		retval;
+	uint64_t			*mid_list;
+	uint32_t			list_size;
+	PyMAPIStoreMessagesObject	*message_list;
+
+	/* Get the child folders' MIDs */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_folder_get_child_fmids(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, MAPISTORE_MESSAGE_TABLE, mem_ctx, &mid_list, &list_size);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Return the PyMAPIStoreMessages object*/
+	message_list = PyObject_New(PyMAPIStoreMessagesObject, &PyMAPIStoreMessages);
+
+	message_list->mem_ctx = self->mem_ctx;
+	talloc_reference(message_list->mem_ctx, mid_list);
+	message_list->folder = self;
+	Py_INCREF(message_list->folder);
+
+	message_list->mids = mid_list;
+	message_list->count = list_size;
+	message_list->curr_index = 0;
+
+	talloc_free(mem_ctx);
+	return (PyObject *) message_list;
+}
+
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
@@ -370,6 +462,8 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
+	{ "open_message", (PyCFunction)py_MAPIStoreFolder_open_message, METH_VARARGS|METH_KEYWORDS },
+	{ "get_child_messages", (PyCFunction)py_MAPIStoreFolder_get_child_messages, METH_NOARGS },
 	{ NULL },
 };
 
@@ -493,4 +587,8 @@ void initmapistore_folder(PyObject *m)
 	/* Deletion flags */
 	PyModule_AddObject(m, "SOFT_DELETE", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "PERMANENT_DELETE", PyInt_FromLong(0x2));
+
+	/* Open message flags */
+	PyModule_AddObject(m, "OPEN_READ", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "OPEN_WRITE", PyInt_FromLong(0x1));
 }

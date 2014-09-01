@@ -425,37 +425,38 @@ static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 	}
 
 	/* Check if there are remaining folders */
-	if(self->curr_index >= self->count) {
-		    PyErr_SetNone(PyExc_StopIteration);
-		    return NULL;
+	if(self->curr_index < self->count) {
+		/* Retrieve FID and increment curr_index*/
+		fid = self->fids[self->curr_index];
+		self->curr_index += 1;
+
+		/* Use FID to open folder */
+		retval = mapistore_folder_open_folder(self->folder->context->mstore_ctx,
+							self->folder->context->context_id,
+							self->folder->folder_object,
+							self->mem_ctx, fid, &folder_object);
+		if (retval != MAPISTORE_SUCCESS) {
+			PyErr_SetMAPIStoreError(retval);
+			return NULL;
+		}
+
+		/* Return the MAPIStoreFolder object */
+		folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+
+		folder->mem_ctx = self->mem_ctx;
+		folder->context = self->folder->context;
+		Py_INCREF(folder->context);
+
+		folder->folder_object = folder_object;
+		(void) talloc_reference(NULL, folder->folder_object);
+		folder->fid = fid;
+
+		return (PyObject *)folder;
+
+	} else {
+	    PyErr_SetNone(PyExc_StopIteration);
+	    return NULL;
 	}
-
-	/* Retrieve FID and increment curr_index*/
-	fid = self->fids[self->curr_index];
-	self->curr_index += 1;
-
-	/* Use FID to open folder */
-	retval = mapistore_folder_open_folder(self->folder->context->mstore_ctx,
-						self->folder->context->context_id,
-						self->folder->folder_object,
-						self->mem_ctx, fid, &folder_object);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		return NULL;
-	}
-
-	/* Return the MAPIStoreFolder object */
-	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
-
-	folder->mem_ctx = self->mem_ctx;
-	folder->context = self->folder->context;
-	Py_INCREF(folder->context);
-
-	folder->folder_object = folder_object;
-	(void) talloc_reference(NULL, folder->folder_object);
-	folder->fid = fid;
-
-	return (PyObject *)folder;
 }
 
 PyTypeObject PyMAPIStoreFolders = {

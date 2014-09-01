@@ -46,7 +46,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
 	uint64_t		fid;
-	int			retval;
+	enum mapistore_error	retval;
 	struct SRow 		*aRow;
 	void			*folder_object;
 
@@ -111,7 +111,7 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	const char		*uri;
 	uint64_t		fid;
 	bool			soft_deleted, partial;
-	int			retval;
+	enum mapistore_error	retval;
 	void			*folder_object;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwnames, &uri)) {
@@ -174,7 +174,6 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 		return NULL;
 	}
 
-	/* TODO: Handle the Python object */
 	Py_RETURN_NONE;
 }
 
@@ -405,9 +404,10 @@ static void py_MAPIStoreFolders_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStoreFolders_iter(PyObject *_self)
+static PyObject *py_MAPIStoreFolders_iter(PyObject *self)
 {
-	return (PyObject *)_self;
+	Py_INCREF(self);
+	return self;
 }
 
 static PyObject *py_MAPIStoreFolders_next(PyObject *_self)

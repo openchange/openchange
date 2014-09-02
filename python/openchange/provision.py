@@ -464,6 +464,10 @@ def newuser(names, lp, creds, username=None):
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
+        smtp_user = username
+        if '@' not in smtp_user:
+            smtp_user += '@%s' % names.dnsdomain
+
         extended_user = """
 dn: %(user_dn)s
 changetype: modify
@@ -479,7 +483,7 @@ add: proxyAddresses
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: smtp:postmaster@%(dnsdomain)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
-proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
+proxyAddresses: SMTP:%(smtp_user)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
 """
@@ -491,7 +495,8 @@ msExchUserAccountControl: 0
                                       "firstou": names.firstou,
                                       "firstou_x400": names.firstou[:64],
                                       "domaindn": names.domaindn,
-                                      "dnsdomain": names.dnsdomain}
+                                      "dnsdomain": names.dnsdomain,
+                                      "smtp_user": smtp_user}
         db.modify_ldif(ldif_value)
 
         res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])

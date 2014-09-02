@@ -451,6 +451,7 @@ def r_mkdir(path):
 
 
 SIEVE_SCRIPT_HEADER = "# OpenChange OOF script\n"
+SIEVE_SCRIPT_NAME = 'out-of-office'
 
 
 class OofSettings(object):
@@ -791,7 +792,7 @@ class OofFileBackend(object):
         active_sieve_script_path = None
         if tail == 'sieve-script':  # Dovecot only?
             active_sieve_script_path = sieve_script_path
-            sieve_script_path = os.path.join(head, 'out-of-office.sieve')
+            sieve_script_path = os.path.join(head, SIEVE_SCRIPT_NAME + '.sieve')
 
         return (sieve_script_path, sieve_user_backup, active_sieve_script_path)
 
@@ -837,11 +838,16 @@ class OofFileBackend(object):
 class OofManagesieveBackend(object):
     """Store the sieve script using ManageSieve protocol"""
 
-    def __init__(self, server, ssl, master_password):
-        from sievelib.managesieve import Client
+    def __init__(self, server, ssl, secret):
+        try:
+            from sievelib.managesieve import Client
+        except ImportError:
+            log.error("Cannot use managesieve backend. Install sievelib python library "
+                      "or use file backend instead")
+            raise Exception('Cannot contact server')
         self.client = Client(server)
         self.ssl = ssl
-        self.passwd = master_password
+        self.passwd = secret
 
     def store(self, mailbox, script):
         """Store the OOF sieve script.
@@ -850,8 +856,15 @@ class OofManagesieveBackend(object):
         :param str script: the sieve script
         :returns: the sieve script
         """
-        # TODO
-        pass
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        (active_script, scripts) = self.client.listscripts()
+        if active_script != SIEVE_SCRIPT_NAME:
+            script = re.sub('require \[', 'require ["include",', script, count=1)
+            script += 'include :personal "' + active_script + '";\n\n'
+
+        self.client.putscript(SIEVE_SCRIPT_NAME, script)
+        self.client.setactive(SIEVE_SCRIPT_NAME)
+        self.client.logout()
 
 
 class OofController(BaseController):

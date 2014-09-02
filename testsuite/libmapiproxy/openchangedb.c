@@ -1002,7 +1002,8 @@ START_TEST (test_build_table_folders_live_filtering) {
 	enum MAPITAGS prop;
 	uint32_t i;
 	struct mapi_SRestriction res;
-	int ok = 0, bad = 0, idx;
+	int ok = 0, bad = 0;
+	int idx = 0;
 
 	fid = 17438782182108692481ul;
 	retval = openchangedb_table_init(g_mem_ctx, g_oc_ctx, USER1, 1, fid, &table);

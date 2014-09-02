@@ -118,8 +118,8 @@ START_TEST (test_parse_connection_string_success) {
 	ck_assert_msg(parsed, "parse_connection_string failed for full string");
 	ck_assert_str_eq(host, "localhost");
 	ck_assert_str_eq(user, "user");
-	ck_assert_ptr_eq(passwd, NULL);
 	ck_assert_str_eq(db, "db");
+	ck_assert_msg(passwd == NULL, "We expect no password to be parsed out");
 
 	/* case sensitivity */
 	parsed = parse_connection_string(mem_ctx, "MySQL://User:Pass@LocalHost/Db",

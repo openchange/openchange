@@ -34,7 +34,43 @@ if opts.openchangedb is not None:
 
 mstore.dump()
 
+print "[PYMAPISTORE] Initialise MAPIStore for user " + opts.username
+
 mstore.initialize(opts.username)
-backend_names = mstore.list_backends();
-print backend_names
-print mstore.capabilities()
+print
+
+print '[PYMAPISTORE] List backends:'
+print
+
+backends = mstore.list_backends()
+for i in backends:
+	print i
+print
+
+'[PYMAPISTORE] List subfolders and messages for each context'
+print
+
+cap_list = mstore.capabilities()
+for cap in cap_list:
+	name = cap['name']
+	if name == 'Fallback': 
+		continue
+	
+	if name:
+		print '[CONTEXT]: ' + name
+	
+	uri = cap['url']
+	ctx = mstore.add_context(uri)
+	root_fld = ctx.open()
+	
+	subfld_count = root_fld.get_child_count(1) 
+	print '[NUMBER OF SUBFOLDERS]: ' + repr(subfld_count)
+	if subfld_count > 0:
+		for fld in root_fld.get_child_folders():
+			print '[SUBFOLDER]: ' + fld.get_uri()
+	msg_count = root_fld.get_child_count(2)
+	print '[NUMBER OF MESSAGES]: ' + repr(msg_count)
+	if msg_count > 0:
+		for msg in root_fld.get_child_messages():
+			print '[MESSAGE]: ' + msg.get_uri()
+	print

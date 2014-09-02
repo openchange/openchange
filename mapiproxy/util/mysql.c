@@ -143,8 +143,6 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	*conn = mysql_init(NULL);
-	reconnect = true;
-	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
 	parsed = parse_connection_string(mem_ctx, connection_string,
 					 &host, &user, &passwd, &db);
 	if (!parsed) {
@@ -156,6 +154,9 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	if (mysql_real_connect(*conn, host, user, passwd, db, 0, NULL, 0)) {
 		goto end;
 	}
+
+	reconnect = true;
+	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
 
 	// Try to create database
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, 0, NULL, 0)) {

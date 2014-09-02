@@ -27,6 +27,7 @@ import struct
 import ldb
 import os
 import os.path
+import re
 import shutil
 import string
 import json
@@ -738,8 +739,9 @@ class OofFileBackend(object):
 
            The default value if not configured is ~/.dovecot.sieve
 
-        :returns: the path where the sieve path will be stored and the
-                  backup if the user already that filename
+        :returns: the path where the sieve path will be stored, the
+                  backup if the user already that filename and the active
+                  sieve script if required
         :rtype: tuple
         """
         # Read the sieve script path template from config
@@ -767,19 +769,31 @@ class OofFileBackend(object):
                 raise Exception("Sieve script directory '%s' does not exist" %
                                 head)
 
-        sieve_path_backup = None
+        sieve_user_backup = None
         if os.path.isfile(sieve_script_path):
             if not self._isOofScript(sieve_script_path):
-                log.info('Backing up already created "%s" to "%s.user"' % (sieve_script_path,
-                                                                           sieve_script_path))
-                sieve_path_backup = sieve_script_path + '.user'
-                shutil.copyfile(sieve_script_path, sieve_path_backup)
-                shutil.copystat(sieve_script_path, sieve_path_backup)
+                if os.path.islink(sieve_script_path):
+                    target_sieve_script_path = os.path.realpath(sieve_script_path)
+                    log.info('Activate the OOF script and change the link for %s' % target_sieve_script_path)
+                    (sieve_user_backup, _) = os.path.splitext(os.path.basename(target_sieve_script_path))
+                else:
+                    log.info('Backing up already created "%s" to "%s.sieve"' % (sieve_script_path,
+                                                                                sieve_script_path))
+                    sieve_path_backup = sieve_script_path + '.sieve'
+                    shutil.copyfile(sieve_script_path, sieve_path_backup)
+                    shutil.copystat(sieve_script_path, sieve_path_backup)
+                    sieve_user_backup = os.path.basename(sieve_script_path)
         elif os.path.exists(sieve_script_path):
             raise Exception("Sieve script path '%s' exists and it is "
                             "not a regular file" % sieve_script_path)
 
-        return (sieve_script_path, sieve_path_backup)
+        # Active the script if necessary
+        active_sieve_script_path = None
+        if tail == 'sieve-script':  # Dovecot only?
+            active_sieve_script_path = sieve_script_path
+            sieve_script_path = os.path.join(head, 'out-of-office.sieve')
+
+        return (sieve_script_path, sieve_user_backup, active_sieve_script_path)
 
     def _isOofScript(self, path):
         """
@@ -800,27 +814,34 @@ class OofFileBackend(object):
 
         :param str mailbox: the mailbox user
         :param str script: the sieve script
-        :returns: the sieve script
         """
-        (sieve_path_script, sieve_path_user) = self._sieve_path(mailbox)
+        (sieve_script_path, sieve_user_path, active_sieve_script_path) = self._sieve_path(mailbox)
 
-        if sieve_path_user is not None:
-            script += 'include :personal "' + sieve_path_user + '";\n\n'
+        if sieve_user_path is not None:
+            script = re.sub('require \[', 'require ["include",', script, count=1)
+            script += 'include :personal "' + sieve_user_path + '";\n\n'
 
-        log.info("SIEVE_PATH_SCRIPT %s" % sieve_path_script)
-        (head, tail) = os.path.split(sieve_path_script)
+        log.info("SIEVE_PATH_SCRIPT %s" % sieve_script_path)
+        (head, tail) = os.path.split(sieve_script_path)
         sinfo = os.stat(head)
-        with open(sieve_path_script, 'w') as f:
+        with open(sieve_script_path, 'w') as f:
             f.write(script.encode('utf8'))
-            os.chmod(sieve_path_script, 0755)
-            os.chown(sieve_path_script, sinfo.st_uid, sinfo.st_gid)
+            os.chmod(sieve_script_path, 0755)
+            os.chown(sieve_script_path, sinfo.st_uid, sinfo.st_gid)
+
+        if active_sieve_script_path:
+            os.unlink(active_sieve_script_path)
+            os.symlink(os.path.basename(sieve_script_path), active_sieve_script_path)
 
 
 class OofManagesieveBackend(object):
     """Store the sieve script using ManageSieve protocol"""
 
-    def __init__(self, **conf):
-        self.conf = conf
+    def __init__(self, server, ssl, master_password):
+        from sievelib.managesieve import Client
+        self.client = Client(server)
+        self.ssl = ssl
+        self.passwd = master_password
 
     def store(self, mailbox, script):
         """Store the OOF sieve script.

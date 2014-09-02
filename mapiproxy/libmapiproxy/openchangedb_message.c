@@ -53,8 +53,8 @@ _PUBLIC_
 enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *mem_ctx,
 					    struct openchangedb_context *oc_ctx,
 					    const char *username,
-					    uint64_t messageID,
-					    uint64_t folderID,
+					    int64_t messageID,
+					    int64_t folderID,
 					    bool fai,
 					    void **message_object)
 {
@@ -101,7 +101,7 @@ _PUBLIC_
 enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *mem_ctx,
 					  struct openchangedb_context *oc_ctx,
 					  const char *username,
-					  uint64_t messageID, uint64_t folderID,
+					  int64_t messageID, int64_t folderID,
 					  void **message_object, void **msgp)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);

@@ -466,7 +466,7 @@ System Attendant Private Interface
 
 	typedef [nopush,nopull,noprint] struct {
 		[range(0,100000)] uint32	cValues;
-		[size_is(cValues)] hyper	*lpui8; 
+		[size_is(cValues)] dlong	*lpui8;
 	} UI8Array_r;
 
 	typedef [switch_type(uint32),nopush,nopull,noprint] union {
@@ -1062,8 +1062,8 @@ System Attendant Private Interface
 	} MoveCopy_Action;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			ReplyTemplateFID;
-		hyper			ReplyTemplateMID;
+		dlong			ReplyTemplateFID;
+		dlong			ReplyTemplateMID;
 		GUID			ReplyTemplateGUID;			
 	} ReplyOOF_Action;
 
@@ -1175,7 +1175,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
-		hyper				folder_id;
+		dlong				folder_id;
  		OpenFolder_OpenModeFlags	OpenModeFlags;
 	} OpenFolder_req;
 
@@ -1229,9 +1229,9 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
 		uint16				CodePageId;
-		hyper				FolderId;
+		dlong				FolderId;
 		OpenMessage_OpenModeFlags	OpenModeFlags;
-		hyper				MessageId;
+		dlong				MessageId;
 	} OpenMessage_req;
 
 	typedef [enum16bit, flag(NDR_PAHEX)] enum {
@@ -1380,13 +1380,13 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
 		uint16		CodePageId;
-		hyper		FolderId;
+		dlong		FolderId;
 		boolean8	AssociatedFlag;
 	} CreateMessage_req;
 
 	typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
 		[case(0x0)];
-		[case(0x1)] hyper	MessageId;
+		[case(0x1)] dlong	MessageId;
 	} CreateMessage_MessageId;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1473,7 +1473,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		handle_idx;
-		hyper		MessageId;
+		dlong		MessageId;
 	} SaveChangesMessage_repl;
 
 	/*************************/
@@ -1949,7 +1949,7 @@ System Attendant Private Interface
 	} CreateFolder_GhostUnion;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper							folder_id;
+		dlong							folder_id;
 		boolean8						IsExistingFolder;
 		[switch_is(IsExistingFolder)]	CreateFolder_GhostUnion	GhostUnion;
 	} CreateFolder_repl;
@@ -1964,7 +1964,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		DeleteFolderFlags      	DeleteFolderFlags;
-		hyper			FolderId;
+		dlong			FolderId;
 	} DeleteFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1977,7 +1977,7 @@ System Attendant Private Interface
 		boolean8	WantAsynchronous;
 		boolean8	NotifyNonRead;
 		uint16		cn_ids;
-		hyper		message_ids[cn_ids];
+		dlong		message_ids[cn_ids];
 	} DeleteMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -1996,7 +1996,7 @@ System Attendant Private Interface
 	} ulMessageStatus;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		msgid;
+		dlong		msgid;
 	} GetMessageStatus_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2006,7 +2006,7 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x20  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		msgid;
+		dlong		msgid;
 		uint32		ulNewStatus;
 		ulMessageStatus	ulNewStatusMask;
 	} SetMessageStatus_req;
@@ -2075,7 +2075,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x26 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		fid;
+		dlong		fid;
 		raw8string	lpszMessageClass;
 	} SetReceiveFolder_req;
 
@@ -2089,7 +2089,7 @@ System Attendant Private Interface
 	} GetReceiveFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		folder_id;
+		dlong		folder_id;
 		astring		MessageClass;
 	} GetReceiveFolder_repl;
 
@@ -2114,16 +2114,16 @@ System Attendant Private Interface
 	} NotificationFlags;
 
 	typedef [nodiscriminant,flag(NDR_NOALIGN)] union {
-		[case(0x0)] hyper	ID;
+		[case(0x0)] dlong	ID;
 		[case(0x1)];
-	} hyperbool;
+	} dlongbool;
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8					handle_idx;
 		NotificationFlags			NotificationFlags;
 		boolean8				WantWholeStore;
-		[switch_is(WantWholeStore)] hyperbool	FolderId;
-		[switch_is(WantWholeStore)] hyperbool	MessageId;
+		[switch_is(WantWholeStore)] dlongbool	FolderId;
+		[switch_is(WantWholeStore)] dlongbool	MessageId;
 	} RegisterNotification_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2186,8 +2186,8 @@ System Attendant Private Interface
 
 	/* NewMailNotification: case 0x2 and 0x8002 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
+		dlong					FID;
+		dlong					MID;
 		MsgFlags				MessageFlags;
 		boolean8				UnicodeFlag;
 		[switch_is(UnicodeFlag)] MessageClass	MessageClass;
@@ -2195,53 +2195,53 @@ System Attendant Private Interface
 
 	/* FolderCreatedNotification: case 0x4 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					ParentFID;
+		dlong					FID;
+		dlong					ParentFID;
 		uint16					TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} FolderCreatedNotification;
 
 	/* FolderDeletedNotification: case 0x8 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					ParentFID;
+		dlong					FID;
+		dlong					ParentFID;
 	} FolderDeletedNotification;
 
 	/* FolderModifiedNotification: case 0x10 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
+		dlong			FID;
 		uint16			TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} FolderModifiedNotification_10;
 
 	/* FolderMoveCopyNotification: case 0x20 and 0x40 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
-		hyper			ParentFID;
-		hyper			OldFID;
-		hyper			OldParentFID;
+		dlong			FID;
+		dlong			ParentFID;
+		dlong			OldFID;
+		dlong			OldParentFID;
 	} FolderMoveCopyNotification;
 
 	/* SearchCompleteNotification: case 0x80 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
+		dlong			FID;
 	} SearchCompleteNotification;
 
 	/* HierarchyTable: case 0x100 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
-		hyper				InsertAfterFID;
+		dlong				FID;
+		dlong				InsertAfterFID;
 		uint16				ColumnSize;
 		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
+		dlong				FID;
 	} HierarchyRowDeletedNotification;
 	
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
-		hyper				InsertAfterFID;
+		dlong				FID;
+		dlong				InsertAfterFID;
 		uint16				ColumnSize;
 		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowModifiedNotification;
@@ -2267,7 +2267,7 @@ System Attendant Private Interface
 
 	/* FolderModifiedNotification: case 0x1010 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
+		dlong			FID;
 		uint16			TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			TotalMessageCount;
@@ -2275,7 +2275,7 @@ System Attendant Private Interface
 
 	/* FolderModifiedNotification: case 0x2010 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
+		dlong			FID;
 		uint16			TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			UnreadMessageCount;
@@ -2283,7 +2283,7 @@ System Attendant Private Interface
 
 	/* FolderModifiedNotification: case 0x3010 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
+		dlong			FID;
 		uint16			TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 		uint32			TotalMessageCount;
@@ -2292,58 +2292,58 @@ System Attendant Private Interface
 
 	/* MessageCreatedNotification: case 0x8004 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
+		dlong					FID;
+		dlong					MID;
 		uint16					TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} MessageCreatedNotification;
 
 	/* MessageDeletedNotification: case 0x8008 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
+		dlong					FID;
+		dlong					MID;
 	} MessageDeletedNotification;
 
 	/* MessageModifiedNotification: case 0x8010 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
+		dlong					FID;
+		dlong					MID;
 		uint16					TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} MessageModifiedNotification;
 
 	/* MessageMoveCopyNotification: case 0x8020 and 0x8040 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FID;
-		hyper			MID;
-		hyper			OldFID;
-		hyper			OldMID;
+		dlong			FID;
+		dlong			MID;
+		dlong			OldFID;
+		dlong			OldMID;
 	} MessageMoveCopyNotification;	
 
 	/* ContentsTableChange: case 0x8100 and 0xc100 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
-		hyper				MID;
+		dlong				FID;
+		dlong				MID;
 		uint32				Instance;
-		hyper				InsertAfterFID;
-		hyper				InsertAfterMID;
+		dlong				InsertAfterFID;
+		dlong				InsertAfterMID;
 		uint32				InsertAfterInstance;
 		uint16				ColumnSize;
 		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} ContentsRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
-		hyper				MID;
+		dlong				FID;
+		dlong				MID;
 		uint32				Instance;
 	} ContentsRowDeletedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper				FID;
-		hyper				MID;
+		dlong				FID;
+		dlong				MID;
 		uint32				Instance;
-		hyper				InsertAfterFID;
-		hyper				InsertAfterMID;
+		dlong				InsertAfterFID;
+		dlong				InsertAfterMID;
 		uint32				InsertAfterInstance;
 		uint16				ColumnsSize;
 		[subcontext(0),subcontext_size(ColumnsSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Columns;
@@ -2363,24 +2363,24 @@ System Attendant Private Interface
 
 	/* SearchMessageCreatedNotification: case 0xc004 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
-		hyper					SearchFID;
+		dlong					FID;
+		dlong					MID;
+		dlong					SearchFID;
 		uint16					TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} SearchMessageCreatedNotification;
 
 	/* SearchMessageRemovedNotification: case 0xc008 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
-		hyper					SearchFID;
+		dlong					FID;
+		dlong					MID;
+		dlong					SearchFID;
 	} SearchMessageRemovedNotification;
 
 	/* SearchMessageModifiedNotification: 0xc010 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper					FID;
-		hyper					MID;
+		dlong					FID;
+		dlong					MID;
 		uint16					TagCount;
                 [switch_is(TagCount)] NotificationTags  NotificationTags;
 	} SearchMessageModifiedNotification;
@@ -2501,7 +2501,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		[subcontext(2)] mapi_SRestriction	res;
 		uint16					FolderIdCount;
-		hyper					FolderIds[FolderIdCount];
+		dlong					FolderIds[FolderIdCount];
 		SearchFlags				SearchFlags;
 	} SetSearchCriteria_req;
 
@@ -2521,7 +2521,7 @@ System Attendant Private Interface
 		[subcontext(0),subcontext_size(RestrictionDataSize)] mapi_SRestriction	RestrictionData;
  		uint8					LogonId;
 		uint16					FolderIdCount;
-		hyper					FolderIds[FolderIdCount];
+		dlong					FolderIds[FolderIdCount];
 		SearchFlags				SearchFlags;
 	} GetSearchCriteria_repl;
 
@@ -2545,7 +2545,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
  		uint8		handle_idx;
  		uint16		count;
- 		hyper		message_id[count];
+		dlong		message_id[count];
 		boolean8	WantAsynchronous;
 		boolean8	WantCopy;
 	} MoveCopyMessages_req;
@@ -2557,8 +2557,8 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x34 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		FolderId;
-		hyper		MessageId;
+		dlong		FolderId;
+		dlong		MessageId;
 	} AbortSubmit_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2575,7 +2575,7 @@ System Attendant Private Interface
 		uint8					handle_idx;
 		boolean8				WantAsynchronous;
 		boolean8				UseUnicode;
-		hyper					FolderId;
+		dlong					FolderId;
 		[switch_is(UseUnicode)] Folder_name	NewFolderName;
 	} MoveFolder_req;
 
@@ -2592,7 +2592,7 @@ System Attendant Private Interface
 		boolean8				WantAsynchronous;
 		boolean8				WantRecursive;
 		boolean8				UseUnicode;
-		hyper					FolderId;
+		dlong					FolderId;
 		[switch_is(UseUnicode)] Folder_name	NewFolderName;
 	} CopyFolder_req;
 
@@ -2738,7 +2738,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x42 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		FolderId;
+		dlong		FolderId;
 	} GetOwningServers_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2750,7 +2750,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x43 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper	Id;
+		dlong	Id;
 	} LongTermIdFromId_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2770,13 +2770,13 @@ System Attendant Private Interface
 	} IdFromLongTermId_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		Id;
+		dlong		Id;
 	} IdFromLongTermId_repl;
 
 	/*************************/
 	/* EcDoRpc Function 0x45 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		FolderId;
+		dlong		FolderId;
 	} PublicFolderIsGhosted_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2800,7 +2800,7 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		       	Reserved;
-		hyper		       	MessageId;
+		dlong		       	MessageId;
 		boolean8	       	HasNamedProperties;
 		TypedString	       	SubjectPrefix;
 		TypedString	       	NormalizedSubject;
@@ -2827,7 +2827,7 @@ System Attendant Private Interface
 	} LockState;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		MessageId;
+		dlong		MessageId;
 		LockState	LockState;
 	} SpoolerLockMessage_req;
 
@@ -2884,7 +2884,7 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8				handle_idx;
 		uint16				MessageIdCount;
-		hyper				MessageIds[MessageIdCount];
+		dlong				MessageIds[MessageIdCount];
 		FastCopyMessagesCopyFlags	CopyFlags;
 		FastCopySendOptions		SendOptions;
 	} FastTransferSourceCopyMessages_req;
@@ -2997,8 +2997,8 @@ System Attendant Private Interface
 	/**************************/
 	/* EcDoRpc Function 0x51  */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		MessageId;
-		hyper		FolderId;
+		dlong		MessageId;
+		dlong		FolderId;
 		astring		MessageClass;
 		uint32		MessageFlags;
 	} TransportNewMail_req;
@@ -3129,7 +3129,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x59 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint16		MaxRowCount;
-		hyper		CategoryId;
+		dlong		CategoryId;
 	} ExpandRow_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3141,7 +3141,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x5a */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		CategoryId;
+		dlong		CategoryId;
 	} CollapseRow_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3267,7 +3267,7 @@ System Attendant Private Interface
 		boolean8	WantAsynchronous;
 	  	MSGFLAG_READ	ReadFlags;
 	  	uint16		MessageIdCount;
-	  	hyper		MessageIds[MessageIdCount];
+		dlong		MessageIds[MessageIdCount];
 	} SetReadFlags_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3292,7 +3292,7 @@ System Attendant Private Interface
 	/* EcDoRpc Function 0x68 */
 	typedef [flag(NDR_NOALIGN)] struct {
 		uint8		flag;
-		hyper		fid;
+		dlong		fid;
 		astring		lpszMessageClass;
 		FILETIME	modiftime;
 	} ReceiveFolder;
@@ -3328,7 +3328,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x6b */
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		RowId;
+		dlong		RowId;
 	  	uint32		RowInstanceNumber;
 	} GetCollapseState_req;
 
@@ -3352,7 +3352,7 @@ System Attendant Private Interface
 	} GetTransportFolder_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		FolderId;
+		dlong		FolderId;
 	} GetTransportFolder_repl;
 
 	/*************************/
@@ -3446,7 +3446,7 @@ System Attendant Private Interface
 	} SyncImportMessageChange_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		MessageId;
+		dlong		MessageId;
 	} SyncImportMessageChange_repl;
 
 	/*************************/
@@ -3457,7 +3457,7 @@ System Attendant Private Interface
 	} SyncImportHierarchyChange_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper			FolderId;
+		dlong			FolderId;
 	} SyncImportHierarchyChange_repl;
 
 	/*************************/
@@ -3534,7 +3534,7 @@ System Attendant Private Interface
 	} SyncImportMessageMove_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		MessageId;
+		dlong		MessageId;
 	} SyncImportMessageMove_repl;
 
 	/*************************/
@@ -3691,7 +3691,7 @@ System Attendant Private Interface
 		boolean8	WantAsynchronous;
 		boolean8	NotifyNonRead;
 		uint16		MessageIdCount;
-		hyper		MessageIds[MessageIdCount];
+		dlong		MessageIds[MessageIdCount];
 	} HardDeleteMessages_req;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -3782,17 +3782,17 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		/* folders */
-		hyper			Root;
-		hyper			IPMSubTree;
-		hyper			NonIPMSubTree;
-		hyper			EFormsRegistry;
-		hyper			FreeBusy;
-		hyper			OAB;
-		hyper			LocalizedEFormsRegistry;
-		hyper			LocalFreeBusy;
-		hyper			LocalOAB;
-		hyper			NNTPIndex;
-		hyper			_empty[3];
+		dlong			Root;
+		dlong			IPMSubTree;
+		dlong			NonIPMSubTree;
+		dlong			EFormsRegistry;
+		dlong			FreeBusy;
+		dlong			OAB;
+		dlong			LocalizedEFormsRegistry;
+		dlong			LocalFreeBusy;
+		dlong			LocalOAB;
+		dlong			NNTPIndex;
+		dlong			_empty[3];
 
 		uint16			ReplId;
 		GUID			Guid;
@@ -3801,19 +3801,19 @@ System Attendant Private Interface
 
 	typedef [flag(NDR_NOALIGN)] struct {
 		/* folders */
-		hyper			Root;
-		hyper			DeferredAction;
-		hyper			SpoolerQueue;
-		hyper			IPMSubTree;
-		hyper			Inbox;
-		hyper			Outbox;
-		hyper			SentItems;
-		hyper			DeletedItems;
-		hyper			CommonViews;
-		hyper			Schedule;
-		hyper			Search;
-		hyper			Views;
-		hyper			Shortcuts;
+		dlong			Root;
+		dlong			DeferredAction;
+		dlong			SpoolerQueue;
+		dlong			IPMSubTree;
+		dlong			Inbox;
+		dlong			Outbox;
+		dlong			SentItems;
+		dlong			DeletedItems;
+		dlong			CommonViews;
+		dlong			Schedule;
+		dlong			Search;
+		dlong			Views;
+		dlong			Shortcuts;
 
 		ResponseFlags		ResponseFlags;
 		GUID			MailboxGuid;

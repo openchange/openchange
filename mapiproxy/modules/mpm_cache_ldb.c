@@ -79,7 +79,7 @@ NTSTATUS mpm_cache_ldb_createdb(struct dcesrv_context *dce_ctx,
  */
 static NTSTATUS  mpm_cache_ldb_add_folder(TALLOC_CTX *mem_ctx, 
 					  struct ldb_context *ldb_ctx,
-					  uint64_t FolderId)
+					  int64_t FolderId)
 {
 	struct ldb_message	*msg;
 	char			*dn;

@@ -187,8 +187,8 @@ static enum mapistore_error mapistore_mgmt_push_send(TALLOC_CTX *mem_ctx, mqd_t 
  */
 enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *mgmt_ctx,
 							      const char *username,
-							      uint64_t FolderID,
-							      uint64_t MessageID,
+							      int64_t FolderID,
+							      int64_t MessageID,
 							      const char *MAPIStoreURI)
 {
 	mqd_t					mqfd;

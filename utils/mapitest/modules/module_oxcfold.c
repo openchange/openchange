@@ -31,7 +31,7 @@
 
 struct folders {
 	uint32_t	id;
-	uint64_t	fid;
+	int64_t		fid;
 	const char	*name;
 };
 

@@ -85,7 +85,7 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateMessage_size(struct EcDoRpc_MAPI_REPL *
 	size += SIZE_DFLT_ROPCREATEMESSAGE;
 
 	if (response->u.mapi_CreateMessage.HasMessageId == 1) {
-		size += sizeof (uint64_t);
+		size += sizeof (int64_t);
 	}
 
 	return size;

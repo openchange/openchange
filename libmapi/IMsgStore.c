@@ -74,7 +74,7 @@ _PUBLIC_ enum MAPISTATUS OpenFolder(mapi_object_t *obj_store,
 	request.handle_idx = 0x1;
 	request.folder_id = id_folder;
 	request.OpenModeFlags = OpenModeFlags_Folder;
-	size += sizeof (uint8_t) + sizeof(uint64_t) + sizeof(uint8_t);
+	size += sizeof (uint8_t) + sizeof(int64_t) + sizeof(uint8_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -168,7 +168,7 @@ _PUBLIC_ enum MAPISTATUS PublicFolderIsGhosted(mapi_object_t *obj_store,
 
 	/* Fill the PublicFolderIsGhosted operation */
 	request.FolderId = folderId;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -340,7 +340,7 @@ _PUBLIC_ enum MAPISTATUS SetReceiveFolder(mapi_object_t *obj_store,
 	/* Fill the SetReceiveFolder operation */
 	size = 0;
 	request.fid = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 	request.lpszMessageClass = lpszMessageClass;
 	size += strlen(lpszMessageClass) + 1;
 
@@ -712,7 +712,7 @@ _PUBLIC_ enum MAPISTATUS GetOwningServers(mapi_object_t *obj_store,
 
 	/* Fill the GetOwningServers operation */
 	request.FolderId = FolderId;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -923,9 +923,9 @@ _PUBLIC_ enum MAPISTATUS TransportNewMail(mapi_object_t *obj_store, mapi_object_
 	/* Fill the TransportNewMail operation */
 	size = 0;
 	request.MessageId = mapi_object_get_id(obj_msg);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 	request.FolderId = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 	request.MessageClass = MessageClass;
 	size += strlen(MessageClass) + 1;
 	request.MessageFlags = MessageFlags;

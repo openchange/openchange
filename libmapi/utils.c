@@ -113,8 +113,8 @@ _PUBLIC_ struct Binary_r *generate_recipient_entryid(TALLOC_CTX *mem_ctx, const 
  */
 _PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb, 
 					   uint8_t *lpb, 
-					   uint64_t parent_fid, 
-					   uint64_t *fid)
+					   int64_t parent_fid,
+					   int64_t *fid)
 {
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!lpb, MAPI_E_INVALID_PARAMETER, NULL);
@@ -122,12 +122,12 @@ _PUBLIC_ enum MAPISTATUS GetFIDFromEntryID(uint16_t cb,
 	OPENCHANGE_RETVAL_IF(cb < 8, MAPI_E_INVALID_PARAMETER, NULL);
 
 	*fid = 0;
-	*fid += ((uint64_t)lpb[cb - 3] << 56);
-	*fid += ((uint64_t)lpb[cb - 4] << 48);
-	*fid += ((uint64_t)lpb[cb - 5] << 40);
-	*fid += ((uint64_t)lpb[cb - 6] << 32);
-	*fid += ((uint64_t)lpb[cb - 7] << 24);
-	*fid += ((uint64_t)lpb[cb - 8] << 16);
+	*fid += ((int64_t)lpb[cb - 3] << 56);
+	*fid += ((int64_t)lpb[cb - 4] << 48);
+	*fid += ((int64_t)lpb[cb - 5] << 40);
+	*fid += ((int64_t)lpb[cb - 6] << 32);
+	*fid += ((int64_t)lpb[cb - 7] << 24);
+	*fid += ((int64_t)lpb[cb - 8] << 16);
 	/* WARNING: for some unknown reason the latest byte of folder
 	   ID may change (0x1 or 0x4 values identified so far).
 	   However this byte sounds the same than the parent folder

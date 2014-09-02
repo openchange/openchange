@@ -551,11 +551,11 @@ static bool mapitest_no_server_props_i4(struct mapitest *mt)
 static bool mapitest_no_server_props_i8(struct mapitest *mt)
 {
 	struct SPropValue propvalue;
-	uint64_t i8 = 0x098763aa;
-	const uint64_t *i8get;
+	int64_t i8 = 0x098763aa;
+	const int64_t *i8get;
 
 	set_SPropValue_proptag(&propvalue, PT_I8, &i8);
-	i8get = (const uint64_t*)get_SPropValue_data(&propvalue);
+	i8get = (const int64_t*)get_SPropValue_data(&propvalue);
 	if (!i8get || (*i8get != i8)) {
 		/* failure */
 		mapitest_print(mt, "* %-40s: [FAILURE]\n", "SPropValue get/set with PT_I8");

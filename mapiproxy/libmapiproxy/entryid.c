@@ -74,7 +74,7 @@ _PUBLIC_ enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *mem_ctx,
 						    struct GUID *MailboxGuid,
 						    struct GUID *ReplGuid,
 						    uint16_t FolderType,
-						    uint64_t fid,
+						    int64_t fid,
 						    struct Binary_r **rbin)
 {
 	struct Binary_r	*bin;

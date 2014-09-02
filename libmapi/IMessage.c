@@ -1219,10 +1219,10 @@ _PUBLIC_ enum MAPISTATUS AbortSubmit(mapi_object_t *obj_store,
 
 	/* Fill the AbortSubmit operation */
 	request.FolderId = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	request.MessageId = mapi_object_get_id(obj_message);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

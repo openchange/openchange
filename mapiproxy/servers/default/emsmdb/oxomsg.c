@@ -40,8 +40,8 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 	struct MessageEntryId		*entryID;
 	struct PtypServerId		*folderSvrID;
 	uint32_t			contextID;
-	uint64_t			folderID;
-	uint64_t			messageID;
+	int64_t				folderID;
+	int64_t				messageID;
 	uint16_t			replID;
 	int				ret, i;
 	char				*owner;
@@ -156,7 +156,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
 	char			*owner;
-	uint64_t		messageID;
+	int64_t			messageID;
 	uint32_t		contextID;
 	uint8_t			flags;
 

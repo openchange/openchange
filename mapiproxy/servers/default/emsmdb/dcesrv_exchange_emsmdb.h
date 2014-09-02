@@ -118,7 +118,7 @@ enum emsmdbp_object_type {
 };
 
 struct emsmdbp_object_mailbox {
-	uint64_t			folderID;
+	int64_t				folderID;
 	char				*owner_Name;
 	char				*owner_EssDN;
 	char				*szUserDN;
@@ -127,15 +127,15 @@ struct emsmdbp_object_mailbox {
 };
 
 struct emsmdbp_object_folder {
-	uint64_t			folderID;
+	int64_t				folderID;
 	uint32_t			contextID; /* requires mapistore_root == true, undefined otherwise */
 	bool				mapistore_root; /* root mapistore container or not */
 	struct SRow			*postponed_props; /* storage for properties set until PR_CONTAINER_CLASS_UNICODE is set */
 };
 
 struct emsmdbp_object_message {
-	uint64_t				folderID;
-	uint64_t				messageID;
+	int64_t					folderID;
+	int64_t					messageID;
 	bool					read_write;
 	struct mapistore_freebusy_properties	*fb_properties;
 };
@@ -315,8 +315,8 @@ bool		      emsmdbp_is_mapistore(struct emsmdbp_object *);
 bool		      emsmdbp_is_mailboxstore(struct emsmdbp_object *);
 char                  *emsmdbp_get_owner(struct emsmdbp_object *object);
 
-int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, char **);
-int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, uint64_t *);
+int		      emsmdbp_get_uri_from_fid(TALLOC_CTX *, struct emsmdbp_context *, int64_t, char **);
+int		      emsmdbp_get_fid_from_uri(struct emsmdbp_context *, const char *, int64_t *);
 uint32_t	      emsmdbp_get_contextID(struct emsmdbp_object *);
 
 /* definitions from emsmdbp_provisioning.c */
@@ -328,28 +328,28 @@ const char **emsmdbp_get_folders_names(TALLOC_CTX *, struct emsmdbp_context *);
 const char **emsmdbp_get_special_folders(TALLOC_CTX *, struct emsmdbp_context *);
 
 /* With emsmdbp_object_create_folder and emsmdbp_object_open_folder, the parent object IS the direct parent */
-enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
-enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
-enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
-enum mapistore_error  emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, int64_t *);
+enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, int64_t, struct SRow *, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, int64_t, struct emsmdbp_object **);
+enum mapistore_error  emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, int64_t, struct emsmdbp_object **);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, const char *, bool);
-struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
+struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, int64_t, struct emsmdbp_object *);
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
-enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint8_t);
+enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *, struct emsmdbp_object *, int64_t, uint8_t);
 enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, TALLOC_CTX *, const char *);
 struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *, struct emsmdbp_object *, uint32_t, uint32_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum mapistore_query_type, enum MAPISTATUS **);
-struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
-enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
+struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, int64_t, struct emsmdbp_object *);
+enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, int64_t, int64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
 struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_stream_commit(struct emsmdbp_object *);
-struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
+struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, int64_t, struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 int emsmdbp_object_set_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SRow *);

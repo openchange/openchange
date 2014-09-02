@@ -415,7 +415,7 @@ _PUBLIC_ struct SPropValue *ocpf_get_SPropValue(uint32_t context_id, uint32_t *c
 
 
 static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
-					  uint64_t sfid,
+					  int64_t sfid,
 					  mapi_object_t *obj_parent,
 					  mapi_id_t folder_id,
 					  mapi_object_t *obj_ret)
@@ -426,7 +426,7 @@ static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t		i;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(obj_parent, folder_id, &obj_folder);
@@ -443,7 +443,7 @@ static enum MAPISTATUS ocpf_folder_lookup(TALLOC_CTX *mem_ctx,
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
 		for (i = 0; i < SRowSet.cRows; i++) {
-			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
 			if (fid && *fid == sfid) {
 				retval = OpenFolder(&obj_folder, *fid, obj_ret);
 				mapi_object_release(&obj_htable);

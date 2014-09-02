@@ -194,7 +194,7 @@ int ocpf_set_propvalue(TALLOC_CTX *mem_ctx,
 		*value = talloc_memdup(ctx, (const void *)&lpProp.err, sizeof (uint32_t));
 		return OCPF_SUCCESS;
 	case PT_I8:
-		*value = talloc_memdup(ctx, (const void *)&lpProp.d, sizeof (uint64_t));
+		*value = talloc_memdup(ctx, (const void *)&lpProp.d, sizeof (int64_t));
 		return OCPF_SUCCESS;
 	case PT_SYSTIME:
 		*value = talloc_memdup(ctx, (const void *)&lpProp.ft, sizeof (struct FILETIME));
@@ -600,7 +600,7 @@ static struct ocpf_olfolder olfolders[] = {
 	{ 0, NULL }
 };
 
-static int ocpf_folder_name_to_id(const char *name, uint64_t *id)
+static int ocpf_folder_name_to_id(const char *name, int64_t *id)
 {
 	uint32_t	i;
 
@@ -630,7 +630,7 @@ static int ocpf_folder_name_to_id(const char *name, uint64_t *id)
  */
 int ocpf_folder_add(struct ocpf_context *ctx, 
 		    const char *name, 
-		    uint64_t id, 
+		    int64_t id, 
 		    const char *var_name)
 {
 	struct ocpf_var		*element;
@@ -647,8 +647,7 @@ int ocpf_folder_add(struct ocpf_context *ctx,
 	} else if (var_name) {
 		for (element = ctx->vars; element->next; element = element->next) {
 			if (element->name && !strcmp(element->name, var_name)) {
-				/* WARNING: we assume var data is double */
-				ctx->folder = *((uint64_t *)element->value);
+				ctx->folder = *((int64_t *)element->value);
 			}
 		}
 	}

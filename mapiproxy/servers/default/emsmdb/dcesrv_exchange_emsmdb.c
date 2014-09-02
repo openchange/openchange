@@ -301,7 +301,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
         enum MAPISTATUS		*retvals;
         uint32_t                contextID, saved_prop_count, prev_instance;
         enum MAPITAGS           *saved_properties, *previous_row_properties;
-        uint64_t                prev_fid, prev_mid;
+        int64_t                prev_fid, prev_mid;
 
         mapi_repl->opnum = op_MAPI_Notify;
         reply = &mapi_repl->u.mapi_Notify;
@@ -448,8 +448,8 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 					mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, handle_object->backend_object, table->prop_count, (enum MAPITAGS *) table->properties);
                                         data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, handle_object, notification->parameters.table_parameters.row_id - 1, MAPISTORE_PREFILTERED_QUERY, NULL);
                                         if (data_pointers) {
-                                                prev_fid = *(uint64_t *) data_pointers[0];
-                                                prev_mid = *(uint64_t *) data_pointers[1];
+                                                prev_fid = *(int64_t *) data_pointers[0];
+                                                prev_mid = *(int64_t *) data_pointers[1];
                                                 prev_instance = *(uint32_t *) data_pointers[2];
                                                 talloc_free(data_pointers);
                                         }

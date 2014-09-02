@@ -233,7 +233,7 @@ _PUBLIC_ enum MAPISTATUS SpoolerLockMessage(mapi_object_t *obj_store,
 
 	/* Fill the SpoolerLockMessage operation */
 	request.MessageId = mapi_object_get_id(obj_message);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	request.LockState = lockstate;
 	size += sizeof (uint8_t);

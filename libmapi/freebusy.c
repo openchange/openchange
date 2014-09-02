@@ -79,8 +79,8 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	char				*o = NULL;
 	char				*ou = NULL;
 	char				*username;
-	const uint64_t			*fid;
-	const uint64_t			*mid;
+	const int64_t			*fid;
+	const int64_t			*mid;
 	uint32_t			i;
 	uint32_t			count;
 
@@ -157,7 +157,7 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 5. Open the folder */
-	fid = (const uint64_t *) get_SPropValue_SRowSet_data(&SRowSet, PR_FID);
+	fid = (const int64_t *) get_SPropValue_SRowSet_data(&SRowSet, PR_FID);
 	if (!fid || *fid == MAPI_E_NOT_FOUND) return MAPI_E_NOT_FOUND;
 
 	mapi_object_init(&obj_exfreebusy);
@@ -201,8 +201,8 @@ _PUBLIC_ enum MAPISTATUS GetUserFreeBusyData(mapi_object_t *obj_store,
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	/* Step 10. Open the message */
-	fid = (const uint64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_FID);	
-	mid = (const uint64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_MID);
+	fid = (const int64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_FID);
+	mid = (const int64_t *)get_SPropValue_SRowSet_data(&SRowSet, PR_MID);
 	OPENCHANGE_RETVAL_IF(!fid || *fid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
 	OPENCHANGE_RETVAL_IF(!mid || *mid == MAPI_E_NOT_FOUND, MAPI_E_NOT_FOUND, NULL);
 

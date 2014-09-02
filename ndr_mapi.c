@@ -2202,7 +2202,7 @@ enum ndr_err_code ndr_push_GetSearchCriteria_repl(struct ndr_push *ndr, int ndr_
 			NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->LogonId));
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->FolderIdCount));
 			for (cntr_FolderIds_0 = 0; cntr_FolderIds_0 < r->FolderIdCount; cntr_FolderIds_0++) {
-				NDR_CHECK(ndr_push_hyper(ndr, NDR_SCALARS, r->FolderIds[cntr_FolderIds_0]));
+				NDR_CHECK(ndr_push_dlong(ndr, NDR_SCALARS, r->FolderIds[cntr_FolderIds_0]));
 			}
 			NDR_CHECK(ndr_push_SearchFlags(ndr, NDR_SCALARS, r->SearchFlags));
 			NDR_CHECK(ndr_push_trailer_align(ndr, 8));
@@ -2237,7 +2237,7 @@ enum ndr_err_code ndr_pull_GetSearchCriteria_repl(struct ndr_pull *ndr, int ndr_
 			_mem_save_FolderIds_0 = NDR_PULL_GET_MEM_CTX(ndr);
 			NDR_PULL_SET_MEM_CTX(ndr, r->FolderIds, 0);
 			for (cntr_FolderIds_0 = 0; cntr_FolderIds_0 < r->FolderIdCount; cntr_FolderIds_0++) {
-				NDR_CHECK(ndr_pull_hyper(ndr, NDR_SCALARS, &r->FolderIds[cntr_FolderIds_0]));
+				NDR_CHECK(ndr_pull_dlong(ndr, NDR_SCALARS, &r->FolderIds[cntr_FolderIds_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_FolderIds_0, 0);
 			NDR_CHECK(ndr_pull_SearchFlags(ndr, NDR_SCALARS, &r->SearchFlags));
@@ -2272,7 +2272,7 @@ void ndr_print_GetSearchCriteria_repl(struct ndr_print *ndr, const char *name, c
 		for (cntr_FolderIds_0=0;cntr_FolderIds_0<r->FolderIdCount;cntr_FolderIds_0++) {
 			char *idx_0=NULL;
 			if (asprintf(&idx_0, "[%d]", cntr_FolderIds_0) != -1) {
-				ndr_print_hyper(ndr, "FolderIds", r->FolderIds[cntr_FolderIds_0]);
+				ndr_print_dlong(ndr, "FolderIds", r->FolderIds[cntr_FolderIds_0]);
 				free(idx_0);
 			}
 		}

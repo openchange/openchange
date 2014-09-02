@@ -663,7 +663,7 @@ may disappear in further versions.
 <br/>
 
 <a name="longlong"></a><h3>8.4. PT_I8</h3>
-OCPF uses the following format for PT_I8 (uint64_t) values:
+OCPF uses the following format for PT_I8 (int64_t) values:
 \code
       D0x9504000000000001
 \endcode

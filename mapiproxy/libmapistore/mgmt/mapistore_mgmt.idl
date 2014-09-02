@@ -52,8 +52,8 @@ interface mapistore_mgmt
 		mapistore_mgmt_notification_type	NotificationFlags;
 		[string, charset(UTF16)] uint16		*username;
 		boolean8				WholeStore;
-		hyper					FolderID;
-		hyper					MessageID;
+		dlong					FolderID;
+		dlong					MessageID;
 		[string, charset(UTF16)] uint16		*MAPIStoreURI;
 		uint32					TotalNumberOfMessages;
 		uint32					UnreadNumberOfMessages;

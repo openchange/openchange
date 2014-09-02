@@ -1095,7 +1095,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	struct SRowSet		SRowSet;
 	struct mt_common_tf_ctx	*context;
 	int			i;
-	uint64_t		messageIds[5];
+	int64_t			messageIds[5];
 
 	/* Step 1. Logon */
 	if (! mapitest_common_setup(mt, &obj_htable, NULL)) {
@@ -1138,7 +1138,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 	}	
 
 	for (i = 0; i < 5; ++i) {
-		messageIds[i] = (*(const uint64_t *)get_SPropValue_data(&(SRowSet.aRow[i*2].lpProps[0])));
+		messageIds[i] = (*(const int64_t *)get_SPropValue_data(&(SRowSet.aRow[i*2].lpProps[0])));
 	}
 
 	retval = SetReadFlags(&(context->obj_test_folder), 0x0, 5, messageIds);

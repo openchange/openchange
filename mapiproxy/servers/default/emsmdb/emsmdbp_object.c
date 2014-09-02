@@ -167,9 +167,9 @@ _PUBLIC_ uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 	return -1;
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, const char *name, uint64_t *fidp)
+_PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, const char *name, int64_t *fidp)
 {
-	uint64_t	folderID;
+	int64_t	folderID;
 
 	if (!emsmdbp_ctx) return MAPISTORE_ERROR;
 	if (!parent_folder) return MAPISTORE_ERROR;
@@ -243,7 +243,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	char				*mapistore_uri, *owner;
 	enum mapistore_context_role	role;
 	TALLOC_CTX			*mem_ctx;
-	uint64_t			parent_fid, fid;
+	int64_t				parent_fid, fid;
 	uint32_t			context_id;
 
 	if (!new_folder->object.folder->postponed_props) {
@@ -330,13 +330,13 @@ end:
 	return ret;
 }
 
-_PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, TALLOC_CTX *mem_ctx, int64_t fid, struct SRow *rowp, struct emsmdbp_object **new_folderp)
 {
-	uint64_t			parentFolderID, testFolderID;
-	struct SPropValue		*value;
-	enum mapistore_error		retval;
-	struct emsmdbp_object		*new_folder;
-	struct SRow			*postponed_props;
+	int64_t			parentFolderID, testFolderID;
+	struct SPropValue	*value;
+	enum mapistore_error	retval;
+	struct emsmdbp_object	*new_folder;
+	struct SRow		*postponed_props;
 
 	/* Sanity checks */
 	MAPI_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
@@ -393,16 +393,16 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 	return MAPI_E_SUCCESS;
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent, uint64_t fid, struct emsmdbp_object **folder_object_p)
+_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent, int64_t fid, struct emsmdbp_object **folder_object_p)
 {
-	struct emsmdbp_object			*folder_object, *mailbox_object;
-	enum mapistore_error			retval;
-	enum MAPISTATUS				ret;
-	char					*path;
-	char					*owner;
-	uint32_t				contextID;
-	uint64_t				parent_fid, oc_parent_fid;
-	void					*local_ctx;
+	struct emsmdbp_object	*folder_object, *mailbox_object;
+	enum mapistore_error	retval;
+	enum MAPISTATUS		ret;
+	char			*path;
+	char			*owner;
+	uint32_t		contextID;
+	int64_t			parent_fid, oc_parent_fid;
+	void			*local_ctx;
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);
 	if (emsmdbp_is_mapistore(parent)) {
@@ -480,7 +480,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	return MAPISTORE_SUCCESS;
 }
 
-_PUBLIC_ int emsmdbp_get_uri_from_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, uint64_t fid, char **urip)
+_PUBLIC_ int emsmdbp_get_uri_from_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, int64_t fid, char **urip)
 {
 	enum MAPISTATUS	retval;
 	bool		soft_deleted;
@@ -492,7 +492,7 @@ _PUBLIC_ int emsmdbp_get_uri_from_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->username, mem_ctx, fid, urip, &soft_deleted);
 }
 
-_PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const char *uri, uint64_t *fidp)
+_PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const char *uri, int64_t *fidp)
 {
 	int	ret;
 	bool	soft_deleted;
@@ -530,7 +530,7 @@ static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 	return parent_uri;
 }
 
-static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, uint64_t fid, uint64_t *parent_fidp)
+static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, int64_t fid, int64_t *parent_fidp)
 {
 	TALLOC_CTX	*mem_ctx;
 	int		retval = MAPISTORE_SUCCESS;
@@ -578,9 +578,9 @@ end:
 
    \return Valid emsmdbp object structure on success, otherwise NULL
  */
-_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, uint64_t fid, struct emsmdbp_object **folder_object_p)
+_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, int64_t fid, struct emsmdbp_object **folder_object_p)
 {
-	uint64_t		parent_fid;
+	int64_t			parent_fid;
 	int			retval;
 	struct emsmdbp_object   *mailbox_object;
 
@@ -1162,7 +1162,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 							   struct emsmdbp_context *emsmdbp_ctx,
-							   uint64_t folderID,
+							   int64_t folderID,
 							   struct emsmdbp_object *parent_object)
 {
 	struct emsmdbp_object			*object;
@@ -1190,7 +1190,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
 {
 	int		retval;
-	uint64_t	folderID;
+	int64_t		folderID;
 
 	if (emsmdbp_is_mapistore(folder)) {
 		retval = (int) mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, 
@@ -1275,7 +1275,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	return ret;
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, uint64_t fid, uint8_t flags)
+_PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_folder, int64_t fid, uint8_t flags)
 {
 	enum mapistore_error	ret;
 	enum MAPISTATUS		mapiret;
@@ -1349,7 +1349,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 							  uint32_t table_type, uint32_t handle_id)
 {
 	struct emsmdbp_object	*table_object;
-	uint64_t		folderID;
+	int64_t			folderID;
 	uint8_t			mstore_type;
 	int			ret;
 
@@ -1582,8 +1582,8 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         struct mapistore_property_data	*properties;
         uint32_t			contextID, i, num_props;
 	struct emsmdbp_object		*rowobject;
-	uint64_t			*rowFMId;
-	uint64_t			parentFolderId;
+	int64_t				*rowFMId;
+	int64_t				parentFolderId;
 	bool				mapistore_folder;
 	void				*odb_ctx;
 	char				*owner;
@@ -1681,7 +1681,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		/* 2. open the corresponding object */
 		switch (table_object->object.table->ulType) {
 		case MAPISTORE_FOLDER_TABLE:
-			ret = emsmdbp_object_open_folder(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(uint64_t *)rowFMId, &rowobject);
+			ret = emsmdbp_object_open_folder(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, *(int64_t *)rowFMId, &rowobject);
 			if (ret == MAPISTORE_SUCCESS) {
 				mapistore_folder = emsmdbp_is_mapistore(rowobject);
 				if (mapistore_folder) {
@@ -1690,7 +1690,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			}
 			break;
 		case MAPISTORE_MESSAGE_TABLE:
-			ret = emsmdbp_object_message_open(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, parentFolderId, *(uint64_t *)rowFMId, false, &rowobject, NULL);
+			ret = emsmdbp_object_message_open(odb_ctx, table_object->parent_object->emsmdbp_ctx, table_object->parent_object, parentFolderId, *(int64_t *)rowFMId, false, &rowobject, NULL);
 			mapistore_folder = false;
 			break;
 		default:
@@ -1841,7 +1841,7 @@ _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_co
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 							    struct emsmdbp_context *emsmdbp_ctx,
-							    uint64_t messageID,
+							    int64_t messageID,
 							    struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;
@@ -1924,7 +1924,7 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS		retval;
 	enum mapistore_error	retval_mapistore;
 	struct emsmdbp_object	*mailbox, *inbox, *calendar;
-	uint64_t		inboxFID, calendarFID;
+	int64_t			inboxFID, calendarFID;
 	uint32_t		contextID;
 	int			i;
 
@@ -2049,7 +2049,7 @@ static enum MAPISTATUS emsmdbp_object_message_fill_freebusy_properties(struct em
 	return MAPI_E_SUCCESS;
 }
 
-_PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, uint64_t folderID, uint64_t messageID, bool read_write, struct emsmdbp_object **messageP, struct mapistore_message **msgp)
+_PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *parent_object, int64_t folderID, int64_t messageID, bool read_write, struct emsmdbp_object **messageP, struct mapistore_message **msgp)
 {
 	struct emsmdbp_object *folder_object, *message_object = NULL;
 	uint32_t contextID;
@@ -2192,7 +2192,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *mem_ctx,
  */
 _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_ctx,
                                                                struct emsmdbp_context *emsmdbp_ctx,
-                                                               uint64_t messageID,
+                                                               int64_t messageID,
                                                                struct emsmdbp_object *parent)
 {
 	struct emsmdbp_object	*object;

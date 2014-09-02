@@ -702,8 +702,8 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	uint32_t		origcount = 0;
 	bool			ret = true;
 	struct SSortOrderSet	criteria;
-	uint64_t		inst_id = 0;
-	uint64_t		inst_num = 0;
+	int64_t			inst_id = 0;
+	uint32_t		inst_num = 0;
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t                rowcount = 0;
@@ -786,7 +786,7 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	/* save away ID/instance values for first row header */
-	inst_id = (*(const uint64_t *)get_SPropValue_data(&(SRowSet.aRow[0].lpProps[4])));
+	inst_id = (*(const int64_t *)get_SPropValue_data(&(SRowSet.aRow[0].lpProps[4])));
 	inst_num = (*(const uint32_t *)get_SPropValue_data(&(SRowSet.aRow[0].lpProps[5])));
 
 	/* Collapse a row header */

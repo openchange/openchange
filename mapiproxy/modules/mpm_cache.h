@@ -41,8 +41,8 @@
 struct mpm_message {
 	struct mpm_session	*session;
 	uint32_t		handle;
-	uint64_t       		FolderId;
-	uint64_t       		MessageId;
+	int64_t       		FolderId;
+	int64_t       		MessageId;
 	struct mpm_message	*prev;
 	struct mpm_message	*next;
 };

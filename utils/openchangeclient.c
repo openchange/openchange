@@ -109,7 +109,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 	mapi_object_t		obj_folder;
 	char     		**folder  = NULL;
 	const char		*name;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 	bool			found = false;
 	uint32_t		index;
 	uint32_t		i;
@@ -134,7 +134,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 
 		while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
-				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
+				fid = (const int64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
 				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME_UNICODE);
 				if (name && fid && !strcmp(name, folder[i])) {
 					retval = OpenFolder(&obj_folder, *fid, obj_child);
@@ -286,22 +286,22 @@ static char *build_uniqueID(TALLOC_CTX *mem_ctx, mapi_object_t *obj_folder,
 	struct SPropTagArray	*SPropTagArray;
 	struct SPropValue	*lpProps;
 	uint32_t		count;
-	const uint64_t		*mid;
-	const uint64_t		*fid;
+	const int64_t		*mid;
+	const int64_t		*fid;
 
 	/* retrieve the folder ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_FID);
 	GetProps(obj_folder, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
-	fid = (const uint64_t *)get_SPropValue_data(lpProps);
+	fid = (const int64_t *)get_SPropValue_data(lpProps);
 
 	/* retrieve the message ID */
 	SPropTagArray = set_SPropTagArray(mem_ctx, 0x1, PR_MID);
 	GetProps(obj_message, 0, SPropTagArray, &lpProps, &count);
 	MAPIFreeBuffer(SPropTagArray);
 	if (GetLastError() != MAPI_E_SUCCESS) return NULL;
-	mid = (const uint64_t *)get_SPropValue_data(lpProps);
+	mid = (const int64_t *)get_SPropValue_data(lpProps);
 
 	if (!fid || !mid) return NULL;
 
@@ -387,7 +387,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	mapi_object_t			obj_table;
 	mapi_object_t			obj_tb_attach;
 	mapi_object_t			obj_attach;
-	uint64_t			id_inbox;
+	int64_t				id_inbox;
 	struct SPropTagArray		*SPropTagArray;
 	struct SRowSet			rowset;
 	struct SRowSet			rowset_attach;
@@ -1009,7 +1009,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 	while ((retval = QueryRows(&obj_table, 0x10, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
 		count_rows = SRowSet.cRows;
 		if (!count_rows) break;
-		id_messages = talloc_array(mem_ctx, uint64_t, count_rows);
+		id_messages = talloc_array(mem_ctx, int64_t, count_rows);
 		count_messages = 0;
 		
 		len = strlen(oclient->subject);
@@ -1593,7 +1593,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	const uint32_t		*unread;
 	const uint32_t		*child;
 	uint32_t		index;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 	int			i;
 
 	mapi_object_init(&obj_folder);
@@ -1617,7 +1617,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
 			comment = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_COMMENT_UNICODE);
 			total = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_CONTENT_COUNT);
@@ -1654,7 +1654,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	const char	       	*name;
 	const uint32_t		*child;
 	uint32_t		index;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 	int			i;
 
 	mapi_object_init(&obj_folder);
@@ -1675,7 +1675,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
 			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
@@ -1877,7 +1877,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
  *
  */
 static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
-				     uint64_t sfid,
+				     int64_t sfid,
 				     mapi_object_t *obj_parent,
 				     mapi_id_t folder_id,
 				     mapi_object_t *obj_ret)
@@ -1888,7 +1888,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t		i;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 
 	mapi_object_init(&obj_folder);
 	retval = OpenFolder(obj_parent, folder_id, &obj_folder);
@@ -1905,7 +1905,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
 		for (i = 0; i < SRowSet.cRows; i++) {
-			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
 			if (fid && *fid == sfid) {
 				retval = OpenFolder(&obj_folder, *fid, obj_ret);
 				mapi_object_release(&obj_htable);
@@ -1930,7 +1930,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 }
 
 static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx, 
-				      uint64_t smid,
+				      int64_t smid,
 				      mapi_object_t *obj_folder, 
 				      mapi_object_t *obj_message)
 {
@@ -1939,8 +1939,8 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t		i;
-	const uint64_t		*fid;
-	const uint64_t		*mid;
+	const int64_t		*fid;
+	const int64_t		*mid;
 
 	mapi_object_init(&obj_htable);
 	retval = GetContentsTable(obj_folder, &obj_htable, 0, NULL);
@@ -1953,8 +1953,8 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
-			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
-			mid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_MID);
+			fid = (const int64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
+			mid = (const int64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_MID);
 			if (mid && *mid == smid) {
 				retval = OpenMessage(obj_folder, *fid, *mid, obj_message, ReadWrite);
 				mapi_object_release(&obj_htable);
@@ -1977,8 +1977,8 @@ static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	mapi_object_t		obj_message;
 	mapi_id_t		id_tis;
 	char			*fid_str;
-	uint64_t		fid;
-	uint64_t		mid;
+	int64_t			fid;
+	int64_t			mid;
 	const char		*item = NULL;
 
 	item = oclient->update;
@@ -2052,8 +2052,8 @@ static bool openchangeclient_deleteitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	mapi_object_t		obj_message;
 	mapi_id_t		id_tis;
 	char			*fid_str;
-	uint64_t		fid;
-	uint64_t		mid;
+	int64_t			fid;
+	int64_t			mid;
 	const char		*item = NULL;
 
 	item = oclient->delete;
@@ -2151,7 +2151,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 		for (i = 0; i < SRowSet.cRows; i++) {
 			lpProp = get_SPropValue_SRowSet(&SRowSet, PR_MID);
 			if (lpProp != NULL) {
-				mid = (const uint64_t *)get_SPropValue(lpProp, PR_MID);
+				mid = (const int64_t *)get_SPropValue(lpProp, PR_MID);
 				if (*mid == msgid) {
 					mapi_object_init(&obj_message);
 					retval = OpenMessage(obj_store,
@@ -2656,8 +2656,8 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	mapi_object_t			obj_message;
 	mapi_id_t			id_tis;
 	const char			*fid_str;
-	uint64_t			fid;
-	uint64_t			mid;
+	int64_t				fid;
+	int64_t				mid;
 	const char			*item = NULL;
 	char				*filename = NULL;
 	struct mapi_SPropValue_array	lpProps;

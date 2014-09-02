@@ -33,7 +33,7 @@ static struct loadparm_context		*g_lp_ctx;
 // v Unit test ----------------------------------------------------------------
 
 START_TEST (test_get_SystemFolderID) {
-	uint64_t folder_id = 0;
+	int64_t folder_id = 0;
 
 	retval = openchangedb_get_SystemFolderID(g_oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
@@ -52,7 +52,7 @@ START_TEST (test_get_SystemFolderID) {
 } END_TEST
 
 START_TEST (test_get_SpecialFolderID) {
-	uint64_t folder_id = 0;
+	int64_t folder_id = 0;
 
 	retval = openchangedb_get_SpecialFolderID(g_oc_ctx, "paco", 2, &folder_id);
 	CHECK_SUCCESS;
@@ -67,7 +67,7 @@ START_TEST (test_get_SpecialFolderID) {
 } END_TEST
 
 START_TEST (test_get_PublicFolderID) {
-	uint64_t folder_id = 0;
+	int64_t folder_id = 0;
 
 	retval = openchangedb_get_PublicFolderID(g_oc_ctx, 14, &folder_id);
 	CHECK_FAILURE;
@@ -131,7 +131,7 @@ START_TEST (test_get_PublicFolderReplica) {
 
 START_TEST (test_get_mapistoreURI) {
 	char *mapistoreURI;
-	uint64_t fid;
+	int64_t fid;
 
 	fid = 577586652210266113ul;
 	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco",
@@ -153,7 +153,7 @@ START_TEST (test_get_mapistoreURI) {
 START_TEST (test_set_mapistoreURI) {
 	char *initial_uri = "sogo://paco:paco@mail/folderA1/";
 	char *uri;
-	uint64_t fid = 13980299143264862209ul;
+	int64_t fid = 13980299143264862209ul;
 	retval = openchangedb_get_mapistoreURI(g_mem_ctx, g_oc_ctx, "paco", fid, &uri, true);
 	CHECK_SUCCESS;
 	ck_assert_str_eq(uri, initial_uri);
@@ -170,7 +170,7 @@ START_TEST (test_set_mapistoreURI) {
 } END_TEST
 
 START_TEST (test_get_parent_fid) {
-	uint64_t pfid = 0ul, fid;
+	int64_t pfid = 0ul, fid;
 
 	fid = 13980299143264862209ul;
 	retval = openchangedb_get_parent_fid(g_oc_ctx, "paco", fid, &pfid, true);
@@ -191,7 +191,7 @@ START_TEST (test_get_parent_fid) {
 } END_TEST
 
 START_TEST (test_get_parent_fid_which_is_the_mailbox) {
-	uint64_t pfid = 0ul, fid = 0ul;
+	int64_t pfid = 0ul, fid = 0ul;
 
 	fid = 18159358122487971841ul;
 	retval = openchangedb_get_parent_fid(g_oc_ctx, "paco", fid, &pfid, true);
@@ -200,7 +200,7 @@ START_TEST (test_get_parent_fid_which_is_the_mailbox) {
 } END_TEST
 
 START_TEST (test_get_fid) {
-	uint64_t fid;
+	int64_t fid;
 	char *uri;
 
 	uri = talloc_strdup(g_mem_ctx, "sogo://paco@contacts/personal/");
@@ -226,7 +226,7 @@ START_TEST (test_get_MAPIStoreURIs) {
 } END_TEST
 
 START_TEST (test_get_ReceiveFolder) {
-	uint64_t fid = 0, expected_fid = 18303473310563827713ul;
+	int64_t fid = 0, expected_fid = 18303473310563827713ul;
 	const char *explicit;
 
 	retval = openchangedb_get_ReceiveFolder(g_mem_ctx, g_oc_ctx, "paco",
@@ -251,14 +251,14 @@ START_TEST (test_get_ReceiveFolder) {
 } END_TEST
 
 START_TEST (test_get_TransportFolder) {
-	uint64_t fid;
+	int64_t fid;
 	retval = openchangedb_get_TransportFolder(g_oc_ctx, "paco", &fid);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(fid, 18375530904601755649ul);
 } END_TEST
 
 START_TEST (test_get_Transport_folder_when_has_unusual_display_name) {
-	uint64_t fid = 0, transport_fid = 18375530904601755649ul;
+	int64_t fid = 0, transport_fid = 18375530904601755649ul;
 	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 
 	row->cValues = 1;
@@ -275,7 +275,7 @@ START_TEST (test_get_Transport_folder_when_has_unusual_display_name) {
 
 START_TEST (test_get_folder_count) {
 	uint32_t count;
-	uint64_t fid;
+	int64_t fid;
 
 	fid = 18231415716525899777ul;
 	retval = openchangedb_get_folder_count(g_oc_ctx, "paco", fid, &count);
@@ -308,7 +308,7 @@ START_TEST (test_get_folder_count_public_folder) {
 } END_TEST
 
 START_TEST (test_get_new_changeNumber) {
-	uint64_t cn = 0, new_cn;
+	int64_t cn = 0, new_cn;
 	int i;
 	for (i = 0; i < 5; i++) {
 		retval = openchangedb_get_new_changeNumber(g_oc_ctx, &cn);
@@ -319,7 +319,7 @@ START_TEST (test_get_new_changeNumber) {
 } END_TEST
 
 START_TEST (test_get_new_changeNumbers) {
-	uint64_t cn;
+	int64_t cn;
 	int i;
 	struct UI8Array_r *cns;
 
@@ -333,7 +333,7 @@ START_TEST (test_get_new_changeNumbers) {
 } END_TEST
 
 START_TEST (test_get_next_changeNumber) {
-	uint64_t new_cn = 0, next_cn = 0;
+	int64_t new_cn = 0, next_cn = 0;
 	int i;
 	for (i = 0; i < 5; i++) {
 		retval = openchangedb_get_next_changeNumber(g_oc_ctx, &next_cn);
@@ -346,7 +346,7 @@ START_TEST (test_get_next_changeNumber) {
 
 START_TEST (test_get_folder_property) {
 	void *data;
-	uint64_t fid;
+	int64_t fid;
 	uint32_t proptag;
 
 	// PT_LONG
@@ -398,7 +398,7 @@ START_TEST (test_get_folder_property) {
 START_TEST (test_get_public_folder_property) {
 	void *data;
 	uint32_t proptag;
-	uint64_t fid;
+	int64_t fid;
 
 	fid = 216172782113783809ul;
 	proptag = PidTagAttributeReadOnly;
@@ -424,10 +424,10 @@ START_TEST (test_get_public_folder_property) {
 } END_TEST
 
 START_TEST (test_set_folder_properties) {
-	uint64_t fid;
+	int64_t fid;
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
-	uint64_t change_number, change_number_after;
+	int64_t change_number, change_number_after;
 	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	char *display_name;
 
@@ -481,7 +481,7 @@ START_TEST (test_set_folder_properties) {
 } END_TEST
 
 START_TEST (test_set_folder_properties_on_mailbox) {
-	uint64_t fid;
+	int64_t fid;
 	uint32_t proptag;
 	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	struct Binary_r *s1, *s2;
@@ -510,7 +510,7 @@ START_TEST (test_set_folder_properties_on_mailbox) {
 START_TEST (test_set_public_folder_properties) {
 	uint32_t proptag;
 	struct FILETIME *last_modification, *last_modification_after;
-	uint64_t change_number, change_number_after, fid;
+	int64_t change_number, change_number_after, fid;
 	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
 	char *display_name;
 
@@ -564,7 +564,7 @@ START_TEST (test_set_public_folder_properties) {
 } END_TEST
 
 START_TEST (test_get_fid_by_name) {
-	uint64_t pfid, fid = 0;
+	int64_t pfid, fid = 0;
 
 	pfid = 18231415716525899777ul;
 	retval = openchangedb_get_fid_by_name(g_oc_ctx, "paco", pfid, "A2", &fid);
@@ -579,7 +579,7 @@ START_TEST (test_get_fid_by_name) {
 } END_TEST
 
 START_TEST (test_get_mid_by_subject) {
-	uint64_t pfid, mid = 0;
+	int64_t pfid, mid = 0;
 	pfid = 145241087982698497ul;
 	retval = openchangedb_get_mid_by_subject(g_oc_ctx, "paco", pfid,
 					      "Sample message on system folder",
@@ -589,7 +589,7 @@ START_TEST (test_get_mid_by_subject) {
 } END_TEST
 
 START_TEST (test_get_mid_by_subject_on_public_folder) {
-	uint64_t pfid, mid = 0;
+	int64_t pfid, mid = 0;
 	pfid = 576460752303423489ul;
 	retval = openchangedb_get_mid_by_subject(g_oc_ctx, "does not matter", pfid,
 					      "USER-/CN=RECIPIENTS/CN=PACO",
@@ -599,7 +599,7 @@ START_TEST (test_get_mid_by_subject_on_public_folder) {
 } END_TEST
 
 START_TEST (test_delete_folder) {
-	uint64_t fid, pfid;
+	int64_t fid, pfid;
 	uint32_t count = 0;
 
 	fid = 10233304253292609537ul;
@@ -617,7 +617,7 @@ START_TEST (test_delete_folder) {
 } END_TEST
 
 START_TEST (test_delete_public_folder) {
-	uint64_t fid, pfid;
+	int64_t fid, pfid;
 	uint32_t count = 0;
 	size_t n;
 
@@ -637,7 +637,7 @@ START_TEST (test_delete_public_folder) {
 } END_TEST
 
 START_TEST (test_set_ReceiveFolder) {
-	uint64_t fid_1, fid_2, fid;
+	int64_t fid_1, fid_2, fid;
 	const char *explicit;
 
 	fid_1 = 13980299143264862209ul;
@@ -682,7 +682,7 @@ START_TEST (test_get_users_from_partial_uri) {
 START_TEST (test_create_mailbox) {
 	char *data;
 	uint32_t *data_int;
-	uint64_t fid = 14989949884725985281ul;
+	int64_t fid = 14989949884725985281ul;
 
 	retval = openchangedb_create_mailbox(g_oc_ctx, "chuck", 1, fid, "OpenChange Mailbox: chuck");
 	CHECK_SUCCESS;
@@ -707,7 +707,7 @@ START_TEST (test_create_mailbox) {
 } END_TEST
 
 START_TEST (test_create_folder) {
-	uint64_t pfid, fid, changenumber;
+	int64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
 
 	pfid = 18231415716525899777ul;
@@ -727,7 +727,7 @@ START_TEST (test_create_folder) {
 } END_TEST
 
 START_TEST (test_create_folder_without_mapistore_uri) {
-	uint64_t pfid, fid, changenumber;
+	int64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
 	struct StringArrayW_r *uris = talloc_zero(g_mem_ctx, struct StringArrayW_r);
 	int uris_before;
@@ -758,7 +758,7 @@ START_TEST (test_create_folder_without_mapistore_uri) {
 
 START_TEST (test_create_folder_and_display_name) {
 	struct SRow *row = talloc_zero(g_mem_ctx, struct SRow);
-	uint64_t pfid, fid, fid2, changenumber;
+	int64_t pfid, fid, fid2, changenumber;
 	uint32_t count, count_after;
 
 	pfid = 18231415716525899777ul;
@@ -790,7 +790,7 @@ START_TEST (test_create_folder_and_display_name) {
 } END_TEST
 
 START_TEST (test_create_public_folder) {
-	uint64_t pfid, fid, changenumber;
+	int64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
 
 	pfid = 216172782113783809ul;
@@ -811,7 +811,7 @@ START_TEST (test_create_public_folder) {
 
 START_TEST (test_get_message_count) {
 	uint32_t count = 0;
-	uint64_t fid = 145241087982698497ul;
+	int64_t fid = 145241087982698497ul;
 	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
@@ -823,7 +823,7 @@ START_TEST (test_get_message_count) {
 
 START_TEST (test_get_message_count_from_public_folder) {
 	uint32_t count = 0;
-	uint64_t fid = 576460752303423489ul;
+	int64_t fid = 576460752303423489ul;
 	retval = openchangedb_get_message_count(g_oc_ctx, "paco", fid, &count, false);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(count, 1);
@@ -839,7 +839,7 @@ START_TEST (test_get_message_count_from_public_folder) {
 
 START_TEST (test_get_system_idx) {
 	int system_idx = 0;
-	uint64_t fid = 17582897370184548353ul;
+	int64_t fid = 17582897370184548353ul;
 	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(3, system_idx);
@@ -852,7 +852,7 @@ START_TEST (test_get_system_idx) {
 
 START_TEST (test_get_system_idx_from_public_folder) {
 	int system_idx = 0;
-	uint64_t fid = 504403158265495553ul;
+	int64_t fid = 504403158265495553ul;
 	retval = openchangedb_get_system_idx(g_oc_ctx, "paco", fid, &system_idx);
 	CHECK_SUCCESS;
 	ck_assert_int_eq(5, system_idx);
@@ -865,7 +865,7 @@ START_TEST (test_get_system_idx_from_public_folder) {
 
 START_TEST (test_create_and_edit_message) {
 	void *msg;
-	uint64_t mid, fid;
+	int64_t mid, fid;
 	uint32_t prop;
 	void *data;
 	struct SRow row;
@@ -886,7 +886,7 @@ START_TEST (test_create_and_edit_message) {
 	prop = PidTagParentFolderId;
 	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
-	ck_assert(fid == *(uint64_t *)data);
+	ck_assert(fid == *(int64_t *)data);
 
 	row.cValues = 2;
 	row.lpProps = talloc_zero_array(g_mem_ctx, struct SPropValue, 2);
@@ -927,7 +927,7 @@ START_TEST (test_create_and_edit_message) {
 
 START_TEST (test_create_and_edit_message_on_public_folder) {
 	void *msg;
-	uint64_t mid, fid;
+	int64_t mid, fid;
 	uint32_t prop;
 	void *data;
 	struct SRow row;
@@ -948,7 +948,7 @@ START_TEST (test_create_and_edit_message_on_public_folder) {
 	prop = PidTagParentFolderId;
 	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
-	ck_assert(fid == *(uint64_t *)data);
+	ck_assert(fid == *(int64_t *)data);
 
 	row.cValues = 1;
 	row.lpProps = talloc_zero(g_mem_ctx, struct SPropValue);
@@ -977,7 +977,7 @@ START_TEST (test_create_and_edit_message_on_public_folder) {
 
 START_TEST (test_build_table_folders) {
 	void *table, *data;
-	uint64_t fid;
+	int64_t fid;
 	enum MAPITAGS prop;
 	uint32_t i;
 
@@ -1015,7 +1015,7 @@ START_TEST (test_build_table_folders) {
 
 START_TEST (test_build_table_folders_with_restrictions) {
 	void *table, *data;
-	uint64_t fid;
+	int64_t fid;
 	enum MAPITAGS prop;
 	struct mapi_SRestriction res;
 
@@ -1039,7 +1039,7 @@ START_TEST (test_build_table_folders_with_restrictions) {
 
 START_TEST (test_build_table_folders_live_filtering) {
 	void *table, *data;
-	uint64_t fid;
+	int64_t fid;
 	enum MAPITAGS prop;
 	uint32_t i;
 	struct mapi_SRestriction res;
@@ -1098,7 +1098,7 @@ START_TEST (test_get_folders_names) {
 } END_TEST
 
 START_TEST (test_set_receive_folder_to_mailbox) {
-	uint64_t mailbox_fid, fid;
+	int64_t mailbox_fid, fid;
 	const char *explicit;
 
 	mailbox_fid = 17438782182108692481ul;

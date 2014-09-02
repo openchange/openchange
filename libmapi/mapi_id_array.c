@@ -88,12 +88,12 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_release(mapi_id_array_t *id)
 
 
 /**
-   \details Retrieve the ContainerList and store it within a uint64_t
+   \details Retrieve the ContainerList and store it within a int64_t
    array.
 
    \param mem_ctx allocated talloc pointer
    \param id pointer to a mapi_id_array structure
-   \param ContainerList pointer on a pointer of uint64_t values
+   \param ContainerList pointer on a pointer of int64_t values
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -118,7 +118,7 @@ _PUBLIC_ enum MAPISTATUS mapi_id_array_get(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!id->lpContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!ContainerList, MAPI_E_INVALID_PARAMETER, NULL);
 
-	*ContainerList = talloc_array(mem_ctx, uint64_t, id->count + 1);
+	*ContainerList = talloc_array(mem_ctx, int64_t, id->count + 1);
 
 	element = id->lpContainerList;
 	while (element) {

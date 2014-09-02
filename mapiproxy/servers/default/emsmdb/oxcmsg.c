@@ -190,8 +190,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*context_object = NULL;
 	struct mapistore_message	*msg;
 	void				*data;
-	uint64_t			folderID;
-	uint64_t			messageID = 0;
+	int64_t				folderID;
+	int64_t				messageID = 0;
 	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
@@ -342,7 +342,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*folder_object = NULL;
 	struct emsmdbp_object		*message_object = NULL;
 	uint32_t			handle;
-	uint64_t			folderID, messageID;
+	int64_t				folderID, messageID;
 	uint32_t			contextID;
 	bool				mapistore = false;
 	void				*data;
@@ -564,7 +564,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	void			*private_data;
 	bool			mapistore = false;
 	struct emsmdbp_object	*object;
-	uint64_t		messageID;
+	int64_t			messageID;
 	uint32_t		contextID;
 	char			*owner;
 	uint8_t			flags;
@@ -1359,7 +1359,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	enum mapistore_error	mretval;
 	uint32_t		handle;
 	uint32_t		contextID;
-	uint64_t		messageID;
+	int64_t			messageID;
 	struct mapi_handles		*rec = NULL;
 	struct mapi_handles		*attachment_rec = NULL;
 	struct emsmdbp_object		*message_object = NULL;
@@ -1505,7 +1505,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS                 retval;
         uint32_t                        handle;
         uint32_t                        contextID;
-        uint64_t                        messageID;
+        int64_t				messageID;
 	struct mapi_handles		*attachment_rec = NULL;
 	struct mapi_handles		*message_rec = NULL;
         struct mapistore_message	*msg;

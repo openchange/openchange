@@ -80,7 +80,7 @@ _PUBLIC_ void mapidump_SPropValue(struct SPropValue lpProp, const char *sep)
 		break;
 	case PT_I8:
 		data = get_SPropValue_data(&lpProp);
-		printf("%s%s: %.16"PRIx64"\n", sep?sep:"", proptag, (*(const uint64_t *)data));
+		printf("%s%s: %.16"PRIx64"\n", sep?sep:"", proptag, (*(const int64_t *)data));
 		break;
 	case PT_STRING8:
 	case PT_UNICODE:

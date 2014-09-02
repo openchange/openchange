@@ -168,7 +168,7 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
 	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
 	response->LogonType.store_pf.NNTPIndex = 0;
-	memset(response->LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
+	memset(response->LogonType.store_pf._empty, 0, sizeof(int64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
 					     &response->LogonType.store_pf.ReplId,
@@ -370,7 +370,7 @@ static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	const char		*MessageClass = NULL;
 	void			*private_data = NULL;
 	uint32_t		handle;
-	uint64_t		fid;
+	int64_t			fid;
 
 	/* Step 1. Ensure the referring MAPI handle is mailbox one */
 	handle = handles[mapi_req->handle_idx];
@@ -690,7 +690,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object = NULL;
 	void				*data;
 	uint16_t			req_repl_id;
-	uint64_t			id;
+	int64_t				id;
 	uint8_t				i;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] LongTermIdFromId (0x43)\n"));
@@ -781,7 +781,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*object = NULL;
 	void				*data;
 	uint16_t			repl_id;
-	uint64_t			fmid, base;
+	int64_t				fmid, base;
 	uint8_t				i, ctr_byte;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] RopIdFromLongTermId (0x44)\n"));
@@ -843,7 +843,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 	fmid = 0;
 	base = 1;
 	for (i = 0; i < 6; i++) {
-		fmid |= (uint64_t) request->LongTermId.GlobalCounter[i] * base;
+		fmid |= (int64_t) request->LongTermId.GlobalCounter[i] * base;
 		base <<= 8;
 	}
 	response->Id = fmid << 16 | repl_id;

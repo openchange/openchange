@@ -45,8 +45,8 @@ struct mapistore_mgmt_users_list {
 struct mapistore_mgmt_notif {
 	bool				WholeStore;
 	uint16_t			NotificationFlags;
-	uint64_t			FolderID;
-	uint64_t			MessageID;
+	int64_t				FolderID;
+	int64_t				MessageID;
 	const char			*MAPIStoreURI;
 	uint32_t			ref_count;
 	struct mapistore_mgmt_notif	*prev;
@@ -98,7 +98,7 @@ enum mapistore_error mapistore_mgmt_set_verbosity(struct mapistore_mgmt_context 
 
 enum mapistore_error mapistore_mgmt_generate_uri(struct mapistore_mgmt_context *, const char *, const char *, const char *, const char *, const char *, char **);
 enum mapistore_error mapistore_mgmt_registered_message(struct mapistore_mgmt_context *, const char *, const char *, const char *,const char *, const char *, const char *);
-enum mapistore_error mapistore_mgmt_register_message(struct mapistore_mgmt_context *, const char *, const char *, uint64_t, const char *, const char *, char **);
+enum mapistore_error mapistore_mgmt_register_message(struct mapistore_mgmt_context *, const char *, const char *, int64_t, const char *, const char *, char **);
 enum mapistore_error mapistore_mgmt_registered_folder_subscription(struct mapistore_mgmt_context *, const char *, const char *, uint16_t);
 
 /* definitions from mapistore_mgmt_messages.c */
@@ -107,7 +107,7 @@ enum mapistore_error mapistore_mgmt_message_notification_command(struct mapistor
 enum mapistore_error mapistore_mgmt_message_bind_command(struct mapistore_mgmt_context *, struct mapistore_mgmt_bind_cmd);
 
 /* definitions from mapistore_mgmt_send.c */
-enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *, const char *, uint64_t, uint64_t, const char *);
+enum mapistore_error mapistore_mgmt_send_newmail_notification(struct mapistore_mgmt_context *, const char *, int64_t, int64_t, const char *);
 enum mapistore_error mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_context *, const char *);
 
 __END_DECLS

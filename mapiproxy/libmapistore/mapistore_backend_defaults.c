@@ -55,7 +55,7 @@ static enum mapistore_error mapistore_op_defaults_create_context(TALLOC_CTX *mem
 
 static enum mapistore_error mapistore_op_defaults_create_root_folder(const char *username, 
 								     enum mapistore_context_role ctx_role, 
-								     uint64_t fid, 
+								     int64_t fid,
 								     const char *name,
 								     TALLOC_CTX *mem_ctx,
 								     char **mapistore_urip)
@@ -65,7 +65,7 @@ static enum mapistore_error mapistore_op_defaults_create_root_folder(const char 
 }
 
 static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC_CTX *mem_ctx,
-							   uint64_t fmid, char **path)
+							   int64_t fmid, char **path)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
@@ -73,7 +73,7 @@ static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC
 
 static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_object,
 								  TALLOC_CTX *mem_ctx,
-								  uint64_t fid,
+								  int64_t fid,
 								  void **root_folder_object)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
@@ -82,7 +82,7 @@ static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_
 
 static enum mapistore_error mapistore_op_defaults_open_folder(void *folder_object,
 							      TALLOC_CTX *mem_ctx,
-							      uint64_t fid,
+							      int64_t fid,
 							      void **child_folder_object)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
@@ -91,7 +91,7 @@ static enum mapistore_error mapistore_op_defaults_open_folder(void *folder_objec
 
 static enum mapistore_error mapistore_op_defaults_create_folder(void *folder_object,
 								TALLOC_CTX *mem_ctx,
-								uint64_t fid,
+								int64_t fid,
 								struct SRow *aRow,
 								void **child_folder_object)
 {
@@ -107,7 +107,7 @@ static enum mapistore_error mapistore_op_defaults_delete_folder(void *folder_obj
 
 static enum mapistore_error mapistore_op_defaults_open_message(void *folder_object,
 							       TALLOC_CTX *mem_ctx,
-							       uint64_t mid,
+							       int64_t mid,
 							       bool rw,
 							       void **message_object)
 {
@@ -117,7 +117,7 @@ static enum mapistore_error mapistore_op_defaults_open_message(void *folder_obje
 
 static enum mapistore_error mapistore_op_defaults_create_message(void *folder_object,
 								 TALLOC_CTX *mem_ctx,
-								 uint64_t mid,
+								 int64_t mid,
 								 uint8_t associated,
 								 void **message_object)
 {
@@ -126,7 +126,7 @@ static enum mapistore_error mapistore_op_defaults_create_message(void *folder_ob
 }
 
 static enum mapistore_error mapistore_op_defaults_delete_message(void *folder_object,
-								 uint64_t mid,
+								 int64_t mid,
 								 uint8_t flags)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
@@ -137,8 +137,8 @@ static enum mapistore_error mapistore_op_defaults_move_copy_messages(void *targe
 								     void *source_folder,
                                                                      TALLOC_CTX *mem_ctx,
 								     uint32_t mid_count,
-								     uint64_t *source_mids,
-								     uint64_t *target_mids,
+								     int64_t *source_mids,
+								     int64_t *target_mids,
 								     struct Binary_r **target_change_keys,
 								     uint8_t want_copy)
 {
@@ -151,7 +151,7 @@ static enum mapistore_error mapistore_op_defaults_get_deleted_fmids(void *folder
 								    enum mapistore_table_type table_type,
 								    uint64_t change_num,
 								    struct UI8Array_r **fmidsp,
-								    uint64_t *cnp)
+								    int64_t *cnp)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
@@ -250,7 +250,7 @@ static enum mapistore_error mapistore_op_defaults_get_attachment_table(void *mes
 static enum mapistore_error mapistore_op_defaults_open_embedded_message(void *message_object,
 									TALLOC_CTX *mem_ctx,
 									void **embedded_message_object,
-									uint64_t *mid,
+									int64_t *mid,
 									struct mapistore_message **msg)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));

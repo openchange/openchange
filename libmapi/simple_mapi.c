@@ -61,7 +61,7 @@
    \sa MAPIInitialize, OpenPublicFolder, GetLastError
  */
 _PUBLIC_ enum MAPISTATUS GetDefaultPublicFolder(mapi_object_t *obj_store,
-						uint64_t *folder,
+						int64_t *folder,
 						const uint32_t id)
 {
 	OPENCHANGE_RETVAL_IF(!obj_store, MAPI_E_INVALID_PARAMETER, NULL);
@@ -234,7 +234,7 @@ static enum MAPISTATUS CacheDefaultFolders(mapi_object_t *obj_store)
    \sa MAPIInitialize, OpenMsgStore, GetLastError
 */
 _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store, 
-					  uint64_t *folder,
+					  int64_t *folder,
 					  const uint32_t id)
 {
 	enum MAPISTATUS			retval;
@@ -313,7 +313,7 @@ _PUBLIC_ enum MAPISTATUS GetDefaultFolder(mapi_object_t *obj_store,
    \return true on success, otherwise false
  */
 _PUBLIC_ bool IsMailboxFolder(mapi_object_t *obj_store, 
-			      uint64_t fid, 
+			      int64_t fid,
 			      uint32_t *olFolder)
 {
 	enum MAPISTATUS		retval;

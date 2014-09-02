@@ -189,14 +189,22 @@ class OofHandler(object):
                     struct.unpack('@h h I', blob[36:44])
                 if user_len > 0:
                     self.username = blob[user_offset:user_offset + user_len]
-                    self.username = self.username.decode('UTF-16')
+                    try:
+                        self.username = self.username.decode('UTF-16')
+                    except UnicodeDecodeError:
+                        # Try with default encoding
+                        self.username = self.username.decode()
                     self.username = self.username.split('@')[0]
 
                 (wks_len, wks_alloc, wks_offset) = \
                     struct.unpack('@h h I', blob[44:52])
                 if wks_len > 0:
                     self.workstation = blob[wks_offset:wks_offset + wks_len]
-                    self.workstation = self.workstation.decode('UTF-16')
+                    try:
+                        self.workstation = self.workstation.decode('UTF-16')
+                    except UnicodeDecodeError:
+                        # Try with default encoding
+                        self.workstation = self.workstation.decode()
 
         if self.username is None:
             raise ServerException('User name not found in request NTLM '

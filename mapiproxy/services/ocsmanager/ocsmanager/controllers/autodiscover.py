@@ -18,7 +18,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-This module provides an implementation of the HTTP autodiscover protocol.
+This module provides an implementation of the HTTP autodiscover protocol. [MS-OXDSCLI]
 """
 from cStringIO import StringIO
 import socket

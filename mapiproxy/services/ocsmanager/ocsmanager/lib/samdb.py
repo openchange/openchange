@@ -1,8 +1,6 @@
 # -*- coding: utf-8 -*-
 #
-# Copyright (C) 2014  Jesús García Saez <jgarcia@zentyal.com>
-#                     Samuel Cabrero Alamán <scabrero@zentyal.com>
-#                     Enrique J. Hernández <ejhernandez@zentyal.com>
+# Copyright (C) 2014  Enrique J. Hernández <ejhernandez@zentyal.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by

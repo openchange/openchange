@@ -458,6 +458,47 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	return (PyObject *)message;
 }
 
+static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "uri", "flags", NULL };
+	const char			*uri;
+	uint8_t				flags;
+	bool				partial, soft_deleted;
+	enum mapistore_error		retval;
+	uint64_t			mid;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sH", kwnames, &uri, &flags)) {
+		return NULL;
+	}
+
+	/* Get the MID from the URI */
+	partial = false;	// A full URI is needed
+	retval = mapistore_indexing_record_get_fmid(self->context->mstore_ctx, self->context->parent->username,
+			uri, partial, &mid, &soft_deleted);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	if ((soft_deleted == true) && (flags == MAPISTORE_SOFT_DELETE)) {
+		PyErr_SetString(PyExc_SystemError,
+				"Already soft-deleted");
+		return NULL;
+	}
+
+	/* Delete the message (soft/hard delete depending on the flags)*/
+	retval = mapistore_folder_delete_message(self->context->mstore_ctx, self->context->context_id,
+						self->folder_object, mid, flags);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -507,6 +548,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ "create_message", (PyCFunction)py_MAPIStoreFolder_create_message, METH_VARARGS|METH_KEYWORDS },
 	{ "open_message", (PyCFunction)py_MAPIStoreFolder_open_message, METH_VARARGS|METH_KEYWORDS },
+	{ "delete_message", (PyCFunction)py_MAPIStoreFolder_delete_message, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_messages", (PyCFunction)py_MAPIStoreFolder_get_child_messages, METH_NOARGS },
 	{ NULL },
 };

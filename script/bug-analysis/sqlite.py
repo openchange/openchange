@@ -82,7 +82,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 else:
                     self.last_crash_id = 0
 
-    def upload(self, report, progress_callback=None):
+    def upload(self, report, suggested_file_name=None, progress_callback=None):
         """
         Upload the report to the database.
 
@@ -90,16 +90,20 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
         The report is not uploaded but the pointer indicated by _URL attribute in the report.
 
-        :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set
+        If we receive _OrigURL attribute in the report, we store it as well in the DB.
+
+        :param str suggested_file_name: the suggested file name where to store the report
+        :raise ValueError: if the report does not have _URL attribute or crashes_base_url option is not set.
         """
         cur = self.db.cursor()
         app, version = report['Package'].split(' ', 1)
 
         if '_URL' not in report and self.base_url is None:
-            raise ValueError('This backend requires _URL attribute to upload a crash report or crashes_base_url configuration option')
+            raise ValueError('This backend requires _URL attribute to upload a crash report '
+                             'or crashes_base_url configuration option')
 
         if '_URL' not in report:
-            report['_URL'] = urljoin(self.base_url, self._report_file_name(report))
+            report['_URL'] = urljoin(self.base_url, self._report_file_name(report, suggested_file_name))
 
         stacktrace = None
         if 'Stacktrace' in report:
@@ -112,10 +116,11 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         self._upload_report_file(report)
 
         cur.execute("""INSERT INTO crashes
-                       (crash_id, crash_url, title, app, version, sym_stacktrace, distro_release)
-                       VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                       (crash_id, crash_url, title, app, version, sym_stacktrace, distro_release, orig_crash_url)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
                     (self.last_crash_id + 1, report['_URL'], report.standard_title(),
-                     app, version, stacktrace, report.get('DistroRelease', None)))
+                     app, version, stacktrace, report.get('DistroRelease', None),
+                     report.get('_OrigURL', None)))
         self.db.commit()
         self.last_crash_id = cur.lastrowid
         return self.last_crash_id
@@ -346,7 +351,11 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         return fixed_version
 
     """
-    This set of methods are exclusive for OpenChange mining tool
+    This set of methods are exclusive for OpenChange mining tool (oc-crash-digger)
+
+    * Set/Get application components from a crash
+    * Set/Get client side duplicates (URLs)
+    * Management of tracker URL for a crash
     """
     def set_app_components(self, id, components):
         """
@@ -369,7 +378,7 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
 
     def get_app_components(self, id):
         """
-        Set the component for a crash
+        Get the components for a crash
 
         :returns: the components for a crash
         :rtype: list
@@ -400,6 +409,98 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
                 if cur.rowcount == 0:
                     raise ValueError("%s is not an application component of crash %d" % (component, id))
 
+    def add_client_side_duplicate(self, id, crash_url):
+        """
+        Add a client side duplicate
+
+        :param int id: the crash id to set the duplicate from
+        :param str crash_url: the original crash url duplicate
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""INSERT INTO client_side_duplicates (crash_id, url)
+                           VALUES (?, ?)""",
+                        [id, crash_url])
+
+    def get_client_side_duplicates(self, id):
+        """
+        Get the client side duplicates for a crash id
+
+        :param int id: the crash id to get the duplicates from
+        :returns: the urls from the duplicated crashes
+        :rtype: list
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT url
+                           FROM client_side_duplicates
+                           WHERE crash_id = ?""", [id])
+            urls = [row[0] for row in cur.fetchall()]
+        return urls
+
+    def remove_client_side_duplicate(self, id, crash_url=None):
+        """
+        Remove client side duplicates for a crash
+
+        :param int id: the crash id to remove the client side duplicates from
+        :param str crash_url: if it is None, all crash urls are deleted
+        :raise ValueError: if the component is not None but it is not a crash app component
+        """
+        with self.db:
+            cur = self.db.cursor()
+            if crash_url is None:
+                cur.execute("""DELETE FROM client_side_duplicates
+                               WHERE crash_id = ?""", [id])
+            else:
+                cur.execute("""DELETE FROM client_side_duplicates
+                               WHERE crash_id = ? AND url = ?""", [id, crash_url])
+                if cur.rowcount == 0:
+                    raise ValueError("%s is not an crash URL duplicate of crash %d" % (crash_url, id))
+
+    def n_client_side_duplicates(self, id):
+        """
+        Get the number of client side duplicates
+
+        :param int id: the crash id to get the stats
+        :returns: the number of client side duplicates
+        :rtype: int
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT COUNT(*) FROM client_side_duplicates
+                           WHERE crash_id = ?""", [id])
+            n_dups = cur.fetchone()[0]
+        return n_dups
+
+    def set_tracker_url(self, id, url):
+        """Set the tracker URL to track the crash report resolution.
+
+        It is assumed the issue is properly set.
+
+        :param int id: the crash identifier
+        :param str url: the tracker URL
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""UPDATE crashes SET tracker_url = ?
+                           WHERE crash_id = ?""", [url, id])
+
+    def get_tracker_url(self, id):
+        """Get the tracker URL to track the crash report resolution.
+
+        :param int id: the crash identifier
+        :returns: the crash tracker URL, None if not found
+        :rtype: Str
+        """
+        with self.db:
+            cur = self.db.cursor()
+            cur.execute("""SELECT tracker_url FROM crashes
+                           WHERE crash_id = ?""", [id])
+            row = cur.fetchone()
+            if row:
+                return row[0]
+            return None
+
     def __create_db(self):
         """
         Create the DB
@@ -423,6 +524,8 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             fixed_version VARCHAR(64),
             state VARCHAR(64),
             master_id INTEGER,
+            orig_crash_url VARCHAR(1024),
+            tracker_url VARCHAR(1024),
             CONSTRAINT master_fk FOREIGN KEY(master_id) REFERENCES crashes(crash_id),
             CONSTRAINT crashes_pk PRIMARY KEY(crash_id))""")
 
@@ -435,6 +538,12 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
             cur.execute("""CREATE TABLE crash_app_components (
             crash_id INTEGER NOT NULL,
             component VARCHAR(64) NOT NULL,
+            CONSTRAINT crashes_fk FOREIGN KEY(crash_id) REFERENCES crashes(crash_id)
+            )""")
+
+            cur.execute("""CREATE TABLE client_side_duplicates (
+            crash_id INTEGER NOT NULL,
+            url VARCHAR(1024) NOT NULL,
             CONSTRAINT crashes_fk FOREIGN KEY(crash_id) REFERENCES crashes(crash_id)
             )""")
 
@@ -465,10 +574,13 @@ class CrashDatabase(apport.crashdb.CrashDatabase):
         '''Update the report file based on scheme'''
         self._upload_report_file(report)
 
-    def _report_file_name(self, report):
-        sep = '_'
-        exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
-        return str(self.last_crash_id + 1) + sep + exe_path
+    def _report_file_name(self, report, suggested_file_name):
+        if suggested_file_name:
+            return suggested_file_name
+        else:
+            sep = '_'
+            exe_path = report['ExecutablePath'].replace(os.path.sep, sep)
+            return str(self.last_crash_id + 1) + sep + exe_path + '.crash'
 
 
 def post_multipart(host, port, selector, fields, files):

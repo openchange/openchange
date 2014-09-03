@@ -21,6 +21,7 @@ import gzip
 from io import BytesIO
 import optparse
 import os
+import re
 import shutil
 import subprocess
 import sys
@@ -32,8 +33,9 @@ import zlib
 import apport
 from apport.crashdb import get_crashdb
 from apport.report import Report
+from buganalysis.analysis import guess_components, readable_stacktrace
+from buganalysis.mail import notify_user_email
 from buganalysis.pkgshelper import map_package, map_dependencies
-from buganalysis.analysis import guess_components
 
 
 #
@@ -43,7 +45,7 @@ class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
                  crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
-                 component=False, crash_ids=[], stacktrace_file=False):
+                 component=False, crash_ids=[], stacktrace_file=False, notified_email=None):
         """
         Initialize pools.
 
@@ -69,6 +71,7 @@ class CrashDigger(object):
         self.upload = upload
         self.guess_component = component
         self.crash_ids = crash_ids
+        self.notified_email = notified_email
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -76,11 +79,21 @@ class CrashDigger(object):
         else:
             self.releases = None
 
+        self.backup_config_dir = None
+        if config_dir:
+            # The backup apport configuration just in case we have it
+            # to test against them
+            backup_config_dir = "%s.backup" % config_dir
+            if os.path.isdir(backup_config_dir):
+                self.log("Having %s as backup to apport on retry" % backup_config_dir)
+                self.backup_config_dir = backup_config_dir
+
         if self.dup_db:
             self.crashdb.init_duplicate_db(self.dup_db)
             # this verified DB integrity; make a backup now
             shutil.copy2(self.dup_db, self.dup_db + '.backup')
 
+        self.tracker = None  # It will be only if oc_cd_conf file
         if self.oc_cd_conf:
             oc_cd_conf_settings = dict()
             with open(self.oc_cd_conf) as f:
@@ -88,6 +101,27 @@ class CrashDigger(object):
                 self.oc_cd_conf = {}
                 if 'extra_packages' in oc_cd_conf_settings:
                     self.oc_cd_conf['extra_packages'] = oc_cd_conf_settings['extra_packages']
+                if 'tracker' in oc_cd_conf_settings:
+                    self.oc_cd_conf['tracker'] = oc_cd_conf_settings['tracker']
+                    tracker_conf = self.oc_cd_conf['tracker']
+                    if 'tracker' in tracker_conf and tracker_conf['tracker'] == 'redmine':
+                        try:
+                            from buganalysis.redmine_client import RedmineClient
+                            self.tracker = RedmineClient(tracker_conf['url'],
+                                                         tracker_conf['key'],
+                                                         project=tracker_conf.get('project_id', None),
+                                                         component_conf=tracker_conf.get('component_conf', {}),
+                                                         custom_fields=tracker_conf.get('custom_fields', []),
+                                                         reporter_field=tracker_conf.get('reporter_field', None))
+                        except ImportError:
+                            self.log("WARNING: python-redmine module is not installed")
+                            # No redmine
+                if 'email' in oc_cd_conf_settings:
+                    self.oc_cd_conf['email'] = oc_cd_conf_settings['email']
+                    if 'smtp_addr' not in self.oc_cd_conf['email']:
+                        self.oc_cd_conf['email']['stmp_addr'] = 'localhost'
+                    if 'from_addr' not in self.oc_cd_conf['email']:
+                        self.oc_cd_conf['email']['from_addr'] = 'root@localhost'
 
     def log(self, str):
         """
@@ -185,6 +219,14 @@ class CrashDigger(object):
             self.log('crash is release %s which does not have a config available, skipping' % rel)
             return
 
+        # Set the suggested_file_name if any
+        # Use the same name if it starts with a number removing .gz if there
+        suggested_file_name = None
+        if re.match('\d+_', os.path.basename(crash_file)):
+            suggested_file_name = os.path.basename(crash_file)
+            if suggested_file_name.endswith('.gz'):
+                suggested_file_name, _ = os.path.splitext(suggested_file_name)
+
         # This may lead to bad guesses...
         temp_file_name = None
         if crash_file.endswith('.gz'):
@@ -218,59 +260,101 @@ class CrashDigger(object):
             with open(temp_file.name, 'wb') as f:
                 report.write(f)
 
-        self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages)
+        report = None
+        valid_stacktrace = False
+        for config_dir in (self.config_dir, self.backup_config_dir):
+            if config_dir is None:
+                continue
+
+            self.__call_retrace(id, rel, temp_file=temp_file_name, extra_packages=extra_packages, config_dir=config_dir)
+            if self.upload or self.stacktrace_file:
+                report = Report()
+                report.load(self.file_to_upload)
+                report['_OrigURL'] = 'file://' + os.path.abspath(crash_file)  # To be stored in the DB
+
+                # Check to see if the retrace has worked or not to call retrace with a backup apport configuration
+                if readable_stacktrace(report):
+                    valid_stacktrace = True
+                    break
 
         if self.upload or self.stacktrace_file:
-            report = Report()
-            report.load(self.file_to_upload)
-
-            if self.upload:
-                # Check for duplicates here...
-                known_report = self.crashdb.known(report)
-                if not known_report:  # Client-side
-                    crash_id = self.crashdb.upload(report)
-                    ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
-                    if ret_dup_check is not None:
-                        self.log('This report is a duplicated of #%i' % ret_dup_check[0])
-                        if ret_dup_check[1] is not None:
-                            self.log('This report is fixed in %s version' % ret_dup_check[1])
-                    else:
-                        self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
-                        self.set_components(crash_id, report)
-                else:
-                    self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+            if not valid_stacktrace:
+                self.log('It is not a readable stacktrace, try using a different apport configuration %s.backup' % self.config_dir)
             else:
-                # Put the stacktrace in a file
-                if crash_file.endswith('.crash'):
-                    crash_file_basename = crash_file
-                else:
-                    crash_file_basename, _ = os.path.splitext(crash_file)
-
-                stacktrace_file_name = "%s.stacktrace" % crash_file_basename
-                # FIXME: Test to override?
-
-                # Guessing components
-                comps = guess_components(report)
-                with open(stacktrace_file_name, 'wb') as f:
-                    if comps:
-                        f.write("Guessed application components: %s\n\n" % ', '.join(comps))
-
-                    if isinstance(report['Stacktrace'], unicode):
-                        f.write(report['Stacktrace'].encode('utf-8'))
+                if self.upload:
+                    master_id, crash_id = None, None
+                    # Check for duplicates here...
+                    known_report = self.crashdb.known(report)
+                    if not known_report:  # Client-side
+                        crash_id = self.crashdb.upload(report, suggested_file_name=suggested_file_name)
+                        ret_dup_check = self.crashdb.check_duplicate(crash_id, report)  # Server side
+                        if ret_dup_check is not None:
+                            self.log('This report is a duplicated of #%i' % ret_dup_check[0])
+                            if ret_dup_check[1] is not None:
+                                self.log('This report is fixed in %s version' % ret_dup_check[1])
+                            master_id = ret_dup_check[0]
+                        else:
+                            self.log('Report %s has been uploaded #%i' % (crash_file, crash_id))
+                            self.set_components(crash_id, report)
+                            self.upload_tracker(crash_id, report)
                     else:
-                        f.write(report['Stacktrace'])
+                        self.log('This is a known issue: %s. Do not upload a duplicated' % known_report)
+                        # Parse #<id>: title
+                        match = re.match('#([0-9]+):', known_report)
+                        if match:
+                            master_id = match.group(1)
 
-                if comps:
-                    self.log("Guessed application components: %s" % ', '.join(comps))
-                else:
-                    self.log("Impossible to guess app components from the crash, review it manually")
-                self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
+                    if master_id:
+                        crash_file_url = 'file://' + os.path.abspath(crash_file)
+                        self.crashdb.add_client_side_duplicate(master_id,
+                                                               crash_file_url)
+                        self.add_duplicate_tracker(master_id, crash_file_url)
+
+                    if self.notified_email and self.tracker and 'email' in self.oc_cd_conf:
+                        if master_id:
+                            tracker_url = self.crashdb.get_tracker_url(master_id)
+                        else:
+                            tracker_url = self.crashdb.get_tracker_url(crash_id)
+                        if tracker_url:
+                            notify_user_email(self.oc_cd_conf['email']['from_addr'],
+                                              self.notified_email, tracker_url,
+                                              duplicated=master_id is not None,
+                                              smtp_addr=self.oc_cd_conf['email']['smtp_addr'])
+
+                if self.stacktrace_file:
+                    # Put the stacktrace in a file
+                    if crash_file.endswith('.crash'):
+                        crash_file_basename = crash_file
+                    else:
+                        crash_file_basename, _ = os.path.splitext(crash_file)
+
+                    stacktrace_file_name = "%s.stacktrace" % crash_file_basename
+                    # FIXME: Test to override?
+
+                    # Guessing components
+                    comps = guess_components(report)
+                    with open(stacktrace_file_name, 'wb') as f:
+                        if comps:
+                            f.write("Guessed application components: %s\n\n" % ', '.join(comps))
+
+                        if isinstance(report['Stacktrace'], unicode):
+                            f.write(report['Stacktrace'].encode('utf-8'))
+                        else:
+                            f.write(report['Stacktrace'])
+
+                    if comps:
+                        self.log("Guessed application components: %s" % ', '.join(comps))
+                    else:
+                        self.log("Impossible to guess app components from the crash, review it manually")
+                    self.log('%s stacktrace has been stored at %s' % (crash_file, stacktrace_file_name))
 
             # Delete temporary file once it is uploaded
             os.unlink(self.file_to_upload.name)
 
-    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None):
-        argv = [self.apport_retrace, '-S', self.config_dir, '--timestamps']
+    def __call_retrace(self, id, rel, temp_file=None, extra_packages=None, config_dir=None):
+        if config_dir is None:
+            config_dir = self.config_dir
+        argv = [self.apport_retrace, '-S', config_dir, '--timestamps']
         if self.cache_dir:
             argv += ['--cache', self.cache_dir]
         if self.dup_db:
@@ -360,6 +444,37 @@ class CrashDigger(object):
         else:
             self.log("Impossible to guess app components to crash %d" % id)
 
+    def upload_tracker(self, crash_id, report):
+        """Upload to a tracker the crash report information using tracker
+        configuration available in oc-cd-conf parameter.
+
+        :param int crash_id: the crash identifier in the DB
+        :param Report report: the crash report object
+        """
+        if self.tracker:
+            issue = self.tracker.create_issue(crash_id, report,
+                                              self.crashdb.get_app_components(crash_id),
+                                              self.notified_email)
+            self.crashdb.set_tracker_url(crash_id, issue.url)
+            self.log("Create a new issue: %s" % issue.url)
+
+    def add_duplicate_tracker(self, crash_id, dup_crash_url):
+        """Add a duplicate note entry to the tracker using tracker
+        configuration available in oc-cd-conf parameter.
+
+        :param int crash_id: the crash identifier in the DB
+        :param str dup_crash_url: the duplicated crash URL
+        """
+        if self.tracker:
+            issue_url = self.crashdb.get_tracker_url(crash_id)
+            if issue_url:  # Check there is a tracker issue
+                _, issue_id = issue_url.rsplit('/', 1)
+                ret = self.tracker.add_duplicate(issue_id, dup_crash_url)
+                if ret:
+                    self.log("Adding duplicate to: %s" % issue_url)
+                else:
+                    self.log("WARNING: Cannot add the duplicate to %s" % issue_url)
+
     def run(self):
         """
         Process the work pools until they are empty.
@@ -392,6 +507,7 @@ def parse_options():
     Parse command line options and return (options, args) tuple.
     """
 
+    # FIXME: Use argparse
     optparser = optparse.OptionParser('%prog [options]')
     optparser.add_option('-c', '--config-dir', metavar='DIR',
                          help='Packaging system configuration base directory.')
@@ -436,6 +552,8 @@ def parse_options():
                          help="Guess components for the stored unfixed crashes",
                          action='store_true', dest='component', default=False)
     optparser.add_option('-i', '--ids', action="append", type="int")
+    optparser.add_option('-n', '--notify', metavar='NOTIFIED_EMAIL',
+                         help='notify when uploading a new retraced crash report when integrated with a tracker')
 
     (opts, args) = optparser.parse_args()
 
@@ -445,11 +563,11 @@ def parse_options():
     if opts.stdout and opts.gdb:
         apport.fatal('Error: --stdout and --gdb are incompatible')
 
-    if opts.upload and opts.stacktrace_file:
-        apport.fatal('Error: --upload and --stacktrace-file are incompatible')
-
     if opts.upload and not opts.dup_db:
         apport.fatal('Error: in order to upload a crash report, you must check the duplicate database')
+
+    if opts.notify and not opts.upload:
+        apport.fatal('Error: --notify only works with upload option')
 
     return (opts, args)
 
@@ -482,7 +600,7 @@ try:
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
                 opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
-                opts.component, opts.ids, opts.stacktrace_file).run()
+                opts.component, opts.ids, opts.stacktrace_file, opts.notify).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

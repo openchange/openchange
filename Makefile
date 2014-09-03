@@ -753,6 +753,10 @@ libmapiproxy-clean:
 	rm -f libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
+	rm -f mapiproxy/util/*.po mapiproxy/util/*.o
+	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
+	rm -f mapiproxy/libmapiproxy/backends/*.o mapiproxy/libmapiproxy/backends/*.po
+
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
 
 libmapiproxy-uninstall:
@@ -966,6 +970,8 @@ mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
 	rm -f mapiproxy/libmapistore/tests/*.gcno
 	rm -f mapiproxy/libmapistore/tests/*.gcda
+	rm -f mapiproxy/libmapistore/backends/*.po
+	rm -f mapiproxy/libmapistore/backends/*.o
 	rm -f bin/mapistore_test
 
 clean:: mapistore_clean

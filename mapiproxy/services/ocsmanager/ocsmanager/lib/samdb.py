@@ -55,8 +55,9 @@ class SamDBWrapper(object):
             except LdbError as [num, msg]:
                 if num == 1:
                     log.warn('Trying to reconnect after %s' % msg)
-                    self.samdb_ldb = SamDB(*self.samdb_args, **self.samdb_kwargs)
+                    self.samdb_ldb = SamDB(*self.samdb_args,
+                                           **self.samdb_kwargs)
                 else:
-                    # Raise the exception
-                    raise Exception([num, msg])
+                    # Re-raise the original exception
+                    raise
         return self.samdb_ldb

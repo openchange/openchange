@@ -304,7 +304,7 @@ class ExchangeService(ServiceBase):
     @staticmethod
     def _open_user_calendar_folder(email):
         # lookup usercn from email
-        ldbdb = config["samba"]["samdb_ldb"]
+        ldbdb = config["samba"]["samdb_ldb"].get_samdb()
         base_dn = "CN=Users,%s" % config["samba"]["domaindn"]
         ldb_filter = "(&(objectClass=user)(mail=%s))" % email
         res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,

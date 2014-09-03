@@ -114,7 +114,7 @@ class OofHandler(object):
         """
         Fetchs a record from LDB
         """
-        samdb = config["samba"]["samdb_ldb"]
+        samdb = config["samba"]["samdb_ldb"].get_samdb()
         base_dn = config["samba"]["domaindn"]
         res = samdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
                            expression=ldb_filter, attrs=["*"])
@@ -143,7 +143,7 @@ class OofHandler(object):
         if user_sid == mbox_sid:
             return True
 
-        samdb = config["samba"]["samdb_ldb"]
+        samdb = config["samba"]["samdb_ldb"].get_samdb()
         # ID of the user who is making the request
         user_sid = samdb.schema_format_value('objectSid', user_sid)
         # Mailbox ID of the mailbox for which the attempt was made

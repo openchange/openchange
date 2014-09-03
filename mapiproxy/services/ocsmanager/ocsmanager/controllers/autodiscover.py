@@ -110,7 +110,7 @@ class AutodiscoverHandler(object):
             top_element.append(new_element)
 
     def _fetch_user_ldb_record(self):
-        samdb = config["samba"]["samdb_ldb"]
+        samdb = config["samba"]["samdb_ldb"].get_samdb()
 
         # fetch user data
         if "LegacyDN" in self.request:
@@ -133,7 +133,7 @@ class AutodiscoverHandler(object):
         return ldb_record
 
     def _fill_deployment_id(self, record):
-        samdb = config["samba"]["samdb_ldb"]
+        samdb = config["samba"]["samdb_ldb"].get_samdb()
 
         # fetch first org data
         base_dn = config["samba"]["firstorgdn"]
@@ -169,7 +169,7 @@ class AutodiscoverHandler(object):
         if "homeMDB" in user_ldb_record:
             base_dn = user_ldb_record["homeMDB"][0]
 
-            samdb = config["samba"]["samdb_ldb"]
+            samdb = config["samba"]["samdb_ldb"].get_samdb()
             res = samdb.search(base=base_dn, scope=ldb.SCOPE_BASE, attrs=["*"])
             if len(res) == 1:
                 ldb_record = res[0]

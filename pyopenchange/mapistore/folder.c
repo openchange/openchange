@@ -168,7 +168,7 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 	uint8_t				flags;
 	enum mapistore_error		retval;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "H", kwnames, &flags)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "h", kwnames, &flags)) {
 		return NULL;
 	}
 
@@ -391,7 +391,7 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 	enum mapistore_error		retval;
 	void				*message_object;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &associated)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "h", kwnames, &associated)) {
 		return NULL;
 	}
 
@@ -443,7 +443,7 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	enum mapistore_error		retval;
 	void				*message_object;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwnames, &uri, &read_write)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|H", kwnames, &uri, &read_write)) {
 		return NULL;
 	}
 

@@ -415,6 +415,8 @@ class OofHandler(object):
         try:
             # Set settings
             oof = OofSettings()
+            # Retrieve stored settings
+            oof.from_sieve(mailbox)
             oof.from_xml(settings_element)
             oof.to_sieve(mailbox)
         except Exception as e:
@@ -465,6 +467,7 @@ class OofSettings(object):
         self._config['duration_end_time'] = None
         self._config['internal_reply_message'] = None
         self._config['external_reply_message'] = None
+        self._config['user_sieve_script'] = None
 
         # Read configuration
         oof_conf = config['ocsmanager']['outofoffice']
@@ -539,10 +542,14 @@ class OofSettings(object):
                 base64.b64encode('I am out of office.')
             self._config['external_reply_message'] = \
                 base64.b64encode('I am out of office.')
+            self._config['user_sieve_script'] = None
 
     def to_sieve(self, mailbox):
         template = """$header\n\n"""
         template += """require ["date","relational","vacation"];\n\n"""
+
+        if self._config['user_sieve_script']:
+            template += """require ["include"];\n\n"""
 
         if self._config['state'] == 'Scheduled':
             template += ("if allof(currentdate :value "
@@ -590,6 +597,9 @@ class OofSettings(object):
         if self._config['state'] == 'Scheduled':
             template += "}\n\n"
 
+        if self._config['user_sieve_script']:
+            template += """include :personal "$user_script";\n\n"""
+
         script = string.Template(template).substitute(
             header=SIEVE_SCRIPT_HEADER,
             start=self._config['duration_start_time'],
@@ -597,10 +607,15 @@ class OofSettings(object):
             subject="Out of office automatic reply",
             internal_domain=internal_domain,
             external_message=external_message,
-            internal_message=internal_message
+            internal_message=internal_message,
+            user_script=self._config['user_sieve_script']
         )
 
         settings_path = self._settings_path(mailbox)
+
+        user_script = self.backend.store(mailbox, script)
+        if user_script is not None:
+            self._config['user_sieve_script'] = user_script
 
         if settings_path is not None:
             (head, tail) = os.path.split(settings_path)
@@ -609,8 +624,6 @@ class OofSettings(object):
                 f.write(self._to_json())
                 os.chmod(settings_path, 0640)
                 os.chown(settings_path, sinfo.st_uid, sinfo.st_gid)
-
-        self.backend.store(mailbox, script)
 
     def from_xml(self, settings_element):
         """
@@ -815,6 +828,8 @@ class OofFileBackend(object):
 
         :param str mailbox: the mailbox user
         :param str script: the sieve script
+        :returns: the old active sieve script if different from oof one.
+        :rtype: str
         """
         (sieve_script_path, sieve_user_path, active_sieve_script_path) = self._sieve_path(mailbox)
 
@@ -833,6 +848,8 @@ class OofFileBackend(object):
         if active_sieve_script_path:
             os.unlink(active_sieve_script_path)
             os.symlink(os.path.basename(sieve_script_path), active_sieve_script_path)
+
+        return sieve_user_path
 
 
 class OofManagesieveBackend(object):
@@ -854,18 +871,22 @@ class OofManagesieveBackend(object):
 
         :param str mailbox: the mailbox user
         :param str script: the sieve script
-        :returns: the sieve script
+        :returns: the old active sieve script if different from oof one.
+        :rtype: str
         """
         self.client.connect(mailbox, self.passwd, starttls=self.ssl)
         (active_script, scripts) = self.client.listscripts()
+        old_active_script = None
         if active_script != SIEVE_SCRIPT_NAME:
             script = re.sub('require \[', 'require ["include",', script, count=1)
             script += 'include :personal "' + active_script + '";\n\n'
+            old_active_script = active_script
 
         self.client.putscript(SIEVE_SCRIPT_NAME, script)
         self.client.setactive(SIEVE_SCRIPT_NAME)
         self.client.logout()
 
+        return old_active_script
 
 class OofController(BaseController):
     """The constroller class for OutOfOffice requests."""

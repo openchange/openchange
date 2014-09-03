@@ -54,6 +54,12 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 		return NULL;
 	}
 
+	/* Check 'foldertype' range */
+	if ((foldertype < FOLDER_GENERIC) || (foldertype > FOLDER_SEARCH)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'foldertype' argument out of range");
+		return NULL;
+	}
 	/* Get FID for the new folder (backend should care about not duplicating folders) */
 	retval = mapistore_indexing_get_new_folderID(self->context->mstore_ctx, &fid);
 
@@ -166,6 +172,13 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 		return NULL;
 	}
 
+	/* Check 'flags' range */
+	if ((flags < MAPISTORE_SOFT_DELETE) || (flags > MAPISTORE_PERMANENT_DELETE)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'flags' argument out of range");
+		return NULL;
+	}
+
 	/* Delete the folder (soft or hard deletion depending on the flags) */
 	retval = mapistore_folder_delete(self->context->mstore_ctx, self->context->context_id, self->folder_object, flags);
 
@@ -185,6 +198,13 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	int				retval;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
+		return NULL;
+	}
+
+	/* Check 'table_type' range */
+	if ((table_type < MAPISTORE_FOLDER_TABLE) || (table_type > MAPISTORE_PERMISSIONS_TABLE)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'table_type' argument out of range");
 		return NULL;
 	}
 
@@ -375,6 +395,13 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 		return NULL;
 	}
 
+	/* Check 'associated' range */
+	if ((associated < 0) || (associated > 1)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'associated' argument out of range");
+		return NULL;
+	}
+
 	/* Get the MID for the new message */
 	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, 1, &mid);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -417,6 +444,13 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	void				*message_object;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|i", kwnames, &uri, &read_write)) {
+		return NULL;
+	}
+
+	/* Check 'read_write' range */
+	if ((read_write < 0) || (read_write > 1)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'read_write' argument out of range");
 		return NULL;
 	}
 
@@ -468,6 +502,13 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	uint64_t			mid;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sH", kwnames, &uri, &flags)) {
+		return NULL;
+	}
+
+	/* Check 'flags' range */
+	if ((flags < MAPISTORE_SOFT_DELETE) || (flags > MAPISTORE_PERMANENT_DELETE)) {
+		PyErr_SetString(PyExc_ValueError,
+				"'table_type' argument out of range");
 		return NULL;
 	}
 
@@ -669,6 +710,10 @@ void initmapistore_folder(PyObject *m)
 	/* Table types */
 	PyModule_AddObject(m, "FOLDER_TABLE", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "MESSAGE_TABLE", PyInt_FromLong(0x2));
+	PyModule_AddObject(m, "MAPISTORE_FAI_TABLE", PyInt_FromLong(0x3));
+	PyModule_AddObject(m, "MAPISTORE_RULE_TABLE", PyInt_FromLong(0x4));
+	PyModule_AddObject(m, "MAPISTORE_ATTACHMENT_TABLE", PyInt_FromLong(0x5));
+	PyModule_AddObject(m, "MAPISTORE_PERMISSIONS_TABLE", PyInt_FromLong(0x6));
 
 	/* Deletion flags */
 	PyModule_AddObject(m, "SOFT_DELETE", PyInt_FromLong(0x1));

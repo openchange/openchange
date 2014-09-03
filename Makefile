@@ -753,6 +753,10 @@ libmapiproxy-clean:
 	rm -f libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION)
 	rm -f mapiproxy/libmapiproxy/*.po mapiproxy/libmapiproxy/*.o
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
+	rm -f mapiproxy/util/*.po mapiproxy/util/*.o
+	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
+	rm -f mapiproxy/libmapiproxy/backends/*.o mapiproxy/libmapiproxy/backends/*.po
+
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
 
 libmapiproxy-uninstall:
@@ -966,6 +970,8 @@ mapistore_clean:
 	rm -f mapiproxy/libmapistore/tests/*.o
 	rm -f mapiproxy/libmapistore/tests/*.gcno
 	rm -f mapiproxy/libmapistore/tests/*.gcda
+	rm -f mapiproxy/libmapistore/backends/*.po
+	rm -f mapiproxy/libmapistore/backends/*.o
 	rm -f bin/mapistore_test
 
 clean:: mapistore_clean
@@ -1028,6 +1034,7 @@ provision-install: python-install
 	$(INSTALL) -d $(DESTDIR)$(sbindir)
 	$(INSTALL) -m 0755 setup/openchange_provision $(DESTDIR)$(sbindir)/
 	$(INSTALL) -m 0755 setup/openchange_newuser $(DESTDIR)$(sbindir)/
+	$(INSTALL) -m 0755 setup/openchange_neworganization $(DESTDIR)$(sbindir)/
 	$(INSTALL) -d $(DESTDIR)$(samba_setupdir)/AD
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
@@ -1312,12 +1319,14 @@ testsuite-clean:
 clean:: testsuite-clean
 
 bin/openchange-testsuite: 	testsuite/testsuite.o					\
+				testsuite/testsuite_common.o						\
 				testsuite/libmapistore/mapistore_namedprops.c		\
 				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
 				testsuite/libmapistore/mapistore_indexing.c		\
 				testsuite/libmapi/mapi_property.c			\
 				testsuite/libmapiproxy/openchangedb.c			\
+				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"

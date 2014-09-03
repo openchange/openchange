@@ -386,6 +386,7 @@ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *, struct emsmdbp_cont
 enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
+enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);
 enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

@@ -51,6 +51,8 @@ parser.add_option("--openchangedb-uri", type="string", default="",
                        "inside samba private directory is used but you can use mysql as backend "
                        "specifying a connection string like mysql://user:passwd@host/db_name")
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
+parser.add_option("--migrate", action="store_true", help="Migrate MySQL schema of an existing OpenChange installation")
+
 opts,args = parser.parse_args()
 if len(args) != 0:
     parser.print_help()
@@ -90,6 +92,8 @@ if not opts.openchangedb:
         openchange.registerasmain(setup_path, provisionnames, lp, creds)
     elif opts.primary_server:
         openchange.registerasmain(setup_path, provisionnames, lp, creds)
+    elif opts.migrate:
+        openchange.openchangedb_migrate(lp)
     else:
         parser.print_help()
         sys.exit(1)

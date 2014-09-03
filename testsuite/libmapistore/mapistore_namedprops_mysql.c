@@ -21,6 +21,7 @@
  */
 
 #include "testsuite.h"
+#include "testsuite_common.h"
 #include <libmapistore/mapistore.h>
 #include <libmapistore/mapistore_errors.h>
 #include <libmapistore/backends/namedprops_mysql.h>
@@ -29,15 +30,8 @@
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
 
-#define	NAMEDPROPS_MYSQL_HOST		"127.0.0.1"
-#define	NAMEDPROPS_MYSQL_USER		"root"
-#define	NAMEDPROPS_MYSQL_PASS		""
-#define	NAMEDPROPS_MYSQL_DB		"myapp_test"
-#define	NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
+#define NAMEDPROPS_MYSQL_SCHEMA_PATH	"setup/mapistore"
 #define	NAMEDPROPS_MYSQL_TMPDIR		"/tmp"
-
-// According to the initial ldif file we insert into database
-#define NEXT_UNUSED_ID 38392
 
 /* Global variables used for test fixture */
 static MYSQL				*conn;
@@ -129,23 +123,23 @@ static void checked_mysql_setup(void)
 	conn = mysql_init(NULL);
 	ck_assert(conn != NULL);
 
-	rconn = mysql_real_connect(conn, NAMEDPROPS_MYSQL_HOST,
-			   NAMEDPROPS_MYSQL_USER, NAMEDPROPS_MYSQL_PASS,
-			   NULL, 0, NULL, 0);
+	rconn = mysql_real_connect(conn, OC_TESTSUITE_MYSQL_HOST,
+				   OC_TESTSUITE_MYSQL_USER, OC_TESTSUITE_MYSQL_PASS,
+				   NULL, 0, NULL, 0);
 	ck_assert(rconn != NULL);
 
-	query = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	query = talloc_asprintf(mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
 	ck_assert(query != NULL);
 	ret = mysql_query(conn, query);
 	talloc_free(query);
 
-	query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	query = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", OC_TESTSUITE_MYSQL_DB);
 	ck_assert(query != NULL);
 	ret = mysql_query(conn, query);
 	talloc_free(query);
 	ck_assert_int_eq(ret, 0);
 
-	ret = mysql_select_db(conn, NAMEDPROPS_MYSQL_DB);
+	ret = mysql_select_db(conn, OC_TESTSUITE_MYSQL_DB);
 	ck_assert_int_eq(ret, 0);
 
 	talloc_free(mem_ctx);
@@ -160,7 +154,7 @@ static void checked_mysql_teardown(void)
 	mem_ctx = talloc_named(NULL, 0, "checked_mysql_teardown");
 	ck_assert(mem_ctx != NULL);
 
-	database = talloc_asprintf(mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	database = talloc_asprintf(mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
 	ck_assert(database != NULL);
 
 	ret = mysql_query(conn, database);
@@ -268,11 +262,11 @@ static void checked_mysql_query_setup(void)
 
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "mapistore:namedproperties", "mysql") == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_data", NAMEDPROPS_MYSQL_SCHEMA_PATH) == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_host", NAMEDPROPS_MYSQL_HOST) == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_user", NAMEDPROPS_MYSQL_USER) == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", NAMEDPROPS_MYSQL_PASS) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_host", OC_TESTSUITE_MYSQL_HOST) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_user", OC_TESTSUITE_MYSQL_USER) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_pass", OC_TESTSUITE_MYSQL_PASS) == true));
 	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_port", "3306") == true));
-	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_db", NAMEDPROPS_MYSQL_DB) == true));
+	ck_assert((lpcfg_set_cmdline(g_lp_ctx, "namedproperties:mysql_db", OC_TESTSUITE_MYSQL_DB) == true));
 
 	retval = mapistore_namedprops_init(g_mem_ctx, g_lp_ctx, &g_nprops);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
@@ -283,7 +277,7 @@ static void checked_mysql_query_teardown(void)
 	int	ret;
 	char	*query = NULL;
 
-	query = talloc_asprintf(g_mem_ctx, "DROP DATABASE %s", NAMEDPROPS_MYSQL_DB);
+	query = talloc_asprintf(g_mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
 	ck_assert(query != NULL);
 
 	ret = mysql_query(g_nprops->data, query);

@@ -158,19 +158,20 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 
 	response->LogonFlags = request->LogonFlags;
 
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
 	response->LogonType.store_pf.LocalizedEFormsRegistry = 0;
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
 	response->LogonType.store_pf.NNTPIndex = 0;
 	memset(response->LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
+					     emsmdbp_ctx->username,
 					     &response->LogonType.store_pf.ReplId,
 					     &response->LogonType.store_pf.Guid);
 	memset(&response->LogonType.store_pf.PerUserGuid, 0, sizeof(struct GUID));

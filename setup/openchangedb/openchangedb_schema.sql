@@ -1,30 +1,14 @@
 -- -----------------------------------------------------
--- Table `company`
--- -----------------------------------------------------
-CREATE TABLE IF NOT EXISTS `company` (
-  `id` INT NOT NULL AUTO_INCREMENT,
-  `domain` VARCHAR(1024) NOT NULL,
-  PRIMARY KEY (`id`))
-ENGINE = InnoDB;
-
-
--- -----------------------------------------------------
 -- Table `organizational_units`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `organizational_units` (
   `id` INT NOT NULL AUTO_INCREMENT,
-  `company_id` INT NOT NULL,
-  `organization` VARCHAR(256) NULL,
-  `administrative_group` VARCHAR(256) NULL,
-  PRIMARY KEY (`id`),
-  CONSTRAINT `fk_organizational_units_company_id`
-    FOREIGN KEY (`company_id`)
-    REFERENCES `company` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
+  `organization` VARCHAR(165) NULL,
+  `administrative_group` VARCHAR(165) NULL,
+  PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
-CREATE INDEX `fk_organizational_units_company_id_idx` ON `organizational_units` (`company_id` ASC);
+CREATE UNIQUE INDEX `ou_unique` ON `organizational_units` (`organization` ASC, `administrative_group` ASC);
 
 
 -- -----------------------------------------------------
@@ -200,18 +184,18 @@ CREATE INDEX `fk_folders_properties_folder_id_idx` ON `folders_properties` (`fol
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `servers` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
-  `company_id` INT NOT NULL,
+  `ou_id` INT NOT NULL,
   `replica_id` INT NOT NULL DEFAULT 1,
   `change_number` INT NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
-  CONSTRAINT `fk_servers_company_id`
-    FOREIGN KEY (`company_id`)
-    REFERENCES `company` (`id`)
-    ON DELETE CASCADE
-    ON UPDATE CASCADE)
+  CONSTRAINT `fk_servers_ou_id`
+    FOREIGN KEY (`ou_id`)
+    REFERENCES `organizational_units` (`id`)
+    ON DELETE NO ACTION
+    ON UPDATE NO ACTION)
 ENGINE = InnoDB;
 
-CREATE INDEX `fk_servers_company_id_idx` ON `servers` (`company_id` ASC);
+CREATE INDEX `fk_servers_1_idx` ON `servers` (`ou_id` ASC);
 
 
 -- -----------------------------------------------------

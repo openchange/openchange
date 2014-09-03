@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -842,7 +842,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							   &(mapi_response->mapi_repl[idx]),
 							   mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetMessageStatus: 0x1f */
+		case op_MAPI_GetMessageStatus: /* 0x1f */
+			retval = EcDoRpc_RopGetMessageStatus(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[idx]),
+							     mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SetMessageStatus: 0x20 */
 		case op_MAPI_GetAttachmentTable: /* 0x21 */
 			retval = EcDoRpc_RopGetAttachmentTable(mem_ctx, emsmdbp_ctx,

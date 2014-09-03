@@ -2308,7 +2308,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	}
 
 	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
 			folder_object = NULL;
@@ -2627,20 +2627,42 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_check_cnset(struct openchangedb_context *oc_ctx, struct idset *parsed_idset, const char *label)
-{
-	uint64_t next_cn, high_cn;
+/**
+   \details Checks that change numbers referenced in parsed_idset are valid
 
-	if (parsed_idset) {
-		openchangedb_get_next_changeNumber(oc_ctx, &next_cn);
-		next_cn = exchange_globcnt(next_cn >> 16);
-		high_cn = exchange_globcnt(parsed_idset->ranges->high);
-		if (high_cn >= next_cn) {
-			DEBUG(0, ("inconsistency: idset range for '%s' is referencing a change number that has not been issued yet: %"PRIx64" >= %"PRIx64" \n", label, high_cn, next_cn));
-			/* FIXME: Decide what we should do in this situation? Aborting is not very cool for end-users obviously :) */
-//			abort();
-		}
+   \param oc_ctx pointer to openchangedb context
+   \param username mailbox name of the current logged user
+   \param parsed_idset pointer to the struct idset to be checked
+   \param label A name to identify where the verification is being done, only
+   used for logging in case the verification fails
+   \returns MAPI_E_SUCCESS if check succeeded
+ */
+static enum MAPISTATUS oxcfxics_check_cnset(struct openchangedb_context *oc_ctx,
+					    const char *username,
+					    struct idset *parsed_idset,
+					    const char *label)
+{
+	uint64_t	next_cn, high_cn;
+	enum MAPISTATUS	retval;
+
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!label, MAPI_E_INVALID_PARAMETER, NULL);
+
+	// Perform check only if parsed_idset is defined
+	OPENCHANGE_RETVAL_IF(!parsed_idset, MAPI_E_SUCCESS, NULL);
+
+	retval = openchangedb_get_next_changeNumber(oc_ctx, username, &next_cn);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+	next_cn = exchange_globcnt(next_cn >> 16);
+	high_cn = exchange_globcnt(parsed_idset->ranges->high);
+	if (high_cn >= next_cn) {
+		DEBUG(0, ("inconsistency: idset range for '%s' is referencing a change number "
+			  "that has not been issued yet: %"PRIx64" >= %"PRIx64" \n",
+			  label, high_cn, next_cn));
+		return MAPI_E_BAD_VALUE;
+
 	}
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -2724,7 +2746,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen");
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
 		old_idset = synccontext->cnset_seen;
 		synccontext->cnset_seen = parsed_idset;
 		break;
@@ -2732,7 +2758,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen_fai");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_fai");
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = parsed_idset;
 		break;
@@ -2740,7 +2770,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		if (parsed_idset) {
 			parsed_idset->single = true;
 		}
-		oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, parsed_idset, "cnset_seen_read");
+		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_read");
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = retval;
+			goto end;
+		}
 		old_idset = synccontext->cnset_read;
 		synccontext->cnset_read = parsed_idset;
 		break;
@@ -3315,13 +3349,14 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	talloc_free(local_mem_ctx);
 }
 
-static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *owner, struct emsmdbp_object *synccontext_object)
+static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *owner, struct emsmdbp_object *synccontext_object)
 {
 	void					*mem_ctx;
 	struct idset				*new_idset, *old_idset;
 	struct oxcfxics_sync_data		*sync_data;
 	struct emsmdbp_context			*emsmdbp_ctx;
 	struct emsmdbp_object_synccontext	*synccontext;
+	enum MAPISTATUS				retval;
 
 	emsmdbp_ctx = synccontext_object->emsmdbp_ctx;
 	synccontext = synccontext_object->object.synccontext;
@@ -3330,11 +3365,14 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	mem_ctx = talloc_zero(NULL, void);
 
 	sync_data = talloc_zero(mem_ctx, struct oxcfxics_sync_data);
-	openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
+	OPENCHANGE_RETVAL_IF(!sync_data, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	retval = openchangedb_get_MailboxReplica(emsmdbp_ctx->oc_ctx, owner, NULL, &sync_data->replica_guid);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	sync_data->prop_index.eid = 0;
 	sync_data->prop_index.change_number = 1;
 	synccontext->properties.cValues = 2;
 	synccontext->properties.aulPropTag = talloc_array(synccontext, enum MAPITAGS, 2);
+	OPENCHANGE_RETVAL_IF(!synccontext->properties.aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 	synccontext->properties.aulPropTag[1] = PidTagChangeNumber;
 	sync_data->ndr = ndr;
 	sync_data->cutmarks_ndr = ndr_push_init_ctx(sync_data);
@@ -3368,7 +3406,8 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	new_idset = RAWIDSET_convert_to_idset(NULL, sync_data->cnset_seen);
 	old_idset = synccontext->cnset_seen;
 	synccontext->cnset_seen = IDSET_merge_idsets(synccontext, old_idset, new_idset);
-	oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, synccontext->cnset_seen, "cnset_seen");
+	retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, synccontext->cnset_seen, "cnset_seen");
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	talloc_free(old_idset);
 	talloc_free(new_idset);
 
@@ -3396,6 +3435,7 @@ static void oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *o
 	talloc_free(mem_ctx);
 
 	ndr_push_uint32(ndr, NDR_SCALARS, IncrSyncStateEnd);
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -3459,7 +3499,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncGetTransferState(TALLOC_CTX *mem_ctx,
 	ndr->offset = 0;
 	
 	owner = emsmdbp_get_owner(synccontext_object);
-	oxcfxics_ndr_push_transfer_state(ndr, owner, synccontext_object);
+	retval = oxcfxics_ndr_push_transfer_state(ndr, owner, synccontext_object);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(5, ("[%s:%d] ndr_push_transfer_state failed\n", __FUNCTION__, __LINE__));
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
 
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, synccontext_handle_id, &ftcontext_handle);
 	ftcontext_object = emsmdbp_object_ftcontext_init((TALLOC_CTX *)ftcontext_handle, emsmdbp_ctx, synccontext_object);

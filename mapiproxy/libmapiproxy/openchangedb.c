@@ -30,6 +30,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/servers/default/emsmdb/dcesrv_exchange_emsmdb.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 
@@ -104,18 +105,21 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_con
    \details Retrieve the public folder FolderID (fid) for a given folder type
 
    \param oc_ctx pointer to the OpenChangeDB context
+   \param username current user
    \param SystemIdx the system folder index
    \param FolderId pointer to the folder identifier the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *oc_ctx,
+							 const char *username,
 							 uint32_t SystemIdx, uint64_t *FolderId)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_PublicFolderID(oc_ctx, SystemIdx, FolderId);
+	return oc_ctx->get_PublicFolderID(oc_ctx, username, SystemIdx, FolderId);
 }
 
 /**
@@ -187,17 +191,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_MailboxReplica(struct openchangedb_con
    from the openchange dispatcher database
 
    \param oc_ctx pointer to the OpenChangeDB context
+   \param username current user
    \param ReplID pointer to the replica identifier the function returns
    \param ReplGUID pointer to the replica GUID the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *oc_ctx,
+							      const char *username,
 							      uint16_t *ReplID, struct GUID *ReplGUID)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_PublicFolderReplica(oc_ctx, ReplID, ReplGUID);
+	return oc_ctx->get_PublicFolderReplica(oc_ctx, username, ReplID, ReplGUID);
 }
 
 /**
@@ -223,6 +230,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *parent_ctx,
 						       bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_mapistoreURI(parent_ctx, oc_ctx, username, fid,
@@ -245,6 +253,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_conte
 						       const char *mapistoreURL)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!mapistoreURL, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->set_mapistoreURI(oc_ctx, username, fid, mapistoreURL);
@@ -270,6 +279,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context
 						     bool mailboxstore)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!parent_fidp, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_parent_fid(oc_ctx, username, fid, parent_fidp,
@@ -416,6 +426,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_conte
 						       uint32_t *RowCount)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_folder_count(oc_ctx, username, fid, RowCount);
@@ -516,16 +527,18 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
    \details Allocates a new change number and returns it
    
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param cn pointer to the cn value the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *oc_ctx, uint64_t *cn)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *oc_ctx, const char *username, uint64_t *cn)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!cn, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_new_changeNumber(oc_ctx, cn);
+	return oc_ctx->get_new_changeNumber(oc_ctx, username, cn);
 }
 
 /**
@@ -533,6 +546,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
    
    \param oc_ctx pointer to the openchange DB context
    \param mem_ctx memory context where the change numbers will be allocated
+   \param username current user
    \param max number of change number to allocate
    \param cns_p array of pointers to the change numbers values the function
    returns
@@ -540,13 +554,16 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_c
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *oc_ctx,
-							    TALLOC_CTX *mem_ctx, uint64_t max,
+							    TALLOC_CTX *mem_ctx,
+							    const char *username,
+							    uint64_t max,
 							    struct UI8Array_r **cns_p)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!cns_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_new_changeNumbers(oc_ctx, mem_ctx, max, cns_p);
+	return oc_ctx->get_new_changeNumbers(oc_ctx, mem_ctx, username, max, cns_p);
 }
 
 /**
@@ -554,16 +571,18 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_
    openchangedb_get_new_changeNumber is next invoked
    
    \param oc_ctx pointer to the openchange DB context
+   \param username current user
    \param cn pointer to the cn value the function returns
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *oc_ctx, uint64_t *cn)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *oc_ctx, const char *username, uint64_t *cn)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!cn, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_next_changeNumber(oc_ctx, cn);
+	return oc_ctx->get_next_changeNumber(oc_ctx, username, cn);
 }
 
 /**
@@ -586,6 +605,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *parent_ctx
 							  void **data)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!data, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_folder_property(parent_ctx, oc_ctx, username,
@@ -608,6 +628,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_
 							    struct SRow *row)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!row, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->set_folder_properties(oc_ctx, username, fid, row);
@@ -663,6 +684,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_contex
 						      uint64_t *fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!foldername, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 	
@@ -689,6 +711,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_con
 							 uint64_t *mid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!subject, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!mid, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -710,6 +733,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context 
 						    uint64_t fid)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	
 	return oc_ctx->delete_folder(oc_ctx, username, fid);
 }
@@ -793,7 +817,8 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
 
    \param oc_ctx pointer to the openchange DB context
    \param username the owner of the mailbox
-   \param systemIdx the id of the mailbox
+   \param organization_name name of the organization of the user
+   \param group_name name of the group where the organization of the user belongs
    \param fid The fid used for the mailbox
    \param display_name Name of the mailbox
 
@@ -801,14 +826,20 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *par
  */
 _PUBLIC_ enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *oc_ctx,
 						     const char *username,
-						     int systemIdx,
+						     const char *organization_name,
+						     const char *group_name,
 						     uint64_t fid,
 						     const char *display_name)
 {
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
-	
-	return oc_ctx->create_mailbox(oc_ctx, username, systemIdx, fid, display_name);
+	OPENCHANGE_RETVAL_IF(!organization_name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!group_name, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!display_name, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->create_mailbox(oc_ctx, username, organization_name,
+				      group_name, EMSMDBP_MAILBOX_ROOT, fid,
+				      display_name);
 }
 
 /**
@@ -832,10 +863,11 @@ _PUBLIC_ enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context 
 						    const char *MAPIStoreURI,
 						    int systemIdx)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!parentFolderID, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPI_RETVAL_IF(!changeNumber, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!parentFolderID, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!changeNumber, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->create_folder(oc_ctx, username, parentFolderID, fid,
 				     changeNumber, MAPIStoreURI, systemIdx);
@@ -858,8 +890,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_cont
 							uint32_t *RowCount,
 							bool fai)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!RowCount, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_message_count(oc_ctx, username, fid, RowCount, fai);
 }
@@ -879,22 +912,23 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context
 						     uint64_t fid,
 						     int *system_idx_p)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
-	MAPI_RETVAL_IF(!system_idx_p, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!system_idx_p, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_system_idx(oc_ctx, username, fid, system_idx_p);
 }
 
 _PUBLIC_ enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *oc_ctx)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	return oc_ctx->transaction_start(oc_ctx);
 }
 
 _PUBLIC_ enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *oc_ctx)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 
 	return oc_ctx->transaction_commit(oc_ctx);
 }
@@ -913,7 +947,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchanged
 							      const char *username,
 							      uint64_t *fid)
 {
-	MAPI_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!fid, MAPI_E_INVALID_PARAMETER, NULL);
 
 	return oc_ctx->get_new_public_folderID(oc_ctx, username, fid);
 }
@@ -940,19 +976,22 @@ _PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_c
 /**
    \details Get the indexing url backend for the user given as parameter. The
    user represents a mailbox.
-   By default a tdb backend file per user will be used in case NULL is returned.
+   By default a tdb backend file per user will be used in case an error is
+   returned.
 
    \param oc_ctx pointer to the openchange DB context
    \param username Name of the mailbox
+   \param indexing_url pointer to the result returned
  */
-_PUBLIC_ const char *openchangedb_get_indexing_url(struct openchangedb_context *oc_ctx,
-						   const char *username)
+_PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *oc_ctx,
+						       const char *username,
+						       const char **indexing_url)
 {
-	if (!oc_ctx || !username) {
-		DEBUG(0, ("Bad parameters when calling openchangedb_get_indexing_url\n"));
-		return NULL;
-	}
-	return oc_ctx->get_indexing_url(oc_ctx, username);
+	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!indexing_url, MAPI_E_INVALID_PARAMETER, NULL);
+
+	return oc_ctx->get_indexing_url(oc_ctx, username, indexing_url);
 }
 
 /**

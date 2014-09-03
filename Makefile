@@ -755,6 +755,7 @@ libmapiproxy-clean:
 	rm -f mapiproxy/libmapiproxy/*.gcno mapiproxy/libmapiproxy/*.gcda
 	rm -f mapiproxy/util/*.po mapiproxy/util/*.o
 	rm -f mapiproxy/modules/*.o mapiproxy/modules/*.po
+	rm -f mapiproxy/libmapiproxy/backends/*.o mapiproxy/libmapiproxy/backends/*.po
 
 	rm -f mapiproxy/libmapiproxy.$(SHLIBEXT).*
 

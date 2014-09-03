@@ -362,6 +362,49 @@ end:
 	return result;
 }
 
+static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	PyMAPIStoreMessageObject	*message;
+	char				*kwnames[] = { "associated", NULL };
+	uint8_t				associated;
+	uint64_t			mid;
+	enum mapistore_error		retval;
+	void				*message_object;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &associated)) {
+		return NULL;
+	}
+
+	/* Get the MID for the new message */
+	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, 1, &mid);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Create message */
+	retval = mapistore_folder_create_message(self->context->mstore_ctx, self->context->context_id,
+						self->folder_object, self->mem_ctx, mid, associated, &message_object);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Return the message object */
+	message = PyObject_New(PyMAPIStoreMessageObject, &PyMAPIStoreMessage);
+
+	message->mem_ctx = self->mem_ctx;
+	message->context = self->context;
+	Py_INCREF(message->context);
+
+	message->message_object = message_object;
+	(void) talloc_reference(NULL, message->message_object);
+	message->mid = mid;
+
+	return (PyObject *)message;
+}
+
 static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	PyMAPIStoreMessageObject	*message;
@@ -462,6 +505,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
+	{ "create_message", (PyCFunction)py_MAPIStoreFolder_create_message, METH_VARARGS|METH_KEYWORDS },
 	{ "open_message", (PyCFunction)py_MAPIStoreFolder_open_message, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_messages", (PyCFunction)py_MAPIStoreFolder_get_child_messages, METH_NOARGS },
 	{ NULL },
@@ -591,4 +635,8 @@ void initmapistore_folder(PyObject *m)
 	/* Open message flags */
 	PyModule_AddObject(m, "OPEN_READ", PyInt_FromLong(0x0));
 	PyModule_AddObject(m, "OPEN_WRITE", PyInt_FromLong(0x1));
+
+	/* Create message flags */
+	PyModule_AddObject(m, "CREATE_GENERIC", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "CREATE_FAI", PyInt_FromLong(0x1));
 }

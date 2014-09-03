@@ -116,7 +116,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	lp_ctx = loadparm_init(mem_ctx);
 	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"Error in loadparm_init");
+				"Error ininitialising loadparm context");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -128,7 +128,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	}
 
 	if (ret == false) {
-		PySys_WriteStderr("lpcfg_load unable to load content from path\n");
+		PySys_WriteStderr("Unable to load content from path\n");
 	}
 
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
@@ -182,7 +182,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"Error in mapistore_init");
+				"Error initialising MAPIStore");
 		return NULL;
 	}
 
@@ -213,7 +213,7 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
 	if (set_success == false) {
 		PyErr_SetString(PyExc_SystemError,
-				"Error in lpcfg_set_cmdline");
+				"Error setting the parameter");
 		return NULL;
 	}
 
@@ -551,7 +551,8 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 	char	*debuglevel = NULL;
 
 	if (value == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
+		PyErr_SetString(PyExc_TypeError,
+				"Cannot delete the last attribute");
 		return -1;
 	}
 
@@ -563,7 +564,8 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 
 	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
 	if (!debuglevel) {
-		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		PyErr_SetString(PyExc_MemoryError,
+				"Out of memory");
 		return -1;
 	}
 	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);

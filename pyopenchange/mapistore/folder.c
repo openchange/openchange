@@ -130,7 +130,7 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 
 	if (soft_deleted == true) {
 		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted folder.");
+				"Soft-deleted folder");
 		return NULL;
 	}
 
@@ -263,7 +263,7 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 
 	if (soft_deleted == true) {
 		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted folder.");
+				"Soft-deleted folder");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -431,7 +431,7 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 
 	if (soft_deleted == true) {
 		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted message.");
+				"Soft-deleted message");
 		return NULL;
 	}
 

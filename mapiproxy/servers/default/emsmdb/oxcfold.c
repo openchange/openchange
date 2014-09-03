@@ -505,7 +505,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n"));
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;

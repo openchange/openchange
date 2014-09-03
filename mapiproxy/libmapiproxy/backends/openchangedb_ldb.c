@@ -132,6 +132,7 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
+					  const char *username,
 					  uint32_t SystemIdx,
 					  uint64_t *FolderId)
 {
@@ -274,6 +275,7 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self,
+					       const char *username,
 					       uint16_t *ReplID,
 					       struct GUID *ReplGUID)
 {
@@ -935,7 +937,7 @@ static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *mem_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self, uint64_t *cn)
+static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self, const char *username, uint64_t *cn)
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
@@ -968,7 +970,9 @@ static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self, u
 }
 
 static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
-					     TALLOC_CTX *mem_ctx, uint64_t max,
+					     TALLOC_CTX *mem_ctx,
+					     const char *username,
+					     uint64_t max,
 					     struct UI8Array_r **cns_p)
 {
 	TALLOC_CTX		*local_mem_ctx;
@@ -1012,7 +1016,7 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 }
 
 static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
-					     uint64_t *cn)
+					     const char *username, uint64_t *cn)
 {
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
@@ -1148,7 +1152,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
 
 	value->ulPropTag = PidTagChangeNumber;
-	get_new_changeNumber(self, (uint64_t *) &value->value.d);
+	get_new_changeNumber(self, username, (uint64_t *) &value->value.d);
 	str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 	ldb_msg_add_string(msg, "PidTagChangeNumber", str_value);
 	msg->elements[msg->num_elements-1].flags = LDB_FLAG_MOD_REPLACE;
@@ -1480,8 +1484,11 @@ static enum MAPISTATUS get_users_from_partial_uri(TALLOC_CTX *parent_ctx,
 }
 
 static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
-				      const char *username, int systemIdx,
-				      uint64_t fid, const char *display_name)
+				      const char *username,
+				      const char *organization_name,
+				      const char *groupo_name,
+				      int systemIdx, uint64_t fid,
+				      const char *display_name)
 {
 	int			ret;
 	TALLOC_CTX		*mem_ctx;
@@ -1496,7 +1503,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	mem_ctx = talloc_named(NULL, 0, "openchangedb_ldb create_mailbox");
 
-	get_new_changeNumber(self, &changeNum);
+	get_new_changeNumber(self, username, &changeNum);
 
 	/* Retrieve distinguesName for parent folder */
 
@@ -1710,9 +1717,9 @@ static bool is_public_folder_id(struct openchangedb_context *self, uint64_t fid)
 	return false;
 }
 
-static const char *get_indexing_url(struct openchangedb_context *self, const char *username)
+static enum MAPISTATUS get_indexing_url(struct openchangedb_context *self, const char *username, const char **indexing_uri)
 {
-	return NULL;
+	return MAPI_E_NOT_IMPLEMENTED;
 }
 
 static bool set_locale(struct openchangedb_context *self, const char *username, uint32_t lcid)

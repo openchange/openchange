@@ -48,6 +48,7 @@ Suite *libmapi_property_suite(void);
 /* libmapiproxy */
 Suite *mapiproxy_openchangedb_mysql_suite(void);
 Suite *mapiproxy_openchangedb_ldb_suite(void);
+Suite *mapiproxy_openchangedb_multitenancy_mysql_suite(void);
 /* libmapistore */
 Suite *mapistore_namedprops_suite(void);
 Suite *mapistore_namedprops_mysql_suite(void);

@@ -43,6 +43,7 @@
 
 struct emsabp_context {
 	const char		*account_name;
+	const char		*organization_name;
 	struct loadparm_context	*lp_ctx;
 	struct ldb_context	*samdb_ctx;
 	void			*ldb_ctx;
@@ -106,13 +107,32 @@ struct EphemeralEntryID {
 #define	EMSABP_TDB_TMP_MID_START	0x5000
 #define	EMSABP_TDB_DATA_REC		"MId_index"
 
-#define DCESRV_NSP_RETURN(r,c,ctx) { r->out.result = c; return; if (ctx) talloc_free(ctx); }
+#define DCESRV_NSP_RETURN_IF(x,r,c,ctx)		\
+do {						\
+	if (x) {				\
+		r->out.result = c;		\
+		if (ctx) {			\
+			talloc_free(ctx);	\
+		}				\
+		return;				\
+	}					\
+} while (0);
+
+#define DCESRV_NSP_RETURN(r,c,ctx)	\
+do {					\
+	r->out.result = c;		\
+	if (ctx) {			\
+		talloc_free(ctx);	\
+	}				\
+	return;				\
+} while (0);
+
 
 __BEGIN_DECLS
 
-NTSTATUS	samba_init_module(void);
-struct ldb_context *samdb_connect_url(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, unsigned int, const char *);
-const struct GUID *samdb_ntds_objectGUID(struct ldb_context *);
+NTSTATUS		samba_init_module(void);
+struct ldb_context	*samdb_connect_url(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, unsigned int, const char *);
+const struct GUID	*samdb_ntds_objectGUID(struct ldb_context *);
 
 /* definitions from emsabp.c */
 struct emsabp_context	*emsabp_init(struct loadparm_context *, TDB_CONTEXT *);
@@ -136,7 +156,7 @@ enum MAPISTATUS		emsabp_table_fetch_attrs(TALLOC_CTX *, struct emsabp_context *,
 enum MAPISTATUS		emsabp_search(TALLOC_CTX *, struct emsabp_context *, struct PropertyTagArray_r *, struct Restriction_r *, struct STAT *, uint32_t);
 enum MAPISTATUS		emsabp_search_dn(struct emsabp_context *, const char *, struct ldb_message **);
 enum MAPISTATUS		emsabp_search_legacyExchangeDN(struct emsabp_context *, const char *, struct ldb_message **, bool *);
-enum MAPISTATUS		emsabp_ab_container_by_id(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct ldb_message **);
+enum MAPISTATUS		emsabp_ab_fetch_filter(TALLOC_CTX *, struct emsabp_context *, uint32_t, char **);
 enum MAPISTATUS		emsabp_ab_container_enum(TALLOC_CTX *, struct emsabp_context *, uint32_t, struct ldb_result **);
 
 

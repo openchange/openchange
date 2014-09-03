@@ -577,6 +577,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
 		exdn1 = strstr(EssDN, "/ou=");
 		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
 		*organization_name = talloc_strndup(mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
+		OPENCHANGE_RETVAL_IF(!*organization_name, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	}
 
 	if (group_name) {
@@ -585,6 +586,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
 		exdn1 = strstr(EssDN, "/cn=");
 		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
 		*group_name = talloc_strndup(mem_ctx, exdn0 + 4, exdn1 - exdn0 - 4);
+		OPENCHANGE_RETVAL_IF(!*group_name, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -604,6 +606,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 	int			ret;
 	struct ldb_result	*res = NULL;
 	char			*org_name;
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!basedn, MAPI_E_INVALID_PARAMETER, NULL);
 
 	retval = emsmdbp_fetch_organizational_units(emsmdbp_ctx, emsmdbp_ctx, &org_name, NULL);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);

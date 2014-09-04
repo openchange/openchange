@@ -83,7 +83,7 @@ static PyGetSetDef mapistore_message_getsetters[] = {
 
 PyTypeObject PyMAPIStoreMessage = {
 	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "mapistore message",
+	.tp_name = "mapistoremessage",
 	.tp_basicsize = sizeof (PyMAPIStoreMessageObject),
 	.tp_methods = mapistore_message_methods,
 	.tp_getset = mapistore_message_getsetters,
@@ -163,7 +163,7 @@ static PyObject *py_MAPIStoreMessages_next(PyObject *_self)
 
 PyTypeObject PyMAPIStoreMessages = {
 	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "child messages",
+	.tp_name = "childmessages",
 	.tp_basicsize = sizeof (PyMAPIStoreMessagesObject),
 	.tp_iter = py_MAPIStoreMessages_iter,
 	.tp_iternext = py_MAPIStoreMessages_next,

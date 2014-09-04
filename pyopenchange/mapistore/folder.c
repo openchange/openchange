@@ -621,7 +621,7 @@ static PyGetSetDef mapistore_folder_getsetters[] = {
 
 PyTypeObject PyMAPIStoreFolder = {
 	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "mapistore folder",
+	.tp_name = "mapistorefolder",
 	.tp_basicsize = sizeof (PyMAPIStoreFolderObject),
 	.tp_methods = mapistore_folder_methods,
 	.tp_getset = mapistore_folder_getsetters,
@@ -700,7 +700,7 @@ static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 
 PyTypeObject PyMAPIStoreFolders = {
 	PyObject_HEAD_INIT(NULL) 0,
-	.tp_name = "child folders",
+	.tp_name = "childfolders",
 	.tp_basicsize = sizeof (PyMAPIStoreFoldersObject),
 	.tp_iter = py_MAPIStoreFolders_iter,
 	.tp_iternext = py_MAPIStoreFolders_next,

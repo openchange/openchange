@@ -54,8 +54,7 @@ static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self)
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted message.");
+		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -65,7 +64,6 @@ static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self)
 	talloc_free(mem_ctx);
 
 	return py_ret;
-	Py_RETURN_NONE;
 }
 
 static PyMethodDef mapistore_message_methods[] = {

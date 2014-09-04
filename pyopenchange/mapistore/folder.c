@@ -54,8 +54,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 
 	/* Check 'foldertype' range */
 	if ((foldertype < FOLDER_GENERIC) || (foldertype > FOLDER_SEARCH)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'foldertype' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'foldertype' argument out of range");
 		return NULL;
 	}
 	/* Get FID for the new folder (backend should care about not duplicating folders) */
@@ -141,8 +140,7 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted folder");
+		PyErr_SetString(PyExc_SystemError, "Soft-deleted folder");
 		return NULL;
 	}
 
@@ -183,8 +181,7 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 
 	/* Check 'flags' range */
 	if ((flags < MAPISTORE_SOFT_DELETE) || (flags > MAPISTORE_PERMANENT_DELETE)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'flags' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'flags' argument out of range");
 		return NULL;
 	}
 
@@ -212,8 +209,7 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 
 	/* Check 'table_type' range */
 	if ((table_type < MAPISTORE_FOLDER_TABLE) || (table_type > MAPISTORE_PERMISSIONS_TABLE)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'table_type' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
 		return NULL;
 	}
 
@@ -296,8 +292,7 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted folder");
+		PyErr_SetString(PyExc_SystemError, "Soft-deleted folder");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -411,8 +406,7 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 
 	/* Check 'associated' range */
 	if ((associated < 0) || (associated > 1)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'associated' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'associated' argument out of range");
 		return NULL;
 	}
 
@@ -466,8 +460,7 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 
 	/* Check 'read_write' range */
 	if ((read_write < 0) || (read_write > 1)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'read_write' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'read_write' argument out of range");
 		return NULL;
 	}
 
@@ -481,8 +474,7 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError,
-				"Soft-deleted message");
+		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
 		return NULL;
 	}
 
@@ -527,8 +519,7 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 
 	/* Check 'flags' range */
 	if ((flags < MAPISTORE_SOFT_DELETE) || (flags > MAPISTORE_PERMANENT_DELETE)) {
-		PyErr_SetString(PyExc_ValueError,
-				"'table_type' argument out of range");
+		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
 		return NULL;
 	}
 
@@ -543,8 +534,7 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	}
 
 	if ((soft_deleted == true) && (flags == MAPISTORE_SOFT_DELETE)) {
-		PyErr_SetString(PyExc_SystemError,
-				"Already soft-deleted");
+		PyErr_SetString(PyExc_SystemError, "Already soft-deleted");
 		return NULL;
 	}
 

@@ -115,8 +115,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize configuration */
 	lp_ctx = loadparm_init(mem_ctx);
 	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"Error ininitialising loadparm context");
+		PyErr_SetString(PyExc_SystemError, "Error initialising loadparm context");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -186,8 +185,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"Error initialising MAPIStore");
+		PyErr_SetString(PyExc_SystemError, "Error initialising MAPIStore");
 		return NULL;
 	}
 
@@ -217,8 +215,7 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	/* Set the value in the specified parameter */
 	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
 	if (set_success == false) {
-		PyErr_SetString(PyExc_SystemError,
-				"Error setting the parameter");
+		PyErr_SetString(PyExc_SystemError, "Error setting the parameter");
 		return NULL;
 	}
 
@@ -230,8 +227,7 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 	bool 				show_defaults = false;
 
 	if (self->lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"Parameters not initialized");
+		PyErr_SetString(PyExc_SystemError, "Parameters not initialized");
 		return NULL;
 	}
 
@@ -566,8 +562,7 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 	char	*debuglevel = NULL;
 
 	if (value == NULL) {
-		PyErr_SetString(PyExc_TypeError,
-				"Cannot delete the last attribute");
+		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
 		return -1;
 	}
 
@@ -579,8 +574,7 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 
 	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
 	if (!debuglevel) {
-		PyErr_SetString(PyExc_MemoryError,
-				"Out of memory");
+		PyErr_SetString(PyExc_MemoryError, "Out of memory");
 		return -1;
 	}
 	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);

@@ -21,7 +21,7 @@ Wrapper over LDB connection to reconnect when the connection has failed
 import logging
 
 
-from ldb import LdbError
+from ldb import LdbError, ERR_OPERATIONS_ERROR
 from samba.samdb import SamDB
 
 
@@ -53,7 +53,9 @@ class SamDBWrapper(object):
             try:
                 self.samdb_ldb.get_serverName()
             except LdbError as [num, msg]:
-                if num == 1:
+                # We'd like to retry on operations error
+                # Maybe the daemon closed the connection
+                if num == ERR_OPERATIONS_ERROR:
                     log.warn('Trying to reconnect after %s' % msg)
                     self.samdb_ldb = SamDB(*self.samdb_args,
                                            **self.samdb_kwargs)

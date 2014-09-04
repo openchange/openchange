@@ -195,7 +195,8 @@ class OofHandler(object):
                     except UnicodeDecodeError:
                         # Try with default encoding
                         self.username = self.username.decode()
-                    self.username = self.username.split('@')[0]
+                    if not config['samba']['username_mail']:
+                        self.username = self.username.split('@')[0]
 
                 (wks_len, wks_alloc, wks_offset) = \
                     struct.unpack('@h h I', blob[44:52])

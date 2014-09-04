@@ -75,6 +75,10 @@ def _load_samba_environment():
     firstorg = FIRST_ORGANIZATION
     firstou = FIRST_ORGANIZATION_UNIT
 
+    username_mail = False
+    if params.get("auth:usernames are emails", 'no') == 'yes':
+        username_mail = True
+
     sam_environ = {"samdb_ldb": samdb_ldb,
                    "private_dir": params.get("private dir"),
                    "domaindn": domaindn,
@@ -86,7 +90,9 @@ def _load_samba_environment():
                                       "/cn=%s"
                                       % (firstorg, firstou, netbiosname)),
                    "hostname": hostname,
-                   "dnsdomain": dnsdomain}
+                   "dnsdomain": dnsdomain,
+                   'username_mail': username_mail,
+    }
 
     # OpenChange dispatcher DB names
 

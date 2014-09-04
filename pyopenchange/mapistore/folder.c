@@ -31,8 +31,6 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 {
 	PyMAPIStoreFolderObject *self = (PyMAPIStoreFolderObject *)_self;
 
-	talloc_unlink(NULL, self->folder_object);
-
 	Py_XDECREF(self->context);
 	PyObject_Del(_self);
 }
@@ -104,7 +102,6 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	Py_INCREF(folder->context);
 
 	folder->folder_object = folder_object;
-	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = fid;
 
 	return (PyObject *)folder;
@@ -156,7 +153,6 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	Py_INCREF(folder->context);
 
 	folder->folder_object = folder_object;
-	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = fid;
 
 	return (PyObject *)folder;
@@ -426,7 +422,6 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 	Py_INCREF(message->context);
 
 	message->message_object = message_object;
-	(void) talloc_reference(NULL, message->message_object);
 	message->mid = mid;
 
 	return (PyObject *)message;
@@ -486,7 +481,6 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	Py_INCREF(message->context);
 
 	message->message_object = message_object;
-	(void) talloc_reference(NULL, message->message_object);
 	message->mid = mid;
 
 	return (PyObject *)message;

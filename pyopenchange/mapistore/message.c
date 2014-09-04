@@ -25,7 +25,6 @@ static void py_MAPIStoreMessage_dealloc(PyObject *_self)
 {
 	PyMAPIStoreMessageObject *self = (PyMAPIStoreMessageObject *)_self;
 
-	talloc_unlink(NULL, self->message_object);
 
 	Py_XDECREF(self->context);
 	PyObject_Del(_self);
@@ -150,7 +149,6 @@ static PyObject *py_MAPIStoreMessages_next(PyObject *_self)
 		Py_INCREF(message->context);
 
 		message->message_object = message_object;
-		(void) talloc_reference(NULL, message->message_object);
 		message->mid = mid;
 
 		return (PyObject *)message;

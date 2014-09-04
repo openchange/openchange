@@ -132,6 +132,11 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	}
 
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
+	if (msobj == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	msobj->mem_ctx = mem_ctx;
 	msobj->lp_ctx = lp_ctx;
 	msobj->mstore_ctx = NULL;
@@ -315,6 +320,11 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 	PyMAPIStoreMGMTObject	*obj;
 
 	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
+	if (obj == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	obj->mgmt_ctx = mapistore_mgmt_init(self->mstore_ctx);
 	if (obj->mgmt_ctx == NULL) {
 		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
@@ -357,6 +367,11 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	}
 
 	context = PyObject_New(PyMAPIStoreContextObject, &PyMAPIStoreContext);
+	if (context == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	context->mem_ctx = self->mem_ctx;
 	context->mstore_ctx = self->mstore_ctx;
 	context->fid = fid;

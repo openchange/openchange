@@ -75,6 +75,11 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 
 	aRow = talloc_zero(mem_ctx, struct SRow);
 	aRow->lpProps = talloc_array(aRow, struct SPropValue, 3);
+	if (aRow->lpProps == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	aRow->cValues = 0;
 
 	/* We assume the parameters passed by Python are UNICODE */
@@ -96,6 +101,10 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	}
 
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+	if (folder == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	folder->mem_ctx = self->mem_ctx;
 	folder->context = self->context;
@@ -147,6 +156,10 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 
 	/* Return the folder object */
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+	if (folder == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	folder->mem_ctx = self->mem_ctx;
 	folder->context = self->context;
@@ -239,6 +252,11 @@ static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *s
 
 	/* Return the PyMAPIStoreFolders object*/
 	folder_list = PyObject_New(PyMAPIStoreFoldersObject, &PyMAPIStoreFolders);
+	if (folder_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	talloc_reference(self->mem_ctx, fid_list);
 	folder_list->mem_ctx = self->mem_ctx;
@@ -416,6 +434,10 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 
 	/* Return the message object */
 	message = PyObject_New(PyMAPIStoreMessageObject, &PyMAPIStoreMessage);
+	if (message == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	message->mem_ctx = self->mem_ctx;
 	message->context = self->context;
@@ -475,6 +497,10 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 
 	/* Return the message object */
 	message = PyObject_New(PyMAPIStoreMessageObject, &PyMAPIStoreMessage);
+	if (message == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
 
 	message->mem_ctx = self->mem_ctx;
 	message->context = self->context;
@@ -559,6 +585,11 @@ static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *
 
 	/* Return the PyMAPIStoreMessages object*/
 	message_list = PyObject_New(PyMAPIStoreMessagesObject, &PyMAPIStoreMessages);
+	if (message_list == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	message_list->mem_ctx = self->mem_ctx;
 	talloc_reference(message_list->mem_ctx, mid_list);
@@ -657,13 +688,16 @@ static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 
 		/* Return the MAPIStoreFolder object */
 		folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
+		if (folder == NULL) {
+			PyErr_NoMemory();
+			return NULL;
+		}
 
 		folder->mem_ctx = self->mem_ctx;
 		folder->context = self->folder->context;
 		Py_INCREF(folder->context);
 
 		folder->folder_object = folder_object;
-		(void) talloc_reference(NULL, folder->folder_object);
 		folder->fid = fid;
 
 		return (PyObject *)folder;

@@ -143,6 +143,10 @@ static PyObject *py_MAPIStoreMessages_next(PyObject *_self)
 
 		/* Return the MAPIStoreFolder object */
 		message = PyObject_New(PyMAPIStoreMessageObject, &PyMAPIStoreMessage);
+		if (message == NULL) {
+			PyErr_NoMemory();
+			return NULL;
+		}
 
 		message->mem_ctx = self->mem_ctx;
 		message->context = self->folder->context;

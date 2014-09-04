@@ -125,7 +125,7 @@ static PyObject *py_MAPIStoreMessages_next(PyObject *_self)
 	}
 
 	/* Check if there are remaining folders */
-	if(self->curr_index < self->count) {
+	if (self->curr_index < self->count) {
 		/* Retrieve MID and increment curr_index*/
 		mid = self->mids[self->curr_index];
 		self->curr_index += 1;

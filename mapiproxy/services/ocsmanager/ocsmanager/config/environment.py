@@ -76,7 +76,7 @@ def _load_samba_environment():
     firstou = FIRST_ORGANIZATION_UNIT
 
     username_mail = False
-    if params.get("auth:usernames are emails", 'no') == 'yes':
+    if params.get("auth:usernames are emails") == 'yes':
         username_mail = True
 
     sam_environ = {"samdb_ldb": samdb_ldb,

@@ -1331,7 +1331,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 testsuite-check:	testsuite
 	@LD_LIBRARY_PATH=. CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite

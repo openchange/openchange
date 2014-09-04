@@ -29,10 +29,10 @@ from pylons.error import handle_mako_error
 import ocsmanager.lib.app_globals as app_globals
 import ocsmanager.lib.helpers
 import ocsmanager.lib.config as OCSConfig
-from ocsmanager.lib.samdb import SamDBWrapper
+import openchange.mapistore as mapistore
 from ocsmanager.config.routing import make_map
 from ocsmanager.lib.openchangedb import get_openchangedb
-import openchange.mapistore as mapistore
+from ocsmanager.lib.samdb import SamDBWrapper
 
 # samba
 import samba.param

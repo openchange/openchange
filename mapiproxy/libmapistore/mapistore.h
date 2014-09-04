@@ -210,9 +210,9 @@ struct mapistore_backend {
                 enum mapistore_error	(*set_read_flag)(void *, uint8_t);
 		enum mapistore_error	(*save)(TALLOC_CTX *, void *);
 		enum mapistore_error	(*submit)(void *, enum SubmitFlags);
-                enum mapistore_error	(*open_attachment)(void *, TALLOC_CTX *, uint32_t, void **);
+		enum mapistore_error	(*open_attachment)(TALLOC_CTX *, void *, uint32_t, void **);
                 enum mapistore_error	(*create_attachment)(void *, TALLOC_CTX *, void **, uint32_t *);
-                enum mapistore_error	(*get_attachment_table)(void *, TALLOC_CTX *, void **, uint32_t *);
+		enum mapistore_error	(*get_attachment_table)(TALLOC_CTX *, void *, void **, uint32_t *);
 
 		/* attachment operations */
                 enum mapistore_error	(*open_embedded_message)(void *, TALLOC_CTX *, void **, uint64_t *, struct mapistore_message **);

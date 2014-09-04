@@ -712,7 +712,7 @@ enum mapistore_error mapistore_backend_message_submit(struct backend_context *bc
 
 enum mapistore_error mapistore_backend_message_open_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
 {
-        return bctx->backend->message.open_attachment(message, mem_ctx, aid, attachment);
+	return bctx->backend->message.open_attachment(mem_ctx, message, aid, attachment);
 }
 
 enum mapistore_error mapistore_backend_message_create_attachment(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **attachment, uint32_t *aid)
@@ -722,7 +722,7 @@ enum mapistore_error mapistore_backend_message_create_attachment(struct backend_
 
 enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
 {
-        return bctx->backend->message.get_attachment_table(message, mem_ctx, table, row_count);
+	return bctx->backend->message.get_attachment_table(mem_ctx, message, table, row_count);
 }
 
 enum mapistore_error mapistore_backend_message_attachment_open_embedded_message(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)

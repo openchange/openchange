@@ -63,11 +63,11 @@ def _load_samba_environment():
     if samdb_url is None:
         samdb_url = params.samdb_url()
 
-    samdb_wrapper = SamDBWrapper()
-    samdb_ldb = samdb_wrapper.set_samdb(url=samdb_url,
-                                        session_info=system_session(),
-                                        credentials=creds,
-                                        lp=params)
+    samdb_wrapper = SamDBWrapper(url=samdb_url,
+                                 session_info=system_session(),
+                                 credentials=creds,
+                                 lp=params)
+    samdb_ldb = samdb_wrapper.samdb_ldb
     domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn
@@ -131,7 +131,7 @@ def load_environment(global_conf, app_conf):
     config['ocsmanager'] = ocsconfig.load()
 
     config['samba'] = _load_samba_environment()
-    config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].get_samdb().lp)
+    config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].samdb_ldb.lp)
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])

@@ -30,36 +30,35 @@ log = logging.getLogger(__name__)
 
 class SamDBWrapper(object):
     """Class to wrap the connection to reconnect when the connection is lost"""
-    def __init__(self):
-        self.samdb_ldb = None
-
-    def set_samdb(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs):
         """Create a new connection to LDB.
 
-        The arguments are blindly passed to SamDB object
+        The arguments are blindly passed to SamDB object.
+
+        The connection is available at samdb_ldb property.
         """
         self.samdb_args = args
         self.samdb_kwargs = kwargs
         self.samdb_ldb = SamDB(*args, **kwargs)
-        return self.samdb_ldb
 
     def get_samdb(self):
         """Get the connection from LDB.
 
         If it fails because of a reconnection, then it tries to reconnect using
         the parameters set by set_ldb method.
+
+        You can bypass this query by getting samdb_ldb property directly.
         """
-        if self.samdb_ldb:
-            try:
-                self.samdb_ldb.get_serverName()
-            except LdbError as [num, msg]:
-                # We'd like to retry on operations error
-                # Maybe the daemon closed the connection
-                if num == ERR_OPERATIONS_ERROR:
-                    log.warn('Trying to reconnect after %s' % msg)
-                    self.samdb_ldb = SamDB(*self.samdb_args,
-                                           **self.samdb_kwargs)
-                else:
-                    # Re-raise the original exception
-                    raise
+        try:
+            self.samdb_ldb.get_serverName()
+        except LdbError as [num, msg]:
+            # We'd like to retry on operations error
+            # Maybe the daemon closed the connection
+            if num == ERR_OPERATIONS_ERROR:
+                log.warn('Trying to reconnect after %s' % msg)
+                self.samdb_ldb = SamDB(*self.samdb_args,
+                                       **self.samdb_kwargs)
+            else:
+                # Re-raise the original exception
+                raise
         return self.samdb_ldb

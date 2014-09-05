@@ -407,7 +407,7 @@ START_TEST (test_get_nameid_type_not_found) {
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_STRING) {
-	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
 	get_nameid(g_nprops, 38306, local_mem_ctx, &nameid);
@@ -424,7 +424,7 @@ START_TEST (test_get_nameid_MNID_STRING) {
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_ID) {
-	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
 	get_nameid(g_nprops, 38212, local_mem_ctx, &nameid);
@@ -440,7 +440,7 @@ START_TEST (test_get_nameid_MNID_ID) {
 
 
 START_TEST (test_get_nameid_not_found) {
-	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid = NULL;
 
 	enum mapistore_error ret = get_nameid(g_nprops, 42, local_mem_ctx, &nameid);
@@ -468,7 +468,7 @@ START_TEST (test_create_id_MNID_ID) {
 START_TEST (test_create_id_MNID_STRING) {
 	struct MAPINAMEID nameid = {0};
 	uint16_t mapped_id = 41;
-	TALLOC_CTX *local_mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 
 	nameid.ulKind = MNID_STRING;
 	nameid.kind.lpwstr.Name = talloc_strdup(local_mem_ctx, "foobar");

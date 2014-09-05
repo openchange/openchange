@@ -87,7 +87,7 @@ START_TEST (test_get_MailboxGuid) {
 } END_TEST
 
 START_TEST (test_get_MailboxReplica) {
-	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct GUID *repl = talloc_zero(local_mem_ctx, struct GUID);
 	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
 	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
@@ -104,7 +104,7 @@ START_TEST (test_get_MailboxReplica) {
 } END_TEST
 
 START_TEST (test_get_PublicFolderReplica) {
-	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct GUID *repl = talloc_zero(local_mem_ctx, struct GUID);
 	struct GUID *expected_repl = talloc_zero(local_mem_ctx, struct GUID);
 	uint16_t *repl_id = talloc_zero(local_mem_ctx, uint16_t);
@@ -1082,7 +1082,7 @@ static void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path,
 	FILE *f;
 	struct ldb_ldif *ldif;
 	struct ldb_context *ldb_ctx = NULL;
-	TALLOC_CTX *local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct ldb_message *msg;
 
 	ldb_ctx = ldb_init(local_mem_ctx, NULL);
@@ -1124,7 +1124,7 @@ static void ldb_setup(void)
 	create_ldb_from_ldif(OPENCHANGEDB_LDB, OPENCHANGEDB_SAMPLE_LDIF,
 			     LDB_DEFAULT_CONTEXT, LDB_ROOT_CONTEXT);
 
-	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	g_mem_ctx = talloc_new(NULL);
 	int ret = openchangedb_ldb_initialize(g_mem_ctx, RESOURCES_DIR, &g_oc_ctx);
 	if (ret != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
@@ -1140,7 +1140,7 @@ static void ldb_teardown(void)
 
 static void mysql_setup(void)
 {
-	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	g_mem_ctx = talloc_new(NULL);
 	initialize_mysql_with_file(g_mem_ctx, OPENCHANGEDB_SAMPLE_SQL, &g_oc_ctx);
 }
 

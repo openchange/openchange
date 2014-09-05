@@ -878,7 +878,7 @@ class OofManagesieveBackend(object):
         self.client.connect(mailbox, self.passwd, starttls=self.ssl)
         (active_script, scripts) = self.client.listscripts()
         old_active_script = None
-        if active_script != SIEVE_SCRIPT_NAME:
+        if active_script is not None and active_script != SIEVE_SCRIPT_NAME:
             script = re.sub('require \[', 'require ["include",', script, count=1)
             script += 'include :personal "' + active_script + '";\n\n'
             old_active_script = active_script

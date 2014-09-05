@@ -3606,6 +3606,8 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 		}
 	}
 
+	talloc_free(mem_ctx);
+
 	return MAPI_E_SUCCESS;
 }
 

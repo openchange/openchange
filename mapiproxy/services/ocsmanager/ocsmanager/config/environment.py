@@ -29,15 +29,16 @@ from pylons.error import handle_mako_error
 import ocsmanager.lib.app_globals as app_globals
 import ocsmanager.lib.helpers
 import ocsmanager.lib.config as OCSConfig
+import openchange.mapistore as mapistore
 from ocsmanager.config.routing import make_map
 from ocsmanager.lib.openchangedb import get_openchangedb
-import openchange.mapistore as mapistore
+from ocsmanager.lib.samdb import SamDBWrapper
 
 # samba
 import samba.param
 from samba.auth import system_session, admin_session
 from samba.credentials import Credentials
-from samba.samdb import SamDB
+
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
@@ -62,10 +63,11 @@ def _load_samba_environment():
     if samdb_url is None:
         samdb_url = params.samdb_url()
 
-    samdb_ldb = SamDB(url=samdb_url,
-                      session_info=system_session(),
-                      credentials=creds,
-                      lp=params)
+    samdb_wrapper = SamDBWrapper(url=samdb_url,
+                                 session_info=system_session(),
+                                 credentials=creds,
+                                 lp=params)
+    samdb_ldb = samdb_wrapper.samdb_ldb
     domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn
@@ -75,7 +77,7 @@ def _load_samba_environment():
     firstorg = FIRST_ORGANIZATION
     firstou = FIRST_ORGANIZATION_UNIT
 
-    sam_environ = {"samdb_ldb": samdb_ldb,
+    sam_environ = {"samdb_ldb": samdb_wrapper,
                    "private_dir": params.get("private dir"),
                    "domaindn": domaindn,
                    "oc_user_basedn": "CN=%s,CN=%s,CN=%s,%s" \
@@ -129,7 +131,7 @@ def load_environment(global_conf, app_conf):
     config['ocsmanager'] = ocsconfig.load()
 
     config['samba'] = _load_samba_environment()
-    config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].lp)
+    config['ocdb'] = get_openchangedb(config['samba']['samdb_ldb'].samdb_ldb.lp)
 
     mapistore.set_mapping_path(config['ocsmanager']['main']['mapistore_data'])
     mstore = mapistore.MAPIStore(config['ocsmanager']['main']['mapistore_root'])

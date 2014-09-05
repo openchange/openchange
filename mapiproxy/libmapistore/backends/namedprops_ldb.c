@@ -222,7 +222,7 @@ static enum mapistore_error create_id(struct namedprops_context *self,
 				      struct MAPINAMEID nameid,
 				      uint16_t mapped_id)
 {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	char *dec_mappedid = talloc_asprintf(mem_ctx, "%u", mapped_id);
 	char *guid = GUID_string(mem_ctx, &nameid.lpguid);
@@ -288,7 +288,7 @@ static enum mapistore_error get_nameid(struct namedprops_context *self,
         struct MAPINAMEID		*nameid;
 	int				rc = MAPISTORE_SUCCESS;
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
 
 	struct ldb_context *ldb_ctx = self->data;
 	int ret = ldb_search(ldb_ctx, local_mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
@@ -330,7 +330,7 @@ static enum mapistore_error get_nameid_type(struct namedprops_context *self,
 					    uint16_t propID,
 					    uint16_t *propTypeP)
 {
-	TALLOC_CTX *mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	const char * const attrs[] = { "propType", NULL };
 	struct ldb_result *res = NULL;

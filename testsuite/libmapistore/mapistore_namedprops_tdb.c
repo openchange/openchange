@@ -213,6 +213,7 @@ START_TEST (test_get_nameid_not_found) {
 	retval = get_nameid(g_nprops, 42, mem_ctx, &nameid);
 	ck_assert_int_eq(retval, MAPISTORE_ERROR);
 	ck_assert(nameid == NULL);
+	talloc_free(mem_ctx);
 } END_TEST
 
 START_TEST (test_create_id_MNID_ID) {
@@ -259,7 +260,7 @@ Suite *mapistore_namedprops_tdb_suite(void)
 	s = suite_create("libmapistore named properties: TDB backend");
 
 	tc_ldb_q = tcase_create("LDB queries");
-	tcase_add_unchecked_fixture(tc_ldb_q, ldb_setup, ldb_teardown);
+	tcase_add_checked_fixture(tc_ldb_q, ldb_setup, ldb_teardown);
 	tcase_add_test(tc_ldb_q, test_next_unused_id);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_STRING);

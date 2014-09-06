@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 #
 # Copyright (C) 2014  Samuel Cabrero <scabrero@zentyal.com>
+#                     Enrique J. Hernández <ejhernandez@zentyal.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -516,7 +517,7 @@ class OofSettings(object):
 
     def to_sieve(self, mailbox):
         current_user_sieve_script = self.backend.user_script(mailbox)
-        log.info("Current user: %s" % current_user_sieve_script)
+        log.debug("Current user: %s" % current_user_sieve_script)
         if current_user_sieve_script is not None:
             self._config['user_sieve_script'] = current_user_sieve_script
 
@@ -811,7 +812,7 @@ class OofFileBackend(object):
             script = re.sub('require \[', 'require ["include",', script, count=1)
             script += 'include :personal "' + sieve_user_path + '";\n\n'
 
-        log.info("SIEVE_PATH_SCRIPT %s" % sieve_script_path)
+        log.debug("SIEVE_PATH_SCRIPT %s" % sieve_script_path)
         (head, tail) = os.path.split(sieve_script_path)
         sinfo = os.stat(head)
         with open(sieve_script_path, 'w') as f:

@@ -38,6 +38,8 @@ int main(int ac, const char *av[])
 	srunner_add_suite(sr, mapistore_namedprops_tdb_suite());
 	srunner_add_suite(sr, mapistore_indexing_mysql_suite());
 	srunner_add_suite(sr, mapistore_indexing_tdb_suite());
+	/* mapiproxy */
+	srunner_add_suite(sr, mapiproxy_util_mysql_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	nf = srunner_ntests_failed(sr);

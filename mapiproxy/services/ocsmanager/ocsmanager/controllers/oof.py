@@ -350,6 +350,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
+            log.error(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -481,41 +482,6 @@ class OofSettings(object):
             raise SystemError('Invalid backend {0}. Available choices: {1}'.format(oof_conf['backend'],
                                                                                    ', '.join('file', 'managesieve')))
 
-    def _settings_path(self, mailbox):
-        """Retrieve the OOF settings path for a mailbox
-
-        :param str mailbox: the user's mailbox
-        :returns: the oof settings file path
-        :rtype: str
-        """
-        # Read the sieve script path template from config
-        oof_conf = config['ocsmanager']['outofoffice']
-        settings_path_template = oof_conf['tmp_settings_path']
-        settings_path_mkdir = oof_conf['tmp_settings_path_mkdir']
-        log.debug("OOF settings path template is '%s'" %
-                  settings_path_template)
-
-        # Build the expansion variables for template
-        (user, domain) = mailbox.split('@')
-
-        # Substitute in template
-        t = Template(settings_path_template)
-        settings_script = t.substitute(domain=domain, user=user,
-                                       fulluser=mailbox)
-        log.debug("Expanded sieve script path for mailbox '%s' is '%s'" %
-                  (mailbox, settings_script))
-
-        # If settings path mkdir enabled, create hierarchy if it does not exist
-        (head, tail) = os.path.split(settings_script)
-        if (settings_path_mkdir):
-            r_mkdir(head)
-        else:
-            if not os.path.isdir(head):
-                raise Exception("Settings directory '%s' does not exist" % head)
-
-        oof_config = os.path.join(head, 'oof-settings')
-        return oof_config
-
     def _to_json(self):
         """
         Dump the OOF settings to a JSON string
@@ -528,12 +494,15 @@ class OofSettings(object):
 
         :param str mailbox: the user's mailbox
         """
-        settings_path = self._settings_path(mailbox)
-        if os.path.isfile(settings_path):
-            with open(settings_path, 'r') as f:
-                line = f.readline()
-                self._config = json.loads(line)
-        else:
+        script = self.backend.load(mailbox)
+        config = False
+        if script:
+            match = re.search(r'# CONFIG: (.*)$', script, re.MULTILINE)
+            if match and len(match.groups()) > 0:
+                self._config = json.loads(match.group(1))
+                config = True
+
+        if not config:
             # Load default settings
             self._config['state'] = 'Disabled'
             self._config['external_audience'] = 'All'
@@ -546,6 +515,11 @@ class OofSettings(object):
             self._config['user_sieve_script'] = None
 
     def to_sieve(self, mailbox):
+        current_user_sieve_script = self.backend.user_script(mailbox)
+        log.info("Current user: %s" % current_user_sieve_script)
+        if current_user_sieve_script is not None:
+            self._config['user_sieve_script'] = current_user_sieve_script
+
         template = """$header\n\n"""
         template += """require ["date","relational","vacation"];\n\n"""
 
@@ -601,6 +575,8 @@ class OofSettings(object):
         if self._config['user_sieve_script']:
             template += """include :personal "$user_script";\n\n"""
 
+        template += '# CONFIG: ' + self._to_json() + "\n\n"
+
         script = string.Template(template).substitute(
             header=SIEVE_SCRIPT_HEADER,
             start=self._config['duration_start_time'],
@@ -612,19 +588,7 @@ class OofSettings(object):
             user_script=self._config['user_sieve_script']
         )
 
-        settings_path = self._settings_path(mailbox)
-
-        user_script = self.backend.store(mailbox, script)
-        if user_script is not None:
-            self._config['user_sieve_script'] = user_script
-
-        if settings_path is not None:
-            (head, tail) = os.path.split(settings_path)
-            sinfo = os.stat(head)
-            with open(settings_path, 'w') as f:
-                f.write(self._to_json())
-                os.chmod(settings_path, 0640)
-                os.chown(settings_path, sinfo.st_uid, sinfo.st_gid)
+        self.backend.store(mailbox, script)
 
     def from_xml(self, settings_element):
         """
@@ -824,6 +788,15 @@ class OofFileBackend(object):
             isOof = (line == SIEVE_SCRIPT_HEADER)
         return isOof
 
+    def user_script(self, mailbox):
+        """Return the user active sieve script if it is different from out of
+        office.
+
+        :param str mailbox: the mailbox user
+        """
+        (sieve_script_path, sieve_user_path, active_sieve_script_path) = self._sieve_path(mailbox)
+        return sieve_user_path
+
     def store(self, mailbox, script):
         """Store the OOF sieve script.
 
@@ -852,6 +825,18 @@ class OofFileBackend(object):
 
         return sieve_user_path
 
+    def load(self, mailbox):
+        """Load the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        """
+        (sieve_script_path, _, _) = self._sieve_path(mailbox)
+        script = None
+        if os.path.exists(sieve_script_path):
+            with open(sieve_script_path, 'r') as f:
+                script = f.read()
+        return script
+
 
 class OofManagesieveBackend(object):
     """Store the sieve script using ManageSieve protocol"""
@@ -867,27 +852,41 @@ class OofManagesieveBackend(object):
         self.ssl = ssl
         self.passwd = secret
 
+    def user_script(self, mailbox):
+        """Return the user active sieve script if it is different from out of
+        office.
+
+        :param str mailbox: the mailbox user
+        """
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        (active_script, scripts) = self.client.listscripts()
+        user_script = None
+        if active_script is not None and active_script != SIEVE_SCRIPT_NAME:
+            user_script = active_script
+        self.client.logout()
+        return user_script
+
     def store(self, mailbox, script):
         """Store the OOF sieve script.
 
         :param str mailbox: the mailbox user
         :param str script: the sieve script
-        :returns: the old active sieve script if different from oof one.
-        :rtype: str
         """
         self.client.connect(mailbox, self.passwd, starttls=self.ssl)
-        (active_script, scripts) = self.client.listscripts()
-        old_active_script = None
-        if active_script is not None and active_script != SIEVE_SCRIPT_NAME:
-            script = re.sub('require \[', 'require ["include",', script, count=1)
-            script += 'include :personal "' + active_script + '";\n\n'
-            old_active_script = active_script
-
         self.client.putscript(SIEVE_SCRIPT_NAME, script)
         self.client.setactive(SIEVE_SCRIPT_NAME)
         self.client.logout()
 
-        return old_active_script
+    def load(self, mailbox):
+        """Load the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        """
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        script = self.client.getscript(SIEVE_SCRIPT_NAME)
+        self.client.logout()
+        return script
+
 
 class OofController(BaseController):
     """The constroller class for OutOfOffice requests."""

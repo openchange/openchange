@@ -164,9 +164,6 @@ class OCSConfig(object):
         self.__get_section('outofoffice')
 
         self.__get_option('outofoffice', 'backend', dflt='file')
-        self.__get_option('outofoffice', 'tmp_settings_path')
-        self.__get_bool_option('outofoffice', 'tmp_settings_path_mkdir',
-                               dflt=False)
 
         if self.d['outofoffice']['backend'] == 'file':
             self.__get_option('outofoffice:file', 'sieve_script_path')

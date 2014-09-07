@@ -101,6 +101,7 @@ class CrashDigger(object):
                 self.oc_cd_conf = {}
                 if 'extra_packages' in oc_cd_conf_settings:
                     self.oc_cd_conf['extra_packages'] = oc_cd_conf_settings['extra_packages']
+
                 if 'tracker' in oc_cd_conf_settings:
                     self.oc_cd_conf['tracker'] = oc_cd_conf_settings['tracker']
                     tracker_conf = self.oc_cd_conf['tracker']
@@ -116,12 +117,16 @@ class CrashDigger(object):
                         except ImportError:
                             self.log("WARNING: python-redmine module is not installed")
                             # No redmine
+
                 if 'email' in oc_cd_conf_settings:
                     self.oc_cd_conf['email'] = oc_cd_conf_settings['email']
                     if 'smtp_addr' not in self.oc_cd_conf['email']:
                         self.oc_cd_conf['email']['stmp_addr'] = 'localhost'
                     if 'from_addr' not in self.oc_cd_conf['email']:
                         self.oc_cd_conf['email']['from_addr'] = 'root@localhost'
+
+                if 'conf_map' in oc_cd_conf_settings:
+                    self.oc_cd_conf['conf_map'] = oc_cd_conf_settings['conf_map']
 
     def log(self, str):
         """
@@ -177,7 +182,8 @@ class CrashDigger(object):
                 self.crashes_files[report_id] = {'path': fpath,
                                                  'distro_release': report['DistroRelease'],
                                                  'map_required': ('Package' not in report or
-                                                                  'Dependencies' not in report)}
+                                                                  'Dependencies' not in report),
+                                                 'custom_config': self._custom_apport_conf(report)}
                 self.log('%s loaded.' % fpath)
                 report_id += 1
             except Exception as exc:
@@ -262,7 +268,10 @@ class CrashDigger(object):
 
         report = None
         valid_stacktrace = False
-        for config_dir in (self.config_dir, self.backup_config_dir):
+        config_dirs = (self.config_dir, self.backup_config_dir)
+        if self.crashes_files[id]['custom_config']:
+            config_dirs = [self.crashes_files[id]['custom_config']]
+        for config_dir in config_dirs:
             if config_dir is None:
                 continue
 
@@ -398,6 +407,31 @@ class CrashDigger(object):
                 self.log('transient error reported; halting')
                 return
             raise SystemError('retracing #%i failed' % id)
+
+    def _custom_apport_conf(self, report):
+        """If there is a conf_map in crash digger configuration, given a
+        report it returns which configuration file should be used.
+
+        :param Report report: the report to return the conf
+        :returns: the apport configuration to use. None for default one
+        :rtype: str
+        """
+        if 'conf_map' in self.oc_cd_conf:
+            for conf_map_key in self.oc_cd_conf['conf_map'].keys():
+                map_key_re = re.compile(conf_map_key)
+                if 'Package' in report:
+                    if map_key_re.search(report['Package']):
+                        self.log("Found %s in Package. Using %s"
+                                 % (conf_map_key, self.oc_cd_conf['conf_map'][conf_map_key]))
+                        return self.oc_cd_conf['conf_map'][conf_map_key]
+                if 'Dependencies' in report:
+                    match = map_key_re.search(report['Dependencies'])
+                    if match:
+                        self.log("Found %s in Dependencies (%s). Using %s"
+                                 % (conf_map_key, match.group(0),
+                                    self.oc_cd_conf['conf_map'][conf_map_key]))
+                        return self.oc_cd_conf['conf_map'][conf_map_key]
+        return None
 
     def dupcheck_next(self):
         """

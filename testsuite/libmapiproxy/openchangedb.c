@@ -1121,11 +1121,13 @@ static void create_ldb_from_ldif(const char *ldb_path, const char *ldif_path,
 
 static void ldb_setup(void)
 {
+	int ret;
+
 	create_ldb_from_ldif(OPENCHANGEDB_LDB, OPENCHANGEDB_SAMPLE_LDIF,
 			     LDB_DEFAULT_CONTEXT, LDB_ROOT_CONTEXT);
 
-	g_mem_ctx = talloc_new(NULL);
-	int ret = openchangedb_ldb_initialize(g_mem_ctx, RESOURCES_DIR, &g_oc_ctx);
+	g_mem_ctx = talloc_new(talloc_autofree_context());
+	ret = openchangedb_ldb_initialize(g_mem_ctx, RESOURCES_DIR, &g_oc_ctx);
 	if (ret != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Error initializing openchangedb %d\n", ret);
 		ck_abort();
@@ -1140,7 +1142,7 @@ static void ldb_teardown(void)
 
 static void mysql_setup(void)
 {
-	g_mem_ctx = talloc_new(NULL);
+	g_mem_ctx = talloc_new(talloc_autofree_context());
 	initialize_mysql_with_file(g_mem_ctx, OPENCHANGEDB_SAMPLE_SQL, &g_oc_ctx);
 }
 

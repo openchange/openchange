@@ -1514,7 +1514,7 @@ START_TEST (test_set_receive_folder_to_mailbox) {
 
 static void mysql_setup(void)
 {
-	g_mem_ctx = talloc_new(NULL);
+	g_mem_ctx = talloc_new(talloc_autofree_context());
 	initialize_mysql_with_file(g_mem_ctx, OPENCHANGEDB_SAMPLE_SQL, &g_oc_ctx);
 }
 

@@ -29,15 +29,17 @@ from pylons.error import handle_mako_error
 import ocsmanager.lib.app_globals as app_globals
 import ocsmanager.lib.helpers
 import ocsmanager.lib.config as OCSConfig
+import openchange.mapistore as mapistore
 from ocsmanager.config.routing import make_map
 from ocsmanager.lib.openchangedb import get_openchangedb
-import openchange.mapistore as mapistore
+from ocsmanager.lib.samdb import SamDBWrapper
+
 
 # samba
 import samba.param
 from samba.auth import system_session, admin_session
 from samba.credentials import Credentials
-from samba.samdb import SamDB
+
 
 FIRST_ORGANIZATION = "First Organization"
 FIRST_ORGANIZATION_UNIT = "First Administrative Group"
@@ -62,10 +64,10 @@ def _load_samba_environment():
     if samdb_url is None:
         samdb_url = params.samdb_url()
 
-    samdb_ldb = SamDB(url=samdb_url,
-                      session_info=system_session(),
-                      credentials=creds,
-                      lp=params)
+    samdb_ldb = SamDBWrapper(url=samdb_url,
+                             session_info=system_session(),
+                             credentials=creds,
+                             lp=params)
     domaindn = samdb_ldb.domain_dn()
 
     rootdn = domaindn
@@ -142,6 +144,6 @@ def load_environment(global_conf, app_conf):
     config['mapistore'] = mstore
     config['management'] = mstore.management()
     if config['ocsmanager']['main']['debug'] == "yes":
-        config['management'].verbose = True;
+        config['management'].verbose = True
 
     return config

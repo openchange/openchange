@@ -149,6 +149,10 @@ __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
 void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
+PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, struct mapistore_property_data *prop_data, uint32_t count);
+enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_t proptag, PyObject *value, void **data);
+
+
 
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);

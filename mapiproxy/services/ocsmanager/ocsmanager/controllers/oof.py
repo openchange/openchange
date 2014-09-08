@@ -1,3 +1,24 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2014  Samuel Cabrero <scabrero@zentyal.com>
+#                     Enrique J. Hernández <ejhernandez@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+"""
+This module provides an implementation of the Out Of Office protocol [MS-OXWSOOF]
+"""
 import logging
 import codecs
 import traceback
@@ -7,20 +28,17 @@ import struct
 import ldb
 import os
 import os.path
+import re
 import shutil
 import string
 import json
 
-from pylons import request, response, session, tmpl_context as c, url
-from pylons.controllers.util import abort, redirect
+from pylons import request, response
 from pylons.decorators.rest import restrict
 from pylons import config
 from xml.etree.ElementTree import Element, ElementTree, tostring
-from xml.etree.ElementTree import register_namespace
 from cStringIO import StringIO
-from time import time, strftime, localtime
-from pwd import getpwnam
-from ocsmanager.lib.base import BaseController, render
+from ocsmanager.lib.base import BaseController
 from string import Template
 
 log = logging.getLogger(__name__)
@@ -31,6 +49,82 @@ namespaces = {
     't': 'http://schemas.microsoft.com/exchange/services/2006/types',
     'e': 'http://schemas.microsoft.com/exchange/services/2006/errors',
 }
+
+"""
+* sample REQUEST (Get Out Of Office settings)
+<?xml version="1.0"?>
+<q:Envelope xmlns:q="http://schemas.xmlsoap.org/soap/envelope/">
+   <q:Body>
+     <ex12m:GetUserOofSettingsRequest xmlns:ex12m="http://schemas.microsoft.com/exchange/services/2006/messages">
+        <ex12t:Mailbox xmlns:ex12t="http://schemas.microsoft.com/exchange/services/2006/types">
+           <ex12t:Address>testd@zentyal-domain.lan</ex12t:Address>
+           <ex12t:RoutingType>SMTP</ex12t:RoutingType>
+        </ex12t:Mailbox>
+     </ex12m:GetUserOofSettingsRequest>
+   </q:Body>
+</q:Envelope>
+
+* sample RESPONSE
+<?xml version='1.0' encoding='utf-8'?>
+<ns0:Envelope xmlns:ns0="http://schemas.xmlsoap.org/soap/envelope/" xmlns:ns1="http://schemas.microsoft.com/exchange/services/2006/types" xmlns:ns2="http://schemas.microsoft.com/exchange/services/2006/messages">
+   <ns0:Header>
+      <ns1:ServerVersionInfo MajorBuildNumber="240" MajorVersion="8" MinorBuildNumber="5" MinorVersion="1" />
+   </ns0:Header>
+   <ns0:Body>
+     <ns2:GetUserOofSettingsResponse>
+         <ResponseMessage ResponseClass="Success">
+             <ResponseCode>NoError</ResponseCode>
+         </ResponseMessage>
+         <ns1:OofSettings>
+             <OofState>Disabled</OofState>
+             <ExternalAudience>All</ExternalAudience>
+             <Duration>
+                <StartTime>1970-01-01</StartTime>
+                <EndTime>2099-12-12</EndTime>
+             </Duration>
+             <InternalReply>
+                <Message>
+                    &lt;html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas.microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40"&gt; ....
+                </Message>
+             </InternalReply>
+             <ExternalReply>
+                <Message>
+                    &lt;html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns:m="http://schemas.microsoft.com/office/2004/12/omml" xmlns="http://www.w3.org/TR/REC-html40"&gt; ....
+                </Message>
+             </ExternalReply>
+         </ns1:OofSettings>
+         <AllowExternalOof>All</AllowExternalOof>
+     </ns2:GetUserOofSettingsResponse>
+   </ns0:Body>
+</ns0:Envelope>
+
+* Set Out Of Office REQUEST
+<?xml version="1.0"?>
+<q:Envelope xmlns:q="http://schemas.xmlsoap.org/soap/envelope/">
+    <q:Body>
+       <ex12m:SetUserOofSettingsRequest xmlns:ex12m="http://schemas.microsoft.com/exchange/services/2006/messages">
+          <ex12t:Mailbox xmlns:ex12t="http://schemas.microsoft.com/exchange/services/2006/types">
+              <ex12t:Address>testd@zentyal-domain.lan</ex12t:Address>
+              <ex12t:RoutingType>SMTP</ex12t:RoutingType>
+          </ex12t:Mailbox>
+          <ex12t:UserOofSettings xmlns:ex12t="http://schemas.microsoft.com/exchange/services/2006/types">
+              <ex12t:OofState>Scheduled</ex12t:OofState>
+              <ex12t:ExternalAudience>All</ex12t:ExternalAudience>
+              <ex12t:Duration>
+                  <ex12t:StartTime>2014-09-01T23:00:00Z</ex12t:StartTime>
+                  <ex12t:EndTime>2099-12-01T01:30:00Z</ex12t:EndTime>
+              </ex12t:Duration>
+              <ex12t:InternalReply xml:lang="es">
+                  <ex12t:Message>...</ex12t:Message>
+              </ex12t:InternalReply>
+              <ex12t:ExternalReply xml:lang="es">
+                  <ex12t:Message>...</ex12t:Message>
+              </ex12t:ExternalReply>
+          </ex12t:UserOofSettings>
+       </ex12m:SetUserOofSettingsRequest>
+     </q:Body>
+</q:Envelope>
+"""
 
 
 class ServerException(Exception):
@@ -97,14 +191,23 @@ class OofHandler(object):
                     struct.unpack('@h h I', blob[36:44])
                 if user_len > 0:
                     self.username = blob[user_offset:user_offset + user_len]
-                    self.username = self.username.decode('UTF-16')
-                    self.username = self.username.split('@')[0]
+                    try:
+                        self.username = self.username.decode('UTF-16')
+                    except UnicodeDecodeError:
+                        # Try with default encoding
+                        self.username = self.username.decode()
+                    if not config['samba']['username_mail']:
+                        self.username = self.username.split('@')[0]
 
                 (wks_len, wks_alloc, wks_offset) = \
                     struct.unpack('@h h I', blob[44:52])
                 if wks_len > 0:
                     self.workstation = blob[wks_offset:wks_offset + wks_len]
-                    self.workstation = self.workstation.decode('UTF-16')
+                    try:
+                        self.workstation = self.workstation.decode('UTF-16')
+                    except UnicodeDecodeError:
+                        # Try with default encoding
+                        self.workstation = self.workstation.decode()
 
         if self.username is None:
             raise ServerException('User name not found in request NTLM '
@@ -112,7 +215,7 @@ class OofHandler(object):
 
     def fetch_ldb_record(self, ldb_filter):
         """
-        Fetchs a record from LDB
+        Fetch a record from LDB
         """
         samdb = config["samba"]["samdb_ldb"]
         base_dn = config["samba"]["domaindn"]
@@ -248,6 +351,7 @@ class OofHandler(object):
         try:
             self.check_mailbox(mailbox)
         except Exception as e:
+            log.error(e)
             fault_element = self._fault_element_from_exception(e)
             body_element.append(fault_element)
             return self._response_string(envelope_element)
@@ -314,6 +418,8 @@ class OofHandler(object):
         try:
             # Set settings
             oof = OofSettings()
+            # Retrieve stored settings
+            oof.from_sieve(mailbox)
             oof.from_xml(settings_element)
             oof.to_sieve(mailbox)
         except Exception as e:
@@ -330,11 +436,33 @@ class OofHandler(object):
         return self._response_string(envelope_element)
 
 
+def r_mkdir(path):
+    """Make directory and set mode, owner and group"""
+    if os.path.isdir(path):
+        pass
+    elif os.path.isfile(path):
+        raise OSError("a file with the same name as the desired "
+                      "dir, '%s', already exists." % path)
+    else:
+        (head, tail) = os.path.split(path)
+        if head and not os.path.isdir(head):
+            r_mkdir(head)
+        if tail:
+            sinfo = os.stat(head)
+            log.debug("Making directory '%s'" % path)
+            os.mkdir(path)
+            os.chmod(path, sinfo.st_mode)
+            os.chown(path, sinfo.st_uid, sinfo.st_gid)
+
+
+SIEVE_SCRIPT_HEADER = "# OpenChange OOF script\n"
+SIEVE_SCRIPT_NAME = 'out-of-office'
+
+
 class OofSettings(object):
-    """Converts xml request to sieve script and vice versa"""
+    """Converts XML request to sieve script and vice versa"""
 
     def __init__(self):
-        self._sieve_script_header = "# OpenChange OOF script\n"
         self._config = {}
         self._config['state'] = None
         self._config['external_audience'] = None
@@ -342,80 +470,18 @@ class OofSettings(object):
         self._config['duration_end_time'] = None
         self._config['internal_reply_message'] = None
         self._config['external_reply_message'] = None
+        self._config['user_sieve_script'] = None
 
-    def _mkdir(self, path):
-        """Make directory and set mode, owner and group"""
-        if os.path.isdir(path):
-            pass
-        elif os.path.isfile(path):
-            raise OSError("a file with the same name as the desired "
-                          "dir, '%s', already exists." % newdir)
-        else:
-            (head, tail) = os.path.split(path)
-            if head and not os.path.isdir(head):
-                self._mkdir(head)
-            if tail:
-                sinfo = os.stat(head)
-                log.debug("Making directory '%s'" % path)
-                os.mkdir(path)
-                os.chmod(path, sinfo.st_mode)
-                os.chown(path, sinfo.st_uid, sinfo.st_gid)
-
-    def _sieve_path(self, mailbox):
-        """Retrieve the sieve script path for a mailbox
-
-           The default value if not configured is ~/.dovecot.sieve
-        """
-        # Read the sieve script path template from config
+        # Read configuration
         oof_conf = config['ocsmanager']['outofoffice']
-        sieve_script_path_template = oof_conf['sieve_script_path']
-        sieve_script_path_mkdir = oof_conf['sieve_script_path_mkdir']
-        log.debug("Sieve script path template is '%s'" %
-                  sieve_script_path_template)
-
-        # Build the expansion variables for template
-        (user, domain) = mailbox.split('@')
-
-        # Substitute in template
-        t = Template(sieve_script_path_template)
-        sieve_path_script = t.substitute(domain=domain, user=user,
-                                         fulluser=mailbox)
-        log.debug("Expanded sieve script path for mailbox '%s' is '%s'" %
-                  (mailbox, sieve_path_script))
-
-        # If sieve script path mkdir enabled create hierarchy if not exists
-        (head, tail) = os.path.split(sieve_path_script)
-        if (sieve_script_path_mkdir):
-            self._mkdir(head)
+        if oof_conf['backend'] in ('file', 'managesieve'):
+            backend_conf = config['ocsmanager']['outofoffice:%s' % oof_conf['backend']]
+            backend_class_name = 'Oof%sBackend' % oof_conf['backend'].title()
+            backend_class = eval(backend_class_name)
+            self.backend = backend_class(**backend_conf)
         else:
-            if not os.path.isdir(head):
-                raise Exception("Sieve script directory '%s' not exists" %
-                                head)
-
-        sieve_path_config = os.path.join(head, 'oof-settings')
-        sieve_path_backup = None
-
-        if os.path.isfile(sieve_path_script):
-            if not self._isOofScript(sieve_path_script):
-                sieve_path_backup = sieve_path_script + '.user'
-                shutil.copyfile(sieve_path_script, sieve_path_backup)
-                shutil.copystat(sieve_path_script, sieve_path_backup)
-        elif os.path.exists(sieve_path_script):
-            raise Exception("Sieve script path '%s' exists and it is "
-                            "not a regular file" % sieve_script_path)
-
-        return (sieve_path_script, sieve_path_backup, sieve_path_config)
-
-    def _isOofScript(self, path):
-        """
-        Checks if the sieve script is the Zentyal OOF script, looking for the
-        header
-        """
-        isOof = False
-        with open(path, 'r') as f:
-            line = f.readline()
-            isOof = (line == self._sieve_script_header)
-        return isOof
+            raise SystemError('Invalid backend {0}. Available choices: {1}'.format(oof_conf['backend'],
+                                                                                   ', '.join('file', 'managesieve')))
 
     def _to_json(self):
         """
@@ -426,13 +492,18 @@ class OofSettings(object):
     def from_sieve(self, mailbox):
         """
         Loads OOF settings for specified mailbox
+
+        :param str mailbox: the user's mailbox
         """
-        (script_path, user_path, settings_path) = self._sieve_path(mailbox)
-        if os.path.isfile(settings_path):
-            with open(settings_path, 'r') as f:
-                line = f.readline()
-                self._config = json.loads(line)
-        else:
+        script = self.backend.load(mailbox)
+        config = False
+        if script:
+            match = re.search(r'# CONFIG: (.*)$', script, re.MULTILINE)
+            if match and len(match.groups()) > 0:
+                self._config = json.loads(match.group(1))
+                config = True
+
+        if not config:
             # Load default settings
             self._config['state'] = 'Disabled'
             self._config['external_audience'] = 'All'
@@ -442,13 +513,19 @@ class OofSettings(object):
                 base64.b64encode('I am out of office.')
             self._config['external_reply_message'] = \
                 base64.b64encode('I am out of office.')
+            self._config['user_sieve_script'] = None
 
     def to_sieve(self, mailbox):
-        (sieve_path_script, sieve_path_user, sieve_path_config) = \
-            self._sieve_path(mailbox)
+        current_user_sieve_script = self.backend.user_script(mailbox)
+        log.debug("Current user: %s" % current_user_sieve_script)
+        if current_user_sieve_script is not None:
+            self._config['user_sieve_script'] = current_user_sieve_script
 
         template = """$header\n\n"""
         template += """require ["date","relational","vacation"];\n\n"""
+
+        if self._config['user_sieve_script']:
+            template += """require ["include"];\n\n"""
 
         if self._config['state'] == 'Scheduled':
             template += ("if allof(currentdate :value "
@@ -479,49 +556,40 @@ class OofSettings(object):
             template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
                          "4.0 Transitional//EN\\\">\r\n")
             template += "$internal_message\";\n"
-        if self._config['external_audience'] == 'All':
-            template += "} else {\n"
-            template += "vacation\n"
-            template += "    :subject \"$subject\"\n"
-            template += "    :days    0\n"
-            template += "    :mime    \"MIME-Version: 1.0\r\n"
-            template += "Content-Type: text/html; charset=UTF-8\r\n"
-            template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
-                         "4.0 Transitional//EN\\\">\r\n")
-            template += "$external_message\";\n"
-        template += "}\n"
+
+            if self._config['external_audience'] == 'All':
+                template += "} else {\n"
+                template += "vacation\n"
+                template += "    :subject \"$subject\"\n"
+                template += "    :days    0\n"
+                template += "    :mime    \"MIME-Version: 1.0\r\n"
+                template += "Content-Type: text/html; charset=UTF-8\r\n"
+                template += ("<!DOCTYPE HTML PUBLIC \\\"-//W3C//DTD HTML "
+                             "4.0 Transitional//EN\\\">\r\n")
+                template += "$external_message\";\n"
+
+            template += "}\n"
 
         if self._config['state'] == 'Scheduled':
             template += "}\n\n"
 
-        if sieve_path_user is not None:
-            template += 'include :personal "' + include + '";\n\n'
+        if self._config['user_sieve_script']:
+            template += """include :personal "$user_script";\n\n"""
+
+        template += '# CONFIG: ' + self._to_json() + "\n\n"
 
         script = string.Template(template).substitute(
-            header=self._sieve_script_header,
+            header=SIEVE_SCRIPT_HEADER,
             start=self._config['duration_start_time'],
             end=self._config['duration_end_time'],
             subject="Out of office automatic reply",
             internal_domain=internal_domain,
             external_message=external_message,
-            internal_message=internal_message
+            internal_message=internal_message,
+            user_script=self._config['user_sieve_script']
         )
 
-        if sieve_path_config is not None:
-            (head, tail) = os.path.split(sieve_path_config)
-            sinfo = os.stat(head)
-            with open(sieve_path_config, 'w') as f:
-                f.write(self._to_json())
-                os.chmod(sieve_path_config, 0640)
-                os.chown(sieve_path_config, sinfo.st_uid, sinfo.st_gid)
-
-        log.info("\n\n\nSIEVE_PATH_SCRIPT %s" % sieve_path_script)
-        (head, tail) = os.path.split(sieve_path_script)
-        sinfo = os.stat(head)
-        with open(sieve_path_script, 'w') as f:
-            f.write(script.encode('utf8'))
-            os.chmod(sieve_path_script, 0755)
-            os.chown(sieve_path_script, sinfo.st_uid, sinfo.st_gid)
+        self.backend.store(mailbox, script)
 
     def from_xml(self, settings_element):
         """
@@ -640,6 +708,187 @@ class OofSettings(object):
                  self._config['external_reply_message'])
 
 
+class OofFileBackend(object):
+    """Store the sieve script in the File System directly"""
+
+    def __init__(self, **conf):
+        self.conf = conf
+
+    def _sieve_path(self, mailbox):
+        """Retrieve the sieve script path for a mailbox
+
+           The default value if not configured is ~/.dovecot.sieve
+
+        :returns: the path where the sieve path will be stored, the
+                  backup if the user already that filename and the active
+                  sieve script if required
+        :rtype: tuple
+        """
+        # Read the sieve script path template from config
+        sieve_script_path_template = self.conf['sieve_script_path']
+        sieve_script_path_mkdir = self.conf['sieve_script_path_mkdir']
+        log.debug("Sieve script path template is '%s'" %
+                  sieve_script_path_template)
+
+        # Build the expansion variables for template
+        (user, domain) = mailbox.split('@')
+
+        # Substitute in template
+        t = Template(sieve_script_path_template)
+        sieve_script_path = t.substitute(domain=domain, user=user,
+                                         fulluser=mailbox)
+        log.debug("Expanded sieve script path for mailbox '%s' is '%s'" %
+                  (mailbox, sieve_script_path))
+
+        # If sieve script path mkdir enabled create hierarchy if it does not exist
+        (head, tail) = os.path.split(sieve_script_path)
+        if (sieve_script_path_mkdir):
+            r_mkdir(head)
+        else:
+            if not os.path.isdir(head):
+                raise Exception("Sieve script directory '%s' does not exist" %
+                                head)
+
+        sieve_user_backup = None
+        if os.path.isfile(sieve_script_path):
+            if not self._isOofScript(sieve_script_path):
+                if os.path.islink(sieve_script_path):
+                    target_sieve_script_path = os.path.realpath(sieve_script_path)
+                    log.info('Activate the OOF script and change the link for %s' % target_sieve_script_path)
+                    (sieve_user_backup, _) = os.path.splitext(os.path.basename(target_sieve_script_path))
+                else:
+                    log.info('Backing up already created "%s" to "%s.sieve"' % (sieve_script_path,
+                                                                                sieve_script_path))
+                    sieve_path_backup = sieve_script_path + '.sieve'
+                    shutil.copyfile(sieve_script_path, sieve_path_backup)
+                    shutil.copystat(sieve_script_path, sieve_path_backup)
+                    sieve_user_backup = os.path.basename(sieve_script_path)
+        elif os.path.exists(sieve_script_path):
+            raise Exception("Sieve script path '%s' exists and it is "
+                            "not a regular file" % sieve_script_path)
+
+        # Active the script if necessary
+        active_sieve_script_path = None
+        if tail == 'sieve-script':  # Dovecot only?
+            active_sieve_script_path = sieve_script_path
+            sieve_script_path = os.path.join(head, SIEVE_SCRIPT_NAME + '.sieve')
+
+        return (sieve_script_path, sieve_user_backup, active_sieve_script_path)
+
+    def _isOofScript(self, path):
+        """
+        Check if the sieve script is the OOF script by looking for the
+        header
+
+        :param str path: the OOF sieve script path
+        :rtype: bool
+        """
+        isOof = False
+        with open(path, 'r') as f:
+            line = f.readline()
+            isOof = (line == SIEVE_SCRIPT_HEADER)
+        return isOof
+
+    def user_script(self, mailbox):
+        """Return the user active sieve script if it is different from out of
+        office.
+
+        :param str mailbox: the mailbox user
+        """
+        (sieve_script_path, sieve_user_path, active_sieve_script_path) = self._sieve_path(mailbox)
+        return sieve_user_path
+
+    def store(self, mailbox, script):
+        """Store the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        :param str script: the sieve script
+        :returns: the old active sieve script if different from oof one.
+        :rtype: str
+        """
+        (sieve_script_path, sieve_user_path, active_sieve_script_path) = self._sieve_path(mailbox)
+
+        if sieve_user_path is not None:
+            script = re.sub('require \[', 'require ["include",', script, count=1)
+            script += 'include :personal "' + sieve_user_path + '";\n\n'
+
+        log.debug("SIEVE_PATH_SCRIPT %s" % sieve_script_path)
+        (head, tail) = os.path.split(sieve_script_path)
+        sinfo = os.stat(head)
+        with open(sieve_script_path, 'w') as f:
+            f.write(script.encode('utf8'))
+            os.chmod(sieve_script_path, 0755)
+            os.chown(sieve_script_path, sinfo.st_uid, sinfo.st_gid)
+
+        if active_sieve_script_path:
+            os.unlink(active_sieve_script_path)
+            os.symlink(os.path.basename(sieve_script_path), active_sieve_script_path)
+
+        return sieve_user_path
+
+    def load(self, mailbox):
+        """Load the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        """
+        (sieve_script_path, _, _) = self._sieve_path(mailbox)
+        script = None
+        if os.path.exists(sieve_script_path):
+            with open(sieve_script_path, 'r') as f:
+                script = f.read()
+        return script
+
+
+class OofManagesieveBackend(object):
+    """Store the sieve script using ManageSieve protocol"""
+
+    def __init__(self, server, ssl, secret):
+        try:
+            from sievelib.managesieve import Client
+        except ImportError:
+            log.error("Cannot use managesieve backend. Install sievelib python library "
+                      "or use file backend instead")
+            raise Exception('Cannot contact server')
+        self.client = Client(server)
+        self.ssl = ssl
+        self.passwd = secret
+
+    def user_script(self, mailbox):
+        """Return the user active sieve script if it is different from out of
+        office.
+
+        :param str mailbox: the mailbox user
+        """
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        (active_script, scripts) = self.client.listscripts()
+        user_script = None
+        if active_script is not None and active_script != SIEVE_SCRIPT_NAME:
+            user_script = active_script
+        self.client.logout()
+        return user_script
+
+    def store(self, mailbox, script):
+        """Store the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        :param str script: the sieve script
+        """
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        self.client.putscript(SIEVE_SCRIPT_NAME, script)
+        self.client.setactive(SIEVE_SCRIPT_NAME)
+        self.client.logout()
+
+    def load(self, mailbox):
+        """Load the OOF sieve script.
+
+        :param str mailbox: the mailbox user
+        """
+        self.client.connect(mailbox, self.passwd, starttls=self.ssl)
+        script = self.client.getscript(SIEVE_SCRIPT_NAME)
+        self.client.logout()
+        return script
+
+
 class OofController(BaseController):
     """The constroller class for OutOfOffice requests."""
 
@@ -654,7 +903,7 @@ class OofController(BaseController):
             rqh = OofHandler(environ)
             response.headers["content-type"] = "text/xml"
             body = rqh.process(request)
-        except Exception as e:
+        except:
             response.status = 500
             response.headers["content-type"] = "text/plain"
             # TODO: disable the showing of exception in prod

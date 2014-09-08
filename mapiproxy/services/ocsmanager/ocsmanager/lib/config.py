@@ -162,9 +162,20 @@ class OCSConfig(object):
 
     def __parse_outofoffice(self):
         self.__get_section('outofoffice')
-        self.__get_option('outofoffice', 'sieve_script_path')
-        self.__get_bool_option('outofoffice', 'sieve_script_path_mkdir',
-                               dflt=False)
+
+        self.__get_option('outofoffice', 'backend', dflt='file')
+
+        if self.d['outofoffice']['backend'] == 'file':
+            self.__get_option('outofoffice:file', 'sieve_script_path')
+            self.__get_bool_option('outofoffice:file', 'sieve_script_path_mkdir',
+                                   dflt=False)
+        elif self.d['outofoffice']['backend'] == 'managesieve':
+            self.__get_option('outofoffice:managesieve', 'server', dflt='127.0.0.1')
+            self.__get_bool_option('outofoffice:managesieve', 'ssl', dflt=True)
+            self.__get_option('outofoffice:managesieve', 'secret')
+        else:
+            log.error('Invalid outofoffice backend: %s' % self.d['outofoffice']['backend'])
+            sys.exit()
 
     def load(self):
         """Load the configuration file.

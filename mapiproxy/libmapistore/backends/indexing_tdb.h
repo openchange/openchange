@@ -28,7 +28,7 @@
 #define	MAPISTORE_SOFT_DELETED_TAG	"SOFT_DELETED:"
 
 
-enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_context *,
+enum mapistore_error mapistore_indexing_tdb_init(TALLOC_CTX *,
 						 const char *,
 						 struct indexing_context **);
 

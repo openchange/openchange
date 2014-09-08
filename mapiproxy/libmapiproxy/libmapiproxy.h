@@ -260,6 +260,7 @@ enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *, struct opencha
 
 /* definitions from auto-generated openchangedb_property.c */
 const char *openchangedb_property_get_attribute(uint32_t);
+uint32_t openchangedb_property_get_tag(char *);
 
 /* definitions from mapi_handles.c */
 struct mapi_handles_context *mapi_handles_init(TALLOC_CTX *);

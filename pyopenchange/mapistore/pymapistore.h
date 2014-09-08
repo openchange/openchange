@@ -32,16 +32,18 @@
 #include <tevent.h>
 
 typedef struct {
-	PyObject		*datetime_module;
-	PyObject		*datetime_datetime_class;
-	struct ldb_context	*samdb_ctx;
-	struct openchangedb_context *ocdb_ctx;
+	PyObject			*datetime_module;
+	PyObject			*datetime_datetime_class;
+	struct ldb_context		*samdb_ctx;
+	struct openchangedb_context 	*ocdb_ctx;
 } PyMAPIStoreGlobals;
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
+	struct loadparm_context		*lp_ctx;
 	struct mapistore_context	*mstore_ctx;
+	char				*username;
 } PyMAPIStoreObject;
 
 typedef struct {
@@ -89,11 +91,20 @@ typedef struct {
 	PyObject_HEAD	
 } PyMAPIStoreTableObject;
 
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	const char			*username;
+	struct loadparm_context		*lp_ctx;
+	struct indexing_context		*ictx;
+} PyMAPIStoreIndexingObject;
+
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -108,6 +119,7 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
 
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
@@ -118,6 +130,7 @@ void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_table(PyObject *);
 void initmapistore_errors(PyObject *);
+void initmapistore_indexing(PyObject *);
 
 PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapistore_freebusy_properties *);
 

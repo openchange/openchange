@@ -456,7 +456,7 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *mstore_ctx,
+_PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *mem_ctx,
 							    const char *username,
 							    const char *connection_string,
 							    struct indexing_context **ictxp)
@@ -467,12 +467,12 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	MYSQL			*conn = NULL;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!connection_string, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!ictxp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	ictx = talloc_zero(mstore_ctx, struct indexing_context);
+	ictx = talloc_zero(mem_ctx, struct indexing_context);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	ictx->data = create_connection(connection_string, &conn);

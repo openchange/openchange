@@ -368,6 +368,17 @@ pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_pyth
 AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
 
+AC_MSG_CHECKING(Standard python library detector)
+stdpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 1)"`
+AC_MSG_RESULT($stdpythondir)
+AC_SUBST(stdpythondir)
+
+AC_MSG_CHECKING(3rd Party python library detector)
+otherpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0)"`
+AC_MSG_RESULT($otherpythondir)
+AC_SUBST(otherpythondir)
+
+
 dnl ----------------------------------------------------------------------------
 dnl Check for MYSQL client libraries
 dnl ----------------------------------------------------------------------------
@@ -411,6 +422,7 @@ PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent samba-cre
 PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb, [], [AC_MSG_WARN(No mapiproxy support)])
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
+PKG_CHECK_MODULES(SAMDB, samdb)
 
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision
@@ -838,9 +850,6 @@ OpenChange Configuration (Please review)
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy
 
-	   * OpenChange mapistore backends:
-	     - backends dependencies goes here
-
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
@@ -859,6 +868,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Documentation:	$enable_doxygen
 
 	   * OpenChange Bindings:
+	     - Python:			$enable_pyopenchange
 	     - Qt4:			$enable_openchange_qt4
 
 	   * Installation prefix:	$prefix

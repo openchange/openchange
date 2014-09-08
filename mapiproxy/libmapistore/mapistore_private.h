@@ -25,6 +25,8 @@
 #include <talloc.h>
 #include "backends/namedprops_backend.h"
 
+#include <Python.h>
+
 #ifndef	ISDOT
 #define ISDOT(path) ( \
 			*((const char *)(path)) == '.' && \
@@ -39,7 +41,6 @@
 			    *(((const char *)(path)) + 2) == '\0' \
 			)
 #endif
-
 
 struct tdb_wrap {
 	struct tdb_context	*tdb;
@@ -114,6 +115,27 @@ struct replica_mapping_context_list {
 #define	MAPISTORE_MQUEUE_IPC		"/mapistore_ipc"
 #define	MAPISTORE_MQUEUE_NEWMAIL_FMT	"/%s#newmail"
 
+/**
+   MAPIStore python data structures
+ */
+enum mapistore_python_object_type {
+	MAPISTORE_PYTHON_OBJECT_BACKEND,
+	MAPISTORE_PYTHON_OBJECT_CONTEXT,
+	MAPISTORE_PYTHON_OBJECT_FOLDER,
+	MAPISTORE_PYTHON_OBJECT_MESSAGE,
+	MAPISTORE_PYTHON_OBJECT_TABLE,
+	MAPISTORE_PYTHON_OBJECT_ATTACHMENT
+};
+
+struct mapistore_python_object {
+	enum mapistore_python_object_type	obj_type;
+	char					*name;
+	struct mapistore_connection_info	*conn;
+	struct indexing_context			*ictx;
+	PyObject				*module;
+	PyObject				*private_object;
+};
+
 __BEGIN_DECLS
 
 /**
@@ -133,12 +155,13 @@ enum mapistore_error mapistore_free_context_id(struct processing_context *, uint
 /* definitions from mapistore_backend.c */
 enum mapistore_error mapistore_backend_init(TALLOC_CTX *, const char *);
 enum mapistore_error mapistore_backend_registered(const char *);
+enum mapistore_error mapistore_backend_list_backend_names(TALLOC_CTX *, int *, const char ***);
 enum mapistore_error mapistore_backend_list_contexts(const char *, struct indexing_context *, TALLOC_CTX *, struct mapistore_contexts_list **);
 enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *, struct mapistore_connection_info *, struct indexing_context *, const char *, const char *, uint64_t, struct backend_context **);
 enum mapistore_error mapistore_backend_create_root_folder(const char *, enum mapistore_context_role, uint64_t, const char *, TALLOC_CTX *, char **);
 enum mapistore_error mapistore_backend_add_ref_count(struct backend_context *);
 enum mapistore_error mapistore_backend_delete_context(struct backend_context *);
-enum mapistore_error mapistore_backend_get_path(struct backend_context *, TALLOC_CTX *, uint64_t, char **);
+enum mapistore_error mapistore_backend_get_path(TALLOC_CTX *, struct backend_context *, uint64_t, char **);
 
 enum mapistore_error mapistore_backend_folder_open_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, void **);
 enum mapistore_error mapistore_backend_folder_create_folder(struct backend_context *, void *, TALLOC_CTX *, uint64_t, struct SRow *, void **);
@@ -190,6 +213,9 @@ enum mapistore_error mapistore_indexing_add(struct mapistore_context *, const ch
 enum mapistore_error mapistore_indexing_record_add(TALLOC_CTX *, struct indexing_context_list *, uint64_t, const char *);
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, int type);
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *, uint32_t, const char *, uint64_t, uint8_t, int type);
+
+/* definitions from mapistore_python.c */
+enum mapistore_error mapistore_python_load_and_run(TALLOC_CTX *, const char *);
 
 __END_DECLS
 

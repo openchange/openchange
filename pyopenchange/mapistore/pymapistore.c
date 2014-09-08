@@ -40,6 +40,12 @@ void PyErr_SetMAPIStoreError(uint32_t retval)
 			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
 }
 
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval)
+{
+	PyErr_SetObject(PyExc_RuntimeError,
+			Py_BuildValue("(i, s)", retval, mapi_get_errstr(retval)));
+}
+
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 {
 	return &globals;
@@ -95,44 +101,16 @@ end:
 	talloc_free(mem_ctx);
 }
 
-static void openchange_ldb_init(const char *syspath)
-{
-	TALLOC_CTX 		*mem_ctx;
-	struct loadparm_context *lp_ctx;
-	const char		*openchangedb_backend;
-
-	if (globals.ocdb_ctx) return;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	lp_ctx = loadparm_init_global(true);
-	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
-
-	if (openchangedb_backend) {
-		openchangedb_mysql_initialize(mem_ctx, lp_ctx, &globals.ocdb_ctx);
-	} else {
-		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
-	}
-
-	if (!globals.ocdb_ctx) {
-		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");
-		goto end;
-	}
-	(void) talloc_reference(NULL, globals.ocdb_ctx);
-end:
-	talloc_free(mem_ctx);
-}
-
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct loadparm_context		*lp_ctx;
-	struct mapistore_context	*mstore_ctx;
 	PyMAPIStoreObject		*msobj;
-	char				*kwnames[] = { "syspath", "path", NULL };
-	const char			*path = NULL;
+	bool				ret_lp;
+	char				*kwnames[] = { "syspath", NULL };
 	const char			*syspath = NULL;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", kwnames, &syspath, &path)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
 		return NULL;
 	}
 
@@ -150,42 +128,195 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	/* Initialize ldb context on openchange.ldb */
-	openchange_ldb_init(syspath);
-	if (globals.ocdb_ctx == NULL) {
+	/* Initialize configuration */
+	lp_ctx = loadparm_init(mem_ctx);
+	if (lp_ctx == NULL) {
 		PyErr_SetString(PyExc_SystemError,
-				"error in openchange_ldb_init");
+				"Error in loadparm_init");
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	/* Initialize configuration */
-	lp_ctx = loadparm_init(mem_ctx);
-	lpcfg_load_default(lp_ctx);
+	if ((syspath != NULL) && (file_exist(syspath) == true)) {
+		ret_lp = lpcfg_load(lp_ctx, syspath);
+	} else {
+		ret_lp = lpcfg_load_default(lp_ctx);
+	}
 
-	/* Initialize mapistore */
-	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, path);
-	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in mapistore_init");
-		talloc_free(mem_ctx);
-		return NULL;
+	if (ret_lp == false) {
+		PySys_WriteStderr("lpcfg_load unable to load content from path\n");
 	}
 
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
 	msobj->mem_ctx = mem_ctx;
-	msobj->mstore_ctx = mstore_ctx;
+	msobj->lp_ctx = lp_ctx;
+	msobj->mstore_ctx = NULL;
+	msobj->username = NULL;
 
 	return (PyObject *) msobj;
 }
 
 static void py_MAPIStore_dealloc(PyObject *_self)
 {
+
 	PyMAPIStoreObject *self = (PyMAPIStoreObject *)_self;
 
 	mapistore_release(self->mstore_ctx);
 	talloc_free(self->mem_ctx);
 	PyObject_Del(_self);
+}
+
+static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args)
+{
+	struct openchangedb_context 	*ocdb_ctx;
+	struct mapistore_context	*mstore_ctx;
+	enum MAPISTATUS			ret_ocdb;
+	enum mapistore_error		ret;
+	const char			*path = NULL;
+	const char			*username = NULL;
+
+	if (!PyArg_ParseTuple(args, "s|s", &username, &path)) {
+		return NULL;
+	}
+
+	/* Initialize ldb context on openchange.ldb */
+	ret_ocdb = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
+	if (ret_ocdb != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret_ocdb);
+		return NULL;
+	}
+	globals.ocdb_ctx = ocdb_ctx;
+
+	/* Initialize mapistore */
+	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
+	if (mstore_ctx == NULL) {
+		PyErr_SetString(PyExc_SystemError,
+				"Error in mapistore_init");
+		return NULL;
+	}
+
+	/* set connection info */
+	ret = mapistore_set_connection_info(mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
+	if (ret != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	self->mstore_ctx = mstore_ctx;
+	self->username = talloc_strdup(self->mem_ctx, username);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
+{
+	bool				set_success;
+	const char			*option = NULL;
+	const char			*value = NULL;
+
+	if (!PyArg_ParseTuple(args, "ss", &option, &value)) {
+		return NULL;
+	}
+
+	/* Set the value in the specified parameter */
+	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
+	if (set_success == false) {
+		PyErr_SetString(PyExc_SystemError,
+				"Error in lpcfg_set_cmdline");
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
+{
+	bool 				show_defaults = false;
+
+	if (self->lp_ctx == NULL) {
+		PyErr_SetString(PyExc_SystemError,
+				"Parameters not initialized");
+		return NULL;
+	}
+
+	lpcfg_dump(self->lp_ctx, stdout, show_defaults, lpcfg_numservices(self->lp_ctx));
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
+{
+	enum mapistore_error		ret;
+	TALLOC_CTX 			*mem_ctx;
+	PyObject			*py_ret = NULL;
+	const char			**backend_names;
+	int 				i, list_size;
+
+	DEBUG(0, ("List backends for user: %s\n", self->username));
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* list backends */
+	ret = mapistore_list_backends_for_user(mem_ctx, &list_size, &backend_names);
+	if (ret != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	/* Build the list */
+	py_ret = PyList_New(list_size);
+
+	for (i = 0; i < list_size; i++) {
+		PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+	}
+
+	talloc_free(mem_ctx);
+	return (PyObject *) py_ret;
+}
+
+static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
+{
+	enum mapistore_error		ret;
+	TALLOC_CTX 			*mem_ctx;
+	PyObject			*py_ret = NULL;
+	PyObject			*py_dict;
+	struct mapistore_contexts_list 	*contexts_list;
+
+	DEBUG(0, ("List contexts for user %s\n", self->username));
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* list contexts */
+	ret = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, mem_ctx, &contexts_list);
+	if (ret != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
+		PyErr_SetMAPIStoreError(ret);
+		return NULL;
+	}
+
+	py_ret = Py_BuildValue("[]");
+
+	while (contexts_list) {
+		py_dict = Py_BuildValue("{s:s, s:s, s:i, s:i}",
+				"name", contexts_list->name,
+				"url", contexts_list->url,
+				"role", contexts_list->role,
+				"main_folder", contexts_list->main_folder);
+		PyList_Append(py_ret, py_dict);
+		contexts_list = contexts_list->next;
+	}
+
+	talloc_free(mem_ctx);
+	return (PyObject *) py_ret;
 }
 
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
@@ -207,37 +338,30 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
-	int				ret;
+	enum mapistore_error		ret_mstore;
+	enum MAPISTATUS			ret_mstatus;
 	PyMAPIStoreContextObject	*context;
 	uint32_t			context_id = 0;
 	const char			*uri;
-	const char			*username;
 	void				*folder_object;
         uint64_t			fid = 0;
 
-	if (!PyArg_ParseTuple(args, "ss", &uri, &username)) {
+	if (!PyArg_ParseTuple(args, "s", &uri)) {
 		return NULL;
 	}
 
 	/* printf("Add context: %s\n", uri); */
 
-	/* Initialize connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
-		return NULL;
-	}
-
 	/* Get FID given mapistore_uri and username */
-	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	ret_mstatus = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
+	if (ret_mstatus != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret_mstatus);
 		return NULL;
 	}
 
-	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	ret_mstore = mapistore_add_context(self->mstore_ctx, self->username, uri, fid, &context_id, &folder_object);
+	if (ret_mstore != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(ret_mstore);
 		return NULL;
 	}
 
@@ -414,6 +538,11 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 /* } */
 
 static PyMethodDef mapistore_methods[] = {
+	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
+	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
+	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
+	{ "list_backends", (PyCFunction)py_MAPIStore_list_backends_for_user, METH_NOARGS },
+	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
 	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */
@@ -426,13 +555,44 @@ static PyMethodDef mapistore_methods[] = {
 	{ NULL },
 };
 
+static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
+{
+	char	*debuglevel = NULL;
+
+	if (value == NULL) {
+		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
+		return -1;
+	}
+
+	if (!PyInt_Check(value)) {
+		PyErr_SetString(PyExc_TypeError,
+				"The debuglevel attribute value must be an integer");
+		return -1;
+	}
+
+	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
+	if (!debuglevel) {
+		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		return -1;
+	}
+	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
+	talloc_free(debuglevel);
+
+	return 0;
+}
+
+static PyGetSetDef mapistore_getsetters[] = {
+	{ "debuglevel", NULL, (setter)py_mapistore_set_debuglevel, "The level of debug."},
+	{ NULL }
+};
+
 PyTypeObject PyMAPIStore = {
 	PyObject_HEAD_INIT(NULL) 0,
 	.tp_name = "mapistore.MAPIStore",
 	.tp_basicsize = sizeof (PyMAPIStoreObject),
 	.tp_doc = "mapistore object",
 	.tp_methods = mapistore_methods,
-	/* .tp_getset = mapistore_getsetters, */
+	.tp_getset = mapistore_getsetters,
 	.tp_new = py_MAPIStore_new,
 	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
@@ -452,17 +612,45 @@ static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 {
 	int		ret;
+	const char	*errstr;
 
 	if (!PyArg_ParseTuple(args, "k", &ret)) {
 		return NULL;
 	}
 
-	return PyString_FromString(mapistore_errstr(ret));
+	errstr = mapistore_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_mapistatus_errstr(PyObject *mod, PyObject *args)
+{
+	int		ret;
+	const char	*errstr;
+
+	if (!PyArg_ParseTuple(args, "k", &ret)) {
+		return NULL;
+	}
+
+	errstr = mapi_get_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
 }
 
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
-	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS,
+		"Returns mapistore_error string presentation\n\n"
+		":param status: mapistore_error code\n"
+		":return string: String" },
+	{ "mapistatus_errstr", (PyCFunction)py_mapistatus_errstr, METH_VARARGS,
+		"Returns MAPISTATUS string presentation\n\n"
+		":param status: MAPISTATUS code\n"
+		":return string: String or None if MAPISTATUS is unknown" },
 	{ NULL },
 };
 
@@ -507,10 +695,24 @@ void initmapistore(void)
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 
+	PyModule_AddObject(m, "ROLE_MAIL", PyInt_FromLong(MAPISTORE_MAIL_ROLE));
+	PyModule_AddObject(m, "ROLE_DRAFTS", PyInt_FromLong(MAPISTORE_DRAFTS_ROLE));
+	PyModule_AddObject(m, "ROLE_SENTITEMS", PyInt_FromLong(MAPISTORE_SENTITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_OUTBOX", PyInt_FromLong(MAPISTORE_OUTBOX_ROLE));
+	PyModule_AddObject(m, "ROLE_DELETEDITEMS", PyInt_FromLong(MAPISTORE_DELETEDITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_CALENDAR", PyInt_FromLong(MAPISTORE_CALENDAR_ROLE));
+	PyModule_AddObject(m, "ROLE_CONTACTS", PyInt_FromLong(MAPISTORE_CONTACTS_ROLE));
+	PyModule_AddObject(m, "ROLE_TASKS", PyInt_FromLong(MAPISTORE_TASKS_ROLE));
+	PyModule_AddObject(m, "ROLE_NOTES", PyInt_FromLong(MAPISTORE_NOTES_ROLE));
+	PyModule_AddObject(m, "ROLE_JOURNAL", PyInt_FromLong(MAPISTORE_JOURNAL_ROLE));
+	PyModule_AddObject(m, "ROLE_FALLBACK", PyInt_FromLong(MAPISTORE_FALLBACK_ROLE));
+	PyModule_AddObject(m, "ROLE_MAX_ROLES", PyInt_FromLong(MAPISTORE_MAX_ROLES));
+
 	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
 	initmapistore_table(m);
+	initmapistore_indexing(m);
 }

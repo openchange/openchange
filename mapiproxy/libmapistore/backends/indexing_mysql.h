@@ -28,7 +28,7 @@
 #define INDEXING_ALLOC_TABLE	"mapistore_indexes"
 
 
-enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_context *,
+enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *,
 						   const char *, const char *,
 						   struct indexing_context **);
 

@@ -179,13 +179,18 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
    \details Add a new connection context to mapistore
 
    \param mstore_ctx pointer to the mapistore context
+   \param owner the owner of the context
    \param uri the connection context URI
+   \param fid the folder identifier of the root folder to open
    \param context_id pointer to the context identifier the function returns
+   \param folder_object pointer on pointer to the private folder object to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
-						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
+_PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx,
+						    const char *owner, const char *uri,
+						    uint64_t fid, uint32_t *context_id,
+						    void **folder_object)
 {
 	TALLOC_CTX				*mem_ctx;
 	int					retval;
@@ -234,7 +239,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
 		*context_id = backend_list->ctx->context_id;
-		*backend_object = backend_list->ctx->root_folder_object;
+		*folder_object = backend_list->ctx->root_folder_object;
 		DLIST_ADD_END(mstore_ctx->context_list, backend_list, struct backend_context_list *);
 	} else {
 		DEBUG(0, ("[%s:%d]: Error - Invalid URI '%s'\n", __FUNCTION__, __LINE__, uri));
@@ -293,6 +298,8 @@ _PUBLIC_ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_c
    \param mstore_ctx pointer to the mapistore context
    \param uri the URI to lookup
    \param context_id pointer to the context identifier to return
+   \param backend_object pointer on pointer to the backend folder
+   object to return
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
@@ -425,8 +432,12 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Storage backend registration failed";
 	case MAPISTORE_ERR_BACKEND_INIT:
 		return "Storage backend initialization failed";
+	case MAPISTORE_ERR_INVALID_BACKEND:
+		return "Invalid backend";
 	case MAPISTORE_ERR_CONTEXT_FAILED:
 		return "Failed creating the context";
+	case MAPISTORE_ERR_INVALID_CONTEXT:
+		return "Invalid context";
 	case MAPISTORE_ERR_INVALID_NAMESPACE:
 		return "Invalid Namespace";
 	case MAPISTORE_ERR_INVALID_URI:
@@ -450,6 +461,18 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 	}
 
 	return "Unknown error";
+}
+
+_PUBLIC_ enum mapistore_error mapistore_list_backends_for_user(TALLOC_CTX *mem_ctx, int * backend_countP, const char ***backend_namesP)
+{
+	enum mapistore_error		retval;
+
+	retval = mapistore_backend_list_backend_names(mem_ctx, backend_countP, backend_namesP);
+	if (retval != MAPISTORE_SUCCESS){
+		return retval;
+	}
+
+	return MAPISTORE_SUCCESS;
 }
 
 _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
@@ -848,13 +871,13 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t *child_fmids[], uint32_t *child_fmid_count)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t **child_fmids, uint32_t *child_fmid_count)
 {
 	TALLOC_CTX			*local_mem_ctx;
 	enum mapistore_error		ret;
 	void				*backend_table;
-	uint32_t			i, row_count;
-	uint64_t			*fmids, *current_fmid;
+	uint32_t			i, row_count, count;
+	uint64_t			*fmids;
 	enum MAPITAGS			fmid_column;
 	struct mapistore_property_data	*row_data;
 
@@ -888,16 +911,20 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_
 		goto end;
 	}
 
-	*child_fmid_count = row_count;
-	fmids = talloc_array(mem_ctx, uint64_t, row_count);
-	*child_fmids = fmids;
-	current_fmid = fmids;
-	for (i = 0; i < row_count; i++) {
-		mapistore_table_get_row(mstore_ctx, context_id, backend_table, local_mem_ctx,
-					MAPISTORE_PREFILTERED_QUERY, i, &row_data);
-		*current_fmid = *(uint64_t *) row_data->data;
-		current_fmid++;
+	fmids = talloc_array(mem_ctx, uint64_t, 2);
+	for (i = 0, count = 0; i < row_count; i++) {
+		ret = mapistore_table_get_row(mstore_ctx, context_id, backend_table,
+						 local_mem_ctx, MAPISTORE_PREFILTERED_QUERY,
+						 i, &row_data);
+		if ((ret == MAPISTORE_SUCCESS) && (row_data->error == MAPISTORE_SUCCESS) &&
+		    (row_data->data)) {
+			fmids = talloc_realloc(mem_ctx, fmids, uint64_t, count + 2);
+			fmids[count] = *(uint64_t *) row_data->data;
+			count++;
+		}
 	}
+	*child_fmids = fmids;
+	*child_fmid_count = row_count;
 
 end:
 	talloc_free(local_mem_ctx);

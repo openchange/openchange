@@ -612,3 +612,21 @@ _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
 
 	return NULL;
 }
+
+
+_PUBLIC_ uint32_t openchangedb_property_get_tag(char *pidtag)
+{
+        uint32_t i;
+
+        if (pidtag == NULL) {
+                return 0xFFFFFFFF;
+        }
+
+        for (i = 0; pidtags[i].pidtag; i++) {
+                if (!strcmp(pidtags[i].pidtag, pidtag)) {
+                        return pidtags[i].proptag;
+                }
+        }
+        DEBUG(0, ("[WARN][%s]: Property Tag not found: %s\n", __location__, pidtag));
+        return 0xFFFFFFFF;
+}

@@ -410,6 +410,103 @@ static PyObject *py_MAPIStoreFolder_get_properties(PyMAPIStoreFolderObject *self
 }
 
 static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	TALLOC_CTX		*mem_ctx;
+	char			*kwnames[] = { "dict", NULL };
+	PyObject		*dict = NULL, *list, *py_key, *py_value;
+	struct SRow		*aRow;
+	struct SPropValue	newValue;
+	void			*data;
+	enum MAPITAGS		tag;
+	enum mapistore_error	retval;
+	enum MAPISTATUS		ret;
+	size_t			i, count;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwnames, &dict)) {
+		return NULL;
+	}
+
+	/* Check the input argument */
+	if (PyDict_Check(dict) == false) {
+		PyErr_SetString(PyExc_TypeError, "Input argument must be a dictionary");
+		return NULL;
+	}
+
+	/* Get a tuple list with the keys */
+	list = PyDict_Keys(dict);
+	if (list == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	count = PyList_Size(list);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	aRow = talloc_zero(mem_ctx, struct SRow);
+
+	for (i = 0; i < count; i++) {
+		/* Transform the key into a property tag */
+		py_key = PyList_GetItem(list, i);
+
+		if (PyString_Check(py_key)) {
+			tag = openchangedb_property_get_tag(PyString_AsString(py_key));
+			if (tag == 0xFFFFFFFF) {
+				DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
+						__location__, PyString_AsString(py_key)));
+				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
+				talloc_free(mem_ctx);
+				return NULL;
+			}
+		} else if (PyInt_Check(py_key)) {
+			tag = PyInt_AsUnsignedLongMask(py_key);
+		} else {
+			PyErr_SetString(PyExc_TypeError,
+					"Invalid property type: only strings and integers accepted");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		/* Transform the input value into proper C type */
+		py_value = PyDict_GetItem(dict, py_key);
+
+		retval = pymapistore_data_from_pyobject(mem_ctx,tag, py_value, &data);
+		if (retval != MAPISTORE_SUCCESS) {
+			DEBUG(0, ("[WARN][%s]: Unsupported value for property '%s' \n",
+					__location__, PyString_AsString(py_key)));
+			continue;
+		}
+
+		/* Update aRow */
+		if (set_SPropValue_proptag(&newValue, tag, data) == false) {
+			PyErr_SetString(PyExc_SystemError, "Can't set property");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		ret = SRow_addprop(aRow, newValue);
+		if (ret != MAPI_E_SUCCESS) {
+			PyErr_SetMAPISTATUSError(ret);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+	}
+
+	/* Set the properties from aRow */
+	retval = mapistore_properties_set_properties(self->context->mstore_ctx,self->context->context_id,
+			self->folder_object, aRow);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	Py_RETURN_NONE;
+}
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
 {
 	PyObject *value;
@@ -708,6 +805,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},
 	{ "get_properties", (PyCFunction)py_MAPIStoreFolder_get_properties, METH_VARARGS|METH_KEYWORDS},
+	{ "set_properties", (PyCFunction)py_MAPIStoreFolder_set_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "fetch_freebusy_properties", (PyCFunction)py_MAPIStoreFolder_fetch_freebusy_properties, METH_VARARGS|METH_KEYWORDS },
 	{ "create_message", (PyCFunction)py_MAPIStoreFolder_create_message, METH_VARARGS|METH_KEYWORDS },
 	{ "open_message", (PyCFunction)py_MAPIStoreFolder_open_message, METH_VARARGS|METH_KEYWORDS },

@@ -460,16 +460,13 @@ START_TEST (test_allocate_fmid) {
 
 static void mysql_setup(void)
 {
-	TALLOC_CTX *mem_ctx;
 	char *conn_string;
 	enum mapistore_error retval;
 
-	mem_ctx = talloc_named(NULL, 0, "mysql_setup");
-	ck_assert(mem_ctx != NULL);
-	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+	g_mstore_ctx = talloc_zero(NULL, struct mapistore_context);
 	ck_assert(g_mstore_ctx != NULL);
 
-	conn_string = _make_connection_string(mem_ctx,
+	conn_string = _make_connection_string(g_mstore_ctx,
 					      INDEXING_MYSQL_USER, INDEXING_MYSQL_PASS,
 					      INDEXING_MYSQL_HOST, INDEXING_MYSQL_DB);
 	ck_assert(conn_string != NULL);
@@ -493,15 +490,12 @@ static void mysql_teardown(void)
 
 static void tdb_setup(void)
 {
-	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval;
 
 	retval = mapistore_set_mapping_path("/tmp/");
 	ck_assert(retval == MAPISTORE_SUCCESS);
 
-	mem_ctx = talloc_named(NULL, 0, "tdb_setup");
-	ck_assert(mem_ctx != NULL);
-	g_mstore_ctx = talloc_zero(mem_ctx, struct mapistore_context);
+	g_mstore_ctx = talloc_zero(NULL, struct mapistore_context);
 	ck_assert(g_mstore_ctx != NULL);
 
 	retval = mapistore_indexing_tdb_init(g_mstore_ctx, g_test_username, &g_ictx);

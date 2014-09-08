@@ -35,7 +35,7 @@ static enum mapistore_error		retval;
 
 static void ldb_setup(void)
 {
-	g_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	g_mem_ctx = talloc_new(NULL);
 
 	g_lp_ctx = loadparm_init(g_mem_ctx);
 	ck_assert(g_lp_ctx != NULL);
@@ -176,7 +176,7 @@ START_TEST (test_get_nameid_type_not_found) {
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_STRING) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
 	get_nameid(g_nprops, 38306, mem_ctx, &nameid);
@@ -192,7 +192,7 @@ START_TEST (test_get_nameid_MNID_STRING) {
 } END_TEST
 
 START_TEST (test_get_nameid_MNID_ID) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
 	get_nameid(g_nprops, 38212, mem_ctx, &nameid);
@@ -207,12 +207,13 @@ START_TEST (test_get_nameid_MNID_ID) {
 } END_TEST
 
 START_TEST (test_get_nameid_not_found) {
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid = NULL;
 
 	retval = get_nameid(g_nprops, 42, mem_ctx, &nameid);
 	ck_assert_int_eq(retval, MAPISTORE_ERROR);
 	ck_assert(nameid == NULL);
+	talloc_free(mem_ctx);
 } END_TEST
 
 START_TEST (test_create_id_MNID_ID) {
@@ -234,7 +235,7 @@ START_TEST (test_create_id_MNID_ID) {
 START_TEST (test_create_id_MNID_STRING) {
 	struct MAPINAMEID nameid = {0};
 	uint16_t mapped_id = 41;
-	TALLOC_CTX *mem_ctx = talloc(NULL, TALLOC_CTX);
+	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 
 	nameid.ulKind = MNID_STRING;
 	nameid.kind.lpwstr.Name = talloc_strdup(mem_ctx, "foobar");
@@ -259,7 +260,7 @@ Suite *mapistore_namedprops_tdb_suite(void)
 	s = suite_create("libmapistore named properties: TDB backend");
 
 	tc_ldb_q = tcase_create("LDB queries");
-	tcase_add_unchecked_fixture(tc_ldb_q, ldb_setup, ldb_teardown);
+	tcase_add_checked_fixture(tc_ldb_q, ldb_setup, ldb_teardown);
 	tcase_add_test(tc_ldb_q, test_next_unused_id);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_ldb_q, test_get_mapped_id_MNID_STRING);

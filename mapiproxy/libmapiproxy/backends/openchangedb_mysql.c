@@ -303,6 +303,7 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_BAD_VALUE, mem_ctx);
 
 	if (!mailboxstore) {
+		talloc_free(mem_ctx);
 		// TODO is it possible?
 		return _not_implemented("get_mapistoreURI with mailboxstore=false");
 	}
@@ -3604,6 +3605,8 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 			OPENCHANGE_RETVAL_IF(!msg->properties.values[msg->properties.size-1], MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		}
 	}
+
+	talloc_free(mem_ctx);
 
 	return MAPI_E_SUCCESS;
 }

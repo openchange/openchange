@@ -23,7 +23,44 @@ To run just one testsuite or testcase, pass the name of the suite in CK_RUN_SUIT
 variable or CK_RUN_CASE for a test case respectively:
 
     CK_RUN_SUITE="libmapistore named properties: interface" bin/openchange-testsuite
+
 or
+
     CK_RUN_CASE="Interface" bin/openchange-testsuite
+
+
+Check for memory leaks
+----------------------
+
+To check for memory leaks, run as:
+
+    bin/openchange-testsuite --leak-report
+
+or
+    bin/openchange-testsuite --leak-report-full
+
+for more detailed leak report.
+
+
+----------
+
+**List of "known" memory leaks (comming from Samba)**
+
+ - struct tevent_ops_list
+ - struct ldb_hooks
+ - struct backends_list_entry
+ - struct loaded
+
+**Not identified (yet):**
+
+ - struct bitmap
+ - struct loadparm_context
+
+**Leaks that are result of our unittest implementation:**
+
+ - talloc_new: testsuite/libmapiproxy/openchangedb.c:1127
+ - talloc_new: testsuite/libmapiproxy/openchangedb.c:1144
+ - talloc_new: testsuite/libmapiproxy/openchangedb_multitenancy.c:1517
+
 
 Enjoy!

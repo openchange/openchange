@@ -34,8 +34,10 @@ START_TEST (test_init) {
 	mem_ctx = talloc_named(NULL, 0, "test_init");
 	ck_assert(mem_ctx != NULL);
 
-	lp_ctx = loadparm_init_global(true);
+	lp_ctx = loadparm_init(mem_ctx);
 	ck_assert(lp_ctx != NULL);
+	lpcfg_load_default(lp_ctx);
+
 
 	/* check sanity checks compliance */
 	retval = mapistore_namedprops_init(NULL, lp_ctx, &nprops_ctx);

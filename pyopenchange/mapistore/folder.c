@@ -457,7 +457,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		if (PyString_Check(py_key)) {
 			tag = openchangedb_property_get_tag(PyString_AsString(py_key));
 			if (tag == 0xFFFFFFFF) {
-				DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
+				DEBUG(0, ("[ERR][%s]: Unsupported property tag '%s' \n",
 						__location__, PyString_AsString(py_key)));
 				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 				talloc_free(mem_ctx);

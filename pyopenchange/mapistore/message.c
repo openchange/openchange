@@ -25,7 +25,6 @@ static void py_MAPIStoreMessage_dealloc(PyObject *_self)
 {
 	PyMAPIStoreMessageObject *self = (PyMAPIStoreMessageObject *)_self;
 
-
 	Py_XDECREF(self->context);
 	PyObject_Del(_self);
 }

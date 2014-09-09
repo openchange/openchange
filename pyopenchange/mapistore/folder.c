@@ -436,6 +436,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 	list = PyDict_Keys(dict);
 	if (list == NULL) {
 		PyErr_NoMemory();
+		Py_DECREF(list);
 		return NULL;
 	}
 
@@ -444,6 +445,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
+		Py_DECREF(list);
 		return NULL;
 	}
 	aRow = talloc_zero(mem_ctx, struct SRow);
@@ -459,6 +461,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 						__location__, PyString_AsString(py_key)));
 				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 				talloc_free(mem_ctx);
+				Py_DECREF(list);
 				return NULL;
 			}
 		} else if (PyInt_Check(py_key)) {
@@ -467,6 +470,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 			PyErr_SetString(PyExc_TypeError,
 					"Invalid property type: only strings and integers accepted");
 			talloc_free(mem_ctx);
+			Py_DECREF(list);
 			return NULL;
 		}
 
@@ -484,6 +488,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		if (set_SPropValue_proptag(&newValue, tag, data) == false) {
 			PyErr_SetString(PyExc_SystemError, "Can't set property");
 			talloc_free(mem_ctx);
+			Py_DECREF(list);
 			return NULL;
 		}
 
@@ -491,6 +496,7 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		if (ret != MAPI_E_SUCCESS) {
 			PyErr_SetMAPISTATUSError(ret);
 			talloc_free(mem_ctx);
+			Py_DECREF(list);
 			return NULL;
 		}
 	}
@@ -501,10 +507,12 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		talloc_free(mem_ctx);
+		Py_DECREF(list);
 		return NULL;
 	}
 
 	talloc_free(mem_ctx);
+	Py_DECREF(list);
 	Py_RETURN_NONE;
 }
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)

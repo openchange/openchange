@@ -701,7 +701,7 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx,
+static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
 						       struct ModifyRecipientRow *recipient_row,
 						       uint16_t prop_count, enum MAPITAGS *properties,
 						       struct mapistore_message_recipient *recipient)
@@ -712,11 +712,29 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx,
 
 	recipient->type = recipient_row->RecipClass;
 
+	recipient->username = NULL;
 	if ((recipient_row->RecipientRow.RecipientFlags & 0x07) == 1) {
-		recipient->username = (char *) recipient_row->RecipientRow.X500DN.recipient_x500name;
-	}
-	else {
-		recipient->username = NULL;
+		if (recipient_row->RecipientRow.AddressPrefixUsed.prefix_size != 0) {
+			/* sanity check for DNPrefix valid length */
+			OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->szDNPrefix, MAPI_E_INVALID_PARAMETER, NULL);
+			if (recipient_row->RecipientRow.AddressPrefixUsed.prefix_size > strlen(emsmdbp_ctx->szDNPrefix)) {
+				DEBUG(0, ("Requested x500name prefix is beyond what we have for DNPrefix=[%s]\n",
+						emsmdbp_ctx->szDNPrefix));
+				return MAPI_E_INVALID_PARAMETER;
+			}
+
+			/* concatenate x500name suffix with szDNPrefix we are using at the moment */
+			size_t name_len = recipient_row->RecipientRow.AddressPrefixUsed.prefix_size
+					+ strlen(recipient_row->RecipientRow.X500DN.recipient_x500name) + 1;
+			recipient->username = talloc_zero_array(mem_ctx, char, name_len);
+			OPENCHANGE_RETVAL_IF(!recipient->username, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+			strncpy(recipient->username, emsmdbp_ctx->szDNPrefix, recipient_row->RecipientRow.AddressPrefixUsed.prefix_size);
+			strcpy(recipient->username + recipient_row->RecipientRow.AddressPrefixUsed.prefix_size,
+					recipient_row->RecipientRow.X500DN.recipient_x500name);
+		} else {
+			recipient->username = (char *) recipient_row->RecipientRow.X500DN.recipient_x500name;
+		}
 	}
 
 	recipient->data = talloc_array(mem_ctx, void *, prop_count + 2);
@@ -847,11 +865,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 		recipients = talloc_array(mem_ctx, struct mapistore_message_recipient, mapi_req->u.mapi_ModifyRecipients.cValues);
 		for (i = 0; i < mapi_req->u.mapi_ModifyRecipients.cValues; i++) {
-			retval = oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i,
+			retval = oxcmsg_parse_ModifyRecipientRow(recipients, emsmdbp_ctx,
+								 mapi_req->u.mapi_ModifyRecipients.RecipientRow + i,
 								 mapi_req->u.mapi_ModifyRecipients.prop_count,
 								 mapi_req->u.mapi_ModifyRecipients.properties,
 								 recipients + i);
 			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(0, ("Failed to parse RecipientRow. [%s]\n", mapi_get_errstr(retval)));
 				mapi_repl->error_code = retval;
 				goto end;
 			}

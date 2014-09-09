@@ -97,6 +97,8 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			if (pyval == NULL) {
 				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
 					  __location__));
+				Py_DECREF(pykey);
+				Py_DECREF(py_ret);
 				return NULL;
 			}
 			for (i = 0; i < MVszA->cValues; i++) {
@@ -104,6 +106,9 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				if (PyList_SetItem(pyval, i, item) == -1) {
 					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
 						  __location__));
+					Py_DECREF(pyval);
+					Py_DECREF(pykey);
+					Py_DECREF(py_ret);
 					return NULL;
 				}
 			}
@@ -114,6 +119,8 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			if (pyval == NULL) {
 				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
 					  __location__));
+				Py_DECREF(pykey);
+				Py_DECREF(py_ret);
 				return NULL;
 			}
 
@@ -122,6 +129,9 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				if (PyList_SetItem(pyval, i, item) == -1) {
 					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
 						  __location__));
+					Py_DECREF(pyval);
+					Py_DECREF(pykey);
+					Py_DECREF(py_ret);
 					return NULL;
 				}
 			}
@@ -153,11 +163,15 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			if (ret != 0) {
 				DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
 					  __location__));
+				Py_DECREF(pykey);
+				Py_DECREF(pyval);
+				Py_DECREF(py_ret);
 				return NULL;
 			}
+			Py_DECREF(pyval);
 		}
+		Py_DECREF(pykey);
 	}
-
 	return py_ret;
 }
 

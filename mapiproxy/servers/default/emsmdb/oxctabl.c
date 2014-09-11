@@ -848,7 +848,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopFindRow(TALLOC_CTX *mem_ctx,
 
 		break;
 	case false:
-		memset (&row, 0, sizeof(DATA_BLOB));
 		DEBUG(0, ("FindRow for openchangedb\n"));
 		/* Restrict rows to be fetched */
 		retval = openchangedb_table_set_restrictions(emsmdbp_ctx->oc_ctx, object->backend_object, &request.res);

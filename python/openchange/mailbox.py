@@ -43,7 +43,7 @@ def _public_folders_meta(names):
                      "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 9),
                      }, 6),
                  "SCHEDULE+ FREE BUSY": ({
-                     "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 8),
+                     "EX:/o=%s/ou=%s" % (names.firstorg, names.firstou): ({}, 8),
                      }, 5),
                  }, 3),
              }, 1)

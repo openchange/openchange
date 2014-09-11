@@ -381,7 +381,7 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 {
 	TALLOC_CTX		*mem_ctx;
 	struct ldb_result	*res = NULL;
-	const char * const	attrs[] = { "*", NULL };
+	const char * const	attrs[] = { "PidTagParentFolderId", NULL };
 	int			ret;
 	struct ldb_context	*ldb_ctx = self->data;
 
@@ -395,7 +395,9 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 	}
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
+
 	*parent_fidp = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagParentFolderId", 0x0);
+	OPENCHANGE_RETVAL_IF(*parent_fidp == 0x0, MAPI_E_NOT_FOUND, mem_ctx);
 
 	talloc_free(mem_ctx);
 

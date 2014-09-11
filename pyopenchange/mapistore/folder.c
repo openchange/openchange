@@ -208,7 +208,11 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 		return NULL;
 	}
 
-	/* TODO: Check target_folder type */
+	/* Check target_folder type */
+	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
+		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		return NULL;
+	}
 	/* TODO: Check special folders */
 
 	retval = mapistore_folder_move_folder(self->context->mstore_ctx, self->context->context_id,
@@ -217,8 +221,6 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
-
-	/* TODO: Delete old folder? */
 
 	Py_RETURN_NONE;
 }

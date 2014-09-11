@@ -24,53 +24,93 @@ if not opts.username:
 if opts.mapping_path:
     mapistore.set_mapping_path(opts.mapping_path)
 
+# Create MAPIStore Object
 mstore = mapistore.MAPIStore()
 
+# Change log_level
 if opts.debuglevel is not None:
     mstore.debuglevel = opts.debuglevel
 
 if opts.openchangedb is not None:
     mstore.set_parm("mapiproxy:openchangedb", opts.openchangedb)
 
+# Display info
 mstore.dump()
 
+# Initialise MAPIStore
 print "[PYMAPISTORE] Initialise MAPIStore for user " + opts.username
-
 mstore.initialize(opts.username)
 print
 
+# List backends
 print '[PYMAPISTORE] List backends:'
-print
-
 backends = mstore.list_backends()
 for i in backends:
 	print i
 print
 
-'[PYMAPISTORE] List subfolders and messages for each context'
+## Get available contexts 
+#print '[PYMAPISTORE] List subfolders and messages for each context:'
+#
+#cap_list = mstore.capabilities()
+# 
+## Iterate over the available contexts and open root folder, subfolders and messages
+#for cap in cap_list:
+#	name = cap['name']
+#	if name == 'Fallback': 
+#		continue
+#	
+#	if name:
+#		print '[CONTEXT]: ' + name
+#	
+#	uri = cap['url']
+#	ctx = mstore.add_context(uri)
+#	root_fld = ctx.open()
+#	
+#	subfld_count = root_fld.get_child_count(1) 
+#	print '[NUMBER OF SUBFOLDERS]: ' + repr(subfld_count)
+#	if subfld_count > 0:
+#		for fld in root_fld.get_child_folders():
+#			print '[SUBFOLDER]: ' + fld.get_uri()
+#	msg_count = root_fld.get_child_count(2)
+#	print '[NUMBER OF MESSAGES]: ' + repr(msg_count)
+#	if msg_count > 0:
+#		for msg in root_fld.get_child_messages():
+#			print '[MESSAGE]: ' + msg.get_uri()
+#	print
+
+# Create, move and delete subfolders
+# *PARTICULAR TO MY ENVIRONMENT*
+print '[PYMAPISTORE] Add INBOX context:'
+in_ctx = mstore.add_context('sogo://user1:user1@mail/folderINBOX')
 print
 
-cap_list = mstore.capabilities()
-for cap in cap_list:
-	name = cap['name']
-	if name == 'Fallback': 
-		continue
-	
-	if name:
-		print '[CONTEXT]: ' + name
-	
-	uri = cap['url']
-	ctx = mstore.add_context(uri)
-	root_fld = ctx.open()
-	
-	subfld_count = root_fld.get_child_count(1) 
-	print '[NUMBER OF SUBFOLDERS]: ' + repr(subfld_count)
-	if subfld_count > 0:
-		for fld in root_fld.get_child_folders():
-			print '[SUBFOLDER]: ' + fld.get_uri()
-	msg_count = root_fld.get_child_count(2)
-	print '[NUMBER OF MESSAGES]: ' + repr(msg_count)
-	if msg_count > 0:
-		for msg in root_fld.get_child_messages():
-			print '[MESSAGE]: ' + msg.get_uri()
+print '[PYMAPISTORE] Open INBOX root folder:'
+in_fld = in_ctx.open()
+print
+
+print '[PYMAPISTORE] Open BLAH folder:'
+blah_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/foldersampleblah/')
+print
+
+print '[PYMAPISTORE] Create FOO subfolder:'
+foo_fld = in_fld.create_folder('FOO')
+print
+
+# Display and modify folder properties
+print '[PYMAPISTORE] Get FOO properties:'
+print foo_fld.get_properties();
+print
+
+print "[PYMAPISTORE] Set FOO 'PidTagContentCount' property:"
+print foo_fld.get_properties(['PidTagContentCount']);
+
+foo_fld.set_properties({'PidTagContentCount': 2L});
+
+print foo_fld.get_properties(['PidTagContentCount']);
+
+# Set back to original value
+foo_fld.set_properties({'PidTagContentCount': 0L});
+print
+
 	print

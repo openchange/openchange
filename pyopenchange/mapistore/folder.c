@@ -197,6 +197,31 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "target_folder", "new_name", NULL };
+	PyMAPIStoreFolderObject		*target_folder;
+	const char			*new_name;
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os", kwnames, &target_folder, &new_name)) {
+		return NULL;
+	}
+
+	/* TODO: Check target_folder type */
+	/* TODO: Check special folders */
+
+	retval = mapistore_folder_move_folder(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, target_folder->folder_object, target_folder->mem_ctx, new_name);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* TODO: Delete old folder? */
+
+	Py_RETURN_NONE;
+}
 static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	uint32_t			RowCount;
@@ -809,6 +834,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "delete", (PyCFunction)py_MAPIStoreFolder_delete, METH_VARARGS|METH_KEYWORDS },
+	{ "move_folder", (PyCFunction)py_MAPIStoreFolder_move_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
 	{ "get_uri", (PyCFunction)py_MAPIStoreFolder_get_uri, METH_NOARGS},

@@ -113,4 +113,40 @@ print foo_fld.get_properties(['PidTagContentCount']);
 foo_fld.set_properties({'PidTagContentCount': 0L});
 print
 
+# Move folder
+print '[PYMAPISTORE] Move FOO subfolder to BLAH:'
+
+try:
+	foo_fld.move_folder(blah_fld, 'FOOM')
+except:
+	print "[PYMAPISTORE][ERR] Can't move folder"
+	print sys.exc_info()[0]
 	print
+
+	print '[PYMAPISTORE] Delete FOO folder:'
+	foo_fld.delete(mapistore.PERMANENT_DELETE)
+	print
+ 
+print "[PYMAPISTORE] INBOX subfolders (FOO shouldn't be one):"
+for f in in_fld.get_child_folders():
+	print f.get_uri()
+print
+
+print "[PYMAPISTORE] BLAH subfolders:"
+for f in blah_fld.get_child_folders():
+	print f.get_uri()
+print
+
+foom_fld = blah_fld.open_folder('sogo://user1:user1@mail/folderINBOX/foldersampleblah/folderFOOM/')
+
+print '[PYMAPISTORE] Display FOOM properties:'
+print foom_fld.get_properties();
+print
+
+# Copy folder
+
+# Clean up
+print '[PYMAPISTORE] Delete FOOM:'
+foom_fld.delete(mapistore.PERMANENT_DELETE)
+print
+

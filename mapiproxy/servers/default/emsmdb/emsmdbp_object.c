@@ -1598,10 +1598,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         table = table_object->object.table;
         num_props = table_object->object.table->prop_count;
 
-        data_pointers = talloc_array(mem_ctx, void *, num_props);
-        memset(data_pointers, 0, sizeof(void *) * num_props);
-        retvals = talloc_array(mem_ctx, enum MAPISTATUS, num_props);
-        memset(retvals, 0, sizeof(uint32_t) * num_props);
+	data_pointers = talloc_zero_array(mem_ctx, void *, num_props);
+	OPENCHANGE_RETVAL_IF(data_pointers == NULL, 0, NULL);
+	retvals = talloc_zero_array(mem_ctx, enum MAPISTATUS, num_props);
+	OPENCHANGE_RETVAL_IF(retvals == NULL, 0, NULL);
 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);

@@ -1612,7 +1612,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			for (i = 0; i < num_props; i++) {
 				data_pointers[i] = properties[i].data;
                                         
-				if (properties[i].error) {
+				if (properties[i].error != MAPISTORE_SUCCESS) {
 					retvals[i] = mapistore_error_to_mapi(properties[i].error);
 				}
 				else {

@@ -3248,7 +3248,10 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
+static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+							   struct emsmdbp_object_synccontext *synccontext,
+							   const char *owner, struct oxcfxics_sync_data *sync_data,
+							   struct emsmdbp_object *folder_object)
 {
 	struct SPropTagArray		*count_query_props;
 	uint64_t			eid, cn;
@@ -3292,7 +3295,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	}
 
 	if (!nr_eid) {
-		return;
+		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Fetch the actual table data */
@@ -3347,6 +3350,7 @@ static void oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, struct emsm
 	}
 
 	talloc_free(local_mem_ctx);
+	return MAPI_E_SUCCESS;
 }
 
 static enum MAPISTATUS oxcfxics_ndr_push_transfer_state(struct ndr_push *ndr, const char *owner, struct emsmdbp_object *synccontext_object)

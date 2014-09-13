@@ -3263,10 +3263,13 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	uint32_t			unix_time;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
-	void				*local_mem_ctx;
+	TALLOC_CTX			*local_mem_ctx;
 	struct GUID			replica_guid;
+	enum mapistore_error		ret;
+	enum MAPISTATUS			retval;
 	
-	local_mem_ctx = talloc_zero(NULL, void);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(local_mem_ctx != NULL, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* Query the amount of rows and update sync_data structure */
 	count_query_props = talloc_zero(local_mem_ctx, struct SPropTagArray);
@@ -3307,7 +3310,10 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	table_object->object.table->prop_count = synccontext->properties.cValues;
 	table_object->object.table->properties = synccontext->properties.aulPropTag;
 	if (emsmdbp_is_mapistore(table_object)) {
-		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object), table_object->backend_object, synccontext->properties.cValues, synccontext->properties.aulPropTag);
+		ret = mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx,
+						  emsmdbp_get_contextID(table_object), table_object->backend_object,
+						  synccontext->properties.cValues, synccontext->properties.aulPropTag);
+		OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), local_mem_ctx);
 	}
 	table = table_object->object.table;
 	for (i = 0; i < table->denominator; i++) {
@@ -3341,9 +3347,16 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 			talloc_free(data_pointers);
 
 			if (sync_data->table_type == MAPISTORE_FOLDER_TABLE) {
-				/* TODO: check return code */
-				emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
-				oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
+				/*
+				 * TODO: be careful with following - it has a comment
+				 * to check it further, so problems might be expected
+				 */
+				ret = emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
+				OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), local_mem_ctx);
+
+				retval = oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
+				OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
+
 				talloc_free(subfolder_object);
 			}
 		}

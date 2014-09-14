@@ -139,10 +139,10 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	char *host, *user, *passwd, *db, *sql;
 	bool parsed;
 
+	if (conn == NULL) return NULL;
 	if (*conn != NULL) return *conn;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	*conn = mysql_init(NULL);
 	parsed = parse_connection_string(mem_ctx, connection_string,
 					 &host, &user, &passwd, &db);
 	if (!parsed) {
@@ -150,6 +150,9 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 		*conn = NULL;
 		goto end;
 	}
+
+	*conn = mysql_init(NULL);
+
 	// First try to connect to the database, if it fails try to create it
 	if (mysql_real_connect(*conn, host, user, passwd, db, 0, NULL, 0)) {
 		goto end;
@@ -163,6 +166,7 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 		// Nop
 		DEBUG(0, ("Can't connect to mysql using %s, error: %s\n",
 			  connection_string, mysql_error(*conn)));
+		mysql_close(*conn);
 		*conn = NULL;
 	} else {
 		// Connect it!, let's try to create database
@@ -170,9 +174,11 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
 			DEBUG(0, ("Can't connect to mysql using %s\n",
 				  connection_string));
+			mysql_close(*conn);
 			*conn = NULL;
 		}
 	}
+
 end:
 	talloc_free(mem_ctx);
 	return *conn;

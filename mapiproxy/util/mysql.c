@@ -172,8 +172,8 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 		// Connect it!, let's try to create database
 		sql = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", db);
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
-			DEBUG(0, ("Can't connect to mysql using %s\n",
-				  connection_string));
+			DEBUG(0, ("Can't connect to mysql using %s, error: %s\n",
+				  connection_string, mysql_error(*conn)));
 			mysql_close(*conn);
 			*conn = NULL;
 		}

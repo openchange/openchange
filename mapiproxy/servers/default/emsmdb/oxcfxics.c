@@ -2305,16 +2305,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 		folder_was_open = true;
 	}
 	else {
-		ret = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
-		if (ret != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("Failed to open parent folder with FID=[0x%016"PRIx64"]: %s", parentFolderID, mapistore_errstr(ret)));
-			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
+		if (MAPI_STATUS_IS_ERR(retval)) {
+			DEBUG(0, ("Failed to open parent folder with FID=[0x%016"PRIx64"]: %s\n", parentFolderID, mapi_get_errstr(retval)));
+			mapi_repl->error_code = retval;
 			goto end;
 		}
 		folder_was_open = false;
 	}
 
-	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object) != MAPISTORE_SUCCESS) {
+	retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object);
+	if (MAPI_STATUS_IS_ERR(retval)) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));

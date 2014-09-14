@@ -695,7 +695,8 @@ static void oxcfxics_push_messageChange_attachments(struct emsmdbp_context *emsm
 	struct SPropTagArray	query_props;
 	uint32_t		i, method, contextID;
 	enum MAPISTATUS		*retvals;
-void			**data_pointers, *attachment_object;
+	void			**data_pointers, *attachment_object;
+	enum mapistore_error	ret;
 
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, MetaTagFXDelProp);
 	ndr_push_uint32(sync_data->ndr, NDR_SCALARS, PidTagMessageAttachments);
@@ -706,7 +707,13 @@ void			**data_pointers, *attachment_object;
 		table_object->object.table->prop_count = prop_count;
 		contextID = emsmdbp_get_contextID(table_object);
 		if (emsmdbp_is_mapistore(table_object)) {
-			mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID, table_object->backend_object, prop_count, prop_tags);
+			ret = mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, contextID,
+							  table_object->backend_object, prop_count, prop_tags);
+			if (ret != MAPISTORE_SUCCESS) {
+				DEBUG(0, (__location__": table_set_columns failed with %s", mapistore_errstr(ret)));
+				talloc_free(table_object);
+				return;
+			}
 		}
 		for (i = 0; i < table_object->object.table->denominator; i++) {
 			mem_ctx = talloc_zero(NULL, void);

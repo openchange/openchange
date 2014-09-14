@@ -533,15 +533,18 @@ static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 	return parent_uri;
 }
 
-static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, uint64_t fid, uint64_t *parent_fidp)
+static enum MAPISTATUS emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx,
+					      struct emsmdbp_object *mailbox_object,
+					      uint64_t fid, uint64_t *parent_fidp)
 {
-	TALLOC_CTX	*mem_ctx;
-	int		retval = MAPISTORE_SUCCESS;
-	bool		soft_deleted;
-	char		*uri, *parent_uri;
-	struct emsmdbp_object_mailbox *mailbox;
+	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error		ret;
+	enum MAPISTATUS			retval;
+	bool				soft_deleted;
+	char				*uri, *parent_uri;
+	struct emsmdbp_object_mailbox	*mailbox;
 
-	MAPISTORE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
 	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
@@ -554,16 +557,17 @@ static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct em
 		goto end;
 	}
 
-	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
-	if (retval == MAPISTORE_SUCCESS) {
+	ret = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
+	if (ret == MAPISTORE_SUCCESS) {
 		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
 		if (parent_uri) {
-			retval = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
+			ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
 		}
 		else {
-			retval = MAPISTORE_ERR_NOT_FOUND;
+			ret = MAPISTORE_ERR_NOT_FOUND;
 		}
 	}
+	retval = mapistore_error_to_mapi(ret);
 
 end:
 	talloc_free(mem_ctx);

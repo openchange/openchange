@@ -2914,7 +2914,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	if (emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID, &source_folder_object) != MAPISTORE_SUCCESS) {
+	retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID, &source_folder_object);
+	if (MAPI_STATUS_IS_ERR(retval)) {
+		DEBUG(0, ("Failed to open source folder with FID=[0x%016"PRIx64"]: %s\n",
+			  sourceFID, mapi_get_errstr(retval)));
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
 		goto end;
 	}

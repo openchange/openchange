@@ -582,51 +582,59 @@ end:
    \param emsmdbp_ctx pointer to the emsmdbp context
    \param context_object pointer to current context object
    \param fid pointer to the Folder Identifier to lookup
+   \param [out] folder_object_p location to store emsmdbp object on success
 
-   \return Valid emsmdbp object structure on success, otherwise NULL
+   \return MAPISTATUS error code
  */
-_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, uint64_t fid, struct emsmdbp_object **folder_object_p)
+
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
+							   struct emsmdbp_context *emsmdbp_ctx,
+							   struct emsmdbp_object *context_object,
+							   uint64_t fid,
+							   struct emsmdbp_object **folder_object_p)
 {
 	uint64_t		parent_fid;
-	int			retval;
+	enum mapistore_error	ret;
+	enum MAPISTATUS		retval;
 	struct emsmdbp_object   *mailbox_object;
 
-	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
 
 	if ((context_object->type == EMSMDBP_OBJECT_MAILBOX
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
 		&& fid == context_object->object.folder->folderID)) {
 		*folder_object_p = context_object;
-		return MAPISTORE_SUCCESS;
+		return MAPI_E_SUCCESS;
 	}
 
 	mailbox_object = emsmdbp_get_mailbox(context_object);
 	if (fid == mailbox_object->object.mailbox->folderID) {
 		*folder_object_p = mailbox_object;
-		return MAPISTORE_SUCCESS;
+		return MAPI_E_SUCCESS;
 	}
 
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
-	if (retval == MAPISTORE_SUCCESS) {
+	if (MAPI_STATUS_IS_OK(retval)) {
 		if (parent_fid) {
 			struct emsmdbp_object	*parent_object = NULL;
 
 			retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, parent_fid, &parent_object);
-			if (retval != MAPISTORE_SUCCESS) {
+			if (retval != MAPI_E_SUCCESS) {
 				return retval;
 			}
-			return emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, parent_object, fid, folder_object_p);
+			ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, parent_object, fid, folder_object_p);
+			return mapistore_error_to_mapi(ret);
 		}
 		else {
 			*folder_object_p = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, NULL);
-			return MAPISTORE_SUCCESS;
+			return MAPI_E_SUCCESS;
 		}
 	}
 
-	return MAPISTORE_ERROR;
+	return retval;
 }
 
 _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)

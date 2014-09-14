@@ -161,7 +161,8 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	// Try to create database
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, 0, NULL, 0)) {
 		// Nop
-		DEBUG(0, ("Can't connect to mysql using %s\n", connection_string));
+		DEBUG(0, ("Can't connect to mysql using %s, error: %s\n",
+			  connection_string, mysql_error(*conn)));
 		*conn = NULL;
 	} else {
 		// Connect it!, let's try to create database

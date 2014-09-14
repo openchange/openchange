@@ -37,14 +37,18 @@ void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path,
 	MYSQL			*conn;
 	struct loadparm_context	*lp_ctx;
 	enum MAPISTATUS		retval;
+	const char		*mysql_pass = getenv("OC_MYSQL_PASS");
 
-	if (strlen(OC_TESTSUITE_MYSQL_PASS) == 0) {
+	if (!mysql_pass) {
+		mysql_pass = OC_TESTSUITE_MYSQL_PASS;
+	}
+
+	if (strlen(mysql_pass) == 0) {
 		database = talloc_asprintf(mem_ctx, "mysql://" OC_TESTSUITE_MYSQL_USER "@"
 					   OC_TESTSUITE_MYSQL_HOST "/" OC_TESTSUITE_MYSQL_DB);
 	} else {
-		database = talloc_asprintf(mem_ctx, "mysql://" OC_TESTSUITE_MYSQL_USER ":"
-					   OC_TESTSUITE_MYSQL_PASS "@" OC_TESTSUITE_MYSQL_HOST
-					   "/" OC_TESTSUITE_MYSQL_DB);
+		database = talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s", OC_TESTSUITE_MYSQL_USER,
+					   mysql_pass, OC_TESTSUITE_MYSQL_HOST, OC_TESTSUITE_MYSQL_DB);
 	}
 
 	lp_ctx = loadparm_init(mem_ctx);

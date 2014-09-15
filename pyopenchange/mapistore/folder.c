@@ -213,7 +213,6 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
 		return NULL;
 	}
-	/* TODO: Check special folders */
 
 	retval = mapistore_folder_move_folder(self->context->mstore_ctx, self->context->context_id,
 			self->folder_object, target_folder->folder_object, target_folder->mem_ctx, new_name);

@@ -750,7 +750,7 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	enum mapistore_error		retval;
 	uint64_t			mid;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sH", kwnames, &uri, &flags)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "sh", kwnames, &uri, &flags)) {
 		return NULL;
 	}
 

@@ -146,9 +146,36 @@ print '[PYMAPISTORE] Display FOOM properties:'
 print foom_fld.get_properties();
 print
 
+# Copy folder
+print '[PYMAPISTORE] Copy FOOM into INBOX:'
+try:
+	foom_fld.copy_folder(in_fld, 'FOOC', mapistore.NON_RECURSIVE)
+except:
+	print "[PYMAPISTORE][ERR] Can't copy folder"
+	print sys.exc_info()[0]
+	print
+   
+print '[PYMAPISTORE] BLAH subfolders (Now FOOM should be there):'
+for f in blah_fld.get_child_folders():
+	print f.get_uri()
+print
+   
+print "[PYMAPISTORE] INBOX subfolders (FOOC should be there):"
+for f in in_fld.get_child_folders():
+    print f.get_uri()
+print
+
+fooc_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/folderFOOC/')
+
+print '[PYMAPISTORE] Display FOOC properties:'
+print fooc_fld.get_properties();
+print
 
 # Clean up
-print '[PYMAPISTORE] Delete FOOM:'
+print '[PYMAPISTORE] Delete FOOM folder:'
 foom_fld.delete(mapistore.PERMANENT_DELETE)
 print
 
+print '[PYMAPISTORE] Delete FOOC folder:'
+fooc_fld.delete(mapistore.PERMANENT_DELETE)
+print

@@ -197,6 +197,41 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStoreFolder_copy_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "target_folder", "new_name", "recursive", NULL };
+	PyMAPIStoreFolderObject		*target_folder;
+	const char			*new_name;
+	int				recursive;	// TODO: Find most correct type (uint8_t + "h"/"H" produces segfault)
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OsH", kwnames, &target_folder, &new_name, &recursive)) {
+		return NULL;
+	}
+
+	/* Check target_folder type */
+	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
+		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		return NULL;
+	}
+
+	/* Check 'recursive' range */
+	if ((recursive < 0) || (recursive > 1)) {
+		PyErr_SetString(PyExc_ValueError, "'recursive' argument out of range");
+		return NULL;
+	}
+
+	retval = mapistore_folder_copy_folder(self->context->mstore_ctx, self->context->context_id,
+			self->folder_object, target_folder->folder_object, self->mem_ctx,
+			(bool) recursive, new_name);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	char				*kwnames[] = { "target_folder", "new_name", NULL };
@@ -835,6 +870,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "delete", (PyCFunction)py_MAPIStoreFolder_delete, METH_VARARGS|METH_KEYWORDS },
+	{ "copy_folder", (PyCFunction)py_MAPIStoreFolder_copy_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "move_folder", (PyCFunction)py_MAPIStoreFolder_move_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_count", (PyCFunction)py_MAPIStoreFolder_get_child_count, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_folders", (PyCFunction)py_MAPIStoreFolder_get_child_folders, METH_NOARGS },
@@ -972,6 +1008,10 @@ void initmapistore_folder(PyObject *m)
 	PyModule_AddObject(m, "MAPISTORE_RULE_TABLE", PyInt_FromLong(0x4));
 	PyModule_AddObject(m, "MAPISTORE_ATTACHMENT_TABLE", PyInt_FromLong(0x5));
 	PyModule_AddObject(m, "MAPISTORE_PERMISSIONS_TABLE", PyInt_FromLong(0x6));
+
+	/* Copy flags */
+	PyModule_AddObject(m, "NON_RECURSIVE", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "RECURSIVE", PyInt_FromLong(0x1));
 
 	/* Deletion flags */
 	PyModule_AddObject(m, "SOFT_DELETE", PyInt_FromLong(0x1));

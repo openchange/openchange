@@ -49,35 +49,38 @@ for i in backends:
 	print i
 print
 
-## Get available contexts 
-#print '[PYMAPISTORE] List subfolders and messages for each context:'
-#
-#cap_list = mstore.capabilities()
-# 
-## Iterate over the available contexts and open root folder, subfolders and messages
-#for cap in cap_list:
-#	name = cap['name']
-#	if name == 'Fallback': 
-#		continue
-#	
-#	if name:
-#		print '[CONTEXT]: ' + name
-#	
-#	uri = cap['url']
-#	ctx = mstore.add_context(uri)
-#	root_fld = ctx.open()
-#	
-#	subfld_count = root_fld.get_child_count(1) 
-#	print '[NUMBER OF SUBFOLDERS]: ' + repr(subfld_count)
-#	if subfld_count > 0:
-#		for fld in root_fld.get_child_folders():
-#			print '[SUBFOLDER]: ' + fld.get_uri()
-#	msg_count = root_fld.get_child_count(2)
-#	print '[NUMBER OF MESSAGES]: ' + repr(msg_count)
-#	if msg_count > 0:
-#		for msg in root_fld.get_child_messages():
-#			print '[MESSAGE]: ' + msg.get_uri()
-#	print
+# Get available contexts 
+print '[PYMAPISTORE] List subfolders and messages for each context:'
+ 
+cap_list = mstore.capabilities()
+  
+# Iterate over the available contexts and open root folder, subfolders and messages
+for cap in cap_list:
+	name = cap['name']
+	if name:
+		print '[CONTEXT]: ' + name
+ 	
+	uri = cap['url']
+	try:
+		ctx = mstore.add_context(uri)
+	except:
+		print "[PYMAPISTORE][ERR]: '" + name + "' couldn't be opened"
+		print
+		continue
+ 
+	root_fld = ctx.open()
+ 	
+	subfld_count = root_fld.get_child_count(mapistore.FOLDER_TABLE) 
+	print '[NUMBER OF SUBFOLDERS]: ' + repr(subfld_count)
+	if subfld_count > 0:
+		for fld in root_fld.get_child_folders():
+			print '[SUBFOLDER]: ' + fld.get_uri()
+	msg_count = root_fld.get_child_count(mapistore.MESSAGE_TABLE)
+	print '[NUMBER OF MESSAGES]: ' + repr(msg_count)
+	if msg_count > 0:
+		for msg in root_fld.get_child_messages():
+			print '[MESSAGE]: ' + msg.get_uri()
+	print
 
 # Create, move and delete subfolders
 # *PARTICULAR TO MY ENVIRONMENT*
@@ -123,7 +126,7 @@ except:
 	print sys.exc_info()[0]
 	print
 
-	print '[PYMAPISTORE] Delete FOO folder:'
+	print '[PYMAPISTORE][ERR] Delete FOO folder:'
 	foo_fld.delete(mapistore.PERMANENT_DELETE)
 	print
  
@@ -143,7 +146,6 @@ print '[PYMAPISTORE] Display FOOM properties:'
 print foom_fld.get_properties();
 print
 
-# Copy folder
 
 # Clean up
 print '[PYMAPISTORE] Delete FOOM:'

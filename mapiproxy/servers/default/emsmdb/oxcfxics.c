@@ -3280,7 +3280,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	enum MAPISTATUS			retval;
 	
 	local_mem_ctx = talloc_new(NULL);
-	OPENCHANGE_RETVAL_IF(local_mem_ctx != NULL, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	OPENCHANGE_RETVAL_IF(local_mem_ctx == NULL, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* Query the amount of rows and update sync_data structure */
 	count_query_props = talloc_zero(local_mem_ctx, struct SPropTagArray);

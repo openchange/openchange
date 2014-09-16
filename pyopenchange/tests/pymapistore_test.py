@@ -127,7 +127,7 @@ except:
 	print
 
 	print '[PYMAPISTORE][ERR] Delete FOO folder:'
-	foo_fld.delete(mapistore.PERMANENT_DELETE)
+	foo_fld.delete(mapistore.DEL_ALL)
 	print
  
 print "[PYMAPISTORE] INBOX subfolders (FOO shouldn't be one):"
@@ -171,11 +171,22 @@ print '[PYMAPISTORE] Display FOOC properties:'
 print fooc_fld.get_properties();
 print
 
-# Clean up
-print '[PYMAPISTORE] Delete FOOM folder:'
-foom_fld.delete(mapistore.PERMANENT_DELETE)
+print "[PYMAPISTORE] FOOC subfolders (should BLAHC be here?):"
 print
 
+# Clean up
 print '[PYMAPISTORE] Delete FOOC folder:'
-fooc_fld.delete(mapistore.PERMANENT_DELETE)
+fooc_fld.delete(mapistore.DEL_ALL)
 print
+print '[PYMAPISTORE] Delete FOOM folder:'
+try:
+    foom_fld.delete(mapistore.DEL_ALL)
+except:
+    '[PYMAPISTORE][ERR] Cannot delete FOOM folder. Use stubbornness'
+    foom_fld.delete(mapistore.DEL_ALL)
+    print "[PYMAPISTORE] BLAH subfolders:"
+    for f in blah_fld.get_child_folders():   
+        print f.get_uri()  
+print
+
+# print '[PYMAPISTORE] Delete FOO message:'

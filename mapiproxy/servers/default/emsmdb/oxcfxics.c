@@ -3358,17 +3358,24 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 			talloc_free(data_pointers);
 
 			if (sync_data->table_type == MAPISTORE_FOLDER_TABLE) {
-				/*
-				 * TODO: be careful with following - it has a comment
-				 * to check it further, so problems might be expected
-				 */
 				ret = emsmdbp_object_open_folder(local_mem_ctx, emsmdbp_ctx, folder_object, eid, &subfolder_object);
 				OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), local_mem_ctx);
 
+				/*
+				 * FIXME: be careful with following - it has a comment
+				 * to check it further, so problems might be expected
+				 * For now, errors are just reported, so we preserve
+				 * existing behavior - I am unable to test failure
+				 * branches at the moment.
+				 */
 				retval = oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
-				OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
-
 				talloc_free(subfolder_object);
+				if (MAPI_STATUS_IS_ERR(retval)) {
+					DEBUG(0, ("%s: ERROR: oxcfxics_fill_transfer_state_arrays has failed - %s."
+						  " Execution will continue to preserver previous behavior\n",
+						  __FUNCTION__, mapi_get_errstr(retval)));
+					continue;
+				}
 			}
 		}
 	}

@@ -180,6 +180,18 @@ fooc_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/folderFOOC/')
 print fooc_fld.get_properties();
 print
 
+# Create message
+print '[PYMAPISTORE] Create FOO message in BLAH:'
+foo_msg = blah_fld.create_message(mapistore.CREATE_GENERIC)
+uri = foo_msg.get_uri()
+print '[PYMAPISTORE] URI: ' + uri
+print
+  
+# Check that it appears
+print '[PYMAPISTORE] INBOX hierarchy:'
+print '[NUMBER OF MESSAGES]: ' + repr(blah_fld.get_child_count(mapistore.MESSAGE_TABLE))
+print
+
 # Clean up
 print '[PYMAPISTORE] Delete FOOC folder:'
 fooc_fld.delete(mapistore.DEL_ALL)
@@ -193,7 +205,12 @@ except:
     foom_fld.delete(mapistore.DEL_ALL)
 print
 
-# print '[PYMAPISTORE] Delete FOO message:'
-print "[PYMAPISTORE] INBOX folder tree:"
+print '[PYMAPISTORE] Delete FOO message:'
+blah_fld.delete_message(uri, mapistore.PERMANENT_DELETE)
+print
+
+print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print
+
+# Test move and copy messages

@@ -1017,6 +1017,8 @@ void initmapistore_folder(PyObject *m)
 	PyModule_AddObject(m, "DEL_MESSAGES", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "DEL_FOLDERS", PyInt_FromLong(0x4));
 	PyModule_AddObject(m, "DEL_ALL", PyInt_FromLong(0x5));
+	PyModule_AddObject(m, "SOFT_DELETE", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "PERMANENT_DELETE", PyInt_FromLong(0x2));
 
 	/* Open message flags */
 	PyModule_AddObject(m, "OPEN_READ", PyInt_FromLong(0x0));

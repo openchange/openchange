@@ -5,6 +5,11 @@ import os,sys
 
 from openchange import mapistore
 
+def print_tree(folder, indent):
+    print '   '*indent + folder.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
+    for f in folder.get_child_folders():
+        print_tree(f, indent+1)
+        
 parser = optparse.OptionParser(usage="%prog --username=<username> [options]", version="%prog 1.0")
 parser.add_option("--username", type="string", help="Set the username to use with mapistore")
 parser.add_option("--mapping-path", type="string", help="Specify mapistore mapping path")
@@ -100,6 +105,11 @@ print '[PYMAPISTORE] Create FOO subfolder:'
 foo_fld = in_fld.create_folder('FOO')
 print
 
+# Display the folder tree
+print "[PYMAPISTORE] INBOX folder tree:"
+print_tree(in_fld, 0)
+print
+
 # Display and modify folder properties
 print '[PYMAPISTORE] Get FOO properties:'
 print foo_fld.get_properties();
@@ -130,19 +140,12 @@ except:
 	foo_fld.delete(mapistore.DEL_ALL)
 	print
  
-print "[PYMAPISTORE] INBOX subfolders (FOO shouldn't be one):"
-for f in in_fld.get_child_folders():
-	print f.get_uri()
+print "[PYMAPISTORE] INBOX folder tree:"
+print_tree(in_fld, 0)
 print
-
-print "[PYMAPISTORE] BLAH subfolders:"
-for f in blah_fld.get_child_folders():
-	print f.get_uri()
-print
-
-foom_fld = blah_fld.open_folder('sogo://user1:user1@mail/folderINBOX/foldersampleblah/folderFOOM/')
 
 print '[PYMAPISTORE] Display FOOM properties:'
+foom_fld = blah_fld.open_folder('sogo://user1:user1@mail/folderINBOX/foldersampleblah/folderFOOM/')
 print foom_fld.get_properties();
 print
 
@@ -155,23 +158,13 @@ except:
 	print sys.exc_info()[0]
 	print
    
-print '[PYMAPISTORE] BLAH subfolders (Now FOOM should be there):'
-for f in blah_fld.get_child_folders():
-	print f.get_uri()
+print "[PYMAPISTORE] INBOX folder tree:"
+print_tree(in_fld, 0)
 print
-   
-print "[PYMAPISTORE] INBOX subfolders (FOOC should be there):"
-for f in in_fld.get_child_folders():
-    print f.get_uri()
-print
-
-fooc_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/folderFOOC/')
 
 print '[PYMAPISTORE] Display FOOC properties:'
+fooc_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/folderFOOC/')
 print fooc_fld.get_properties();
-print
-
-print "[PYMAPISTORE] FOOC subfolders (should BLAHC be here?):"
 print
 
 # Clean up
@@ -184,9 +177,9 @@ try:
 except:
     '[PYMAPISTORE][ERR] Cannot delete FOOM folder. Use stubbornness'
     foom_fld.delete(mapistore.DEL_ALL)
-    print "[PYMAPISTORE] BLAH subfolders:"
-    for f in blah_fld.get_child_folders():   
-        print f.get_uri()  
 print
 
 # print '[PYMAPISTORE] Delete FOO message:'
+print "[PYMAPISTORE] INBOX folder tree:"
+print_tree(in_fld, 0)
+print

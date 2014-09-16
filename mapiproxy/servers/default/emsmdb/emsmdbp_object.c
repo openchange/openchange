@@ -617,7 +617,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 	}
 
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
-	if (MAPI_STATUS_IS_OK(retval)) {
+	if (retval == MAPI_E_SUCCESS) {
 		if (parent_fid) {
 			struct emsmdbp_object	*parent_object = NULL;
 

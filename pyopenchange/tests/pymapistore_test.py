@@ -214,3 +214,47 @@ print_tree(in_fld, 0)
 print
 
 # Test move and copy messages
+# *PARTICULAR TO MY ENVIRONMENT*
+print '[PYMAPISTORE] Add Sent context:'
+sent_ctx = mstore.add_context('sogo://user1:user1@mail/folderSent')
+print
+
+print '[PYMAPISTORE] Open Sent root folder:'
+sent_fld = sent_ctx.open()
+print
+
+print '[PYMAPISTORE] Sent child messages:'
+uri_list = []
+for m in sent_fld.get_child_messages():
+    uri = m.get_uri()
+    uri_list.append(uri)
+    print uri
+print
+
+print '[PYMAPISTORE] Move child messages to INBOX:'
+sent_fld.copy_move_messages(uri_list, in_fld, 1)
+print
+
+print '[PYMAPISTORE] INBOX child messages:'
+uri_list = []
+for m in in_fld.get_child_messages():
+    uri = m.get_uri()
+    uri_list.append(uri)
+    print uri
+print
+
+print '[PYMAPISTORE] Move child messages into BLAH:'
+in_fld.copy_move_messages(uri_list, blah_fld, 0)
+print
+
+print '[PYMAPISTORE] INBOX child messages:'
+for m in in_fld.get_child_messages():
+    print m.get_uri()
+print
+
+print '[PYMAPISTORE] BLAH child messages (delete them once shown):'
+for m in blah_fld.get_child_messages():
+    uri = m.get_uri()
+    print uri
+    blah_fld.delete_message(uri, mapistore.PERMANENT_DELETE)
+print

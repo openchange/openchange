@@ -822,6 +822,112 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStoreFolder_copy_move_messages(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	char				*kwnames[] = { "uri_list", "target_folder", "want_copy", NULL };
+	PyObject			*uri_list, *item;
+	PyMAPIStoreFolderObject 	*target_folder;
+	int				want_copy;
+	Py_ssize_t			count, i;
+	TALLOC_CTX			*mem_ctx;
+	uint64_t			*source_mids, *target_mids, mid;
+	char				*uri;
+	bool				partial = false, soft_deleted; // We use full URIs
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OOi", kwnames, &uri_list, &target_folder, &want_copy)) {
+		return NULL;
+	}
+
+	/* Check the arguments' types */
+	if (PyList_Check(uri_list) == false) {
+		PyErr_SetString(PyExc_TypeError, "'message_list' must be a list");
+		return NULL;
+	}
+
+	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
+		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		return NULL;
+	}
+
+	if ((want_copy < 0) || (want_copy > 1)) {
+		PyErr_SetString(PyExc_ValueError, "Argument 'want_copy' out of range");
+		return NULL;
+	}
+
+	/* Build source MID list */
+	count = PyList_Size(uri_list);
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	source_mids = talloc_array(mem_ctx, uint64_t,count);
+	if (source_mids == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	for (i = 0; i < count; i++) {
+		item = PyList_GetItem(uri_list, i);
+
+		if (PyString_Check(item) == false) {
+			PyErr_SetString(PyExc_TypeError, "Argument 'uri_list' must only contain strings");
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		uri = PyString_AsString(item);
+
+		retval = mapistore_indexing_record_get_fmid(self->context->mstore_ctx, self->context->parent->username,
+				uri, partial, &mid, &soft_deleted);
+		if (retval != MAPISTORE_SUCCESS) {
+			PyErr_SetMAPIStoreError(retval);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		if (soft_deleted == true) {
+			PyErr_SetString(PyExc_SystemError, talloc_asprintf(mem_ctx, "Soft-deleted message; %s", uri));
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+
+		source_mids[i] = mid;
+	}
+
+	/* Build target MID list */
+	target_mids = talloc_array(mem_ctx, uint64_t, count);
+	if (target_mids == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, count, target_mids);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Move/copy messages */
+	retval = mapistore_folder_move_copy_messages(self->context->mstore_ctx, self->context->context_id,
+			target_folder->folder_object, self->folder_object, target_folder->mem_ctx, count,
+			source_mids, target_mids, NULL, (bool) want_copy);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -881,6 +987,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_message", (PyCFunction)py_MAPIStoreFolder_create_message, METH_VARARGS|METH_KEYWORDS },
 	{ "open_message", (PyCFunction)py_MAPIStoreFolder_open_message, METH_VARARGS|METH_KEYWORDS },
 	{ "delete_message", (PyCFunction)py_MAPIStoreFolder_delete_message, METH_VARARGS|METH_KEYWORDS },
+	{ "copy_move_messages", (PyCFunction)py_MAPIStoreFolder_copy_move_messages, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_messages", (PyCFunction)py_MAPIStoreFolder_get_child_messages, METH_NOARGS },
 	{ NULL },
 };

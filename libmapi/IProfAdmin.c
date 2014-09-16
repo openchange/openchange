@@ -93,7 +93,7 @@ static enum MAPISTATUS ldb_load_profile(TALLOC_CTX *mem_ctx,
 	profile->roh_tls = ldb_msg_find_attr_as_bool(msg, "roh_tls", true);
 	profile->roh_rpc_proxy_port = ldb_msg_find_attr_as_int(msg, "roh_rpc_proxy_port", 443);
 	profile->roh_rpc_proxy_server = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "roh_rpc_proxy_server", NULL));
-
+	profile->roh_http_auth = talloc_steal(profile, ldb_msg_find_attr_as_string(msg, "roh_http_auth", "ntlm"));
 	talloc_free(res);
 
 	return MAPI_E_SUCCESS;

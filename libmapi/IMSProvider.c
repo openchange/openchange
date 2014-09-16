@@ -20,6 +20,7 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/libmapi_private.h"
+#include "libmapi/mapi_profile.h"
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
 #include <core/error.h>
@@ -97,11 +98,14 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 	if (!mapi_ctx) return NULL;
 
 	if (profile->roh == true) {
-		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,",
+		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[RpcProxy=%s:%d,HttpAuthOption=%s",
 				rpcserver, profile->roh_rpc_proxy_server,
-				profile->roh_rpc_proxy_port);
+				profile->roh_rpc_proxy_port,
+				profile->roh_http_auth);
 		if (profile->roh_tls == true) {
-			binding = talloc_strdup_append(binding, "tls,");
+			binding = talloc_strdup_append(binding, ",HttpUseTls=true");
+		} else {
+			binding = talloc_strdup_append(binding, ",HttpUseTls=false");
 		}
 	} else {
 		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", rpcserver);
@@ -109,15 +113,15 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 
 	/* If dump-data option is enabled */
 	if (mapi_ctx->dumpdata == true) {
-		binding = talloc_strdup_append(binding, "print,");
+		binding = talloc_strdup_append(binding, ",print");
 	}
 	/* If seal option is enabled in the profile */
 	if (profile->seal == true) {
-		binding = talloc_strdup_append(binding, "seal,");
+		binding = talloc_strdup_append(binding, ",seal");
 	}
 	/* If localaddress parameter is available in the profile */
 	if (profile->localaddr) {
-		binding = talloc_asprintf_append(binding, "localaddress=%s,", profile->localaddr);
+		binding = talloc_asprintf_append(binding, ",localaddress=%s", profile->localaddr);
 	}
 
 	binding = talloc_strdup_append(binding, "]");

@@ -59,6 +59,7 @@ struct mapi_profile
 	bool		roh_tls;
 	const char	*roh_rpc_proxy_server;
 	uint32_t	roh_rpc_proxy_port;
+    const char  *roh_http_auth;
 };
 
 typedef int (*mapi_profile_callback_t)(struct PropertyRowSet_r *, const void *);

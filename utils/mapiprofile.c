@@ -131,7 +131,8 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 			       bool opt_dumpdata, const char *opt_debuglevel,
 			       uint8_t exchange_version, const char *kerberos,
 			       bool roh, bool roh_tls, uint32_t roh_rpc_proxy_port,
-			       const char *roh_rpc_proxy_server)
+			       const char *roh_rpc_proxy_server,
+			       const char *roh_http_auth)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -192,6 +193,7 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_tls", (roh_tls == true) ? "true" : "false");
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_server", roh_rpc_proxy_server);
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_port", roh_rpc_proxy_port_str);
+		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_http_auth", roh_http_auth);
 		talloc_free(roh_rpc_proxy_port_str);
 	}
 
@@ -470,6 +472,7 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
                 printf("\tRPC over HTTP use TLS      == %s\n", (profile->roh_tls == true) ? "yes" : "no");
                 printf("\tRPC over HTTP proxy server == %s\n", profile->roh_rpc_proxy_server);
                 printf("\tRPC over HTTP proxy port   == %d\n", profile->roh_rpc_proxy_port);
+                printf("\tRPC over HTTP auth scheme  == %s\n", profile->roh_http_auth);
         }
 end:
 	talloc_free(mem_ctx);
@@ -571,6 +574,7 @@ int main(int argc, const char *argv[])
 	const char	*version = NULL;
 	const char	*opt_roh_rpc_proxy_server = NULL;
 	const char	*opt_roh_rpc_proxy_port = NULL;
+	const char	*opt_roh_http_auth = NULL;
 	uint32_t	nopass = 0;
 	uint32_t	roh_rpc_proxy_port = 443;
 	char		hostname[256];
@@ -584,7 +588,7 @@ int main(int argc, const char *argv[])
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
 	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB,
 	      OPT_ROH, OPT_ROH_NO_TLS, OPT_ROH_RPC_PROXY_PORT,
-	      OPT_ROH_RPC_PROXY_SERVER};
+	      OPT_ROH_RPC_PROXY_SERVER, OPT_ROH_HTTP_AUTH};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -620,6 +624,7 @@ int main(int argc, const char *argv[])
 		{"roh-no-tls", 0, POPT_ARG_NONE, NULL, OPT_ROH_NO_TLS, "Do not use TLS to connect to Exchange server over HTTP", NULL },
 		{"roh-rpc-proxy-port", 0, POPT_ARG_STRING, NULL, OPT_ROH_RPC_PROXY_PORT, "RPC over HTTP proxy port", "443" },
 		{"roh-rpc-proxy", 0, POPT_ARG_STRING, NULL, OPT_ROH_RPC_PROXY_SERVER, "RPC over HTTP proxy server", NULL },
+		{"roh-http-auth", 0, POPT_ARG_STRING, NULL, OPT_ROH_HTTP_AUTH, "RPC over HTTP authentication scheme", NULL },
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
@@ -756,6 +761,18 @@ int main(int argc, const char *argv[])
 			free((void *)opt_tmp);
 			opt_tmp = NULL;
 			break;
+		case OPT_ROH_HTTP_AUTH:
+			opt_tmp = poptGetOptArg(pc);
+			opt_roh_http_auth = talloc_strdup(mem_ctx, opt_tmp);
+			if (strcmp(opt_roh_http_auth, "ntlm") != 0 &&
+			    strcmp(opt_roh_http_auth, "basic") != 0) {
+				printf("Invalid HTTP authentication scheme, choose between 'ntlm' and 'basic'\n");
+				retcode = EXIT_FAILURE;
+				goto cleanup;
+			}
+			free((void *)opt_tmp);
+			opt_tmp = NULL;
+			break;
 		}
 	}
 
@@ -810,6 +827,9 @@ int main(int argc, const char *argv[])
 	if (opt_roh && opt_roh_rpc_proxy_server == NULL) {
 		opt_roh_rpc_proxy_server = talloc_strdup(mem_ctx, address);
 	}
+	if (opt_roh && opt_roh_http_auth == NULL) {
+		opt_roh_http_auth = talloc_strdup(mem_ctx, "ntlm");
+	}
 
 	/* Process the code here */
 
@@ -856,7 +876,8 @@ int main(int argc, const char *argv[])
 					 exchange_version[i].version,
 					 opt_krb, opt_roh, opt_roh_tls,
 					 roh_rpc_proxy_port,
-					 opt_roh_rpc_proxy_server)) {
+					 opt_roh_rpc_proxy_server,
+					 opt_roh_http_auth)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

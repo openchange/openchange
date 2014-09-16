@@ -126,8 +126,21 @@ print foo_fld.get_properties(['PidTagContentCount']);
 foo_fld.set_properties({'PidTagContentCount': 0L});
 print
 
+### Copy folder ###
+print '[PYMAPISTORE] Duplicate BLAH (copy into FOO):'
+try:
+    blah_fld.copy_folder(foo_fld, 'BLAHC', mapistore.NON_RECURSIVE)
+except:
+    print "[PYMAPISTORE][ERR] Can't copy folder"
+    print sys.exc_info()[0]
+    print
+   
+print "[PYMAPISTORE] INBOX folder tree:"
+print_tree(in_fld, 0)
+print
+
 # Move folder
-print '[PYMAPISTORE] Move FOO subfolder to BLAH:'
+print '[PYMAPISTORE] Move FOO subfolder to BLAH as FOOM:'
 
 try:
 	foo_fld.move_folder(blah_fld, 'FOOM')
@@ -150,9 +163,9 @@ print foom_fld.get_properties();
 print
 
 # Copy folder
-print '[PYMAPISTORE] Copy FOOM into INBOX:'
+print '[PYMAPISTORE] Copy FOOM into INBOX as FOOC:'
 try:
-	foom_fld.copy_folder(in_fld, 'FOOC', mapistore.NON_RECURSIVE)
+	foom_fld.copy_folder(in_fld, 'FOOC', mapistore.RECURSIVE)
 except:
 	print "[PYMAPISTORE][ERR] Can't copy folder"
 	print sys.exc_info()[0]
@@ -175,7 +188,7 @@ print '[PYMAPISTORE] Delete FOOM folder:'
 try:
     foom_fld.delete(mapistore.DEL_ALL)
 except:
-    '[PYMAPISTORE][ERR] Cannot delete FOOM folder. Use stubbornness'
+    print '[PYMAPISTORE][ERR] Cannot delete FOOM folder. Use stubbornness'
     foom_fld.delete(mapistore.DEL_ALL)
 print
 

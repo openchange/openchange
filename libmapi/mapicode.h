@@ -89,7 +89,10 @@ typedef unsigned long	SCODE;
 #define	MAPI_STATUS_V(x) ((SCODE)x)
 
 #define	MAPI_STATUS_IS_OK(x) (MAPI_STATUS_V(x) == 0)
-#define	MAPI_STATUS_IS_ERR(x) ((MAPI_STATUS_V(x) & 0xc0000000) == 0x80000000)
+/*
+ * MAPI_STATUS_IS_ERR() is deprecated. Please use status != MAPI_E_SUCCESS instead
+ */
+/*#define	MAPI_STATUS_IS_ERR(x) ((MAPI_STATUS_V(x) & 0xc0000000) == 0x80000000)*/
 #define	MAPI_STATUS_EQUAL(x,y) (MAPI_STATUS_V(x) == MAPI_STATUS_V(y))
 
 #define	MAPI_STATUS_IS_OK_RETURN(x) do { \

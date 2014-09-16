@@ -2306,7 +2306,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	}
 	else {
 		retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object->parent_object, parentFolderID, &parent_folder);
-		if (MAPI_STATUS_IS_ERR(retval)) {
+		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(0, ("Failed to open parent folder with FID=[0x%016"PRIx64"]: %s\n", parentFolderID, mapi_get_errstr(retval)));
 			mapi_repl->error_code = retval;
 			goto end;
@@ -2315,7 +2315,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	}
 
 	retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, parent_folder, folderID, &folder_object);
-	if (MAPI_STATUS_IS_ERR(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval) {
 			DEBUG(5, (__location__": unable to obtain a change number\n"));
@@ -2915,7 +2915,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	}
 
 	retval = emsmdbp_object_open_folder_by_fid(NULL, emsmdbp_ctx, synccontext_object, sourceFID, &source_folder_object);
-	if (MAPI_STATUS_IS_ERR(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(0, ("Failed to open source folder with FID=[0x%016"PRIx64"]: %s\n",
 			  sourceFID, mapi_get_errstr(retval)));
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
@@ -3370,7 +3370,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 				 */
 				retval = oxcfxics_fill_transfer_state_arrays(mem_ctx, emsmdbp_ctx, synccontext, owner, sync_data, subfolder_object);
 				talloc_free(subfolder_object);
-				if (MAPI_STATUS_IS_ERR(retval)) {
+				if (retval != MAPI_E_SUCCESS) {
 					DEBUG(0, ("%s: ERROR: oxcfxics_fill_transfer_state_arrays has failed - %s."
 						  " Execution will continue to preserve previous behavior\n",
 						  __FUNCTION__, mapi_get_errstr(retval)));

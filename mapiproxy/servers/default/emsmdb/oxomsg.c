@@ -109,7 +109,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 		}
 
 		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object);
-		if (MAPI_STATUS_IS_ERR(retval)) {
+		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(5, (__location__": Failed to open parent folder with FID=[0x%016"PRIx64"]: %s\n",
 				  folderID, mapi_get_errstr(retval)));
 			continue;

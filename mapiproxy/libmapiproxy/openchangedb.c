@@ -997,10 +997,12 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_conte
 	OPENCHANGE_RETVAL_IF(MAPI_STATUS_IS_ERR(retval), retval, NULL);
 
 	/* check indexing_url we are about to return */
-	if (!(*indexing_url) || !(*indexing_url[0])) {
-		DEBUG(0, ("%s: Invalid indexing url [%s] for user %s\n",
-			  __FUNCTION__, *indexing_url, username));
-		return MAPI_E_DISK_ERROR;
+	if (*indexing_url == NULL) {
+		return MAPI_E_NOT_FOUND;
+	} else if (!*indexing_url[0]) {
+		DEBUG(3, ("[%s:%d]: Invalid empty indexing url for user %s\n",
+			  __FUNCTION__, __LINE__, username));
+		return MAPI_E_NOT_FOUND;
 	}
 
 	return MAPI_E_SUCCESS;

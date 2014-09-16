@@ -1,8 +1,10 @@
 INSERT organizational_units VALUES (1, 'First Organization', 'First Administrative Group');
 INSERT servers VALUES (1, 1, 1, 402);
 INSERT public_folders VALUES (1, 1, 'c4898b91-da9d-4f3e-9ae4-8a8bd5051b89');
-INSERT mailboxes VALUES (1, 1, 17438782182108692481, 'paco', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, NULL, 'en_US');
+INSERT mailboxes VALUES (1, 1, 17438782182108692481, 'paco', '13c54881-02f6-4ade-ba7d-8b28c5f638c6', 'd87292c1-1bc3-4370-a734-98b559b69a52', 1, 1, 'mysql://openchange@localhost/openchange', 'en_US');
 INSERT mailboxes_properties VALUES (1, 'PidTagDisplayName', 'OpenChange Mailbox: paco'), (1, 'PidTagAccess', '63'), (1, 'PidTagCreationTime', '130268260180000000'),(1, 'PidTagFolderType', '1'),(1, 'PidTagLastModificationTime', '130268260180000000'),(1, 'PidTagRights', '2043'),(1, 'PidTagSubFolders', 'TRUE'),(1, 'PidTagMessageClass', 'IPC'),(1, 'PidTagIpmDraftsEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABoAAA=='),(1, 'PidTagIpmAppointmentEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABsAAA=='),(1, 'PidTagIpmContactEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABwAAA=='),(1, 'PidTagIpmTaskEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB0AAA=='),(1, 'PidTagIpmNoteEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB4AAA=='),(1, 'PidTagIpmJournalEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAAB8AAA=='),(1, 'PidTagRemindersOnlineEntryId', 'AAAAAIFIxRP2At5Kun2LKMX2OMYBAMGSctjDG3BDpzSYtVm2mlIAAAAAABIAAA=='),(1, 'PidTagChangeNumber', '4683743612465315841');
+INSERT mailboxes VALUES (2, 1, 145241087982698497, 'null_indexing_url', 'cafd179b-b29e-4f8a-a511-200ddddbc3b1', 'cafd179b-b29e-4f8a-a511-200ddddbc3b2', 1, 1, NULL, 'en_US');
+INSERT mailboxes VALUES (3, 1, 145241087982698497, 'empty_indexing_url', 'cafd179b-b29e-4f8a-a511-200ddddbc3b3', 'cafd179b-b29e-4f8a-a511-200ddddbc3b4', 1, 1, "", 'en_US');
 
 INSERT INTO folders VALUES (0, 1, 72057594037927937, 'publicfolder', NULL, NULL, NULL, 1, NULL);
 INSERT folders_properties VALUES (LAST_INSERT_ID(), 'PidTagDisplayName', 'Public Folder Root');

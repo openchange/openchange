@@ -987,11 +987,23 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_conte
 						       const char *username,
 						       const char **indexing_url)
 {
+	enum MAPISTATUS	retval;
+
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!indexing_url, MAPI_E_INVALID_PARAMETER, NULL);
 
-	return oc_ctx->get_indexing_url(oc_ctx, username, indexing_url);
+	retval = oc_ctx->get_indexing_url(oc_ctx, username, indexing_url);
+	OPENCHANGE_RETVAL_IF(MAPI_STATUS_IS_ERR(retval), retval, NULL);
+
+	/* check indexing_url we are about to return */
+	if (!(*indexing_url) || !(*indexing_url[0])) {
+		DEBUG(0, ("%s: Invalid indexing url [%s] for user %s\n",
+			  __FUNCTION__, *indexing_url, username));
+		return MAPI_E_DISK_ERROR;
+	}
+
+	return MAPI_E_SUCCESS;
 }
 
 /**

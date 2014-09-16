@@ -114,7 +114,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 
 	// indexing context has not been found, let's create it.
 	retval = openchangedb_get_indexing_url(mstore_ctx->conn_info->oc_ctx, username, &indexing_url);
-	if (retval != MAPI_E_SUCCESS || indexing_url == NULL) {
+	if (retval != MAPI_E_SUCCESS) {
 		indexing_url = default_indexing_url;
 	}
 

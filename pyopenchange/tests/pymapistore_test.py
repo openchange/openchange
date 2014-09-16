@@ -6,7 +6,7 @@ import os,sys
 from openchange import mapistore
 
 def print_tree(folder, indent):
-    print '   '*indent + folder.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
+    print '   '*indent + '[F]: ' + folder.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
     for f in folder.get_child_folders():
         print_tree(f, indent+1)
         
@@ -105,8 +105,8 @@ print '[PYMAPISTORE] Create FOO subfolder:'
 foo_fld = in_fld.create_folder('FOO')
 print
 
-# Display the folder tree
-print "[PYMAPISTORE] INBOX folder tree:"
+# Display the hierarchy
+print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print
 
@@ -135,7 +135,7 @@ except:
     print sys.exc_info()[0]
     print
    
-print "[PYMAPISTORE] INBOX folder tree:"
+print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print
 
@@ -153,7 +153,7 @@ except:
 	foo_fld.delete(mapistore.DEL_ALL)
 	print
  
-print "[PYMAPISTORE] INBOX folder tree:"
+print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print
 
@@ -171,7 +171,7 @@ except:
 	print sys.exc_info()[0]
 	print
    
-print "[PYMAPISTORE] INBOX folder tree:"
+print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print
 
@@ -184,6 +184,7 @@ print
 print '[PYMAPISTORE] Delete FOOC folder:'
 fooc_fld.delete(mapistore.DEL_ALL)
 print
+
 print '[PYMAPISTORE] Delete FOOM folder:'
 try:
     foom_fld.delete(mapistore.DEL_ALL)

@@ -231,8 +231,8 @@ for m in sent_fld.get_child_messages():
     print uri
 print
 
-print '[PYMAPISTORE] Move child messages to INBOX:'
-sent_fld.copy_move_messages(uri_list, in_fld, 1)
+print '[PYMAPISTORE] Copy child messages to INBOX:'
+sent_fld.copy_messages(uri_list, in_fld)
 print
 
 print '[PYMAPISTORE] INBOX child messages:'
@@ -244,7 +244,7 @@ for m in in_fld.get_child_messages():
 print
 
 print '[PYMAPISTORE] Move child messages into BLAH:'
-in_fld.copy_move_messages(uri_list, blah_fld, 0)
+in_fld.move_messages(uri_list, blah_fld)
 print
 
 print '[PYMAPISTORE] INBOX child messages:'

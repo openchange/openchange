@@ -3372,7 +3372,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 				talloc_free(subfolder_object);
 				if (MAPI_STATUS_IS_ERR(retval)) {
 					DEBUG(0, ("%s: ERROR: oxcfxics_fill_transfer_state_arrays has failed - %s."
-						  " Execution will continue to preserver previous behavior\n",
+						  " Execution will continue to preserve previous behavior\n",
 						  __FUNCTION__, mapi_get_errstr(retval)));
 					continue;
 				}

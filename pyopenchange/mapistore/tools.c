@@ -31,130 +31,136 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 
 	/* Build the dictionary */
 	for (i = 0; i < count; i++) {
-		/* Set the key of the dictionary entry */
 		key = aulPropTag[i];
+		/* Set the value of the dictionary entry */
 		if (prop_data[i].error) {
-			key = key | PT_ERROR;
+			key = (key & 0xFFFF0000) | PT_ERROR;
+			pyval = PyString_FromString(mapistore_errstr(prop_data[i].error));
+		} else {
+			/* Sanity check */
+			if (prop_data[i].data == 0x0){
+				DEBUG(0, ("[ERR][%s]: Invalid data pointer for tag 0x%x (and no associated error)\n",
+					  __location__, key));
+				Py_DECREF(py_ret);
+				return NULL;
+			}
+			pyval = NULL;
+
+			switch (key & 0xFFFF) {
+			case PT_I2:
+				DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
+				break;
+			case PT_LONG:
+				pyval = PyLong_FromLong(*((uint32_t *)prop_data[i].data));
+				break;
+			case PT_DOUBLE:
+				DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
+				break;
+			case PT_BOOLEAN:
+				pyval = PyBool_FromLong(*((uint32_t *)prop_data[i].data));
+				break;
+			case PT_I8:
+				pyval = PyLong_FromUnsignedLongLong(*((uint64_t *)prop_data[i].data));
+				break;
+			case PT_STRING8:
+			case PT_UNICODE:
+				pyval = PyString_FromString((const char *)prop_data[i].data);
+				break;
+			case PT_SYSTIME:
+				ft = (struct FILETIME *) prop_data[i].data;
+				nt = ft->dwHighDateTime;
+				nt = nt << 32;
+				nt |= ft->dwLowDateTime;
+				nttime_to_timeval(&t, nt);
+				pyval = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
+				break;
+			case PT_CLSID:
+				DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
+				break;
+			case PT_SVREID:
+			case PT_BINARY:
+				bin = (struct Binary_r *)prop_data[i].data;
+				pyval = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
+				break;
+			case PT_MV_SHORT:
+				DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
+				break;
+			case PT_MV_LONG:
+				DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
+				break;
+			case PT_MV_I8:
+				DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
+				break;
+			case PT_MV_STRING8:
+				MVszA = (struct StringArray_r *)prop_data[i].data;
+				pyval = PyList_New(MVszA->cValues);
+				if (pyval == NULL) {
+					DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
+						  __location__));
+					Py_DECREF(py_ret);
+					return NULL;
+				}
+				for (i = 0; i < MVszA->cValues; i++) {
+					item = PyString_FromString(MVszA->lppszA[i]);
+					if (PyList_SetItem(pyval, i, item) == -1) {
+						DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
+							  __location__));
+						Py_DECREF(pyval);
+						Py_DECREF(py_ret);
+						return NULL;
+					}
+				}
+				break;
+			case PT_MV_UNICODE:
+				MVszW = (struct StringArrayW_r *)prop_data[i].data;
+				pyval = PyList_New(MVszW->cValues);
+				if (pyval == NULL) {
+					DEBUG(0, ("[ERR][%s]: Unable to initialise Python List\n",
+						  __location__));
+					Py_DECREF(py_ret);
+					return NULL;
+				}
+
+				for (i = 0; i < MVszW->cValues; i++) {
+					item = PyString_FromString(MVszW->lppszW[i]);
+					if (PyList_SetItem(pyval, i, item) == -1) {
+						DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
+							  __location__));
+						Py_DECREF(pyval);
+						Py_DECREF(py_ret);
+						return NULL;
+					}
+				}
+				break;
+			case PT_MV_SYSTIME:
+				DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
+				break;
+			case PT_MV_CLSID:
+				DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
+				break;
+			case PT_MV_BINARY:
+				DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
+				break;
+			case PT_NULL:
+				DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
+				break;
+			case PT_OBJECT:
+				DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
+				break;
+			default:
+				DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__,
+					  (key & 0xFFFF)));
+				break;
+			}
+
 		}
+
+		/* Set the key of the dictionary entry */
 		skey = openchangedb_property_get_attribute(key);
 		if (skey == NULL) {
 			pykey = PyString_FromFormat("0x%x", key);
 		} else {
 			pykey = PyString_FromString(skey);
-		}
-
-		/* Set the value of the dictionary entry */
-		pyval = NULL;
-
-		switch (key & 0xFFFF) {
-		case PT_I2:
-			DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
-			break;
-		case PT_LONG:
-			pyval = PyLong_FromLong(*((uint32_t *)prop_data[i].data));
-			break;
-		case PT_DOUBLE:
-			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
-			break;
-		case PT_BOOLEAN:
-			pyval = PyBool_FromLong(*((uint32_t *)prop_data[i].data));
-			break;
-		case PT_I8:
-			pyval = PyLong_FromUnsignedLongLong(*((uint64_t *)prop_data[i].data));
-			break;
-		case PT_STRING8:
-		case PT_UNICODE:
-			pyval = PyString_FromString((const char *)prop_data[i].data);
-			break;
-		case PT_SYSTIME:
-			ft = (struct FILETIME *) prop_data[i].data;
-			nt = ft->dwHighDateTime;
-			nt = nt << 32;
-			nt |= ft->dwLowDateTime;
-			nttime_to_timeval(&t, nt);
-			pyval = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
-			break;
-		case PT_CLSID:
-			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
-			break;
-		case PT_SVREID:
-		case PT_BINARY:
-			bin = (struct Binary_r *)prop_data[i].data;
-			pyval = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
-			break;
-		case PT_MV_SHORT:
-			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
-			break;
-		case PT_MV_LONG:
-			DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
-			break;
-		case PT_MV_I8:
-			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
-			break;
-		case PT_MV_STRING8:
-			MVszA = (struct StringArray_r *)prop_data[i].data;
-			pyval = PyList_New(MVszA->cValues);
-			if (pyval == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
-					  __location__));
-				Py_DECREF(pykey);
-				Py_DECREF(py_ret);
-				return NULL;
-			}
-			for (i = 0; i < MVszA->cValues; i++) {
-				item = PyString_FromString(MVszA->lppszA[i]);
-				if (PyList_SetItem(pyval, i, item) == -1) {
-					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
-						  __location__));
-					Py_DECREF(pyval);
-					Py_DECREF(pykey);
-					Py_DECREF(py_ret);
-					return NULL;
-				}
-			}
-			break;
-		case PT_MV_UNICODE:
-			MVszW = (struct StringArrayW_r *)prop_data[i].data;
-			pyval = PyList_New(MVszW->cValues);
-			if (pyval == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
-					  __location__));
-				Py_DECREF(pykey);
-				Py_DECREF(py_ret);
-				return NULL;
-			}
-
-			for (i = 0; i < MVszW->cValues; i++) {
-				item = PyString_FromString(MVszW->lppszW[i]);
-				if (PyList_SetItem(pyval, i, item) == -1) {
-					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
-						  __location__));
-					Py_DECREF(pyval);
-					Py_DECREF(pykey);
-					Py_DECREF(py_ret);
-					return NULL;
-				}
-			}
-			break;
-		case PT_MV_SYSTIME:
-			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
-			break;
-		case PT_MV_CLSID:
-			DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
-			break;
-		case PT_MV_BINARY:
-			DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
-			break;
-		case PT_NULL:
-			DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
-			break;
-		case PT_OBJECT:
-			DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
-			break;
-		default:
-			DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__,
-				  (key & 0xFFFF)));
-			break;
 		}
 
 		/* Set the dictionary entry */
@@ -170,6 +176,7 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			}
 			Py_DECREF(pyval);
 		}
+
 		Py_DECREF(pykey);
 	}
 	return py_ret;

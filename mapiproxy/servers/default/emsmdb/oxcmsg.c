@@ -689,7 +689,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	if (mapistore) {
 		contextID = emsmdbp_get_contextID(object);
 		memset(&columns, 0, sizeof(struct SPropTagArray));
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, &columns, object->backend_object, 0, NULL);
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, &columns, 0, NULL);
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));

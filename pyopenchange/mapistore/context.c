@@ -32,17 +32,21 @@ static void py_MAPIStoreContext_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self, PyObject *args)
+static PyObject *py_MAPIStoreContext_open(PyMAPIStoreContextObject *self)
 {
 	PyMAPIStoreFolderObject		*folder;
 
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
-	
+	if (folder == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	folder->mem_ctx = self->mem_ctx;
 	folder->context = self;
 	Py_INCREF(folder->context);
 
 	folder->folder_object = self->folder_object;
-	(void) talloc_reference(NULL, folder->folder_object);
 	folder->fid = self->fid;
 	
 	return (PyObject *)folder;
@@ -201,7 +205,7 @@ static PyObject *py_MAPIStoreContext_get_notifications(PyMAPIStoreContextObject 
 #endif /* disabled notifications */
 
 static PyMethodDef mapistore_context_methods[] = {
-	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_VARARGS },
+	{ "open", (PyCFunction)py_MAPIStoreContext_open, METH_NOARGS },
 #if 0
 	{ "add_subscription", (PyCFunction)py_MAPIStoreContext_register_subscription, METH_VARARGS },
 	{ "delete_subscription", (PyCFunction)py_MAPIStoreContext_unregister_subscription, METH_VARARGS },

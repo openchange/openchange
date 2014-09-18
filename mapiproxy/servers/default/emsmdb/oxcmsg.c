@@ -65,7 +65,7 @@ static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs,
 			 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-			 recipient->username);
+			 ldb_binary_encode_string(mem_ctx, recipient->username));
 	/* If the search failed, build an external recipient: very basic for the moment */
 	if (ret != LDB_SUCCESS || !res->count) {
 		DEBUG(0, ("record not found for %s\n", recipient->username));

@@ -236,7 +236,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
 	}
 
-	if (!mapi_repl->error_code) {
+	if (mapi_repl->error_code == MAPI_E_SUCCESS) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
 		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, request->EssDN, mailboxstore);
 		retval = mapi_handles_set_private_data(rec, object);

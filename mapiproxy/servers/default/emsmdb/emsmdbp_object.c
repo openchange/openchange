@@ -1119,27 +1119,28 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->folderID = 0x0;
 	object->object.mailbox->mailboxstore = mailboxstore;
 
-	if (mailboxstore == true) {
-		object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
-		ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
-				 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
-				 ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
-		if (!ret && res->count == 1) {
-			accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
-			if (accountName) {
-				object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox, accountName);
+	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s",
+			 ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
+	if (!ret && res->count == 1) {
+		accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
+		if (accountName) {
+			object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox, accountName);
 
-				/* Retrieve Mailbox folder identifier */
-				openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
-								0x1, &object->object.mailbox->folderID);
-			}
-			displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
-			if (displayName) {
-				object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox, 
-										   displayName);
-			}
 		}
+		displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
+		if (displayName) {
+			object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox,
+									   displayName);
+		}
+	}
+
+	if (mailboxstore == true) {
+		/* Retrieve Mailbox folder identifier */
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
+						0x1, &object->object.mailbox->folderID);
 	} else {
 		/* Retrieve Public folder identifier */
 		openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &object->object.mailbox->folderID);

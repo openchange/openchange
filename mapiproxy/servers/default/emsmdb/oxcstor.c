@@ -208,6 +208,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
 	bool				mailboxstore = true;
+	const char			*essDN = NULL;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
 
@@ -219,6 +220,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	request = &mapi_req->u.mapi_Logon;
+
+	essDN = request->EssDN;
 
 	/* Fill EcDoRpc_MAPI_REPL reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -234,11 +237,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		mailboxstore = false;
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
+
+		/*
+		 * EssDN for public logons may be empty string
+		 * In this case, fallback to emsmdbp_ctx->szUserDN
+		 */
+		if (strlen(essDN) == 0) {
+			essDN = emsmdbp_ctx->szUserDN;
+		}
 	}
 
 	if (mapi_repl->error_code == MAPI_E_SUCCESS) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
-		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, request->EssDN, mailboxstore);
+		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, essDN, mailboxstore);
 		retval = mapi_handles_set_private_data(rec, object);
 
 		handles[mapi_repl->handle_idx] = rec->handle;

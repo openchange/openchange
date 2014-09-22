@@ -482,14 +482,14 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 {
 	TALLOC_CTX		*mem_ctx;
 	char			*kwnames[] = { "dict", NULL };
-	PyObject		*dict = NULL, *list, *py_key, *py_value;
+	PyObject		*dict = NULL, *py_key, *py_value;
 	struct SRow		*aRow;
 	struct SPropValue	newValue;
 	void			*data;
 	enum MAPITAGS		tag;
 	enum mapistore_error	retval;
 	enum MAPISTATUS		ret;
-	size_t			i, count;
+	Py_ssize_t		pos = 0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwnames, &dict)) {
 		return NULL;
@@ -501,20 +501,9 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		return NULL;
 	}
 
-	/* Get a tuple list with the keys */
-	list = PyDict_Keys(dict);
-	if (list == NULL) {
-		PyErr_NoMemory();
-		Py_DECREF(list);
-		return NULL;
-	}
-
-	count = PyList_Size(list);
-
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
-		Py_DECREF(list);
 		return NULL;
 	}
 	aRow = talloc_zero(mem_ctx, struct SRow);
@@ -523,10 +512,8 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		goto end;
 	}
 
-	for (i = 0; i < count; i++) {
+	while (PyDict_Next(dict, &pos, &py_key, &py_value)) {
 		/* Transform the key into a property tag */
-		py_key = PyList_GetItem(list, i);
-
 		if (PyString_Check(py_key)) {
 			tag = openchangedb_property_get_tag(PyString_AsString(py_key));
 			if (tag == 0xFFFFFFFF) {
@@ -544,8 +531,6 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 		}
 
 		/* Transform the input value into proper C type */
-		py_value = PyDict_GetItem(dict, py_key);
-
 		retval = pymapistore_data_from_pyobject(mem_ctx,tag, py_value, &data);
 		if (retval != MAPISTORE_SUCCESS) {
 			DEBUG(0, ("[WARN][%s]: Unsupported value for property '%s' \n",
@@ -575,11 +560,9 @@ static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self
 	}
 
 	talloc_free(mem_ctx);
-	Py_DECREF(list);
 	Py_RETURN_NONE;
 end:
 	talloc_free(mem_ctx);
-	Py_DECREF(list);
 	return NULL;
 }
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)

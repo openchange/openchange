@@ -250,6 +250,11 @@ print
 print '[PYMAPISTORE] INBOX hierarchy:'
 print_tree(in_fld, 0)
 
+print '[PYMAPISTORE] Display message data:'
+in_msg_data = in_msg.get_data();
+print in_msg_data
+print
+
 # Clean up
 print '[PYMAPISTORE] BLAH child messages (delete them once shown):'
 for m in blah_fld.get_child_messages():

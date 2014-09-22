@@ -166,6 +166,7 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 		PyErr_SetString(PyExc_SystemError, "Error building the dictionary");
 		goto end;
 	}
+
 	talloc_free(mem_ctx);
 	return py_ret;
 
@@ -263,10 +264,202 @@ end:
 	return NULL;
 }
 
+static PyObject *py_MAPIStoreMessage_get_message_data(PyMAPIStoreMessageObject *self)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapistore_message	*msg_data;
+	struct mapistore_property_data  *prop_data;
+	PyObject			*py_ret = NULL, *py_val, *py_user_dict, *py_user_val;
+	const char			*proptag;
+	enum mapistore_error		retval;
+	uint32_t			tag_count = 0, recipients_count, i, j;
+	int				ret;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Retrieve the message data */
+	retval = mapistore_message_get_message_data(self->context->mstore_ctx, self->context->context_id,
+						    self->message_object, mem_ctx,
+						    &msg_data);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Build the dictionary */
+	py_ret = PyDict_New();
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	/* Build a dictionary with the message properties */
+	/* "Subject prefix" */
+	if (msg_data->subject_prefix != NULL) {
+		py_val = PyString_FromString(msg_data->subject_prefix);
+	} else {
+		py_val = PyString_FromString("Nan");
+	}
+
+	ret = PyDict_SetItem(py_ret, PyString_FromString("Subject prefix"), py_val);
+	if (ret != 0) {
+		Py_DECREF(py_val);
+		goto end;
+	}
+	Py_DECREF(py_val);
+
+	/* "Normalized subject" */
+	if (msg_data->normalized_subject != NULL) {
+		py_val = PyString_FromString(msg_data->normalized_subject);
+	} else {
+		py_val = PyString_FromString("Nan");
+	}
+
+	ret = PyDict_SetItem(py_ret, PyString_FromString("Normalized subject"), py_val);
+	if (ret != 0) {
+		Py_DECREF(py_val);
+		goto end;
+	}
+	Py_DECREF(py_val);
+
+	/* "Recipient count" */
+	recipients_count = msg_data->recipients_count;
+	py_val = PyInt_FromLong(recipients_count);
+	ret = PyDict_SetItem(py_ret, PyString_FromString("Recipient count"), py_val);
+	if (ret != 0) {
+		Py_DECREF(py_val);
+		goto end;
+	}
+	Py_DECREF(py_val);
+
+	/* "Recipient columns" */
+	if (msg_data->columns != NULL) {
+		tag_count = msg_data->columns->cValues;
+		py_val = PyList_New(tag_count);
+		if (py_val == NULL) {
+			PyErr_NoMemory();
+			goto end;
+		}
+
+		for (i = 0; i < tag_count; i++) {
+			proptag = get_proptag_name(msg_data->columns->aulPropTag[i]);
+			if (proptag) {
+				ret = PyList_SetItem(py_val, i, PyString_FromString(proptag));
+			} else {
+				ret = PyList_SetItem(py_val, i, PyString_FromFormat("0x%x",
+						msg_data->columns->aulPropTag[i]));
+			}
+			if (ret != 0) {
+				PyErr_SetString(PyExc_SystemError, "Unable to set item in column list");
+				Py_DECREF(py_val);
+				goto end;
+			}
+		}
+	} else {
+		py_val = PyString_FromString("Nan");
+	}
+
+	ret = PyDict_SetItem(py_ret, PyString_FromString("Recipient columns"), py_val);
+	if (ret != 0) {
+		Py_DECREF(py_val);
+		goto end;
+	}
+
+	Py_DECREF(py_val);
+
+	/* "Recipient data" */
+	py_val = PyList_New(recipients_count);
+	if (py_val == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
+
+	for (i = 0; i < recipients_count; i++){
+		/* Build the mapistore_property_data structure */
+		prop_data = talloc_zero_array(mem_ctx, struct mapistore_property_data, tag_count);
+		if (prop_data == NULL) {
+			PyErr_NoMemory();
+			Py_DECREF(py_val);
+			goto end;
+		}
+
+		for (j = 0; j < tag_count; j++){
+			if (msg_data->recipients[i].data[j] != NULL) {
+				prop_data[j].data = msg_data->recipients[i].data[j];
+				prop_data[j].error = MAPISTORE_SUCCESS;
+			} else {
+				prop_data[j].error = MAPISTORE_ERR_NOT_FOUND;
+			}
+		}
+
+		/* Get a dictionary with the user properties */
+		py_user_dict = pymapistore_python_dict_from_properties(msg_data->columns->aulPropTag, prop_data, tag_count);
+		if (py_ret == NULL) {
+			PyErr_SetString(PyExc_SystemError, "Error building the recipient data dictionary");
+			Py_DECREF(py_val);
+			goto end;
+		}
+
+		if (msg_data->recipients[i].username != NULL) {
+			py_user_val = PyString_FromString(msg_data->recipients[i].username);
+		} else {
+			py_user_val = PyString_FromString("Nan");
+		}
+
+		ret = PyDict_SetItem(py_user_dict, PyString_FromString("Username"), py_user_val);
+		if (ret != 0) {
+			Py_DECREF(py_val);
+			Py_DECREF(py_user_dict);
+			Py_DECREF(py_user_val);
+			goto end;
+		}
+
+		Py_DECREF(py_user_val);
+
+		ret = PyDict_SetItem(py_user_dict, PyString_FromString("Type"),
+				PyLong_FromLong(msg_data->recipients[i].type));
+		if (ret != 0) {
+			Py_DECREF(py_val);
+			Py_DECREF(py_user_dict);
+			goto end;
+		}
+
+		ret = PyList_SetItem(py_val, i, py_user_dict);
+		if (ret != 0) {
+			Py_DECREF(py_val);
+			goto end;
+		}
+	}
+
+	ret = PyDict_SetItem(py_ret, PyString_FromString("Recipient data"), py_val);
+	if (ret != 0) {
+		Py_DECREF(py_val);
+		goto end;
+	}
+
+	Py_DECREF(py_val);
+
+	talloc_free(mem_ctx);
+	return py_ret;
+
+end:
+	Py_DECREF(py_ret);
+	talloc_free(mem_ctx);
+	return NULL;
+}
+
+
 static PyMethodDef mapistore_message_methods[] = {
 	{ "get_uri", (PyCFunction)py_MAPIStoreMessage_get_uri, METH_NOARGS},
 	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
+	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
 	{ NULL },
 };
 

@@ -140,14 +140,12 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 	}
 
 	/* Get the available values */
-	prop_data = talloc_array(mem_ctx, struct mapistore_property_data, properties->cValues);
+	prop_data = talloc_zero_array(mem_ctx, struct mapistore_property_data, properties->cValues);
 	if (prop_data == NULL) {
 		PyErr_NoMemory();
 		talloc_free(mem_ctx);
 		return NULL;
 	}
-
-	memset(prop_data, 0, sizeof(struct mapistore_property_data) * properties->cValues);
 
 	retval = mapistore_properties_get_properties(self->context->mstore_ctx,
 			self->context->context_id, self->message_object, mem_ctx,

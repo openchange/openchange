@@ -110,10 +110,12 @@ print
  
 print "[PYMAPISTORE] Set FOO 'PidTagContentCount' property:"
 print foo_fld.get_properties(['PidTagContentCount']);
+print
  
 foo_fld.set_properties({'PidTagContentCount': 2L});
  
 print foo_fld.get_properties(['PidTagContentCount']);
+print
  
 # Set back to original value
 foo_fld.set_properties({'PidTagContentCount': 0L});
@@ -211,6 +213,7 @@ print
 
 print '[PYMAPISTORE] Sent hierarchy:'
 print_tree(sent_fld,0)
+print
 
 print '[PYMAPISTORE] Copy child messages to INBOX:'
 uri_list = []
@@ -222,6 +225,7 @@ print
  
 print '[PYMAPISTORE] INBOX hierarchy:'
 print_tree(in_fld, 0)
+print
 
 # Backend returns an invalid pointer for the data associated to 'PidTagInternetMessageId' 
 print '[PYMAPISTORE] Modify message properties:'

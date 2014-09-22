@@ -242,7 +242,7 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	TALLOC_CTX 			*mem_ctx;
 	PyObject			*py_ret = NULL;
 	const char			**backend_names;
-	int 				i, list_size;
+	int 				i, list_size, ret;
 
 	DEBUG(0, ("List backends for user: %s\n", self->username));
 
@@ -262,9 +262,20 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 
 	/* Build the list */
 	py_ret = PyList_New(list_size);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
 
 	for (i = 0; i < list_size; i++) {
-		PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+		ret = PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+		if (ret != 0) {
+			PyErr_SetString(PyExc_SystemError, "Unable to set item list");
+			Py_DECREF(py_ret);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 	}
 
 	talloc_free(mem_ctx);

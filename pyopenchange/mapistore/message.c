@@ -94,22 +94,30 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 				self->context->context_id, self->message_object, mem_ctx, &properties);
 		if (retval != MAPISTORE_SUCCESS) {
 			PyErr_SetMAPIStoreError(retval);
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 	} else {
 		/* Check the input argument */
 		if (PyList_Check(list) == false) {
 			PyErr_SetString(PyExc_TypeError, "Input argument must be a list");
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		/* Build the SPropTagArray structure */
 		count = PyList_Size(list);
 
 		properties = talloc_zero(mem_ctx, struct SPropTagArray);
+		if (properties == NULL) {
+			PyErr_NoMemory();
+			goto end;
+		}
+
 		properties->aulPropTag = talloc_zero(properties, void);
+		if (properties == NULL) {
+			PyErr_NoMemory();
+			goto end;
+		}
+
 		for (i = 0; i < count; i++) {
 			py_key = PyList_GetItem(list, i);
 			if (PyString_Check(py_key)) {
@@ -118,23 +126,20 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 					DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
 							__location__, PyString_AsString(py_key)));
 					PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
-					talloc_free(mem_ctx);
-					return NULL;
+					goto end;
 				}
 			} else if (PyInt_Check(py_key)) {
 				tag = PyInt_AsUnsignedLongMask(py_key);
 			} else {
 				PyErr_SetString(PyExc_TypeError,
 						"Invalid type in list: only strings and integers accepted");
-				talloc_free(mem_ctx);
-				return NULL;
+				goto end;
 			}
 
 			ret = SPropTagArray_add(mem_ctx, properties, tag);
 			if (ret != MAPI_E_SUCCESS) {
 				PyErr_SetMAPISTATUSError(ret);
-				talloc_free(mem_ctx);
-				return NULL;
+				goto end;
 			}
 		}
 	}
@@ -143,8 +148,7 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 	prop_data = talloc_zero_array(mem_ctx, struct mapistore_property_data, properties->cValues);
 	if (prop_data == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	retval = mapistore_properties_get_properties(self->context->mstore_ctx,
@@ -152,19 +156,21 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 			properties->cValues, properties->aulPropTag, prop_data);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Build a Python dictionary object with the tags and the property values */
 	py_ret = pymapistore_python_dict_from_properties(properties->aulPropTag, prop_data, properties->cValues);
 	if (py_ret == NULL) {
 		PyErr_SetString(PyExc_SystemError, "Error building the dictionary");
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 	talloc_free(mem_ctx);
 	return py_ret;
+
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
@@ -207,6 +213,10 @@ static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *se
 		return NULL;
 	}
 	aRow = talloc_zero(mem_ctx, struct SRow);
+	if (aRow == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
 
 	for (i = 0; i < count; i++) {
 		/* Transform the key into a property tag */
@@ -218,18 +228,14 @@ static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *se
 				DEBUG(0, ("[ERR][%s]: Unsupported property tag '%s' \n",
 						__location__, PyString_AsString(py_key)));
 				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
-				talloc_free(mem_ctx);
-				Py_DECREF(list);
-				return NULL;
+				goto end;
 			}
 		} else if (PyInt_Check(py_key)) {
 			tag = PyInt_AsUnsignedLongMask(py_key);
 		} else {
 			PyErr_SetString(PyExc_TypeError,
 					"Invalid property type: only strings and integers accepted");
-			talloc_free(mem_ctx);
-			Py_DECREF(list);
-			return NULL;
+			goto end;
 		}
 
 		/* Transform the input value into proper C type */
@@ -245,17 +251,13 @@ static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *se
 		/* Update aRow */
 		if (set_SPropValue_proptag(&newValue, tag, data) == false) {
 			PyErr_SetString(PyExc_SystemError, "Can't set property");
-			talloc_free(mem_ctx);
-			Py_DECREF(list);
-			return NULL;
+			goto end;
 		}
 
 		ret = SRow_addprop(aRow, newValue);
 		if (ret != MAPI_E_SUCCESS) {
 			PyErr_SetMAPISTATUSError(ret);
-			talloc_free(mem_ctx);
-			Py_DECREF(list);
-			return NULL;
+			goto end;
 		}
 	}
 
@@ -264,14 +266,16 @@ static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *se
 			self->message_object, aRow);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		Py_DECREF(list);
-		return NULL;
+		goto end;
 	}
 
 	talloc_free(mem_ctx);
 	Py_DECREF(list);
 	Py_RETURN_NONE;
+end:
+	talloc_free(mem_ctx);
+	Py_DECREF(list);
+	return NULL;
 }
 
 static PyMethodDef mapistore_message_methods[] = {

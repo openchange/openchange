@@ -156,7 +156,7 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 		}
 
 		/* Set the key of the dictionary entry */
-		skey = openchangedb_property_get_attribute(key);
+		skey = get_proptag_name(key);
 		if (skey == NULL) {
 			pykey = PyString_FromFormat("0x%x", key);
 		} else {

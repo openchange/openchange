@@ -121,7 +121,8 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 		for (i = 0; i < count; i++) {
 			py_key = PyList_GetItem(list, i);
 			if (PyString_Check(py_key)) {
-				tag = openchangedb_property_get_tag(PyString_AsString(py_key));
+				tag = get_proptag_value(PyString_AsString(py_key));
+
 				if (tag == 0xFFFFFFFF) {
 					DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
 							__location__, PyString_AsString(py_key)));
@@ -210,7 +211,8 @@ static PyObject *py_MAPIStoreMessage_set_properties(PyMAPIStoreMessageObject *se
 	while (PyDict_Next(dict, &pos, &py_key, &py_value)) {
 		/* Transform the key into a property tag */
 		if (PyString_Check(py_key)) {
-			tag = openchangedb_property_get_tag(PyString_AsString(py_key));
+			tag = get_proptag_value(PyString_AsString(py_key));
+
 			if (tag == 0xFFFFFFFF) {
 				DEBUG(0, ("[ERR][%s]: Unsupported property tag '%s' \n",
 						__location__, PyString_AsString(py_key)));

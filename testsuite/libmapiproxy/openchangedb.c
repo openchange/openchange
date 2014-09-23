@@ -1072,6 +1072,24 @@ START_TEST (test_set_receive_folder_to_mailbox) {
 	ck_assert_str_eq(explicit, "IPC");
 } END_TEST
 
+START_TEST (test_get_indexing_url) {
+	enum MAPISTATUS retval;
+	const char	*indexing_url;
+
+	/* Valid indexing url */
+	retval = openchangedb_get_indexing_url(g_oc_ctx, USER1, &indexing_url);
+	CHECK_SUCCESS;
+	ck_assert_str_eq(indexing_url, "mysql://openchange@localhost/openchange");
+
+	/* indexing_url is NULL */
+	retval = openchangedb_get_indexing_url(g_oc_ctx, "null_indexing_url", &indexing_url);
+	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
+
+	/* indexing_url is empty - "" */
+	retval = openchangedb_get_indexing_url(g_oc_ctx, "empty_indexing_url", &indexing_url);
+	ck_assert_int_eq(retval, MAPI_E_NOT_FOUND);
+} END_TEST
+
 // ^ Unit test ----------------------------------------------------------------
 
 // v Suite definition ---------------------------------------------------------
@@ -1215,6 +1233,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 		// Ugly workaround to test mysql only functions
 		tcase_add_test(tc, test_set_locale);
 		tcase_add_test(tc, test_get_folders_names);
+		tcase_add_test(tc, test_get_indexing_url);
 	}
 
 	tcase_add_test(tc, test_set_receive_folder_to_mailbox);

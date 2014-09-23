@@ -271,6 +271,9 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME_UNICODE);
 	if (!value) {
+		value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME);
+	}
+	if (!value) {
 		DEBUG(5, (__location__": display name not set yet\n"));
 		goto end;
 	}
@@ -1116,27 +1119,28 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *mem_ctx,
 	object->object.mailbox->folderID = 0x0;
 	object->object.mailbox->mailboxstore = mailboxstore;
 
-	if (mailboxstore == true) {
-		object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
-		ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
-				 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-				 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s", 
-				 object->object.mailbox->owner_EssDN);
-		if (!ret && res->count == 1) {
-			accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
-			if (accountName) {
-				object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox, accountName);
+	object->object.mailbox->owner_EssDN = talloc_strdup(object->object.mailbox, essDN);
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "legacyExchangeDN=%s",
+			 ldb_binary_encode_string(mem_ctx, object->object.mailbox->owner_EssDN));
+	if (!ret && res->count == 1) {
+		accountName = ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", NULL);
+		if (accountName) {
+			object->object.mailbox->owner_username = talloc_strdup(object->object.mailbox, accountName);
 
-				/* Retrieve Mailbox folder identifier */
-				openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
-								0x1, &object->object.mailbox->folderID);
-			}
-			displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
-			if (displayName) {
-				object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox, 
-										   displayName);
-			}
 		}
+		displayName = ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
+		if (displayName) {
+			object->object.mailbox->owner_Name = talloc_strdup(object->object.mailbox,
+									   displayName);
+		}
+	}
+
+	if (mailboxstore == true) {
+		/* Retrieve Mailbox folder identifier */
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
+						0x1, &object->object.mailbox->folderID);
 	} else {
 		/* Retrieve Public folder identifier */
 		openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &object->object.mailbox->folderID);
@@ -1187,16 +1191,18 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *mem_ctx,
 	return object;
 }
 
-int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
+enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, uint32_t *row_countp)
 {
-	int		retval;
-	uint64_t	folderID;
+	uint64_t		folderID;
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
 
 	if (emsmdbp_is_mapistore(folder)) {
-		retval = (int) mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, 
+		ret = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx,
 								emsmdbp_get_contextID(folder),
-								folder->backend_object, 
+								folder->backend_object,
 								MAPISTORE_FOLDER_TABLE, row_countp);
+		retval = mapistore_error_to_mapi(ret);
 	}
 	else {
 		if (folder->type == EMSMDBP_OBJECT_FOLDER) {
@@ -1207,10 +1213,10 @@ int emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_ctx, struct 
 		}
 		else {
 			DEBUG(5, ("unsupported object type\n"));
-			return MAPISTORE_ERROR;
+			return MAPI_E_INVALID_OBJECT;
 		}
 		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
-		retval = (int) openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, row_countp);
+		retval = openchangedb_get_folder_count(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, folderID, row_countp);
 	}
 
 	return retval;
@@ -1894,7 +1900,7 @@ static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALL
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 basedn, LDB_SCOPE_SUBTREE, attrs,
 			 "(&(objectClass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE)(cn=%s))",
-			 group_name);
+			 ldb_binary_encode_string(mem_ctx, group_name));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {
@@ -2360,7 +2366,7 @@ static int emsmdbp_object_get_properties_message(TALLOC_CTX *mem_ctx, struct ems
 	/* Look over properties */
 	for (i = 0; i < properties->cValues; i++) {
 		if (properties->aulPropTag[i] == PR_SOURCE_KEY) {
-			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.message->folderID,
+			emsmdbp_source_key_from_fmid(data_pointers, emsmdbp_ctx, owner, object->object.message->messageID,
 						     &binr);
 			data_pointers[i] = binr;
 			retval = MAPI_E_SUCCESS;

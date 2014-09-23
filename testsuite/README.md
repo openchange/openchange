@@ -50,17 +50,8 @@ for more detailed leak report.
  - struct ldb_hooks
  - struct backends_list_entry
  - struct loaded
-
-**Not identified (yet):**
-
  - struct bitmap
  - struct loadparm_context
-
-**Leaks that are result of our unittest implementation:**
-
- - talloc_new: testsuite/libmapiproxy/openchangedb.c:1127
- - talloc_new: testsuite/libmapiproxy/openchangedb.c:1144
- - talloc_new: testsuite/libmapiproxy/openchangedb_multitenancy.c:1517
 
 
 Enjoy!

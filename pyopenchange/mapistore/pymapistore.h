@@ -72,6 +72,32 @@ typedef struct {
 } PyMAPIStoreFolderObject;
 
 typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFolderObject		*folder;
+	size_t				curr_index;
+	size_t				count;
+	uint64_t			*fids;
+} PyMAPIStoreFoldersObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreContextObject	*context;
+	void				*message_object;
+	uint64_t			mid;
+} PyMAPIStoreMessageObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFolderObject		*folder;
+	size_t				curr_index;
+	size_t				count;
+	uint64_t			*mids;
+} PyMAPIStoreMessagesObject;
+
+typedef struct {
 	PyObject_HEAD	
 
 	PyObject *timestamp;
@@ -103,6 +129,9 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolders;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessage;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessages;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 
@@ -120,12 +149,17 @@ __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
 void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
+PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, struct mapistore_property_data *prop_data, uint32_t count);
+enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_t proptag, PyObject *value, void **data);
+
+
 
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
 
 void initmapistore_context(PyObject *);
 void initmapistore_folder(PyObject *);
+void initmapistore_message(PyObject *);
 void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_table(PyObject *);

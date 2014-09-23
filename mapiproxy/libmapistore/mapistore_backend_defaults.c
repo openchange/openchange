@@ -74,8 +74,8 @@ static enum mapistore_error mapistore_op_defaults_get_path(TALLOC_CTX *mem_ctx, 
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_object,
-								  TALLOC_CTX *mem_ctx,
+static enum mapistore_error mapistore_op_defaults_get_root_folder(TALLOC_CTX *mem_ctx,
+								  void *backend_object,
 								  uint64_t fid,
 								  void **root_folder_object)
 {

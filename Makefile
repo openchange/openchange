@@ -1600,10 +1600,12 @@ $(pythonscriptdir)/openchange/mapistore.$(SHLIBEXT): 	pyopenchange/mapistore/pym
 							pyopenchange/mapistore/mgmt.c				\
 							pyopenchange/mapistore/context.c			\
 							pyopenchange/mapistore/folder.c				\
+							pyopenchange/mapistore/message.c			\
 							pyopenchange/mapistore/freebusy_properties.c		\
 							pyopenchange/mapistore/table.c				\
 							pyopenchange/mapistore/errors.c				\
 							pyopenchange/mapistore/indexing.c			\
+							pyopenchange/mapistore/tools.c				\
 							mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Compiling and linking $@"

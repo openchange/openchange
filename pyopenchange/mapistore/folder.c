@@ -1216,6 +1216,6 @@ void initmapistore_folder(PyObject *m)
 	PyModule_AddObject(m, "OPEN_WRITE", PyInt_FromLong(0x1));
 
 	/* Create message flags */
-	PyModule_AddObject(m, "CREATE_GENERIC", PyInt_FromLong(0x0));
-	PyModule_AddObject(m, "CREATE_FAI", PyInt_FromLong(0x1));
+	PyModule_AddObject(m, "MESSAGE_GENERIC", PyInt_FromLong(0x0));
+	PyModule_AddObject(m, "MESSAGE_FAI", PyInt_FromLong(0x1));
 }

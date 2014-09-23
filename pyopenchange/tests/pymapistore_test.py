@@ -194,11 +194,23 @@ print
 
 # Create message
 print '[PYMAPISTORE] Create FOO message in BLAH:'
-foo_msg = blah_fld.create_message(mapistore.CREATE_GENERIC)
-print '[PYMAPISTORE] URI: ' + foo_msg.get_uri()
+blah_msg = blah_fld.create_message(mapistore.CREATE_GENERIC)
+print '[PYMAPISTORE] URI: ' + blah_msg.get_uri()
 print
-   
-# Check that it appears
+ 
+print '[PYMAPISTORE] Display message data:'
+blah_msg_props = blah_msg.get_properties()
+print blah_msg_props
+print
+ 
+print '[PYMAPISTORE] Modify message properties:'
+blah_msg.set_properties({'PidTagSubject': 'blahmsg', 'PidTagNormalizedSubject': 'blahmsg', 'PidTagBody': 'Hello, World!', })
+print
+ 
+print '[PYMAPISTORE] Save message:'
+blah_msg.save();
+print 
+ 
 print "[PYMAPISTORE] INBOX hierarchy:"
 print_tree(in_fld, 0)
 print 

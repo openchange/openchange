@@ -454,11 +454,33 @@ end:
 	return NULL;
 }
 
+static PyObject *py_MAPIStoreMessage_save(PyMAPIStoreMessageObject *self)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_message_save(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
 
 static PyMethodDef mapistore_message_methods[] = {
 	{ "get_uri", (PyCFunction)py_MAPIStoreMessage_get_uri, METH_NOARGS},
 	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
+	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
 	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
 	{ NULL },
 };

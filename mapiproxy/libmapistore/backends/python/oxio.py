@@ -141,7 +141,19 @@ class _OxioConn(object):
         self._dump_response(r)
         return r.json()['data']
 
-    def getEmails(self, folder_id, columns):
+    def getEmailsCount(self, folder_id):
+        """Just ping the server for message count in folder"""
+        payload = {'action': 'count',
+                   'session': self.sess_id,
+                   'folder': folder_id,
+                   }
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
+        self._dump_response(r)
+        return r.json()['data']
+
+
+    def listEmails(self, folder_id, columns):
         """Fetch subfolders for folder_id
         :param folder_id: oxid for parent folder
         :param columns list: list of columns for fetch
@@ -154,6 +166,21 @@ class _OxioConn(object):
         r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
         self._dump_response(r)
         return r.json()['data']
+
+    def getMessageBody(self, folder_id, message_id, need_html=False):
+        payload = {"action": "get",
+                   "session": self.sess_id,
+                   "id": message_id,
+                   "folder": folder_id,
+                   "view": "html" if need_html else "text",
+                   }
+        self._dump_request(payload)
+        r = self.so.get('https://www.ox.io/appsuite/api/mail', params=payload)
+        self._dump_response(r)
+        data = r.json()['data']
+        # find the body
+        body = data['attachments'][0]['content']
+        return body
 
     def _dump_request(self, payload):
 #         print json.dumps(payload, indent=4)
@@ -239,7 +266,8 @@ class BackendObject(object):
         """ List context capabilities of this backend.
         """
         logger.info('[PYTHON]: [%s] backend.list_contexts(): username = %s' % (self.name, username))
-        BackendObject.hack_username = username
+        if BackendObject.hack_username is None:
+            BackendObject.hack_username = username
         inbox = {'name': 'INBOX',
                  'url': _Indexing.uri_oxio_to_mstore('default0/INBOX'),
                  'main_folder': True,
@@ -336,15 +364,12 @@ class FolderObject(object):
             oxio_subfolders = oxioConn.getSubFolders(self.uri, [])
         # ox records for messages
         self.messages = []
-        oxio_messages = []
-        if self.message_count > 0:
-            oxio_messages = oxioConn.getEmails(self.uri, [])
         # preload subfolders and messages
         self._index_subfolders(oxio_subfolders)
-        self._index_messages(oxio_messages)
         pass
 
     def _index_subfolders(self, oxio_subfolders):
+        self.subfolders = []
         #print json.dumps(oxio_subfolders, indent=4)
         for fr in oxio_subfolders:
             folder = {'uri': fr[0],
@@ -366,6 +391,7 @@ class FolderObject(object):
 
     def _index_messages(self, oxio_messages):
         #print json.dumps(oxio_messages, indent=4)
+        self.messages = []
         for msg in oxio_messages:
             self.messages.append(MessageObject(self, msg, None))
         pass
@@ -414,8 +440,26 @@ class FolderObject(object):
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
+        factory = {1: self._open_table_any,
+                   2: self._open_table_messages,
+                   3: self._open_table_any,
+                   4: self._open_table_any,
+                   5: self._open_table_any,
+                   6: self._open_table_any
+                   }
+        return factory[table_type](table_type)
+
+    def _open_table_any(self, table_type):
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
+
+    def _open_table_messages(self, table_type):
+        # Refresh messages
+        oxioConn = _OxioConn.get_instance()
+        oxio_messages = oxioConn.listEmails(self.uri, [])
+        self._index_messages(oxio_messages)
+        # now go on with usual open_table implementation
+        return self._open_table_any(table_type)
 
     def get_child_count(self, table_type):
         logger.info('[PYTHON]: [%s] folder.get_child_count. table_type = %d' % (BackendObject.name, table_type))
@@ -434,7 +478,8 @@ class FolderObject(object):
 
     def _count_messages(self):
         logger.info('[PYTHON][INTERNAL]: [%s] folder._count_messages(%s) = %s' % (BackendObject.name, self.folderID, len(self.messages)))
-        return len(self.messages)
+#         return len(self.messages)
+        return _OxioConn.get_instance().getEmailsCount(self.uri)
 
     def _count_zero(self):
         return mapistore.errors.MAPISTORE_SUCCESS
@@ -460,6 +505,8 @@ class MessageObject(object):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, oxio_msg))
         self.folder = folder
         self.mid = mid or long(oxio_msg[0])
+        self.oxio_id = oxio_msg[0]
+        self.oxio_folder_id = oxio_msg[1]
         self.properties = {}
         if oxio_msg is not None:
             self.init_from_msg_list(oxio_msg)
@@ -477,8 +524,8 @@ class MessageObject(object):
         logger.info(json.dumps(oxio_msg, indent=4))
         subject = str(oxio_msg[5])
         self.properties['PidTagFolderId'] = self.folder.folderID
-        self.properties['PidTagMid'] = long(oxio_msg[0])
-        self.properties['PidTagInstID'] = long(oxio_msg[0])
+        self.properties['PidTagMid'] = self.mid
+        self.properties['PidTagInstID'] = self.mid
         self.properties['PidTagSubjectPrefix'] = ''
         self.properties['PidTagSubject'] = subject
         self.properties['PidTagNormalizedSubject'] = subject
@@ -487,11 +534,10 @@ class MessageObject(object):
         self.properties['PidTagDepth'] = 0
         self.properties['PidTagRowType'] = 1
         self.properties['PidTagInstanceNum'] = 0
-        self.properties['PidTagBody'] = "This is the content of this sample email"
-        self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
         self.properties['PidTagLastModificationTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[6] / 1000)).strftime("%s.%f"))
         self.properties['PidTagMessageDeliveryTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg[7] / 1000)).strftime("%s.%f"))
-#         self.properties["PidTagBody"] = "This is the content of this sample email"
+#         self.properties['PidTagBody'] = "This is the content of this sample email"
+#         self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
 #         self.properties["PidTagImportance"] = 2
 #         self.properties["PidTagHasAttachments"] = False
 #         self.properties["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
@@ -516,13 +562,16 @@ class MessageObject(object):
             self.recipients.append(_make_recipient(oxio_rcpt, 0x00000002))
 
     def fetch(self):
+        self.properties['PidTagBody'] = _OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False)
+        self.properties['PidTagHtml'] = bytearray(_OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False), 'utf8')
         pass
 
     def get_message_data(self):
         logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
         logger.debug('recipients: %s', json.dumps(self.recipients, indent=4))
         log_props = self.properties.copy()
-        del log_props['PidTagHtml']
+        if 'PidTagHtml' in log_props:
+            del log_props['PidTagHtml']
         logger.debug('properties: %s', json.dumps(log_props, indent=4))
         return (self.recipients, self.properties)
 

@@ -43,7 +43,7 @@ def _public_folders_meta(names):
                      "/o=%s/cn=addrlists/cn=oabs/cn=Default Offline Address Book" % (names.firstorg): ({}, 9),
                      }, 6),
                  "SCHEDULE+ FREE BUSY": ({
-                     "EX:/o=%s/ou=%s" % (names.firstorg.lower(), names.firstou.lower()): ({}, 8),
+                     "EX:/o=%s/ou=%s" % (names.firstorg, names.firstou): ({}, 8),
                      }, 5),
                  }, 3),
              }, 1)
@@ -309,6 +309,30 @@ class OpenChangeDBWithMysqlBackend(object):
                       self.db.escape_string(self.db_name))
         self.db.select_db(self.db_name)
 
+    # Workaround to handle schema and data migration, if this grows it should
+    # be moved to another place and being handled better
+    def migrate(self):
+        """Migrate both mysql schema and data"""
+        self.db.select_db(self.db_name)
+        try:
+            self._execute("SELECT count(*) FROM company")
+        except:
+            # Table does not exist, we don't need migration
+            return False
+        # Migrate schema
+        self._execute("ALTER TABLE organizational_units DROP FOREIGN KEY fk_organizational_units_company_id;")
+        self._execute("ALTER TABLE organizational_units DROP COLUMN company_id")
+        self._execute("ALTER TABLE servers DROP FOREIGN KEY fk_servers_company_id")
+        self._execute("ALTER TABLE servers DROP COLUMN company_id")
+        self._execute("DROP TABLE company")
+        self._execute("ALTER TABLE servers ADD COLUMN ou_id INT NOT NULL")
+        self._execute("UPDATE servers SET ou_id = (SELECT id FROM organizational_units)")
+        self._execute("ALTER TABLE servers ADD CONSTRAINT `fk_servers_ou_id` FOREIGN KEY (`ou_id`) REFERENCES `organizational_units` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION")
+        # Migrate data
+        self._execute("UPDATE messages m JOIN mailboxes mb ON mb.id = m.mailbox_id set m.ou_id = mb.ou_id WHERE m.ou_id IS NULL")
+        self._execute("UPDATE messages m JOIN folders f ON f.id = m.folder_id set m.ou_id = f.ou_id WHERE m.ou_id IS NULL")
+        return True
+
     def remove(self):
         """Remove an existing OpenChangeDB."""
         self._execute("DROP DATABASE `%s`" %
@@ -362,15 +386,13 @@ class OpenChangeDBWithMysqlBackend(object):
         return cur
 
     def add_server(self, names):
-        cur = self._execute("INSERT company VALUES (0, %s)", (names.domain,))
-        company_id = int(cur.lastrowid)
-        cur = self._execute("INSERT organizational_units VALUES (0, %s, %s, %s)",
-                            (company_id, names.firstorg, names.firstou))
+        self.db.select_db(self.db_name)
+        cur = self._execute("INSERT organizational_units VALUES (0, %s, %s)",
+                            (names.firstorg, names.firstou))
         self.ou_id = int(cur.lastrowid)
-
         change_number = 1
-        cur = self._execute("INSERT servers VALUES (0, %s, %s, %s)", 
-                            (company_id, self.replica_id, change_number))
+        cur = self._execute("INSERT servers VALUES (0, %s, %s, %s)",
+                            (self.ou_id, self.replica_id, change_number))
         self.server_id = int(cur.lastrowid)
 
     def _add_root_public_folder(self, fid, change_num, SystemIdx, childcount):
@@ -385,7 +407,7 @@ class OpenChangeDBWithMysqlBackend(object):
             "INSERT folders VALUES (0, %s, %s, 'public', NULL, NULL, 1, %s, NULL)",
             (self.ou_id, fid, SystemIdx))
         folder_id = cur.lastrowid
-        self._execute("INSERT folders_properties VALUES (%s, %s, %s)", 
+        self._execute("INSERT folders_properties VALUES (%s, %s, %s)",
                       [(folder_id,) + p for p in properties])
 
     def _add_sub_public_folder(self, parentfid, fid, change_num, display_name,
@@ -419,7 +441,7 @@ class OpenChangeDBWithMysqlBackend(object):
         if parent_fid == 0:
             self._add_root_public_folder(fid, change_num, system_index, childcount)
         else:
-            self._add_sub_public_folder(parent_fid, fid, change_num, name, 
+            self._add_sub_public_folder(parent_fid, fid, change_num, name,
                                         system_index, childcount);
 
         self.global_count += 1
@@ -434,20 +456,20 @@ class OpenChangeDBWithMysqlBackend(object):
             raise Exception("You have to add a server before calling add_public_folders method")
 
         store_guid = str(uuid.uuid4())
-        self._execute("INSERT public_folders VALUES (%s, %s, %s)", 
+        self._execute("INSERT public_folders VALUES (%s, %s, %s)",
                       (self.ou_id, self.replica_id, store_guid))
 
         public_folders = _public_folders_meta(names)
 
         print "[+] Public Folders"
         print "==================="
-        self._add_one_public_folder(0, ("Public Folder Root",), 
+        self._add_one_public_folder(0, ("Public Folder Root",),
                                     public_folders[0], public_folders[1], names)
 
     @property
     def change_number(self):
         if self._change_number is None:
-            cur = self._execute("SELECT change_number FROM servers WHERE id = %s", 
+            cur = self._execute("SELECT change_number FROM servers WHERE id = %s",
                                 self.server_id)
             data = cur.fetchone()
             if data:

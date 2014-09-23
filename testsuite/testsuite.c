@@ -18,11 +18,65 @@
  */
 
 #include "testsuite.h"
+#include "libmapi/version.h"
 
-int main(int ac, const char *av[])
+#include <popt.h>
+#include <talloc.h>
+
+static void popt_openchange_version_callback(poptContext con,
+                                             enum poptCallbackReason reason,
+                                             const struct poptOption *opt,
+                                             const char *arg,
+                                             const void *data)
 {
-	SRunner	*sr;
-	int	nf;
+        switch (opt->val) {
+        case 'V':
+                printf("Version %s\n", OPENCHANGE_VERSION_STRING);
+                exit (0);
+        }
+}
+
+
+enum {OPT_LEAK_REPORT=1,OPT_LEAK_REPORT_FULL};
+
+struct poptOption popt_openchange_version[] = {
+        { NULL, '\0', POPT_ARG_CALLBACK, (void *)popt_openchange_version_callback, '\0', NULL, NULL },
+        { "version", 'V', POPT_ARG_NONE, NULL, 'V', "Print version ", NULL },
+        POPT_TABLEEND
+};
+
+struct poptOption popt_openchange_testsuite_options[] = {
+	POPT_AUTOHELP
+	{ "leak-report",      0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT, "enable talloc leak reporting on exit", NULL },
+	{ "leak-report-full", 0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT_FULL, "enable full talloc leak reporting on exit", NULL },
+	{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_openchange_version, 0, "Common openchange options:", NULL },
+	{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
+};
+
+
+int main(int argc, const char *argv[])
+{
+	poptContext	pc;
+	int		opt;
+	SRunner		*sr;
+	int		nf;
+
+	pc = poptGetContext(NULL, argc, argv, popt_openchange_testsuite_options, 0);
+	while ((opt = poptGetNextOpt(pc)) != -1) {
+		switch (opt) {
+		case OPT_LEAK_REPORT:
+			talloc_enable_leak_report();
+			break;
+
+		case OPT_LEAK_REPORT_FULL:
+			talloc_enable_leak_report_full();
+			break;
+		default:
+			poptPrintUsage(pc, stderr, 0);
+			return EXIT_FAILURE;
+		}
+	}
+	poptFreeContext(pc);
 
 	sr = srunner_create(suite_create("OpenChange unit testing"));
 
@@ -31,12 +85,15 @@ int main(int ac, const char *av[])
 	/* libmapiproxy */
 	srunner_add_suite(sr, mapiproxy_openchangedb_mysql_suite());
 	srunner_add_suite(sr, mapiproxy_openchangedb_ldb_suite());
+	srunner_add_suite(sr, mapiproxy_openchangedb_multitenancy_mysql_suite());
 	/* libmapistore */
 	srunner_add_suite(sr, mapistore_namedprops_suite());
 	srunner_add_suite(sr, mapistore_namedprops_mysql_suite());
 	srunner_add_suite(sr, mapistore_namedprops_tdb_suite());
 	srunner_add_suite(sr, mapistore_indexing_mysql_suite());
 	srunner_add_suite(sr, mapistore_indexing_tdb_suite());
+	/* mapiproxy */
+	srunner_add_suite(sr, mapiproxy_util_mysql_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	nf = srunner_ntests_failed(sr);

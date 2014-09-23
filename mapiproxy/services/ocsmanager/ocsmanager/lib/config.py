@@ -1,8 +1,34 @@
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2011-2014  Julien Kerihuel <jkerihuel@openchange.org>
+#                          Enrique J. Hernández <ejhernandez@zentyal.com>
+#                          Samuel Cabrero <scabrero@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+"""
+Load and retrieve OCSManager configuration
+"""
 import ConfigParser
-import os, sys
+import os
 import logging
+import re
+import sys
+
 
 log = logging.getLogger(__name__)
+
 
 class OCSConfig(object):
     """OCSConfig class documentation. Load and retrieve ocsmanager
@@ -60,6 +86,22 @@ class OCSConfig(object):
 
         self.d[section][option] = cfg_option
 
+    def __get_list_option(self, section=None, option=None, dflt=None, delimiter=',\s*'):
+        if dflt is None and not self.cfg.has_option(section, option):
+            log.error("%s: Missing %s option in [%s] section", self.config, option, section)
+            sys.exit()
+
+        if dflt is not None and not self.cfg.has_option(section, option):
+            cfg_option = dflt
+        else:
+            cfg_option = self.cfg.get(section, option)
+            cfg_option = re.split(delimiter, cfg_option)
+
+        if section not in self.d:
+            self.d[section] = {}
+
+        self.d[section][option] = cfg_option
+
     def __parse_main(self):
         """Parse [main] configuration section.
         """
@@ -72,7 +114,7 @@ class OCSConfig(object):
         if self.d['main']['debug'] != "yes" and self.d['main']['debug'] != "no":
             log.error("%s: invalid debug value: %s. Must be set to yes or no", self.config, self.d['main']['debug'])
             sys.exit()
-        
+
         if not self.cfg.has_section('auth:%s' % self.d['auth']['type']):
             log.error("%s: Missing [auth:%s] section", self.config, self.d['auth']['type'])
             sys.exit()
@@ -80,7 +122,7 @@ class OCSConfig(object):
     def __parse_auth(self):
         section = 'auth:%s' % self.d['auth'].get('type')
         self.__get_section(section)
-        
+
         if self.d['auth']['type'] == 'single':
             self.__get_option(section, 'username', 'auth', None)
             self.__get_option(section, 'password', 'auth', None)
@@ -107,23 +149,37 @@ class OCSConfig(object):
         self.__get_option('rpcproxy:ldap', 'port', 'rpcproxy', 'ldap_port')
         self.__get_option('rpcproxy:ldap', 'basedn', 'rpcproxy', 'ldap_basedn')
 
+    def __parse_autodiscover(self):
+        self.__get_section('autodiscover')
+        self.__get_list_option('autodiscover', 'internal_networks', dflt=['0.0.0.0/0'])
+
     def __parse_autodiscover_rpcproxy(self):
         self.__get_section('autodiscover:rpcproxy')
         # Have to set a default value to avoid missing option exception
         self.__get_option('autodiscover:rpcproxy', 'external_hostname', dflt="__none__")
-        self.__get_option('autodiscover:rpcproxy', 'ssl', dflt=False)
+        self.__get_bool_option('autodiscover:rpcproxy', 'ssl', dflt=False)
+        self.__get_bool_option('autodiscover:rpcproxy', 'enabled', dflt=True)
 
     def __parse_outofoffice(self):
         self.__get_section('outofoffice')
-        self.__get_option('outofoffice', 'sieve_script_path')
-        self.__get_bool_option('outofoffice', 'sieve_script_path_mkdir',
-                               dflt=False)
+
+        self.__get_option('outofoffice', 'backend', dflt='file')
+
+        if self.d['outofoffice']['backend'] == 'file':
+            self.__get_option('outofoffice:file', 'sieve_script_path')
+            self.__get_bool_option('outofoffice:file', 'sieve_script_path_mkdir',
+                                   dflt=False)
+        elif self.d['outofoffice']['backend'] == 'managesieve':
+            self.__get_option('outofoffice:managesieve', 'server', dflt='127.0.0.1')
+            self.__get_bool_option('outofoffice:managesieve', 'ssl', dflt=True)
+            self.__get_option('outofoffice:managesieve', 'secret')
+        else:
+            log.error('Invalid outofoffice backend: %s' % self.d['outofoffice']['backend'])
+            sys.exit()
 
     def load(self):
         """Load the configuration file.
         """
-        
-        cfg = {}
 
         try:
             os.stat(self.config)
@@ -140,7 +196,8 @@ class OCSConfig(object):
         self.__parse_main()
         self.__parse_auth()
         self.__parse_rpcproxy()
+        self.__parse_autodiscover()
         self.__parse_autodiscover_rpcproxy()
         self.__parse_outofoffice()
-        
+
         return self.d

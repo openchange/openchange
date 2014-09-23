@@ -400,11 +400,31 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Finalize generic Exchange configuration objects")
-        print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
+
+
+def provision_organization(setup_path, names, lp, creds, reporter=None):
+    """Create exchange organization
+
+    :param setup_path: Path to the setup directory
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: Provision Names object
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    """
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    try:
+        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects")
+    except LdbError, ldb_error:
+        print ("[!] error while provisioning the Exchange organization"
+               " objects (%d): %s" % ldb_error.args)
+        return False
+    return True
 
 
 def get_ldb_url(lp, creds, names):
@@ -444,6 +464,10 @@ def newuser(names, lp, creds, username=None):
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
+        smtp_user = username
+        if '@' not in smtp_user:
+            smtp_user += '@%s' % names.dnsdomain
+
         extended_user = """
 dn: %(user_dn)s
 changetype: modify
@@ -458,8 +482,8 @@ legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 proxyAddresses: smtp:postmaster@%(dnsdomain)s
-proxyAddresses: X400:c=US;a= ;p=First Organizati;o=Exchange;s=%(username)s
-proxyAddresses: SMTP:%(username)s@%(dnsdomain)s
+proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
+proxyAddresses: SMTP:%(smtp_user)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
 """
@@ -467,9 +491,12 @@ msExchUserAccountControl: 0
                                       "username": username,
                                       "netbiosname": names.netbiosname,
                                       "firstorg": names.firstorg,
+                                      "firstorg_x400": names.firstorg[:16],
                                       "firstou": names.firstou,
+                                      "firstou_x400": names.firstou[:64],
                                       "domaindn": names.domaindn,
-                                      "dnsdomain": names.dnsdomain}
+                                      "dnsdomain": names.dnsdomain,
+                                      "smtp_user": smtp_user}
         db.modify_ldif(ldif_value)
 
         res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])
@@ -609,6 +636,11 @@ def provision(setup_path, names, lp, creds, reporter=None):
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds, reporter)
+
+    # Provision first org
+    provision_organization(setup_path, names, lp, creds, reporter)
+
+    print "[SUCCESS] Done!"
 
 
 def deprovision(setup_path, names, lp, creds, reporter=None):
@@ -751,6 +783,16 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     openchangedb.remove()
 
 
+def openchangedb_migrate(lp):
+    uri = openchangedb_url(lp)
+    if uri.startswith('mysql'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
+        if openchangedb.migrate():
+            print "Migration openchange db done"
+    else:
+        print "Only OpenchangeDB with MySQL as backend needs migration"
+
+
 def openchangedb_provision(names, lp, uri=None):
     """Create the OpenChange database.
 
@@ -770,6 +812,22 @@ def openchangedb_provision(names, lp, uri=None):
         print "[!] error provisioning openchangedb: Unknown uri `%s`" % uri
         return
     openchangedb.setup(names)
+    openchangedb.add_server(names)
+    openchangedb.add_public_folders(names)
+
+
+def openchangedb_new_organization(names, lp):
+    """Create organization, servers and public folders in openchange db
+
+    :param names: Provision names object
+    :param lp: Loadparm context
+    """
+    uri = openchangedb_url(lp)
+    if uri.startswith('mysql'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
+    else:
+        openchangedb = mailbox.OpenChangeDB(uri)
+
     openchangedb.add_server(names)
     openchangedb.add_public_folders(names)
 

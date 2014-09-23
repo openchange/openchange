@@ -233,7 +233,8 @@ _PUBLIC_ bool emsmdbp_verify_user(struct dcesrv_call_state *dce_call,
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s", username);
+			 LDB_SCOPE_SUBTREE, recipient_attrs, "sAMAccountName=%s",
+			 ldb_binary_encode_string(emsmdbp_ctx, username));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -289,7 +290,7 @@ _PUBLIC_ bool emsmdbp_verify_userdn(struct dcesrv_call_state *dce_call,
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
-			 legacyExchangeDN);
+			 ldb_binary_encode_string(emsmdbp_ctx, legacyExchangeDN));
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -357,7 +358,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_resolve_recipient(TALLOC_CTX *mem_ctx,
 			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs,
 			 "(&(objectClass=user)(sAMAccountName=*%s*)(!(objectClass=computer)))",
-			 recipient);
+			 ldb_binary_encode_string(mem_ctx, recipient));
 
 	/* If the search failed, build an external recipient: very basic for the moment */
 	if (ret != LDB_SUCCESS || !res->count) {
@@ -577,6 +578,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
 		exdn1 = strstr(EssDN, "/ou=");
 		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
 		*organization_name = talloc_strndup(mem_ctx, exdn0 + 3, exdn1 - exdn0 - 3);
+		OPENCHANGE_RETVAL_IF(!*organization_name, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	}
 
 	if (group_name) {
@@ -585,6 +587,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_fetch_organizational_units(TALLOC_CTX *mem_ctx,
 		exdn1 = strstr(EssDN, "/cn=");
 		OPENCHANGE_RETVAL_IF(!exdn1, MAPI_E_BAD_VALUE, NULL);
 		*group_name = talloc_strndup(mem_ctx, exdn0 + 4, exdn1 - exdn0 - 4);
+		OPENCHANGE_RETVAL_IF(!*group_name, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -605,13 +608,18 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 	struct ldb_result	*res = NULL;
 	char			*org_name;
 
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->samdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!basedn, MAPI_E_INVALID_PARAMETER, NULL);
+
 	retval = emsmdbp_fetch_organizational_units(emsmdbp_ctx, emsmdbp_ctx, &org_name, NULL);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
 			 ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
                          LDB_SCOPE_SUBTREE, NULL,
-                         "(&(objectClass=msExchOrganizationContainer)(cn=%s))", org_name);
+                         "(&(objectClass=msExchOrganizationContainer)(cn=%s))",
+                         ldb_binary_encode_string(emsmdbp_ctx, org_name));
 	talloc_free(org_name);
 
 	/* If the search failed */

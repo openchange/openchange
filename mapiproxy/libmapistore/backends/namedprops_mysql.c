@@ -123,7 +123,9 @@ static enum mapistore_error next_unused_id(struct namedprops_context *nprops,
 	}
 
 	*highest_id = strtol(row[0], NULL, 10);
+
 	mysql_free_result(res);
+	talloc_free(mem_ctx);
 
 	*highest_id = *highest_id + 1;
 	return MAPISTORE_SUCCESS;
@@ -596,7 +598,7 @@ end:
 	talloc_free(mem_ctx);
 	fclose(f);
 
-	return retval;;
+	return retval;
 }
 
 

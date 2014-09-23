@@ -73,6 +73,24 @@ class ContextObject(BackendObject):
 
     def __init__(self):
 
+        # Attachments
+        attachment1 = {}
+        attachment1["properties"] = {}
+        attachment1["properties"]["PidTagMid"] = 0xdead00010000001
+        attachment1["properties"]["PidTagAttachNumber"] = 0
+        attachment1["properties"]["PidTagAttachMethod"] = 1
+        attachment1["properties"]["PidTagAttachmentLinkId"] = 0x0
+        attachment1["properties"]["PidTagAttachmentHidden"] = False
+        attachment1["properties"]["PidTagAttachFilename"] = "Dummyfile.txt"
+        attachment1["properties"]["PidTagAttachLongFilename"] = "Long Dummyfile.txt"
+        attachment1["properties"]["PidTagAttachLongPathname"] = "Long Dummyfile.txt"
+        attachment1["properties"]["PidTagAttachPathname"] = "Dummyfile.txt"
+        attachment1["properties"]["PidTagAttachExtension"] = "txt"
+        attachment1["properties"]["PidTagAttachContentId"] = "Content Id"
+        attachment1["properties"]["PidTagAttachRendering"] = 1
+        attachment1["properties"]["PidTagAttachDataBinary"] = bytearray("<html><head></head><h1>Attach me</h1></body></html>")
+        attachment1["properties"]["PidTagAttachSize"] = len(attachment1["properties"]["PidTagAttachDataBinary"])
+
         # Recipients
         DummyTo = {}
         DummyTo["PidTagRecipientType"] = 0x1
@@ -82,7 +100,8 @@ class ContextObject(BackendObject):
         DummyTo["PidTagDisplayTo"] = "dummy@openchange.org"
 
         message1 = {}
-        message1["Recipients"] = [DummyTo, ]
+        message1["recipients"] = [DummyTo, ]
+        message1["attachments"] = [attachment1, ]
         message1["mid"] = 0xdead00010000001
         message1["fai"] = False
         message1["cache"] = {}
@@ -95,14 +114,15 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagRowType"] = 1
         message1["properties"]["PidTagDepth"] = 0
         message1["properties"]["PidTagMessageClass"] = "IPM.Note"
-
         message1["properties"]["PidTagSubject"] = "Dummy Sample Email"
         message1["properties"]["PidTagNormalizedSubject"] = message1["properties"]["PidTagSubject"]
         message1["properties"]["PidTagConversationTopic"] = message1["properties"]["PidTagSubject"]
         message1["properties"]["PidTagBody"] = "This is the content of this sample email"
         message1["properties"]["PidTagHtml"] = bytearray("<html><head></head><h1>"+ message1["properties"]["PidTagBody"] + "</h1></body></html>")
         message1["properties"]["PidTagImportance"] = 2
-        message1["properties"]["PidTagHasAttachments"] = False
+        message1["properties"]["PidTagSensitivity"] = 1
+        message1["properties"]["PidTagHasAttachments"] = True
+        message1["properties"]["PidTagContentCount"] = len(message1["attachments"])
         message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
         message1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         message1["properties"]["PidTagMessageStatus"] = 0
@@ -248,7 +268,8 @@ class FolderObject(ContextObject):
     def create_message(self, mid, associated):
         print '[PYTHON]: %s folder.create_message()' % self.name
         newmsg = {}
-        newmsg["Recipients"] = []
+        newmsg["recipients"] = []
+        newmsg["attachments"] = []
         newmsg["mid"] = mid
         newmsg["fai"] = associated
         newmsg["cache"] = {}
@@ -293,7 +314,6 @@ class TableObject(BackendObject):
         rowdata = None
         if self.tableType == 1:
             subfolders = self.folder.basedict["subfolders"]
-            print len(subfolders)
             if (len(subfolders) > rowId and
                 subfolders[rowId] and
                 subfolders[rowId].has_key("properties")):
@@ -304,6 +324,12 @@ class TableObject(BackendObject):
                 messages[rowId] and
                 messages[rowId].has_key("properties")):
                 rowdata = messages[rowId]["properties"]
+        elif self.tableType == 5:
+            attachments = self.folder.message["attachments"]
+            if (len(attachments) > rowId and
+                attachments[rowId] and
+                attachments[rowId].has_key("properties")):
+                rowdata = attachments[rowId]["properties"]
         return (self.properties, rowdata)
 
 
@@ -324,7 +350,7 @@ class MessageObject(BackendObject):
 
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
-        return (self.message["Recipients"], self.message["properties"])
+        return (self.message["recipients"], self.message["properties"])
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
@@ -349,3 +375,40 @@ class MessageObject(BackendObject):
                 self.folder.basedict["cache"]["messages"].remove(item)
                 return 0
         return 17
+
+    def _count_attachments(self):
+        print '[PYTHON][INTERNAL]: %s message._count_folders(0x%x): %d' % (self.name, self.mid, len(self.message["attachments"]))
+        return len(self.message["attachments"])
+
+    def get_child_count(self, table_type):
+        print '[PYTHON]: %s message.get_child_count' % (self.name)
+        counter = { 5: self._count_attachments }
+        return counter[table_type]()
+
+    def open_attachment(self, attach_id):
+        print '[PYTHON]: %s message.open_attachment(): %d/%d' % (self.name, attach_id,
+                                                                 len(self.message["attachments"]))
+        if attach_id > len(self.message["attachments"]):
+            return None
+        return AttachmentObject(self.message["attachments"][attach_id], self, attach_id)
+
+
+    def get_attachment_table(self):
+        print '[PYTHON]: %s message.get_attachment_table()' % (self.name)
+        table = TableObject(self, 5)
+        return (table, self.get_child_count(5))
+
+
+class AttachmentObject(BackendObject):
+
+    def __init__(self, attachment, message, attachid):
+        print '[PYTHON]: %s attachment.__init__()' % (self.name)
+        print attachment
+        self.attachment = attachment
+        self.message = message
+        self.attachid = attachid
+        return
+
+    def get_properties(self, properties):
+        print '[PYTHON]: %s message.get_properties()' % (self.name)
+        return self.attachment["properties"]

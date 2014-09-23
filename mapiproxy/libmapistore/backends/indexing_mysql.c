@@ -423,6 +423,8 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 
 	*fmidp = next_fmid;
 
+	talloc_free(mem_ctx);
+
 	return MAPISTORE_SUCCESS;
 }
 

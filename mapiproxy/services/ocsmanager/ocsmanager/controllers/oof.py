@@ -821,7 +821,8 @@ class OofFileBackend(object):
             os.chown(sieve_script_path, sinfo.st_uid, sinfo.st_gid)
 
         if active_sieve_script_path:
-            os.unlink(active_sieve_script_path)
+            if os.path.exists(active_sieve_script_path):
+                os.unlink(active_sieve_script_path)
             os.symlink(os.path.basename(sieve_script_path), active_sieve_script_path)
 
         return sieve_user_path

@@ -115,7 +115,19 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD	
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreContextObject	*context;
+	struct SPropTagArray		*columns;
+	void				*table_object;
 } PyMAPIStoreTableObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreTableObject		*table;
+	size_t				curr_index;
+	size_t				count;
+} PyMAPIStoreRowsObject;
 
 typedef struct {
 	PyObject_HEAD
@@ -133,6 +145,7 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolders;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessage;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessages;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreRows;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 
 #ifndef __BEGIN_DECLS

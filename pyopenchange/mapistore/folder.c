@@ -1055,6 +1055,64 @@ static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *
 	return (PyObject *) message_list;
 }
 
+static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
+{
+	PyMAPIStoreTableObject		*table;
+	char				*kwnames[] = { "table_type", NULL };
+	void				*table_object;
+	struct SPropTagArray		*columns;
+	uint32_t			count = 0;
+	enum mapistore_table_type	table_type;
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "H", kwnames, &table_type)) {
+		return NULL;
+	}
+
+	/* Check 'table_type' range */
+	if ((table_type < MAPISTORE_FOLDER_TABLE) || (table_type > MAPISTORE_PERMISSIONS_TABLE)) {
+		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
+		return NULL;
+	}
+
+	/* Open the table */
+	retval = mapistore_folder_open_table(self->context->mstore_ctx, self->context->context_id,
+						self->folder_object, self->mem_ctx, table_type, 0,
+						&table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Initialise the SPropTagArray */
+	columns = talloc_zero(self->mem_ctx, struct SPropTagArray);
+	if (columns == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	columns->aulPropTag = talloc_zero(columns, void);
+	if (columns->aulPropTag == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Return the table object */
+	table = PyObject_New(PyMAPIStoreTableObject, &PyMAPIStoreTable);
+	if (table == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	table->mem_ctx = self->mem_ctx;
+	table->context = self->context;
+	Py_INCREF(table->context);
+
+	table->columns = columns;
+	table->table_object = table_object;
+
+	return (PyObject *)table;
+}
 static PyMethodDef mapistore_folder_methods[] = {
 	{ "create_folder", (PyCFunction)py_MAPIStoreFolder_create_folder, METH_VARARGS|METH_KEYWORDS },
 	{ "open_folder", (PyCFunction)py_MAPIStoreFolder_open_folder, METH_VARARGS|METH_KEYWORDS },
@@ -1073,6 +1131,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 	{ "copy_messages", (PyCFunction)py_MAPIStoreFolder_copy_messages, METH_VARARGS|METH_KEYWORDS },
 	{ "move_messages", (PyCFunction)py_MAPIStoreFolder_move_messages, METH_VARARGS|METH_KEYWORDS },
 	{ "get_child_messages", (PyCFunction)py_MAPIStoreFolder_get_child_messages, METH_NOARGS },
+	{ "open_table", (PyCFunction)py_MAPIStoreFolder_open_table, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
 

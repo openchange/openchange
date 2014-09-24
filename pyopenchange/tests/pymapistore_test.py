@@ -274,3 +274,23 @@ for m in blah_fld.get_child_messages():
 print
 
 print_tree(in_fld, 0)
+
+# ----------------------------------- #
+# TEST CREATE AND ITERATE OVER TABLES
+# ----------------------------------- #
+
+print '[PYMAPISTORE] Open INBOX folder table'
+in_fld_tbl = in_fld.open_table(mapistore.FOLDER_TABLE)
+print
+
+print '[PYMAPISTORE] Row count: ' + repr(in_fld_tbl.count)
+print
+
+print "[PYMAPISTORE] Set colums to ['PidTagLastModificationTime', 'PidTagFolderId']"
+in_fld_tbl.set_columns(['PidTagLastModificationTime', 0x67480014])
+print
+
+print '[PYMAPISTORE] Iterate over the rows and display its content'
+for r in in_fld_tbl.rows:
+    print r
+print

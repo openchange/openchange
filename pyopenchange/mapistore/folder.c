@@ -419,7 +419,7 @@ static PyObject *py_MAPIStoreFolder_get_properties(PyMAPIStoreFolderObject *self
 		}
 
 		properties->aulPropTag = talloc_zero(properties, void);
-		if (properties == NULL) {
+		if (properties->aulPropTag == NULL) {
 			PyErr_NoMemory();
 			goto end;
 		}
@@ -1195,10 +1195,10 @@ void initmapistore_folder(PyObject *m)
 	/* Table types */
 	PyModule_AddObject(m, "FOLDER_TABLE", PyInt_FromLong(0x1));
 	PyModule_AddObject(m, "MESSAGE_TABLE", PyInt_FromLong(0x2));
-	PyModule_AddObject(m, "MAPISTORE_FAI_TABLE", PyInt_FromLong(0x3));
-	PyModule_AddObject(m, "MAPISTORE_RULE_TABLE", PyInt_FromLong(0x4));
-	PyModule_AddObject(m, "MAPISTORE_ATTACHMENT_TABLE", PyInt_FromLong(0x5));
-	PyModule_AddObject(m, "MAPISTORE_PERMISSIONS_TABLE", PyInt_FromLong(0x6));
+	PyModule_AddObject(m, "FAI_TABLE", PyInt_FromLong(0x3));
+	PyModule_AddObject(m, "RULE_TABLE", PyInt_FromLong(0x4));
+	PyModule_AddObject(m, "ATTACHMENT_TABLE", PyInt_FromLong(0x5));
+	PyModule_AddObject(m, "PERMISSIONS_TABLE", PyInt_FromLong(0x6));
 
 	/* Copy flags */
 	PyModule_AddObject(m, "NON_RECURSIVE", PyInt_FromLong(0x0));

@@ -113,7 +113,7 @@ static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *se
 		}
 
 		properties->aulPropTag = talloc_zero(properties, void);
-		if (properties == NULL) {
+		if (properties->aulPropTag == NULL) {
 			PyErr_NoMemory();
 			goto end;
 		}

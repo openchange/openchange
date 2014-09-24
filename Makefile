@@ -967,7 +967,7 @@ bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.po		\
 			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
+	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(SAMDB_LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 mapistore_tool: bin/mapistore_tool
 

@@ -82,7 +82,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	aRow->lpProps = talloc_array(aRow, struct SPropValue, 3);
 	if (aRow->lpProps == NULL) {
 		PyErr_NoMemory();
-		return NULL;
+		goto end;
 	}
 
 	aRow->cValues = 0;
@@ -98,17 +98,16 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 
 	retval = mapistore_folder_create_folder(self->context->mstore_ctx, self->context->context_id,
 						self->folder_object, self->mem_ctx, fid, aRow, &folder_object);
-	talloc_free(mem_ctx);
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		return NULL;
+		goto end;
 	}
 
 	folder = PyObject_New(PyMAPIStoreFolderObject, &PyMAPIStoreFolder);
 	if (folder == NULL) {
 		PyErr_NoMemory();
-		return NULL;
+		goto end;
 	}
 
 	folder->mem_ctx = self->mem_ctx;
@@ -119,6 +118,9 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	folder->fid = fid;
 
 	return (PyObject *)folder;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
@@ -309,16 +311,14 @@ static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *s
 			self->folder_object, MAPISTORE_FOLDER_TABLE, mem_ctx, &fid_list, &list_size);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Return the PyMAPIStoreFolders object*/
 	folder_list = PyObject_New(PyMAPIStoreFoldersObject, &PyMAPIStoreFolders);
 	if (folder_list == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	talloc_reference(self->mem_ctx, fid_list);
@@ -332,6 +332,9 @@ static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *s
 
 	talloc_free(mem_ctx);
 	return (PyObject *) folder_list;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
@@ -354,14 +357,12 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	if (soft_deleted == true) {
 		PyErr_SetString(PyExc_SystemError, "Soft-deleted folder");
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Return the URI */
@@ -369,6 +370,9 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 	talloc_free(mem_ctx);
 
 	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_get_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
@@ -850,8 +854,7 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 	source_mids = talloc_array(mem_ctx, uint64_t,count);
 	if (source_mids == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -859,8 +862,7 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 
 		if (PyString_Check(item) == false) {
 			PyErr_SetString(PyExc_TypeError, "Argument 'uri_list' must only contain strings");
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		uri = PyString_AsString(item);
@@ -869,14 +871,12 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 				uri, partial, &mid, &soft_deleted);
 		if (retval != MAPISTORE_SUCCESS) {
 			PyErr_SetMAPIStoreError(retval);
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		if (soft_deleted == true) {
 			PyErr_SetString(PyExc_SystemError, talloc_asprintf(mem_ctx, "Soft-deleted message; %s", uri));
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		source_mids[i] = mid;
@@ -886,15 +886,13 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 	target_mids = talloc_array(mem_ctx, uint64_t, count);
 	if (target_mids == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, count, target_mids);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Move/copy messages */
@@ -903,12 +901,14 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 			source_mids, target_mids, NULL, true);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	talloc_free(mem_ctx);
 	Py_RETURN_NONE;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
@@ -950,8 +950,7 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 	source_mids = talloc_array(mem_ctx, uint64_t,count);
 	if (source_mids == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	for (i = 0; i < count; i++) {
@@ -959,8 +958,7 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 
 		if (PyString_Check(item) == false) {
 			PyErr_SetString(PyExc_TypeError, "Argument 'uri_list' must only contain strings");
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		uri = PyString_AsString(item);
@@ -969,14 +967,12 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 				uri, partial, &mid, &soft_deleted);
 		if (retval != MAPISTORE_SUCCESS) {
 			PyErr_SetMAPIStoreError(retval);
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		if (soft_deleted == true) {
 			PyErr_SetString(PyExc_SystemError, talloc_asprintf(mem_ctx, "Soft-deleted message; %s", uri));
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 
 		source_mids[i] = mid;
@@ -986,15 +982,13 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 	target_mids = talloc_array(mem_ctx, uint64_t, count);
 	if (target_mids == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, count, target_mids);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Move/copy messages */
@@ -1003,12 +997,14 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 			source_mids, target_mids, NULL, false);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	talloc_free(mem_ctx);
 	Py_RETURN_NONE;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *self)
@@ -1030,16 +1026,14 @@ static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *
 			self->folder_object, MAPISTORE_MESSAGE_TABLE, mem_ctx, &mid_list, &list_size);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Return the PyMAPIStoreMessages object*/
 	message_list = PyObject_New(PyMAPIStoreMessagesObject, &PyMAPIStoreMessages);
 	if (message_list == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	message_list->mem_ctx = self->mem_ctx;
@@ -1053,6 +1047,9 @@ static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *
 
 	talloc_free(mem_ctx);
 	return (PyObject *) message_list;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)

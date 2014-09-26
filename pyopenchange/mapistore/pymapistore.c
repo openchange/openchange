@@ -133,6 +133,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
 	if (msobj == NULL) {
 		PyErr_NoMemory();
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -255,17 +256,15 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	/* list backends */
 	retval = mapistore_list_backends_for_user(mem_ctx, &list_size, &backend_names);
 	if (retval != MAPISTORE_SUCCESS) {
-		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
-		return NULL;
+		goto end;
 	}
 
 	/* Build the list */
 	py_ret = PyList_New(list_size);
 	if (py_ret == NULL) {
 		PyErr_NoMemory();
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	for (i = 0; i < list_size; i++) {
@@ -273,13 +272,15 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 		if (ret != 0) {
 			PyErr_SetString(PyExc_SystemError, "Unable to set item list");
 			Py_DECREF(py_ret);
-			talloc_free(mem_ctx);
-			return NULL;
+			goto end;
 		}
 	}
 
 	talloc_free(mem_ctx);
 	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
@@ -303,6 +304,7 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 	if (retval != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 

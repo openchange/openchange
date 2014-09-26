@@ -48,21 +48,22 @@ static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self)
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	if (soft_deleted == true) {
 		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
-		talloc_free(mem_ctx);
-		return NULL;
+		goto end;
 	}
 
 	/* Return the URI */
 	py_ret = PyString_FromString(uri);
-	talloc_free(mem_ctx);
 
+	talloc_free(mem_ctx);
 	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)

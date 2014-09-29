@@ -20,6 +20,7 @@
 #define __TESTSUITE_COMMON_H__
 
 #include "mapiproxy/libmapiproxy/backends/openchangedb_backends.h"
+#include "mapiproxy/util/mysql.h"
 
 /* MySQL constants to establish a connection */
 #define	OC_TESTSUITE_MYSQL_HOST		"127.0.0.1"
@@ -35,6 +36,6 @@
 
 
 void initialize_mysql_with_file(TALLOC_CTX *, const char *, struct openchangedb_context **);
-
+void drop_mysql_database(MYSQL *, const char *);
 
 #endif /* __TESTSUITE_COMMON_H__ */

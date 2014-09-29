@@ -23,9 +23,33 @@
 
 #include <time.h>
 #include <util/debug.h>
+#include "ccan/htable/htable.h"
+#include "ccan/hash/hash.h"
 #include "libmapi/mapicode.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+
+
+/* Items stored on ht table */
+struct conn_v {
+	MYSQL		*conn;
+	const char	*connection_string;
+};
+
+/* Rehash function for ht table */
+static size_t _ht_rehash(const void *e, void *unused)
+{
+	return hash_string(((struct conn_v *)e)->connection_string);
+}
+
+/* Comparison function to get items from ht table */
+static bool _ht_cmp(const void *e, void *string)
+{
+	return strcmp(((struct conn_v *)e)->connection_string, (const char *)string) == 0;
+}
+
+/* This is a dictionary [connection_string] -> [MYSQL *] (actually struct conn_v) */
+static struct htable ht = HTABLE_INITIALIZER(ht, _ht_rehash, NULL);
 
 
 static float timespec_diff_in_seconds(struct timespec *end, struct timespec *start)
@@ -35,14 +59,31 @@ static float timespec_diff_in_seconds(struct timespec *end, struct timespec *sta
 		/ 1000000000;
 }
 
+/**
+    \details Close and delete all mysql connections already open
+ */
+void close_all_connections(void)
+{
+	struct htable_iter 	i;
+	struct conn_v		*entry;
+
+	entry = htable_first(&ht, &i);
+	while (entry) {
+		DEBUG(3, ("Closing %s\n", entry->connection_string));
+		mysql_close(entry->conn);
+		entry = htable_next(&ht, &i);
+	}
+	htable_clear(&ht);
+}
 
 /**
    \details Parse mysql connection string with format like:
-		mysql://user[:pass]@host/database
+		mysql://user[:pass]@host[:port]/database
 
    \param mem_ctx pointer to the memory context
    \param connection_string pointer to conenction string
    \param host out parameter to store host into
+   \param port out parameter to store connection port - optional
    \param user out parameter to store user name into
    \param passwd out parameter to store password into - optional
    \param db out parameter to store database name into
@@ -51,22 +92,18 @@ static float timespec_diff_in_seconds(struct timespec *end, struct timespec *sta
  */
 static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 				    const char *connection_string,
-				    char **host, char **user, char **passwd,
-				    char **db)
+				    char **host, int *port, char **user,
+				    char **passwd, char **db)
 {
-	const char	*user_p;
-	size_t		user_len;
-	const char	*pass_p;
-	size_t		pass_len;
-	const char	*host_p;
-	size_t		host_len;
-	const char *db_p;
+	const char	*user_p, *pass_p, *host_p, *port_p, *db_p, *port_str;
+	size_t		user_len, pass_len, host_len, port_len;
+	uint64_t	port_number;
 
 	/* Sanity check on input parameters */
 	if (!connection_string || !connection_string[0]) {
 		return false;
 	}
-	if (!host || !user || !passwd || !db) {
+	if (!host || !port || !user || !passwd || !db) {
 		return false;
 	}
 
@@ -88,15 +125,10 @@ static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 	if (!db_p) {
 		return false;
 	}
-	host_len = db_p - host_p;
 	db_p++;
 
 	if (!db_p[0]) {
 		/* empty database name */
-		return false;
-	}
-	if (!host_len) {
-		/* no hostname in connection string */
 		return false;
 	}
 
@@ -105,15 +137,17 @@ static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 	if (pass_p) {
 		pass_p++;
 		if (pass_p > host_p) {
-			/* : found after host offset! */
-			return false;
-		}
-		if (pass_p == user_p) {
+			/* : found after host offset! no password */
+			user_len = host_p - user_p - 1;
+			pass_len = 0;
+			pass_p = NULL;
+		} else if (pass_p == user_p) {
 			/* username is empty */
 			return false;
+		} else {
+			user_len = pass_p - user_p - 1;
+			pass_len = host_p  - pass_p - 1;
 		}
-		user_len = pass_p - user_p - 1;
-		pass_len = host_p  - pass_p - 1;
 	} else {
 		user_len = host_p - user_p - 1;
 		pass_len = 0;
@@ -123,30 +157,78 @@ static bool parse_connection_string(TALLOC_CTX *mem_ctx,
 		/* username is empty */
 		return false;
 	}
+
+	/* check for port - it is optional */
+	port_p = strchr(host_p, ':');
+	if (port_p) {
+		port_p++;
+		if (port_p > db_p) {
+			/* : found after db offset and db cannot have ':' */
+			return false;
+		}
+		if (port_p == host_p) {
+			/* host is empty */
+			return false;
+		}
+		host_len = port_p - host_p -1;
+		port_len = db_p - port_p - 1;
+	} else {
+		host_len = db_p - host_p - 1;
+		port_len = 0;
+	}
+
+	if (!host_len) {
+		/* no hostname in connection string */
+		return false;
+	}
+
 	*user = talloc_strndup(mem_ctx, user_p, user_len);
 	*passwd = talloc_strndup(mem_ctx, pass_p, pass_len);
 	*host = talloc_strndup(mem_ctx, host_p, host_len);
 	*db = talloc_strdup(mem_ctx, db_p);
+	if (port_len > 0) {
+		port_str = talloc_strndup(mem_ctx, port_p, port_len);
+		if (!convert_string_to_ull(port_str, &port_number)) {
+			return false;
+		}
+		*port = (int) port_number;
+	} else {
+		*port = 0;
+	}
 
 	return true;
 }
 
 
-MYSQL* create_connection(const char *connection_string, MYSQL **conn)
+MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 {
-	TALLOC_CTX *mem_ctx;
-	my_bool reconnect;
-	char *host, *user, *passwd, *db, *sql;
-	bool parsed;
+	TALLOC_CTX	*mem_ctx;
+	my_bool		reconnect;
+	char		*host, *user, *passwd, *db, *sql;
+	int		port;
+	bool		parsed;
+	struct conn_v	*entry = NULL, *retval = NULL;
 
 	if (conn == NULL) return NULL;
-	if (*conn != NULL) return *conn;
+
+	retval = htable_get(&ht, hash_string(connection_string), _ht_cmp, connection_string);
+	if (retval) {
+		DEBUG(5, ("[MYSQL] Found connection, reusing it %"PRIu32"\n", hash_string(connection_string)));
+		*conn = retval->conn;
+		return *conn;
+	}
+
+	*conn = mysql_init(NULL);
+	reconnect = true;
+	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (!mem_ctx) return NULL;
+
 	parsed = parse_connection_string(mem_ctx, connection_string,
-					 &host, &user, &passwd, &db);
+					 &host, &port, &user, &passwd, &db);
 	if (!parsed) {
-		DEBUG(0, ("Wrong connection string to mysql %s\n", connection_string));
+		DEBUG(1, ("[MYSQL] Wrong connection string %s\n", connection_string));
 		*conn = NULL;
 		goto end;
 	}
@@ -154,37 +236,56 @@ MYSQL* create_connection(const char *connection_string, MYSQL **conn)
 	*conn = mysql_init(NULL);
 
 	// First try to connect to the database, if it fails try to create it
-	if (mysql_real_connect(*conn, host, user, passwd, db, 0, NULL, 0)) {
-		goto end;
+	if (mysql_real_connect(*conn, host, user, passwd, db, port, NULL, 0)) {
+		DEBUG(5, ("[MYSQL] Connection done\n"));
+		goto connected;
 	}
 
 	reconnect = true;
 	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
 
 	// Try to create database
-	if (!mysql_real_connect(*conn, host, user, passwd, NULL, 0, NULL, 0)) {
+	if (!mysql_real_connect(*conn, host, user, passwd, NULL, port, NULL, 0)) {
 		// Nop
-		DEBUG(0, ("Can't connect to mysql using %s, error: %s\n",
+		DEBUG(1, ("[MYSQL] Can't connect to server using %s, error: %s\n",
 			  connection_string, mysql_error(*conn)));
 		mysql_close(*conn);
 		*conn = NULL;
+		goto end;
 	} else {
+		DEBUG(5, ("[MYSQL] Connection done, let's create the database\n"));
 		// Connect it!, let's try to create database
 		sql = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", db);
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
-			DEBUG(0, ("Can't connect to mysql using %s, error: %s\n",
+			DEBUG(1, ("[MYSQL] Can't connect to server using %s, error: %s\n",
 				  connection_string, mysql_error(*conn)));
 			mysql_close(*conn);
 			*conn = NULL;
+			goto end;
 		}
+	}
+
+connected:
+	// This entries will never be deallocated
+	entry = talloc_zero(talloc_autofree_context(), struct conn_v);
+	entry->connection_string = talloc_strdup(entry, connection_string);
+	entry->conn = *conn;
+	// Store the new connection in our table
+	if (!htable_add(&ht, hash_string(connection_string), entry)) {
+		DEBUG(1, ("[MYSQL] ERROR adding new connection to internal pool of connections\n"));
+	} else {
+		DEBUG(5, ("[MYSQL] Stored new connection %"PRIu32"\n", hash_string(connection_string)));
 	}
 
 end:
 	talloc_free(mem_ctx);
 	return *conn;
-
 }
 
+void release_connection(MYSQL *conn)
+{
+	// Do nothing
+}
 
 enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 {
@@ -193,8 +294,7 @@ enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (mysql_query(conn, sql) != 0) {
-		printf("Error on query `%s`: %s\n", sql, mysql_error(conn));
-		DEBUG(5, ("Error on query `%s`: %s\n", sql, mysql_error(conn)));
+		DEBUG(3, ("Error on query `%s`: %s\n", sql, mysql_error(conn)));
 		return MYSQL_ERROR;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &end);
@@ -354,53 +454,71 @@ bool table_exists(MYSQL *conn, char *table_name)
 	return created;
 }
 
+/**
+   \details Create the existing sql schema in filename
 
-bool create_schema(MYSQL *conn, char *schema_file)
+   \param conn pointer to the MySQL connection
+   \param filename path to the schema file
+
+   \fixme find a better approach than allocating buffer of the file size
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum mapistore_error create_schema(MYSQL *conn, const char *filename)
 {
-	TALLOC_CTX *mem_ctx;
-	FILE *f;
-	int sql_size, bytes_read;
-	char *schema, *query;
-	bool ret, queries_to_execute;
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	struct stat		sb;
+	FILE			*f;
+	int			ret;
+	int			len;
+	char			*query, *schema;
+	bool			queries_to_execute;
 
-	f = fopen(schema_file, "r");
-	if (!f) {
-		DEBUG(0, ("schema file %s not found\n", schema_file));
-		ret = false;
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "create_schema");
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	ret = stat(filename, &sb);
+	MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
+	MAPISTORE_RETVAL_IF(sb.st_size == 0, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+
+	schema = talloc_zero_array(mem_ctx, char, sb.st_size + 1);
+	MAPISTORE_RETVAL_IF(!schema, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	f = fopen(filename, "r");
+	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
+
+	len = fread(schema, sizeof(char), sb.st_size, f);
+	if (len != sb.st_size) {
+		retval = MAPISTORE_ERR_BACKEND_INIT;
+		mapistore_set_errno(MAPISTORE_ERR_BACKEND_INIT);
 		goto end;
 	}
-	fseek(f, 0, SEEK_END);
-	sql_size = ftell(f);
-	rewind(f);
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	schema = talloc_zero_array(mem_ctx, char, sql_size + 1);
-	bytes_read = fread(schema, sizeof(char), sql_size, f);
-	if (bytes_read != sql_size) {
-		DEBUG(0, ("error reading schema file %s\n", schema_file));
-		ret = false;
-		goto end;
-	}
-	// schema is a series of create table/index queries separated by ';'
-	query = strtok (schema, ";");
+
+	query = strtok(schema, ";");
 	queries_to_execute = query != NULL;
 	while (queries_to_execute) {
-		ret = mysql_query(conn, query) ? false : true;
-		if (!ret) {
-			DEBUG(0, ("Error creating schema: %s\n", mysql_error(conn)));
-			break;
+		ret = mysql_query(conn, query);
+		if (ret) {
+			retval = MAPISTORE_ERR_DATABASE_OPS;
+			mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
+			goto end;
 		}
 		query = strtok(NULL, ";");
-		queries_to_execute = ret && query && strlen(query) > 10;
+		queries_to_execute = query && strlen(query) > 10;
 	}
+
 end:
-	if (f) {
-		talloc_free(mem_ctx);
-		fclose(f);
-	}
+	talloc_free(schema);
+	talloc_free(mem_ctx);
+	fclose(f);
 
-	return ret;
+	return retval;
 }
-
 
 const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)
 {

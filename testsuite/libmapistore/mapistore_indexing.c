@@ -20,6 +20,7 @@
  */
 
 #include "testsuite.h"
+#include "testsuite_common.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"
@@ -110,13 +111,8 @@ START_TEST(test_backend_init_parameters) {
 	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
 
 	/* check missing host */
-/*
- * 	TODO: at the moment mysql connect string parsing is widely untested
- * 	and this test fails. To 'fix' it, it will require a bit more work
- * 	and tests. When done, remove the comment.
 	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, "mysql://root@/somedb", &ictx);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
-*/
 
 	/* check wrong password */
 	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string_wrong_pass, &ictx);
@@ -484,7 +480,7 @@ static void mysql_setup(void)
 
 static void mysql_teardown(void)
 {
-	mysql_query((MYSQL*)g_ictx->data, "DROP DATABASE " INDEXING_MYSQL_DB);
+	drop_mysql_database(g_ictx->data, INDEXING_MYSQL_DB);
 	talloc_free(g_mstore_ctx);
 }
 

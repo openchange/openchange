@@ -119,7 +119,7 @@ static PyObject *py_MAPIStoreTable_get_row(PyMAPIStoreTableObject *self, PyObjec
 	enum mapistore_error		retval;
 	uint32_t			line, row_count;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &line)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I", kwnames, &line)) {
 		return NULL;
 	}
 

@@ -49,7 +49,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	uint64_t		fid;
 	uint16_t		foldertype = FOLDER_GENERIC;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|sh", kwnames, &name, &desc, &foldertype)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|sH", kwnames, &name, &desc, &foldertype)) {
 		return NULL;
 	}
 
@@ -181,7 +181,7 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 {
 	char				*kwnames[] = { "flags", NULL };
 	enum mapistore_error		retval;
-	uint8_t				flags = 0x0;
+	uint16_t			flags = 0x0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|H", kwnames, &flags)) {
 		return NULL;
@@ -210,7 +210,7 @@ static PyObject *py_MAPIStoreFolder_copy_folder(PyMAPIStoreFolderObject *self, P
 	PyMAPIStoreFolderObject		*target_folder;
 	const char			*new_name;
 	enum mapistore_error		retval;
-	int				recursive = 0x1; // TODO: Find most correct type (uint8_t + "h"/"H" produces segfault)
+	uint16_t			recursive = 0x1;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os|H", kwnames, &target_folder, &new_name, &recursive)) {
 		return NULL;
@@ -268,11 +268,11 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	char				*kwnames[] = { "table_type", NULL };
-	enum mapistore_table_type	table_type;
 	uint32_t			RowCount;
+	uint16_t			table_type;
 	int				retval;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "H", kwnames, &table_type)) {
 		return NULL;
 	}
 
@@ -283,7 +283,8 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 	}
 
 	retval = mapistore_folder_get_child_count(self->context->mstore_ctx, self->context->context_id,
-						  self->folder_object, table_type, &RowCount);
+						  self->folder_object, (enum mapistore_table_type) table_type,
+						  &RowCount);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;
@@ -663,7 +664,7 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 	void				*message_object;
 	enum mapistore_error		retval;
 	uint64_t			mid;
-	uint8_t				associated = 0x0;
+	uint16_t			associated = 0x0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|H", kwnames, &associated)) {
 		return NULL;
@@ -684,7 +685,8 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 
 	/* Create message */
 	retval = mapistore_folder_create_message(self->context->mstore_ctx, self->context->context_id,
-						self->folder_object, self->mem_ctx, mid, associated, &message_object);
+						self->folder_object, self->mem_ctx, mid, (uint8_t) associated,
+						&message_object);
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
@@ -716,7 +718,7 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	const char			*uri;
 	enum mapistore_error		retval;
 	uint64_t			mid;
-	uint8_t				read_write = 0x0;
+	uint16_t			read_write = 0x0;
 	bool				soft_deleted, partial;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|H", kwnames, &uri, &read_write)) {
@@ -775,7 +777,7 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	const char			*uri;
 	enum mapistore_error		retval;
 	uint64_t			mid;
-	uint8_t				flags = MAPISTORE_PERMANENT_DELETE;
+	uint16_t			flags = MAPISTORE_PERMANENT_DELETE;
 	bool				partial, soft_deleted;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|H", kwnames, &uri, &flags)) {
@@ -805,7 +807,7 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 
 	/* Delete the message (soft/hard delete depending on the flags)*/
 	retval = mapistore_folder_delete_message(self->context->mstore_ctx, self->context->context_id,
-						self->folder_object, mid, flags);
+						self->folder_object, mid, (uint8_t) flags);
 
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
@@ -1058,7 +1060,7 @@ static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, Py
 	PyMAPIStoreTableObject		*table;
 	void				*table_object;
 	struct SPropTagArray		*columns;
-	enum mapistore_table_type	table_type;
+	uint16_t			table_type;
 	enum mapistore_error		retval;
 	uint32_t			count = 0;
 
@@ -1074,7 +1076,8 @@ static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, Py
 
 	/* Open the table */
 	retval = mapistore_folder_open_table(self->context->mstore_ctx, self->context->context_id,
-						self->folder_object, self->mem_ctx, table_type, 0,
+						self->folder_object, self->mem_ctx,
+						(enum mapistore_table_type) table_type, 0,
 						&table_object, &count);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);

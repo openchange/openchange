@@ -24,7 +24,8 @@ sys.path.append(os.sep.join((root, '..', '..')))
 
 import json
 import uuid
-from datetime import datetime
+from datetime import datetime, timedelta
+from pytz import timezone
 from openchange import mapistore
 
 class BackendObject(object):
@@ -54,7 +55,14 @@ class BackendObject(object):
         deadbeef["role"] = mapistore.ROLE_MAIL
         deadbeef["tag"] = "tag"
 
-        contexts = [deadbeef,]
+        cacabeef = {}
+        cacabeef["url"] = "sample://cacabeef0000001/"
+        cacabeef["name"] = "cacabeef"
+        cacabeef["main_folder"] = True
+        cacabeef["role"] = mapistore.ROLE_CALENDAR
+        cacabeef["tag"] = "tag"
+
+        contexts = [deadbeef, cacabeef]
         return contexts
 
     def create_context(self, uri):
@@ -72,6 +80,10 @@ class ContextObject(BackendObject):
     mapping = {}
 
     def __init__(self):
+
+        #
+        # Mail data
+        #
 
         # Attachments
         attachment1 = {}
@@ -159,6 +171,76 @@ class ContextObject(BackendObject):
         self.mapping[0xdeadbeef0000001]["cache"] = {}
         self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder, ]
         self.mapping[0xdeadbeef0000001]["messages"] = [message1, ]
+
+        #
+        # Calendar data
+        #
+        appt1 = {}
+        appt1["recipients"] = []
+        appt1["attachments"] = []
+        appt1["mid"] = 0xcaca00010000001
+        appt1["fai"] = False
+        appt1["cache"] = {}
+        appt1["properties"] = {}
+
+        # General properties (read-only)
+        appt1["properties"]["PidTagAccess"] = 63
+        appt1["properties"]["PidTagAccessLevel"] = 1
+        appt1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        appt1["properties"]["PidTagCreationTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        appt1["properties"]["PidTagLastModificationTime"] = appt1["properties"]["PidTagCreationTime"]
+        appt1["properties"]["PidTagLastModifierName"] = "julien"
+        appt1["properties"]["PidTagObjectType"] = 5
+        appt1["properties"]["PidTagRecordKey"] = bytearray(uuid.uuid1().bytes)
+        appt1["properties"]["PidTagSearchKey"] = bytearray(uuid.uuid1().bytes)
+
+        appt1["properties"]["PidTagFolderId"] = 0xcacabeef0000001
+        appt1["properties"]["PidTagMid"] = appt1["mid"]
+        appt1["properties"]["PidTagInstID"] = appt1["mid"]
+        appt1["properties"]["PidTagInstanceNum"] = 0
+        appt1["properties"]["PidTagRowType"] = 1
+        appt1["properties"]["PidTagDepth"] = 0
+        appt1["properties"]["PidTagMessageClass"] = "IPM.Appointment"
+        appt1["properties"]["PidTagIconIndex"] = 0x400 # single-instance appointment 2.2.1.49 [MS-OXOCAL]
+        appt1["properties"]["0x91f80003"] = 0 # PidLidSideEffects 2.2.2.1.16 [MS-OXCMSG]
+        # appt1["properties"]["0x94e60003"] = # PidLidHeaderItem
+        appt1["properties"]["PidTagMessageStatus"] = 0
+        appt1["properties"]["PidTagMessageFlags"] = 0
+        # appt1["properties"]["0x92020102" = # PidLidTimeZoneStruct
+        appt1["properties"]["0x910c001f"] = "Location of the event" # PidLidLocation
+        appt1["properties"]["0x91900003"] = 0 # PidLidAppointmentStateFlags 2.2.1.10 [MS-OXOCAL]
+        appt1["properties"]["0x91ee000b"] = True # PidLidReminderSet
+        #appt1["properties"]["0x918b0102"] = # PidLidAppointmentRecur
+        appt1["properties"]["0x90Fa000b"] = False # PidLidAppointmentSubType
+
+        appt1["properties"]["PidTagSubject"] = "Meet Sample backend appointment folder"
+        appt1["properties"]["PidTagNormalizedSubject"] = appt1["properties"]["PidTagSubject"]
+        appt1["properties"]["PidTagHasAttachments"] = False
+        appt1["properties"]["PidTagSensitivity"] = 1
+        appt1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
+        appt1["properties"]["PidTagBody"] = "Description of the event"
+        appt1["properties"]["PidTagHtml"] = bytearray(appt1["properties"]["PidTagBody"])
+        appt1["properties"]["0x90db101f"] = ["Blue Category", "OpenChange", ]
+        appt1["properties"]["PidTagMessageDeliveryTime"] = appt1["properties"]["PidTagCreationTime"]
+        appt1["properties"]["0x918f0040"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f")) # PidLidAppointmentStartWhole
+        appt1["properties"]["0x91980040"] =  appt1["properties"]["0x918f0040"]  # PidLidCommonEnd
+        appt1["properties"]["0x918a0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=1)).strftime("%s.%f")) # PidLidAppointmentEndWhole
+        appt1["properties"]["0x91990040"] =  appt1["properties"]["0x918a0040"] # PidLidCommonStart
+
+        appt1["properties"]["0x91930003"] = 2 # PidLidBusyStatus
+        appt1["properties"]["0x90fc0003"] = 0 # PidLidResponseStatus
+
+        self.mapping[0xcacabeef0000001] = {}
+        self.mapping[0xcacabeef0000001]["uri"] = "sample://cacabeef0000001/"
+        self.mapping[0xcacabeef0000001]["properties"] = {}
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagFolderId"] = 0xcacabeef0000001
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Appointment"
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Appointment"
+        self.mapping[0xcacabeef0000001]["subfolders"] = []
+        self.mapping[0xcacabeef0000001]["messages"] = [appt1,]
+        self.mapping[0xcacabeef0000001]["cache"] = {}
+        self.mapping[0xcacabeef0000001]["cache"]["properties"] = {}
+        self.mapping[0xcacabeef0000001]["cache"]["messages"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
         return

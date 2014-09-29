@@ -74,6 +74,11 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	}
 
 	aRow = talloc_zero(mem_ctx, struct SRow);
+	if (aRow == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	aRow->lpProps = talloc_array(aRow, struct SPropValue, 3);
 	if (aRow->lpProps == NULL) {
 		PyErr_NoMemory();

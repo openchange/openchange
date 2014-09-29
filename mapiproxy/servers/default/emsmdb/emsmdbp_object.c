@@ -533,15 +533,18 @@ static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 	return parent_uri;
 }
 
-static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *mailbox_object, uint64_t fid, uint64_t *parent_fidp)
+static enum MAPISTATUS emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx,
+					      struct emsmdbp_object *mailbox_object,
+					      uint64_t fid, uint64_t *parent_fidp)
 {
-	TALLOC_CTX	*mem_ctx;
-	int		retval = MAPISTORE_SUCCESS;
-	bool		soft_deleted;
-	char		*uri, *parent_uri;
-	struct emsmdbp_object_mailbox *mailbox;
+	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error		ret;
+	enum MAPISTATUS			retval;
+	bool				soft_deleted;
+	char				*uri, *parent_uri;
+	struct emsmdbp_object_mailbox	*mailbox;
 
-	MAPISTORE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mailbox_object, MAPI_E_INVALID_PARAMETER, NULL);
 	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
@@ -554,16 +557,17 @@ static int emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ctx, struct em
 		goto end;
 	}
 
-	retval = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
-	if (retval == MAPISTORE_SUCCESS) {
+	ret = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
+	if (ret == MAPISTORE_SUCCESS) {
 		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
 		if (parent_uri) {
-			retval = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
+			ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
 		}
 		else {
-			retval = MAPISTORE_ERR_NOT_FOUND;
+			ret = MAPISTORE_ERR_NOT_FOUND;
 		}
 	}
+	retval = mapistore_error_to_mapi(ret);
 
 end:
 	talloc_free(mem_ctx);
@@ -578,51 +582,59 @@ end:
    \param emsmdbp_ctx pointer to the emsmdbp context
    \param context_object pointer to current context object
    \param fid pointer to the Folder Identifier to lookup
+   \param [out] folder_object_p location to store emsmdbp object on success
 
-   \return Valid emsmdbp object structure on success, otherwise NULL
+   \return MAPISTATUS error code
  */
-_PUBLIC_ enum mapistore_error emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *context_object, uint64_t fid, struct emsmdbp_object **folder_object_p)
+
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
+							   struct emsmdbp_context *emsmdbp_ctx,
+							   struct emsmdbp_object *context_object,
+							   uint64_t fid,
+							   struct emsmdbp_object **folder_object_p)
 {
 	uint64_t		parent_fid;
-	int			retval;
+	enum mapistore_error	ret;
+	enum MAPISTATUS		retval;
 	struct emsmdbp_object   *mailbox_object;
 
-	MAPISTORE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!folder_object_p, MAPI_E_INVALID_PARAMETER, NULL);
 
 	if ((context_object->type == EMSMDBP_OBJECT_MAILBOX
 	     && fid == context_object->object.mailbox->folderID)
 	    || (context_object->type == EMSMDBP_OBJECT_FOLDER
 		&& fid == context_object->object.folder->folderID)) {
 		*folder_object_p = context_object;
-		return MAPISTORE_SUCCESS;
+		return MAPI_E_SUCCESS;
 	}
 
 	mailbox_object = emsmdbp_get_mailbox(context_object);
 	if (fid == mailbox_object->object.mailbox->folderID) {
 		*folder_object_p = mailbox_object;
-		return MAPISTORE_SUCCESS;
+		return MAPI_E_SUCCESS;
 	}
 
 	retval = emsmdbp_get_parent_fid(emsmdbp_ctx, mailbox_object, fid, &parent_fid);
-	if (retval == MAPISTORE_SUCCESS) {
+	if (retval == MAPI_E_SUCCESS) {
 		if (parent_fid) {
 			struct emsmdbp_object	*parent_object = NULL;
 
 			retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, parent_fid, &parent_object);
-			if (retval != MAPISTORE_SUCCESS) {
+			if (retval != MAPI_E_SUCCESS) {
 				return retval;
 			}
-			return emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, parent_object, fid, folder_object_p);
+			ret = emsmdbp_object_open_folder(mem_ctx, emsmdbp_ctx, parent_object, fid, folder_object_p);
+			return mapistore_error_to_mapi(ret);
 		}
 		else {
 			*folder_object_p = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, NULL);
-			return MAPISTORE_SUCCESS;
+			return MAPI_E_SUCCESS;
 		}
 	}
 
-	return MAPISTORE_ERROR;
+	return retval;
 }
 
 _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
@@ -1598,10 +1610,10 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         table = table_object->object.table;
         num_props = table_object->object.table->prop_count;
 
-        data_pointers = talloc_array(mem_ctx, void *, num_props);
-        memset(data_pointers, 0, sizeof(void *) * num_props);
-        retvals = talloc_array(mem_ctx, enum MAPISTATUS, num_props);
-        memset(retvals, 0, sizeof(uint32_t) * num_props);
+	data_pointers = talloc_zero_array(mem_ctx, void *, num_props);
+	OPENCHANGE_RETVAL_IF(data_pointers == NULL, 0, NULL);
+	retvals = talloc_zero_array(mem_ctx, enum MAPISTATUS, num_props);
+	OPENCHANGE_RETVAL_IF(retvals == NULL, 0, NULL);
 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
@@ -1612,7 +1624,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			for (i = 0; i < num_props; i++) {
 				data_pointers[i] = properties[i].data;
                                         
-				if (properties[i].error) {
+				if (properties[i].error != MAPISTORE_SUCCESS) {
 					retvals[i] = mapistore_error_to_mapi(properties[i].error);
 				}
 				else {

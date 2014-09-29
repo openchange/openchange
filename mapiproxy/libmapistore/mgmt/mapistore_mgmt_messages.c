@@ -386,7 +386,7 @@ enum mapistore_error mapistore_mgmt_message_notification_command(struct mapistor
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!notif.username || (!notif.MAPIStoreURI && notif.WholeStore == false) || 
-			    (!notif.FolderID && notif.WholeStore == false), MAPI_E_INVALID_PARAMETER, NULL);
+			    (!notif.FolderID && notif.WholeStore == false), MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	for (el = mgmt_ctx->users; el; el = el->next) {
 		if (!strcmp(el->info->username, notif.username)) {

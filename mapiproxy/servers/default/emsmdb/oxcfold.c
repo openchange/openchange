@@ -286,7 +286,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (MAPI_STATUS_IS_ERR(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
@@ -294,7 +294,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	/* GetContentsTable can only be called for folder objects */
 	retval = mapi_handles_get_private_data(parent, &data);
-	if (MAPI_STATUS_IS_ERR(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapi_repl->error_code = retval;
 		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
 		goto end;
@@ -324,7 +324,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Table object */
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-	if (MAPI_STATUS_IS_ERR(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapi_repl->error_code = retval;
 		goto end;
 	}

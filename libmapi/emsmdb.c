@@ -360,7 +360,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx,
 	r.out.mapi_response = mapi_response;
 
 	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 

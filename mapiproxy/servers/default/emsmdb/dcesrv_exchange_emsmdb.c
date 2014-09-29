@@ -1662,7 +1662,10 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	*dnprefix = '\0';
+	emsmdbp_ctx->szDNPrefix = talloc_strdup(emsmdbp_ctx, userDN);
+	OPENCHANGE_RETVAL_IF(emsmdbp_ctx->szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
+	OPENCHANGE_RETVAL_IF(*r->out.szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 	/* Step 6. Fill EcDoConnectEx reply */
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_EMSMDB);

@@ -701,7 +701,70 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx,
+/**
+   \details Resolve partial username in x500dn format to a sAMAccountName
+            for corresponding user. If no such user, then just returns
+            reconstructed x500dn (legaxyExchangeDN)
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param prefix_size amount of DN Prefix to use
+   \param x500name partial (or full) x500dn to resolve
+   \param username_p pointe to buffer to store resolved user name
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS oxcmsg_resolve_partial_x500name(TALLOC_CTX *mem_ctx,
+						       struct emsmdbp_context *emsmdbp_ctx,
+						       uint8_t prefix_size, const char *x500name,
+						       char **username_p)
+{
+	char			*x500dn;
+	char			*username;
+	const char * const	attrs[] = { "sAMAccountName", NULL };
+	int			ret;
+	struct ldb_result	*res = NULL;
+
+	OPENCHANGE_RETVAL_IF(!username_p, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Step 0. Restore full x500dn */
+	if (prefix_size != 0) {
+		/* sanity check for DNPrefix valid length */
+		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->szDNPrefix, MAPI_E_INVALID_PARAMETER, NULL);
+		if (prefix_size > strlen(emsmdbp_ctx->szDNPrefix)) {
+			DEBUG(0, ("Requested x500name prefix is beyond what we have for DNPrefix=[%s]\n",
+					emsmdbp_ctx->szDNPrefix));
+			return MAPI_E_INVALID_PARAMETER;
+		}
+
+		/* concatenate x500name suffix with szDNPrefix we are using at the moment */
+		size_t name_len = prefix_size + strlen(x500name) + 1;
+		x500dn = talloc_zero_array(mem_ctx, char, name_len);
+		OPENCHANGE_RETVAL_IF(!x500dn, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+		strncpy(x500dn, emsmdbp_ctx->szDNPrefix, prefix_size);
+		strcpy(x500dn + prefix_size, x500name);
+	} else {
+		x500dn = discard_const_p(char, x500name);
+	}
+
+	/* Step 1. Try to find out an account with x500dn we have */
+	ret = ldb_search(emsmdbp_ctx->samdb_ctx, mem_ctx, &res,
+			 ldb_get_default_basedn(emsmdbp_ctx->samdb_ctx), LDB_SCOPE_SUBTREE,
+			 attrs, "legacyExchangeDN=%s", x500dn);
+	if (ret != LDB_SUCCESS || res->count != 1) {
+		/* no such user, just pass what we have */
+		username = x500dn;
+	} else {
+		username = discard_const_p(char, ldb_msg_find_attr_as_string(res->msgs[0], "sAMAccountName", x500dn));
+	}
+
+	*username_p = username;
+
+	return MAPI_E_SUCCESS;
+}
+
+static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
 						       struct ModifyRecipientRow *recipient_row,
 						       uint16_t prop_count, enum MAPITAGS *properties,
 						       struct mapistore_message_recipient *recipient)
@@ -709,14 +772,17 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx,
 	int			i;
 	uint32_t		data_pos;
 	const void		*prop_value;
+	enum MAPISTATUS		retval;
 
 	recipient->type = recipient_row->RecipClass;
 
+	recipient->username = NULL;
 	if ((recipient_row->RecipientRow.RecipientFlags & 0x07) == 1) {
-		recipient->username = (char *) recipient_row->RecipientRow.X500DN.recipient_x500name;
-	}
-	else {
-		recipient->username = NULL;
+		retval = oxcmsg_resolve_partial_x500name(mem_ctx, emsmdbp_ctx,
+							 recipient_row->RecipientRow.AddressPrefixUsed.prefix_size,
+							 recipient_row->RecipientRow.X500DN.recipient_x500name,
+							 &recipient->username);
+		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 	}
 
 	recipient->data = talloc_array(mem_ctx, void *, prop_count + 2);
@@ -847,11 +913,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 
 		recipients = talloc_array(mem_ctx, struct mapistore_message_recipient, mapi_req->u.mapi_ModifyRecipients.cValues);
 		for (i = 0; i < mapi_req->u.mapi_ModifyRecipients.cValues; i++) {
-			retval = oxcmsg_parse_ModifyRecipientRow(recipients, mapi_req->u.mapi_ModifyRecipients.RecipientRow + i,
+			retval = oxcmsg_parse_ModifyRecipientRow(recipients, emsmdbp_ctx,
+								 mapi_req->u.mapi_ModifyRecipients.RecipientRow + i,
 								 mapi_req->u.mapi_ModifyRecipients.prop_count,
 								 mapi_req->u.mapi_ModifyRecipients.properties,
 								 recipients + i);
 			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(0, ("Failed to parse RecipientRow. [%s]\n", mapi_get_errstr(retval)));
 				mapi_repl->error_code = retval;
 				goto end;
 			}

@@ -431,7 +431,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		
 		retval = emsabp_ab_container_enum(mem_ctx, emsabp_ctx,
 						  r->in.pStat->ContainerID, &ldb_res);
-		if (!MAPI_STATUS_IS_OK(retval))  {
+		if (retval != MAPI_E_SUCCESS)  {
 			goto failure;
 		}
 	
@@ -453,7 +453,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		for (i = 0; i < count; i++) {
 			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
 							     ldb_res->msgs[i+r->in.pStat->NumPos], 0, r->in.dwFlags, pPropTags);
-			if (!MAPI_STATUS_IS_OK(retval)) {
+			if (retval != MAPI_E_SUCCESS) {
 				goto failure;
 			}
 		}
@@ -1094,7 +1094,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
-	if (!MAPI_STATUS_IS_OK(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(5, ("[nspi][%s:%d] ab_fetch_filter failed\n", __FUNCTION__, __LINE__));
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
@@ -1240,7 +1240,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
-	if (!MAPI_STATUS_IS_OK(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(5, ("[nspi][%s:%d] ab_fetch_filter failed\n", __FUNCTION__, __LINE__));
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}

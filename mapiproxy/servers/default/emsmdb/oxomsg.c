@@ -47,6 +47,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 	char				*owner;
 	struct emsmdbp_object		*folder_object;
 	struct emsmdbp_object		*message_object;
+	enum MAPISTATUS			retval;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -107,8 +108,10 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			continue;
 		}
 
-		if (emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
-			DEBUG(5, (__location__": unable to open folder\n"));
+		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(5, (__location__": Failed to open parent folder with FID=[0x%016"PRIx64"]: %s\n",
+				  folderID, mapi_get_errstr(retval)));
 			continue;
 		}
 

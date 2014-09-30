@@ -147,76 +147,60 @@ static void checked_mysql_setup(void)
 
 static void checked_mysql_teardown(void)
 {
-	TALLOC_CTX	*mem_ctx;
-	char		*database = NULL;
-	int		ret;
-
-	mem_ctx = talloc_named(NULL, 0, "checked_mysql_teardown");
-	ck_assert(mem_ctx != NULL);
-
-	database = talloc_asprintf(mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
-	ck_assert(database != NULL);
-
-	ret = mysql_query(conn, database);
-	talloc_free(database);
-	ck_assert_int_eq(ret, 0);
-
-	talloc_free(mem_ctx);
+	drop_mysql_database(conn, OC_TESTSUITE_MYSQL_DB);
 }
 
 START_TEST (test_create_schema) {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval;
 	int			ret;
-	char			*schemafile = NULL;
+	const char		*tmp_schemafile, *real_schemafile;
 	char			str[] = "invalid schema file";
 	FILE			*fp;
 
 	mem_ctx = talloc_named(NULL, 0, "test_create_schema");
 	ck_assert(mem_ctx != NULL);
 
-	schemafile = talloc_asprintf(mem_ctx, "%s/%s", NAMEDPROPS_MYSQL_TMPDIR,
-				     NAMEDPROPS_MYSQL_SCHEMA);
-	ck_assert(schemafile != NULL);
+	tmp_schemafile = NAMEDPROPS_MYSQL_TMPDIR "/" NAMEDPROPS_MYSQL_SCHEMA;
+	real_schemafile = NAMEDPROPS_MYSQL_SCHEMA_PATH "/" NAMEDPROPS_MYSQL_SCHEMA;
 
 	/* check sanity checks */
 	retval = create_schema(NULL, NULL);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
 	/* test non existent schema file */
-	unlink(schemafile);
+	unlink(tmp_schemafile);
 
-	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	retval = create_schema(conn, tmp_schemafile);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_BACKEND_INIT);
 
 	/* test empty schema file */
-	ret = unlink(schemafile);
+	ret = unlink(tmp_schemafile);
 	ck_assert_int_eq(ret, -1);
 
-	fp = fopen(schemafile, "w+");
+	fp = fopen(tmp_schemafile, "w+");
 	ck_assert(fp != NULL);
 	fclose(fp);
 
-	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	retval = create_schema(conn, tmp_schemafile);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
 
 	/* test invalid schema file */
-	fp = fopen(schemafile, "w+");
+	fp = fopen(tmp_schemafile, "w+");
 	ck_assert(fp != NULL);
 	fwrite(str, 1, sizeof(str), fp);
 	fclose(fp);
 
-	retval = create_schema(conn, NAMEDPROPS_MYSQL_TMPDIR);
+	retval = create_schema(conn, tmp_schemafile);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_OPS);
 
-	ret = unlink(schemafile);
+	ret = unlink(tmp_schemafile);
 	ck_assert_int_eq(ret, 0);
 
 	/* test real schema file */
-	retval = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	retval = create_schema(conn, real_schemafile);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
-	talloc_free(schemafile);
 	talloc_free(mem_ctx);
 } END_TEST
 
@@ -226,7 +210,7 @@ START_TEST (test_is_schema_created) {
 	ck_assert(is_schema_created(conn) == false);
 	ck_assert(is_database_empty(conn) == true);
 
-	retval = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	retval = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH"/"NAMEDPROPS_MYSQL_SCHEMA);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
 	ck_assert(is_schema_created(conn) == true);
@@ -250,9 +234,9 @@ START_TEST (test_initialize_database) {
 
 } END_TEST
 
-static void checked_mysql_query_setup(void)
+static void unchecked_mysql_query_setup(void)
 {
-	enum mapistore_error		retval;
+	enum mapistore_error retval;
 
 	g_mem_ctx = talloc_named(NULL, 0, "checked_mysql_query_setup");
 	ck_assert(g_mem_ctx != NULL);
@@ -272,18 +256,9 @@ static void checked_mysql_query_setup(void)
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 }
 
-static void checked_mysql_query_teardown(void)
+static void unchecked_mysql_query_teardown(void)
 {
-	int	ret;
-	char	*query = NULL;
-
-	query = talloc_asprintf(g_mem_ctx, "DROP DATABASE %s", OC_TESTSUITE_MYSQL_DB);
-	ck_assert(query != NULL);
-
-	ret = mysql_query(g_nprops->data, query);
-	talloc_free(query);
-	ck_assert_int_eq(ret, 0);
-
+	drop_mysql_database(g_nprops->data, OC_TESTSUITE_MYSQL_DB);
 	talloc_free(g_nprops);
 	talloc_free(g_lp_ctx);
 	talloc_free(g_mem_ctx);
@@ -512,7 +487,7 @@ Suite *mapistore_namedprops_mysql_suite(void)
 	/* MySQL queries */
 	tc_mysql_q = tcase_create("MySQL queries");
 	tcase_set_timeout(tc_mysql_q, 60);
-	tcase_add_checked_fixture(tc_mysql_q, checked_mysql_query_setup, checked_mysql_query_teardown);
+	tcase_add_unchecked_fixture(tc_mysql_q, unchecked_mysql_query_setup, unchecked_mysql_query_teardown);
 	tcase_add_test(tc_mysql_q, test_next_unused_id);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_ID);
 	tcase_add_test(tc_mysql_q, test_get_mapped_id_MNID_STRING);

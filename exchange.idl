@@ -846,7 +846,9 @@ System Attendant Private Interface
 			RolePublishAuthor	= 0x0000049B,
 			RolePublishEditor	= 0x000004FB,
 			RightsAll		= 0x000005FB,
-			RoleOwner		= 0x000007FB
+			RoleOwner		= 0x000007FB,
+			RightsFreeBusySimple    = 0x00000800,
+			RightsFreeBusyDetailed  = 0x00001000
 	       	} ACLRIGHTS;
 
 	typedef [public, enum8bit, flag(NDR_PAHEX)] enum

@@ -18,7 +18,6 @@
  */
 #include "testsuite_common.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
-#include <mysql/mysql.h>
 #include <string.h>
 #include <check.h>
 #include <param.h>
@@ -90,4 +89,13 @@ void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path,
 		insert = strtok(NULL, ";");
 		inserts_to_execute = insert && strlen(insert) > 10;
 	}
+}
+
+void drop_mysql_database(MYSQL *conn, const char *database)
+{
+	char *sql = talloc_asprintf(NULL, "DROP DATABASE %s", database);
+	if (!sql) ck_abort();
+	mysql_query(conn, sql);
+	talloc_free(sql);
+	close_all_connections();
 }

@@ -994,7 +994,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_conte
 	OPENCHANGE_RETVAL_IF(!indexing_url, MAPI_E_INVALID_PARAMETER, NULL);
 
 	retval = oc_ctx->get_indexing_url(oc_ctx, username, indexing_url);
-	OPENCHANGE_RETVAL_IF(MAPI_STATUS_IS_ERR(retval), retval, NULL);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 
 	/* check indexing_url we are about to return */
 	if (*indexing_url == NULL) {

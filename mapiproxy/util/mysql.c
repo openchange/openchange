@@ -462,62 +462,51 @@ bool table_exists(MYSQL *conn, char *table_name)
 
    \fixme find a better approach than allocating buffer of the file size
 
-   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+   \return bool indicating success
  */
-enum mapistore_error create_schema(MYSQL *conn, const char *filename)
+bool create_schema(MYSQL *conn, const char *filename)
 {
-	TALLOC_CTX		*mem_ctx;
-	enum mapistore_error	retval = MAPISTORE_SUCCESS;
-	struct stat		sb;
-	FILE			*f;
-	int			ret;
-	int			len;
-	char			*query, *schema;
-	bool			queries_to_execute;
+	TALLOC_CTX	*mem_ctx = NULL;
+	struct stat	sb;
+	FILE		*f = NULL;
+	int		ret;
+	int		len;
+	char		*query, *schema;
+	bool		queries_to_execute;
+	bool		schema_created = false;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	if (!conn || !filename) return false;
 
 	mem_ctx = talloc_named(NULL, 0, "create_schema");
-	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+	if (!mem_ctx) goto end;
 
 	ret = stat(filename, &sb);
-	MAPISTORE_RETVAL_IF(ret == -1, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
-	MAPISTORE_RETVAL_IF(sb.st_size == 0, MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+	if (ret == -1 || sb.st_size == 0) goto end;
 
 	schema = talloc_zero_array(mem_ctx, char, sb.st_size + 1);
-	MAPISTORE_RETVAL_IF(!schema, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	if (!schema) goto end;
 
 	f = fopen(filename, "r");
-	MAPISTORE_RETVAL_IF(!f, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
+	if (!f) goto end;
 
 	len = fread(schema, sizeof(char), sb.st_size, f);
-	if (len != sb.st_size) {
-		retval = MAPISTORE_ERR_BACKEND_INIT;
-		mapistore_set_errno(MAPISTORE_ERR_BACKEND_INIT);
-		goto end;
-	}
+	if (len != sb.st_size) goto end;
 
 	query = strtok(schema, ";");
 	queries_to_execute = query != NULL;
 	while (queries_to_execute) {
 		ret = mysql_query(conn, query);
-		if (ret) {
-			retval = MAPISTORE_ERR_DATABASE_OPS;
-			mapistore_set_errno(MAPISTORE_ERR_DATABASE_OPS);
-			goto end;
-		}
+		if (ret) goto end;
 		query = strtok(NULL, ";");
 		queries_to_execute = query && strlen(query) > 10;
 	}
-
+	schema_created = true;
 end:
-	talloc_free(schema);
-	talloc_free(mem_ctx);
-	fclose(f);
+	if (mem_ctx) talloc_free(mem_ctx);
+	if (f) fclose(f);
 
-	return retval;
+	return schema_created;
 }
 
 const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)

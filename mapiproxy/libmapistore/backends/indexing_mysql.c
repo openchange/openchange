@@ -474,6 +474,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *mem_ctx,
 	struct indexing_context	*ictx;
 	char			*schema_file;
 	MYSQL			*conn = NULL;
+	bool			schema_created;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -491,16 +492,18 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		enum mapistore_error schema_created;
 		DEBUG(3, ("Creating schema for indexing on mysql %s\n", connection_string));
 
 		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);
 		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
-		schema_created = create_schema(MYSQL(ictx), schema_file);
+		schema_created = create_schema(conn, schema_file);
 		talloc_free(schema_file);
 
-		MAPISTORE_RETVAL_IF(schema_created != MAPISTORE_SUCCESS,
-				    MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+		if (!schema_created) {
+			DEBUG(1, ("Failed indexing schema creation, "
+				  "last mysql error was: `%s`\n", mysql_error(conn)));
+			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+		}
 	}
 
 	/* TODO: extract url from backend mapping, by the moment we use the username */

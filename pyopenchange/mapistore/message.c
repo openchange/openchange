@@ -488,7 +488,7 @@ static PyMethodDef mapistore_message_methods[] = {
 
 static PyObject *py_MAPIStoreMessage_get_mid(PyMAPIStoreMessageObject *self, void *closure)
 {
-	return PyLong_FromLongLong(self->mid);
+	return PyLong_FromUnsignedLongLong(self->mid);
 }
 
 static PyGetSetDef mapistore_message_getsetters[] = {

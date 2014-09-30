@@ -1137,7 +1137,7 @@ static PyMethodDef mapistore_folder_methods[] = {
 
 static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
 {
-	return PyLong_FromLongLong(self->fid);
+	return PyLong_FromUnsignedLongLong(self->fid);
 }
 
 static PyGetSetDef mapistore_folder_getsetters[] = {

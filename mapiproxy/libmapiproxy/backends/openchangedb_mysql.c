@@ -38,10 +38,6 @@
 
 #define THRESHOLD_SLOW_QUERIES 0.25
 
-// We only used one connection
-// FIXME assumption that every user will use the same mysql server. Change
-// into list of connections indexed by username, like indexing backend.
-static MYSQL *conn = NULL;
 
 static enum MAPISTATUS _not_implemented(const char *caller) {
 	DEBUG(0, ("Called not implemented function `%s` from mysql backend", caller));
@@ -2156,12 +2152,15 @@ static const char **get_folders_names(TALLOC_CTX *parent_ctx,
 				      const char *locale, const char *type)
 {
 	TALLOC_CTX		*mem_ctx;
+	MYSQL			*conn;
 	char			*table, *sql, *short_locale;
 	const char		**ret;
 	struct StringArrayW_r	*results;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folders_name");
 	if (!mem_ctx) return NULL;
+	conn = self->data;
+	if (!conn) return NULL;
 	table = talloc_asprintf(mem_ctx, "provisioning_%s", type);
 	if (!table) return NULL;
 
@@ -3620,10 +3619,13 @@ static const char *openchangedb_data_dir(void)
 
 static int openchangedb_mysql_destructor(struct openchangedb_context *self)
 {
-	DEBUG(3, ("Destroying openchangedb mysql context\n"));
-	if (conn != NULL) {
-		mysql_close(conn);
-		conn = NULL;
+	DEBUG(5, ("Destroying openchangedb mysql context\n"));
+	if (self && self->data) {
+		MYSQL *conn = self->data;
+		release_connection(conn);
+	} else {
+		DEBUG(0, ("[%s:%d] Error: tried to destroy corrupted openchangedb mysql context\n",
+			  __FUNCTION__, __LINE__));
 	}
 	return 0;
 }
@@ -3634,6 +3636,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 					      struct openchangedb_context **ctx)
 {
 	struct openchangedb_context 	*oc_ctx;
+	MYSQL				*conn = NULL;
 	char 				*schema_file;
 	const char			*connection_string;
 	const char			*schema_dir;
@@ -3704,24 +3707,25 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 		OPENCHANGE_RETVAL_ERR(MAPI_E_INVALID_PARAMETER, oc_ctx);
 	}
 	// Connect to mysql
-	oc_ctx->data = create_connection(connection_string, &conn);
-	OPENCHANGE_RETVAL_IF(!oc_ctx->data, MAPI_E_NOT_INITIALIZED, oc_ctx);
+	create_connection(connection_string, &conn);
+	OPENCHANGE_RETVAL_IF(!conn, MAPI_E_NOT_INITIALIZED, oc_ctx);
+	oc_ctx->data = conn;
+	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	if (!table_exists(oc_ctx->data, "folders")) {
-		bool schema_created;
-		DEBUG(0, ("Creating schema for openchangedb on mysql %s\n",
-			  connection_string));
+		enum mapistore_error schema_created;
 
 		schema_dir = lpcfg_parm_string(lp_ctx, NULL, "openchangedb", "data");
 		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
 					      schema_dir ? schema_dir :
 					      openchangedb_data_dir());
+		DEBUG(3, ("Creating schema for openchangedb on mysql %s with %s\n",
+			  connection_string, schema_file));
 		schema_created = create_schema(oc_ctx->data, schema_file);
 		talloc_free(schema_file);
 
-		OPENCHANGE_RETVAL_IF(!schema_created, MAPI_E_NOT_INITIALIZED,
-				     oc_ctx);
+		OPENCHANGE_RETVAL_IF(schema_created != MAPISTORE_SUCCESS,
+				     MAPI_E_NOT_INITIALIZED, oc_ctx);
 	}
-	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	*ctx = oc_ctx;
 
 	return MAPI_E_SUCCESS;

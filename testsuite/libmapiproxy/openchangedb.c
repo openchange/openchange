@@ -1166,7 +1166,7 @@ static void mysql_setup(void)
 
 static void mysql_teardown(void)
 {
-	mysql_query(g_oc_ctx->data, "DROP DATABASE " OC_TESTSUITE_MYSQL_DB);
+	drop_mysql_database(g_oc_ctx->data, OC_TESTSUITE_MYSQL_DB);
 	talloc_free(g_mem_ctx);
 }
 

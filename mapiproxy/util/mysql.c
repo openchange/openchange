@@ -555,7 +555,7 @@ bool convert_string_to_ull(const char *str, uint64_t *ret)
 		if (aux != NULL && *aux == '\0') {
 			retval = true;
 		} else {
-			DEBUG(0, ("ERROR converting %s into ull\n", str));
+			DEBUG(1, ("ERROR converting %s into ull\n", str));
 		}
 	}
 

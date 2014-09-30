@@ -27,7 +27,6 @@
 static TALLOC_CTX *mem_ctx;
 
 
-
 // v Unit test ----------------------------------------------------------------
 
 START_TEST (test_parse_connection_string_fail) {
@@ -52,6 +51,10 @@ START_TEST (test_parse_connection_string_fail) {
 	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@localhost/db",
 					 NULL, &port, &user, &passwd, &db);
 	ck_assert_msg(!parsed, "NULL host parameter, but parsing succeeded");
+
+	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@localhost/db",
+					 &host, NULL, &user, &passwd, &db);
+	ck_assert_msg(!parsed, "NULL port parameter, but parsing succeeded");
 
 	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@localhost/db",
 					 &host, &port, NULL, &passwd, &db);
@@ -79,8 +82,16 @@ START_TEST (test_parse_connection_string_fail) {
 					 &host, &port, &user, &passwd, &db);
 	ck_assert_msg(!parsed, "No username given, but parsing succeeded");
 
+	parsed = parse_connection_string(mem_ctx, "mysql://:pass@localhost:12/db",
+					 &host, &port, &user, &passwd, &db);
+	ck_assert_msg(!parsed, "No username given, but parsing succeeded");
+
 	/* missing hostname */
 	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@/db",
+					 &host, &port, &user, &passwd, &db);
+	ck_assert_msg(!parsed, "No hostname given, but parsing succeeded");
+
+	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@:12/db",
 					 &host, &port, &user, &passwd, &db);
 	ck_assert_msg(!parsed, "No hostname given, but parsing succeeded");
 
@@ -93,7 +104,16 @@ START_TEST (test_parse_connection_string_fail) {
 					 &host, &port, &user, &passwd, &db);
 	ck_assert_msg(!parsed, "No db name given, but parsing succeeded");
 
+	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@localhost:123",
+					 &host, &port, &user, &passwd, &db);
+	ck_assert_msg(!parsed, "No db name given, but parsing succeeded");
+
+	/* invliad port name */
+	parsed = parse_connection_string(mem_ctx, "mysql://user:pass@localhost:batman/db",
+					 &host, &port, &user, &passwd, &db);
+	ck_assert_msg(!parsed, "Invalid port, but parsing succeeded");
 } END_TEST
+
 
 START_TEST (test_parse_connection_string_success) {
 	char *host;

@@ -22,7 +22,6 @@
 #ifndef __MYSQL_H__
 #define __MYSQL_H__
 
-#include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <mysql/mysql.h>
 #include <talloc.h>
 #include <stdbool.h>
@@ -40,7 +39,7 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *, MYSQL *, const char *, const 
 enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql, uint64_t *n);
 
 bool table_exists(MYSQL *, char *);
-enum mapistore_error create_schema(MYSQL *, const char *);
+bool create_schema(MYSQL *, const char *);
 bool convert_string_to_ull(const char *, uint64_t *);
 
 MYSQL *create_connection(const char *, MYSQL **);

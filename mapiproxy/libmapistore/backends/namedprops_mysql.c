@@ -467,6 +467,7 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	char			*filename;
 	FILE			*f;
 	bool			inserted;
+	bool			schema_created;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
@@ -477,8 +478,12 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	filename = talloc_asprintf(mem_ctx, "%s/" NAMEDPROPS_MYSQL_SCHEMA,
 				   schema_path ? schema_path : mapistore_namedprops_get_ldif_path());
 	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-	retval = create_schema(conn, filename);
-	MAPISTORE_RETVAL_IF(retval != MAPISTORE_SUCCESS, retval, NULL);
+	schema_created = create_schema(conn, filename);
+	if (!schema_created) {
+		DEBUG(1, ("Failed named properties schema creation, "
+			  "last mysql error was: `%s`\n", mysql_error(conn)));
+		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
+	}
 
 	ldb_ctx = ldb_init(mem_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
@@ -563,7 +568,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 		DEBUG(0, ("[%s:%d] ERROR: parsing MySQL named properties "
 			  "parametric option failed with %s\n",
 			  __FUNCTION__, __LINE__, mapistore_errstr(retval)));
-		MAPISTORE_RETVAL_IF(1, retval, NULL);
+		MAPISTORE_RETVAL_ERR(retval, NULL);
 	}
 
 	/* Establish MySQL connection */

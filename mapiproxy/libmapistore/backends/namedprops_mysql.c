@@ -517,19 +517,21 @@ end:
 
 static char *connection_string_from_parameters(TALLOC_CTX *mem_ctx, struct namedprops_mysql_params *parms)
 {
-	char *ret = talloc_asprintf(mem_ctx, "mysql://%s", parms->user);
-	if (!ret) return NULL;
+	char *connection_string;
+
+	connection_string = talloc_asprintf(mem_ctx, "mysql://%s", parms->user);
+	if (!connection_string) return NULL;
 	if (parms->pass && parms->pass[0]) {
-		ret = talloc_asprintf_append(ret, ":%s", parms->pass);
-		if (!ret) return NULL;
+		connection_string = talloc_asprintf_append(connection_string, ":%s", parms->pass);
+		if (!connection_string) return NULL;
 	}
-	ret = talloc_asprintf_append(ret, "@%s", parms->host);
-	if (!ret) return NULL;
+	connection_string = talloc_asprintf_append(connection_string, "@%s", parms->host);
+	if (!connection_string) return NULL;
 	if (parms->port) {
-		ret = talloc_asprintf_append(ret, ":%d", parms->port);
-		if (!ret) return NULL;
+		connection_string = talloc_asprintf_append(connection_string, ":%d", parms->port);
+		if (!connection_string) return NULL;
 	}
-	return talloc_asprintf_append(ret, "/%s", parms->db);
+	return talloc_asprintf_append(connection_string, "/%s", parms->db);
 }
 
 /**

@@ -42,6 +42,15 @@ do {					\
 	}				\
 } while (0);
 
+#define	MAPISTORE_RETVAL_ERR(e,c)	\
+do {					\
+	mapistore_set_errno(e);		\
+	if (c) {			\
+		talloc_free(c);		\
+	}				\
+	return (e);			\
+} while (0);
+
 #define	MAPISTORE_SANITY_CHECKS(x,c)						\
 MAPISTORE_RETVAL_IF(!x, MAPISTORE_ERR_NOT_INITIALIZED, c);			\
 MAPISTORE_RETVAL_IF(!x->processing_ctx, MAPISTORE_ERR_NOT_INITIALIZED, c);	\

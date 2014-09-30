@@ -3640,6 +3640,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	char 				*schema_file;
 	const char			*connection_string;
 	const char			*schema_dir;
+	bool				schema_created;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
 	// Initialize context with function pointers
@@ -3712,8 +3713,6 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = conn;
 	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	if (!table_exists(oc_ctx->data, "folders")) {
-		enum mapistore_error schema_created;
-
 		schema_dir = lpcfg_parm_string(lp_ctx, NULL, "openchangedb", "data");
 		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
 					      schema_dir ? schema_dir :
@@ -3723,8 +3722,11 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 		schema_created = create_schema(oc_ctx->data, schema_file);
 		talloc_free(schema_file);
 
-		OPENCHANGE_RETVAL_IF(schema_created != MAPISTORE_SUCCESS,
-				     MAPI_E_NOT_INITIALIZED, oc_ctx);
+		if (!schema_created) {
+			DEBUG(1, ("Failed openchangedb schema creation, "
+				  "last mysql error was: `%s`\n", mysql_error(conn)));
+			OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_INITIALIZED, oc_ctx);
+		}
 	}
 	*ctx = oc_ctx;
 

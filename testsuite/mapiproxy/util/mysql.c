@@ -19,13 +19,17 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-
 #include "testsuite.h"
+#include "testsuite_common.h"
 #include "mapiproxy/util/mysql.c"
 
 /* Global test variables */
-static TALLOC_CTX *mem_ctx;
+static TALLOC_CTX 	*mem_ctx;
+static MYSQL		*conn;
 
+#define MYSQL_REAL_SCHEMA_1	"setup/mapistore/named_properties_schema.sql"
+#define MYSQL_REAL_SCHEMA_2	"setup/openchangedb/openchangedb_schema.sql"
+#define MYSQL_TMP_SCHEMA	"/tmp/fake_schema.sql"
 
 // v Unit test ----------------------------------------------------------------
 
@@ -177,17 +181,84 @@ START_TEST (test_parse_connection_string_success) {
 
 } END_TEST
 
+START_TEST (test_create_schema) {
+	bool		schema_created;
+	int		ret;
+	const char	*tmp_schema, *real_schema_simple, *real_schema_advanced;
+	char		str[] = "invalid schema file";
+	FILE		*fp;
+
+	tmp_schema = MYSQL_TMP_SCHEMA;
+	real_schema_simple = MYSQL_REAL_SCHEMA_1;
+	real_schema_advanced = MYSQL_REAL_SCHEMA_2;
+
+	/* check sanity checks */
+	schema_created = create_schema(NULL, NULL);
+	ck_assert(!schema_created);
+
+	/* test non existent schema file */
+	unlink(tmp_schema);
+
+	schema_created = create_schema(conn, tmp_schema);
+	ck_assert(!schema_created);
+
+	/* test empty schema file */
+	ret = unlink(tmp_schema);
+	ck_assert_int_eq(ret, -1);
+
+	fp = fopen(tmp_schema, "w+");
+	ck_assert(fp != NULL);
+	fclose(fp);
+
+	schema_created = create_schema(conn, tmp_schema);
+	ck_assert(!schema_created);
+
+	/* test invalid schema file */
+	fp = fopen(tmp_schema, "w+");
+	ck_assert(fp != NULL);
+	fwrite(str, 1, sizeof(str), fp);
+	fclose(fp);
+
+	schema_created = create_schema(conn, tmp_schema);
+	ck_assert(!schema_created);
+
+	ret = unlink(tmp_schema);
+	ck_assert_int_eq(ret, 0);
+
+	/* test real schema file */
+	schema_created = create_schema(conn, real_schema_simple);
+	ck_assert(schema_created);
+
+	schema_created = create_schema(conn, real_schema_advanced);
+	ck_assert(schema_created);
+} END_TEST
 
 // ^ unit tests ---------------------------------------------------------------
 
 // v suite definition ---------------------------------------------------------
 
-static void tc_mysql_util_setup(void)
+static void unchecked_mysql_util_setup(void)
+{
+	const char	*connection_string;
+	bool		connection_created;
+
+	connection_string = "mysql://"OC_TESTSUITE_MYSQL_USER":"OC_TESTSUITE_MYSQL_PASS
+			    "@"OC_TESTSUITE_MYSQL_HOST"/"OC_TESTSUITE_MYSQL_DB;
+	connection_created = create_connection(connection_string, &conn);
+	ck_assert(connection_created);
+}
+
+static void unchecked_mysql_util_teardown(void)
+{
+	drop_mysql_database(conn, OC_TESTSUITE_MYSQL_DB);
+}
+
+static void checked_mysql_util_setup(void)
 {
 	mem_ctx = talloc_named(NULL, 0, __FUNCTION__);
 }
 
-static void tc_mysql_util_teardown(void)
+static void checked_mysql_util_teardown(void)
 {
 	talloc_free(mem_ctx);
 }
@@ -197,10 +268,12 @@ Suite *mapiproxy_util_mysql_suite(void)
 	Suite *s = suite_create("Mapiproxy/util/mysql");
 
 	TCase *tc = tcase_create("mysql utility functions");
-	tcase_add_checked_fixture(tc, tc_mysql_util_setup, tc_mysql_util_teardown);
+	tcase_add_unchecked_fixture(tc, unchecked_mysql_util_setup, unchecked_mysql_util_teardown);
+	tcase_add_checked_fixture(tc, checked_mysql_util_setup, checked_mysql_util_teardown);
 
 	tcase_add_test(tc, test_parse_connection_string_fail);
 	tcase_add_test(tc, test_parse_connection_string_success);
+	tcase_add_test(tc, test_create_schema);
 
 	suite_add_tcase(s, tc);
 

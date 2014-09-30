@@ -613,11 +613,25 @@ if __name__ == '__main__':
 
 
     c = OpenchangeDBWithMySQL(openchangedb_uri)
+    backend = BackendObject()
+
+    # namespace like
+    nslike = backend.namespace + '%'
+
+    # Retrieve mailbox_id, ou_id
+    rows = c.select("SELECT id,ou_id FROM mailboxes WHERE name=%s", username)
+    if len(rows) == 0:
+        print "[ERROR] No such user %s" % username
+        sys.exit(1)
+    mailbox_id = rows[0][0]
+    ou_id = rows[0][1]
+
+    rows = c.select("SELECT * FROM folders WHERE MAPIStoreURI LIKE %s AND mailbox_id=%s AND ou_id=%s",
+                    (nslike, mailbox_id, ou_id))
 
     if opts.status:
-        rows = c.select("SELECT * FROM folders WHERE MAPIStoreURI LIKE \"sample://%\"", None)
         if (rows):
-            print "Sample backend is provisioned for user %s the following folders:" % username
+            print "[INFO] Sample backend is provisioned for user %s the following folders:" % username
             for row in rows:
                 name = c.select("SELECT value FROM folders_properties WHERE name=\"PidTagDisplayName\" AND folder_id=%s", row[0])
                 print "\t* %-40s (%s)" % (name[0][0], row[len(row) - 1])
@@ -626,20 +640,16 @@ if __name__ == '__main__':
         sys.exit(0)
 
     if opts.provision:
-        rows = c.select("SELECT id,ou_id FROM mailboxes WHERE name=%s", username)
-        if len(rows) == 0:
-            print "[ERROR]: No such user %s" % username
-            sys.exit(1)
-        mailbox_id = rows[0][0]
-        ou_id = rows[0][1]
+        if (rows):
+            print "[WARN] Sample backend is already provisioned for user %s" % username
+            sys.exit(0)
 
-        rows = c.select("SELECT id,folder_id FROM folders WHERE SystemIdx=12 AND mailbox_id=%s", mailbox_id)
+        rows = c.select("SELECT id,folder_id FROM folders WHERE SystemIdx=12 AND mailbox_id=%s AND ou_id=%s", (mailbox_id, ou_id))
         if len(rows) == 0:
             print "[ERROR] No such SystemIdx for mailbox_id=%s" % mailbox_id
         system_id = rows[0][0]
         parent_id = rows[0][1]
 
-        backend = BackendObject()
         contexts = backend.list_contexts(username)
         for context in contexts:
             url = "%s%s" % (backend.namespace, context["url"])
@@ -662,11 +672,12 @@ if __name__ == '__main__':
         print "[DONE]"
 
     if opts.deprovision:
-        backend = BackendObject()
-        # Retrieve entries from folders
-        rows = c.select("SELECT id FROM folders WHERE MAPIStoreURI LIKE \"%sample://%\"", None)
+        if not rows:
+            print "[WARN] Sample backend is not provisioned for user %s" % username
+            sys.exit(0)
+
         for row in rows:
             c.delete("DELETE FROM folders WHERE id=%s", row[0])
             c.delete("DELETE FROM folders_properties WHERE folder_id=%s", row[0])
-        c.delete("DELETE FROM mapistore_indexing WHERE url LIKE \"%sample://%\"", None)
+        c.delete("DELETE FROM mapistore_indexing WHERE url LIKE %s", nslike)
         print "[DONE]"

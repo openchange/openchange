@@ -785,6 +785,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/modules.po			\
 							mapiproxy/libmapiproxy/fault_util.po			\
 							mapiproxy/util/mysql.po					\
+							mapiproxy/util/ccan/htable/htable.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
 	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
@@ -942,6 +943,7 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/backends/indexing_tdb.po			\
 							mapiproxy/libmapistore/backends/indexing_mysql.po		\
 							mapiproxy/util/mysql.po						\
+							mapiproxy/util/ccan/htable/htable.po				\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -967,7 +969,7 @@ bin/mapistore_test: 	mapiproxy/libmapistore/tests/mapistore_test.po		\
 			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LDFLAGS) $(LIBS) $(SAMDB_LIBS) -lpopt -L. libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $^ $(LDFLAGS) $(SAMDB_LIBS) $(LIBS) -lpopt
 
 mapistore_tool: bin/mapistore_tool
 

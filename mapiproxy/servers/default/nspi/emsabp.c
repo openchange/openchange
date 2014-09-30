@@ -726,7 +726,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs(TALLOC_CTX *mem_ctx, struct emsabp_c
 
 	/* Step 0. Try to Retrieve the dn associated to the MId first from temp TDB (users) */
 	retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->ttdb_ctx, MId, &dn);
-	if (!MAPI_STATUS_IS_OK(retval)) {
+	if (retval != MAPI_E_SUCCESS) {
 		/* If it fails try to retrieve it from the on-disk TDB database (conf) */
 		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, MId, &dn);
 	}
@@ -1345,11 +1345,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_fetch_filter(TALLOC_CTX *mem_ctx,
 	} else {
 		/* fetch a container we have already recorded */
 		retval = emsabp_tdb_fetch_dn_from_MId(mem_ctx, emsabp_ctx->tdb_ctx, ContainerID, &dn);
-		OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(retval), MAPI_E_INVALID_BOOKMARK, NULL);
+		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
 	retval = emsabp_search_dn(emsabp_ctx, dn, &ldb_msg);
-	OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(retval), MAPI_E_CORRUPT_STORE, NULL);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPI_E_CORRUPT_STORE, NULL);
 
 	// Fetch purportedSearch
 	purportedSearch = ldb_msg_find_attr_as_string(ldb_msg, "purportedSearch", NULL);
@@ -1388,7 +1388,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 
 	/* Fetch AB container record */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, ContainerID, &filter_search);
-	OPENCHANGE_RETVAL_IF(!MAPI_STATUS_IS_OK(retval), MAPI_E_INVALID_BOOKMARK, NULL);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, MAPI_E_INVALID_BOOKMARK, NULL);
 
 	/* Search AD with filter_search */
 

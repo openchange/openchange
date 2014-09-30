@@ -50,6 +50,7 @@ struct emsmdbp_context {
 	char					*szDisplayName;
 	uint32_t				userLanguage;
 	char					*username;
+	char					*szDNPrefix;
 	struct loadparm_context			*lp_ctx;
 	struct openchangedb_context		*oc_ctx;
 	struct ldb_context			*samdb_ctx;
@@ -330,7 +331,7 @@ const char **emsmdbp_get_special_folders(TALLOC_CTX *, struct emsmdbp_context *)
 enum mapistore_error  emsmdbp_object_get_fid_by_name(struct emsmdbp_context *, struct emsmdbp_object *, const char *, uint64_t *);
 enum MAPISTATUS       emsmdbp_object_create_folder(struct emsmdbp_context *, struct emsmdbp_object *, TALLOC_CTX *, uint64_t, struct SRow *, struct emsmdbp_object **);
 enum mapistore_error  emsmdbp_object_open_folder(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
-enum mapistore_error  emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
+enum MAPISTATUS       emsmdbp_object_open_folder_by_fid(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, struct emsmdbp_object **);
 
 struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *parent_object);
 int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, struct SPropTagArray *, bool);

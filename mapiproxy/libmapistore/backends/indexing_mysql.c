@@ -438,9 +438,19 @@ static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *
 
 static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 {
-	MYSQL *conn = ictx->data;
-	if (conn) {
-		mysql_close(conn);
+	if (ictx && ictx->data) {
+		MYSQL *conn = ictx->data;
+		if (ictx->url) {
+			DEBUG(5, ("[%s:%d] Destroying indexing context `%s`\n",
+				  __FUNCTION__, __LINE__, ictx->url));
+		} else {
+			DEBUG(5, ("[%s:%d] Destroying unknown indexing context\n",
+				  __FUNCTION__, __LINE__));
+		}
+		release_connection(conn);
+	} else {
+		DEBUG(0, ("[%s:%d] Error: tried to destroy corrupted indexing mysql context\n",
+			  __FUNCTION__, __LINE__));
 	}
 	return 0;
 }
@@ -462,7 +472,6 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *mem_ctx,
 							    struct indexing_context **ictxp)
 {
 	struct indexing_context	*ictx;
-	bool			schema_created;
 	char			*schema_file;
 	MYSQL			*conn = NULL;
 
@@ -475,21 +484,24 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(TALLOC_CTX *mem_ctx,
 	ictx = talloc_zero(mem_ctx, struct indexing_context);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	ictx->data = create_connection(connection_string, &conn);
+	create_connection(connection_string, &conn);
+	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+	ictx->data = conn;
 	talloc_set_destructor(ictx, mapistore_indexing_mysql_destructor);
 	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(3, ("Creating schema for indexing on mysql %s\n",
-			  connection_string));
+		enum mapistore_error schema_created;
+		DEBUG(3, ("Creating schema for indexing on mysql %s\n", connection_string));
 
 		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);
 		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
 		schema_created = create_schema(MYSQL(ictx), schema_file);
 		talloc_free(schema_file);
 
-		MAPISTORE_RETVAL_IF(!schema_created, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
+		MAPISTORE_RETVAL_IF(schema_created != MAPISTORE_SUCCESS,
+				    MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 	}
-
 
 	/* TODO: extract url from backend mapping, by the moment we use the username */
 	ictx->url = talloc_strdup(ictx, username);

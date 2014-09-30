@@ -741,7 +741,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 			if (retval != MAPISTORE_SUCCESS) goto error;
 			retval = mapistore_folder_create_message(emsmdbp_ctx->mstore_ctx, context_id, backend_object, mem_ctx, current_mid, false, &backend_message);
 			if (retval != MAPISTORE_SUCCESS) {
-				DEBUG(3, ("[%s:%d] Error creating a message in mapistore %d", __FUNCTION__, __LINE__, retval));
+				DEBUG(3, ("[%s:%d] Error creating a message in mapistore %s\n",
+					  __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 				goto error;
 			}
 

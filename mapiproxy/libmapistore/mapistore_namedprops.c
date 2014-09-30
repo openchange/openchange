@@ -64,8 +64,8 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 
 	backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "namedproperties");
 	if (!backend) {
-		DEBUG(0, ("[WARN][%s]: Missing mapistore:namedproperties option\n", __location__));
-		DEBUG(0, ("[WARN][%s]: Assigned by default to '%s'\n", __location__, NAMEDPROPS_BACKEND_LDB));
+		DEBUG(3, ("[WARN][%s]: Missing mapistore:namedproperties option\n", __location__));
+		DEBUG(3, ("[WARN][%s]: Assigned by default to '%s'\n", __location__, NAMEDPROPS_BACKEND_LDB));
 		backend = NAMEDPROPS_BACKEND_LDB;
 	}
 	if (!strncmp(backend, NAMEDPROPS_BACKEND_LDB, strlen(NAMEDPROPS_BACKEND_LDB))) {
@@ -73,10 +73,10 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 	} else if (!strncmp(backend, NAMEDPROPS_BACKEND_MYSQL, strlen(NAMEDPROPS_BACKEND_MYSQL))) {
 		return mapistore_namedprops_mysql_init(mem_ctx, lp_ctx, nprops);
 	} else {
-		DEBUG(0, ("[%s:%d] ERROR: Invalid namedproperties backend type '%s'\n",
+		DEBUG(1, ("[%s:%d] ERROR: Invalid namedproperties backend type '%s'\n",
 			  __FUNCTION__, __LINE__, backend));
 	}
-	
+
 	return MAPISTORE_ERR_INVALID_PARAMETER;
 }
 

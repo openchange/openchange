@@ -189,7 +189,7 @@ _PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
 
 	status = dcerpc_NspiUnbind_r(nspi_ctx->rpc_connection->binding_handle, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	OPENCHANGE_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	OPENCHANGE_RETVAL_IF((retval != 1) && !NT_STATUS_IS_OK(status), retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }

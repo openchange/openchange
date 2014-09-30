@@ -28,6 +28,11 @@ from datetime import datetime, timedelta
 from pytz import timezone
 from openchange import mapistore
 
+import MySQLdb
+from samba import Ldb
+import optparse
+import samba.getopt as options
+
 class BackendObject(object):
 
     name = "sample"
@@ -49,14 +54,14 @@ class BackendObject(object):
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
         deadbeef = {}
-        deadbeef["url"] = "sample://deadbeef0000001/"
+        deadbeef["url"] = "deadbeef0000001/"
         deadbeef["name"] = "deadbeef"
         deadbeef["main_folder"] = True
         deadbeef["role"] = mapistore.ROLE_MAIL
         deadbeef["tag"] = "tag"
 
         cacabeef = {}
-        cacabeef["url"] = "sample://cacabeef0000001/"
+        cacabeef["url"] = "cacabeef0000001/"
         cacabeef["name"] = "cacabeef"
         cacabeef["main_folder"] = True
         cacabeef["role"] = mapistore.ROLE_CALENDAR
@@ -143,7 +148,7 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagMessageDeliveryTime"] = float(datetime.now().strftime("%s.%f"))
 
         subfolder = {}
-        subfolder["uri"] = "sample://deadbeef0000001/dead0010000001/"
+        subfolder["uri"] = "deadbeef0000001/dead0010000001/"
         subfolder["fid"] = 0xdead10010000001
         subfolder["subfolders"] = []
         subfolder["messages"] = []
@@ -165,9 +170,15 @@ class ContextObject(BackendObject):
         subfolder["cache"]["messages"] = []
 
         self.mapping[0xdeadbeef0000001] = {}
-        self.mapping[0xdeadbeef0000001]["uri"] = "sample://deadbeef0000001/"
+        self.mapping[0xdeadbeef0000001]["uri"] = "deadbeef0000001/"
         self.mapping[0xdeadbeef0000001]["properties"] = {}
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagDisplayName"] = "SampleMail"
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagComment"] = "Sample Mail Folder"
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Note"
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Note"
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagAccess"] = 63
+        self.mapping[0xdeadbeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xdeadbeef0000001]["cache"] = {}
         self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder, ]
         self.mapping[0xdeadbeef0000001]["messages"] = [message1, ]
@@ -231,11 +242,15 @@ class ContextObject(BackendObject):
         appt1["properties"]["0x90fc0003"] = 0 # PidLidResponseStatus
 
         self.mapping[0xcacabeef0000001] = {}
-        self.mapping[0xcacabeef0000001]["uri"] = "sample://cacabeef0000001/"
+        self.mapping[0xcacabeef0000001]["uri"] = "cacabeef0000001/"
         self.mapping[0xcacabeef0000001]["properties"] = {}
         self.mapping[0xcacabeef0000001]["properties"]["PidTagFolderId"] = 0xcacabeef0000001
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagDisplayName"] = "SampleCalendar"
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagComment"] = "Sample Calendar Folder"
         self.mapping[0xcacabeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Appointment"
         self.mapping[0xcacabeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Appointment"
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagAccess"] = 63
+        self.mapping[0xcacabeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcacabeef0000001]["subfolders"] = []
         self.mapping[0xcacabeef0000001]["messages"] = [appt1,]
         self.mapping[0xcacabeef0000001]["cache"] = {}
@@ -494,3 +509,164 @@ class AttachmentObject(BackendObject):
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
         return self.attachment["properties"]
+
+
+
+###################################################################################################################################
+####### Provision Code ############################################################################################################
+###################################################################################################################################
+
+
+class OpenchangeDBWithMySQL():
+    def __init__(self, uri):
+        self.uri = uri
+        self.db = self._connect_to_mysql(uri)
+
+    def _connect_to_mysql(self, uri):
+        if not uri.startswith('mysql://'):
+            raise ValueError("Bad connection string for mysql: invalid schema")
+
+        if '@' not in uri:
+            raise ValueError("Bad connection string for mysql: expected format "
+                             "mysql://user[:passwd]@host/db_name")
+        user_passwd, host_db = uri.split('@')
+
+        user_passwd = user_passwd[len('mysql://'):]
+        if ':' in user_passwd:
+            user, passwd = user_passwd.split(':')
+        else:
+            user, passwd = user_passwd, ''
+
+        if '/' not in host_db:
+            raise ValueError("Bad connection string for mysql: expected format "
+                             "mysql://user[:passwd]@host/db_name")
+        host, db = host_db.split('/')
+
+        return MySQLdb.connect(host=host, user=user, passwd=passwd, db=db)
+
+    def select(self, sql, params=()):
+        try:
+            cur = self.db.cursor()
+            cur.execute(sql, params)
+            rows = cur.fetchall()
+            cur.close()
+            self.op_error = False
+            return rows
+        except MySQLdb.OperationalError as e:
+            # FIXME: It may be leaded by another error
+            # Reconnect and rerun this
+            if self.op_error:
+                raise e
+            self.db = self._connect_to_mysql(self.uri)
+            self.op_error = True
+            return self.select(sql, params)
+        except MySQLdb.ProgrammingError as e:
+            print "Error executing %s with %r: %r" % (sql, params, e)
+            raise e
+
+    def insert(self, sql, params=()):
+        self.delete(sql, params)
+
+    def delete(self, sql, params=()):
+        cur = self.db.cursor()
+        cur.execute(sql, params)
+        self.db.commit()
+        cur.close()
+        return
+
+if __name__ == '__main__':
+    parser = optparse.OptionParser("sample.py [options]")
+
+    sambaopts = options.SambaOptions(parser)
+    parser.add_option_group(sambaopts)
+
+    parser.add_option("--status", action="store_true",
+                      help="Status of sample backend for specified user")
+    parser.add_option("--provision", action="store_true",
+                      help="Provision sample backend for specified user")
+    parser.add_option("--deprovision", action="store_true",
+                      help="Deprovision sample backend for specified user")
+    parser.add_option("--username", type="string", help="User mailbox to update")
+
+    opts,args = parser.parse_args()
+    if len(args) != 0:
+        parser.print_help()
+        sys.exit(1)
+
+    lp = sambaopts.get_loadparm()
+
+    username = opts.username
+    if username is None:
+        print "[ERROR] No username specified"
+        sys.exit(1)
+    if username.isalnum() is False:
+        print "[ERROR] Username must be alpha numeric"
+        sys.exit(1)
+
+    openchangedb_uri = lp.get("mapiproxy:openchangedb")
+    if openchangedb_uri is None:
+        print "This script only supports MySQL backend for openchangedb"
+
+    if opts.provision and opts.deprovision:
+        print "[ERROR] Incompatible options: provision and deprovision"
+        sys.exit(1)
+
+
+    c = OpenchangeDBWithMySQL(openchangedb_uri)
+
+    if opts.status:
+        rows = c.select("SELECT * FROM folders WHERE MAPIStoreURI LIKE \"sample://%\"", None)
+        if (rows):
+            print "Sample backend is provisioned for user %s the following folders:" % username
+            for row in rows:
+                name = c.select("SELECT value FROM folders_properties WHERE name=\"PidTagDisplayName\" AND folder_id=%s", row[0])
+                print "\t* %-40s (%s)" % (name[0][0], row[len(row) - 1])
+        else:
+            print "[INFO] Sample backend is not provisioned for user %s" % username
+        sys.exit(0)
+
+    if opts.provision:
+        rows = c.select("SELECT id,ou_id FROM mailboxes WHERE name=%s", username)
+        if len(rows) == 0:
+            print "[ERROR]: No such user %s" % username
+            sys.exit(1)
+        mailbox_id = rows[0][0]
+        ou_id = rows[0][1]
+
+        rows = c.select("SELECT id,folder_id FROM folders WHERE SystemIdx=12 AND mailbox_id=%s", mailbox_id)
+        if len(rows) == 0:
+            print "[ERROR] No such SystemIdx for mailbox_id=%s" % mailbox_id
+        system_id = rows[0][0]
+        parent_id = rows[0][1]
+
+        backend = BackendObject()
+        contexts = backend.list_contexts(username)
+        for context in contexts:
+            url = "%s%s" % (backend.namespace, context["url"])
+            folder_id = int(context["url"].replace('/', ''), 16)
+            c.insert("INSERT INTO folders (ou_id,folder_id,folder_class,mailbox_id,"
+                     "parent_folder_id,FolderType,SystemIdx,MAPIStoreURI) VALUES "
+                     "(%s, %s, \"system\", %s, %s, 1, -1, %s)",
+                     (ou_id, folder_id, mailbox_id, system_id, url))
+
+            rows = c.select("SELECT MAX(id) FROM folders")
+            fid = rows[0][0]
+            (ret,ctx) = backend.create_context(url)
+            (ret,fld) = ctx.get_root_folder(folder_id)
+
+            props = fld.get_properties(None)
+
+            for prop in props:
+                c.insert("INSERT INTO folders_properties (folder_id, name, value) VALUES (%s, %s, %s)", (fid, prop, props[prop]))
+            c.insert("INSERT INTO folders_properties (folder_id, name, value) VALUES (%s, \"PidTagParentFolderId\", %s)", (fid, parent_id))
+        print "[DONE]"
+
+    if opts.deprovision:
+        backend = BackendObject()
+        # Retrieve entries from folders
+        rows = c.select("SELECT id FROM folders WHERE MAPIStoreURI LIKE \"%sample://%\"", None)
+        for row in rows:
+            c.delete("DELETE FROM folders WHERE id=%s", row[0])
+            c.delete("DELETE FROM folders_properties WHERE folder_id=%s", row[0])
+        c.delete("DELETE FROM mapistore_indexing WHERE url LIKE \"%sample://%\"", None)
+        print "[DONE]"

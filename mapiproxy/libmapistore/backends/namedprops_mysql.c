@@ -478,7 +478,7 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 				   schema_path ? schema_path : mapistore_namedprops_get_ldif_path());
 	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	retval = create_schema(conn, filename);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	MAPISTORE_RETVAL_IF(retval != MAPISTORE_SUCCESS, retval, NULL);
 
 	ldb_ctx = ldb_init(mem_ctx, NULL);
 	MAPISTORE_RETVAL_IF(!ldb_ctx, MAPISTORE_ERR_BACKEND_INIT, mem_ctx);
@@ -557,12 +557,12 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 
 	/* Retrieve smb.conf arguments */
 	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &parms);
-	if (retval) {
+	if (retval != MAPISTORE_SUCCESS) {
 		DEBUG(0, ("[%s:%d] ERROR: parsing MySQL named properties "
 			  "parametric option failed with %s\n",
 			  __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		MAPISTORE_RETVAL_IF(1, retval, NULL);
 	}
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
 
 	/* Establish MySQL connection */
 	if (parms.sock) {

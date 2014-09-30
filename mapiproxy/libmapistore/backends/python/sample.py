@@ -49,14 +49,14 @@ class BackendObject(object):
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
         deadbeef = {}
-        deadbeef["url"] = "sample://deadbeef0000001/"
+        deadbeef["url"] = "deadbeef0000001/"
         deadbeef["name"] = "deadbeef"
         deadbeef["main_folder"] = True
         deadbeef["role"] = mapistore.ROLE_MAIL
         deadbeef["tag"] = "tag"
 
         cacabeef = {}
-        cacabeef["url"] = "sample://cacabeef0000001/"
+        cacabeef["url"] = "cacabeef0000001/"
         cacabeef["name"] = "cacabeef"
         cacabeef["main_folder"] = True
         cacabeef["role"] = mapistore.ROLE_CALENDAR
@@ -143,7 +143,7 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagMessageDeliveryTime"] = float(datetime.now().strftime("%s.%f"))
 
         subfolder = {}
-        subfolder["uri"] = "sample://deadbeef0000001/dead0010000001/"
+        subfolder["uri"] = "deadbeef0000001/dead0010000001/"
         subfolder["fid"] = 0xdead10010000001
         subfolder["subfolders"] = []
         subfolder["messages"] = []
@@ -165,7 +165,7 @@ class ContextObject(BackendObject):
         subfolder["cache"]["messages"] = []
 
         self.mapping[0xdeadbeef0000001] = {}
-        self.mapping[0xdeadbeef0000001]["uri"] = "sample://deadbeef0000001/"
+        self.mapping[0xdeadbeef0000001]["uri"] = "deadbeef0000001/"
         self.mapping[0xdeadbeef0000001]["properties"] = {}
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
         self.mapping[0xdeadbeef0000001]["cache"] = {}
@@ -231,7 +231,7 @@ class ContextObject(BackendObject):
         appt1["properties"]["0x90fc0003"] = 0 # PidLidResponseStatus
 
         self.mapping[0xcacabeef0000001] = {}
-        self.mapping[0xcacabeef0000001]["uri"] = "sample://cacabeef0000001/"
+        self.mapping[0xcacabeef0000001]["uri"] = "cacabeef0000001/"
         self.mapping[0xcacabeef0000001]["properties"] = {}
         self.mapping[0xcacabeef0000001]["properties"]["PidTagFolderId"] = 0xcacabeef0000001
         self.mapping[0xcacabeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Appointment"

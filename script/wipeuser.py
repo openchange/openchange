@@ -102,15 +102,19 @@ username = opts.username
 if username is None:
     parser.print_help()
     sys.exit(1)
+if username.isalnum() is False:
+    print "[ERROR] Username must be alpha numeric"
+    sys.exit(1)
 
 openchangedb_uri = lp.get("mapiproxy:openchangedb")
 if openchangedb_uri is None:
     print "This script only supports MySQL backend for openchangedb"
+    sys.exit(1)
 
 c = OpenchangeDBWithMySQL(openchangedb_uri)
 rows = c.select("""SELECT * from mailboxes WHERE name=%s """, username)
 if len(rows) == 0:
-    print "[ERROR]: No such user %s" % username
+    print "[ERROR] No such user %s" % username
     sys.exit(1)
 
 # Delete entry from mailboxes and mailboxes_properties

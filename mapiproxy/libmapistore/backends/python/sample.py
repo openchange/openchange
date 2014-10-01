@@ -54,35 +54,35 @@ class BackendObject(object):
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
         deadbeef = {}
-        deadbeef["url"] = "deadbeef0000001/"
+        deadbeef["url"] = "sample://deadbeef0000001/"
         deadbeef["name"] = "deadbeef"
         deadbeef["main_folder"] = True
         deadbeef["role"] = mapistore.ROLE_MAIL
         deadbeef["tag"] = "tag"
 
         cacabeef = {}
-        cacabeef["url"] = "cacabeef0000001/"
+        cacabeef["url"] = "sample://cacabeef0000001/"
         cacabeef["name"] = "cacabeef"
         cacabeef["main_folder"] = True
         cacabeef["role"] = mapistore.ROLE_CALENDAR
         cacabeef["tag"] = "tag"
 
         cadabeef = {}
-        cadabeef["url"] = "cadabeef0000001/"
+        cadabeef["url"] = "sample://cadabeef0000001/"
         cadabeef["name"] = "cadabeef"
         cadabeef["main_folder"] = True
         cadabeef["role"] = mapistore.ROLE_CONTACTS
         cadabeef["tag"] = "tag"
 
         cafebeef = {}
-        cafebeef["url"] = "cafebeef0000001/"
+        cafebeef["url"] = "sample://cafebeef0000001/"
         cafebeef["name"] = "cafebeef"
         cafebeef["main_folder"] = True
         cafebeef["role"] = mapistore.ROLE_TASKS
         cafebeef["tag"] = "tag"
 
         cababeef = {}
-        cababeef["url"] = "cababeef0000001/"
+        cababeef["url"] = "sample://cababeef0000001/"
         cababeef["name"] = "cababeef"
         cababeef["main_folder"] = True
         cababeef["role"] = mapistore.ROLE_NOTES
@@ -899,16 +899,17 @@ if __name__ == '__main__':
 
         contexts = backend.list_contexts(username)
         for context in contexts:
-            url = "%s%s" % (backend.namespace, context["url"])
-            folder_id = int(context["url"].replace('/', ''), 16)
+            folder_id = context["url"]
+            folder_id = folder_id.replace("sample://", '')
+            folder_id = int(folder_id.replace('/', ''), 16)
             c.insert("INSERT INTO folders (ou_id,folder_id,folder_class,mailbox_id,"
                      "parent_folder_id,FolderType,SystemIdx,MAPIStoreURI) VALUES "
                      "(%s, %s, \"system\", %s, %s, 1, -1, %s)",
-                     (ou_id, folder_id, mailbox_id, system_id, url))
+                     (ou_id, folder_id, mailbox_id, system_id, context["url"]))
 
             rows = c.select("SELECT MAX(id) FROM folders")
             fid = rows[0][0]
-            (ret,ctx) = backend.create_context(url)
+            (ret,ctx) = backend.create_context(context["url"])
             (ret,fld) = ctx.get_root_folder(folder_id)
 
             props = fld.get_properties(None)

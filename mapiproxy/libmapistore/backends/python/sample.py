@@ -81,7 +81,14 @@ class BackendObject(object):
         cafebeef["role"] = mapistore.ROLE_TASKS
         cafebeef["tag"] = "tag"
 
-        contexts = [deadbeef, cacabeef, cadabeef, cafebeef]
+        cababeef = {}
+        cababeef["url"] = "cababeef0000001/"
+        cababeef["name"] = "cababeef"
+        cababeef["main_folder"] = True
+        cababeef["role"] = mapistore.ROLE_NOTES
+        cababeef["tag"] = "tag"
+
+        contexts = [deadbeef, cababeef, cacabeef, cadabeef, cafebeef]
         return contexts
 
     def create_context(self, uri):
@@ -439,6 +446,63 @@ class ContextObject(BackendObject):
         self.mapping[0xcafebeef0000001]["cache"] = {}
         self.mapping[0xcafebeef0000001]["cache"]["properties"] = {}
         self.mapping[0xcafebeef0000001]["cache"]["messages"] = []
+
+
+        #
+        # StickyNotes
+        #
+        note1 = {}
+        note1["recipients"] = []
+        note1["attachments"] = []
+        note1["mid"] = 0xcaba00010000001
+        note1["fai"] = False
+        note1["cache"] = {}
+        note1["properties"] = {}
+
+        note1["properties"]["PidTagAccess"] = 63
+        note1["properties"]["PidTagAccessLevel"] = 1
+        note1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        note1["properties"]["PidTagCreationTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        note1["properties"]["PidTagLastModificationTime"] = note1["properties"]["PidTagCreationTime"]
+        note1["properties"]["PidTagObjectType"] = 5
+        note1["properties"]["PidTagRecordKey"] = bytearray(uuid.uuid1().bytes)
+        note1["properties"]["PidTagSearchKey"] = bytearray(uuid.uuid1().bytes)
+        note1["properties"]["PidTagFolderId"] = 0xcababeef0000001
+        note1["properties"]["PidTagMid"] = note1["mid"]
+        note1["properties"]["PidTagInstID"] = note1["mid"]
+        note1["properties"]["PidTagInstanceNum"] = 0
+        note1["properties"]["PidTagRowType"] = 1
+        note1["properties"]["PidTagDepth"] = 0
+        note1["properties"]["PidTagMessageClass"] = "IPM.StickyNote"
+        note1["properties"]["PidTagMessageFlags"] = 1
+
+        note1["properties"]["PidTagSubjectPrefix"] = ''
+        note1["properties"]["PidTagNormalizedSubject"] = "This is the subject of the sample note"
+        note1["properties"]["PidTagRtfCompressed"] = bytearray(b"\xfa\x00\x00\x00$\x01\x00\x00LZFu\x0e\xc2\x02\xb7\x03\x00\n\x00rcpg125z2\x00\xf5n\x08`\r\xe0\x03p\n\xb0t\x8b\x00\xf2\x0b`n\x0e\x10033\x01\xf7\'\x02\xa4\x03\xe3\x02\x00ch\n\xc0se\x90t0 C\x07@ib\x05\x10M\x02\x80}\n\x80\x08\xc8 ;\to0\xfb\x02\x80\x12\xc2*\t\xb0\t\xf0\x04\x90\x0fP\x05\xb1\x1aR\r\xe0h\t\x80\x01\xd0 14\x00.0.7008./\x0f\xf0\x16\xd0\x02\x82\x15 m\x00\xc0th\x14Pr\x00\xb0w\x15\x80pIn\x07\x01\x00\x020\x16p40}\\vI\x08\x90wk\x0b\x80d4\x0c`c61\n\x84\x0b0c\x00A\x0b\xb42 \x14Th\x04\x00 \x1bqa s\x8d\x00\xc0l\x03 \x0e\xd0te \x05\x00\xd6e\x0fP\t\x80 \x03R \x17\xe0\x1c\x80Tsa\x0f0l\x1c\x80b\x00\xd0k_\t\xf0\x0b1\n\xc0\n\x80\x12\xb1\x00\x1f0")
+        note1["properties"]["0x94a90003"] = 3
+        note1["properties"]["PidTagIconIndex"] = 0x300 + int(note1["properties"]["0x94a90003"])
+
+        # Positioning and Size
+        note1["properties"]["0x92ab0003"] = 320 # PidLidNoteWidth
+        note1["properties"]["0x92ac0003"] = 240 # PidLidNoteHeight
+        note1["properties"]["0x92ad0003"] = 564 # PidLidNoteX
+        note1["properties"]["0x92ae0003"] = 335 # PidLidNoteY
+
+        self.mapping[0xcababeef0000001] = {}
+        self.mapping[0xcababeef0000001]["uri"] = "cababeef0000001/"
+        self.mapping[0xcababeef0000001]["properties"] = {}
+        self.mapping[0xcababeef0000001]["properties"]["PidTagFolderId"] = 0xcababeef0000001
+        self.mapping[0xcababeef0000001]["properties"]["PidTagDisplayName"] = "SampleNote"
+        self.mapping[0xcababeef0000001]["properties"]["PidTagComment"] = "Sample Note Folder"
+        self.mapping[0xcababeef0000001]["properties"]["PidTagContainerClass"] = "IPF.StickyNote"
+        self.mapping[0xcababeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.StickyNote"
+        self.mapping[0xcababeef0000001]["properties"]["PidTagAccess"] = 63
+        self.mapping[0xcababeef0000001]["properties"]["PidTagRights"] = 2043
+        self.mapping[0xcababeef0000001]["subfolders"] = []
+        self.mapping[0xcababeef0000001]["messages"] = [note1]
+        self.mapping[0xcababeef0000001]["cache"] = {}
+        self.mapping[0xcababeef0000001]["cache"]["properties"] = {}
+        self.mapping[0xcababeef0000001]["cache"]["messages"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
         return

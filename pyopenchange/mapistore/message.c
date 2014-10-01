@@ -477,6 +477,38 @@ static PyObject *py_MAPIStoreMessage_save(PyMAPIStoreMessageObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStoreMessage_create_attachment(PyMAPIStoreMessageObject *self)
+{
+	PyMAPIStoreAttachmentObject	*attachment;
+	void				*attachment_object;
+	enum mapistore_error		retval;
+	uint32_t			aid;
+
+	/* Create attachment */
+	retval = mapistore_message_create_attachment(self->context->mstore_ctx,self->context->context_id,
+			self->message_object, self->mem_ctx, &attachment_object, &aid);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Return the attachment object */
+	attachment = PyObject_New(PyMAPIStoreAttachmentObject, &PyMAPIStoreAttachment);
+	if (attachment == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	attachment->mem_ctx = self->mem_ctx;
+	attachment->context = self->context;
+	Py_INCREF(attachment->context);
+
+	attachment->attachment_object = attachment_object;
+	printf("\n***AID: %d\n", aid);
+
+	return (PyObject *)attachment;
+}
+
 static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObject *self)
 {
 	PyMAPIStoreTableObject		*table;
@@ -528,6 +560,7 @@ static PyMethodDef mapistore_message_methods[] = {
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
 	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
+	{ "create_attachment", (PyCFunction)py_MAPIStoreMessage_create_attachment, METH_NOARGS},
 	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS},
 	{ NULL },
 };

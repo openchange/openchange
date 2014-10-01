@@ -67,7 +67,21 @@ class BackendObject(object):
         cacabeef["role"] = mapistore.ROLE_CALENDAR
         cacabeef["tag"] = "tag"
 
-        contexts = [deadbeef, cacabeef]
+        cadabeef = {}
+        cadabeef["url"] = "cadabeef0000001/"
+        cadabeef["name"] = "cadabeef"
+        cadabeef["main_folder"] = True
+        cadabeef["role"] = mapistore.ROLE_CONTACTS
+        cadabeef["tag"] = "tag"
+
+        cafebeef = {}
+        cafebeef["url"] = "cafebeef0000001/"
+        cafebeef["name"] = "cafebeef"
+        cafebeef["main_folder"] = True
+        cafebeef["role"] = mapistore.ROLE_TASKS
+        cafebeef["tag"] = "tag"
+
+        contexts = [deadbeef, cacabeef, cadabeef, cafebeef]
         return contexts
 
     def create_context(self, uri):
@@ -256,6 +270,128 @@ class ContextObject(BackendObject):
         self.mapping[0xcacabeef0000001]["cache"] = {}
         self.mapping[0xcacabeef0000001]["cache"]["properties"] = {}
         self.mapping[0xcacabeef0000001]["cache"]["messages"] = []
+
+
+        #
+        # Contacts data
+        #
+
+        contact1 = {}
+        contact1["recipients"] = []
+        contact1["mid"] = 0xcada00010000001
+        contact1["fai"] = False
+        contact1["cache"] = {}
+        contact1["properties"] = {}
+        contact1["attachments"] = {}
+
+        contact1["properties"]["PidTagAccess"] = 63
+        contact1["properties"]["PidTagAccessLevel"] = 1
+        contact1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        contact1["properties"]["PidTagCreationTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        contact1["properties"]["PidTagLastModificationTime"] = contact1["properties"]["PidTagCreationTime"]
+        contact1["properties"]["PidTagObjectType"] = 5
+        contact1["properties"]["PidTagRecordKey"] = bytearray(uuid.uuid1().bytes)
+        contact1["properties"]["PidTagSearchKey"] = bytearray(uuid.uuid1().bytes)
+
+        contact1["properties"]["PidTagFolderId"] = 0xcadabeef0000001
+        contact1["properties"]["PidTagMid"] = contact1["mid"]
+        contact1["properties"]["PidTagInstID"] = contact1["mid"]
+        contact1["properties"]["PidTagInstanceNum"] = 0
+        contact1["properties"]["PidTagRowType"] = 1
+        contact1["properties"]["PidTagDepth"] = 0
+        contact1["properties"]["PidTagMessageFlags"] = 1 # msfRead
+        contact1["properties"]["PidTagMessageClass"] = "IPM.Contact"
+
+        # Full Name
+        contact1["properties"]["PidTagDisplayNamePrefix"] = ''
+        contact1["properties"]["PidTagGivenName"] = "Julien"
+        contact1["properties"]["PidTagMiddleName"] = ''
+        contact1["properties"]["PidTagSurname"] = "Kerihuel"
+        contact1["properties"]["PidTagDisplayName"] = "%s%s %s %s" % (contact1["properties"]["PidTagDisplayNamePrefix"],
+                                                                      contact1["properties"]["PidTagGivenName"],
+                                                                      contact1["properties"]["PidTagMiddleName"],
+                                                                      contact1["properties"]["PidTagSurname"])
+        contact1["properties"]["PidTagCompanyName"] = "OpenChange Project" # Company
+        contact1["properties"]["PidTagTitle"] = "Project Founder" # Job tile
+        contact1["properties"]["0x91c2001f"] = "OpenChange Project Founder" # File As
+        contact1["properties"]["PidTagBody"] = "OpenChange Project Founder and Lead Developer since December, 2003"
+
+        contact1["properties"]["0x91ad0001"] = "SMTP" # PidLidEmail1AddressType
+        contact1["properties"]["0x91ae001f"] = "j.kerihuel@openchange.org" # PidLidEmail1EmailAddress
+        contact1["properties"]["0x91b0001f"] = contact1["properties"]["0x91ae001f"] # PidLidEmail1OriginalDisplayName
+        # PidLidEmail1DisplayName Display as
+        contact1["properties"]["0x91af001f"] = "%s <%s>" % (contact1["properties"]["PidTagDisplayName"],
+                                                            contact1["properties"]["0x91ae001f"])
+        contact1["properties"]["0x930d001f"] = "http://www.openchange.org" # PidLidHtml
+        contact1["properties"]["PidTagBusinessHomePage"] = contact1["properties"]["0x930d001f"]
+        contact1["properties"]["0x92a6001f"] = "@jkerihuel" # PidLidInstantMessagingAddress
+        contact1["properties"]["PidTagBusinessTelephoneNumber"] = "Phone Office"
+        contact1["properties"]["PidTagHomeTelephoneNumber"] = "Phone Home"
+        contact1["properties"]["PidTagMobileTelephoneNumber"] = "Phone Mobile"
+        contact1["properties"]["PidTagBusinessFaxNumber"] = "Fax Office"
+
+        contact1["properties"]["PidTagStreetAddress"] = "Street"
+        contact1["properties"]["PidTagLocality"] = "City"
+        contact1["properties"]["PidTagStateOrProvince"] = "State/Province"
+        contact1["properties"]["PidTagPostalCode"] = "ZIP/Postal code"
+        contact1["properties"]["PidTagCountry"] = "France"
+        contact1["properties"]["0x9309001f"] = "FR" # PidLidAddressCountryCode
+
+        # PidTagPostalAddress
+        contact1["properties"]["PidTagPostalAddress"] = "%s\n%s %s %s\n%s" % (contact1["properties"]["PidTagStreetAddress"],
+                                                                              contact1["properties"]["PidTagPostalCode"],
+                                                                              contact1["properties"]["PidTagLocality"],
+                                                                              contact1["properties"]["PidTagStateOrProvince"],
+                                                                              contact1["properties"]["PidTagCountry"])
+
+        # Business Address
+        contact1["properties"]["0x90a6001f"] = contact1["properties"]["PidTagStreetAddress"] # PidLidWorkAddressStreet
+        contact1["properties"]["0x9097001f"] = contact1["properties"]["PidTagLocality"] # PidLidWorkAddressCity
+        contact1["properties"]["0x90a5001f"] = contact1["properties"]["PidTagStateOrProvince"] # PidLidWorkAddressState
+        contact1["properties"]["0x909e001f"] = contact1["properties"]["PidTagPostalCode"] # PidLidWorkAddressPostalCode
+        contact1["properties"]["0x908d001f"] = contact1["properties"]["PidTagCountry"] # PidLidWorkAddressCountry
+        contact1["properties"]["0x9306001f"] = contact1["properties"]["0x9309001f"] # PidLidWorkAddressCountryCode
+
+        # PidLidWorkAddress
+        contact1["properties"]["0x90a7001f"] = contact1["properties"]["PidTagPostalAddress"]
+
+
+        self.mapping[0xcadabeef0000001] = {}
+        self.mapping[0xcadabeef0000001]["uri"] = "cadabeef0000001/"
+        self.mapping[0xcadabeef0000001]["properties"] = {}
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagFolderId"] = 0xcadabeef0000001
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagDisplayName"] = "SampleContact"
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagComment"] = "Sample Contact Folder"
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Contact"
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Contact"
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagAccess"] = 63
+        self.mapping[0xcadabeef0000001]["properties"]["PidTagRights"] = 2043
+        self.mapping[0xcadabeef0000001]["subfolders"] = []
+        self.mapping[0xcadabeef0000001]["messages"] = [contact1]
+        self.mapping[0xcadabeef0000001]["cache"] = {}
+        self.mapping[0xcadabeef0000001]["cache"]["properties"] = {}
+        self.mapping[0xcadabeef0000001]["cache"]["messages"] = []
+
+
+
+        #
+        # Tasks data
+        #
+        self.mapping[0xcafebeef0000001] = {}
+        self.mapping[0xcafebeef0000001]["uri"] = "cafebeef0000001/"
+        self.mapping[0xcafebeef0000001]["properties"] = {}
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagFolderId"] = 0xcafebeef0000001
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagDisplayName"] = "SampleTask"
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagComment"] = "Sample Task Folder"
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagContainerClass"] = "IPF.Task"
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Task"
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagAccess"] = 63
+        self.mapping[0xcafebeef0000001]["properties"]["PidTagRights"] = 2043
+        self.mapping[0xcafebeef0000001]["subfolders"] = []
+        self.mapping[0xcafebeef0000001]["messages"] = []
+        self.mapping[0xcafebeef0000001]["cache"] = {}
+        self.mapping[0xcafebeef0000001]["cache"]["properties"] = {}
+        self.mapping[0xcafebeef0000001]["cache"]["messages"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
         return

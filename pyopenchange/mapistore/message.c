@@ -477,12 +477,58 @@ static PyObject *py_MAPIStoreMessage_save(PyMAPIStoreMessageObject *self)
 	Py_RETURN_NONE;
 }
 
+static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObject *self)
+{
+	PyMAPIStoreTableObject		*table;
+	void				*table_object;
+	struct SPropTagArray		*columns;
+	enum mapistore_error		retval;
+	uint32_t			count = 0;
+
+	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, self->mem_ctx, &table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Initialise the SPropTagArray */
+	columns = talloc_zero(self->mem_ctx, struct SPropTagArray);
+	if (columns == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	columns->aulPropTag = talloc_zero(columns, void);
+	if (columns->aulPropTag == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Return the table object */
+	table = PyObject_New(PyMAPIStoreTableObject, &PyMAPIStoreTable);
+	if (table == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	table->mem_ctx = self->mem_ctx;
+	table->context = self->context;
+	Py_INCREF(table->context);
+
+	table->columns = columns;
+	table->table_object = table_object;
+
+	return (PyObject *)table;
+}
+
 static PyMethodDef mapistore_message_methods[] = {
 	{ "get_uri", (PyCFunction)py_MAPIStoreMessage_get_uri, METH_NOARGS},
 	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
 	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
+	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS},
 	{ NULL },
 };
 
@@ -491,8 +537,34 @@ static PyObject *py_MAPIStoreMessage_get_mid(PyMAPIStoreMessageObject *self, voi
 	return PyLong_FromUnsignedLongLong(self->mid);
 }
 
+static PyObject *py_MAPIStoreMessage_get_attachment_count(PyMAPIStoreMessageObject *self, void *closure)
+{
+	TALLOC_CTX			*mem_ctx;
+	void				*table_object;
+	enum mapistore_error		retval;
+	uint32_t			count;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx, &table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	talloc_free(mem_ctx);
+	return PyLong_FromUnsignedLong(count);
+}
+
 static PyGetSetDef mapistore_message_getsetters[] = {
 	{ (char *)"mid", (getter)py_MAPIStoreMessage_get_mid, NULL, NULL },
+	{ (char *)"attachment_count", (getter)py_MAPIStoreMessage_get_attachment_count, NULL, NULL },
 	{ NULL }
 };
 

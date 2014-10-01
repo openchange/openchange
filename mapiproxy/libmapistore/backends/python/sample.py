@@ -377,6 +377,53 @@ class ContextObject(BackendObject):
         #
         # Tasks data
         #
+        task1 = {}
+        task1["recipients"] = []
+        task1["attachments"] = []
+        task1["mid"] = 0xcafe00010000001
+        task1["fai"] = False
+        task1["cache"] = {}
+        task1["properties"] = {}
+
+        task1["properties"]["PidTagAccess"] = 63
+        task1["properties"]["PidTagAccessLevel"] = 1
+        task1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        task1["properties"]["PidTagCreationTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        task1["properties"]["PidTagLastModificationTime"] = task1["properties"]["PidTagCreationTime"]
+        task1["properties"]["PidTagLastModifierName"] = "julien"
+        task1["properties"]["PidTagObjectType"] = 5
+        task1["properties"]["PidTagRecordKey"] = bytearray(uuid.uuid1().bytes)
+        task1["properties"]["PidTagSearchKey"] = bytearray(uuid.uuid1().bytes)
+        task1["properties"]["PidTagFolderId"] = 0xcafebeef0000001
+        task1["properties"]["PidTagMid"] = task1["mid"]
+        task1["properties"]["PidTagInstID"] = task1["mid"]
+        task1["properties"]["PidTagInstanceNum"] = 0
+        task1["properties"]["PidTagRowType"] = 1
+        task1["properties"]["PidTagDepth"] = 0
+        task1["properties"]["PidTagMessageClass"] = "IPM.Task"
+        task1["properties"]["PidTagMessageFlags"] = 1
+
+        task1["properties"]["PidTagSubjectPrefix"] = ''
+        task1["properties"]["PidTagSubject"] = "Subject of the task"
+        task1["properties"]["PidTagNormalizedSubject"] = task1["properties"]["PidTagSubject"]
+        task1["properties"]["PidTagConversationTopic"] = task1["properties"]["PidTagSubject"]
+        task1["properties"]["PidTagPriority"] = 1
+        task1["properties"]["PidTagImportance"] = 2
+        task1["properties"]["PidTagSensitivity"] = 2
+        task1["properties"]["PidTagIconIndex"] = 0x500
+        task1["properties"]["0x91200003"] = 1 # PidLidTaskStatus
+        task1["properties"]["0x91210005"] = float(0.500000) # PidLidPercentComplete
+        task1["properties"]["0x9224000b"] = True # PidLidPrivate
+        task1["properties"]["0x911e0040"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f")) # PidLidTaskStartDate
+        task1["properties"]["0x911f0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=2)).strftime("%s.%f")) # PidLidTaskEndDate
+        task1["properties"]["0x90db101f"] = ["Green Category", "Orange Category"]
+        task1["properties"]["PidTagBody"] = "This task is not very complex. It however tries to fill most of the common and available fields."
+
+        # Reminder
+        task1["properties"]["0x91ee000b"] = True # PidLidReminderSet
+        task1["properties"]["0x91eb0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f")) # PidLidReminderSignalTime
+        task1["properties"]["0x91ef0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f")) # PidLidReminderTime
+
         self.mapping[0xcafebeef0000001] = {}
         self.mapping[0xcafebeef0000001]["uri"] = "cafebeef0000001/"
         self.mapping[0xcafebeef0000001]["properties"] = {}
@@ -388,7 +435,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcafebeef0000001]["properties"]["PidTagAccess"] = 63
         self.mapping[0xcafebeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcafebeef0000001]["subfolders"] = []
-        self.mapping[0xcafebeef0000001]["messages"] = []
+        self.mapping[0xcafebeef0000001]["messages"] = [task1]
         self.mapping[0xcafebeef0000001]["cache"] = {}
         self.mapping[0xcafebeef0000001]["cache"]["properties"] = {}
         self.mapping[0xcafebeef0000001]["cache"]["messages"] = []

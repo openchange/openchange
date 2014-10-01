@@ -112,6 +112,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 	bool			b;
 	int			l;
 	uint64_t		ll;
+	double			d;
 	struct Binary_r		*bin;
 	struct StringArray_r	*MVszA;
 	struct StringArrayW_r	*MVszW;
@@ -135,7 +136,10 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_DOUBLE:
-			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyFloat_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			d = PyFloat_AsDouble(value);
+			*data = talloc_memdup(mem_ctx, &d, sizeof(d));
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_BOOLEAN:
 			MAPISTORE_RETVAL_IF((PyBool_Check(value) == false), MAPISTORE_ERR_NOT_FOUND, NULL);
@@ -308,7 +312,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			val = PyLong_FromLong(*((uint32_t *)data));
 			break;
 		case PT_DOUBLE:
-			DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
+			val = PyFloat_FromDouble(*((double *)data));
 			break;
 		case PT_BOOLEAN:
 			val = PyBool_FromLong(*((uint32_t *)data));

@@ -354,8 +354,8 @@ static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
 	const char *val = ldb_msg_find_attr_as_string(ldif, field, "");
 	if (strlen(val) == 0) {
 		if (mandatory) {
-			DEBUG(0, ("%s value hasn't been found! malformed ldif?",
-				  field));
+			DEBUG(0, ("%s value hasn't been found in %s! malformed ldif?",
+				  field, ldb_dn_get_linearized(ldif->dn)));
 		}
 		return false;
 	}
@@ -423,7 +423,8 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 	//           to store it as an integer
 	val = ldb_msg_find_attr_as_string(ldif, "propType", "");
 	if (strlen(val) == 0) {
-		DEBUG(0, ("propType value hasn't been found! malformed ldif?"));
+		DEBUG(0, ("propType value hasn't been found in %s! malformed ldif?\n",
+			  ldb_dn_get_linearized(ldif->dn)));
 		return false;
 	}
 	int propType;

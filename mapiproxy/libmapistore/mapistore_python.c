@@ -290,7 +290,12 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	for (count = 0; count < aRow->cValues; count++) {
 
 		/* Set the key of the dictionary entry */
-		skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);
+		if ((aRow->lpProps[count].ulPropTag >> 16) > 0x8000) {
+			skey = openchangedb_named_properties_get_attribute(aRow->lpProps[count].ulPropTag);
+		} else {
+			skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);
+		}
+
 		if (skey == NULL) {
 			key = PyString_FromFormat("0x%x", aRow->lpProps[count].ulPropTag);
 		} else {
@@ -2295,7 +2300,12 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 	}
 
 	for (i = 0; i < count; i++) {
-		value = openchangedb_property_get_attribute(properties[i]);
+		if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
+			value = openchangedb_named_properties_get_attribute(properties[i]);
+		} else {
+			value = openchangedb_property_get_attribute(properties[i]);
+		}
+
 		if (value == NULL) {
 			item = PyString_FromFormat("0x%x", properties[i]);
 		} else {
@@ -2446,7 +2456,10 @@ static enum mapistore_error mapistore_python_table_get_row(TALLOC_CTX *mem_ctx,
 			} else {
 				proptag = openchangedb_property_get_tag(sproptag);
 				if (proptag == 0xFFFFFFFF) {
-					proptag = strtoul(sproptag, NULL, 16);
+					proptag = openchangedb_named_properties_get_tag(sproptag);
+					if (proptag == 0xFFFFFFFF) {
+						proptag = strtoul(sproptag, NULL, 16);
+					}
 				}
 			}
 		} else if (PyLong_Check(item)) {
@@ -2603,7 +2616,12 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	}
 
 	for (i = 0; i < count; i++) {
-		sproptag = openchangedb_property_get_attribute(properties[i]);
+		if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
+			sproptag = openchangedb_named_properties_get_attribute(properties[i]);
+		} else {
+			sproptag = openchangedb_property_get_attribute(properties[i]);
+		}
+
 		if (sproptag == NULL) {
 			item = PyString_FromFormat("0x%x", properties[i]);
 		} else {
@@ -2638,7 +2656,11 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 
 	/* Map data */
 	for (i = 0; i < count; i++) {
-		sproptag = openchangedb_property_get_attribute(properties[i]);
+		if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
+			sproptag = openchangedb_named_properties_get_attribute(properties[i]);
+		} else {
+			sproptag = openchangedb_property_get_attribute(properties[i]);
+		}
 		if (sproptag == NULL) {
 			item = PyString_FromFormat("0x%x", properties[i]);
 		} else {

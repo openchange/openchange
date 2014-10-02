@@ -868,7 +868,6 @@ mapiproxy/libmapistore/mgmt/gen_ndr/ndr_%.h mapiproxy/libmapistore/mgmt/gen_ndr/
 libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)	\
-		setup/mapistore/mapistore_namedprops.ldif		\
 		setup/mapistore/named_properties_schema.sql		\
 		setup/mapistore/indexing_schema.sql			\
 		$(OC_MAPISTORE)						\
@@ -876,10 +875,6 @@ libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 
 mapiproxy/libmapistore/mapistore_nameid.h: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
 	libmapi/conf/mparse.pl --parser=mapistore_nameid --outputdir=mapiproxy/libmapistore/ libmapi/conf/mapi-named-properties
-
-setup/mapistore/mapistore_namedprops.ldif: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
-	-mkdir --parent "setup/mapistore"
-	libmapi/conf/mparse.pl --parser=mapistore_namedprops --outputdir=setup/mapistore/ libmapi/conf/mapi-named-properties
 
 libmapistore-installpc:
 	@echo "[*] install: libmapistore pc files"

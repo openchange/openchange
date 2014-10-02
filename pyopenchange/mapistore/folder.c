@@ -55,7 +55,8 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 
 	/* Check 'foldertype' range */
 	if ((foldertype < FOLDER_GENERIC) || (foldertype > FOLDER_SEARCH)) {
-		PyErr_SetString(PyExc_ValueError, "'foldertype' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'foldertype' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 	/* Get FID for the new folder (backend should care about not duplicating folders) */
@@ -148,7 +149,8 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError, "Soft-deleted folder");
+		DEBUG(0, ("[ERR][%s]: Soft-deleted folder\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 		return NULL;
 	}
 
@@ -189,7 +191,8 @@ static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObje
 
 	/* Check 'flags' range */
 	if ((flags < 1) && (flags > 5)) {
-		PyErr_SetString(PyExc_ValueError, "Argument 'flags' out of range");
+		DEBUG(0, ("[ERR][%s]: Argument 'flags' out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -218,13 +221,15 @@ static PyObject *py_MAPIStoreFolder_copy_folder(PyMAPIStoreFolderObject *self, P
 
 	/* Check target_folder type */
 	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
-		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		DEBUG(0,("[ERR][%s]: Target folder must be a PyMAPIStoreFolder object\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
 	/* Check 'recursive' range */
 	if ((recursive < 0) || (recursive > 1)) {
-		PyErr_SetString(PyExc_ValueError, "'recursive' argument out of range");
+		DEBUG(0, ("[ERR][%s]: Argument 'recursive' out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -252,7 +257,8 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 
 	/* Check target_folder type */
 	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
-		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		DEBUG(0, ("[ERR][%s]: Target folder must be a PyMAPIStoreFolder object\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -278,7 +284,8 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 
 	/* Check 'table_type' range */
 	if ((table_type < MAPISTORE_FOLDER_TABLE) || (table_type > MAPISTORE_PERMISSIONS_TABLE)) {
-		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'table_type' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -295,198 +302,43 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 
 static PyObject *py_MAPIStoreFolder_get_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	TALLOC_CTX			*mem_ctx;
 	char				*kwnames[] = { "list", NULL };
-	PyObject			*list = NULL, *py_key, *py_ret = NULL;
-	struct SPropTagArray		*properties;
-	struct mapistore_property_data  *prop_data;
+	PyObject			*list = NULL, *py_ret = NULL;
 	enum mapistore_error		retval;
-	enum MAPISTATUS			ret;
-	enum MAPITAGS			tag;
-	Py_ssize_t			i, count;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwnames, &list)) {
 		return NULL;
 	}
 
-	/* Get the available properties */
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
+	retval = pymapistore_get_properties(list, self->context->mstore_ctx,
+			self->context->context_id, self->folder_object, &py_ret);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
-	if (list == NULL) {
-		/* If no list of needed properties is provided, return all */
-		retval = mapistore_properties_get_available_properties(self->context->mstore_ctx,
-				self->context->context_id, self->folder_object, mem_ctx, &properties);
-		if (retval != MAPISTORE_SUCCESS) {
-			PyErr_SetMAPIStoreError(retval);
-			goto end;
-		}
-	} else {
-		/* Check the input argument */
-		if (PyList_Check(list) == false) {
-			PyErr_SetString(PyExc_TypeError, "Input argument must be a list");
-			goto end;
-		}
-
-		/* Build the SPropTagArray structure */
-		count = PyList_Size(list);
-
-		properties = talloc_zero(mem_ctx, struct SPropTagArray);
-		if (properties == NULL) {
-			PyErr_NoMemory();
-			goto end;
-		}
-
-		properties->aulPropTag = talloc_zero(properties, void);
-		if (properties->aulPropTag == NULL) {
-			PyErr_NoMemory();
-			goto end;
-		}
-		for (i = 0; i < count; i++) {
-			py_key = PyList_GetItem(list, i);
-			if (PyString_Check(py_key)) {
-				tag = openchangedb_property_get_tag(PyString_AsString(py_key));
-				if (tag == 0xFFFFFFFF) {
-					DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
-							__location__, PyString_AsString(py_key)));
-					PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
-					goto end;
-				}
-			} else if (PyInt_Check(py_key)) {
-				tag = PyInt_AsUnsignedLongMask(py_key);
-			} else {
-				PyErr_SetString(PyExc_TypeError,
-						"Invalid type in list: only strings and integers accepted");
-				goto end;
-			}
-
-			ret = SPropTagArray_add(mem_ctx, properties, tag);
-			if (ret != MAPI_E_SUCCESS) {
-				PyErr_SetMAPISTATUSError(ret);
-				goto end;
-			}
-		}
-	}
-
-	/* Get the available values */
-	prop_data = talloc_zero_array(mem_ctx, struct mapistore_property_data, properties->cValues);
-	if (prop_data == NULL) {
-		PyErr_NoMemory();
-		goto end;
-	}
-
-	retval = mapistore_properties_get_properties(self->context->mstore_ctx,
-			self->context->context_id, self->folder_object, mem_ctx,
-			properties->cValues, properties->aulPropTag, prop_data);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	/* Build a Python dictionary object with the tags and the property values */
-	py_ret = pymapistore_python_dict_from_properties(properties->aulPropTag, prop_data, properties->cValues);
-	if (py_ret == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error building the dictionary");
-		goto end;
-	}
-	talloc_free(mem_ctx);
 	return py_ret;
-
-end:
-	talloc_free(mem_ctx);
-	return NULL;
 }
 
 static PyObject *py_MAPIStoreFolder_set_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	TALLOC_CTX		*mem_ctx;
 	char			*kwnames[] = { "dict", NULL };
-	PyObject		*dict = NULL, *py_key, *py_value;
-	struct SRow		*aRow;
-	struct SPropValue	newValue;
-	void			*data;
-	enum MAPITAGS		tag;
+	PyObject		*dict = NULL;
 	enum mapistore_error	retval;
-	enum MAPISTATUS		ret;
-	Py_ssize_t		pos = 0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwnames, &dict)) {
 		return NULL;
 	}
 
-	/* Check the input argument */
-	if (PyDict_Check(dict) == false) {
-		PyErr_SetString(PyExc_TypeError, "Input argument must be a dictionary");
-		return NULL;
-	}
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	aRow = talloc_zero(mem_ctx, struct SRow);
-	if (aRow == NULL) {
-		PyErr_NoMemory();
-		goto end;
-	}
-
-	while (PyDict_Next(dict, &pos, &py_key, &py_value)) {
-		/* Transform the key into a property tag */
-		if (PyString_Check(py_key)) {
-			tag = openchangedb_property_get_tag(PyString_AsString(py_key));
-			if (tag == 0xFFFFFFFF) {
-				DEBUG(0, ("[ERR][%s]: Unsupported property tag '%s' \n",
-						__location__, PyString_AsString(py_key)));
-				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
-				goto end;
-			}
-		} else if (PyInt_Check(py_key)) {
-			tag = PyInt_AsUnsignedLongMask(py_key);
-		} else {
-			PyErr_SetString(PyExc_TypeError,
-					"Invalid property type: only strings and integers accepted");
-			goto end;
-		}
-
-		/* Transform the input value into proper C type */
-		retval = pymapistore_data_from_pyobject(mem_ctx,tag, py_value, &data);
-		if (retval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("[WARN][%s]: Unsupported value for property '%s' \n",
-					__location__, PyString_AsString(py_key)));
-			continue;
-		}
-
-		/* Update aRow */
-		if (set_SPropValue_proptag(&newValue, tag, data) == false) {
-			PyErr_SetString(PyExc_SystemError, "Can't set property");
-			goto end;
-		}
-
-		ret = SRow_addprop(aRow, newValue);
-		if (ret != MAPI_E_SUCCESS) {
-			PyErr_SetMAPISTATUSError(ret);
-			goto end;
-		}
-	}
-
-	/* Set the properties from aRow */
-	retval = mapistore_properties_set_properties(self->context->mstore_ctx,self->context->context_id,
-			self->folder_object, aRow);
+	retval = pymapistore_set_properties(dict, self->context->mstore_ctx, self->context->context_id, self->folder_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		goto end;
+		return NULL;
 	}
 
-	talloc_free(mem_ctx);
 	Py_RETURN_NONE;
-end:
-	talloc_free(mem_ctx);
-	return NULL;
 }
+
 static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, struct tm *tm)
 {
 	PyObject *value;
@@ -589,7 +441,8 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 
 	/* Check 'associated' range */
 	if ((associated < 0) || (associated > 1)) {
-		PyErr_SetString(PyExc_ValueError, "'associated' argument out of range");
+		DEBUG(0,("[ERR][%s]: 'associated' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -644,7 +497,8 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 
 	/* Check 'read_write' range */
 	if ((read_write < 0) || (read_write > 1)) {
-		PyErr_SetString(PyExc_ValueError, "'read_write' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'read_write' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -658,7 +512,8 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 	}
 
 	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
+		DEBUG(0, ("[ERR][%s]: Soft-deleted message\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 		return NULL;
 	}
 
@@ -703,7 +558,8 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 
 	/* Check 'flags' range */
 	if ((flags < MAPISTORE_SOFT_DELETE) || (flags > MAPISTORE_PERMANENT_DELETE)) {
-		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'table_type' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -718,7 +574,8 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 	}
 
 	if ((soft_deleted == true) && (flags == MAPISTORE_SOFT_DELETE)) {
-		PyErr_SetString(PyExc_SystemError, "Already soft-deleted");
+		DEBUG(0, ("[ERR][%s]: Already soft-deleted\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 		return NULL;
 	}
 
@@ -752,12 +609,14 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 
 	/* Check the arguments' types */
 	if (PyList_Check(uri_list) == false) {
-		PyErr_SetString(PyExc_TypeError, "'message_list' must be a list");
+		DEBUG(0, ("[ERR][%s]: 'message_list' must be a list\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
 	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
-		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		DEBUG(0, ("[ERR][%s]: Target folder must be a PyMAPIStoreFolder object\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -780,7 +639,8 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 		item = PyList_GetItem(uri_list, i);
 
 		if (PyString_Check(item) == false) {
-			PyErr_SetString(PyExc_TypeError, "Argument 'uri_list' must only contain strings");
+			DEBUG(0, ("[ERR][%s]: Argument 'uri_list' must only contain strings\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 			goto end;
 		}
 
@@ -794,7 +654,8 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 		}
 
 		if (soft_deleted == true) {
-			PyErr_SetString(PyExc_SystemError, talloc_asprintf(mem_ctx, "Soft-deleted message; %s", uri));
+			DEBUG(0, ("[ERR][%s]: Soft-deleted message\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 			goto end;
 		}
 
@@ -848,12 +709,14 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 
 	/* Check the arguments' types */
 	if (PyList_Check(uri_list) == false) {
-		PyErr_SetString(PyExc_TypeError, "'message_list' must be a list");
+		DEBUG(0, ("[ERR][%s]: 'message_list' must be a list\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
 	if (strcmp("mapistorefolder", target_folder->ob_type->tp_name) != 0) {
-		PyErr_SetString(PyExc_TypeError, "Target folder must be a PyMAPIStoreFolder object");
+		DEBUG(0, ("[ERR][%s]: Target folder must be a PyMAPIStoreFolder object\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -876,7 +739,8 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 		item = PyList_GetItem(uri_list, i);
 
 		if (PyString_Check(item) == false) {
-			PyErr_SetString(PyExc_TypeError, "Argument 'uri_list' must only contain strings");
+			DEBUG(0, ("[ERR][%s]: Argument 'uri_list' must only contain strings\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 			goto end;
 		}
 
@@ -890,7 +754,8 @@ static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self,
 		}
 
 		if (soft_deleted == true) {
-			PyErr_SetString(PyExc_SystemError, talloc_asprintf(mem_ctx, "Soft-deleted message; %s", uri));
+			DEBUG(0,("[ERR][%s]: Soft-deleted message: %s\n", __location__, uri));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
 			goto end;
 		}
 
@@ -942,7 +807,8 @@ static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, Py
 
 	/* Check 'table_type' range */
 	if ((table_type < MAPISTORE_FOLDER_TABLE) || (table_type > MAPISTORE_PERMISSIONS_TABLE)) {
-		PyErr_SetString(PyExc_ValueError, "'table_type' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'table_type' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -1006,40 +872,18 @@ static PyMethodDef mapistore_folder_methods[] = {
 
 static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self, void *closure)
 {
-	TALLOC_CTX			*mem_ctx;
-	PyObject			*py_ret;
-	char				*uri;
+	PyObject			*py_uri;
 	enum mapistore_error 		retval;
-	bool				soft_deleted;
+	char				*uri;
 
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
+	retval = pymapistore_get_uri(self->context->mstore_ctx, self->context->parent->username,
+			self->fid, &py_uri);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
-	/* Retrieve the URI from the indexing */
-	retval = mapistore_indexing_record_get_uri(self->context->mstore_ctx, self->context->parent->username,
-			self->mem_ctx, self->fid, &uri, &soft_deleted);
-
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError, "Soft-deleted folder");
-		goto end;
-	}
-
-	/* Return the URI */
-	py_ret = PyString_FromString(uri);
-	talloc_free(mem_ctx);
-
-	return py_ret;
-end:
-	talloc_free(mem_ctx);
-	return NULL;
+	return py_uri;
 }
 
 static PyObject *py_MAPIStoreFolder_get_fid(PyMAPIStoreFolderObject *self, void *closure)
@@ -1182,7 +1026,8 @@ static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 
 	self = (PyMAPIStoreFoldersObject *)_self;
 	if (!self) {
-		PyErr_SetString(PyExc_TypeError, "Expected object of type MAPIStoreFolders");
+		DEBUG(0,("[ERR][%s]: Expected object of type MAPIStoreFolders\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 

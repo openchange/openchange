@@ -170,6 +170,9 @@ __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
 void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
+enum mapistore_error pymapistore_get_uri(struct mapistore_context *mstore_ctx, const char *username, uint64_t fmid, PyObject **ppy_uri);
+enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, PyObject **ppy_dict);
+enum mapistore_error pymapistore_set_properties(PyObject *dict, struct mapistore_context *mstore_ctx, uint32_t context_id, void *object);
 PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, struct mapistore_property_data *prop_data, uint32_t count);
 enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_t proptag, PyObject *value, void **data);
 

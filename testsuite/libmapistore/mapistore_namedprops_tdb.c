@@ -79,7 +79,7 @@ START_TEST (test_get_mapped_id_MNID_ID) {
 		cn: 0x8102
 		canonical: PidLidPercentComplete
 		oleguid: 00062003-0000-0000-c000-000000000046
-		mappedId: 37153
+		mappedId: 37195
 		propId: 33026
 		propType: 5
 		oom: PercentComplete
@@ -93,17 +93,17 @@ START_TEST (test_get_mapped_id_MNID_ID) {
 	uint16_t prop;
 
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37153);
+	ck_assert_int_eq(prop, 37195);
 
 	// A couple more...
 	nameid.lpguid.time_low = 0x62004;
 	nameid.kind.lid = 32978;
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37524);
+	ck_assert_int_eq(prop, 36913);
 
 	nameid.kind.lid = 32901;
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37297);
+	ck_assert_int_eq(prop, 36894);
 
 } END_TEST
 
@@ -125,16 +125,16 @@ START_TEST (test_get_mapped_id_MNID_STRING) {
 	nameid.lpguid.time_low = 0x20329;
 	nameid.lpguid.clock_seq[0] = 0xc0;
 	nameid.lpguid.node[5] = 0x46;
-	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/smallicon";
+	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/junkemailmovestamp";
 	uint16_t prop;
 
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 38342);
+	ck_assert_int_eq(prop, 37312);
 
 	// Another...
-	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/searchfolder";
+	nameid.kind.lpwstr.Name = "urn:schemas:calendar:rrule";
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop), MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 38365);
+	ck_assert_int_eq(prop, 37327);
 } END_TEST
 
 START_TEST (test_get_mapped_id_not_found) {
@@ -147,11 +147,11 @@ START_TEST (test_get_mapped_id_not_found) {
 START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = 0;
 
-	retval = get_nameid_type(g_nprops, 38306, &prop_type);
+	retval = get_nameid_type(g_nprops, 36868, &prop_type);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop_type, PT_NULL);
+	ck_assert_int_eq(prop_type, PT_BOOLEAN);
 
-	get_nameid_type(g_nprops, 37975, &prop_type);
+	get_nameid_type(g_nprops, 37338, &prop_type);
 	ck_assert_int_eq(prop_type, PT_UNICODE);
 
 	/* mappedId should be unique? It's not
@@ -163,7 +163,7 @@ START_TEST (test_get_nameid_type) {
 	ck_assert_int_eq(ret, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop_type, PT_LONG);*/
 
-	retval = get_nameid_type(g_nprops, 37090, &prop_type);
+	retval = get_nameid_type(g_nprops, 36870, &prop_type);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert_int_eq(prop_type, PT_SYSTIME);
 } END_TEST
@@ -179,13 +179,14 @@ START_TEST (test_get_nameid_MNID_STRING) {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(g_nprops, 38306, mem_ctx, &nameid);
+	get_nameid(g_nprops, 37312, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("urn:schemas:httpmail:junkemail", nameid->kind.lpwstr.Name);
+	ck_assert_str_eq("http://schemas.microsoft.com/exchange/junkemailmovestamp",
+			 nameid->kind.lpwstr.Name);
 
-	get_nameid(g_nprops, 38344, mem_ctx, &nameid);
+	get_nameid(g_nprops, 37316, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("http://schemas.microsoft.com/exchange/mailbox-owner-name",
+	ck_assert_str_eq("http://schemas.microsoft.com/exchange/patternstart",
 			 nameid->kind.lpwstr.Name);
 
 	talloc_free(mem_ctx);
@@ -195,13 +196,13 @@ START_TEST (test_get_nameid_MNID_ID) {
 	TALLOC_CTX *mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(g_nprops, 38212, mem_ctx, &nameid);
+	get_nameid(g_nprops, 36938, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_int_eq(32778, nameid->kind.lid);
+	ck_assert_int_eq(32814, nameid->kind.lid);
 
-	get_nameid(g_nprops, 38111, mem_ctx, &nameid);
+	get_nameid(g_nprops, 36945, mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_int_eq(34063, nameid->kind.lid);
+	ck_assert_int_eq(33367, nameid->kind.lid);
 
 	talloc_free(mem_ctx);
 } END_TEST

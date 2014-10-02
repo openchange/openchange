@@ -320,7 +320,7 @@ START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = -1;
 
 	/* PidLidWhere */
-	get_nameid_type(g_nprops, 37115, &prop_type);
+	get_nameid_type(g_nprops, 37116, &prop_type);
 	ck_assert_int_eq(prop_type, PT_UNICODE);
 
 	/* PidLidDistributionListChecksum */
@@ -345,7 +345,7 @@ START_TEST (test_get_nameid_MNID_STRING) {
 
 	get_nameid(g_nprops, 37312, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("urn:schemas:httpmail:junkemailmovestamp",
+	ck_assert_str_eq("http://schemas.microsoft.com/exchange/junkemailmovestamp",
 			 nameid->kind.lpwstr.Name);
 
 	get_nameid(g_nprops, 37323, local_mem_ctx, &nameid);

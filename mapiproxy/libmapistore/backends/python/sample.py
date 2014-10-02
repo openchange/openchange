@@ -234,16 +234,16 @@ class ContextObject(BackendObject):
         appt1["properties"]["PidTagDepth"] = 0
         appt1["properties"]["PidTagMessageClass"] = "IPM.Appointment"
         appt1["properties"]["PidTagIconIndex"] = 0x400 # single-instance appointment 2.2.1.49 [MS-OXOCAL]
-        appt1["properties"]["0x91f80003"] = 0 # PidLidSideEffects 2.2.2.1.16 [MS-OXCMSG]
-        # appt1["properties"]["0x94e60003"] = # PidLidHeaderItem
+        appt1["properties"]["PidLidSideEffects"] = 0 # 2.2.2.1.16 [MS-OXCMSG]
+        # appt1["properties"]["PidLidHeaderItem"] =
         appt1["properties"]["PidTagMessageStatus"] = 0
         appt1["properties"]["PidTagMessageFlags"] = 0
-        # appt1["properties"]["0x92020102" = # PidLidTimeZoneStruct
-        appt1["properties"]["0x910c001f"] = "Location of the event" # PidLidLocation
-        appt1["properties"]["0x91900003"] = 0 # PidLidAppointmentStateFlags 2.2.1.10 [MS-OXOCAL]
-        appt1["properties"]["0x91ee000b"] = True # PidLidReminderSet
-        #appt1["properties"]["0x918b0102"] = # PidLidAppointmentRecur
-        appt1["properties"]["0x90Fa000b"] = False # PidLidAppointmentSubType
+        # appt1["properties"]["PidLidTimeZoneStruct"] = #
+        appt1["properties"]["PidLidLocation"] = "Location of the event"
+        appt1["properties"]["PidLidAppointmentStateFlags"] = 0 # 2.2.1.10 [MS-OXOCAL]
+        appt1["properties"]["PidLidReminderSet"] = True
+        #appt1["properties"]["PidLidAppointmentRecur"] =
+        appt1["properties"]["PidLidAppointmentSubType"] = False
 
         appt1["properties"]["PidTagSubject"] = "Meet Sample backend appointment folder"
         appt1["properties"]["PidTagNormalizedSubject"] = appt1["properties"]["PidTagSubject"]
@@ -252,15 +252,15 @@ class ContextObject(BackendObject):
         appt1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
         appt1["properties"]["PidTagBody"] = "Description of the event"
         appt1["properties"]["PidTagHtml"] = bytearray(appt1["properties"]["PidTagBody"])
-        appt1["properties"]["0x90db101f"] = ["Blue Category", "OpenChange", ]
+        appt1["properties"]["PidNameKeywords"] = ["Blue Category", "OpenChange", ]
         appt1["properties"]["PidTagMessageDeliveryTime"] = appt1["properties"]["PidTagCreationTime"]
-        appt1["properties"]["0x918f0040"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f")) # PidLidAppointmentStartWhole
-        appt1["properties"]["0x91980040"] =  appt1["properties"]["0x918f0040"]  # PidLidCommonEnd
-        appt1["properties"]["0x918a0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=1)).strftime("%s.%f")) # PidLidAppointmentEndWhole
-        appt1["properties"]["0x91990040"] =  appt1["properties"]["0x918a0040"] # PidLidCommonStart
+        appt1["properties"]["PidLidAppointmentStartWhole"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f"))
+        appt1["properties"]["PidLidCommonStart"] =  appt1["properties"]["PidLidAppointmentStartWhole"]
+        appt1["properties"]["PidLidAppointmentEndWhole"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=1)).strftime("%s.%f"))
+        appt1["properties"]["PidLidCommonEnd"] =  appt1["properties"]["PidLidAppointmentEndWhole"]
 
-        appt1["properties"]["0x91930003"] = 2 # PidLidBusyStatus
-        appt1["properties"]["0x90fc0003"] = 0 # PidLidResponseStatus
+        appt1["properties"]["PidLidBusyStatus"] = 2
+        appt1["properties"]["PidLidResponseStatus"] = 0
 
         self.mapping[0xcacabeef0000001] = {}
         self.mapping[0xcacabeef0000001]["uri"] = "cacabeef0000001/"
@@ -320,18 +320,22 @@ class ContextObject(BackendObject):
                                                                       contact1["properties"]["PidTagSurname"])
         contact1["properties"]["PidTagCompanyName"] = "OpenChange Project" # Company
         contact1["properties"]["PidTagTitle"] = "Project Founder" # Job tile
-        contact1["properties"]["0x91c2001f"] = "OpenChange Project Founder" # File As
+        # "<PidTagSurname><space><PidTagGivenName><space><PidTagMiddleName>\r\n<PidTagCompanyName>"
+        contact1["properties"]["PidLidFileUnderId"] = 0x8035
+        contact1["properties"]["PidLidFileUnder"] =  "%s %s\r\n%s" % (contact1["properties"]["PidTagSurname"],
+                                                                         contact1["properties"]["PidTagGivenName"],
+                                                                         contact1["properties"]["PidTagCompanyName"]) # File As
         contact1["properties"]["PidTagBody"] = "OpenChange Project Founder and Lead Developer since December, 2003"
 
-        contact1["properties"]["0x91ad0001"] = "SMTP" # PidLidEmail1AddressType
-        contact1["properties"]["0x91ae001f"] = "j.kerihuel@openchange.org" # PidLidEmail1EmailAddress
-        contact1["properties"]["0x91b0001f"] = contact1["properties"]["0x91ae001f"] # PidLidEmail1OriginalDisplayName
-        # PidLidEmail1DisplayName Display as
-        contact1["properties"]["0x91af001f"] = "%s <%s>" % (contact1["properties"]["PidTagDisplayName"],
-                                                            contact1["properties"]["0x91ae001f"])
-        contact1["properties"]["0x930d001f"] = "http://www.openchange.org" # PidLidHtml
-        contact1["properties"]["PidTagBusinessHomePage"] = contact1["properties"]["0x930d001f"]
-        contact1["properties"]["0x92a6001f"] = "@jkerihuel" # PidLidInstantMessagingAddress
+        contact1["properties"]["PidLidEmail1AddressType"] = "SMTP"
+        contact1["properties"]["PidLidEmail1EmailAddress"] = "j.kerihuel@openchange.org"
+        contact1["properties"]["PidLidEmail1OriginalDisplayName"] = contact1["properties"]["PidLidEmail1EmailAddress"]
+        contact1["properties"]["PidLidEmail1DisplayName"] = "%s <%s>" % (contact1["properties"]["PidTagDisplayName"],
+                                                                         contact1["properties"]["PidLidEmail1EmailAddress"])
+        contact1["properties"]["0x901b001f"] = contact1["properties"]["PidLidEmail1DisplayName"]
+        contact1["properties"]["PidLidHtml"] = "http://www.openchange.org"
+        contact1["properties"]["PidTagBusinessHomePage"] = contact1["properties"]["PidLidHtml"]
+        contact1["properties"]["PidLidInstantMessagingAddress"] = "@jkerihuel on irc.freenode.net"
         contact1["properties"]["PidTagBusinessTelephoneNumber"] = "Phone Office"
         contact1["properties"]["PidTagHomeTelephoneNumber"] = "Phone Home"
         contact1["properties"]["PidTagMobileTelephoneNumber"] = "Phone Mobile"
@@ -342,7 +346,7 @@ class ContextObject(BackendObject):
         contact1["properties"]["PidTagStateOrProvince"] = "State/Province"
         contact1["properties"]["PidTagPostalCode"] = "ZIP/Postal code"
         contact1["properties"]["PidTagCountry"] = "France"
-        contact1["properties"]["0x9309001f"] = "FR" # PidLidAddressCountryCode
+        contact1["properties"]["PidLidAddressCountryCode"] = "FR"
 
         # PidTagPostalAddress
         contact1["properties"]["PidTagPostalAddress"] = "%s\n%s %s %s\n%s" % (contact1["properties"]["PidTagStreetAddress"],
@@ -352,12 +356,12 @@ class ContextObject(BackendObject):
                                                                               contact1["properties"]["PidTagCountry"])
 
         # Business Address
-        contact1["properties"]["0x90a6001f"] = contact1["properties"]["PidTagStreetAddress"] # PidLidWorkAddressStreet
-        contact1["properties"]["0x9097001f"] = contact1["properties"]["PidTagLocality"] # PidLidWorkAddressCity
-        contact1["properties"]["0x90a5001f"] = contact1["properties"]["PidTagStateOrProvince"] # PidLidWorkAddressState
-        contact1["properties"]["0x909e001f"] = contact1["properties"]["PidTagPostalCode"] # PidLidWorkAddressPostalCode
-        contact1["properties"]["0x908d001f"] = contact1["properties"]["PidTagCountry"] # PidLidWorkAddressCountry
-        contact1["properties"]["0x9306001f"] = contact1["properties"]["0x9309001f"] # PidLidWorkAddressCountryCode
+        contact1["properties"]["PidLidWorkAddressStreet"] = contact1["properties"]["PidTagStreetAddress"]
+        contact1["properties"]["PidLidWorkAddressCity"] = contact1["properties"]["PidTagLocality"]
+        contact1["properties"]["PidLidWorkAddressState"] = contact1["properties"]["PidTagStateOrProvince"]
+        contact1["properties"]["PidLidWorkAddressPostalCode"] = contact1["properties"]["PidTagPostalCode"]
+        contact1["properties"]["PidLidWorkAddressCountry"] = contact1["properties"]["PidTagCountry"]
+        contact1["properties"]["PidLidWorkAddressCountryCode"] = contact1["properties"]["PidLidAddressCountryCode"]
 
         # PidLidWorkAddress
         contact1["properties"]["0x90a7001f"] = contact1["properties"]["PidTagPostalAddress"]
@@ -418,18 +422,18 @@ class ContextObject(BackendObject):
         task1["properties"]["PidTagImportance"] = 2
         task1["properties"]["PidTagSensitivity"] = 2
         task1["properties"]["PidTagIconIndex"] = 0x500
-        task1["properties"]["0x91200003"] = 1 # PidLidTaskStatus
-        task1["properties"]["0x91210005"] = float(0.500000) # PidLidPercentComplete
-        task1["properties"]["0x9224000b"] = True # PidLidPrivate
-        task1["properties"]["0x911e0040"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f")) # PidLidTaskStartDate
-        task1["properties"]["0x911f0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=2)).strftime("%s.%f")) # PidLidTaskEndDate
-        task1["properties"]["0x90db101f"] = ["Green Category", "Orange Category"]
+        task1["properties"]["PidLidTaskStatus"] = 1
+        task1["properties"]["PidLidPercentComplete"] = float(0.500000)
+        task1["properties"]["PidLidPrivate"] = True
+        task1["properties"]["PidLidTaskStartDate"] = float(datetime.now(tz=timezone('Europe/Madrid')).strftime("%s.%f"))
+        task1["properties"]["PidLidTaskEndDate"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=2)).strftime("%s.%f"))
+        task1["properties"]["PidNameKeywords"] = ["Green Category", "Orange Category"]
         task1["properties"]["PidTagBody"] = "This task is not very complex. It however tries to fill most of the common and available fields."
 
         # Reminder
-        task1["properties"]["0x91ee000b"] = True # PidLidReminderSet
-        task1["properties"]["0x91eb0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f")) # PidLidReminderSignalTime
-        task1["properties"]["0x91ef0040"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f")) # PidLidReminderTime
+        task1["properties"]["PidLidReminderSet"] = True
+        task1["properties"]["PidLidReminderSignalTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f"))
+        task1["properties"]["PidLidReminderTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f"))
 
         self.mapping[0xcafebeef0000001] = {}
         self.mapping[0xcafebeef0000001]["uri"] = "cafebeef0000001/"
@@ -479,14 +483,14 @@ class ContextObject(BackendObject):
         note1["properties"]["PidTagSubjectPrefix"] = ''
         note1["properties"]["PidTagNormalizedSubject"] = "This is the subject of the sample note"
         note1["properties"]["PidTagRtfCompressed"] = bytearray(b"\xfa\x00\x00\x00$\x01\x00\x00LZFu\x0e\xc2\x02\xb7\x03\x00\n\x00rcpg125z2\x00\xf5n\x08`\r\xe0\x03p\n\xb0t\x8b\x00\xf2\x0b`n\x0e\x10033\x01\xf7\'\x02\xa4\x03\xe3\x02\x00ch\n\xc0se\x90t0 C\x07@ib\x05\x10M\x02\x80}\n\x80\x08\xc8 ;\to0\xfb\x02\x80\x12\xc2*\t\xb0\t\xf0\x04\x90\x0fP\x05\xb1\x1aR\r\xe0h\t\x80\x01\xd0 14\x00.0.7008./\x0f\xf0\x16\xd0\x02\x82\x15 m\x00\xc0th\x14Pr\x00\xb0w\x15\x80pIn\x07\x01\x00\x020\x16p40}\\vI\x08\x90wk\x0b\x80d4\x0c`c61\n\x84\x0b0c\x00A\x0b\xb42 \x14Th\x04\x00 \x1bqa s\x8d\x00\xc0l\x03 \x0e\xd0te \x05\x00\xd6e\x0fP\t\x80 \x03R \x17\xe0\x1c\x80Tsa\x0f0l\x1c\x80b\x00\xd0k_\t\xf0\x0b1\n\xc0\n\x80\x12\xb1\x00\x1f0")
-        note1["properties"]["0x94a90003"] = 3
-        note1["properties"]["PidTagIconIndex"] = 0x300 + int(note1["properties"]["0x94a90003"])
+        note1["properties"]["PidLidNoteColor"] = 1
+        note1["properties"]["PidTagIconIndex"] = 0x300 + int(note1["properties"]["PidLidNoteColor"])
 
         # Positioning and Size
-        note1["properties"]["0x92ab0003"] = 320 # PidLidNoteWidth
-        note1["properties"]["0x92ac0003"] = 240 # PidLidNoteHeight
-        note1["properties"]["0x92ad0003"] = 564 # PidLidNoteX
-        note1["properties"]["0x92ae0003"] = 335 # PidLidNoteY
+        note1["properties"]["PidLidNoteWidth"] = 320
+        note1["properties"]["PidLidNoteHeight"] = 240
+        note1["properties"]["PidLidNoteX"] = 564
+        note1["properties"]["PidLidNoteY"] = 335
 
         self.mapping[0xcababeef0000001] = {}
         self.mapping[0xcababeef0000001]["uri"] = "cababeef0000001/"

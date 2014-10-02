@@ -905,8 +905,6 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f mapiproxy/libmapistore/mgmt/*.po mapiproxy/libmapistore/mgmt/*.o
 	rm -f mapiproxy/libmapistore/*.gcno mapiproxy/libmapistore/*.gcda
 	rm -f mapiproxy/libmapistore.$(SHLIBEXT).*
-	rm -f setup/mapistore/mapistore_namedprops.ldif
-	rm -f setup/mapistore/mapistore_namedprops_v2.ldif
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
 	rm -rf mapiproxy/libmapistore/mgmt/gen_ndr
 

@@ -227,6 +227,18 @@ START_TEST (test_next_unused_id) {
 
 START_TEST (test_get_mapped_id_MNID_ID) {
 	/*
+	  Looking for:
+		dn: CN=0x8102,CN=00062003-0000-0000-c000-000000000046,CN=default
+		objectClass: MNID_ID
+		cn: 0x8102
+		canonical: PidLidPercentComplete
+		oleguid: 00062003-0000-0000-c000-000000000046
+		mappedId: 37195
+		propId: 33026
+		propType: 5
+		oom: PercentComplete
+
+
 	Looking for:
 		dn: CN=0x8102,CN=00062003-0000-0000-c000-000000000046,CN=default
 		objectClass: MNID_ID
@@ -248,19 +260,19 @@ START_TEST (test_get_mapped_id_MNID_ID) {
 
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop),
 			 MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37153);
+	ck_assert_int_eq(prop, 37195);
 
 	// A couple more...
 	nameid.lpguid.time_low = 0x62004;
 	nameid.kind.lid = 32978;
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop),
 			 MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37524);
+	ck_assert_int_eq(prop, 36913);
 
 	nameid.kind.lid = 32901;
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop),
 			 MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 37297);
+	ck_assert_int_eq(prop, 36894);
 
 } END_TEST
 
@@ -282,18 +294,18 @@ START_TEST (test_get_mapped_id_MNID_STRING) {
 	nameid.lpguid.time_low = 0x20329;
 	nameid.lpguid.clock_seq[0] = 0xc0;
 	nameid.lpguid.node[5] = 0x46;
-	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/smallicon";
+	nameid.kind.lpwstr.Name = "urn:schemas-microsoft-com:exch-data:baseschema";
 	uint16_t prop;
 
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop),
 			 MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 38342);
+	ck_assert_int_eq(prop, 37318);
 
 	// Another...
-	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/searchfolder";
+	nameid.kind.lpwstr.Name = "http://schemas.microsoft.com/exchange/reminderinterval";
 	ck_assert_int_eq(get_mapped_id(g_nprops, nameid, &prop),
 			 MAPISTORE_SUCCESS);
-	ck_assert_int_eq(prop, 38365);
+	ck_assert_int_eq(prop, 37317);
 } END_TEST
 
 START_TEST (test_get_mapped_id_not_found) {
@@ -307,16 +319,16 @@ START_TEST (test_get_mapped_id_not_found) {
 START_TEST (test_get_nameid_type) {
 	uint16_t prop_type = -1;
 
-	get_nameid_type(g_nprops, 38306, &prop_type);
-	ck_assert_int_eq(prop_type, PT_NULL);
-
-	get_nameid_type(g_nprops, 37975, &prop_type);
+	/* PidLidWhere */
+	get_nameid_type(g_nprops, 37115, &prop_type);
 	ck_assert_int_eq(prop_type, PT_UNICODE);
 
-	get_nameid_type(g_nprops, 37097, &prop_type);
+	/* PidLidDistributionListChecksum */
+	get_nameid_type(g_nprops, 36885, &prop_type);
 	ck_assert_int_eq(prop_type, PT_LONG);
 
-	get_nameid_type(g_nprops, 37090, &prop_type);
+	/* PidLidWeddingAnniversaryLocal */
+	get_nameid_type(g_nprops, 36930, &prop_type);
 	ck_assert_int_eq(prop_type, PT_SYSTIME);
 } END_TEST
 
@@ -331,14 +343,14 @@ START_TEST (test_get_nameid_MNID_STRING) {
 	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(g_nprops, 38306, local_mem_ctx, &nameid);
+	get_nameid(g_nprops, 37312, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("urn:schemas:httpmail:junkemail",
+	ck_assert_str_eq("urn:schemas:httpmail:junkemailmovestamp",
 			 nameid->kind.lpwstr.Name);
 
-	get_nameid(g_nprops, 38344, local_mem_ctx, &nameid);
+	get_nameid(g_nprops, 37323, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_str_eq("http://schemas.microsoft.com/exchange/mailbox-owner-name",
+	ck_assert_str_eq("urn:schemas:httpmail:calendar",
 			 nameid->kind.lpwstr.Name);
 
 	talloc_free(local_mem_ctx);
@@ -348,13 +360,13 @@ START_TEST (test_get_nameid_MNID_ID) {
 	TALLOC_CTX *local_mem_ctx = talloc_new(NULL);
 	struct MAPINAMEID *nameid;
 
-	get_nameid(g_nprops, 38212, local_mem_ctx, &nameid);
+	get_nameid(g_nprops, 37010, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_int_eq(32778, nameid->kind.lid);
+	ck_assert_int_eq(34252, nameid->kind.lid);
 
-	get_nameid(g_nprops, 38111, local_mem_ctx, &nameid);
+	get_nameid(g_nprops, 37017, local_mem_ctx, &nameid);
 	ck_assert(nameid != NULL);
-	ck_assert_int_eq(34063, nameid->kind.lid);
+	ck_assert_int_eq(34232, nameid->kind.lid);
 
 	talloc_free(local_mem_ctx);
 } END_TEST

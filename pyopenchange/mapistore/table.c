@@ -48,7 +48,8 @@ static PyObject *py_MAPIStoreTable_set_columns(PyMAPIStoreTableObject *self, PyO
 
 	/* Check 'tag_list' type */
 	if (PyList_Check(tag_list) == false) {
-		PyErr_SetString(PyExc_TypeError, "Input argument must be a list");
+		DEBUG(0, ("[ERR][%s]: Input argument must be a list\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -80,8 +81,9 @@ static PyObject *py_MAPIStoreTable_set_columns(PyMAPIStoreTableObject *self, PyO
 		} else if (PyInt_Check(py_tag)) {
 			tag = PyInt_AsUnsignedLongMask(py_tag);
 		} else {
-			PyErr_SetString(PyExc_TypeError,
-					"Invalid type in list: only strings and integers accepted");
+			DEBUG(0, ("[ERR][%s]: Invalid type in list: only strings and integers accepted\n",
+					__location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 			goto end;
 		}
 
@@ -132,7 +134,8 @@ static PyObject *py_MAPIStoreTable_get_row(PyMAPIStoreTableObject *self, PyObjec
 	}
 
 	if ((line < 0) || (line >= row_count)) {
-		PyErr_SetString(PyExc_ValueError, "'line' argument out of range");
+		DEBUG(0, ("[ERR][%s]: 'line' argument out of range\n", __location__));
+		PyErr_SetMAPISTATUSError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -154,7 +157,8 @@ static PyObject *py_MAPIStoreTable_get_row(PyMAPIStoreTableObject *self, PyObjec
 	py_ret = pymapistore_python_dict_from_properties(self->columns->aulPropTag, row_data,
 			self->columns->cValues);
 	if (py_ret == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error building the dictionary");
+		DEBUG(0, ("[ERR][%s]: Error building the dictionary\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		goto end;
 	}
 
@@ -250,7 +254,8 @@ static PyObject *py_MAPIStoreTable_get_columns(PyMAPIStoreTableObject *self, voi
 
 		ret = PyList_SetItem(py_columns, i , py_key);
 		if (ret != 0) {
-			PyErr_SetString(PyExc_SystemError, "Unable to set element in column list");
+			DEBUG(0, ("[ERR][%s]: Unable to set element in column list\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 			Py_DecRef(py_columns);
 			return NULL;
 		}
@@ -301,7 +306,8 @@ static PyObject *py_MAPIStoreRows_next(PyObject *_self)
 
 	self = (PyMAPIStoreRowsObject *)_self;
 	if (!self) {
-		PyErr_SetString(PyExc_TypeError, "Expected object of type 'MAPIStoreRows'");
+		DEBUG(0, ("[ERR][%s]: Expected object of type 'MAPIStoreRows'\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return NULL;
 	}
 
@@ -326,7 +332,8 @@ static PyObject *py_MAPIStoreRows_next(PyObject *_self)
 		py_ret = pymapistore_python_dict_from_properties(self->table->columns->aulPropTag, row_data,
 				self->table->columns->cValues);
 		if (py_ret == NULL) {
-			PyErr_SetString(PyExc_SystemError, "Error building the dictionary");
+			DEBUG(0, ("[ERR][%s]: Error building the dictionary\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 			goto end;
 		}
 

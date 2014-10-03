@@ -103,7 +103,8 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize configuration */
 	lp_ctx = loadparm_init(mem_ctx);
 	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error initialising loadparm context");
+		DEBUG(0, ("[ERR][%s]: Error initialising loadparm context\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -174,7 +175,8 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error initialising MAPIStore");
+		DEBUG(0, ("[ERR][%s]: Error initialising MAPIStore\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		return NULL;
 	}
 
@@ -204,7 +206,8 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	/* Set the value in the specified parameter */
 	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
 	if (set_success == false) {
-		PyErr_SetString(PyExc_SystemError, "Error setting the parameter");
+		DEBUG(0, ("[ERR][%s]: Error setting the parameter\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		return NULL;
 	}
 
@@ -216,7 +219,7 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 	bool 				show_defaults = false;
 
 	if (self->lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Parameters not initialized");
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
 		return NULL;
 	}
 
@@ -258,7 +261,8 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	for (i = 0; i < list_size; i++) {
 		ret = PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
 		if (ret != 0) {
-			PyErr_SetString(PyExc_SystemError, "Unable to set item list");
+			DEBUG(0,("[ERR][%s]: Unable to set item list\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 			Py_DECREF(py_ret);
 			goto end;
 		}
@@ -277,8 +281,6 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 	PyObject			*py_ret = NULL, *py_dict;
 	struct mapistore_contexts_list 	*contexts_list;
 	enum mapistore_error		retval;
-
-	DEBUG(0, ("List contexts for user %s\n", self->username));
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -560,21 +562,23 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 	char	*debuglevel = NULL;
 
 	if (value == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
+		DEBUG(0, ("[ERR][%s]: Cannot delete the 'debug' attribute\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return -1;
 	}
 
 	if (!PyInt_Check(value)) {
-		PyErr_SetString(PyExc_TypeError,
-				"The debuglevel attribute value must be an integer");
+		DEBUG(0, ("[ERR][%s]: The debuglevel attribute value must be an integer\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return -1;
 	}
 
 	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
 	if (!debuglevel) {
-		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NO_MEMORY);
 		return -1;
 	}
+
 	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 

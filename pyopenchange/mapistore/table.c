@@ -32,86 +32,6 @@ static void py_MAPIStoreTable_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStoreTable_set_columns(PyMAPIStoreTableObject *self, PyObject *args, PyObject *kwargs)
-{
-	char				*kwnames[] = { "tag_list", NULL };
-	PyObject			*tag_list = NULL, *py_tag;
-	struct SPropTagArray		*properties;
-	uint32_t			count, tag, i;
-	enum mapistore_error		retval;
-	enum MAPISTATUS			ret;
-
-	/* Read list of property names/tags */
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwnames, &tag_list)) {
-		return NULL;
-	}
-
-	/* Check 'tag_list' type */
-	if (PyList_Check(tag_list) == false) {
-		DEBUG(0, ("[ERR][%s]: Input argument must be a list\n", __location__));
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
-		return NULL;
-	}
-
-	/* Build the SPropTagArray structure */
-	properties = talloc_zero(self->mem_ctx, struct SPropTagArray);
-	if (properties == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	properties->aulPropTag = talloc_zero(properties, void);
-	if (properties == NULL) {
-		PyErr_NoMemory();
-		goto end;
-	}
-
-	count = PyList_Size(tag_list);
-
-	for (i = 0; i < count; i++) {
-		py_tag = PyList_GetItem(tag_list, i);
-		if (PyString_Check(py_tag)) {
-			tag = openchangedb_property_get_tag(PyString_AsString(py_tag));
-			if (tag == 0xFFFFFFFF) {
-				DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
-						__location__, PyString_AsString(py_tag)));
-				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
-				goto end;
-			}
-		} else if (PyInt_Check(py_tag)) {
-			tag = PyInt_AsUnsignedLongMask(py_tag);
-		} else {
-			DEBUG(0, ("[ERR][%s]: Invalid type in list: only strings and integers accepted\n",
-					__location__));
-			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
-			goto end;
-		}
-
-		ret = SPropTagArray_add(self->mem_ctx, properties, tag);
-		if (ret != MAPI_E_SUCCESS) {
-			PyErr_SetMAPISTATUSError(ret);
-			goto end;
-		}
-	}
-
-	/* Set the columns */
-	retval = mapistore_table_set_columns(self->context->mstore_ctx, self->context->context_id,
-			self->table_object, properties->cValues, properties->aulPropTag);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	/* Update self-> columns */
-	talloc_free(self->columns);
-	self->columns = properties;
-
-	Py_RETURN_NONE;
-end:
-	talloc_free(properties);
-	return NULL;
-}
-
 static PyObject *py_MAPIStoreTable_get_row(PyMAPIStoreTableObject *self, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -171,7 +91,6 @@ end:
 }
 
 static PyMethodDef mapistore_table_methods[] = {
-	{ "set_columns", (PyCFunction)py_MAPIStoreTable_set_columns, METH_VARARGS | METH_KEYWORDS },
 	{ "get_row", (PyCFunction)py_MAPIStoreTable_get_row, METH_VARARGS | METH_KEYWORDS },
 	{ NULL },
 };
@@ -264,8 +183,82 @@ static PyObject *py_MAPIStoreTable_get_columns(PyMAPIStoreTableObject *self, voi
 	return py_columns;
 }
 
+static int py_MAPIStoreTable_set_columns(PyMAPIStoreTableObject *self, PyObject *tag_list, void *closure)
+{
+	PyObject			*py_tag;
+	struct SPropTagArray		*properties;
+	uint32_t			count, tag, i;
+	enum mapistore_error		retval;
+	enum MAPISTATUS			ret;
+
+	/* Check 'tag_list' type */
+	if (PyList_Check(tag_list) == false) {
+		DEBUG(0, ("[ERR][%s]: Input argument must be a list\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+		return -1;
+	}
+
+	/* Build the SPropTagArray structure */
+	properties = talloc_zero(self->mem_ctx, struct SPropTagArray);
+	if (properties == NULL) {
+		PyErr_NoMemory();
+		return -1;
+	}
+
+	properties->aulPropTag = talloc_zero(properties, void);
+	if (properties == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
+
+	count = PyList_Size(tag_list);
+
+	for (i = 0; i < count; i++) {
+		py_tag = PyList_GetItem(tag_list, i);
+		if (PyString_Check(py_tag)) {
+			tag = openchangedb_property_get_tag(PyString_AsString(py_tag));
+			if (tag == 0xFFFFFFFF) {
+				DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s' \n",
+						__location__, PyString_AsString(py_tag)));
+				PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_DATA);
+				goto end;
+			}
+		} else if (PyInt_Check(py_tag)) {
+			tag = PyInt_AsUnsignedLongMask(py_tag);
+		} else {
+			DEBUG(0, ("[ERR][%s]: Invalid type in list: only strings and integers accepted\n",
+					__location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+			goto end;
+		}
+
+		ret = SPropTagArray_add(self->mem_ctx, properties, tag);
+		if (ret != MAPI_E_SUCCESS) {
+			PyErr_SetMAPISTATUSError(ret);
+			goto end;
+		}
+	}
+
+	/* Set the columns */
+	retval = mapistore_table_set_columns(self->context->mstore_ctx, self->context->context_id,
+			self->table_object, properties->cValues, properties->aulPropTag);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	/* Update self-> columns */
+	talloc_free(self->columns);
+	self->columns = properties;
+
+	return 0;
+end:
+	talloc_free(properties);
+	return -1;
+}
+
 static PyGetSetDef mapistore_table_getsetters[] = {
-	{ (char *)"columns", (getter)py_MAPIStoreTable_get_columns, NULL, NULL },
+	{ (char *)"columns", (getter)py_MAPIStoreTable_get_columns, (setter)py_MAPIStoreTable_set_columns, NULL, NULL },
 	{ (char *)"rows", (getter)py_MAPIStoreTable_get_rows, NULL, NULL },
 	{ (char *)"count", (getter)py_MAPIStoreTable_get_count, NULL, NULL },
 	{ NULL }

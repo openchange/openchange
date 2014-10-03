@@ -290,7 +290,7 @@ print '[PYMAPISTORE] Row count: ' + repr(in_fld_tbl.count)
 print
 
 print "[PYMAPISTORE] Set colums to ['PidTagLastModificationTime', 'PidTagFolderId']"
-in_fld_tbl.set_columns(['PidTagLastModificationTime', 0x67480014])
+in_fld_tbl.columns = ['PidTagLastModificationTime', 0x67480014]
 print
 
 print '[PYMAPISTORE] Iterate over the rows and display its content'

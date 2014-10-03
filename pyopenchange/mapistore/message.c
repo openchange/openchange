@@ -373,7 +373,6 @@ static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self, voi
 {
 	PyObject			*py_uri;
 	enum mapistore_error 		retval;
-	char				*uri;
 
 	retval = pymapistore_get_uri(self->context->mstore_ctx, self->context->parent->username,
 			self->mid, &py_uri);

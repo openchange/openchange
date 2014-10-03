@@ -874,7 +874,6 @@ static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self, void 
 {
 	PyObject			*py_uri;
 	enum mapistore_error 		retval;
-	char				*uri;
 
 	retval = pymapistore_get_uri(self->context->mstore_ctx, self->context->parent->username,
 			self->fid, &py_uri);

@@ -549,3 +549,14 @@ enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_
 	return retval;
 }
 
+void PyErr_SetMAPIStoreError(uint32_t retval)
+{
+	PyErr_SetObject(PyExc_RuntimeError,
+			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
+}
+
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval)
+{
+	PyErr_SetObject(PyExc_RuntimeError,
+			Py_BuildValue("(i, s)", retval, mapi_get_errstr(retval)));
+}

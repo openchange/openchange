@@ -733,7 +733,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	buffer_size = mapi_req->u.mapi_ReadStream.ByteCount;
 	/* careful here, let's switch to idiot mode */
 	if (buffer_size == 0xBABE) {
-		buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
+		/* If MaximumByteCount (uint32_t) overflows sizeof (uint16_t) */
+		if (mapi_req->u.mapi_ReadStream.MaximumByteCount.value > 0xFFF0) {
+			buffer_size = 0xFFF0;
+		} else {
+			buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
+		}
 	}
 
         mapi_repl->u.mapi_ReadStream.data = emsmdbp_stream_read_buffer(&object->object.stream->stream, buffer_size);

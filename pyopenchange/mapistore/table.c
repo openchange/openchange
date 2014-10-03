@@ -101,7 +101,7 @@ static PyObject *py_MAPIStoreTable_set_columns(PyMAPIStoreTableObject *self, PyO
 	}
 
 	/* Update self-> columns */
-	/* TODO: Check if it leaks memory (talloc_free(self->columns) causes a segfault) */
+	talloc_free(self->columns);
 	self->columns = properties;
 
 	Py_RETURN_NONE;
@@ -132,7 +132,7 @@ static PyObject *py_MAPIStoreTable_get_row(PyMAPIStoreTableObject *self, PyObjec
 	}
 
 	if ((line < 0) || (line >= row_count)) {
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_FOUND);
+		PyErr_SetString(PyExc_ValueError, "'line' argument out of range");
 		return NULL;
 	}
 
@@ -166,7 +166,28 @@ end:
 	return NULL;
 }
 
-static PyObject *py_MAPIStoreTable_get_rows(PyMAPIStoreTableObject *self)
+static PyMethodDef mapistore_table_methods[] = {
+	{ "set_columns", (PyCFunction)py_MAPIStoreTable_set_columns, METH_VARARGS | METH_KEYWORDS },
+	{ "get_row", (PyCFunction)py_MAPIStoreTable_get_row, METH_VARARGS | METH_KEYWORDS },
+	{ NULL },
+};
+
+static PyObject *py_MAPIStoreTable_get_count(PyMAPIStoreTableObject *self, void *closure)
+{
+	uint32_t			row_count = 0;
+	enum mapistore_error		retval;
+
+	retval = mapistore_table_get_row_count(self->context->mstore_ctx, self->context->context_id,
+			self->table_object, MAPISTORE_PREFILTERED_QUERY, &row_count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	return PyLong_FromLong(row_count);
+}
+
+static PyObject *py_MAPIStoreTable_get_rows(PyMAPIStoreTableObject *self, void* closure)
 {
 	PyMAPIStoreRowsObject		*row;
 	uint32_t			row_count;
@@ -200,29 +221,47 @@ static PyObject *py_MAPIStoreTable_get_rows(PyMAPIStoreTableObject *self)
 	return (PyObject *) row;
 }
 
-static PyMethodDef mapistore_table_methods[] = {
-	{ "set_columns", (PyCFunction)py_MAPIStoreTable_set_columns, METH_VARARGS | METH_KEYWORDS },
-	{ "get_row", (PyCFunction)py_MAPIStoreTable_get_row, METH_VARARGS | METH_KEYWORDS },
-	{ "get_rows", (PyCFunction)py_MAPIStoreTable_get_rows, METH_NOARGS },
-	{ NULL },
-};
-
-static PyObject *py_MAPIStoreTable_get_count(PyMAPIStoreTableObject *self, void *closure)
+static PyObject *py_MAPIStoreTable_get_columns(PyMAPIStoreTableObject *self, void* closure)
 {
-	uint32_t			row_count = 0;
-	enum mapistore_error		retval;
+	PyObject		*py_columns, *py_key;
+	Py_ssize_t		count, i;
+	const char		*skey;
+	unsigned		key;
+	int			ret;
 
-	retval = mapistore_table_get_row_count(self->context->mstore_ctx, self->context->context_id,
-			self->table_object, MAPISTORE_PREFILTERED_QUERY, &row_count);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
+	count = (Py_ssize_t)self->columns->cValues;
+
+	py_columns = PyList_New(count);
+	if (py_columns == NULL) {
+		PyErr_NoMemory();
 		return NULL;
 	}
 
-	return PyLong_FromLong(row_count);
+	/* Build the columnn list */
+	for (i = 0; i < count; i++) {
+		key = self->columns->aulPropTag[i];
+
+		skey = get_proptag_name(key);
+		if (skey == NULL) {
+			py_key = PyString_FromFormat("0x%x", key);
+		} else {
+			py_key = PyString_FromString(skey);
+		}
+
+		ret = PyList_SetItem(py_columns, i , py_key);
+		if (ret != 0) {
+			PyErr_SetString(PyExc_SystemError, "Unable to set element in column list");
+			Py_DecRef(py_columns);
+			return NULL;
+		}
+	}
+
+	return py_columns;
 }
 
 static PyGetSetDef mapistore_table_getsetters[] = {
+	{ (char *)"columns", (getter)py_MAPIStoreTable_get_columns, NULL, NULL },
+	{ (char *)"rows", (getter)py_MAPIStoreTable_get_rows, NULL, NULL },
 	{ (char *)"count", (getter)py_MAPIStoreTable_get_count, NULL, NULL },
 	{ NULL }
 };
@@ -243,7 +282,6 @@ static void py_MAPIStoreRows_dealloc(PyObject *_self)
 	PyMAPIStoreRowsObject *self = (PyMAPIStoreRowsObject *)_self;
 
 	Py_XDECREF(self->table);
-
 	PyObject_Del(_self);
 }
 

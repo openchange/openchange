@@ -29,43 +29,6 @@ static void py_MAPIStoreMessage_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
-static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self)
-{
-	TALLOC_CTX			*mem_ctx;
-	PyObject			*py_ret;
-	enum mapistore_error 		retval;
-	char				*uri;
-	bool				soft_deleted;
-
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-	/* Retrieve the URI from the indexing */
-	retval = mapistore_indexing_record_get_uri(self->context->mstore_ctx, self->context->parent->username,
-			self->mem_ctx, self->mid, &uri, &soft_deleted);
-
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	if (soft_deleted == true) {
-		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
-		goto end;
-	}
-
-	/* Return the URI */
-	py_ret = PyString_FromString(uri);
-
-	talloc_free(mem_ctx);
-	return py_ret;
-end:
-	talloc_free(mem_ctx);
-	return NULL;
-}
-
 static PyObject *py_MAPIStoreMessage_get_properties(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
@@ -548,14 +511,13 @@ static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObj
 	table->context = self->context;
 	Py_INCREF(table->context);
 
-	table->columns = columns;
 	table->table_object = table_object;
+	table->columns = columns;
 
 	return (PyObject *)table;
 }
 
 static PyMethodDef mapistore_message_methods[] = {
-	{ "get_uri", (PyCFunction)py_MAPIStoreMessage_get_uri, METH_NOARGS},
 	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
@@ -564,6 +526,43 @@ static PyMethodDef mapistore_message_methods[] = {
 	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS},
 	{ NULL },
 };
+
+static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self, void *closure)
+{
+	TALLOC_CTX			*mem_ctx;
+	PyObject			*py_ret;
+	enum mapistore_error 		retval;
+	char				*uri;
+	bool				soft_deleted;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+	/* Retrieve the URI from the indexing */
+	retval = mapistore_indexing_record_get_uri(self->context->mstore_ctx, self->context->parent->username,
+			self->mem_ctx, self->mid, &uri, &soft_deleted);
+
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	if (soft_deleted == true) {
+		PyErr_SetString(PyExc_SystemError, "Soft-deleted message");
+		goto end;
+	}
+
+	/* Return the URI */
+	py_ret = PyString_FromString(uri);
+
+	talloc_free(mem_ctx);
+	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
+}
 
 static PyObject *py_MAPIStoreMessage_get_mid(PyMAPIStoreMessageObject *self, void *closure)
 {
@@ -596,6 +595,7 @@ static PyObject *py_MAPIStoreMessage_get_attachment_count(PyMAPIStoreMessageObje
 }
 
 static PyGetSetDef mapistore_message_getsetters[] = {
+	{ (char *)"uri", (getter)py_MAPIStoreMessage_get_uri, NULL, NULL },
 	{ (char *)"mid", (getter)py_MAPIStoreMessage_get_mid, NULL, NULL },
 	{ (char *)"attachment_count", (getter)py_MAPIStoreMessage_get_attachment_count, NULL, NULL },
 	{ NULL }

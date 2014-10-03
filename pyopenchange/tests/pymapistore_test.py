@@ -7,9 +7,12 @@ from openchange import mapistore
 
 def print_tree(folder, indent):
     print '   '*indent + '[F]: ' + folder.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
-    for m in folder.get_child_messages():
-        print '   '*(indent+1) + '[m]: ' + m.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
-    for f in folder.get_child_folders():
+    for m in folder.messages:
+        try:
+            print '   '*(indent+1) + '[m]: ' + m.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
+        except:
+            print '   '*(indent+1) + '[m]: ' + repr(m.get_properties(['PidTagMid'])['PidTagMid'])
+    for f in folder.subfolders:
         print_tree(f, indent+1)
         
 parser = optparse.OptionParser(usage="%prog --username=<username> [options]", version="%prog 1.0")
@@ -195,7 +198,7 @@ print
 # Create message
 print '[PYMAPISTORE] Create FOO message in BLAH:'
 blah_msg = blah_fld.create_message(mapistore.MESSAGE_GENERIC)
-print '[PYMAPISTORE] URI: ' + blah_msg.get_uri()
+print '[PYMAPISTORE] URI: ' + blah_msg.uri
 print
  
 print '[PYMAPISTORE] Display message data:'
@@ -229,8 +232,8 @@ print
 
 print '[PYMAPISTORE] Copy child messages to INBOX:'
 uri_list = []
-for m in sent_fld.get_child_messages():
-    uri_list.append(m.get_uri())
+for m in sent_fld.messages:
+    uri_list.append(m.uri)
 
 sent_fld.copy_messages(uri_list, in_fld)
 print
@@ -242,8 +245,8 @@ print
 # Backend returns an invalid pointer for the data associated to 'PidTagInternetMessageId' 
 print '[PYMAPISTORE] Modify message properties:'
 uri_list = []
-for m in in_fld.get_child_messages():
-    uri_list.append(m.get_uri())
+for m in in_fld.messages:
+    uri_list.append(m.uri)
 print
 
 in_msg = in_fld.open_message(uri_list[0], mapistore.OPEN_WRITE)
@@ -269,8 +272,8 @@ print
 
 # Clean up
 print '[PYMAPISTORE] BLAH child messages (delete them once shown):'
-for m in blah_fld.get_child_messages():
-    blah_fld.delete_message(m.get_uri(), mapistore.PERMANENT_DELETE)
+for m in blah_fld.messages:
+    blah_fld.delete_message(m.uri, mapistore.PERMANENT_DELETE)
 print
 
 print_tree(in_fld, 0)

@@ -3302,14 +3302,12 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, folder_object, count_query_props, (enum MAPISTATUS **) &retvals);
 	if (data_pointers && !retvals[0]) {
 		nr_eid = *(uint32_t *) data_pointers[0];
-	}
-	else {
-		DEBUG(5, ("could not retrieve number of rows in table\n"));
+		/* No content, return */
+		OPENCHANGE_RETVAL_IF(!nr_eid, MAPI_E_SUCCESS, local_mem_ctx);
+	} else {
+		DEBUG(1, ("[%s:%d] ERROR: could not retrieve number of rows in table\n",
+			  __FUNCTION__, __LINE__));
 		abort();
-	}
-
-	if (!nr_eid) {
-		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
 
 	/* Fetch the actual table data */

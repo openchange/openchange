@@ -32,10 +32,10 @@ static void py_MAPIStoreMessage_dealloc(PyObject *_self)
 static PyObject *py_MAPIStoreMessage_get_uri(PyMAPIStoreMessageObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
+	PyObject			*py_ret;
 	enum mapistore_error 		retval;
 	char				*uri;
 	bool				soft_deleted;
-	PyObject			*py_ret;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -268,9 +268,9 @@ end:
 static PyObject *py_MAPIStoreMessage_get_message_data(PyMAPIStoreMessageObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
+	PyObject			*py_ret = NULL, *py_val, *py_user_dict, *py_user_val;
 	struct mapistore_message	*msg_data;
 	struct mapistore_property_data  *prop_data;
-	PyObject			*py_ret = NULL, *py_val, *py_user_dict, *py_user_val;
 	const char			*proptag;
 	enum mapistore_error		retval;
 	uint32_t			tag_count = 0, recipients_count, i, j;
@@ -525,11 +525,11 @@ static PyObject *py_MAPIStoreMessages_iter(PyObject *self)
 
 static PyObject *py_MAPIStoreMessages_next(PyObject *_self)
 {
-	uint64_t			mid;
-	enum mapistore_error		retval;
-	void 				*message_object;
-	PyMAPIStoreMessageObject	*message;
 	PyMAPIStoreMessagesObject 	*self;
+	PyMAPIStoreMessageObject	*message;
+	void 				*message_object;
+	enum mapistore_error		retval;
+	uint64_t			mid;
 
 	self = (PyMAPIStoreMessagesObject *)_self;
 	if (!self) {

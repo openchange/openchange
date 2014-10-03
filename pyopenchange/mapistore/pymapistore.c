@@ -54,7 +54,6 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct tevent_context	*ev;
-	int			retval;
 	struct ldb_result	*res;
 	struct ldb_dn		*tmp_dn = NULL;
 	static const char	*attrs[] = {
@@ -62,6 +61,7 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 		"defaultNamingContext",
 		NULL
 	};
+	int			retval;
 
 	/* Sanity checks */
 	if (globals.samdb_ctx) {
@@ -96,11 +96,11 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
-	struct loadparm_context		*lp_ctx;
-	PyMAPIStoreObject		*msobj;
-	bool				ret;
 	char				*kwnames[] = { "syspath", NULL };
+	PyMAPIStoreObject		*msobj;
+	struct loadparm_context		*lp_ctx;
 	const char			*syspath = NULL;
+	bool				ret;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
 		return NULL;
@@ -159,10 +159,10 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 {
 	struct openchangedb_context 	*ocdb_ctx;
 	struct mapistore_context	*mstore_ctx;
-	enum MAPISTATUS			ret;
-	enum mapistore_error		retval;
 	const char			*path = NULL;
 	const char			*username = NULL;
+	enum MAPISTATUS			ret;
+	enum mapistore_error		retval;
 
 	if (!PyArg_ParseTuple(args, "s|s", &username, &path)) {
 		return NULL;
@@ -205,9 +205,9 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 
 static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 {
-	bool				set_success;
 	const char			*option = NULL;
 	const char			*value = NULL;
+	bool				set_success;
 
 	if (!PyArg_ParseTuple(args, "ss", &option, &value)) {
 		return NULL;
@@ -239,10 +239,10 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 
 static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 {
-	enum mapistore_error		retval;
 	TALLOC_CTX 			*mem_ctx;
 	PyObject			*py_ret = NULL;
 	const char			**backend_names;
+	enum mapistore_error		retval;
 	int 				i, list_size, ret;
 
 	DEBUG(0, ("List backends for user: %s\n", self->username));
@@ -285,11 +285,10 @@ end:
 
 static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 {
-	enum mapistore_error		retval;
 	TALLOC_CTX 			*mem_ctx;
-	PyObject			*py_ret = NULL;
-	PyObject			*py_dict;
+	PyObject			*py_ret = NULL, *py_dict;
 	struct mapistore_contexts_list 	*contexts_list;
+	enum mapistore_error		retval;
 
 	DEBUG(0, ("List contexts for user %s\n", self->username));
 
@@ -348,19 +347,17 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
+	PyMAPIStoreContextObject	*context;
+	void				*folder_object;
+	const char			*uri;
 	enum mapistore_error		retval;
 	enum MAPISTATUS			ret;
-	PyMAPIStoreContextObject	*context;
-	uint32_t			context_id = 0;
-	const char			*uri;
-	void				*folder_object;
         uint64_t			fid = 0;
+	uint32_t			context_id = 0;
 
 	if (!PyArg_ParseTuple(args, "s", &uri)) {
 		return NULL;
 	}
-
-	/* printf("Add context: %s\n", uri); */
 
 	/* Get FID given mapistore_uri and username */
 	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);

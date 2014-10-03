@@ -4,19 +4,16 @@
 
 PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, struct mapistore_property_data *prop_data, uint32_t count)
 {
-	PyObject 		*py_ret;
-	int			ret, i;
-	unsigned		key;
-	const char		*skey;
-	PyObject		*pykey;
-	PyObject		*pyval;
-	PyObject		*item;
+	PyObject 		*py_ret, *py_key, *py_val, *item;
 	struct Binary_r		*bin;
-	NTTIME			nt;
 	struct FILETIME		*ft;
 	struct timeval		t;
 	struct StringArrayW_r	*MVszW;
 	struct StringArray_r	*MVszA;
+	NTTIME			nt;
+	const char		*skey;
+	unsigned		key;
+	int			ret, i;
 
 	/* Sanity checks */
 	if (!aulPropTag) return NULL;
@@ -35,36 +32,37 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 		/* Set the value of the dictionary entry */
 		if (prop_data[i].error) {
 			key = (key & 0xFFFF0000) | PT_ERROR;
-			pyval = PyString_FromString(mapistore_errstr(prop_data[i].error));
+			py_val = PyString_FromString(mapistore_errstr(prop_data[i].error));
 		} else {
 			/* Sanity check */
 			if (prop_data[i].data == 0x0){
 				DEBUG(0, ("[ERR][%s]: Invalid data pointer for tag 0x%x (and no associated error)\n",
 					  __location__, key));
-				Py_DECREF(py_ret);
-				return NULL;
+				continue; /* TODO: Restore error setting */
+//				Py_DECREF(py_ret);
+//				return NULL;
 			}
-			pyval = NULL;
+			py_val = NULL;
 
 			switch (key & 0xFFFF) {
 			case PT_I2:
 				DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
 				break;
 			case PT_LONG:
-				pyval = PyLong_FromLong(*((uint32_t *)prop_data[i].data));
+				py_val = PyLong_FromLong(*((uint32_t *)prop_data[i].data));
 				break;
 			case PT_DOUBLE:
 				DEBUG(5, ("[WARN][%s]: PT_DOUBLE case not implemented\n", __location__));
 				break;
 			case PT_BOOLEAN:
-				pyval = PyBool_FromLong(*((uint32_t *)prop_data[i].data));
+				py_val = PyBool_FromLong(*((uint32_t *)prop_data[i].data));
 				break;
 			case PT_I8:
-				pyval = PyLong_FromUnsignedLongLong(*((uint64_t *)prop_data[i].data));
+				py_val = PyLong_FromUnsignedLongLong(*((uint64_t *)prop_data[i].data));
 				break;
 			case PT_STRING8:
 			case PT_UNICODE:
-				pyval = PyString_FromString((const char *)prop_data[i].data);
+				py_val = PyString_FromString((const char *)prop_data[i].data);
 				break;
 			case PT_SYSTIME:
 				ft = (struct FILETIME *) prop_data[i].data;
@@ -72,7 +70,7 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				nt = nt << 32;
 				nt |= ft->dwLowDateTime;
 				nttime_to_timeval(&t, nt);
-				pyval = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
+				py_val = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
 				break;
 			case PT_CLSID:
 				DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
@@ -80,7 +78,7 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			case PT_SVREID:
 			case PT_BINARY:
 				bin = (struct Binary_r *)prop_data[i].data;
-				pyval = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
+				py_val = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
 				break;
 			case PT_MV_SHORT:
 				DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
@@ -93,8 +91,8 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				break;
 			case PT_MV_STRING8:
 				MVszA = (struct StringArray_r *)prop_data[i].data;
-				pyval = PyList_New(MVszA->cValues);
-				if (pyval == NULL) {
+				py_val = PyList_New(MVszA->cValues);
+				if (py_val == NULL) {
 					DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
 						  __location__));
 					Py_DECREF(py_ret);
@@ -102,10 +100,10 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				}
 				for (i = 0; i < MVszA->cValues; i++) {
 					item = PyString_FromString(MVszA->lppszA[i]);
-					if (PyList_SetItem(pyval, i, item) == -1) {
+					if (PyList_SetItem(py_val, i, item) == -1) {
 						DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
 							  __location__));
-						Py_DECREF(pyval);
+						Py_DECREF(py_val);
 						Py_DECREF(py_ret);
 						return NULL;
 					}
@@ -113,8 +111,8 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 				break;
 			case PT_MV_UNICODE:
 				MVszW = (struct StringArrayW_r *)prop_data[i].data;
-				pyval = PyList_New(MVszW->cValues);
-				if (pyval == NULL) {
+				py_val = PyList_New(MVszW->cValues);
+				if (py_val == NULL) {
 					DEBUG(0, ("[ERR][%s]: Unable to initialise Python List\n",
 						  __location__));
 					Py_DECREF(py_ret);
@@ -123,10 +121,10 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 
 				for (i = 0; i < MVszW->cValues; i++) {
 					item = PyString_FromString(MVszW->lppszW[i]);
-					if (PyList_SetItem(pyval, i, item) == -1) {
+					if (PyList_SetItem(py_val, i, item) == -1) {
 						DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
 							  __location__));
-						Py_DECREF(pyval);
+						Py_DECREF(py_val);
 						Py_DECREF(py_ret);
 						return NULL;
 					}
@@ -158,47 +156,44 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 		/* Set the key of the dictionary entry */
 		skey = get_proptag_name(key);
 		if (skey == NULL) {
-			pykey = PyString_FromFormat("0x%x", key);
+			py_key = PyString_FromFormat("0x%x", key);
 		} else {
-			pykey = PyString_FromString(skey);
+			py_key = PyString_FromString(skey);
 		}
 
 		/* Set the dictionary entry */
-		if (pyval) {
-			ret = PyDict_SetItem(py_ret, pykey, pyval);
+		if (py_val) {
+			ret = PyDict_SetItem(py_ret, py_key, py_val);
 			if (ret != 0) {
 				DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
 					  __location__));
-				Py_DECREF(pykey);
-				Py_DECREF(pyval);
+				Py_DECREF(py_key);
+				Py_DECREF(py_val);
 				Py_DECREF(py_ret);
 				return NULL;
 			}
-			Py_DECREF(pyval);
+			Py_DECREF(py_val);
 		}
 
-		Py_DECREF(pykey);
+		Py_DECREF(py_key);
 	}
 	return py_ret;
 }
 
-enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
-							 uint32_t proptag,
-							 PyObject *value,
-							 void **data)
+enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_t proptag, PyObject *value, void **data)
 {
-	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
 	PyObject		*item;
-	uint32_t		count;
-	bool			b;
-	int			l;
-	uint64_t		ll;
 	struct Binary_r		*bin;
-	struct StringArray_r	*MVszA;
 	struct StringArrayW_r	*MVszW;
-	NTTIME			nt;
+	struct StringArray_r	*MVszA;
 	struct FILETIME		*ft;
+	NTTIME			nt;
 	char			*str;
+	enum mapistore_error	retval = MAPISTORE_ERR_NOT_FOUND;
+	uint64_t		ll;
+	uint32_t		count;
+	int			l;
+	bool			b;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!proptag, MAPISTORE_ERR_NOT_FOUND, NULL);

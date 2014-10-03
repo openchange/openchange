@@ -39,15 +39,15 @@ static void py_MAPIStoreFolder_dealloc(PyObject *_self)
 static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX		*mem_ctx;
-	PyMAPIStoreFolderObject	*folder;
 	char			*kwnames[] = { "name", "description", "foldertype", NULL };
-	const char		*name;
-	const char		*desc = NULL;
-	uint16_t		foldertype = FOLDER_GENERIC;
-	uint64_t		fid;
-	enum mapistore_error	retval;
+	PyMAPIStoreFolderObject	*folder;
 	struct SRow 		*aRow;
 	void			*folder_object;
+	const char		*name;
+	const char		*desc = NULL;
+	enum mapistore_error	retval;
+	uint64_t		fid;
+	uint16_t		foldertype = FOLDER_GENERIC;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|sh", kwnames, &name, &desc, &foldertype)) {
 		return NULL;
@@ -125,13 +125,13 @@ end:
 
 static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	PyMAPIStoreFolderObject	*folder;
 	char			*kwnames[] = { "uri", NULL };
+	PyMAPIStoreFolderObject	*folder;
+	void			*folder_object;
 	const char		*uri;
+	enum mapistore_error	retval;
 	uint64_t		fid;
 	bool			soft_deleted, partial;
-	enum mapistore_error	retval;
-	void			*folder_object;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s", kwnames, &uri)) {
 		return NULL;
@@ -180,8 +180,8 @@ static PyObject *py_MAPIStoreFolder_open_folder(PyMAPIStoreFolderObject *self, P
 static PyObject *py_MAPIStoreFolder_delete(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
 	char				*kwnames[] = { "flags", NULL };
-	uint8_t				flags = 0x0;
 	enum mapistore_error		retval;
+	uint8_t				flags = 0x0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|H", kwnames, &flags)) {
 		return NULL;
@@ -209,8 +209,8 @@ static PyObject *py_MAPIStoreFolder_copy_folder(PyMAPIStoreFolderObject *self, P
 	char				*kwnames[] = { "target_folder", "new_name", "recursive", NULL };
 	PyMAPIStoreFolderObject		*target_folder;
 	const char			*new_name;
-	int				recursive = 0x1; // TODO: Find most correct type (uint8_t + "h"/"H" produces segfault)
 	enum mapistore_error		retval;
+	int				recursive = 0x1; // TODO: Find most correct type (uint8_t + "h"/"H" produces segfault)
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "Os|H", kwnames, &target_folder, &new_name, &recursive)) {
 		return NULL;
@@ -267,9 +267,9 @@ static PyObject *py_MAPIStoreFolder_move_folder(PyMAPIStoreFolderObject *self, P
 }
 static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	uint32_t			RowCount;
-	enum mapistore_table_type	table_type;
 	char				*kwnames[] = { "table_type", NULL };
+	enum mapistore_table_type	table_type;
+	uint32_t			RowCount;
 	int				retval;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
@@ -295,10 +295,10 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 static PyObject *py_MAPIStoreFolder_get_child_folders(PyMAPIStoreFolderObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFoldersObject	*folder_list;
 	enum mapistore_error		retval;
 	uint64_t			*fid_list;
 	uint32_t			list_size;
-	PyMAPIStoreFoldersObject	*folder_list;
 
 	/* Get the child folders' FIDs */
 	mem_ctx = talloc_new(NULL);
@@ -340,10 +340,10 @@ end:
 static PyObject *py_MAPIStoreFolder_get_uri(PyMAPIStoreFolderObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
-	enum mapistore_error 		retval;
-	char				*uri;
-	bool				soft_deleted;
 	PyObject			*py_ret;
+	char				*uri;
+	enum mapistore_error 		retval;
+	bool				soft_deleted;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -380,11 +380,11 @@ static PyObject *py_MAPIStoreFolder_get_properties(PyMAPIStoreFolderObject *self
 	TALLOC_CTX			*mem_ctx;
 	char				*kwnames[] = { "list", NULL };
 	PyObject			*list = NULL, *py_key, *py_ret = NULL;
+	struct SPropTagArray		*properties;
+	struct mapistore_property_data  *prop_data;
 	enum mapistore_error		retval;
 	enum MAPISTATUS			ret;
 	enum MAPITAGS			tag;
-	struct SPropTagArray		*properties;
-	struct mapistore_property_data  *prop_data;
 	Py_ssize_t			i, count;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|O", kwnames, &list)) {
@@ -660,10 +660,10 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 {
 	PyMAPIStoreMessageObject	*message;
 	char				*kwnames[] = { "associated", NULL };
-	uint8_t				associated = 0x0;
-	uint64_t			mid;
-	enum mapistore_error		retval;
 	void				*message_object;
+	enum mapistore_error		retval;
+	uint64_t			mid;
+	uint8_t				associated = 0x0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|H", kwnames, &associated)) {
 		return NULL;
@@ -712,12 +712,12 @@ static PyObject *py_MAPIStoreFolder_open_message(PyMAPIStoreFolderObject *self, 
 {
 	PyMAPIStoreMessageObject	*message;
 	char				*kwnames[] = { "uri", "read_write", NULL };
-	const char			*uri;
-	uint8_t				read_write = 0x0;
-	uint64_t			mid;
-	bool				soft_deleted, partial;
-	enum mapistore_error		retval;
 	void				*message_object;
+	const char			*uri;
+	enum mapistore_error		retval;
+	uint64_t			mid;
+	uint8_t				read_write = 0x0;
+	bool				soft_deleted, partial;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|H", kwnames, &uri, &read_write)) {
 		return NULL;
@@ -773,10 +773,10 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 {
 	char				*kwnames[] = { "uri", "flags", NULL };
 	const char			*uri;
-	uint8_t				flags = MAPISTORE_PERMANENT_DELETE;
-	bool				partial, soft_deleted;
 	enum mapistore_error		retval;
 	uint64_t			mid;
+	uint8_t				flags = MAPISTORE_PERMANENT_DELETE;
+	bool				partial, soft_deleted;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|H", kwnames, &uri, &flags)) {
 		return NULL;
@@ -817,15 +817,15 @@ static PyObject *py_MAPIStoreFolder_delete_message(PyMAPIStoreFolderObject *self
 
 static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	char				*kwnames[] = { "uri_list", "target_folder", NULL };
-	PyObject			*uri_list, *item;
-	PyMAPIStoreFolderObject 	*target_folder;
-	Py_ssize_t			count, i;
 	TALLOC_CTX			*mem_ctx;
-	uint64_t			*source_mids, *target_mids, mid;
+	char				*kwnames[] = { "uri_list", "target_folder", NULL };
+	PyMAPIStoreFolderObject 	*target_folder;
+	PyObject			*uri_list, *item;
 	char				*uri;
-	bool				partial = false, soft_deleted; // We use full URIs
 	enum mapistore_error		retval;
+	uint64_t			*source_mids, *target_mids, mid;
+	Py_ssize_t			count, i;
+	bool				partial = false, soft_deleted; // We use full URIs
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwnames, &uri_list, &target_folder)) {
 		return NULL;
@@ -913,15 +913,15 @@ end:
 
 static PyObject *py_MAPIStoreFolder_move_messages(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	char				*kwnames[] = { "uri_list", "target_folder", NULL };
-	PyObject			*uri_list, *item;
-	PyMAPIStoreFolderObject 	*target_folder;
-	Py_ssize_t			count, i;
 	TALLOC_CTX			*mem_ctx;
-	uint64_t			*source_mids, *target_mids, mid;
+	char				*kwnames[] = { "uri_list", "target_folder", NULL };
+	PyMAPIStoreFolderObject 	*target_folder;
+	PyObject			*uri_list, *item;
 	char				*uri;
-	bool				partial = false, soft_deleted; // We use full URIs
 	enum mapistore_error		retval;
+	uint64_t			*source_mids, *target_mids, mid;
+	Py_ssize_t			count, i;
+	bool				partial = false, soft_deleted; // We use full URIs
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "OO", kwnames, &uri_list, &target_folder)) {
 		return NULL;
@@ -1010,10 +1010,10 @@ end:
 static PyObject *py_MAPIStoreFolder_get_child_messages(PyMAPIStoreFolderObject *self)
 {
 	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreMessagesObject	*message_list;
 	enum mapistore_error		retval;
 	uint64_t			*mid_list;
 	uint32_t			list_size;
-	PyMAPIStoreMessagesObject	*message_list;
 
 	/* Get the child folders' MIDs */
 	mem_ctx = talloc_new(NULL);
@@ -1054,13 +1054,13 @@ end:
 
 static PyObject *py_MAPIStoreFolder_open_table(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)
 {
-	PyMAPIStoreTableObject		*table;
 	char				*kwnames[] = { "table_type", NULL };
+	PyMAPIStoreTableObject		*table;
 	void				*table_object;
 	struct SPropTagArray		*columns;
-	uint32_t			count = 0;
 	enum mapistore_table_type	table_type;
 	enum mapistore_error		retval;
+	uint32_t			count = 0;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "H", kwnames, &table_type)) {
 		return NULL;
@@ -1171,11 +1171,11 @@ static PyObject *py_MAPIStoreFolders_iter(PyObject *self)
 
 static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 {
-	uint64_t			fid;
-	enum mapistore_error		retval;
-	void 				*folder_object;
-	PyMAPIStoreFolderObject		*folder;
 	PyMAPIStoreFoldersObject 	*self;
+	PyMAPIStoreFolderObject		*folder;
+	void 				*folder_object;
+	enum mapistore_error		retval;
+	uint64_t			fid;
 
 	self = (PyMAPIStoreFoldersObject *)_self;
 	if (!self) {

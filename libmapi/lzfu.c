@@ -279,6 +279,13 @@ static void append_to_output(output_state *output, char c)
 	output->output_blob->length += 1;
 }
 
+static char get_latest_literal_in_output(output_state output)
+{
+        if (!output.out_pos) return 0;
+
+        return output.output_blob->data[output.out_pos-1];
+}
+
 static char get_dictionary_entry(decompression_state *state, uint32_t index)
 {
 	char c = state->dict[index % LZFU_DICTLENGTH];
@@ -347,7 +354,10 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 				dictref = get_next_dictionary_reference(&state);
 				if (dictref.offset == state.dict_writeoffset) {
 					DEBUG(4, ("matching offset - done\n"));
-					append_to_output(&output, '\0');
+                                        /* Do not add \0 twice */
+                                        if (get_latest_literal_in_output(output)) {
+                                                append_to_output(&output, '\0');
+                                        }
 					cleanup_decompression_state(&state);
 					return MAPI_E_SUCCESS;
 				}

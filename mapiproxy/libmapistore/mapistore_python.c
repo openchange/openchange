@@ -431,7 +431,8 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
  */
 static enum mapistore_error mapistore_python_backend_init(const char *module_name)
 {
-	enum mapistore_error	retval;
+	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	long			l;
 	PyObject		*module;
 	PyObject		*backend;
 	PyObject		*pinst;
@@ -478,8 +479,8 @@ static enum mapistore_error mapistore_python_backend_init(const char *module_nam
 		return MAPISTORE_ERR_BACKEND_INIT;
 	}
 
-	retval = PyLong_AsLong(pres);
-	if (retval == -1) {
+	l = PyLong_AsLong(pres);
+	if (l == -1) {
 		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
 			  module_name, __location__));
 		PyErr_Print();
@@ -735,11 +736,11 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 								    const char *uri,
 								    void **context_obj)
 {
-	enum mapistore_error		retval;
 	struct mapistore_python_object	*pyobj;
 	PyObject			*module;
 	PyObject			*backend, *pres, *pinst;
 	PyObject			*res, *robj;
+	long				l;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!module_name, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
@@ -810,12 +811,10 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	retval = PyLong_AsLong(res);
-	if (retval != MAPISTORE_SUCCESS) {
-		if (retval == -1) {
-			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
-				  module_name, __location__));
-		}
+	l = PyLong_AsLong(res);
+	if (l == -1) {
+	  DEBUG(0, ("[ERR][%s][%s]: Overflow error\n",
+		    module_name, __location__));
 		Py_DECREF(res);
 		Py_DECREF(pres);
 		Py_DECREF(pinst);
@@ -886,13 +885,14 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 								     uint64_t fid,
 								     void **folder_object)
 {
-	enum mapistore_error		retval;
+	enum mapistore_error		retval = MAPISTORE_SUCCESS;
 	struct mapistore_python_object	*pyobj;
 	struct mapistore_python_object	*fobj = NULL;
 	PyObject			*context;
 	PyObject			*pres;
 	PyObject			*res;
 	PyObject			*folder;
+	long				l;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
@@ -938,13 +938,11 @@ static enum mapistore_error mapistore_python_context_get_root_folder(TALLOC_CTX 
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	retval = PyLong_AsLong(res);
+	l = PyLong_AsLong(res);
 	Py_DECREF(res);
-	if (retval != MAPISTORE_SUCCESS) {
-		if (retval == -1) {
-			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
-			retval = MAPISTORE_ERR_CONTEXT_FAILED;
-		}
+	if (l == -1) {
+		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
+		retval = MAPISTORE_ERR_CONTEXT_FAILED;
 		Py_DECREF(pres);
 		return retval;
 	}
@@ -1142,7 +1140,6 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 								  struct SRow *aRow,
 								  void **new_folder)
 {
-	enum mapistore_error		retval;
 	struct mapistore_python_object	*pyobj;
 	struct mapistore_python_object	*pynobj;
 	PyObject			*folder;
@@ -1150,6 +1147,7 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 	PyObject			*pynew;
 	PyObject			*pres;
 	PyObject			*res;
+	long				l;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
@@ -1202,11 +1200,9 @@ static enum mapistore_error mapistore_python_folder_create_folder(TALLOC_CTX *me
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}
 
-	retval = PyLong_AsLong(res);
-	if (retval != MAPISTORE_SUCCESS) {
-		if (retval == -1) {
-			DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
-		}
+	l = PyLong_AsLong(res);
+	if (l == -1) {
+		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", pyobj->name, __location__));
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_INVALID_PARAMETER;
 	}

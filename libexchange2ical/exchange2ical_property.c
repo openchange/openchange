@@ -22,22 +22,6 @@
 #include "libexchange2ical/libexchange2ical.h"
 #include <ldb.h>
 
-struct RRULE_byday {
-	uint16_t	DayOfWeek;
-	const char	*DayName;
-};
-
-static const struct RRULE_byday RRULE_byday[] = {
-	{ 0x0000,	"SU" },
-	{ 0x0001,	"MO" },
-	{ 0x0002,	"TU" },
-	{ 0x0003,	"WE" },
-	{ 0x0004,	"TH" },
-	{ 0x0005,	"FR" },
-	{ 0x0006,	"SA" },
-	{ 0x0007,	NULL }
-};
-
 static const char *get_filename(const char *filename)
 {
 	const char *substr;

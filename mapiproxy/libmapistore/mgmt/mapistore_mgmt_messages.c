@@ -165,6 +165,10 @@ enum mapistore_error mapistore_mgmt_message_bind_command(struct mapistore_mgmt_c
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!bind.username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!bind.cbContext || !bind.cbCallbackAddress, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	user_cmd.backend = NULL;
+	user_cmd.username = NULL;
+	user_cmd.vuser = NULL;
 	
 	/* If bind occurs before any user registration */
 	if (!mgmt_ctx->users) {

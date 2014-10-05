@@ -297,11 +297,12 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 	struct mapi_handles     *handle_object_handle;
 	enum MAPISTATUS         retval;
         void                    **data_pointers;
-        DATA_BLOB               *table_row;
+        DATA_BLOB               *table_row = NULL;
         enum MAPISTATUS		*retvals;
-        uint32_t                contextID, saved_prop_count, prev_instance;
+        uint32_t                contextID, saved_prop_count, prev_instance = 0;
         enum MAPITAGS           *saved_properties, *previous_row_properties;
-        uint64_t                prev_fid, prev_mid;
+        int64_t			prev_fid = 0;
+	int64_t			prev_mid = 0;
 
         mapi_repl->opnum = op_MAPI_Notify;
         reply = &mapi_repl->u.mapi_Notify;
@@ -379,7 +380,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                                 talloc_free(data_pointers);
                                         }
                                         else {
-                                                prev_fid = -1;
+                                                prev_fid = 0;
                                         }
 
                                         table->prop_count = saved_prop_count;
@@ -454,9 +455,9 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                                 talloc_free(data_pointers);
                                         }
                                         else {
-                                                prev_fid = -1;
-                                                prev_mid = -1;
-                                                prev_instance = -1;
+                                                prev_fid = 0;
+                                                prev_mid = 0;
+                                                prev_instance = 0;
                                         }
 
                                         table->prop_count = saved_prop_count;

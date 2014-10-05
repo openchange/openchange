@@ -404,7 +404,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	char					*path;
 	char					*owner;
 	uint32_t				contextID;
-	uint64_t				parent_fid, oc_parent_fid;
+	uint64_t				parent_fid = 0;
+	uint64_t				oc_parent_fid;
 	void					*local_ctx;
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);

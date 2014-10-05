@@ -2205,7 +2205,7 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *mem_ctx,
 					    uint32_t proptag, void **data)
 {
 	struct openchangedb_message	*msg = (struct openchangedb_message *)message_object;
-	struct ldb_message		*message;
+	struct ldb_message		*message = NULL;
 	char				*PidTagAttr = NULL;
 	bool				tofree = false;
 
@@ -2249,7 +2249,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 					      struct SRow *row)
 {
 	struct openchangedb_message	*msg = (struct openchangedb_message *) message_object;
-	struct ldb_message		*message;
+	struct ldb_message		*message = NULL;
 	struct ldb_message_element	*element;
 	char				*PidTagAttr = NULL;
 	struct SPropValue		value;

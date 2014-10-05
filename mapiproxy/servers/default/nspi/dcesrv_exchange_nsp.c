@@ -435,7 +435,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 	
-		if ((ldb_res->count - r->in.pStat->NumPos) < 0) {
+		if (((int)(ldb_res->count - r->in.pStat->NumPos)) < 0) {
 			count = 0;
 		} else {
 			count = ldb_res->count - r->in.pStat->NumPos;

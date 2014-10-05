@@ -398,6 +398,7 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	const struct SBinary_short	*html = NULL;
 	const uint8_t			*has_attach;
 	const uint32_t       		*cp;
+	size_t				ret;
 
 	msgid = (const char *)find_mapi_SPropValue_data(properties, PR_INTERNET_MESSAGE_ID_UNICODE);
 	if (!msgid)
@@ -472,8 +473,12 @@ _PUBLIC_ void mapidump_message(struct mapi_SPropValue_array *properties, const c
 	if (body) {
 		printf("%s\n", body);
 	} else if (html) {
-		write(1, html->lpb, html->cb);
-		write(1, "\n", 1);
+		ret = write(1, html->lpb, html->cb);
+		if (ret == -1) perror("write failed\n");
+
+		ret = write(1, "\n", 1);
+		if (ret == -1) perror("write failed\n");
+
 		fflush(0);
 	}
 }

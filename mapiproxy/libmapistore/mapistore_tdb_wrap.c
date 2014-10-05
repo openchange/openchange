@@ -49,9 +49,11 @@ static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 	va_list ap;
 	char	*ptr = NULL;
 	int	dl;
+	int	ret;
 
 	va_start(ap, format);
-	vasprintf(&ptr, format, ap);
+	ret = vasprintf(&ptr, format, ap);
+	if (ret == -1) return;
 	va_end(ap);
 	
 	switch (level) {

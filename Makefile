@@ -918,6 +918,8 @@ libmapistore-distclean: libmapistore-clean
 
 distclean:: libmapistore-distclean
 
+mapiproxy/libmapistore/mapistore_python.o mapiproxy/libmapistore/mapistore_python.po: CFLAGS+=-DPYTHON_DLOPEN=\"${PYTHON_DLOPEN}\"
+
 mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/mgmt/gen_ndr/ndr_mapistore_mgmt.po	\
 							mapiproxy/libmapistore/mapistore_interface.po			\
 							mapiproxy/libmapistore/mgmt/mapistore_mgmt.po			\

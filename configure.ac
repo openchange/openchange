@@ -363,6 +363,22 @@ PYTHON_LIBS=`$PYTHON_CONFIG --libs`
 AC_MSG_RESULT($PYTHON_LIBS)
 AC_SUBST(PYTHON_LIBS)
 
+AC_MSG_CHECKING(python configdir)
+PYTHON_CONFIGDIR=`$PYTHON_CONFIG --configdir`
+AC_MSG_RESULT($PYTHON_CONFIGDIR)
+AC_SUBST(PYTHON_CONFIGDIR)
+
+AC_MSG_CHECKING(python version)
+PYTHON_VERSION=`$PYTHON -c "import sys, string; major,minor,rev = string.split(sys.version)[[0]].split('.');print major + '.' + minor;"`
+AC_MSG_RESULT($PYTHON_VERSION)
+AC_SUBST(PYTHON_VERSION)
+
+
+AC_MSG_CHECKING(python extension-suffix)
+PYTHON_EXT_SUFFIX=`$PYTHON_CONFIG --extension-suffix`
+AC_MSG_RESULT($PYTHON_EXT_SUFFIX)
+AC_SUBST(PYTHON_EXT_SUFFIX)
+
 AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
 AC_MSG_RESULT($pythondir)

@@ -2761,7 +2761,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* Initialize backend with default settings */
 	mapistore_backend_init_defaults(&backend);
 
-	void *h = dlopen("/usr/lib/x86_64-linux-gnu/libpython2.7.so.1.0", RTLD_NOW | RTLD_GLOBAL);
+	void *h = dlopen(PYTHON_DLOPEN, RTLD_NOW | RTLD_GLOBAL);
 	DEBUG(1, ("Preloading libpython2.7: %p\n", h));
 
 	/* Import the module */

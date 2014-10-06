@@ -37,4 +37,4 @@ if [ -z "$out" ]; then
     out=--stdout
 fi
 
-APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c apport-config -C apport-sandbox-cache -S $crashes --oc-cd-conf=crash-digger.conf $verbose $out
+APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c apport-config -C apport-sandbox-cache -S "$crashes" --oc-cd-conf=crash-digger.conf $verbose $out

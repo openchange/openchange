@@ -57,7 +57,8 @@ class ApiHandler(object):
         fold_dict = self._db.get_folders()
         if folder_id not in fold_dict:
             raise KeyError('No folder with id = %d' % folder_id)
-        return fold_dict[folder_id]
+        folder_obj = fold_dict[folder_id]
+        return self._folder_rec(folder_obj, fold_dict)
 
     def folders_dir(self, parent_folder_id=0):
         """List child folders for a given folder ID

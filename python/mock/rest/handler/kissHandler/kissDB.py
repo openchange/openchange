@@ -100,7 +100,6 @@ class kissDB(object):
         return {
             'id': id,
             'parent_id': parent_id,
-            'name': name,
-            'comment': comment,
-            'type': 'folder'
+            'PidTagDisplayName': name,
+            'PidTagComment': comment,
         }

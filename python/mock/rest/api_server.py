@@ -24,6 +24,7 @@ from flask import (Flask,
                    abort,
                    jsonify,
                    send_from_directory)
+from flask.ctx import after_this_request
 from handler.kissHandler import ApiHandler
 
 app = Flask(__name__)
@@ -66,6 +67,24 @@ def _module_folders_dir_impl(parent_id):
     finally:
         handler.close_context()
     return ret_val
+
+
+@app.route('/folders/<int:folder_id>/folders', methods=['HEAD'])
+def module_folders_head_folders(folder_id):
+    """Get number of folder's child"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.folders_get_folder(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    @after_this_request
+    def add_header_X_Mapistore_Rowcount(response):
+        response.headers['X-Mapistore-Rowcount'] = ret_val['item_count']
+        return response
+    return jsonify()
 
 
 @app.route('/folders/', methods=['GET'])

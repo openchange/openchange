@@ -88,7 +88,7 @@ def module_folders_head_folders(folder_id):
 
 
 @app.route('/folders/', methods=['GET'])
-@app.route('/folders/<int:folder_id>/folders/', methods=['GET'])
+@app.route('/folders/<int:folder_id>/folders', methods=['GET'])
 def module_folders_get_folders(folder_id=0):
     """List root level folders"""
     return jsonify(items=_module_folders_dir_impl(folder_id))

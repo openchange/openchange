@@ -1528,21 +1528,78 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteAttach(TALLOC_CTX *mem_ctx,
                                                  struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                  uint32_t *handles, uint16_t *size)
 {
-//	enum MAPISTATUS				retval;
-//	enum mapistore_error			mretval;
-//	uint32_t				attachmentID;
+	struct mapi_handles		*rec = NULL;
+	struct emsmdbp_object		*message_object = NULL;
+	void				*data;
+	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
+	uint32_t			handle;
+	uint32_t			contextID;
+	uint32_t			attachmentID;
+	bool				mapistore;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCMSG] DeleteAttach (0x24)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* Initialise default empty DeleteAttach reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 
-//	attachmentID = mapi_req->u.mapi_DeleteAttach.AttachmentID;
-//	mretval = mapistore_message_delete_attachment(emsmdbp_ctx->mstore_ctx,
-//			contextID, object->backend_object, attachmentID)
+	/* Convert the handle index into a handle, and then get the message object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		goto end;
+	}
 
+	retval = mapi_handles_get_private_data(rec, &data);
+	if (retval) {
+		mapi_repl->error_code = retval;
+		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		goto end;
+	}
+
+	message_object = (struct emsmdbp_object *) data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		DEBUG(5, ("  no object or object is not a message\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	if (!message_object->object.message->read_write) {
+		DEBUG(5, ("  parent message object is not open read/write\n"));
+		mapi_repl->error_code = MAPI_E_NO_ACCESS;
+		goto end;
+	}
+
+	/* retrieve the context and attachment IDs and perform the operation */
+	mapistore = emsmdbp_is_mapistore(message_object);
+	if (mapistore) {
+                contextID = emsmdbp_get_contextID(message_object);
+
+        	attachmentID = mapi_req->u.mapi_DeleteAttach.AttachmentID;
+
+        	mretval = mapistore_message_delete_attachment(emsmdbp_ctx->mstore_ctx,
+        			contextID, message_object->backend_object, attachmentID);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("Could not delete attachment\n"));
+			mapi_repl->error_code = mapistore_error_to_mapi(mretval);
+		}
+	}
+	else {
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+	}
+end:
 	*size += libmapiserver_RopDeleteAttach_size(mapi_repl);
 	return MAPI_E_SUCCESS;
 }

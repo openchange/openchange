@@ -91,7 +91,17 @@ def module_folders_head_folders(folder_id):
 @app.route('/folders/<int:folder_id>/folders', methods=['GET'])
 def module_folders_get_folders(folder_id=0):
     """List root level folders"""
-    return jsonify(items=_module_folders_dir_impl(folder_id))
+    properties = request.args.get('properties')
+    if properties is None:
+        properties = set()
+    else:
+        properties = set(properties.split(','))
+    properties.add('id')
+    properties.add('type')
+    folders = _module_folders_dir_impl(folder_id)
+    # filter only requested properties
+    folders = [{k:v for (k,v) in f.items() if k in properties} for f in folders]
+    return jsonify(items=folders)
 
 
 @app.route('/folders/', methods=['POST'])

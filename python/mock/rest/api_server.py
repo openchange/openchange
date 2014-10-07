@@ -128,7 +128,21 @@ def module_folders_create():
     return jsonify(id=ret_val['id'])
 
 
-@app.route('/folders/<int:folder_id>', methods=['HEAD'])
+@app.route('/folders/<int:folder_id>', methods=['PUT'])
+def module_folders_put(folder_id):
+    """List root level folders"""
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.folders_update(folder_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
+
+@app.route('/folders/<int:folder_id>/', methods=['HEAD'])
 def module_folders_head(folder_id):
     """List root level folders"""
     handler = ApiHandler(user_id='any')

@@ -88,6 +88,16 @@ class ApiHandler(object):
         new_folder = self._db.create_folder(props)
         return new_folder
 
+    def folders_update(self, folder_id, props):
+        # load what we have
+        folders = self._db.get_folders()
+        # check parent ID
+        if folder_id not in folders:
+            raise KeyError('No folder with id = %d' % folder_id)
+        # update properties
+        props['id'] = folder_id
+        self._db.update_folder(props)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

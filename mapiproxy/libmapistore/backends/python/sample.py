@@ -767,6 +767,11 @@ class MessageObject(BackendObject):
             return None
         return AttachmentObject(self.message["attachments"][attach_id], self, attach_id)
 
+    def delete_attachment(self, attach_id):
+        print '[PYTHON]: %s message.delete_attachment %d/%d' % (self.name, attach_id+1,
+                                                                len(self.message["attachments"]))
+        del self.message["attachments"][attach_id]
+        return 0
 
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)

@@ -505,6 +505,7 @@ uint16_t libmapiserver_RopGetMessageStatus_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopGetAttachmentTable_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *);
+uint16_t libmapiserver_RopDeleteAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response);
 

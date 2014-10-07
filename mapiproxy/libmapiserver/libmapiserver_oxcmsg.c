@@ -276,6 +276,18 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *r
 }
 
 /**
+   \details Calculate DeleteAttach (0x24) Rop size
+
+   \param response pointer to the DeleteAttach EcDoRpc_MAPI_REPL
+
+   \return Size of DeleteAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeleteAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
    \details Calculate SaveChangesAttachment (0x25) Rop size
 
    \param response pointer to the SaveChangesAttachment EcDoRpc_MAPI_REPL

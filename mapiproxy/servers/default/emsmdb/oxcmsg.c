@@ -1508,6 +1508,46 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 }
 
 /**
+   \details EcDoRpc DeleteAttach (0x24) Rop. This operation deletes an attachment
+   from the message handle.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the DeleteAttach EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the DeleteAttach
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteAttach(TALLOC_CTX *mem_ctx,
+                                                 struct emsmdbp_context *emsmdbp_ctx,
+                                                 struct EcDoRpc_MAPI_REQ *mapi_req,
+                                                 struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                                 uint32_t *handles, uint16_t *size)
+{
+//	enum MAPISTATUS				retval;
+//	enum mapistore_error			mretval;
+//	uint32_t				attachmentID;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] DeleteAttach (0x24)\n"));
+
+	/* Initialise default empty DeleteAttach reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+
+//	attachmentID = mapi_req->u.mapi_DeleteAttach.AttachmentID;
+//	mretval = mapistore_message_delete_attachment(emsmdbp_ctx->mstore_ctx,
+//			contextID, object->backend_object, attachmentID)
+
+	*size += libmapiserver_RopDeleteAttach_size(mapi_repl);
+	return MAPI_E_SUCCESS;
+}
+
+/**
    \details EcDoRpc SaveChangesAttachment (0x25) Rop. This operation open an attachment
    from the message handle.
 

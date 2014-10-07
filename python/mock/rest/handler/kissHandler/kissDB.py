@@ -59,6 +59,15 @@ class kissDB(object):
         self._set_data('folders', folders, True)
         return folder_props
 
+    def update_folder(self, folder_props):
+        """Update folder properties
+        :param folder_props:
+        """
+        folders = self._get_data('folders')
+        f = folders[folder_props['id']]
+        f.update(folder_props)
+        self._set_data('folders', folders, True)
+
     def get_messages(self):
         """@:return dict: Dictionary {message_id -> data}"""
         return self._get_data('messages')

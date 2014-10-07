@@ -167,6 +167,19 @@ def module_folders_get(folder_id):
     return jsonify(ret_val)
 
 
+@app.route('/folders/<int:folder_id>/', methods=['DELETE'])
+def module_folders_delete(folder_id):
+    """List root level folders"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.folders_delete(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

@@ -102,4 +102,5 @@ class kissDB(object):
             'parent_id': parent_id,
             'PidTagDisplayName': name,
             'PidTagComment': comment,
+            'type': 'folder',
         }

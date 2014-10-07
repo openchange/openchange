@@ -723,6 +723,11 @@ enum mapistore_error mapistore_backend_message_create_attachment(struct backend_
         return bctx->backend->message.create_attachment(message, mem_ctx, attachment, aid);
 }
 
+enum mapistore_error mapistore_backend_message_delete_attachment(struct backend_context *bctx, void *message, uint32_t aid)
+{
+	return bctx->backend->message.delete_attachment(message, aid);
+}
+
 enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, void **table, uint32_t *row_count)
 {
 	return bctx->backend->message.get_attachment_table(mem_ctx, message, table, row_count);

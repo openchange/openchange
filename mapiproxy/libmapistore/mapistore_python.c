@@ -2141,6 +2141,52 @@ static enum mapistore_error mapistore_python_message_open_attachment(TALLOC_CTX 
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Delete an attachment object
+
+   \param message_object pointer to the message object
+   \param attach_id the id of the attachment to retrieve
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_delete_attachment(void *message_object,
+								       uint32_t attach_id)
+{
+	struct mapistore_python_object	*pyobj;
+	PyObject			*message;
+	PyObject			*pres;
+	enum mapistore_error		retval;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call delete_attachment function */
+	pres = PyObject_CallMethod(message, "delete_attachment", "i", attach_id);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
 
 /**
    \details Open the attachment table
@@ -2991,6 +3037,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.message.submit = mapistore_python_message_submit; */
 	backend.message.open_attachment = mapistore_python_message_open_attachment;
 	/* backend.message.create_attachment = mapistore_python_message_create_attachment; */
+	backend.message.delete_attachment = mapistore_python_message_delete_attachment;
 	backend.message.get_attachment_table = mapistore_python_message_get_attachment_table;
 	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */
 

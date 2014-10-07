@@ -99,6 +99,14 @@ class ApiHandler(object):
         props['id'] = folder_id
         self._db.update_folder(props)
 
+    def folders_delete(self, folder_id):
+        # load what we have
+        folders = self._db.get_folders()
+        # check parent ID
+        if folder_id not in folders:
+            raise KeyError('No folder with id = %d' % folder_id)
+        self._db.delete_folder(folder_id)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

@@ -76,7 +76,9 @@ class ApiHandler(object):
         # we rely on API server to check preconditions
         # but anyway, assert here too
         assert 'parent_id' in props, 'parent_id is required'
-        assert 'name' in props, 'name is required'
+        assert 'PidTagDisplayName' in props, 'PidTagdisplayName is required'
+        # override folder type
+        props['type'] = 'folder'
         # load what we have
         folders = self._db.get_folders()
         # check parent ID

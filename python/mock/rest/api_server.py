@@ -117,7 +117,7 @@ def module_folders_create():
         parent_id = data.get('parent_id', None)
         if parent_id is None:
             abort(422, "parent_id is required parameter")
-        folder_name = data.get('name')
+        folder_name = data.get('PidTagDisplayName')
         if folder_name is None:
             abort(422, "name is a required parameter")
         ret_val = handler.folders_create(parent_id, folder_name, data)
@@ -125,7 +125,7 @@ def module_folders_create():
         abort(404, ke.message)
     finally:
         handler.close_context()
-    return jsonify(ret_val)
+    return jsonify(id=ret_val['id'])
 
 
 @app.route('/folders/<int:folder_id>', methods=['HEAD'])

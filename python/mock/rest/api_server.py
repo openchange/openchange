@@ -23,6 +23,8 @@ from flask import (Flask,
                    request,
                    abort,
                    jsonify,
+                   json,
+                   Response,
                    send_from_directory)
 from flask.ctx import after_this_request
 from handler.kissHandler import ApiHandler
@@ -93,15 +95,15 @@ def module_folders_get_folders(folder_id=0):
     """List root level folders"""
     properties = request.args.get('properties')
     if properties is None:
-        properties = set()
+        properties = None
     else:
         properties = set(properties.split(','))
-    properties.add('id')
-    properties.add('type')
     folders = _module_folders_dir_impl(folder_id)
     # filter only requested properties
-    folders = [{k:v for (k,v) in f.items() if k in properties} for f in folders]
-    return jsonify(items=folders)
+    folders = [{k:v for (k,v) in f.items()
+                    if properties is None or k in properties}
+               for f in folders]
+    return Response(json.dumps(folders),  mimetype='application/json')
 
 
 @app.route('/folders/', methods=['POST'])

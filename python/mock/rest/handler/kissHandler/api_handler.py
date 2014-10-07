@@ -85,6 +85,7 @@ class ApiHandler(object):
         if parent_id not in folders:
             raise KeyError('No folder with id = %d' % parent_id)
         # crate new folder
+        props['parent_id'] = parent_id
         new_folder = self._db.create_folder(props)
         return new_folder
 

@@ -395,7 +395,6 @@ class FolderObject(object):
         self.messages = []
         # preload subfolders and messages
         self._index_subfolders(oxio_subfolders)
-        pass
 
     def _index_subfolders(self, oxio_subfolders):
         self.subfolders = []
@@ -416,14 +415,12 @@ class FolderObject(object):
                       }
             folder['PidTagFolderId'] = self.ctx.indexing.add_uri(folder['uri'])
             self.subfolders.append(folder)
-        pass
 
     def _index_messages(self, oxio_messages):
         #print json.dumps(oxio_messages, indent=4)
         self.messages = []
         for msg in oxio_messages:
             self.messages.append(MessageObject(self, msg, None))
-        pass
 
     def open_folder(self, folderID):
         """Open childer by its id.
@@ -577,7 +574,6 @@ class MessageObject(object):
     def fetch(self):
         self.properties['PidTagBody'] = _OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False)
         self.properties['PidTagHtml'] = bytearray(_OxioConn.get_instance().getMessageBody(self.oxio_folder_id, self.oxio_id, need_html=False), 'utf8')
-        pass
 
     def get_message_data(self):
         logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)

@@ -109,7 +109,7 @@ class ApiHandler(object):
 
     def folders_get_messages(self, folder_id):
         msg_dict = self._db.get_messages()
-        return [msg for msg in msg_dict.values() if folder_id == msg['folder_id']]
+        return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
 
     @staticmethod
     def _folder_rec(fval, fold_dict):

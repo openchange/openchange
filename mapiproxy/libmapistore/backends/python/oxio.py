@@ -558,14 +558,6 @@ class MessageObject(object):
         self.properties['PidTagMessageSize'] = oxio_msg['size']
         self.properties['PidTagLastModificationTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg['sent_date'] / 1000)).strftime("%s.%f"))
         self.properties['PidTagMessageDeliveryTime'] = float(datetime.datetime.fromtimestamp(float(oxio_msg['received_date'] / 1000)).strftime("%s.%f"))
-#         self.properties['PidTagCreationTime'] = self.properties['PidTagMessageDeliveryTime']
-#         self.properties["PidTagImportance"] = int(oxio_msg['priority'])
-#         self.properties["PidTagHasAttachments"] = oxio_msg['attachment']
-
-#         self.properties['PidTagBody'] = "This is the content of this sample email"
-#         self.properties['PidTagHtml'] = bytearray("<html><head></head><h1>" +  self.properties['PidTagBody'] + "</h1></body></html>")
-#         self.properties["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
-
         # build recipients
         self.recipients = []
         self.recipients += [{'PidTagRecipientType': MapiRecipientType.MAPI_ORIG,

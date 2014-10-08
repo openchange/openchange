@@ -105,6 +105,14 @@ typedef struct {
 } PyMAPIStoreAttachmentObject;
 
 typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreMessageObject	*message;
+	size_t				curr_index;
+	size_t				count;
+} PyMAPIStoreAttachmentsObject;
+
+typedef struct {
 	PyObject_HEAD	
 
 	PyObject *timestamp;
@@ -152,6 +160,7 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolders;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessage;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessages;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreAttachment;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreAttachments;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreRows;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;

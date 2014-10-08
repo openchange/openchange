@@ -296,4 +296,13 @@ print
 print '[PYMAPISTORE] Iterate over the rows and display its content'
 for r in in_fld_tbl.rows:
     print r
-print
+printprint
+
+# ------------------------------- #
+# TEST ATTACHMENT IMPLIEMENTATION
+# ------------------------------- #
+dont_fld = in_fld.open_folder('sogo://user1:user1@mail/folderINBOX/folderdonottouch/')
+dos_msg = dont_fld.open_message('sogo://user1:user1@mail/folderINBOX/folderdonottouch/2.eml')
+att_table = dos_msg.open_attachment_table()
+att_table.columns = ['PidTagAttachNumber']
+att = dos_msg.open_attachment(att_table.get_row(0)['PidTagAttachNumber'])

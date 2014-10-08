@@ -309,9 +309,70 @@ static PyObject *py_MAPIStoreMessage_create_attachment(PyMAPIStoreMessageObject 
 	Py_INCREF(attachment->context);
 
 	attachment->attachment_object = attachment_object;
-	printf("\n***AID: %d\n", aid);
 
 	return (PyObject *)attachment;
+}
+
+static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
+{
+	TALLOC_CTX			*mem_ctx;
+	char				*kwnames[] = { "att_id", NULL };
+	PyMAPIStoreAttachmentObject	*attachment;
+	void				*attachment_object, *table_object;
+	enum mapistore_error		retval;
+	uint32_t			att_id, count;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I", kwnames, &att_id)) {
+		return NULL;
+	}
+
+	/* Check for out of range error*/
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx, &table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	if (att_id >= count) {
+		DEBUG(0, ("[ERR][%s]: 'att_id' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+		goto end;
+	}
+
+	/* Retrieve the attachment */
+	retval = mapistore_message_open_attachment(self->context->mstore_ctx,
+			self->context->context_id, self->message_object,
+			self->mem_ctx, att_id, &attachment_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	/* Return the MAPIStoreAttachment object */
+	attachment = PyObject_New(PyMAPIStoreAttachmentObject, &PyMAPIStoreAttachment);
+	if (attachment == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
+
+	attachment->mem_ctx = self->mem_ctx;
+	attachment->context = self->context;
+	Py_INCREF(attachment->context);
+
+	attachment->attachment_object = attachment_object;
+
+	talloc_free(mem_ctx);
+	return (PyObject *)attachment;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObject *self)
@@ -364,6 +425,7 @@ static PyMethodDef mapistore_message_methods[] = {
 	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
 	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
 	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
+	{ "open_attachment", (PyCFunction)py_MAPIStoreMessage_open_attachment, METH_VARARGS|METH_KEYWORDS },
 	{ "create_attachment", (PyCFunction)py_MAPIStoreMessage_create_attachment, METH_NOARGS},
 	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS},
 	{ NULL },
@@ -414,10 +476,54 @@ static PyObject *py_MAPIStoreMessage_get_attachment_count(PyMAPIStoreMessageObje
 	return PyLong_FromUnsignedLong(count);
 }
 
+static PyObject *py_MAPIStoreFolder_get_attachments(PyMAPIStoreMessageObject *self, void *closure)
+{
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreAttachmentsObject	*attachment_list;
+	void				*table_object;
+	enum mapistore_error		retval;
+	uint32_t			list_size;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* Get the attachment count */
+	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx, &table_object, &list_size);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	/* Return the PyMAPIStoreMessages object*/
+	attachment_list = PyObject_New(PyMAPIStoreAttachmentsObject, &PyMAPIStoreAttachments);
+	if (attachment_list == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
+
+	attachment_list->mem_ctx = self->mem_ctx;
+	attachment_list->message = self;
+	Py_INCREF(attachment_list->message);
+
+	attachment_list->count = list_size;
+	attachment_list->curr_index = 0;
+
+	talloc_free(mem_ctx);
+	return (PyObject *) attachment_list;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
+}
+
 static PyGetSetDef mapistore_message_getsetters[] = {
 	{ (char *)"uri", (getter)py_MAPIStoreMessage_get_uri, NULL, NULL },
 	{ (char *)"mid", (getter)py_MAPIStoreMessage_get_mid, NULL, NULL },
 	{ (char *)"attachment_count", (getter)py_MAPIStoreMessage_get_attachment_count, NULL, NULL },
+	{ (char *)"attachments", (getter)py_MAPIStoreFolder_get_attachments, NULL, NULL },
 	{ NULL }
 };
 

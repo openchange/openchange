@@ -45,7 +45,8 @@ class CrashDigger(object):
     def __init__(self, config_dir, cache_dir, apport_retrace,
                  verbose=False, dup_db=None, dupcheck_mode=False, publish_dir=None,
                  crashes_dir=None, oc_cd_conf=None, stdout=False, gdb=False, upload=False,
-                 component=False, crash_ids=[], stacktrace_file=False, notified_email=None):
+                 component=False, crash_ids=[], stacktrace_file=False, notified_email=None,
+                 update=False):
         """
         Initialize pools.
 
@@ -72,6 +73,7 @@ class CrashDigger(object):
         self.guess_component = component
         self.crash_ids = crash_ids
         self.notified_email = notified_email
+        self.update = update
         if config_dir:
             self.releases = os.listdir(config_dir)
             self.releases.sort()
@@ -145,6 +147,9 @@ class CrashDigger(object):
         elif self.dupcheck_mode:
             self.dupcheck_pool.update(self.crashdb.get_dup_unchecked())
             self.log('fill_pool: dup check pool now: %s' % str(self.dupcheck_pool))
+        elif self.update:
+            self.retrace_pool.update(self.crash_ids)
+            self.log('fill_pool: retrace pool now: %s' % str(self.retrace_pool))
         elif not self.guess_component:
             self.retrace_pool.update(self.crashdb.get_unretraced())
             self.log('fill_pool: retrace pool now: %s' % str(self.retrace_pool))
@@ -195,7 +200,6 @@ class CrashDigger(object):
         """
         Grab an ID from the retrace pool and retrace it.
         """
-
         id = self.retrace_pool.pop()
         self.log('retracing #%i (left in pool: %i)' % (id, len(self.retrace_pool)))
 
@@ -210,6 +214,26 @@ class CrashDigger(object):
             return
 
         self.__call_retrace(id, rel)
+
+        if self.update:
+            report = Report()
+            report.load(self.file_to_upload)
+            if not readable_stacktrace(report):
+                self.log('Not readable stacktrace. Try using a different apport configuration')
+                return
+            self.crashdb.update(id, report, comment='Retraced',
+                                key_filter=['Stacktrace', 'StacktraceAddressSignature',
+                                            'StacktraceTop', 'ThreadStacktrace'])
+            # Check for duplicates (only server-side as the report is already in the DB)
+            ret_dup_check = self.crashdb.check_duplicate(id, report)
+            if ret_dup_check is not None:
+                self.log('#%i report is a duplicated of #%i' % (id, ret_dup_check[0]))
+                if ret_dup_check[1] is not None:
+                    self.log('#%i report is fixed in %s version' % (id, ret_dup_check[1]))
+                # Add info to tracker?
+            else:
+                self.set_components(id, report)
+            self.log('#%i report has updated its stacktrace' % id)
 
         self.crashdb.mark_retraced(id)
 
@@ -378,7 +402,7 @@ class CrashDigger(object):
         else:
             argv.extend(['--auth', 'foo'])
 
-        if self.upload or self.stacktrace_file:
+        if self.upload or self.stacktrace_file or self.update:
             # Retrace the result, store it in a file to upload it afterwards
             self.file_to_upload = NamedTemporaryFile(delete=False)
             argv.extend(['--output', self.file_to_upload.name])
@@ -588,6 +612,9 @@ def parse_options():
     optparser.add_option('-i', '--ids', action="append", type="int")
     optparser.add_option('-n', '--notify', metavar='NOTIFIED_EMAIL',
                          help='notify when uploading a new retraced crash report when integrated with a tracker')
+    optparser.add_option('-U', '--update',
+                         help='Update a trace with a new stacktrace',
+                         action='store_true', dest='update', default=False)
 
     (opts, args) = optparser.parse_args()
 
@@ -602,6 +629,12 @@ def parse_options():
 
     if opts.notify and not opts.upload:
         apport.fatal('Error: --notify only works with upload option')
+
+    if opts.update and opts.upload:
+        apport.fatal('Error: --update and --upload are incompatible')
+
+    if opts.update and not opts.ids:
+        apport.fatal('Error: in order to update a trace you must pass the --ids argument')
 
     return (opts, args)
 
@@ -634,7 +667,8 @@ try:
                 opts.apport_retrace, opts.verbose, opts.dup_db,
                 opts.dupcheck_mode, opts.publish_db, opts.crashes,
                 opts.oc_cd_conf, opts.stdout, opts.gdb, opts.upload,
-                opts.component, opts.ids, opts.stacktrace_file, opts.notify).run()
+                opts.component, opts.ids, opts.stacktrace_file, opts.notify,
+                opts.update).run()
 except SystemExit as exit:
     if exit.code == 99:
         pass  # fall through lock cleanup

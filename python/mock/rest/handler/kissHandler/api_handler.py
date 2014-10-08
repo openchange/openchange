@@ -125,6 +125,13 @@ class ApiHandler(object):
         # crate new folder
         return self._db.create_message(props)
 
+    def messages_get(self, msg_id):
+        msg_dict = self._db.get_messages()
+        if msg_id not in msg_dict:
+            raise KeyError('No item with id = %d' % msg_id)
+        msg_obj = msg_dict[msg_id]
+        return self._folder_rec(msg_obj, msg_dict)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

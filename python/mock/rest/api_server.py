@@ -247,6 +247,20 @@ def module_calendar_create():
     return jsonify(id=msg['id'])
 
 
+@app.route('/calendars/<int:msg_id>/', methods=['GET'])
+def module_calendar_get(msg_id=0):
+    """Retrieve all the properties of the calendar entry identified by id"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.messages_get(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(ret_val)
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

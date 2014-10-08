@@ -109,7 +109,9 @@ class kissDB(object):
                 2: kissDB._folder_rec(2, 'Outbox', 'Outbox folder', 0),
                 3: kissDB._folder_rec(2, 'Sent', 'Sent items', 0)
             },
-            'messages': {}
+            'messages': {
+                51: kissDB._message_rec(51, 1, 'Welcome', 'Welcome to the real world Neo'),
+            }
         }
 
     @staticmethod
@@ -120,4 +122,14 @@ class kissDB(object):
             'PidTagDisplayName': name,
             'PidTagComment': comment,
             'type': 'folder',
+        }
+
+    @staticmethod
+    def _message_rec(mid, fid, subject, body):
+        return {
+            'id': mid,
+            'folder_id': fid,
+            'PidTagSubject': subject,
+            'PidTagBody': body,
+            'type': 'mail',
         }

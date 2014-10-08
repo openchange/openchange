@@ -107,6 +107,10 @@ class ApiHandler(object):
             raise KeyError('No folder with id = %d' % folder_id)
         self._db.delete_folder(folder_id)
 
+    def folders_get_messages(self, folder_id):
+        msg_dict = self._db.get_messages()
+        return [msg for msg in msg_dict.values() if folder_id == msg['folder_id']]
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

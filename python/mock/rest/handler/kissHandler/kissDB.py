@@ -80,6 +80,18 @@ class kissDB(object):
         """@:return dict: Dictionary {message_id -> data}"""
         return self._get_data('messages')
 
+    def create_message(self, msg_props):
+        """Create new message and return the record
+        :param msg_props:
+        """
+        next_id = self._get_data('next_id')
+        msg_props['id'] = next_id
+        messages = self._get_data('messages')
+        messages[next_id] = msg_props
+        self._set_data('next_id', next_id + 1)
+        self._set_data('folders', messages, True)
+        return msg_props
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB

@@ -111,6 +111,20 @@ class ApiHandler(object):
         msg_dict = self._db.get_messages()
         return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
 
+    def messages_create(self, type, props):
+        # we rely on API server to check preconditions
+        # but anyway, assert here too
+        assert 'parent_id' in props, 'parent_id is required'
+        assert 'PidTagSubject' in props, 'PidTagSubject is required'
+        # override folder type
+        props['type'] = type
+        # check parent ID
+        parent_id = props['parent_id']
+        if not self.folders_id_exists(parent_id):
+            raise KeyError('No folder with id = %d' % parent_id)
+        # crate new folder
+        return self._db.create_message(props)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

@@ -221,6 +221,32 @@ def module_folders_get_messages(folder_id):
     return Response(json.dumps(messages),  mimetype='application/json')
 
 
+###############################################################################
+# Calendar
+###############################################################################
+
+@app.route('/calendars/', methods=['POST'])
+def module_calendar_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    msg = {}
+    try:
+        if data is None:
+            abort(422, "You must supply parent_id and PidTagSubject at least")
+        parent_id = data.get('parent_id', None)
+        if parent_id is None:
+            abort(422, "parent_id is required parameter")
+        subject = data.get('PidTagSubject')
+        if subject is None:
+            abort(422, "PidTagSubject is a required parameter")
+        msg = handler.messages_create('calendar', data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

@@ -198,6 +198,29 @@ def module_folders_head_messages(folder_id):
     return jsonify()
 
 
+@app.route('/folders/<int:folder_id>/messages', methods=['GET'])
+def module_folders_get_messages(folder_id):
+    """List of messages within specified folder"""
+    properties = request.args.get('properties')
+    if properties is None:
+        properties = None
+    else:
+        properties = set(properties.split(','))
+    handler = ApiHandler(user_id='any')
+    messages = ''
+    try:
+        messages = handler.folders_get_messages(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    # filter only requested properties
+    messages = [{k:v for (k,v) in msg.items()
+                    if properties is None or k in properties}
+               for msg in messages]
+    return Response(json.dumps(messages),  mimetype='application/json')
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

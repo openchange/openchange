@@ -180,6 +180,24 @@ def module_folders_delete(folder_id):
     return "", 204
 
 
+@app.route('/folders/<int:folder_id>/messages', methods=['HEAD'])
+def module_folders_head_messages(folder_id):
+    """Get number of messages in a folder"""
+    handler = ApiHandler(user_id='any')
+    messages = ''
+    try:
+        messages = handler.folders_get_messages(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    @after_this_request
+    def add_header_X_Mapistore_Rowcount(response):
+        response.headers['X-Mapistore-Rowcount'] = len(messages)
+        return response
+    return jsonify()
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

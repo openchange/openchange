@@ -128,7 +128,7 @@ class kissDB(object):
     def _message_rec(mid, fid, subject, body):
         return {
             'id': mid,
-            'folder_id': fid,
+            'parent_id': fid,
             'PidTagSubject': subject,
             'PidTagBody': body,
             'type': 'mail',

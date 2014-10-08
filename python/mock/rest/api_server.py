@@ -110,7 +110,7 @@ def module_folders_get_folders(folder_id=0):
 def module_folders_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
-    ret_val = ''
+    ret_val = {}
     try:
         if data is None:
             abort(422, "You must supply parent_id and name at least")

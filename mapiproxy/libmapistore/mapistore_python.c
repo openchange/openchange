@@ -24,6 +24,7 @@
 
 #include <sys/types.h>
 #include <string.h>
+#include <dlfcn.h>
 #include <dirent.h>
 #include <err.h>
 
@@ -2759,6 +2760,9 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 
 	/* Initialize backend with default settings */
 	mapistore_backend_init_defaults(&backend);
+
+	void *h = dlopen(PYTHON_DLOPEN, RTLD_NOW | RTLD_GLOBAL);
+	DEBUG(0, ("[INFO] Preloading %s: %p\n", PYTHON_DLOPEN, h));
 
 	/* Import the module */
 	module = PyImport_ImportModule(module_name);

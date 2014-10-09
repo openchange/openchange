@@ -458,6 +458,8 @@ def newuser(names, lp, creds, username=None, mail=None):
     :param creds: Credentials context
     :param names: provision names object.
     :param username: Name of user to extend
+    :param mail: The user email address. If not specified, it will be set
+                 to <samAccountName>@<dnsdomain>
     """
 
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),

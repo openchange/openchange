@@ -92,6 +92,15 @@ class kissDB(object):
         self._set_data('messages', messages, True)
         return msg_props
 
+    def update_message(self, msg_props):
+        """Update message properties
+        :param msg_props:
+        """
+        messages = self._get_data('messages')
+        msg = messages[msg_props['id']]
+        msg.update(msg_props)
+        self._set_data('messages', messages, True)
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB

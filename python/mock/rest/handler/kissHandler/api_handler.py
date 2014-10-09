@@ -132,6 +132,16 @@ class ApiHandler(object):
         msg_obj = msg_dict[msg_id]
         return self._folder_rec(msg_obj, msg_dict)
 
+    def messages_update(self, msg_id, props):
+        # load what we have
+        messages = self._db.get_messages()
+        # check msg id
+        if msg_id not in messages:
+            raise KeyError('No message with id = %d' % msg_id)
+        # update properties
+        props['id'] = msg_id
+        self._db.update_message(props)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

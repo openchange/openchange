@@ -89,7 +89,7 @@ class kissDB(object):
         messages = self._get_data('messages')
         messages[next_id] = msg_props
         self._set_data('next_id', next_id + 1)
-        self._set_data('folders', messages, True)
+        self._set_data('messages', messages, True)
         return msg_props
 
     def _get_data(self, top_key):

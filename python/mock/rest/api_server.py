@@ -261,6 +261,20 @@ def module_calendar_get(msg_id=0):
     return jsonify(ret_val)
 
 
+@app.route('/calendars/<int:msg_id>/', methods=['PUT'])
+def module_calendar_put(msg_id):
+    """Update existing message properties"""
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.messages_update(msg_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

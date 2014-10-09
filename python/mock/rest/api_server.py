@@ -128,7 +128,7 @@ def module_folders_create():
     return jsonify(id=ret_val['id'])
 
 
-@app.route('/folders/<int:folder_id>', methods=['PUT'])
+@app.route('/folders/<int:folder_id>/', methods=['PUT'])
 def module_folders_put(folder_id):
     """List root level folders"""
     data = request.get_json()

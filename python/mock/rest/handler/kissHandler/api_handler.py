@@ -142,6 +142,14 @@ class ApiHandler(object):
         props['id'] = msg_id
         self._db.update_message(props)
 
+    def messages_delete(self, msg_id):
+        # load what we have
+        messages = self._db.get_messages()
+        # check parent ID
+        if msg_id not in messages:
+            raise KeyError('No message with id = %d' % msg_id)
+        self._db.delete_message(msg_id)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

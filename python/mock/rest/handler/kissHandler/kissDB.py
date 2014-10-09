@@ -101,6 +101,14 @@ class kissDB(object):
         msg.update(msg_props)
         self._set_data('messages', messages, True)
 
+    def delete_message(self, msg_id):
+        """Delete a message record
+        :param msg_id:
+        """
+        messages = self._get_data('messages')
+        del messages[msg_id]
+        self._set_data('messages', messages, True)
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB

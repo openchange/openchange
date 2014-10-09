@@ -275,6 +275,19 @@ def module_calendar_put(msg_id):
     return "", 201
 
 
+@app.route('/calendars/<int:msg_id>/', methods=['DELETE'])
+def module_calendar_delete(msg_id):
+    """Delete message with msg_id"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.messages_delete(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
+
 if __name__ == '__main__':
     app.debug = True
     app.run()

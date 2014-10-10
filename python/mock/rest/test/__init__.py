@@ -69,6 +69,7 @@ class MockApiBaseTestCase(unittest.TestCase):
 
     @staticmethod
     def _to_json_ret(text):
+        """:rtype: dict"""
         try:
             return json.loads(text)
         except (TypeError, ValueError) as e:
@@ -77,10 +78,13 @@ class MockApiBaseTestCase(unittest.TestCase):
     def _create_test_folder(self, parent_id=1, name='test folder', comment='folder comment'):
         """Create a new folder to test with.
         By default, it is created in INBOX (parent_id=1)
-        """
-        data = {
+        :rtype: int folder id"""
+        payload = {
             'parent_id': parent_id,
             'PidTagDisplayName': name,
             'PidTagComment': comment
         }
-        return self.post_req('/folders/', data)
+        status, text, headers = self.post_req('/folders/', payload)
+        self.assertEquals(status, 200)
+        folder = self._to_json_ret(text)
+        return folder['id']

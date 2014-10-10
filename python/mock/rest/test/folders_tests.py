@@ -29,33 +29,30 @@ class FoldersInterfaceTestCase(test.MockApiBaseTestCase):
 
     def test_create(self):
         """Folder creation test"""
-        status, text, headers = self._create_test_folder(1, 'folder-create', 'create comment')
-        self.assertEquals(status, 200)
-        self.assertIn('id', self._to_json_ret(text))
+        fid = self._create_test_folder(1, 'folder-create', 'create comment')
+        self.assertIsNotNone(fid)
 
     def test_get(self):
         # create some test item to play with
-        status, text, headers = self._create_test_folder(name='folder-get', comment='folder-get comment')
-        item = self._to_json_ret(text)
+        fid = self._create_test_folder(name='folder-get', comment='folder-get comment')
         # fetch the Folder
-        path = '/folders/%d/?properties=id,type,PidTagDisplayName,PidTagComment' % item['id']
+        path = '/folders/%d/?properties=id,type,PidTagDisplayName,PidTagComment' % fid
         status, text, headers = self.get_req(path)
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
-        self.assertEqual(res['id'], item['id'])
+        self.assertEqual(res['id'], fid)
         self.assertEqual(res['type'], 'folder')
         self.assertEqual(res['PidTagDisplayName'], 'folder-get')
         self.assertEqual(res['PidTagComment'], 'folder-get comment')
 
     def test_update(self):
         # create some test item to play with
-        status, text, headers = self._create_test_folder(name='folder-update', comment='folder-update comment')
-        item = self._to_json_ret(text)
+        fid = self._create_test_folder(name='folder-update', comment='folder-update comment')
         # update the Folder
         data = {
             'PidTagComment': 'Updated body'
         }
-        path = '/folders/%d/' % item['id']
+        path = '/folders/%d/' % fid
         status, text, headers = self.put_req(path, data)
         self.assertEqual(status, 201)
         self.assertEqual(text, "")
@@ -67,10 +64,9 @@ class FoldersInterfaceTestCase(test.MockApiBaseTestCase):
 
     def test_delete(self):
         # create some test item to play with
-        status, text, headers = self._create_test_folder(name='folder-delete', comment='delete comment')
-        item = self._to_json_ret(text)
+        fid = self._create_test_folder(name='folder-delete', comment='delete comment')
         # check message exists
-        path = '/folders/%d/' % item['id']
+        path = '/folders/%d/' % fid
         status, text, headers = self.delete_req(path)
         self.assertEqual(status, 204)
         self.assertEqual(text, "")

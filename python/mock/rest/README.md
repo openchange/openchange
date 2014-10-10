@@ -18,7 +18,7 @@ Run the server:
 By default, server listens on http://127.0.0.1:5000
 
 If you have built the docs, default page is going to serve
-the help page for the API (convenien).
+the help page for the API (convenient during development).
 
 TODO:
 
@@ -26,6 +26,6 @@ TODO:
 * no sessions support at the moment
 * no authentication support - everyone rules
 * some test page to demonstrate basic calls using jQuery.ajax
-* And administrative endpoint so that server could be tuned in automated environment
+* Add administrative endpoint so that server could be tuned in automated environment
 
 Enjoy!

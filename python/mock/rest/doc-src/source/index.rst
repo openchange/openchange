@@ -584,9 +584,9 @@ Tasks
         "id": "b1f2726d32b44551b99f4a6adb61e112"
       }
 
-      :>json string id: Message identifier of the task item created
-      :reqheader Authorization: auth token
-      :statuscode 200: Ok
+   :>json string id: Message identifier of the task item created
+   :reqheader Authorization: auth token
+   :statuscode 200: Ok
 
 
 .. http:get:: /tasks/(id)/
@@ -612,9 +612,9 @@ Tasks
 
       {
         "id": "b1f2726d32b44551b99f4a6adb61e112",
-	"parent_id": "95fc55f35da743bc9450ae694f38def0",
-	"PidTagSubject": "My sample task",
-	"PidTagBody": "Sample body"
+        "parent_id": "95fc55f35da743bc9450ae694f38def0",
+        "PidTagSubject": "My sample task",
+        "PidTagBody": "Sample body"
       },
 
    :reqheader Authorization: auth token
@@ -730,9 +730,9 @@ Contacts
         "id": "d220314b8a374d2bbd7f43bf0819b5a0"
       }
 
-      :>json string id: Message identifier of the contact item created
-      :reqheader Authorization: auth token
-      :statuscode 200: Ok
+   :>json string id: Message identifier of the contact item created
+   :reqheader Authorization: auth token
+   :statuscode 200: Ok
 
 
 .. http:get:: /contacts/(id)/
@@ -758,9 +758,9 @@ Contacts
 
       {
         "id": "d220314b8a374d2bbd7f43bf0819b5a0",
-	"parent_id": "9175fe8d54da416a9cb1a946c50b7467",
-	"PidTagSubject": "My sample contact",
-	"PidTagBody": "Sample body"
+        "parent_id": "9175fe8d54da416a9cb1a946c50b7467",
+        "PidTagSubject": "My sample contact",
+        "PidTagBody": "Sample body"
       },
 
    :reqheader Authorization: auth token
@@ -860,7 +860,7 @@ Notes
       {
         "parent_id": "765dc8566f9e4baf94ee36e1b2763d50",
         "PidTagSubject": "My sample note",
-	"PidTagBody": "Sample body"
+        "PidTagBody": "Sample body"
       }
 
    **Example response**:
@@ -875,9 +875,9 @@ Notes
         "id": "f07d68499c974a5bbffed5cc3ddcc31e"
       }
 
-      :>json string id: Message identifier of the note item created
-      :reqheader Authorization: auth token
-      :statuscode 200: Ok
+   :>json string id: Message identifier of the note item created
+   :reqheader Authorization: auth token
+   :statuscode 200: Ok
 
 
 .. http:get:: /notes/(id)/
@@ -903,9 +903,9 @@ Notes
 
       {
         "id": "f07d68499c974a5bbffed5cc3ddcc31e",
-	"parent_id": "765dc8566f9e4baf94ee36e1b2763d50",
-	"PidTagSubject": "My sample note",
-	"PidTagBody": "Sample body"
+        "parent_id": "765dc8566f9e4baf94ee36e1b2763d50",
+        "PidTagSubject": "My sample note",
+        "PidTagBody": "Sample body"
       },
 
    :reqheader Authorization: auth token

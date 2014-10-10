@@ -75,14 +75,6 @@ class FoldersInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 204)
         self.assertEqual(text, "")
 
-    def _create_test_folder(self, parent_id=1, name='test folder', comment='folder comment'):
-        data = {
-            'parent_id': parent_id,
-            'PidTagDisplayName': name,
-            'PidTagComment': comment
-        }
-        return self.post_req('/folders/', data)
-
 
 if __name__ == '__main__':
     unittest.main()

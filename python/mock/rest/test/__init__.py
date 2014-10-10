@@ -73,3 +73,14 @@ class MockApiBaseTestCase(unittest.TestCase):
             return json.loads(text)
         except (TypeError, ValueError) as e:
             return None
+
+    def _create_test_folder(self, parent_id=1, name='test folder', comment='folder comment'):
+        """Create a new folder to test with.
+        By default, it is created in INBOX (parent_id=1)
+        """
+        data = {
+            'parent_id': parent_id,
+            'PidTagDisplayName': name,
+            'PidTagComment': comment
+        }
+        return self.post_req('/folders/', data)

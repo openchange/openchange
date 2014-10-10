@@ -58,9 +58,12 @@ class FoldersInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(text, "")
 
     def test_existing_folder(self):
-        status, text, headers = self.head_req('/folders/1/')
-        self.assertEquals(status, 200, "Unexpected status code")
-        self.assertEquals(text, '', "Empty response expected")
+        # create some test item to play with
+        fid = self._create_test_folder(name='folder_existing', comment='folder_existing comment')
+        # fetch what we have
+        status, text, headers = self.head_req('/folders/%d/' % fid)
+        self.assertEqual(status, 200)
+        self.assertEqual(text, '')
 
     def test_delete(self):
         # create some test item to play with

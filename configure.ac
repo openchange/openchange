@@ -273,7 +273,7 @@ dnl Sun Studio Compiler
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
 dnl Intel Compiler
     COMPILER_OPTIONS_SHARED="-Wall -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
-    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wpointer-sign"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
 dnl GNU Compiler
@@ -283,7 +283,7 @@ dnl GNU Compiler
     else
         COMPILER_OPTIONS_SHARED="$COMPILER_OPTIONS_SHARED"
     fi
-    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes -Wpointer-sign"
     if test "x$use_cov" = "xyes"; then
         COMPILER_OPTIONS_C="$COMPILER_OPTIONS_C -fprofile-arcs -ftest-coverage"
         LDFLAGS="$LDFLAGS -lgcov --coverage"

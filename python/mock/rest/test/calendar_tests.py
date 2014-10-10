@@ -22,10 +22,9 @@ For reference see <>
 """
 
 import unittest
-import basetest
+import test
 
-
-class CalendarInterfaceTestCase(basetest.MockApiBaseTestCase):
+class CalendarInterfaceTestCase(test.MockApiBaseTestCase):
     """Basic tests for Calendars module interface"""
 
     def _create_test_item(self, parent_id=1, subject='Calendar 1', body='Cal text body'):

@@ -16,15 +16,17 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Unit testing for Openchange REST API server
+Tests to verify Openchange REST API implementation.
 """
 
 import unittest
 import requests
 import json
 
+
 # Default URL for Mock server running on localhost
 _SERVER_URL = 'http://localhost:5000'
+
 
 class MockApiBaseTestCase(unittest.TestCase):
     """Provide helpers for the rest of out tests"""
@@ -71,7 +73,3 @@ class MockApiBaseTestCase(unittest.TestCase):
             return json.loads(text)
         except (TypeError, ValueError) as e:
             return None
-
-
-if __name__ == '__main__':
-    unittest.main()

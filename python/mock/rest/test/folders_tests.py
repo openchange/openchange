@@ -22,10 +22,10 @@ For reference see <>
 """
 
 import unittest
-import basetest
+import test
 
 
-class FoldersInterfaceTestCase(basetest.MockApiBaseTestCase):
+class FoldersInterfaceTestCase(test.MockApiBaseTestCase):
 
     def test_create(self):
         """Folder creation test"""

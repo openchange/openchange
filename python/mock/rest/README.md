@@ -25,7 +25,8 @@ TODO:
 * "messages" support is not ready yet
 * no sessions support at the moment
 * no authentication support - everyone rules
-* some test page to demonstrate basic calls using jQuery.ajax
+* Add basic tests for testing API calls
+* Add more test to check corner cases, error handling, etc.
 * Add administrative endpoint so that server could be tuned in automated environment
 
 Enjoy!

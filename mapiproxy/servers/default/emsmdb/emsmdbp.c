@@ -511,10 +511,10 @@ _PUBLIC_ int emsmdbp_replid_to_guid(struct emsmdbp_context *emsmdbp_ctx, const c
 	return MAPI_E_NOT_FOUND;
 }
 
-_PUBLIC_ int emsmdbp_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *username, uint64_t fmid, struct Binary_r **source_keyP)
+_PUBLIC_ int emsmdbp_source_key_from_fmid(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, const char *username, int64_t fmid, struct Binary_r **source_keyP)
 {
 	struct Binary_r	*source_key;
-	uint64_t	gc;
+	int64_t		gc;
 	uint16_t	replid;
 	uint8_t		*bytes;
 	int		i;

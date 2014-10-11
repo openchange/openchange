@@ -46,7 +46,7 @@ struct GLOBSET_parser {
 /**
   \details Inverts the bytes of a globcnt, such as for the ids returned by Exchange
 */
-_PUBLIC_ uint64_t exchange_globcnt(uint64_t globcnt)
+_PUBLIC_ int64_t exchange_globcnt(int64_t globcnt)
 {
 	return ((globcnt & 0x00000000000000ffLL)	<< 40
 		| (globcnt & 0x000000000000ff00LL)	<< 24
@@ -122,9 +122,9 @@ static DATA_BLOB *GLOBSET_parser_stack_combine(TALLOC_CTX *mem_ctx, struct GLOBS
 	return combined;
 }
 
-static uint64_t GLOBSET_parser_range_value(DATA_BLOB *combined)
+static int64_t GLOBSET_parser_range_value(DATA_BLOB *combined)
 {
-	uint64_t value = 0, base = 1;
+	int64_t value = 0, base = 1;
 	uint8_t i;
 
 	for (i = 0; i < combined->length; i++) {
@@ -185,7 +185,7 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 {
 	uint8_t mask, bit, i;
 	DATA_BLOB *combined, additional;
-	uint64_t baseValue, lowValue, highValue;
+	int64_t baseValue, lowValue, highValue;
 	struct globset_range *range;
 	bool blank = false;
 
@@ -207,7 +207,7 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 		if (blank) {
 			if ((mask & bit)) {
 				blank = false;
-				lowValue = baseValue + ((uint64_t) (bit + 1) << 40);
+				lowValue = baseValue + ((int64_t) (bit + 1) << 40);
 				highValue = lowValue;
 			}
 		}
@@ -221,7 +221,7 @@ static inline void GLOBSET_parser_do_bitmask(struct GLOBSET_parser *parser)
 				blank = true;
 			}
 			else {
-				highValue = baseValue + ((uint64_t) (bit + 1) << 40);
+				highValue = baseValue + ((int64_t) (bit + 1) << 40);
 			}
 		}
 	}
@@ -433,10 +433,10 @@ static int IDSET_GUID_compar(const void *vap, const void *vbp)
 static int IDSET_globcnt_compar(const void *vap, const void *vbp)
 {
 	int retval;
-	uint64_t a, b;
+	int64_t a, b;
 
-	a = exchange_globcnt(*(uint64_t *) vap);
-	b = exchange_globcnt(*(uint64_t *) vbp);
+	a = exchange_globcnt(*(int64_t *) vap);
+	b = exchange_globcnt(*(int64_t *) vbp);
 
 	if (a < b) {
 		retval = -1;
@@ -461,12 +461,12 @@ static int IDSET_range_compar(const void *vap, const void *vbp)
 	return IDSET_globcnt_compar(&ap->low, &bp->low);
 }
 
-static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base_id, const struct GUID *base_guid, const uint64_t *array, uint32_t length, bool single)
+static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base_id, const struct GUID *base_guid, const int64_t *array, uint32_t length, bool single)
 {
 	struct idset *idset;
 	struct globset_range *current_globset;
-	uint64_t last_consequent;
-	uint64_t *work_array;
+	int64_t last_consequent;
+	int64_t *work_array;
 	uint32_t i;
 
 	if (!array) {
@@ -490,8 +490,8 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 		return idset;
 	}
 
-	work_array = talloc_memdup(NULL, array, sizeof(uint64_t) * length);
-	qsort(work_array, length, sizeof(uint64_t), IDSET_globcnt_compar);
+	work_array = talloc_memdup(NULL, array, sizeof(int64_t) * length);
+	qsort(work_array, length, sizeof(int64_t), IDSET_globcnt_compar);
 
 	if (length == 2) {
 		DEBUG(5, ("work_array[0]: %.16Lx, %.16Lx\n", (unsigned long long) work_array[0], (unsigned long long) work_array[1]));
@@ -528,7 +528,7 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 }
 
 /* start: [0|1|2|3|4|5] -- count --> */
-static void GLOBSET_ndr_push_shifted_id(struct ndr_push *ndr, uint64_t range_id, uint8_t start, uint8_t count)
+static void GLOBSET_ndr_push_shifted_id(struct ndr_push *ndr, int64_t range_id, uint8_t start, uint8_t count)
 {
 	uint8_t i, steps, byte;
 
@@ -542,7 +542,7 @@ static void GLOBSET_ndr_push_shifted_id(struct ndr_push *ndr, uint64_t range_id,
 static void GLOBSET_ndr_push_globset_range(struct ndr_push *ndr, struct globset_range *range)
 {
 	uint8_t i;
-	uint64_t mask;
+	int64_t mask;
 	bool done;
 
 	if (range->low == range->high) {
@@ -876,11 +876,11 @@ _PUBLIC_ struct Binary_r *IDSET_serialize(TALLOC_CTX *mem_ctx, const struct idse
 /**
   \details tests the presence of a specific id in the ranges of a ReplID-based idset structure
 */
-_PUBLIC_ bool IDSET_includes_eid(const struct idset *idset, uint64_t eid)
+_PUBLIC_ bool IDSET_includes_eid(const struct idset *idset, int64_t eid)
 {
 	struct globset_range *range;
 	uint16_t eid_id;
-	uint64_t eid_globcnt;
+	int64_t eid_globcnt;
 
 	if (!idset || !idset->idbased) {
 		return false;
@@ -909,7 +909,7 @@ _PUBLIC_ bool IDSET_includes_eid(const struct idset *idset, uint64_t eid)
 /**
   \details tests the presence of a specific id in the ranges of a ReplGUID-based idset structure
 */
-_PUBLIC_ bool IDSET_includes_guid_glob(const struct idset *idset, struct GUID *replica_guid, uint64_t id)
+_PUBLIC_ bool IDSET_includes_guid_glob(const struct idset *idset, struct GUID *replica_guid, int64_t id)
 {
 	struct globset_range *range;
 
@@ -936,10 +936,10 @@ _PUBLIC_ bool IDSET_includes_guid_glob(const struct idset *idset, struct GUID *r
 	return false;
 }
 
-static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
+static void IDSET_ranges_remove_globcnt(struct idset *idset, int64_t eid) {
 	struct globset_range *range, *new_range;
 	bool done = false;
-	uint64_t work_eid;
+	int64_t work_eid;
 
 	work_eid = exchange_globcnt(eid);
 
@@ -1078,7 +1078,7 @@ _PUBLIC_ struct rawidset *RAWIDSET_make(TALLOC_CTX *mem_ctx, bool idbased, bool 
 	rawidset->mem_ctx = mem_ctx;
 	rawidset->idbased = idbased;
 	rawidset->single = single;
-	rawidset->globcnts = talloc_zero(rawidset, uint64_t);
+	rawidset->globcnts = talloc_zero(rawidset, int64_t);
 	rawidset->count = 0;
 	rawidset->max_count = 0;
 	rawidset->next = NULL;
@@ -1136,11 +1136,11 @@ static struct rawidset *RAWIDSET_find_by_GUID(struct rawidset *rawidset, const s
 	return NULL;
 }
 
-_PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
+_PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, int64_t eid)
 {
 	struct rawidset *glob_idset, *last_glob_idset = NULL;
 	uint16_t eid_id;
-	uint64_t eid_globcnt;
+	int64_t eid_globcnt;
 
 	if (!rawidset) return;
 
@@ -1161,13 +1161,13 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 
 	if (glob_idset->count + 1 > glob_idset->max_count) {
 		glob_idset->max_count += 256;
-		glob_idset->globcnts = talloc_realloc(glob_idset, glob_idset->globcnts, uint64_t, glob_idset->max_count);
+		glob_idset->globcnts = talloc_realloc(glob_idset, glob_idset->globcnts, int64_t, glob_idset->max_count);
 	}
 	glob_idset->globcnts[glob_idset->count] = eid_globcnt;
 	glob_idset->count++;
 }
 
-_PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GUID *guid, uint64_t globcnt)
+_PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GUID *guid, int64_t globcnt)
 {
 	struct rawidset		*glob_idset;
 	struct rawidset		*last_glob_idset = NULL;
@@ -1205,7 +1205,7 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 
 	if (glob_idset->count + 1 > glob_idset->max_count) {
 		glob_idset->max_count += 256;
-		glob_idset->globcnts = talloc_realloc(glob_idset, glob_idset->globcnts, uint64_t, glob_idset->max_count);
+		glob_idset->globcnts = talloc_realloc(glob_idset, glob_idset->globcnts, int64_t, glob_idset->max_count);
 	}
 	glob_idset->globcnts[glob_idset->count] = globcnt;
 	glob_idset->count++;

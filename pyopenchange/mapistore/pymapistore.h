@@ -55,7 +55,7 @@ typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;
-	uint64_t			fid;
+	int64_t				fid;
 	void				*folder_object;
 	uint32_t			context_id;
 	PyMAPIStoreObject		*parent;
@@ -66,7 +66,7 @@ typedef struct {
 	TALLOC_CTX			*mem_ctx;
 	PyMAPIStoreContextObject	*context;
 	void				*folder_object;
-	uint64_t			fid;
+	int64_t				fid;
 } PyMAPIStoreFolderObject;
 
 typedef struct {

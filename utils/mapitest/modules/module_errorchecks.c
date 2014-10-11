@@ -50,7 +50,7 @@ _PUBLIC_ bool mapitest_errorchecks_simplemapi_c(struct mapitest *mt)
 	mapi_object_t	*obj_folder = 0;
 	mapi_object_t	*obj_message = 0;
 	mapi_object_t	tmp;
-	uint64_t	*folder = 0;
+	int64_t		*folder = 0;
 	uint32_t	id = 0x99;
 	uint32_t	arg; 		// an all purpose argument...
 

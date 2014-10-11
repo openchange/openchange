@@ -472,7 +472,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_message(struct mapistore
 	struct indexing_context		*ictxp;
 	char				*uri;
 	int				ret;
-	uint64_t			mid;
+	int64_t				mid;
 	bool				retval;
 	bool				softdeleted;
 

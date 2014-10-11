@@ -121,7 +121,7 @@
 /**
    \details: SaveChangesMessageRop has fixed response size for:
    -# handle_idx: uint8_t
-   -# MessageId: uint64_t
+   -# MessageId: int64_t
  */
 #define	SIZE_DFLT_ROPSAVECHANGESMESSAGE		9
 
@@ -154,7 +154,7 @@
 /**
    \details: OpenEmbeddedMessage has fixed response size for:
    -# Reserved: uint8_t
-   -# MessageId: uint64_t
+   -# MessageId: int64_t
    -# HasNamedProperties: uint8_t
    -# RecipientCount: uint16_t
    -# RecipientColumns.cValues: uint16_t
@@ -203,7 +203,7 @@
 
 /**
    \details CreateFolderRop has fixed response size for:
-   -# folder_id: uint64_t
+   -# folder_id: int64_t
    -# isExistingFolder: uint8_t
  */
 #define	SIZE_DFLT_ROPCREATEFOLDER		9
@@ -247,7 +247,7 @@
 
 /**
    \details GetReceiveFolder has fixed response size for:
-   -# folder_id: uint64_t
+   -# folder_id: int64_t
  */
 #define	SIZE_DFLT_ROPGETRECEIVEFOLDER		8
 
@@ -266,7 +266,7 @@
 
 /**
    \details GetTransportFolder has fixed response size for:
-   -# FolderId: uint64_t
+   -# FolderId: int64_t
  */
 #define	SIZE_DFLT_ROPGETTRANSPORTFOLDER		8
 
@@ -396,7 +396,7 @@
 /**
    \details LogonRop has a fixed size for mailbox:
    -# LogonFlags: uint8_t
-   -# FolderIDs: uint64_t * 13
+   -# FolderIDs: int64_t * 13
    -# ResponseFlags: uint8_t
    -# MailboxGUID: sizeof (struct GUID)
    -# ReplID: uint16_t
@@ -410,7 +410,7 @@
 /**
    \details LogonRop has a fixed size for public folder logon:
    -# LogonFlags: uint8_t
-   -# FolderIDs: uint64_t * 13
+   -# FolderIDs: int64_t * 13
    -# ReplId: uint16_t
    -# ReplGuid: sizeof (struct GUID) = 16 bytes
    -# PerUserGuid: sizeof (struct GUID) = 16 bytes
@@ -453,19 +453,19 @@
 
 /**
    \details SyncImportMessageChange has a fixed size for:
-   -# FolderId: uint64_t
+   -# FolderId: int64_t
 */
 #define SIZE_DFLT_ROPSYNCIMPORTMESSAGECHANGE 8
 
 /**
    \details SyncImportHierarchyChange has a fixed size for:
-   -# FolderId: uint64_t
+   -# FolderId: int64_t
 */
 #define SIZE_DFLT_ROPSYNCIMPORTHIERARCHYCHANGE 8
 
 /**
    \details SyncImportMessageMove has a fixed size for:
-   -# MessageId: uint64_t
+   -# MessageId: int64_t
 */
 #define SIZE_DFLT_ROPSYNCIMPORTMESSAGEMOVE 8
 

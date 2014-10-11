@@ -103,7 +103,7 @@ struct ocpf_context
 	struct SRowSet		*recipients;
 	struct SPropValue	*lpProps;
 	uint32_t		cValues;
-	uint64_t		folder;
+	int64_t			folder;
 	/* context */
 	FILE			*fp;
 	const char		*filename;

@@ -35,8 +35,8 @@ struct idset {
 };
 
 struct globset_range {
-	uint64_t		low;
-	uint64_t		high;
+	int64_t			low;
+	int64_t			high;
 	struct globset_range	*prev;
 	struct globset_range	*next;
 };
@@ -49,7 +49,7 @@ struct rawidset {
 		struct GUID	guid;
 	} repl;
 	bool		single; /* single range */
-	uint64_t	*globcnts;
+	int64_t		*globcnts;
 	int		count;
 	int		max_count;
 	struct rawidset	*next;

@@ -159,9 +159,9 @@ static PyObject *py_ocpf_dump(PyOcpfObject *self)
 static PyObject *py_ocpf_write_init(PyOcpfObject *self, PyObject *args)
 {
 	int		ret;
-	uint64_t	folder_id;
+	int64_t		folder_id;
 
-	if (!PyArg_ParseTuple(args, "K", &folder_id)) {
+	if (!PyArg_ParseTuple(args, "L", &folder_id)) {
 		return NULL;
 	}
 

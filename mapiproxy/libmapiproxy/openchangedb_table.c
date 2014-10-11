@@ -49,7 +49,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *mem_ctx,
 						 struct openchangedb_context *self,
 						 const char *username,
 						 uint8_t table_type,
-						 uint64_t folderID,
+						 int64_t folderID,
 						 void **table_object)
 {
 	MAPI_RETVAL_IF(!self, MAPI_E_NOT_INITIALIZED, NULL);

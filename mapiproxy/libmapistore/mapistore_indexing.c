@@ -152,7 +152,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context *mstore_ctx,
 							uint32_t context_id,
 							const char *username,
-							uint64_t fmid, int type)
+							int64_t fmid, int type)
 {
 	int				ret;
 	struct backend_context		*backend_ctx;
@@ -208,7 +208,7 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context *mstore_ctx,
-							uint32_t context_id, const char *username, uint64_t fmid,
+							uint32_t context_id, const char *username, int64_t fmid,
 							uint8_t flags, int type)
 {
 	int				ret;
@@ -255,7 +255,7 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, uint64_t fmid, char **urip, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore_context *mstore_ctx, const char *username, TALLOC_CTX *mem_ctx, int64_t fmid, char **urip, bool *soft_deletedp)
 {
 	struct indexing_context	*ictx;
 	int			ret;
@@ -274,7 +274,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore
 	return ictx->get_uri(ictx, username, mem_ctx, fmid, urip, soft_deletedp);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, bool partial, uint64_t *fmidp, bool *soft_deletedp)
+_PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistore_context *mstore_ctx, const char *username, const char *uri, bool partial, int64_t *fmidp, bool *soft_deletedp)
 {
 	struct indexing_context		*ictx;
 	int				ret;
@@ -307,7 +307,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t fid)
+								uint32_t context_id, const char *username, int64_t fid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid, MAPISTORE_FOLDER);
 }
@@ -326,7 +326,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t fid, 
+								uint32_t context_id, const char *username, int64_t fid, 
 								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags, MAPISTORE_FOLDER);
@@ -347,7 +347,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t mid)
+								uint32_t context_id, const char *username, int64_t mid)
 {
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid, MAPISTORE_MESSAGE);
 }
@@ -366,7 +366,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore_context *mstore_ctx,
-								uint32_t context_id, const char *username, uint64_t mid,
+								uint32_t context_id, const char *username, int64_t mid,
 								uint8_t flags)
 {
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags, MAPISTORE_MESSAGE);
@@ -374,7 +374,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore
 
 static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_context *mstore_ctx,
 							    const char *username,
-							    uint64_t range_len, uint64_t *fid)
+							    uint32_t range_len, int64_t *fid)
 {
 	enum mapistore_error ret;
 	struct indexing_context	*ictx;
@@ -401,7 +401,7 @@ static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_con
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct mapistore_context *mstore_ctx,
-									  const char *username, uint64_t *fid)
+									  const char *username, int64_t *fid)
 {
 	enum mapistore_error ret;
 
@@ -422,7 +422,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID(struct mapistore_context *mstore_ctx,
-								  uint64_t *fid)
+								  int64_t *fid)
 {
 	return mapistore_indexing_get_new_folderID_as_user(mstore_ctx, mstore_ctx->conn_info->username, fid);
 }
@@ -439,11 +439,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID(struct mapisto
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapistore_context *mstore_ctx,
 								   TALLOC_CTX *mem_ctx,
-								   uint64_t max,
+								   uint32_t max,
 								   struct UI8Array_r **fids_p)
 {
-	uint64_t fid;
-	uint64_t count;
+	int64_t fid;
+	uint32_t count;
 	enum mapistore_error ret;
 	struct UI8Array_r *fids;
 
@@ -452,7 +452,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapist
 
 	fids = talloc_zero(mem_ctx, struct UI8Array_r);
 	fids->cValues = max;
-	fids->lpui8 = talloc_array(fids, uint64_t, max);
+	fids->lpui8 = talloc_array(fids, int64_t, max);
 
 	for (count = 0; count < max; count++) {
 		fids->lpui8[count] = (exchange_globcnt(fid + count) << 16) | 0x0001;
@@ -474,11 +474,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapist
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_indexing_reserve_fmid_range(struct mapistore_context *mstore_ctx,
-								    uint64_t range_len,
-								    uint64_t *first_fmidp)
+								    uint32_t range_len,
+								    int64_t *first_fmidp)
 {
 	enum mapistore_error ret;
-	uint64_t fmid;
+	int64_t fmid;
 	struct indexing_context	*ictx;
 	const char *username;
 

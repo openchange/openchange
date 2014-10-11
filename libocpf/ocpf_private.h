@@ -59,7 +59,7 @@ int ocpf_new_recipient(struct ocpf_context *);
 int ocpf_recipient_set_class(struct ocpf_context *, enum ulRecipClass);
 int ocpf_nproperty_add(struct ocpf_context *, struct ocpf_nprop *, union SPropValue_CTR, const char *, uint16_t, bool);
 int ocpf_type_add(struct ocpf_context *, const char *);
-int ocpf_folder_add(struct ocpf_context *, const char *, uint64_t, const char *);
+int ocpf_folder_add(struct ocpf_context *, const char *, int64_t, const char *);
 int ocpf_oleguid_add(struct ocpf_context *, const char *, const char *);
 int ocpf_oleguid_check(struct ocpf_context *, const char *, const char **);
 int ocpf_add_filetime(const char *, struct FILETIME *);

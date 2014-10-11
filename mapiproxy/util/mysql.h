@@ -36,11 +36,17 @@ enum MYSQLRESULT execute_query(MYSQL *, const char *);
 enum MYSQLRESULT select_without_fetch(MYSQL *, const char *, MYSQL_RES **);
 enum MYSQLRESULT select_all_strings(TALLOC_CTX *, MYSQL *, const char *, struct StringArrayW_r **);
 enum MYSQLRESULT select_first_string(TALLOC_CTX *, MYSQL *, const char *, const char **);
-enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql, uint64_t *n);
+enum MYSQLRESULT select_first_uint32(MYSQL *, const char *, uint32_t *);
+enum MYSQLRESULT select_first_uint64(MYSQL *, const char *, uint64_t *);
+enum MYSQLRESULT select_first_int(MYSQL *, const char *, int *);
+enum MYSQLRESULT select_first_int64(MYSQL *, const char *, int64_t *);
 
 bool table_exists(MYSQL *, char *);
 bool create_schema(MYSQL *, const char *);
+bool convert_string_to_ul(const char *, uint32_t *);
 bool convert_string_to_ull(const char *, uint64_t *);
+bool convert_string_to_l(const char *, int *);
+bool convert_string_to_ll(const char *, int64_t *);
 
 MYSQL *create_connection(const char *, MYSQL **);
 void release_connection(MYSQL *);

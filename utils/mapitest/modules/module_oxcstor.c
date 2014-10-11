@@ -284,7 +284,7 @@ _PUBLIC_ bool mapitest_oxcstor_GetOwningServers(struct mapitest *mt)
 	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
-	uint64_t		folderId;
+	int64_t			folderId;
 	uint16_t		OwningServersCount;
 	uint16_t		CheapServersCount;
 	char			*OwningServers;
@@ -358,7 +358,7 @@ _PUBLIC_ bool mapitest_oxcstor_PublicFolderIsGhosted(struct mapitest *mt)
 	bool			ret = true;
 	mapi_object_t		obj_store;
 	mapi_object_t		obj_folder;
-	uint64_t		folderId;
+	int64_t			folderId;
 	bool			IsGhosted;
 
 	/* Step 1. Logon */

@@ -200,7 +200,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetSearchCriteria_size(struct EcDoRpc_MAPI_RE
 
 	size += SIZE_DFLT_ROPGETSEARCHCRITERIA;
 	size += response->u.mapi_GetSearchCriteria.RestrictionDataSize;
-	size += response->u.mapi_GetSearchCriteria.FolderIdCount * sizeof (uint64_t);
+	size += response->u.mapi_GetSearchCriteria.FolderIdCount * sizeof (int64_t);
 
 	return size;
 }

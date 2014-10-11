@@ -39,7 +39,7 @@ void yyerror(struct ocpf_context *, void *, char *);
 	uint8_t				b;
 	uint16_t			s;
 	uint32_t			l;
-	uint64_t			d;
+	int64_t				d;
 	double				dbl;
 	char				*name;
 	char				*nameW;

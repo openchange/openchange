@@ -54,16 +54,16 @@ struct poptOption popt_openchange_version[] = {
 struct parent_fid {
         struct parent_fid	*prev;
         struct parent_fid	*next;
-        uint64_t		fid;
+        int64_t			fid;
 };
 
 struct mapistore_output_ctx {
 	struct mapistore_context	*mstore_ctx;
 	uint32_t			mapistore_context_id;
-	uint64_t			root_fid;
+	int64_t				root_fid;
 	void				*root_folder;
 	struct parent_fid		*parent_fids; /* stack */
-	uint64_t			current_id;
+	int64_t				current_id;
 	uint8_t				current_output_type;
 	struct SRow			*proplist; /* the properties on the "current" object */
 };

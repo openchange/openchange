@@ -200,60 +200,59 @@ struct openchangedb_context;
 
 /* definitions from openchangedb.c */
 enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *, struct loadparm_context *, struct openchangedb_context **oc_ctx);
-enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *, const char *, uint64_t *);
-enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *, TALLOC_CTX *, const char *, uint64_t, struct UI8Array_r **);
-enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *, const char *, uint64_t *);
-enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
-enum MAPISTATUS openchangedb_get_SpecialFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
-enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *, const char *, uint32_t, uint64_t *);
-enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
-enum MAPISTATUS openchangedb_get_mailboxDN(TALLOC_CTX *, struct openchangedb_context *, uint64_t, char **);
+enum MAPISTATUS openchangedb_get_new_changeNumber(struct openchangedb_context *, const char *, int64_t *);
+enum MAPISTATUS openchangedb_get_new_changeNumbers(struct openchangedb_context *, TALLOC_CTX *, const char *, uint32_t, struct UI8Array_r **);
+enum MAPISTATUS openchangedb_get_next_changeNumber(struct openchangedb_context *, const char *, int64_t *);
+enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_context *, const char *, uint32_t, int64_t *);
+enum MAPISTATUS openchangedb_get_SpecialFolderID(struct openchangedb_context *, const char *, uint32_t, int64_t *);
+enum MAPISTATUS openchangedb_get_PublicFolderID(struct openchangedb_context *, const char *, uint32_t, int64_t *);
+enum MAPISTATUS openchangedb_get_distinguishedName(TALLOC_CTX *, struct openchangedb_context *, int64_t, char **);
 enum MAPISTATUS	openchangedb_get_MailboxGuid(struct openchangedb_context *, const char *, struct GUID *);
 enum MAPISTATUS	openchangedb_get_MailboxReplica(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
 enum MAPISTATUS openchangedb_get_PublicFolderReplica(struct openchangedb_context *, const char *, uint16_t *, struct GUID *);
-enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *, const char *, uint64_t, uint64_t *, bool);
+enum MAPISTATUS openchangedb_get_parent_fid(struct openchangedb_context *, const char *, int64_t, int64_t *, bool);
 enum MAPISTATUS openchangedb_get_MAPIStoreURIs(struct openchangedb_context *, const char *, TALLOC_CTX *, struct StringArrayW_r **);
-enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, char **, bool);
-enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_context *, const char *, uint64_t, const char *);
-enum MAPISTATUS openchangedb_get_fid(struct openchangedb_context *, const char *, uint64_t *);
-enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *, uint64_t *, const char **);
+enum MAPISTATUS openchangedb_get_mapistoreURI(TALLOC_CTX *, struct openchangedb_context *, const char *, int64_t, char **, bool);
+enum MAPISTATUS openchangedb_set_mapistoreURI(struct openchangedb_context *, const char *, int64_t, const char *);
+enum MAPISTATUS openchangedb_get_fid(struct openchangedb_context *, const char *, int64_t *);
+enum MAPISTATUS openchangedb_get_ReceiveFolder(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *, int64_t *, const char **);
 enum MAPISTATUS openchangedb_get_ReceiveFolderTable(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t *, struct ReceiveFolder **);
-enum MAPISTATUS openchangedb_get_TransportFolder(struct openchangedb_context *, const char *, uint64_t *);
-enum MAPISTATUS openchangedb_lookup_folder_property(struct openchangedb_context *, uint32_t, uint64_t);
-enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_context *, const char *, uint64_t, struct SRow *);
+enum MAPISTATUS openchangedb_get_TransportFolder(struct openchangedb_context *, const char *, int64_t *);
+enum MAPISTATUS openchangedb_lookup_folder_property(struct openchangedb_context *, uint32_t, int64_t);
+enum MAPISTATUS openchangedb_set_folder_properties(struct openchangedb_context *, const char *, int64_t, struct SRow *);
 char *          openchangedb_set_folder_property_data(TALLOC_CTX *, struct SPropValue *);
-enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, uint64_t, void **);
-enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *, const char *, uint64_t, uint32_t *);
-enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_context *, const char *, uint64_t, uint32_t *, bool);
-enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context *, const char *, uint64_t, int *);
+enum MAPISTATUS openchangedb_get_folder_property(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, int64_t, void **);
+enum MAPISTATUS openchangedb_get_folder_count(struct openchangedb_context *, const char *, int64_t, uint32_t *);
+enum MAPISTATUS openchangedb_get_message_count(struct openchangedb_context *, const char *, int64_t, uint32_t *, bool);
+enum MAPISTATUS openchangedb_get_system_idx(struct openchangedb_context *, const char *, int64_t, int *);
 enum MAPISTATUS openchangedb_get_table_property(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t, uint32_t, void **);
-enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_context *, const char *, uint64_t, const char*, uint64_t *);
-enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_context *, const char *, uint64_t, const char *, bool, uint64_t *);
-enum MAPISTATUS openchangedb_set_ReceiveFolder(struct openchangedb_context *, const char *, const char *, uint64_t);
-enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *, const char *, const char *, const char *, uint64_t, const char *);
-enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *, const char *, uint64_t, uint64_t, uint64_t, const char *, int);
-enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *, const char *, uint64_t);
-enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchangedb_context *, const char *, uint64_t *);
+enum MAPISTATUS openchangedb_get_fid_by_name(struct openchangedb_context *, const char *, int64_t, const char*, int64_t *);
+enum MAPISTATUS openchangedb_get_mid_by_subject(struct openchangedb_context *, const char *, int64_t, const char *, bool, int64_t *);
+enum MAPISTATUS openchangedb_set_ReceiveFolder(struct openchangedb_context *, const char *, const char *, int64_t);
+enum MAPISTATUS openchangedb_create_mailbox(struct openchangedb_context *, const char *, const char *, const char *, int64_t, const char *);
+enum MAPISTATUS openchangedb_create_folder(struct openchangedb_context *, const char *, int64_t, int64_t, int64_t, const char *, int);
+enum MAPISTATUS openchangedb_delete_folder(struct openchangedb_context *, const char *, int64_t);
+enum MAPISTATUS openchangedb_get_fid_from_partial_uri(struct openchangedb_context *, const char *, int64_t *);
 enum MAPISTATUS openchangedb_get_users_from_partial_uri(TALLOC_CTX *, struct openchangedb_context *, const char *, uint32_t *, char ***, char ***);
 enum MAPISTATUS openchangedb_transaction_start(struct openchangedb_context *);
 enum MAPISTATUS openchangedb_transaction_commit(struct openchangedb_context *);
 
-enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context *, const char *, uint64_t *);
-bool		openchangedb_is_public_folder_id(struct openchangedb_context *, uint64_t);
+enum MAPISTATUS openchangedb_get_new_public_folderID(struct openchangedb_context *, const char *, int64_t *);
+bool		openchangedb_is_public_folder_id(struct openchangedb_context *, int64_t);
 
 enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_context *, const char *, const char **);
 bool 		openchangedb_set_locale(struct openchangedb_context*, const char *, uint32_t);
 const char **	openchangedb_get_folders_names(TALLOC_CTX *, struct openchangedb_context *, const char *, const char *);
 
 /* definitions from openchangedb_table.c */
-enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, uint64_t, void **);
+enum MAPISTATUS openchangedb_table_init(TALLOC_CTX *, struct openchangedb_context *, const char *, uint8_t, int64_t, void **);
 enum MAPISTATUS openchangedb_table_set_sort_order(struct openchangedb_context *, void *, struct SSortOrderSet *);
 enum MAPISTATUS openchangedb_table_set_restrictions(struct openchangedb_context *, void *, struct mapi_SRestriction *);
 enum MAPISTATUS openchangedb_table_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, enum MAPITAGS, uint32_t, bool, void **);
 
 /* definitions from openchangedb_message.c */
-enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, void **, void **);
-enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct openchangedb_context *, const char *, uint64_t, uint64_t, bool, void **);
+enum MAPISTATUS openchangedb_message_open(TALLOC_CTX *, struct openchangedb_context *, const char *, int64_t, int64_t, void **, void **);
+enum MAPISTATUS openchangedb_message_create(TALLOC_CTX *, struct openchangedb_context *, const char *, int64_t, int64_t, bool, void **);
 enum MAPISTATUS openchangedb_message_save(struct openchangedb_context *, void *, uint8_t);
 enum MAPISTATUS openchangedb_message_get_property(TALLOC_CTX *, struct openchangedb_context *, void *, uint32_t, void **);
 enum MAPISTATUS openchangedb_message_set_properties(TALLOC_CTX *, struct openchangedb_context *, void *, struct SRow *);
@@ -274,7 +273,7 @@ enum MAPISTATUS mapi_handles_set_systemfolder(struct mapi_handles *, int);
 
 /* definitions from entryid.c */
 enum MAPISTATUS entryid_set_AB_EntryID(TALLOC_CTX *, const char *, struct SBinary_short *);
-enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *, struct GUID *, struct GUID *, uint16_t, uint64_t, struct Binary_r **);
+enum MAPISTATUS entryid_set_folder_EntryID(TALLOC_CTX *, struct GUID *, struct GUID *, uint16_t, int64_t, struct Binary_r **);
 
 /* definitions from modules.c */
 typedef NTSTATUS (*openchange_plugin_init_fn) (void);

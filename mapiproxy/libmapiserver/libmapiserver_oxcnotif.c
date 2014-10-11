@@ -55,38 +55,38 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         switch (response->u.mapi_Notify.NotificationType) {
                 /* Folders */
         case 0x3010: /* different forms of folder modifications */
-                size += sizeof (uint64_t) + sizeof (uint32_t) * 2 + sizeof (uint16_t);
+                size += sizeof (int64_t) + sizeof (uint32_t) * 2 + sizeof (uint16_t);
                 if (NotificationData->FolderModifiedNotification_3010.TagCount != 0xFFFF) {
 			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_3010.TagCount;
                 }
 		break;
         case 0x1010:
-		size += sizeof (uint64_t) + sizeof (uint16_t) + sizeof(uint32_t);
+		size += sizeof (int64_t) + sizeof (uint16_t) + sizeof(uint32_t);
 		if (NotificationData->FolderModifiedNotification_1010.TagCount != 0xFFFF) {
 			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_1010.TagCount;
 		}
 		break;
         case 0x2010:
-		size += sizeof (uint64_t) + sizeof (uint16_t) + sizeof(uint32_t);
+		size += sizeof (int64_t) + sizeof (uint16_t) + sizeof(uint32_t);
 		if (NotificationData->FolderModifiedNotification_2010.TagCount != 0xFFFF) {
 			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_2010.TagCount;
 		}
 		break;
         case 0x0010: /* folder modified */
-                size += sizeof (uint64_t) + sizeof (uint16_t);
+                size += sizeof (int64_t) + sizeof (uint16_t);
                 if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
 			size += sizeof(enum MAPITAGS) * NotificationData->FolderModifiedNotification_10.TagCount;
                 }
                 break;
         case 0x0004: /* folder created */
-		size += sizeof (uint64_t) * 2 + sizeof (uint16_t);
+		size += sizeof (int64_t) * 2 + sizeof (uint16_t);
 		if (NotificationData->FolderModifiedNotification_10.TagCount != 0xffff) {
 			size += sizeof(enum MAPITAGS) * NotificationData->FolderCreatedNotification.TagCount;
 		}
 		break;
 	case 0x0002: /* newmail */
 	case 0x8002:
-		size += sizeof (uint64_t) * 2 + sizeof (uint32_t) + sizeof (uint8_t);
+		size += sizeof (int64_t) * 2 + sizeof (uint32_t) + sizeof (uint8_t);
 		if (NotificationData->NewMailNotification.UnicodeFlag == false) {
 			size += strlen(NotificationData->NewMailNotification.MessageClass.lpszA) + 1;
 		} else {
@@ -94,20 +94,20 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
 		}
 		break;
         case 0x8004: /* message created */
-		size += sizeof (uint64_t) * 2 + sizeof(uint16_t);
+		size += sizeof (int64_t) * 2 + sizeof(uint16_t);
 		if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
 		        size += sizeof(enum MAPITAGS) * NotificationData->MessageCreatedNotification.TagCount;
 		}
 		break;
         case 0x8010: /* message modified */
-                size += sizeof (uint64_t) * 2 + sizeof(uint16_t);
+                size += sizeof (int64_t) * 2 + sizeof(uint16_t);
                 if (NotificationData->MessageCreatedNotification.TagCount != 0xffff) {
                         size += sizeof(enum MAPITAGS) * NotificationData->MessageModifiedNotification.TagCount;
                 }
 		break;
         case 0x8008: /* message deleted */
         case 0x0008: /* folder deleted */
-                size += 2 * sizeof(uint64_t);
+                size += 2 * sizeof(int64_t);
                 break;
 
                 /* Tables */
@@ -115,14 +115,14 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 size += sizeof(uint16_t); /* TableEventType */
                 switch (NotificationData->HierarchyTableChange.TableEvent) {
                 case TABLE_ROW_ADDED:
-                        size += 2 * sizeof(uint64_t); /* FID and InsertAfterFID */
+                        size += 2 * sizeof(int64_t); /* FID and InsertAfterFID */
                         size += sizeof(uint16_t) + NotificationData->HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowAddedNotification.Columns.length; /* blob length */
                         break;
                 case TABLE_ROW_DELETED:
-                        size += sizeof(uint64_t); /* FID */
+                        size += sizeof(int64_t); /* FID */
                         break;
                 case TABLE_ROW_MODIFIED:
-                        size += 2 * sizeof(uint64_t); /* FID and InsertAfterFID */
+                        size += 2 * sizeof(int64_t); /* FID and InsertAfterFID */
                         size += sizeof(uint16_t) + NotificationData->HierarchyTableChange.HierarchyTableChangeUnion.HierarchyRowModifiedNotification.Columns.length; /* blob length */
                         break;
                 default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
@@ -133,14 +133,14 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 size += sizeof(uint16_t); /* TableEventType */
                 switch (NotificationData->ContentsTableChange.TableEvent) {
                 case TABLE_ROW_ADDED:
-                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += 2 * (2 * sizeof(int64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
                         size += sizeof(uint16_t) + NotificationData->ContentsTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Columns.length; /* blob length */
                         break;
                 case TABLE_ROW_DELETED:
-                        size += 2 * sizeof(uint64_t) + sizeof(uint32_t); /* FID, MID, Instance */
+                        size += 2 * sizeof(int64_t) + sizeof(uint32_t); /* FID, MID, Instance */
                         break;
                 case TABLE_ROW_MODIFIED:
-                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += 2 * (2 * sizeof(int64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
                         size += sizeof(uint16_t) + NotificationData->ContentsTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns.length;
                         break;
                 default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
@@ -151,14 +151,14 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
                 size += sizeof(uint16_t); /* TableEventType */
                 switch (NotificationData->SearchTableChange.TableEvent) {
                 case TABLE_ROW_ADDED:
-                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += 2 * (2 * sizeof(int64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
                         size += sizeof(uint16_t) + NotificationData->SearchTableChange.ContentsTableChangeUnion.ContentsRowAddedNotification.Columns.length; /* blob length */
                         break;
                 case TABLE_ROW_DELETED:
-                        size += 2 * sizeof(uint64_t) + sizeof(uint32_t); /* FID, MID, Instance */
+                        size += 2 * sizeof(int64_t) + sizeof(uint32_t); /* FID, MID, Instance */
                         break;
                 case TABLE_ROW_MODIFIED:
-                        size += 2 * (2 * sizeof(uint64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
+                        size += 2 * (2 * sizeof(int64_t) + sizeof(uint32_t)); /* FID, MID, Instance, InsertAfterFID, InsertAfterMID, InsertAfterInstance */
                         size += sizeof(uint16_t) + NotificationData->SearchTableChange.ContentsTableChangeUnion.ContentsRowModifiedNotification.Columns.length;
                         break;
                 default: /* TABLE_CHANGED and TABLE_RESTRICT_DONE */
@@ -200,7 +200,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /*         break; */
         case 0x8020:
         case 0x8040:
-                 size += sizeof (uint64_t) * 4;
+                 size += sizeof (int64_t) * 4;
                  break; 
         /* case 0x8100: */
         /* case 0xc100: */

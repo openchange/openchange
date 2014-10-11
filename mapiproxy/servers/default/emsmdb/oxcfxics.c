@@ -86,7 +86,7 @@ struct oxcfxics_sync_data {
 };
 
 struct oxcfxics_message_sync_data {
-	uint64_t	*mids;
+	int64_t		*mids;
 	uint64_t	count;
 	uint64_t	max;
 };
@@ -170,7 +170,7 @@ static void oxcfxics_ndr_push_simple_data(struct ndr_push *ndr, uint16_t prop_ty
 		ndr_push_double(ndr, NDR_SCALARS, *(double *) value);
 		break;
 	case PT_I8:
-		ndr_push_dlong(ndr, NDR_SCALARS, *(uint64_t *) value);
+		ndr_push_dlong(ndr, NDR_SCALARS, *(int64_t *) value);
 		break;
 	case PT_BOOLEAN:
 		ndr_push_uint16(ndr, NDR_SCALARS, (*(uint8_t *) value) ? 1 : 0);
@@ -353,9 +353,9 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 
 }
 
-static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, const char *owner, struct SBinary_short *source_key, uint64_t *fmidp)
+static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, const char *owner, struct SBinary_short *source_key, int64_t *fmidp)
 {
-	uint64_t	fmid, base;
+	int64_t		fmid, base;
 	uint16_t	replid;
 	const uint8_t	*bytes;
 	int		i;
@@ -368,7 +368,7 @@ static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, co
 	fmid = 0;
 	base = 1;
 	for (i = 0; i < 6; i++) {
-		fmid |= (uint64_t) bytes[i] * base;
+		fmid |= (int64_t) bytes[i] * base;
 		base <<= 8;
 	}
 	fmid <<= 16;
@@ -378,12 +378,12 @@ static int oxcfxics_fmid_from_source_key(struct emsmdbp_context *emsmdbp_ctx, co
 	return MAPISTORE_SUCCESS;
 }
 
-static struct Binary_r *oxcfxics_make_xid(TALLOC_CTX *mem_ctx, struct GUID *replica_guid, uint64_t *id, uint8_t idlength)
+static struct Binary_r *oxcfxics_make_xid(TALLOC_CTX *mem_ctx, struct GUID *replica_guid, int64_t *id, uint8_t idlength)
 {
 	struct ndr_push	*ndr;
 	struct Binary_r *data;
-	uint8_t	i;
-	uint64_t current_id;
+	uint8_t		i;
+	int64_t		current_id;
 
 	if (!mem_ctx) return NULL;
 	if (!replica_guid || !id) return NULL;
@@ -411,7 +411,7 @@ static struct Binary_r *oxcfxics_make_xid(TALLOC_CTX *mem_ctx, struct GUID *repl
 	return data;
 }
 
-static inline struct Binary_r *oxcfxics_make_gid(TALLOC_CTX *mem_ctx, struct GUID *replica_guid, uint64_t id)
+static inline struct Binary_r *oxcfxics_make_gid(TALLOC_CTX *mem_ctx, struct GUID *replica_guid, int64_t id)
 {
 	return oxcfxics_make_xid(mem_ctx, replica_guid, &id, 6);
 }
@@ -625,7 +625,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(struct emsmd
 	enum mapistore_error		ret;
         struct mapistore_message	*msg;
 	void				*embedded_message;
-	uint64_t			messageID;
+	int64_t				messageID;
 	struct SPropTagArray		*properties;
 	struct mapistore_property_data  *prop_data;
 	void				**data_pointers;
@@ -805,7 +805,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	struct SPropTagArray		query_props;
 	struct Binary_r			predecessors_data;
 	struct Binary_r			*bin_data;
-	uint64_t			eid, cn;
+	int64_t				eid, cn;
 	struct mapistore_message	*msg;
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
@@ -856,12 +856,12 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 			DEBUG(5, ("push_messageChange: %d objects in table\n", table_object->object.table->denominator));
 			/* fetch maching mids */
-			message_sync_data->mids = talloc_array(message_sync_data, uint64_t, table_object->object.table->denominator);
+			message_sync_data->mids = talloc_array(message_sync_data, int64_t, table_object->object.table->denominator);
 			for (i = 0; i < table_object->object.table->denominator; i++) {
 				data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 				if (data_pointers) {
 					if (retvals[0] == MAPI_E_SUCCESS) {
-						message_sync_data->mids[message_sync_data->max] = *(uint64_t *) data_pointers[0];
+						message_sync_data->mids[message_sync_data->max] = *(int64_t *) data_pointers[0];
 						message_sync_data->max++;
 					}
 				}
@@ -950,7 +950,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 			abort();
 		}
-		cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
+		cn = ((*(int64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 		if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 			synccontext->skipped_objects++;
 			DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
@@ -1021,8 +1021,8 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		/* cn (conditional) */
 		if (synccontext->request.request_cn) {
 			query_props.aulPropTag[i] = PidTagChangeNumber;
-			header_data_pointers[i] = talloc_zero(header_data_pointers, uint64_t);
-			*(uint64_t *) header_data_pointers[i] = (cn << 16) | (eid & 0xffff);
+			header_data_pointers[i] = talloc_zero(header_data_pointers, int64_t);
+			*(int64_t *) header_data_pointers[i] = (cn << 16) | (eid & 0xffff);
 			i++;
 		}
 
@@ -1277,7 +1277,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_object	*table_object, *subfolder_object;
-	uint64_t		eid, cn;
+	int64_t			eid, cn;
 	struct Binary_r		predecessors_data;
 	struct Binary_r		*bin_data;
 	struct FILETIME		*lm_time;
@@ -1328,14 +1328,14 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 				bin_data->lpb = (uint8_t *) "";
 			}
 			else {
-				emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, *(uint64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
+				emsmdbp_source_key_from_fmid(header_data_pointers, emsmdbp_ctx, owner, *(int64_t *) data_pointers[sync_data->prop_index.parent_fid], &bin_data);
 			}
 			query_props.aulPropTag[j] = PidTagParentSourceKey;
 			header_data_pointers[j] = bin_data;
 			j++;
 			
 			/* source key */
-			eid = *(uint64_t *) data_pointers[sync_data->prop_index.eid];
+			eid = *(int64_t *) data_pointers[sync_data->prop_index.eid];
 			if (eid == 0x7fffffffffffffffLL) {
 				DEBUG(0, ("folder without a valid eid\n"));
 				talloc_free(header_data_pointers);
@@ -1371,7 +1371,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for folder\n"));
 				abort();
 			}
-			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
+			cn = ((*(int64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			if (IDSET_includes_guid_glob(synccontext->cnset_seen, &sync_data->replica_guid, cn)) {
 				synccontext->skipped_objects++;
 				DEBUG(5, (__location__": folder changes: cn %.16"PRIx64" already present\n", cn));
@@ -1427,7 +1427,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 				query_props.aulPropTag[j] = PidTagParentFolderId;
 				header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
 				if (retvals[sync_data->prop_index.parent_fid]) {
-					header_data_pointers[j] = talloc_zero(header_data_pointers, uint64_t);
+					header_data_pointers[j] = talloc_zero(header_data_pointers, int64_t);
 				}
 				else {
 					header_data_pointers[j] = data_pointers[sync_data->prop_index.parent_fid];
@@ -2101,7 +2101,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageChange(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageChange_req	*request;
 	struct SyncImportMessageChange_repl	*response;
 	char					*owner;
-	uint64_t				folderID, messageID;
+	int64_t					folderID, messageID;
 	struct GUID				replica_guid;
 	uint16_t				repl_id, i;
 	struct mapistore_message		*msg;
@@ -2234,8 +2234,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportHierarchyChange(TALLOC_CTX *mem_ct
 	struct SyncImportHierarchyChange_repl	*response;
 	char					*owner;
 	const char				*new_folder_name;
-	uint64_t				parentFolderID;
-	uint64_t				folderID, cn;
+	int64_t					parentFolderID;
+	int64_t					folderID, cn;
 	struct GUID				replica_guid;
 	uint16_t				repl_id;
 	uint32_t				i;
@@ -2391,7 +2391,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportDeletes(TALLOC_CTX *mem_ctx,
 	void					*data;
 	struct SyncImportDeletes_req		*request;
 	uint32_t				contextID;
-	uint64_t				objectID;
+	int64_t					objectID;
 	char					*owner;
 	struct GUID				replica_guid;
 	uint16_t				repl_id;
@@ -2650,7 +2650,7 @@ static enum MAPISTATUS oxcfxics_check_cnset(struct openchangedb_context *oc_ctx,
 					    struct idset *parsed_idset,
 					    const char *label)
 {
-	uint64_t	next_cn, high_cn;
+	int64_t		next_cn, high_cn;
 	enum MAPISTATUS	retval;
 
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
@@ -2818,10 +2818,10 @@ end:
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint32_t size, uint64_t *fmidP)
+static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint32_t size, int64_t *fmidP)
 {
 	struct GUID	guid;
-	uint64_t	base, fmid;
+	int64_t		base, fmid;
 	uint32_t	i;
 
 	if (size < 17) {
@@ -2836,7 +2836,7 @@ static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint
 	fmid = 0;
 	base = 1;
 	for (i = 16; i < size; i++) {
-		fmid |= (uint64_t) data[i] * base;
+		fmid |= (int64_t) data[i] * base;
 		base <<= 8;
 	}
 	fmid <<= 16;
@@ -2855,7 +2855,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	struct SyncImportMessageMove_req	*request;
 	struct SyncImportMessageMove_repl	*response;
 	struct GUID				replica_guid;
-	uint64_t				sourceFID, sourceMID, destMID;
+	int64_t					sourceFID, sourceMID, destMID;
 	struct Binary_r				*change_key;
 	uint32_t				contextID, synccontext_handle;
 	void					*data;
@@ -3040,7 +3040,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetLocalReplicaIds(TALLOC_CTX *mem_ctx,
 	struct GetLocalReplicaIds_req	*request;
 	struct mapi_handles		*object_handle;
 	uint32_t			handle_id;
-	uint64_t			new_id;
+	int64_t				new_id;
 	uint8_t				i;
 	void				*data;
 	int				retval;
@@ -3162,7 +3162,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 	uint32_t				read_states_size;
 	struct Binary_r				*bin_data;
 	char					*owner;
-	uint64_t				mid, base;
+	int64_t					mid, base;
 	uint16_t				replid;
 	int					i;
 	struct mapistore_message		*msg;
@@ -3227,7 +3227,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			mid = 0;
 			base = 1;
 			for (i = 16; i < read_states->MessageIdSize; i++) {
-				mid |= (uint64_t) read_states->MessageId[i] * base;
+				mid |= (int64_t) read_states->MessageId[i] * base;
 				base <<= 8;
 			}
 			mid <<= 16;
@@ -3265,7 +3265,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 							   struct emsmdbp_object *folder_object)
 {
 	struct SPropTagArray		*count_query_props;
-	uint64_t			eid, cn;
+	int64_t				eid, cn;
 	uint32_t			i, nr_eid;
 	void				**data_pointers;
 	enum MAPISTATUS			*retvals;
@@ -3328,7 +3328,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 	for (i = 0; i < table->denominator; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(NULL, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
-			eid = *(uint64_t *) data_pointers[0];
+			eid = *(int64_t *) data_pointers[0];
 			emsmdbp_replid_to_guid(emsmdbp_ctx, owner, eid & 0xffff, &replica_guid);
 			RAWIDSET_push_guid_glob(sync_data->eid_set, &replica_guid, (eid >> 16) & 0x0000ffffffffffff);
 			
@@ -3349,7 +3349,7 @@ static enum MAPISTATUS oxcfxics_fill_transfer_state_arrays(TALLOC_CTX *mem_ctx, 
 				DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 				abort();
 			}
-			cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
+			cn = ((*(int64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 			RAWIDSET_push_guid_glob(sync_data->cnset_seen, &sync_data->replica_guid, cn);
 			
 			talloc_free(retvals);

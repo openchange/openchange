@@ -379,7 +379,7 @@ static char *ocpf_write_property(struct ocpf_context *ctx, bool *found, uint32_t
 		*found = true;
 		break;
 	case PT_I8:
-		line = talloc_asprintf(ctx, "D0x%.16"PRIx64"\n", *(const uint64_t *)value);
+		line = talloc_asprintf(ctx, "D0x%.16"PRIx64"\n", *(const int64_t *)value);
 		*found = true;
 		break;
 	case PT_SYSTIME:

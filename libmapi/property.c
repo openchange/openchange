@@ -475,7 +475,7 @@ _PUBLIC_ bool set_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *l
 		lpProps->value.dbl = *((const double *)data);
 		break;
 	case PT_I8:
-		lpProps->value.d = *((const uint64_t *)data);
+		lpProps->value.d = *((const int64_t *)data);
 		break;
 	case PT_BOOLEAN:
 		lpProps->value.b = *((const uint8_t *)data);
@@ -564,7 +564,7 @@ _PUBLIC_ bool set_SPropValue(struct SPropValue *lpProps, const void *data)
 		lpProps->value.dbl = *((const double *)data);
 		break;
 	case PT_I8:
-		lpProps->value.d = *((const uint64_t *)data);
+		lpProps->value.d = *((const int64_t *)data);
 		break;
 	case PT_BOOLEAN:
 		lpProps->value.b = *((const uint8_t *)data);
@@ -638,7 +638,7 @@ _PUBLIC_ uint32_t get_mapi_property_size(struct mapi_SPropValue *lpProp)
 	case PT_DOUBLE:
 		return sizeof (double);
 	case PT_I8:
-		return sizeof (uint64_t);
+		return sizeof (int64_t);
 	case PT_STRING8:
 		return strlen(lpProp->value.lpszA) + 1;
 	case PT_UNICODE:
@@ -763,7 +763,7 @@ _PUBLIC_ uint32_t cast_mapi_SPropValue(TALLOC_CTX *mem_ctx,
 		return sizeof(double);
 	case PT_I8:
 		mapi_sprop->value.d = sprop->value.d;
-		return sizeof(uint64_t);
+		return sizeof(int64_t);
 	case PT_STRING8:
 		mapi_sprop->value.lpszA = sprop->value.lpszA;
 		if (!mapi_sprop->value.lpszA) return 0;
@@ -912,7 +912,7 @@ _PUBLIC_ uint32_t cast_SPropValue(TALLOC_CTX *mem_ctx,
 		return sizeof(double);
 	case PT_I8:
 		sprop->value.d = mapi_sprop->value.d;
-		return sizeof(uint64_t);
+		return sizeof(int64_t);
 	case PT_STRING8:
 		sprop->value.lpszA = mapi_sprop->value.lpszA;
 		if (!mapi_sprop->value.lpszA) return 0;

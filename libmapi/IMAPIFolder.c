@@ -75,7 +75,7 @@ _PUBLIC_ enum MAPISTATUS CreateMessage(mapi_object_t *obj_folder, mapi_object_t 
 	request.CodePageId = 0xfff;
 	size += sizeof (uint16_t);
 	request.FolderId = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 	request.AssociatedFlag = 0;
 	size += sizeof (uint8_t);
 
@@ -337,7 +337,7 @@ _PUBLIC_ enum MAPISTATUS GetMessageStatus(mapi_object_t *obj_folder,
 
 	/* Fill the GetMessageStatus operation */
 	request.msgid = msgid;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -436,7 +436,7 @@ _PUBLIC_ enum MAPISTATUS SetMessageStatus(mapi_object_t *obj_folder,
 
 	/* Fill the SetMessageStatus operation */
 	request.msgid = msgid;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	request.ulNewStatus = ulNewStatus;
 	size += sizeof (uint32_t);
@@ -876,7 +876,7 @@ _PUBLIC_ enum MAPISTATUS DeleteFolder(mapi_object_t *obj_parent,
 	request.DeleteFolderFlags = DeleteFolderFlags;
 	size += sizeof (uint8_t);
 	request.FolderId = FolderId;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -979,7 +979,7 @@ _PUBLIC_ enum MAPISTATUS MoveFolder(mapi_object_t *obj_folder,
 	size += sizeof (uint8_t);
 
 	request.FolderId = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	if (!request.UseUnicode) {
 		request.NewFolderName.lpszA = NewFolderName;
@@ -1095,7 +1095,7 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 	size += sizeof (uint8_t);
 
 	request.FolderId = mapi_object_get_id(obj_folder);
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	if (!request.UseUnicode) {
 		request.NewFolderName.lpszA = NewFolderName;
@@ -1165,7 +1165,7 @@ _PUBLIC_ enum MAPISTATUS CopyFolder(mapi_object_t *obj_folder,
 _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 				      uint8_t ReadFlags, 
 				      uint16_t MessageIdCount,
-				      uint64_t *MessageIds)
+				      int64_t *MessageIds)
 {
 	TALLOC_CTX		*mem_ctx;
 	uint32_t		size;
@@ -1198,7 +1198,7 @@ _PUBLIC_ enum MAPISTATUS SetReadFlags(mapi_object_t *obj_folder,
 	request.MessageIdCount = MessageIdCount;
 	size += sizeof(uint16_t);
 	request.MessageIds = MessageIds;
-	size += sizeof(uint64_t) * MessageIdCount;
+	size += sizeof(int64_t) * MessageIdCount;
 
 
 	/* Fill the MAPI_REQ request */

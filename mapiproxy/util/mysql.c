@@ -417,10 +417,41 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 }
 
 
-enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
-				  uint64_t *n)
+enum MYSQLRESULT select_first_uint32(MYSQL *conn, const char *sql, uint32_t *n)
 {
-	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "select_first_uint");
+	TALLOC_CTX		*mem_ctx;
+	const char		*result;
+	enum MYSQLRESULT	ret;
+
+	/* Sanity checks */
+	if (!conn) return MYSQL_ERROR;
+	if (!sql) return MYSQL_ERROR;
+	if (!n) return MYSQL_ERROR;
+
+	mem_ctx = talloc_named(NULL, 0, "select_first_uint32");
+	if (!mem_ctx) return MYSQL_ERROR;
+
+	ret = select_first_string(mem_ctx, conn, sql, &result);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = MYSQL_ERROR;
+	if (convert_string_to_ul(result, n)) {
+		ret = MYSQL_SUCCESS;
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+enum MYSQLRESULT select_first_uint64(MYSQL *conn, const char *sql,
+				     uint64_t *n)
+{
+	TALLOC_CTX *mem_ctx = talloc_named(NULL, 0, "select_first_uint64");
 	const char *result;
 	enum MYSQLRESULT ret;
 
@@ -432,6 +463,68 @@ enum MYSQLRESULT select_first_uint(MYSQL *conn, const char *sql,
 
 	ret = MYSQL_ERROR;
 	if (convert_string_to_ull(result, n)) {
+		ret = MYSQL_SUCCESS;
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+enum MYSQLRESULT select_first_int(MYSQL *conn, const char *sql, int *n)
+{
+	TALLOC_CTX		*mem_ctx;
+	const char		*result;
+	enum MYSQLRESULT	ret;
+
+	/* Sanity checks */
+	if (!conn) return MYSQL_ERROR;
+	if (!sql) return MYSQL_ERROR;
+	if (!n) return MYSQL_ERROR;
+
+	mem_ctx = talloc_named(NULL, 0, "select_first_uint32");
+	if (!mem_ctx) return MYSQL_ERROR;
+
+	ret = select_first_string(mem_ctx, conn, sql, &result);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = MYSQL_ERROR;
+	if (convert_string_to_l(result, n)) {
+		ret = MYSQL_SUCCESS;
+	}
+
+	talloc_free(mem_ctx);
+
+	return ret;
+}
+
+
+enum MYSQLRESULT select_first_int64(MYSQL *conn, const char *sql, int64_t *n)
+{
+	TALLOC_CTX		*mem_ctx;
+	const char		*result;
+	enum MYSQLRESULT	ret;
+
+	/* Sanity checks */
+	if (!conn) return MYSQL_ERROR;
+	if (!sql) return MYSQL_ERROR;
+	if (!n) return MYSQL_ERROR;
+
+	mem_ctx = talloc_named(NULL, 0, "select_first_int64");
+	if (!mem_ctx) return MYSQL_ERROR;
+
+	ret = select_first_string(mem_ctx, conn, sql, &result);
+	if (ret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return ret;
+	}
+
+	ret = MYSQL_ERROR;
+	if (convert_string_to_ll(result, n)) {
 		ret = MYSQL_SUCCESS;
 	}
 
@@ -533,6 +626,26 @@ const char* _sql_escape(TALLOC_CTX *mem_ctx, const char *s, char c)
 	return ret;
 }
 
+
+bool convert_string_to_ul(const char *str, uint32_t *ret)
+{
+	bool retval = false;
+	char *aux = NULL;
+
+	if (ret != NULL) {
+		*ret = strtoul(str, &aux, 10);
+		if (aux != NULL && *aux == '\0') {
+			retval = true;
+		} else {
+			DEBUG(1, ("ERROR converting %s into ull\n", str));
+		}
+	}
+
+	return retval;
+}
+
+
+
 // FIXME use this function instead of strtoull(*, NULL, *) in openchangedb_mysql.c
 bool convert_string_to_ull(const char *str, uint64_t *ret)
 {
@@ -545,6 +658,42 @@ bool convert_string_to_ull(const char *str, uint64_t *ret)
 			retval = true;
 		} else {
 			DEBUG(1, ("ERROR converting %s into ull\n", str));
+		}
+	}
+
+	return retval;
+}
+
+
+bool convert_string_to_l(const char *str, int *ret)
+{
+	bool retval = false;
+	char *aux = NULL;
+
+	if (ret != NULL) {
+		*ret = strtol(str, &aux, 10);
+		if (aux != NULL && *aux == '\0') {
+			retval = true;
+		} else {
+			DEBUG(1, ("ERROR converting %s into ll\n", str));
+		}
+	}
+
+	return retval;
+}
+
+
+bool convert_string_to_ll(const char *str, int64_t *ret)
+{
+	bool retval = false;
+	char *aux = NULL;
+
+	if (ret != NULL) {
+		*ret = strtoll(str, &aux, 10);
+		if (aux != NULL && *aux == '\0') {
+			retval = true;
+		} else {
+			DEBUG(1, ("ERROR converting %s into ll\n", str));
 		}
 	}
 

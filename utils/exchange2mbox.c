@@ -117,7 +117,7 @@ static bool delete_messages(
 	struct SPropTagArray	*SPropTagArray;
 	struct SRowSet		SRowSet;
 	uint32_t		i, j;
-	uint64_t		id_message;
+	int64_t			id_message;
 	struct mapi_profile	*profile;
 
 	if (!del_count || !del_msgid) {

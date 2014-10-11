@@ -61,7 +61,7 @@ int main(int argc, const char *argv[])
 	struct mapi_session		*session = NULL;
 	mapi_object_t			obj_store, obj_folder;
 	uint32_t			prop_id;
-	uint64_t			query_fid = 0;
+	int64_t				query_fid = 0;
 	poptContext			pc;
 	int				opt;
 	const char			*prop_id_str;

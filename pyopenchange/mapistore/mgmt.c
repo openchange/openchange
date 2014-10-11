@@ -111,7 +111,7 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 	const char	*messageID;
 	char		*registered_uri;
 	PyObject	*retlist;
-	uint64_t	mid;
+	int64_t		mid;
 	int		ret;
 
 	if (!PyArg_ParseTuple(args, "ssss", &backend, &user, &uri, &messageID)) {
@@ -217,8 +217,8 @@ static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyOb
 	const char	*storeuser;
 	const char	*FolderURI;
 	const char	*MessageURI;
-	uint64_t	FolderID;
-	uint64_t	MessageID;
+	int64_t		FolderID;
+	int64_t		MessageID;
 	bool		softdeleted;
 	PyMAPIStoreGlobals *globals;
 

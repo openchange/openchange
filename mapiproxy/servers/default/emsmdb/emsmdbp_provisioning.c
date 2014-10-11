@@ -65,7 +65,7 @@ static const char **get_folders_names(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	return ret;
 }
 
-static enum MAPISTATUS get_new_public_folder_id(struct emsmdbp_context *emsmdbp_ctx, uint64_t parent_fid, uint64_t *fid)
+static enum MAPISTATUS get_new_public_folder_id(struct emsmdbp_context *emsmdbp_ctx, int64_t parent_fid, int64_t *fid)
 {
 	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
 	enum mapistore_error	ret;
@@ -97,10 +97,10 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	char			*dn_root = NULL;
 	char			*dn_user = NULL;
 	char			*cn_ptr = NULL;
-	uint64_t		public_fb_fid;
-	uint64_t		group_fid;
-	uint64_t		fb_mid;
-	uint64_t		change_num;
+	int64_t			public_fb_fid;
+	int64_t			group_fid;
+	int64_t			fb_mid;
+	int64_t			change_num;
 	size_t			i, max;
 	void			*message_object;
 	struct SRow		property_row;
@@ -297,7 +297,7 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	const char				**container_classes;
 	const char				*search_container_classes[] = {"Outlook.Reminder", "IPF.Task", "IPF.Note"};
 	uint32_t				context_id, row_count;
-	uint64_t				mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, current_mid, found_fid, current_cn;
+	int64_t					mailbox_fid = 0, ipm_fid, inbox_fid = 0, current_fid, current_mid, found_fid, current_cn;
 	char					*fallback_url, *entryid_dump, *url;
 	const char				*mapistore_url, *current_name, *base_name;
 	struct emsmdbp_special_folder		*current_folder;

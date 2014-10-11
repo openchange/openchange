@@ -32,12 +32,12 @@ struct mapi_session;
 /* generic mapi object definition
  */
 
-typedef uint64_t mapi_id_t;
+typedef int64_t mapi_id_t;
 typedef uint32_t mapi_handle_t;
 
 typedef struct mapi_object {
 	bool			store;
-	uint64_t		id;
+	int64_t			id;
 	mapi_handle_t		handle;
 	uint8_t			logon_id;
 	struct mapi_session	*session;
@@ -65,37 +65,37 @@ typedef struct mapi_obj_store
 {
 	enum MsgStoreType	store_type;
 	/* Mailbox */
-	uint64_t		fid_mailbox_root;
-	uint64_t		fid_deferred_actions;
-	uint64_t		fid_spooler_queue;
-	uint64_t		fid_top_information_store;
-	uint64_t		fid_inbox;
-	uint64_t		fid_outbox;
-	uint64_t		fid_sent_items;
-	uint64_t		fid_deleted_items;
-	uint64_t		fid_common_views;
-	uint64_t		fid_schedule;
-	uint64_t		fid_search;
-	uint64_t		fid_views;
-	uint64_t		fid_shortcuts;
+	int64_t			fid_mailbox_root;
+	int64_t			fid_deferred_actions;
+	int64_t			fid_spooler_queue;
+	int64_t			fid_top_information_store;
+	int64_t			fid_inbox;
+	int64_t			fid_outbox;
+	int64_t			fid_sent_items;
+	int64_t			fid_deleted_items;
+	int64_t			fid_common_views;
+	int64_t			fid_schedule;
+	int64_t			fid_search;
+	int64_t			fid_views;
+	int64_t			fid_shortcuts;
 	/* Public Folders */
-	uint64_t		fid_pf_public_root;
-	uint64_t		fid_pf_ipm_subtree;
-	uint64_t		fid_pf_non_ipm_subtree;
-	uint64_t		fid_pf_EFormsRegistryRoot;
-	uint64_t		fid_pf_FreeBusyRoot;
-	uint64_t		fid_pf_OfflineAB;
-	uint64_t		fid_pf_EFormsRegistry;
-	uint64_t		fid_pf_LocalSiteFreeBusy;
-	uint64_t		fid_pf_LocalSiteOfflineAB;
-	uint64_t		fid_pf_NNTPArticle;
+	int64_t			fid_pf_public_root;
+	int64_t			fid_pf_ipm_subtree;
+	int64_t			fid_pf_non_ipm_subtree;
+	int64_t			fid_pf_EFormsRegistryRoot;
+	int64_t			fid_pf_FreeBusyRoot;
+	int64_t			fid_pf_OfflineAB;
+	int64_t			fid_pf_EFormsRegistry;
+	int64_t			fid_pf_LocalSiteFreeBusy;
+	int64_t			fid_pf_LocalSiteOfflineAB;
+	int64_t			fid_pf_NNTPArticle;
 	/* cached data */
-	uint64_t		fid_calendar;
-	uint64_t		fid_contact;
-	uint64_t		fid_journal;
-	uint64_t		fid_note;
-	uint64_t		fid_task;
-	uint64_t		fid_drafts;
+	int64_t			fid_calendar;
+	int64_t			fid_contact;
+	int64_t			fid_journal;
+	int64_t			fid_note;
+	int64_t			fid_task;
+	int64_t			fid_drafts;
 	/* GUID */
 	struct GUID		guid;
 } mapi_object_store_t;

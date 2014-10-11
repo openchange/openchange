@@ -52,9 +52,9 @@ struct poptOption popt_openchange_version[] = {
 
 #define DEFAULT_PROFDB  "%s/.openchange/profiles.ldb"
 
-static uint64_t GetGlobalCounter(uint8_t *ptr)
+static int64_t GetGlobalCounter(uint8_t *ptr)
 {
-	uint64_t id, base;
+	int64_t id, base;
 	uint8_t i;
 
 	id = 0;
@@ -69,7 +69,7 @@ static uint64_t GetGlobalCounter(uint8_t *ptr)
 
 static void ShowBinaryEntryId(struct Binary_r *bin)
 {
-	uint64_t id;
+	int64_t id;
 
 	id = GetGlobalCounter(bin->lpb + 38);
 	printf("0x%.12"PRIx64"\n", id);

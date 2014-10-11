@@ -58,10 +58,10 @@ CREATE INDEX `fk_mailboxes_ou_id_idx` ON `mailboxes` (`ou_id` ASC);
 CREATE TABLE IF NOT EXISTS `folders` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ou_id` INT NOT NULL,
-  `folder_id` BIGINT UNSIGNED NOT NULL,
+  `folder_id` BIGINT SIGNED NOT NULL,
   `folder_class` VARCHAR(6) NOT NULL DEFAULT 'system',
   `mailbox_id` BIGINT UNSIGNED NULL,
-  `parent_folder_id` BIGINT UNSIGNED NULL,
+  `parent_folder_id` BIGINT SIGNED NULL,
   `FolderType` INT NULL,
   `SystemIdx` INT NULL,
   `MAPIStoreURI` VARCHAR(1024) NULL,
@@ -96,7 +96,7 @@ CREATE INDEX `fk_folders_parent_folder_id_idx` ON `folders` (`parent_folder_id` 
 CREATE TABLE IF NOT EXISTS `messages` (
   `id` BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ou_id` INT NULL,
-  `message_id` BIGINT UNSIGNED NULL,
+  `message_id` BIGINT SIGNED NULL,
   `message_type` VARCHAR(45) NULL,
   `folder_id` BIGINT UNSIGNED NULL,
   `mailbox_id` BIGINT UNSIGNED NULL,
@@ -186,7 +186,7 @@ CREATE TABLE IF NOT EXISTS `servers` (
   `id` INT UNSIGNED NOT NULL AUTO_INCREMENT,
   `ou_id` INT NOT NULL,
   `replica_id` INT NOT NULL DEFAULT 1,
-  `change_number` INT NOT NULL DEFAULT 1,
+  `change_number` BIGINT SIGNED NOT NULL DEFAULT 1,
   PRIMARY KEY (`id`),
   CONSTRAINT `fk_servers_ou_id`
     FOREIGN KEY (`ou_id`)

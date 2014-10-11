@@ -369,7 +369,7 @@ START_TEST(test_get_uri_uknown_fmid) {
 
 START_TEST(test_get_fmid_sanity) {
 	enum mapistore_error	retval;
-	uint64_t		fmid_res;
+	int64_t			fmid_res;
 	bool			soft_deleted;
 
 	/* missing indexing context */
@@ -395,7 +395,7 @@ START_TEST(test_get_fmid_sanity) {
 
 START_TEST(test_get_fmid) {
 	enum mapistore_error	retval;
-	uint64_t		fmid_res;
+	int64_t			fmid_res;
 	bool			soft_deleted = true;
 
 	retval = g_ictx->get_fmid(g_ictx, g_test_username, INDEXING_EXIST_URL, false, &fmid_res, &soft_deleted);
@@ -406,8 +406,8 @@ START_TEST(test_get_fmid) {
 
 START_TEST(test_get_fmid_with_wildcard) {
 	enum mapistore_error	ret;
-	uint64_t		fid_1, fid_2;
-	uint64_t		fmid_res;
+	int64_t			fid_1, fid_2;
+	int64_t			fmid_res;
 	bool			soft_deleted = true;
 
 	fid_1 = INDEXING_TEST_FMID;
@@ -438,8 +438,8 @@ START_TEST(test_get_fmid_with_wildcard) {
 
 START_TEST (test_allocate_fmid) {
 	enum mapistore_error	ret;
-	uint64_t		fmid1 = 222;
-	uint64_t		fmid2 = 222;
+	int64_t			fmid1 = 222;
+	int64_t			fmid2 = 222;
 
 	ret = g_ictx->allocate_fmid(g_ictx, g_test_username, &fmid1);
 	ck_assert(ret == MAPISTORE_SUCCESS);

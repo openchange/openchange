@@ -213,7 +213,7 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	const char			*uri;
 	const char			*username;
 	void				*folder_object;
-        uint64_t			fid = 0;
+        int64_t				fid = 0;
 
 	if (!PyArg_ParseTuple(args, "ss", &uri, &username)) {
 		return NULL;

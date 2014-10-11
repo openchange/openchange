@@ -338,7 +338,7 @@ static bool is_database_empty(MYSQL *conn)
 	enum MYSQLRESULT	ret;
 	uint64_t		n = 0;
 
-	ret = select_first_uint(conn, "SELECT count(*) FROM "NAMEDPROPS_MYSQL_TABLE, &n);
+	ret = select_first_uint64(conn, "SELECT count(*) FROM "NAMEDPROPS_MYSQL_TABLE, &n);
 	if (ret != MYSQL_SUCCESS) {
 		/* query failed, table does not exist? */
 		return true;

@@ -185,7 +185,7 @@ _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_con
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *mstore_ctx, const char *owner,
-						    const char *uri, uint64_t fid, uint32_t *context_id, void **backend_object)
+						    const char *uri, int64_t fid, uint32_t *context_id, void **backend_object)
 {
 	TALLOC_CTX				*mem_ctx;
 	int					retval;
@@ -461,7 +461,7 @@ _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_
 	return mapistore_backend_list_contexts(owner, ictx, mem_ctx, contexts_listp);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
+_PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, int64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -482,7 +482,7 @@ _PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_open_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							   void *folder, TALLOC_CTX *mem_ctx, uint64_t fid, void **child_folder)
+							   void *folder, TALLOC_CTX *mem_ctx, int64_t fid, void **child_folder)
 {
 	struct backend_context		*backend_ctx;
 
@@ -511,7 +511,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_open_folder(struct mapistore_cont
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_create_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							     void *folder, TALLOC_CTX *mem_ctx, uint64_t fid, struct SRow *aRow, void **child_folder)
+							     void *folder, TALLOC_CTX *mem_ctx, int64_t fid, struct SRow *aRow, void **child_folder)
 {
 	struct backend_context		*backend_ctx;
 
@@ -544,7 +544,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete(struct mapistore_context *
 	enum mapistore_error	ret;
 	TALLOC_CTX		*mem_ctx;
 	void			*subfolder;
-	uint64_t		*child_fmids;
+	int64_t			*child_fmids;
 	uint32_t		i, child_count;
 
 	/* TODO : handle the removal of entries in indexing.tdb */
@@ -648,7 +648,7 @@ end:
    \return MAPISTORE SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_open_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							    void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, bool read_write, void **messagep)
+							    void *folder, TALLOC_CTX *mem_ctx, int64_t mid, bool read_write, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 
@@ -677,7 +677,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_open_message(struct mapistore_con
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_create_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							      void *folder, TALLOC_CTX *mem_ctx, uint64_t mid, uint8_t associated, void **messagep)
+							      void *folder, TALLOC_CTX *mem_ctx, int64_t mid, uint8_t associated, void **messagep)
 {
 	struct backend_context		*backend_ctx;
 
@@ -705,7 +705,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_create_message(struct mapistore_c
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_delete_message(struct mapistore_context *mstore_ctx, uint32_t context_id,
-							      void *folder, uint64_t mid, uint8_t flags)
+							      void *folder, int64_t mid, uint8_t flags)
 {
 	struct backend_context	*backend_ctx;
 
@@ -724,7 +724,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_delete_message(struct mapistore_c
 
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapistore_context *mstore_ctx, uint32_t context_id,
-								  void *target_folder, void *source_folder, TALLOC_CTX *mem_ctx, uint32_t mid_count, uint64_t *source_mids, uint64_t *target_mids, struct Binary_r **target_change_keys, uint8_t want_copy)
+								  void *target_folder, void *source_folder, TALLOC_CTX *mem_ctx, uint32_t mid_count, int64_t *source_mids, int64_t *target_mids, struct Binary_r **target_change_keys, uint8_t want_copy)
 {
 	struct backend_context	*backend_ctx;
 
@@ -793,7 +793,7 @@ _PUBLIC_ enum mapistore_error mapistore_folder_copy_folder(struct mapistore_cont
 
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, uint64_t change_num, struct UI8Array_r **fmidsp, uint64_t *cnp)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_deleted_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, TALLOC_CTX *mem_ctx, enum mapistore_table_type table_type, int64_t change_num, struct UI8Array_r **fmidsp, int64_t *cnp)
 {
 	struct backend_context	*backend_ctx;
 
@@ -848,13 +848,13 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_
    
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
-_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, uint64_t *child_fmids[], uint32_t *child_fmid_count)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, enum mapistore_table_type table_type, TALLOC_CTX *mem_ctx, int64_t *child_fmids[], uint32_t *child_fmid_count)
 {
 	TALLOC_CTX			*local_mem_ctx;
 	enum mapistore_error		ret;
 	void				*backend_table;
 	uint32_t			i, row_count;
-	uint64_t			*fmids, *current_fmid;
+	int64_t				*fmids, *current_fmid;
 	enum MAPITAGS			fmid_column;
 	struct mapistore_property_data	*row_data;
 
@@ -889,13 +889,13 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_fmids(struct mapistore_
 	}
 
 	*child_fmid_count = row_count;
-	fmids = talloc_array(mem_ctx, uint64_t, row_count);
+	fmids = talloc_array(mem_ctx, int64_t, row_count);
 	*child_fmids = fmids;
 	current_fmid = fmids;
 	for (i = 0; i < row_count; i++) {
 		mapistore_table_get_row(mstore_ctx, context_id, backend_table, local_mem_ctx,
 					MAPISTORE_PREFILTERED_QUERY, i, &row_data);
-		*current_fmid = *(uint64_t *) row_data->data;
+		*current_fmid = *(int64_t *) row_data->data;
 		current_fmid++;
 	}
 
@@ -905,7 +905,7 @@ end:
 	return ret;
 }
 
-_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const char *name, uint64_t *fidp)
+_PUBLIC_ enum mapistore_error mapistore_folder_get_child_fid_by_name(struct mapistore_context *mstore_ctx, uint32_t context_id, void *folder, const char *name, int64_t *fidp)
 {
 	struct backend_context	*backend_ctx;
 
@@ -1564,7 +1564,7 @@ _PUBLIC_ enum mapistore_error mapistore_message_create_attachment(struct mapisto
 	return mapistore_backend_message_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
 }
 
-_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
+_PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, int64_t *mid, struct mapistore_message **msg)
 {
 	struct backend_context	*backend_ctx;
 

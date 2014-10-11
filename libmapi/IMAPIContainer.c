@@ -655,7 +655,7 @@ _PUBLIC_ enum MAPISTATUS SetSearchCriteria(mapi_object_t *obj_container,
 		size += sizeof (uint16_t);
 
 		mapi_id_array_get(mem_ctx, lpContainerList, &request.FolderIds);
-		size += lpContainerList->count * sizeof (uint64_t);
+		size += lpContainerList->count * sizeof (int64_t);
 	} else {
 		request.FolderIdCount = 0;
 		size += sizeof (uint16_t);
@@ -724,7 +724,7 @@ _PUBLIC_ enum MAPISTATUS GetSearchCriteria(mapi_object_t *obj_container,
 					   struct mapi_SRestriction *res,
 					   uint32_t *SearchFlags,
 					   uint16_t *FolderIdCount,
-					   uint64_t **FolderIds)
+					   int64_t **FolderIds)
 {
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;

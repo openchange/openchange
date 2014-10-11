@@ -38,7 +38,7 @@
 
 static enum mapistore_error tdb_search_existing_fmid(struct indexing_context *ictx,
 						     const char *username,
-						     uint64_t fmid, bool *IsSoftDeleted)
+						     int64_t fmid, bool *IsSoftDeleted)
 {
 	int		ret;
 	TDB_DATA	key;
@@ -75,7 +75,7 @@ static enum mapistore_error tdb_search_existing_fmid(struct indexing_context *ic
 
 static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 					   const char *username,
-					   uint64_t fmid,
+					   int64_t fmid,
 					   const char *mapistore_URI)
 {
 	int		ret;
@@ -115,7 +115,7 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 
 static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
 					      const char *username,
-					      uint64_t fmid,
+					      int64_t fmid,
 					      const char *mapistore_URI)
 {
 	int		ret;
@@ -150,7 +150,7 @@ static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
 
 static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 					   const char *username,
-					   uint64_t fmid,
+					   int64_t fmid,
 					   uint8_t flags)
 {
 	int				ret;
@@ -209,7 +209,7 @@ static enum mapistore_error tdb_record_del(struct indexing_context *ictx,
 static enum mapistore_error tdb_record_get_uri(struct indexing_context *ictx,
 					       const char *username,
 					       TALLOC_CTX *mem_ctx,
-					       uint64_t fmid,
+					       int64_t fmid,
 					       char **urip,
 					       bool *soft_deletedp)
 {
@@ -268,7 +268,7 @@ static enum mapistore_error tdb_record_get_uri(struct indexing_context *ictx,
  */
 struct tdb_get_fid_data {
 	bool		found;
-	uint64_t	fmid;
+	int64_t		fmid;
 	char		*uri;
 	size_t		uri_len;
 	uint32_t	wildcard_count;
@@ -294,7 +294,7 @@ static int tdb_get_fid_traverse(struct tdb_context *tdb_ctx, TDB_DATA key, TDB_D
 	}
 	if (strcmp(cmp_uri, tdb_data->uri) == 0) {
 		key_str = talloc_strndup(mem_ctx, (char *) key.dptr, key.dsize);
-		tdb_data->fmid = strtoull(key_str, NULL, 16);
+		tdb_data->fmid = strtoll(key_str, NULL, 16);
 		tdb_data->found = true;
 		ret = 1;
 	}
@@ -325,7 +325,7 @@ static int tdb_get_fid_traverse_partial(struct tdb_context *tdb_ctx, TDB_DATA ke
 	    !strncmp(cmp_uri + (strlen(cmp_uri) - strlen(tdb_data->endswith)), tdb_data->endswith, 
 		     strlen(tdb_data->endswith))) {
 		    key_str = talloc_strndup(mem_ctx, (char *) key.dptr, key.dsize);
-		    tdb_data->fmid = strtoull(key_str, NULL, 16);
+		    tdb_data->fmid = strtoll(key_str, NULL, 16);
 		    tdb_data->found = true;
 		    ret = 1;
 	}
@@ -338,7 +338,7 @@ static int tdb_get_fid_traverse_partial(struct tdb_context *tdb_ctx, TDB_DATA ke
 static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 					        const char *username,
 					        const char *uri, bool partial,
-					        uint64_t *fmidp, bool *soft_deletedp)
+					        int64_t *fmidp, bool *soft_deletedp)
 {
 	int				ret;
 	struct tdb_get_fid_data		tdb_data;
@@ -411,8 +411,8 @@ static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 
 static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *ictx,
 						      const char *username,
-						      int count,
-						      uint64_t *fmidp)
+						      uint32_t count,
+						      int64_t *fmidp)
 {
 	TDB_DATA		key, data;
 	int			ret;
@@ -432,7 +432,7 @@ static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *i
 		GlobalCount = 1;
 	}
 	else {
-		GlobalCount = strtoull((const char*)data.dptr, NULL, 16);
+		GlobalCount = strtoll((const char*)data.dptr, NULL, 16);
 	}
 
 	/* Save and increment the counter (reserve) */
@@ -456,7 +456,7 @@ static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *i
 
 static enum mapistore_error tdb_record_allocate_fmid(struct indexing_context *ictx,
 						     const char *username,
-						     uint64_t *fmidp)
+						     int64_t *fmidp)
 {
 	return tdb_record_allocate_fmids(ictx, username, 1, fmidp);
 }

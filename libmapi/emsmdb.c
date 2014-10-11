@@ -779,7 +779,7 @@ void free_emsmdb_property(struct SPropValue *lpProp, void *data)
 		talloc_free((uint32_t *)data);
 		break;
 	case PT_I8:
-		talloc_free((uint64_t *)data);
+		talloc_free((int64_t *)data);
 		break;
 	case PT_BOOLEAN:
 		talloc_free((uint8_t *)data);
@@ -810,7 +810,7 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 	const char			*pt_string8 = NULL;
 	const char			*pt_unicode = NULL;
 	uint16_t			*pt_i2 = NULL;
-	uint64_t			*pt_i8 = NULL;
+	int64_t				*pt_i8 = NULL;
 	uint32_t			*pt_long = NULL;
 	uint8_t				*pt_boolean = NULL;
 	double				*pt_double = NULL;
@@ -855,8 +855,8 @@ const void *pull_emsmdb_property(TALLOC_CTX *mem_ctx,
 		talloc_free(ndr);
 		return (const void *) pt_boolean;
 	case PT_I8:
-		pt_i8 = talloc_zero(mem_ctx, uint64_t);
-		ndr_pull_hyper(ndr, NDR_SCALARS, pt_i8);
+		pt_i8 = talloc_zero(mem_ctx, int64_t);
+		ndr_pull_dlong(ndr, NDR_SCALARS, pt_i8);
 		*offset = ndr->offset;
 		talloc_free(ndr);
 		return (const void *) pt_i8;

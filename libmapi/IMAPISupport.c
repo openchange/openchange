@@ -115,10 +115,10 @@ _PUBLIC_ enum MAPISTATUS Subscribe(mapi_object_t *obj, uint32_t	*connection,
 
 	if (WholeStore == false) {
 		request.FolderId.ID = mapi_object_get_id(obj);
-		size += sizeof (uint64_t);
+		size += sizeof (int64_t);
 
 		request.MessageId.ID = 0x0;
-		size += sizeof (uint64_t);
+		size += sizeof (int64_t);
 	}
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

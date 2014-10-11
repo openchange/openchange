@@ -87,7 +87,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	const char	       	*name;
 	const uint32_t		*child;
 	uint32_t		index;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 	int			i;
 
 	mapi_object_init(&obj_folder);
@@ -108,7 +108,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
 			child = (const uint32_t *)find_SPropValue_data(&rowset.aRow[index], PR_FOLDER_CHILD_COUNT);
 
@@ -136,7 +136,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 	struct SRowSet		rowset;
 	mapi_object_t		obj_htable;
 	const char		*name;
-	const uint64_t		*fid;
+	const int64_t		*fid;
 	uint32_t		index;
 
 	mapi_object_init(&obj_htable);
@@ -152,7 +152,7 @@ static enum MAPISTATUS openchangepfadmin_getdir(TALLOC_CTX *mem_ctx,
 	
 	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
-			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
+			fid = (const int64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
 
 			if (name && fid && !strcmp(name, folder)) {

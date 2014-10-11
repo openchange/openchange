@@ -128,9 +128,9 @@ enum MAPISTATUS		SetMAPIDebugLevel(struct mapi_context *, uint32_t);
 enum MAPISTATUS		GetLoadparmContext(struct mapi_context *, struct loadparm_context **);
 
 /* The following public definitions come from libmapi/simple_mapi.c */
-enum MAPISTATUS		GetDefaultPublicFolder(mapi_object_t *, uint64_t *, const uint32_t);
-enum MAPISTATUS		GetDefaultFolder(mapi_object_t *, uint64_t *, const uint32_t);
-bool			IsMailboxFolder(mapi_object_t *, uint64_t, uint32_t *);
+enum MAPISTATUS		GetDefaultPublicFolder(mapi_object_t *, int64_t *, const uint32_t);
+enum MAPISTATUS		GetDefaultFolder(mapi_object_t *, int64_t *, const uint32_t);
+bool			IsMailboxFolder(mapi_object_t *, int64_t, uint32_t *);
 enum MAPISTATUS		GetFolderItemsCount(mapi_object_t *, uint32_t *, uint32_t *);
 enum MAPISTATUS		AddUserPermission(mapi_object_t *, const char *, enum ACLRIGHTS);
 enum MAPISTATUS		ModifyUserPermission(mapi_object_t *, const char *, enum ACLRIGHTS);
@@ -337,7 +337,7 @@ enum MAPISTATUS		GetPermissionsTable(mapi_object_t *, uint8_t, mapi_object_t *);
 enum MAPISTATUS		GetRulesTable(mapi_object_t *, mapi_object_t *, uint8_t);
 enum MAPISTATUS		ModifyPermissions(mapi_object_t *, uint8_t, struct mapi_PermissionsData *);
 enum MAPISTATUS		SetSearchCriteria(mapi_object_t *, struct mapi_SRestriction *, uint32_t, mapi_id_array_t *);
-enum MAPISTATUS		GetSearchCriteria(mapi_object_t *, struct mapi_SRestriction *, uint32_t *, uint16_t *, uint64_t **);
+enum MAPISTATUS		GetSearchCriteria(mapi_object_t *, struct mapi_SRestriction *, uint32_t *, uint16_t *, int64_t **);
 
 /* The following public definitions come from libmapi/IMAPIFolder.c */
 enum MAPISTATUS		CreateMessage(mapi_object_t *, mapi_object_t *);
@@ -351,7 +351,7 @@ enum MAPISTATUS		EmptyFolder(mapi_object_t *);
 enum MAPISTATUS		DeleteFolder(mapi_object_t *, mapi_id_t, uint8_t, bool *);
 enum MAPISTATUS		MoveFolder(mapi_object_t *, mapi_object_t *, mapi_object_t *, char *, bool);
 enum MAPISTATUS		CopyFolder(mapi_object_t *, mapi_object_t *, mapi_object_t *, char *, bool, bool);
-enum MAPISTATUS		SetReadFlags(mapi_object_t *, uint8_t, uint16_t, uint64_t *);
+enum MAPISTATUS		SetReadFlags(mapi_object_t *, uint8_t, uint16_t, int64_t *);
 enum MAPISTATUS		HardDeleteMessagesAndSubfolders(mapi_object_t *);
 
 /* The following public definitions come from libmapi/IMAPIProp.c */
@@ -396,8 +396,8 @@ enum MAPISTATUS		Restrict(mapi_object_t *, struct mapi_SRestriction *, uint8_t *
 enum MAPISTATUS		FindRow(mapi_object_t *, struct mapi_SRestriction *, enum BOOKMARK, enum FindRow_ulFlags, struct SRowSet *);
 enum MAPISTATUS		GetStatus(mapi_object_t *, uint8_t *);
 enum MAPISTATUS		Abort(mapi_object_t *, uint8_t *);
-enum MAPISTATUS		ExpandRow(mapi_object_t *, uint64_t, uint16_t, struct SRowSet *, uint32_t *);
-enum MAPISTATUS		CollapseRow(mapi_object_t *, uint64_t, uint32_t *);
+enum MAPISTATUS		ExpandRow(mapi_object_t *, int64_t, uint16_t, struct SRowSet *, uint32_t *);
+enum MAPISTATUS		CollapseRow(mapi_object_t *, int64_t, uint32_t *);
 enum MAPISTATUS		GetCollapseState(mapi_object_t *, uint64_t, uint32_t, struct SBinary_short *);
 enum MAPISTATUS		SetCollapseState(mapi_object_t *, struct SBinary_short *);
 
@@ -508,7 +508,7 @@ enum MAPISTATUS		compress_rtf(TALLOC_CTX *, const char*, const size_t, uint8_t *
 /* The following public definitions come from libmapi/utils.c */
 char			*guid_delete_dash(TALLOC_CTX *, const char *);
 struct Binary_r		*generate_recipient_entryid(TALLOC_CTX *, const char *);
-enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, uint64_t, uint64_t *);
+enum MAPISTATUS		GetFIDFromEntryID(uint16_t, uint8_t *, int64_t, int64_t *);
 enum MAPISTATUS		EntryIDFromSourceIDForMessage(TALLOC_CTX *, mapi_object_t *, mapi_object_t *, mapi_object_t *, struct SBinary_short *);
 
 /* The following public definitions come from libmapi/notif.c */
@@ -533,18 +533,18 @@ void 			fxparser_set_property_callback(struct fx_parser_context *, fxparser_prop
 enum MAPISTATUS		fxparser_parse(struct fx_parser_context *, DATA_BLOB *);
 
 /* The following public definitions come from libmapi/idset.c */
-uint64_t		exchange_globcnt(uint64_t);
+int64_t			exchange_globcnt(int64_t);
 
 struct rawidset *	RAWIDSET_make(TALLOC_CTX *, bool, bool);
-void			RAWIDSET_push_eid(struct rawidset *, uint64_t);
-void			RAWIDSET_push_guid_glob(struct rawidset *, const struct GUID *, uint64_t);
+void			RAWIDSET_push_eid(struct rawidset *, int64_t);
+void			RAWIDSET_push_guid_glob(struct rawidset *, const struct GUID *, int64_t);
 struct idset *		RAWIDSET_convert_to_idset(TALLOC_CTX *, const struct rawidset *);
 
 struct idset *		IDSET_parse(TALLOC_CTX *, DATA_BLOB, bool);
-struct idset *		IDSET_merge_idsets(TALLOC_CTX *mem_ctx, const struct idset *, const struct idset *);
+struct idset *		IDSET_merge_idsets(TALLOC_CTX *, const struct idset *, const struct idset *);
 struct Binary_r *	IDSET_serialize(TALLOC_CTX *, const struct idset *);
-bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, uint64_t);
-bool			IDSET_includes_eid(const struct idset *, uint64_t);
+bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, int64_t);
+bool			IDSET_includes_eid(const struct idset *, int64_t);
 void			IDSET_remove_rawidset(struct idset *, const struct rawidset *);
 void			IDSET_dump(const struct idset *, const char *);
 void			ndr_push_idset(struct ndr_push *, struct idset *);

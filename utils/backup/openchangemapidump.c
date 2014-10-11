@@ -201,8 +201,8 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 	while ((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
-			fid = (const uint64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_FID);
-			mid = (const uint64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_MID);
+			fid = (const int64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_FID);
+			mid = (const int64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_MID);
 			/* Open Message */
 			retval = OpenMessage(obj_folder, *fid, *mid, &obj_message, 0);
 			if (GetLastError() == MAPI_E_SUCCESS) {
@@ -308,7 +308,7 @@ static enum MAPISTATUS mapidump_walk_container(TALLOC_CTX *mem_ctx,
 
 		while ((retval = QueryRows(&obj_htable, rcount, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 			for (i = 0; i < rowset.cRows; i++) {
-				fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[i], PR_FID);
+				fid = (const int64_t *)find_SPropValue_data(&rowset.aRow[i], PR_FID);
 				retval = mapidump_walk_container(mem_ctx, ocb_ctx, &obj_folder, *fid, containerdn, count + 1);
 			}
 		}

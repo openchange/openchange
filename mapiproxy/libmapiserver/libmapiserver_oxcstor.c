@@ -241,7 +241,7 @@ _PUBLIC_ uint16_t libmapiserver_RopGetReceiveFolderTable_size(struct EcDoRpc_MAP
 	size += sizeof(uint32_t); /* cValues */
 	for (i = 0; i < response->u.mapi_GetReceiveFolderTable.cValues; ++i) {
 		size += sizeof(uint8_t); /* flag */
-		size += sizeof(uint64_t); /* fid */
+		size += sizeof(int64_t); /* fid */
 		size += strlen(response->u.mapi_GetReceiveFolderTable.entries[i].lpszMessageClass) + 1;
 		size += sizeof(struct FILETIME); /* modiftime */
 	}

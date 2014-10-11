@@ -46,7 +46,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
 	uint16_t		flags = NONE;
-	uint64_t		fid;
+	int64_t			fid;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|shh", kwnames, &name, &desc, &foldertype, &flags)) {
 		return NULL;

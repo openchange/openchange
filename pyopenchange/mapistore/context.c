@@ -57,7 +57,7 @@ static PyObject *py_MAPIStoreContext_register_subscription(PyMAPIStoreContextObj
 	const char					*mapistoreURI;
 	bool						WholeStore;
 	uint16_t					NotificationFlags;
-	uint64_t					FolderID;
+	int64_t						FolderID;
 	bool						softdeleted;
 	struct mapistore_subscription_list		*subscription_list;
 	struct mapistore_subscription			*subscription;
@@ -133,7 +133,7 @@ static PyObject *py_MAPIStoreContext_unregister_subscription(PyMAPIStoreContextO
 	const char				*mapistoreURI;
 	bool					WholeStore;
 	uint16_t				NotificationFlags;
-	uint64_t				FolderID;
+	int64_t					FolderID;
 	uint32_t				identifier;
 	PyMAPIStoreGlobals *globals;
 

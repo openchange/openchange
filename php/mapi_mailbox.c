@@ -218,7 +218,7 @@ PHP_METHOD(MAPIMailbox, setName)
 PHP_METHOD(MAPIMailbox, inbox)
 {
 	enum MAPISTATUS  retval;
-	uint64_t	id_inbox;
+	int64_t		id_inbox;
 	uint32_t	count;
 	zval            *folder;
 

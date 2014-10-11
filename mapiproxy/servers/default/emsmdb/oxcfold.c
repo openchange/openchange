@@ -150,7 +150,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapistore_subscription *subscription;
 	struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
-	uint64_t		folderID;
+	int64_t			folderID;
 	uint32_t		handle;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
@@ -265,7 +265,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
         struct mapistore_subscription *subscription;
         struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
-	uint64_t		folderID;
+	int64_t			folderID;
 	uint32_t		handle;
 	uint8_t			table_type;
 
@@ -398,7 +398,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	enum mapistore_error		ret;
 	struct mapi_handles		*parent = NULL;
 	uint32_t			handle;
-	uint64_t			parent_fid, fid, cn;
+	int64_t				parent_fid, fid, cn;
 	struct SPropValue		cnValue;
 	struct emsmdbp_object		*parent_object = NULL;
 	struct emsmdbp_object		*object = NULL;
@@ -693,7 +693,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopDeleteMessages(TALLOC_CTX *mem_ctx,
 	owner = emsmdbp_get_owner(parent_object);
 	for (i = 0; i < mapi_req->u.mapi_DeleteMessages.cn_ids; ++i) {
 		int ret;
-		uint64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
+		int64_t mid = mapi_req->u.mapi_DeleteMessages.message_ids[i];
 		DEBUG(0, ("MID %i to delete: 0x%.16"PRIx64"\n", i, mid));
 		ret = mapistore_folder_delete_message(emsmdbp_ctx->mstore_ctx, contextID, parent_object->backend_object, mid, MAPISTORE_SOFT_DELETE);
 		if (ret != MAPISTORE_SUCCESS && ret != MAPISTORE_ERR_NOT_FOUND) {
@@ -823,7 +823,7 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object   *folder_object = NULL;
 	uint32_t                context_id;
 	enum mapistore_error	retval;
-	uint64_t		*childFolders;
+	int64_t			*childFolders;
 	uint32_t		childFolderCount;
 	uint32_t		i;
 	uint8_t			flags = DELETE_HARD_DELETE| DEL_MESSAGES | DEL_FOLDERS;
@@ -968,7 +968,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 	void			*private_data = NULL;
 	struct emsmdbp_object	*destination_object;
 	struct emsmdbp_object   *source_object;
-	uint64_t                *targetMIDs;
+	int64_t			*targetMIDs;
         uint32_t                i;
 	bool			mapistore = false;
 
@@ -1027,7 +1027,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(source_object);
 	if (mapistore) {
 		/* We prepare a set of new MIDs for the backend */
-		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
+		targetMIDs = talloc_array(NULL, int64_t, mapi_req->u.mapi_MoveCopyMessages.count);
 		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
 			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &targetMIDs[i]);
 		}

@@ -1561,7 +1561,7 @@ _PUBLIC_ enum MAPISTATUS Abort(mapi_object_t *obj_table, uint8_t *TableStatus)
    \sa CollapseRow
  */
 _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table, 
-				   uint64_t categoryId,
+				   int64_t categoryId,
 				   uint16_t maxRows, 
 				   struct SRowSet *rowData,
 				   uint32_t *expandedRowCount)
@@ -1601,7 +1601,7 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table,
 	request.MaxRowCount = maxRows;
 	size += sizeof (uint16_t);
 	request.CategoryId = categoryId;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);
@@ -1673,7 +1673,7 @@ _PUBLIC_ enum MAPISTATUS ExpandRow(mapi_object_t *obj_table,
 
    \sa ExpandRow
  */
-_PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t categoryId,
+_PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, int64_t categoryId,
 				     uint32_t *rowCount)
 {
 	struct mapi_request		*mapi_request;
@@ -1702,7 +1702,7 @@ _PUBLIC_ enum MAPISTATUS CollapseRow(mapi_object_t *obj_table, uint64_t category
 
 	/* Fill the CollapseRow operation */
 	request.CategoryId = categoryId;
-	size += sizeof (uint64_t);
+	size += sizeof (int64_t);
 
 	/* Fill the MAPI_REQ request */
 	mapi_req = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REQ);

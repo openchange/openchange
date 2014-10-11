@@ -50,7 +50,7 @@
  */
 static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *ictx,
 						       const char *username,
-						       uint64_t fmid, bool *is_soft_deleted)
+						       int64_t fmid, bool *is_soft_deleted)
 {
 	int		ret;
 	uint64_t	soft_deleted;
@@ -68,7 +68,7 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
 		"SELECT soft_deleted FROM %s "
 		"WHERE username = '%s' AND fmid = %"PRIu64,
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid);
-	ret = select_first_uint(MYSQL(ictx), sql, &soft_deleted);
+	ret = select_first_uint64(MYSQL(ictx), sql, &soft_deleted);
 	MAPI_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_EXIST, mem_ctx);
 
 	*is_soft_deleted = (soft_deleted == 1);
@@ -92,7 +92,7 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
  */
 static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 					   const char *username,
-					   uint64_t fmid,
+					   int64_t fmid,
 					   const char *mapistore_URI)
 {
 	int		ret;
@@ -141,7 +141,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
  */
 static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 						const char *username,
-						uint64_t fmid,
+						int64_t fmid,
 						const char *mapistore_URI)
 {
 	int		ret;
@@ -192,7 +192,7 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
  */
 static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 					     const char *username,
-					     uint64_t fmid,
+					     int64_t fmid,
 					     uint8_t flags)
 {
 	int		ret;
@@ -257,7 +257,7 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 						 const char *username,
 						 TALLOC_CTX *mem_ctx,
-						 uint64_t fmid,
+						 int64_t fmid,
 						 char **urip,
 						 bool *soft_deletedp)
 {
@@ -312,7 +312,7 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 						  const char *username,
 						  const char *uri,
 						  bool partial,
-						  uint64_t *fmidp,
+						  int64_t *fmidp,
 						  bool *soft_deletedp)
 {
 	enum MYSQLRESULT	ret;
@@ -349,7 +349,7 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 
 	row = mysql_fetch_row(res);
 
-	*fmidp = strtoull(row[0], NULL, 0);
+	*fmidp = strtoll(row[0], NULL, 0);
 	*soft_deletedp = strtoull(row[1], NULL, 0) == 1;
 
 	mysql_free_result(res);
@@ -361,11 +361,11 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 
 static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context *ictx,
 						      const char *username,
-						      int count,
-						      uint64_t *fmidp)
+						      uint32_t count,
+						      int64_t *fmidp)
 {
 	int		ret;
-	uint64_t	next_fmid;
+	int64_t		next_fmid;
 	char		*sql;
 	TALLOC_CTX	*mem_ctx;
 
@@ -385,7 +385,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 		"SELECT next_fmid FROM %s "
 		"WHERE username = '%s'",
 		INDEXING_ALLOC_TABLE, _sql(mem_ctx, username));
-	ret = select_first_uint(MYSQL(ictx), sql, &next_fmid);
+	ret = select_first_int64(MYSQL(ictx), sql, &next_fmid);
 	switch (ret) {
 	case MYSQL_SUCCESS:
 		if (next_fmid <= MAX_PUBLIC_FOLDER_ID) {
@@ -430,7 +430,7 @@ static enum mapistore_error mysql_record_allocate_fmids(struct indexing_context 
 
 static enum mapistore_error mysql_record_allocate_fmid(struct indexing_context *ictx,
 						     const char *username,
-						     uint64_t *fmidp)
+						     int64_t *fmidp)
 {
 	return mysql_record_allocate_fmids(ictx, username, 1, fmidp);
 }

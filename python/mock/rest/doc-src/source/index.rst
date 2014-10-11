@@ -34,13 +34,21 @@ Backend info
       Content-Type: application/json
 
       {
-        "name": "My MAPISTORE Backend",
-        "version": 3,
-        "capabilities": {
-          "soft_delete": true,
-          "...": "...",
-        },
-      },
+         "name": "My MAPISTORE Backend",
+         "version": 3,
+         "capabilities": {
+            "soft_delete": true,
+            "...": "...",
+         },
+         "contexts": [
+            {
+               "url": "/calendars/",
+               "roles": ["calendar"],
+               "name": "Personal Calendar",
+               "main_folder": true
+            }
+         ]
+      }
 
    :reqheader Authorization: auth token
    :reqheader Accept: the response content type depends on

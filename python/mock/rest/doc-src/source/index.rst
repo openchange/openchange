@@ -583,7 +583,7 @@ Calendar
       {
         "parent_id": "cea793f236334942bdae2c1e6c83607d",
         "PidTagSubject": "My sample appointment",
-	"PidTagBody": "Sample body"
+        "PidTagBody": "Sample body"
       }
 
    **Example response**:
@@ -626,9 +626,9 @@ Calendar
 
       {
         "id": "15924213158245d0ad631c6a41a0e7c3",
-	"parent_id": "cea793f236334942bdae2c1e6c83607d",
-	"PidTagSubject": "My sample appointment",
-	"PidTagBody": "Sample body"
+        "parent_id": "cea793f236334942bdae2c1e6c83607d",
+        "PidTagSubject": "My sample appointment",
+        "PidTagBody": "Sample body"
       },
 
    :reqheader Authorization: auth token

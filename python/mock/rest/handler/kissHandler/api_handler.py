@@ -43,10 +43,14 @@ class ApiHandler(object):
 
     def info_get(self):
         """get static description for this handler implementation"""
+        # build main folders list
+        folders = self._db.get_folders()
+        contexts = [folders[i] for i in folders if i < 100]
         return {
             'name': ApiHandler.NAME,
             'version': ApiHandler.VERSION,
-            'capabilities': {}
+            'capabilities': {},
+            'contexts': contexts
         }
 
     def folders_id_exists(self, folder_id):

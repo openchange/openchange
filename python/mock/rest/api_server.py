@@ -52,6 +52,18 @@ def module_info():
     """Get information for this backend"""
     handler = ApiHandler(user_id='any')
     ret_val = handler.info_get()
+    # fix contexts, they are relative atm
+    def _contexts_info(folder):
+        return {
+            'url': '/folders/%s/' % folder['id'],
+            'roles': 'root',
+            'name': folder['PidTagDisplayName'],
+            'main_folder': True
+        }
+    contexts = [_contexts_info(ctx) for ctx in ret_val['contexts']]
+    contexts.append({'url': '/calendar/', 'roles': 'calendar', 'name': 'Calendar', 'main_folder': True})
+    # todo: add 'calendar' etc
+    ret_val['contexts'] = contexts
     handler.close_context()
     return jsonify(ret_val)
 

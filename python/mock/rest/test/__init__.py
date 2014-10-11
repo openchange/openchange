@@ -25,7 +25,7 @@ import json
 
 
 # Default URL for Mock server running on localhost
-_SERVER_URL = 'http://localhost:5000'
+_SERVER_URL = 'http://localhost:5001'
 
 
 class MockApiBaseTestCase(unittest.TestCase):

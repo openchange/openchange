@@ -290,4 +290,4 @@ def module_calendar_delete(msg_id):
 
 if __name__ == '__main__':
     app.debug = True
-    app.run()
+    app.run(port=5001)

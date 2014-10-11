@@ -402,8 +402,168 @@ Folders
 
 
 Email
-------
-TBD
+-----
+
+TODO
+   - Define sending e-mail
+   - Do we need special handling for Recipients?
+   - Move/Copy message defintion?
+
+
+.. http:post:: /mail/
+
+   :synopsis: Creates a new mail message and returns its ID.
+              ``parent_id`` and ``PidTagSubject``` are required.
+              Other message attributes are optional.
+
+   **Example request**:
+
+   .. sourcecode:: http
+
+      POST /mail/ HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+      {
+        "parent_id": "c7e77cc9999908ec54ae32f1faf17e0e",
+        "PidTagSubject": "New mail message",
+        "PidTagBody": "Message text body",
+        "PidTagBodyHtml": "<html>....</html>"
+      }
+
+   :<json string parent_id: Parent Folder Identifier
+   :<json string PidTagSubject: Message subject line
+   :<json string PidTagBody: Message body - text format
+   :<json string PidTagBodyHtml: HTML formatted body for mail message
+
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: application/json
+
+      {
+        "id": "68b329da9893e34099c7d8ad5cb9c940"
+      }
+
+   :>json string id: Message Identifier of the message created
+   :reqheader Authorization: auth token
+   :statuscode 200: Ok
+   :statuscode 422: The request was well-formed but was unable
+                    to be followed due to semantic errors
+
+
+.. http:get:: /mail/(id)/
+
+   :synopsis: Retrieve all the properties of an email message
+              identified by `id`
+
+   **Example request**:
+
+   .. sourcecode:: http
+
+      GET /mail/15924213158245d0ad631c6a41a0e7c3/ HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+      Vary: Accept
+      Content-Type: application/json
+
+      {
+        "id": "15924213158245d0ad631c6a41a0e7c3",
+        "parent_id": "cea793f236334942bdae2c1e6c83607d",
+        "PidTagSubject": "New mail message",
+        "PidTagBody": "Sample body",
+        "PidTagBodyHtml": "<html>...</html>"
+      },
+
+   :reqheader Authorization: auth token
+   :reqheader Accept: the response content depends on on
+                      :mailheader:`Accept` header
+   :resheader Content-Type: this depends on :mailheader:`Accept`
+                            header of the request
+   :statuscode 200: Ok
+   :statuscode 404: Item does not exist
+
+
+.. http:put:: /mail/(id)/
+
+   :synopsis: Set properties on email message identified by `id`
+
+   **Example request**:
+
+   .. sourcecode:: http
+
+      PUT /mail/15924213158245d0ad631c6a41a0e7c3/ HTTP/1.1
+      Host: example.com
+      Accept: application/json
+
+      {
+        "PidTagBody": "Sample body v2"
+      }
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 201 No Content
+
+   :reqheader Authorization: auth token
+   :statuscode 201: The update was successfully applied
+   :statuscode 400: Bad request
+
+
+.. http:head:: /mail/(id)/
+
+   :synopsis: Check if the email message identified by `id` exists
+
+   **Example request**:
+
+   .. sourcecode:: http
+
+      HEAD /calendars/15924213158245d0ad631c6a41a0e7c3/ HTTP/1.1
+      Host: example.com
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 200 OK
+
+   :reqheader Authorization: auth token
+   :statuscode 200: Ok
+   :statuscode 404: Item does not exist
+
+
+.. http:delete:: /mail/(id)/
+
+   :synopsis: Delete the email message identified by `id`
+
+   **Example request**:
+
+   .. sourcecode:: http
+
+      DELETE /mail/15924213158245d0ad631c6a41a0e7c3 HTTP/1.1
+      Host: example.com
+
+   **Example response**:
+
+   .. sourcecode:: http
+
+      HTTP/1.1 204 No content
+
+   :reqheader Authorization: auth token
+   :statuscode 204: Ok
+   :statuscode 404: Item does not exist
+
 
 Calendar
 --------

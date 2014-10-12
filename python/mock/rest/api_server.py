@@ -244,13 +244,10 @@ def module_folders_get_messages(folder_id):
 
 
 ###############################################################################
-# Mail service
+# common message implementation
 ###############################################################################
 
-@app.route('/mail/', methods=['POST'])
-def module_mail_create():
-    data = request.get_json()
-    handler = ApiHandler(user_id='any')
+def _messsage_create(handler, type, data):
     msg = {}
     try:
         if data is None:
@@ -264,6 +261,19 @@ def module_mail_create():
         msg = handler.messages_create('mail', data)
     except KeyError, ke:
         abort(404, ke.message)
+    return msg
+
+
+###############################################################################
+# Mail service
+###############################################################################
+
+@app.route('/mail/', methods=['POST'])
+def module_mail_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        msg = _messsage_create(handler, 'mail', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
@@ -318,19 +328,8 @@ def module_mail_delete(msg_id):
 def module_calendar_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
-    msg = {}
     try:
-        if data is None:
-            abort(422, "You must supply parent_id and PidTagSubject at least")
-        parent_id = data.get('parent_id', None)
-        if parent_id is None:
-            abort(422, "parent_id is required parameter")
-        subject = data.get('PidTagSubject')
-        if subject is None:
-            abort(422, "PidTagSubject is a required parameter")
-        msg = handler.messages_create('calendar', data)
-    except KeyError, ke:
-        abort(404, ke.message)
+        msg = _messsage_create(handler, 'calendar', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])

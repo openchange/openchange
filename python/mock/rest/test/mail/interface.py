@@ -27,7 +27,7 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
 
     def _create_test_msg(self, parent_id=1, subject='Message ', body='Message body'):
         data = {
-            'parent_id': 1,
+            'parent_id': parent_id,
             'PidTagSubject': subject,
             'PidTagBody': body,
             'PidTagBodyHtml': '<html>%s</html>' % body

@@ -280,6 +280,7 @@ def module_mail_create():
 
 
 @app.route('/mail/<int:msg_id>/', methods=['GET'])
+@app.route('/calendars/<int:msg_id>/', methods=['GET'])
 def module_mail_get(msg_id=0):
     """Retrieve all the properties of the calendar entry identified by id"""
     handler = ApiHandler(user_id='any')
@@ -294,6 +295,7 @@ def module_mail_get(msg_id=0):
 
 
 @app.route('/mail/<int:msg_id>/', methods=['PUT'])
+@app.route('/calendars/<int:msg_id>/', methods=['PUT'])
 def module_mail_put(msg_id):
     """Update existing message properties"""
     data = request.get_json()
@@ -308,6 +310,7 @@ def module_mail_put(msg_id):
 
 
 @app.route('/mail/<int:msg_id>/', methods=['DELETE'])
+@app.route('/calendars/<int:msg_id>/', methods=['DELETE'])
 def module_mail_delete(msg_id):
     """Delete message with msg_id"""
     handler = ApiHandler(user_id='any')
@@ -333,47 +336,6 @@ def module_calendar_create():
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
-
-
-@app.route('/calendars/<int:msg_id>/', methods=['GET'])
-def module_calendar_get(msg_id=0):
-    """Retrieve all the properties of the calendar entry identified by id"""
-    handler = ApiHandler(user_id='any')
-    ret_val = ''
-    try:
-        ret_val = handler.messages_get(msg_id)
-    except KeyError, ke:
-        abort(404, ke.message)
-    finally:
-        handler.close_context()
-    return jsonify(ret_val)
-
-
-@app.route('/calendars/<int:msg_id>/', methods=['PUT'])
-def module_calendar_put(msg_id):
-    """Update existing message properties"""
-    data = request.get_json()
-    handler = ApiHandler(user_id='any')
-    try:
-        handler.messages_update(msg_id, data)
-    except KeyError, ke:
-        abort(404, ke.message)
-    finally:
-        handler.close_context()
-    return "", 201
-
-
-@app.route('/calendars/<int:msg_id>/', methods=['DELETE'])
-def module_calendar_delete(msg_id):
-    """Delete message with msg_id"""
-    handler = ApiHandler(user_id='any')
-    try:
-        handler.messages_delete(msg_id)
-    except KeyError, ke:
-        abort(404, ke.message)
-    finally:
-        handler.close_context()
-    return "", 204
 
 
 if __name__ == '__main__':

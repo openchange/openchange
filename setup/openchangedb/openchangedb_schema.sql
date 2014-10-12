@@ -61,7 +61,7 @@ CREATE TABLE IF NOT EXISTS `folders` (
   `folder_id` BIGINT SIGNED NOT NULL,
   `folder_class` VARCHAR(6) NOT NULL DEFAULT 'system',
   `mailbox_id` BIGINT UNSIGNED NULL,
-  `parent_folder_id` BIGINT SIGNED NULL,
+  `parent_folder_id` BIGINT UNSIGNED NULL,
   `FolderType` INT NULL,
   `SystemIdx` INT NULL,
   `MAPIStoreURI` VARCHAR(1024) NULL,

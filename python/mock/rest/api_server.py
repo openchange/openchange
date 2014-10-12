@@ -281,6 +281,9 @@ def module_mail_create():
 
 @app.route('/mail/<int:msg_id>/', methods=['GET'])
 @app.route('/calendars/<int:msg_id>/', methods=['GET'])
+@app.route('/tasks/<int:msg_id>/', methods=['GET'])
+@app.route('/contacts/<int:msg_id>/', methods=['GET'])
+@app.route('/notes/<int:msg_id>/', methods=['GET'])
 def module_mail_get(msg_id=0):
     """Retrieve all the properties of the calendar entry identified by id"""
     handler = ApiHandler(user_id='any')
@@ -296,6 +299,9 @@ def module_mail_get(msg_id=0):
 
 @app.route('/mail/<int:msg_id>/', methods=['PUT'])
 @app.route('/calendars/<int:msg_id>/', methods=['PUT'])
+@app.route('/tasks/<int:msg_id>/', methods=['PUT'])
+@app.route('/contacts/<int:msg_id>/', methods=['PUT'])
+@app.route('/notes/<int:msg_id>/', methods=['PUT'])
 def module_mail_put(msg_id):
     """Update existing message properties"""
     data = request.get_json()
@@ -311,6 +317,9 @@ def module_mail_put(msg_id):
 
 @app.route('/mail/<int:msg_id>/', methods=['DELETE'])
 @app.route('/calendars/<int:msg_id>/', methods=['DELETE'])
+@app.route('/tasks/<int:msg_id>/', methods=['DELETE'])
+@app.route('/contacts/<int:msg_id>/', methods=['DELETE'])
+@app.route('/notes/<int:msg_id>/', methods=['DELETE'])
 def module_mail_delete(msg_id):
     """Delete message with msg_id"""
     handler = ApiHandler(user_id='any')
@@ -328,11 +337,56 @@ def module_mail_delete(msg_id):
 ###############################################################################
 
 @app.route('/calendars/', methods=['POST'])
-def module_calendar_create():
+def module_calendars_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
         msg = _messsage_create(handler, 'calendar', data)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
+###############################################################################
+# Tasks service
+###############################################################################
+
+@app.route('/tasks/', methods=['POST'])
+def module_tasks_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        msg = _messsage_create(handler, 'task', data)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
+###############################################################################
+# Contacts service
+###############################################################################
+
+@app.route('/contacts/', methods=['POST'])
+def module_contacts_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        msg = _messsage_create(handler, 'contact', data)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
+###############################################################################
+# Notes service
+###############################################################################
+
+@app.route('/notes/', methods=['POST'])
+def module_notes_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        msg = _messsage_create(handler, 'note', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])

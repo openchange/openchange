@@ -16,72 +16,70 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 """
-Unit testing for Openchange REST API server
-This module tests "/calendars/" module.
-For reference see <>
+Basic tests on service interface
 """
 
 import unittest
 import test
 
-class CalendarInterfaceTestCase(test.MockApiBaseTestCase):
-    """Basic tests for Calendars module interface"""
+class ContactsInterfaceTestCase(test.MockApiBaseTestCase):
+    """Basic tests for Contacts module interface"""
 
-    def _create_test_item(self, parent_id=1, subject='Calendar 1', body='Cal text body'):
+    def _create_test_msg(self, parent_id=1, subject='Message ', body='Message body'):
         data = {
-            'parent_id': 1,
+            'parent_id': parent_id,
             'PidTagSubject': subject,
             'PidTagBody': body
         }
-        return self.post_req('/calendars/', data)
+        return self.post_req('/contacts/', data)
 
     def test_create(self):
-        status, text, headers = self._create_test_item()
+        status, text, headers = self._create_test_msg()
         self.assertEqual(status, 200)
         self.assertIn('id', self._to_json_ret(text))
 
     def test_get(self):
         # create some test item to play with
-        status, text, headers = self._create_test_item(subject='tget', body='tget body')
+        status, text, headers = self._create_test_msg(subject='contacts tget', body='contacts tget body')
         item = self._to_json_ret(text)
         # fetch the message
-        path = '/calendars/%d/?properties=id,type,PidTagSubject,PidTagBody' % item['id']
+        path = '/contacts/%d/?properties=id,type,PidTagSubject,PidTagBody' % item['id']
         status, text, headers = self.get_req(path)
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['type'], 'calendar')
-        self.assertEqual(res['PidTagSubject'], 'tget')
-        self.assertEqual(res['PidTagBody'], 'tget body')
+        self.assertEqual(res['type'], 'contact')
+        self.assertEqual(res['PidTagSubject'], 'contacts tget')
+        self.assertEqual(res['PidTagBody'], 'contacts tget body')
 
     def test_update(self):
         # create some test item to play with
-        status, text, headers = self._create_test_item()
+        status, text, headers = self._create_test_msg()
         item = self._to_json_ret(text)
         # update the event
         data = {
-            'PidTagBody': 'Updated Appointment body'
+            'PidTagBody': 'Updated contacts body'
         }
-        path = '/calendars/%d/' % item['id']
+        path = '/contacts/%d/' % item['id']
         status, text, headers = self.put_req(path, data)
         self.assertEqual(status, 201)
         self.assertEqual(text, "")
 
     def test_head(self):
         # create some test item to play with
-        status, text, headers = self._create_test_item()
+        status, text, headers = self._create_test_msg()
         item = self._to_json_ret(text)
         # check message exists
-        path = '/calendars/%d/' % item['id']
+        path = '/contacts/%d/' % item['id']
         status, text, headers = self.head_req(path)
         self.assertEqual(status, 200)
 
     def test_delete(self):
         # create some test item to play with
-        status, text, headers = self._create_test_item()
+        status, text, headers = self._create_test_msg()
         item = self._to_json_ret(text)
         # check message exists
-        path = '/calendars/%d/' % item['id']
+        path = '/contacts/%d/' % item['id']
         status, text, headers = self.delete_req(path)
         self.assertEqual(status, 204)
         self.assertEqual(text, "")

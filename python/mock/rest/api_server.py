@@ -52,8 +52,9 @@ def module_info():
     """Get information for this backend"""
     handler = ApiHandler(user_id='any')
     ret_val = handler.info_get()
-    # fix contexts, they are relative atm
+
     def _contexts_info(folder):
+        # fix contexts, they are relative atm
         return {
             'url': '/folders/%s/' % folder['id'],
             'roles': 'root',
@@ -61,7 +62,10 @@ def module_info():
             'main_folder': True
         }
     contexts = [_contexts_info(ctx) for ctx in ret_val['contexts']]
-    contexts.append({'url': '/calendar/', 'roles': 'calendar', 'name': 'Calendar', 'main_folder': True})
+    contexts.append({'url': '/calendar/',
+                     'roles': 'calendar',
+                     'name': 'Calendar',
+                     'main_folder': True})
     # todo: add 'calendar' etc
     ret_val['contexts'] = contexts
     handler.close_context()
@@ -94,10 +98,12 @@ def module_folders_head_folders(folder_id):
         abort(404, ke.message)
     finally:
         handler.close_context()
+
     @after_this_request
     def add_header_X_Mapistore_Rowcount(response):
         response.headers['X-Mapistore-Rowcount'] = ret_val['item_count']
         return response
+
     return jsonify()
 
 
@@ -112,8 +118,9 @@ def module_folders_get_folders(folder_id=0):
         properties = set(properties.split(','))
     folders = _module_folders_dir_impl(folder_id)
     # filter only requested properties
-    folders = [{k:v for (k,v) in f.items()
-                    if properties is None or k in properties}
+    folders = [{k: v
+                for (k, v) in f.items()
+                if properties is None or k in properties}
                for f in folders]
     return Response(json.dumps(folders),  mimetype='application/json')
 
@@ -203,10 +210,12 @@ def module_folders_head_messages(folder_id):
         abort(404, ke.message)
     finally:
         handler.close_context()
+
     @after_this_request
     def add_header_X_Mapistore_Rowcount(response):
         response.headers['X-Mapistore-Rowcount'] = len(messages)
         return response
+
     return jsonify()
 
 
@@ -227,9 +236,10 @@ def module_folders_get_messages(folder_id):
     finally:
         handler.close_context()
     # filter only requested properties
-    messages = [{k:v for (k,v) in msg.items()
-                    if properties is None or k in properties}
-               for msg in messages]
+    messages = [{k: v
+                 for (k, v) in msg.items()
+                 if properties is None or k in properties}
+                for msg in messages]
     return Response(json.dumps(messages),  mimetype='application/json')
 
 

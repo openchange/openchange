@@ -47,8 +47,8 @@ class MockApiBaseTestCase(unittest.TestCase):
 
     def put_req(self, path, data):
         r = requests.put(self._make_url(path),
-                          headers=self._headers(),
-                          data=json.dumps(data))
+                         headers=self._headers(),
+                         data=json.dumps(data))
         return r.status_code, r.text, r.headers
 
     def delete_req(self, path):
@@ -72,7 +72,7 @@ class MockApiBaseTestCase(unittest.TestCase):
         """:rtype: dict"""
         try:
             return json.loads(text)
-        except (TypeError, ValueError) as e:
+        except (TypeError, ValueError):
             return None
 
     def _create_test_folder(self, parent_id=1, name='test folder', comment='folder comment'):

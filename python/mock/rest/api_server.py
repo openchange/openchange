@@ -234,6 +234,73 @@ def module_folders_get_messages(folder_id):
 
 
 ###############################################################################
+# Mail service
+###############################################################################
+
+@app.route('/mail/', methods=['POST'])
+def module_mail_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    msg = {}
+    try:
+        if data is None:
+            abort(422, "You must supply parent_id and PidTagSubject at least")
+        parent_id = data.get('parent_id', None)
+        if parent_id is None:
+            abort(422, "parent_id is required parameter")
+        subject = data.get('PidTagSubject')
+        if subject is None:
+            abort(422, "PidTagSubject is a required parameter")
+        msg = handler.messages_create('mail', data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
+@app.route('/mail/<int:msg_id>/', methods=['GET'])
+def module_mail_get(msg_id=0):
+    """Retrieve all the properties of the calendar entry identified by id"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.messages_get(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(ret_val)
+
+
+@app.route('/mail/<int:msg_id>/', methods=['PUT'])
+def module_mail_put(msg_id):
+    """Update existing message properties"""
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.messages_update(msg_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
+
+@app.route('/mail/<int:msg_id>/', methods=['DELETE'])
+def module_mail_delete(msg_id):
+    """Delete message with msg_id"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.messages_delete(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
+
+###############################################################################
 # Calendar
 ###############################################################################
 

@@ -258,7 +258,7 @@ def _messsage_create(handler, type, data):
         subject = data.get('PidTagSubject')
         if subject is None:
             abort(422, "PidTagSubject is a required parameter")
-        msg = handler.messages_create('mail', data)
+        msg = handler.messages_create(type, data)
     except KeyError, ke:
         abort(404, ke.message)
     return msg

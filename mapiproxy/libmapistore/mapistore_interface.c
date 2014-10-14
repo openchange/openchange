@@ -1591,6 +1591,22 @@ _PUBLIC_ enum mapistore_error mapistore_message_create_attachment(struct mapisto
 	return mapistore_backend_message_create_attachment(backend_ctx, message, mem_ctx, attachment, aid);
 }
 
+_PUBLIC_ enum mapistore_error mapistore_message_delete_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
+								  void *message, uint32_t aid)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_message_delete_attachment(backend_ctx, message, aid);
+}
+
 _PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)
 {
 	struct backend_context	*backend_ctx;

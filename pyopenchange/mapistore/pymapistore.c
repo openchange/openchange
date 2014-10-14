@@ -34,18 +34,6 @@ void initmapistore(void);
 
 static PyMAPIStoreGlobals globals;
 
-void PyErr_SetMAPIStoreError(uint32_t retval)
-{
-	PyErr_SetObject(PyExc_RuntimeError,
-			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
-}
-
-void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval)
-{
-	PyErr_SetObject(PyExc_RuntimeError,
-			Py_BuildValue("(i, s)", retval, mapi_get_errstr(retval)));
-}
-
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 {
 	return &globals;
@@ -54,7 +42,6 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
 	struct tevent_context	*ev;
-	int			retval;
 	struct ldb_result	*res;
 	struct ldb_dn		*tmp_dn = NULL;
 	static const char	*attrs[] = {
@@ -62,6 +49,7 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 		"defaultNamingContext",
 		NULL
 	};
+	int			retval;
 
 	/* Sanity checks */
 	if (globals.samdb_ctx) {
@@ -96,11 +84,11 @@ static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_co
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
-	struct loadparm_context		*lp_ctx;
-	PyMAPIStoreObject		*msobj;
-	bool				ret;
 	char				*kwnames[] = { "syspath", NULL };
+	PyMAPIStoreObject		*msobj;
+	struct loadparm_context		*lp_ctx;
 	const char			*syspath = NULL;
+	bool				ret;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
 		return NULL;
@@ -115,7 +103,8 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	/* Initialize configuration */
 	lp_ctx = loadparm_init(mem_ctx);
 	if (lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error initialising loadparm context");
+		DEBUG(0, ("[ERR][%s]: Error initialising loadparm context\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -133,6 +122,7 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
 	if (msobj == NULL) {
 		PyErr_NoMemory();
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -158,10 +148,10 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 {
 	struct openchangedb_context 	*ocdb_ctx;
 	struct mapistore_context	*mstore_ctx;
-	enum MAPISTATUS			ret;
-	enum mapistore_error		retval;
 	const char			*path = NULL;
 	const char			*username = NULL;
+	enum MAPISTATUS			ret;
+	enum mapistore_error		retval;
 
 	if (!PyArg_ParseTuple(args, "s|s", &username, &path)) {
 		return NULL;
@@ -185,7 +175,8 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Error initialising MAPIStore");
+		DEBUG(0, ("[ERR][%s]: Error initialising MAPIStore\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		return NULL;
 	}
 
@@ -204,9 +195,9 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 
 static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 {
-	bool				set_success;
 	const char			*option = NULL;
 	const char			*value = NULL;
+	bool				set_success;
 
 	if (!PyArg_ParseTuple(args, "ss", &option, &value)) {
 		return NULL;
@@ -215,7 +206,8 @@ static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
 	/* Set the value in the specified parameter */
 	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
 	if (set_success == false) {
-		PyErr_SetString(PyExc_SystemError, "Error setting the parameter");
+		DEBUG(0, ("[ERR][%s]: Error setting the parameter\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		return NULL;
 	}
 
@@ -227,7 +219,7 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 	bool 				show_defaults = false;
 
 	if (self->lp_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError, "Parameters not initialized");
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
 		return NULL;
 	}
 
@@ -238,11 +230,11 @@ static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
 
 static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 {
-	enum mapistore_error		retval;
 	TALLOC_CTX 			*mem_ctx;
 	PyObject			*py_ret = NULL;
 	const char			**backend_names;
-	int 				i, list_size;
+	enum mapistore_error		retval;
+	int 				i, list_size, ret;
 
 	DEBUG(0, ("List backends for user: %s\n", self->username));
 
@@ -255,31 +247,40 @@ static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
 	/* list backends */
 	retval = mapistore_list_backends_for_user(mem_ctx, &list_size, &backend_names);
 	if (retval != MAPISTORE_SUCCESS) {
-		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
-		return NULL;
+		goto end;
 	}
 
 	/* Build the list */
 	py_ret = PyList_New(list_size);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
 
 	for (i = 0; i < list_size; i++) {
-		PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+		ret = PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+		if (ret != 0) {
+			DEBUG(0,("[ERR][%s]: Unable to set item list\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
+			Py_DECREF(py_ret);
+			goto end;
+		}
 	}
 
 	talloc_free(mem_ctx);
 	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
 }
 
 static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 {
-	enum mapistore_error		retval;
 	TALLOC_CTX 			*mem_ctx;
-	PyObject			*py_ret = NULL;
-	PyObject			*py_dict;
+	PyObject			*py_ret = NULL, *py_dict;
 	struct mapistore_contexts_list 	*contexts_list;
-
-	DEBUG(0, ("List contexts for user %s\n", self->username));
+	enum mapistore_error		retval;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -292,6 +293,7 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 	if (retval != MAPISTORE_SUCCESS) {
 		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
 		return NULL;
 	}
 
@@ -335,19 +337,17 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
+	PyMAPIStoreContextObject	*context;
+	void				*folder_object;
+	const char			*uri;
 	enum mapistore_error		retval;
 	enum MAPISTATUS			ret;
-	PyMAPIStoreContextObject	*context;
-	uint32_t			context_id = 0;
-	const char			*uri;
-	void				*folder_object;
         uint64_t			fid = 0;
+	uint32_t			context_id = 0;
 
 	if (!PyArg_ParseTuple(args, "s", &uri)) {
 		return NULL;
 	}
-
-	/* printf("Add context: %s\n", uri); */
 
 	/* Get FID given mapistore_uri and username */
 	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
@@ -562,21 +562,23 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 	char	*debuglevel = NULL;
 
 	if (value == NULL) {
-		PyErr_SetString(PyExc_TypeError, "Cannot delete the last attribute");
+		DEBUG(0, ("[ERR][%s]: Cannot delete the 'debug' attribute\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return -1;
 	}
 
 	if (!PyInt_Check(value)) {
-		PyErr_SetString(PyExc_TypeError,
-				"The debuglevel attribute value must be an integer");
+		DEBUG(0, ("[ERR][%s]: The debuglevel attribute value must be an integer\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
 		return -1;
 	}
 
 	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
 	if (!debuglevel) {
-		PyErr_SetString(PyExc_MemoryError, "Out of memory");
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NO_MEMORY);
 		return -1;
 	}
+
 	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 
@@ -713,6 +715,7 @@ void initmapistore(void)
 	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);
+	initmapistore_attachment(m);
 	initmapistore_message(m);
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);

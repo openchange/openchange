@@ -74,9 +74,9 @@ def _load_samba_environment():
     firstorg = None
     firstorg_basedn = 'CN=Microsoft Exchange,CN=Services,' + configdn
     res = samdb_ldb.search(base=firstorg_basedn, scope=ldb.SCOPE_ONELEVEL, expression='(objectClass=msExchOrganizationContainer)', attrs=['cn'])
-    if (len(res) > 0):
+    if res:
         if len(res) > 1:
-            logger.warn('More than a exchange organization found')
+            logger.warn('More than one exchange organization found')
         firstorg = res[0]['cn'][0]
     if not firstorg:
         raise Exception("Cannot find first exchange organization in samba database")
@@ -84,9 +84,9 @@ def _load_samba_environment():
     firstou = None
     firstou_basedn = "CN=Administrative Groups,CN=%s,%s" %(firstorg, firstorg_basedn)
     res = samdb_ldb.search(base=firstou_basedn, scope=ldb.SCOPE_ONELEVEL, expression='(objectClass=msExchAdminGroup)', attrs=['cn'])
-    if (len(res) > 0):
+    if res:
         if len(res) > 1:
-            logger.warn('More than a exchange administration group found')
+            logger.warn('More than one exchange administration group found')
         firstou = res[0]['cn'][0]
     if not firstou:
         raise Exception("Cannot find exchange first organization unit in samba database")    

@@ -11,7 +11,10 @@ def print_tree(folder, indent):
         try:
             print '   '*(indent+1) + '[m]: ' + m.get_properties(['PidTagDisplayName'])['PidTagDisplayName']
         except:
-            print '   '*(indent+1) + '[m]: ' + repr(m.get_properties(['PidTagMid'])['PidTagMid'])
+            try:
+                print '   '*(indent+1) + '[m]: ' + repr(m.get_properties(['PidTagSubject'])['PidTagSubject'])               
+            except:
+                print '   '*(indent+1) + '[m]: ' + repr(m.get_properties(['PidTagMid'])['PidTagMid'])
     for f in folder.subfolders:
         print_tree(f, indent+1)
         
@@ -266,7 +269,7 @@ print '[PYMAPISTORE] INBOX hierarchy:'
 print_tree(in_fld, 0)
 
 print '[PYMAPISTORE] Display message data:'
-in_msg_data = in_msg.get_data();
+in_msg_data = in_msg.get_data()
 print in_msg_data
 print
 
@@ -290,13 +293,13 @@ print '[PYMAPISTORE] Row count: ' + repr(in_fld_tbl.count)
 print
 
 print "[PYMAPISTORE] Set colums to ['PidTagLastModificationTime', 'PidTagFolderId']"
-in_fld_tbl.columns = ['PidTagLastModificationTime', 0x67480014]
+in_fld_tbl.columns = ['PidTagDisplayName', 'PidTagLastModificationTime', 0x67480014]
 print
 
 print '[PYMAPISTORE] Iterate over the rows and display its content'
 for r in in_fld_tbl.rows:
     print r
-printprint
+print
 
 # ------------------------------- #
 # TEST ATTACHMENT IMPLIEMENTATION

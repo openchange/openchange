@@ -49,8 +49,28 @@ static PyObject *py_MAPIStoreAttachment_get_properties(PyMAPIStoreAttachmentObje
 	return py_ret;
 }
 
+static PyObject *py_MAPIStoreAttachment_set_properties(PyMAPIStoreAttachmentObject *self, PyObject *args, PyObject *kwargs)
+{
+	char			*kwnames[] = { "dict", NULL };
+	PyObject		*dict = NULL;
+	enum mapistore_error	retval;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "O", kwnames, &dict)) {
+		return NULL;
+	}
+
+	retval = pymapistore_set_properties(dict, self->context->mstore_ctx, self->context->context_id, self->attachment_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyMethodDef mapistore_attachment_methods[] = {
 	{ "get_properties", (PyCFunction)py_MAPIStoreAttachment_get_properties, METH_VARARGS|METH_KEYWORDS },
+	{ "set_properties", (PyCFunction)py_MAPIStoreAttachment_set_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },
 };
 

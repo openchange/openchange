@@ -1061,7 +1061,6 @@ static PyObject *py_MAPIStoreFolders_next(PyObject *_self)
 		folder->fid = fid;
 
 		return (PyObject *)folder;
-
 	} else {
 	    PyErr_SetNone(PyExc_StopIteration);
 	    return NULL;

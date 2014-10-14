@@ -421,13 +421,13 @@ static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObj
 }
 
 static PyMethodDef mapistore_message_methods[] = {
-	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS},
-	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS},
-	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS},
-	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS},
+	{ "get_properties", (PyCFunction)py_MAPIStoreMessage_get_properties, METH_VARARGS|METH_KEYWORDS },
+	{ "set_properties", (PyCFunction)py_MAPIStoreMessage_set_properties, METH_VARARGS|METH_KEYWORDS },
+	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS },
+	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS },
+	{ "create_attachment", (PyCFunction)py_MAPIStoreMessage_create_attachment, METH_NOARGS },
+	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS },
 	{ "open_attachment", (PyCFunction)py_MAPIStoreMessage_open_attachment, METH_VARARGS|METH_KEYWORDS },
-	{ "create_attachment", (PyCFunction)py_MAPIStoreMessage_create_attachment, METH_NOARGS},
-	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS},
 	{ NULL },
 };
 

@@ -106,7 +106,7 @@ _PUBLIC_ bool mapitest_zentyal_1863(struct mapitest *mt)
 	lpProp = talloc_zero(mem_ctx, struct PropertyValue_r);
 	lpProp->ulPropTag = PR_ACCOUNT;
 	lpProp->dwAlignPad = 0;
-	lpProp->value.lpszA = "Administrator";
+	lpProp->value.lpszA = talloc_strdup(lpProp, mt->profile->username);
 
 	Filter.rt = RES_PROPERTY;
 	Filter.res.resProperty.relop = RES_PROPERTY;

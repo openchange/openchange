@@ -57,13 +57,13 @@ def module_info():
         # fix contexts, they are relative atm
         return {
             'url': '/folders/%s/' % folder['id'],
-            'roles': 'root',
+            'role': 'root',
             'name': folder['PidTagDisplayName'],
             'main_folder': True
         }
     contexts = [_contexts_info(ctx) for ctx in ret_val['contexts']]
     contexts.append({'url': '/calendar/',
-                     'roles': 'calendar',
+                     'role': 'calendar',
                      'name': 'Calendar',
                      'main_folder': True})
     # todo: add 'calendar' etc

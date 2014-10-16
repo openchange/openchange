@@ -42,7 +42,7 @@ class InfoInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertTrue(len(contexts) > 1)
         for ctx in contexts:
             self.assertIn('url', ctx)
-            self.assertIn('roles', ctx)
+            self.assertIn('role', ctx)
             self.assertIn('name', ctx)
             self.assertIn('main_folder', ctx)
         # todo: check for 'notes', 'tasks', 'contacts', 'notes', 'attachments'

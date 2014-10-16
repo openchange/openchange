@@ -43,7 +43,7 @@ Backend info
          "contexts": [
             {
                "url": "/calendars/",
-               "roles": ["calendar"],
+               "role": ["calendar"],
                "name": "Personal Calendar",
                "main_folder": true
             }

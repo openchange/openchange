@@ -143,7 +143,7 @@ class ContextObject(BackendObject):
         message1["attachments"] = [attachment1, ]
         message1["mid"] = 0xdead00010000001
         message1["fai"] = False
-        message1["cache"] = {}
+        message1["attachment_cache"] = []
         message1["properties"] = {}
         message1["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
         message1["properties"]["PidTagMid"] = message1["mid"]
@@ -187,12 +187,12 @@ class ContextObject(BackendObject):
         subfolder["properties"]["PidTagContentCount"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagContentUnreadCount"] = len(subfolder["messages"])
         subfolder["properties"]["PidTagChildFolderCount"] = len(subfolder["subfolders"])
-        subfolder["cache"] = {}
-        subfolder["cache"]["properties"] = {}
-        subfolder["cache"]["messages"] = []
+        subfolder["message_cache"] = []
 
         self.mapping[0xdeadbeef0000001] = {}
         self.mapping[0xdeadbeef0000001]["uri"] = "deadbeef0000001/"
+        self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder, ]
+        self.mapping[0xdeadbeef0000001]["messages"] = [message1, ]
         self.mapping[0xdeadbeef0000001]["properties"] = {}
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagDisplayName"] = "SampleMail"
@@ -201,9 +201,7 @@ class ContextObject(BackendObject):
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagDefaultPostMessageClass"] = "IPM.Note"
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagAccess"] = 63
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagRights"] = 2043
-        self.mapping[0xdeadbeef0000001]["cache"] = {}
-        self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder, ]
-        self.mapping[0xdeadbeef0000001]["messages"] = [message1, ]
+        self.mapping[0xdeadbeef0000001]["message_cache"] = []
 
         #
         # Calendar data
@@ -214,7 +212,6 @@ class ContextObject(BackendObject):
         appt1["attachments"] = []
         appt1["mid"] = 0xcaca00010000001
         appt1["fai"] = False
-        appt1["cache"] = {}
         appt1["properties"] = {}
 
         # General properties (read-only)
@@ -283,9 +280,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcacabeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcacabeef0000001]["subfolders"] = []
         self.mapping[0xcacabeef0000001]["messages"] = [appt1,]
-        self.mapping[0xcacabeef0000001]["cache"] = {}
-        self.mapping[0xcacabeef0000001]["cache"]["properties"] = {}
-        self.mapping[0xcacabeef0000001]["cache"]["messages"] = []
+        self.mapping[0xcacabeef0000001]["message_cache"] = []
 
 
         #
@@ -312,7 +307,7 @@ class ContextObject(BackendObject):
         contact1["recipients"] = []
         contact1["mid"] = 0xcada00010000001
         contact1["fai"] = False
-        contact1["cache"] = {}
+        contact1["attachment_cache"] = []
         contact1["properties"] = {}
         contact1["attachments"] = [contact1_attachment1]
         contact1["properties"]["PidTagAccess"] = 63
@@ -407,9 +402,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcadabeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcadabeef0000001]["subfolders"] = []
         self.mapping[0xcadabeef0000001]["messages"] = [contact1]
-        self.mapping[0xcadabeef0000001]["cache"] = {}
-        self.mapping[0xcadabeef0000001]["cache"]["properties"] = {}
-        self.mapping[0xcadabeef0000001]["cache"]["messages"] = []
+        self.mapping[0xcadabeef0000001]["message_cache"] = []
 
 
 
@@ -421,7 +414,7 @@ class ContextObject(BackendObject):
         task1["attachments"] = []
         task1["mid"] = 0xcafe00010000001
         task1["fai"] = False
-        task1["cache"] = {}
+        task1["attachment_cache"] = []
         task1["properties"] = {}
 
         task1["properties"]["PidTagAccess"] = 63
@@ -475,9 +468,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcafebeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcafebeef0000001]["subfolders"] = []
         self.mapping[0xcafebeef0000001]["messages"] = [task1]
-        self.mapping[0xcafebeef0000001]["cache"] = {}
-        self.mapping[0xcafebeef0000001]["cache"]["properties"] = {}
-        self.mapping[0xcafebeef0000001]["cache"]["messages"] = []
+        self.mapping[0xcafebeef0000001]["message_cache"] = []
 
 
         #
@@ -488,7 +479,7 @@ class ContextObject(BackendObject):
         note1["attachments"] = []
         note1["mid"] = 0xcaba00010000001
         note1["fai"] = False
-        note1["cache"] = {}
+        note1["attachment_cache"] = []
         note1["properties"] = {}
 
         note1["properties"]["PidTagAccess"] = 63
@@ -532,9 +523,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcababeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcababeef0000001]["subfolders"] = []
         self.mapping[0xcababeef0000001]["messages"] = [note1]
-        self.mapping[0xcababeef0000001]["cache"] = {}
-        self.mapping[0xcababeef0000001]["cache"]["properties"] = {}
-        self.mapping[0xcababeef0000001]["cache"]["messages"] = []
+        self.mapping[0xcababeef0000001]["message_cache"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
         return
@@ -589,9 +578,7 @@ class FolderObject(ContextObject):
             folder["properties"]["PidTagComment"] = properties["PidTagComment"]
         folder["subfolders"] = []
         folder["messages"] = []
-        folder["cache"] = {}
-        folder["cache"]["properties"] = {}
-        folder["cache"]["messages"] = []
+        folder["message_cache"] = []
 
         self.basedict["subfolders"].append(folder)
 
@@ -638,6 +625,8 @@ class FolderObject(ContextObject):
         for item in self.basedict["messages"]:
             if str(item["mid"]) == str(mid):
                 print '[PYTHON]: messageID 0x%x found\n' % (mid)
+                tmpmsg = item.copy()
+                self.basedict["message_cache"].append(tmpmsg)
                 return MessageObject(item, self, mid, rw)
         return None
 
@@ -648,10 +637,10 @@ class FolderObject(ContextObject):
         newmsg["attachments"] = []
         newmsg["mid"] = mid
         newmsg["fai"] = associated
-        newmsg["cache"] = {}
+        newmsg["attachment_cache"] = []
         newmsg["properties"] = {}
         newmsg["properties"]["PidTagMessageId"] = newmsg["mid"]
-        self.basedict["cache"]["messages"].append(newmsg)
+        self.basedict["message_cache"].append(newmsg)
         return MessageObject(newmsg, self, mid, 1)
 
     def get_properties(self, properties):
@@ -662,11 +651,11 @@ class FolderObject(ContextObject):
     def set_properties(self, properties):
         print '[PYTHON]: %s folder.set_properties()' % (self.name)
 
-        tmpdict = self.basedict["cache"].copy()
+        tmpdict = self.basedict["properties"].copy()
         tmpdict.update(properties)
-        self.basedict["cache"] = tmpdict
+        self.basedict["properties"] = tmpdict
 
-        print self.basedict["cache"]
+        print self.basedict["properties"]
         return 0
 
 class TableObject(BackendObject):
@@ -735,20 +724,23 @@ class MessageObject(BackendObject):
     def set_properties(self, properties):
         print '[PYTHON]: %s message.set_properties()' % (self.name)
 
-        tmpdict = self.message["cache"].copy()
+        tmpdict = self.message["properties"].copy()
         tmpdict.update(properties)
-        self.message["cache"] = tmpdict;
+        self.message["properties"] = tmpdict;
 
-        print self.message["cache"]
+        print self.message["properties"]
         return 0
 
     def save(self):
         print '[PYTHON]: %s message.save()' % (self.name)
-
-        for item in self.folder.basedict["cache"]["messages"]:
+    
+        for item in self.folder.basedict["message_cache"]:
             if str(item["mid"]) == str(self.mid):
+                for ex_item in self.folder.basedict["messages"]:
+                    if str(ex_item["mid"]) == str(self.mid):
+                        self.folder.basedict["messages"].remove(ex_item)
                 self.folder.basedict["messages"].append(item)
-                self.folder.basedict["cache"]["messages"].remove(item)
+                self.folder.basedict["message_cache"].remove(item)
                 return 0
         return 17
 

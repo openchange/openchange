@@ -169,7 +169,7 @@ static PyObject *py_MAPIStoreIndexing_fmid_for_uri(PyMAPIStoreIndexingObject *se
 		Py_RETURN_NONE;
 	}
 
-	return PyLong_FromLongLong(fmid);
+	return PyLong_FromUnsignedLongLong(fmid);
 }
 
 static PyObject *py_MAPIStoreIndexing_allocate_fmid(PyMAPIStoreIndexingObject *self)
@@ -188,7 +188,7 @@ static PyObject *py_MAPIStoreIndexing_allocate_fmid(PyMAPIStoreIndexingObject *s
 	/* Transform to Exchange format - whatever that means */
 	fmid = (exchange_globcnt(fmid) << 16) | 0x0001;
 
-	return PyLong_FromLongLong(fmid);
+	return PyLong_FromUnsignedLongLong(fmid);
 }
 
 static PyObject *obj_get_username(PyMAPIStoreIndexingObject *self, void *closure)

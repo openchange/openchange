@@ -684,7 +684,7 @@ static enum mapistore_error mapistore_python_backend_list_contexts(TALLOC_CTX *m
 		item = PyDict_GetItem(dict, key);
 		Py_DECREF(key);
 		/* FIXME: Check int type */
-		entry->role = (bool)PyInt_AsLong(item);
+		entry->role = PyInt_AsLong(item);
 
 		/* tag */
 		key = PyString_FromString("tag");

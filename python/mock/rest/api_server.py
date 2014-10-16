@@ -57,16 +57,11 @@ def module_info():
         # fix contexts, they are relative atm
         return {
             'url': '/folders/%s/' % folder['id'],
-            'role': 'root',
+            'role': folder['role'],
             'name': folder['PidTagDisplayName'],
             'main_folder': True
         }
     contexts = [_contexts_info(ctx) for ctx in ret_val['contexts']]
-    contexts.append({'url': '/calendar/',
-                     'role': 'calendar',
-                     'name': 'Calendar',
-                     'main_folder': True})
-    # todo: add 'calendar' etc
     ret_val['contexts'] = contexts
     handler.close_context()
     return jsonify(ret_val)

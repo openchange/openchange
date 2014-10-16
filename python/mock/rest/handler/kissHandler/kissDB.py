@@ -22,7 +22,7 @@ of abstraction for data storage for Folder  Messages
 import os
 import shelve
 from cPickle import HIGHEST_PROTOCOL
-
+from openchange import mapistore
 
 class kissDB(object):
     """Wrapper arround simple database
@@ -134,9 +134,10 @@ class kissDB(object):
         return {
             'next_id': 100,
             'folders': {
-                1: kissDB._folder_rec(1, 'INBOX', 'Inbox folder', 0),
-                2: kissDB._folder_rec(2, 'Outbox', 'Outbox folder', 0),
-                3: kissDB._folder_rec(2, 'Sent', 'Sent items', 0)
+#                1: kissDB._folder_rec(1, 'INBOX', 'Inbox folder', mapistore.ROLE_MAIL 0),
+#                2: kissDB._folder_rec(2, 'Outbox', 'Outbox folder', mapistore.ROLE.OUTBOX, 0),
+#                3: kissDB._folder_rec(3, 'Sent', 'Sent items', mapistore.ROLE_SENTITEMS, 0),
+                4: kissDB._folder_rec(4, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 0)
             },
             'messages': {
                 51: kissDB._message_rec(51, 1, 'Welcome', 'Welcome to the real world Neo'),
@@ -144,13 +145,14 @@ class kissDB(object):
         }
 
     @staticmethod
-    def _folder_rec(id, name, comment, parent_id):
+    def _folder_rec(id, name, comment, role, parent_id):
         return {
             'id': id,
+            'role': role,
+            'type': 'folder',
             'parent_id': parent_id,
             'PidTagDisplayName': name,
             'PidTagComment': comment,
-            'type': 'folder',
         }
 
     @staticmethod

@@ -777,7 +777,7 @@ enum mapistore_error mapistore_backend_table_handle_destructor(struct backend_co
 
 enum mapistore_error mapistore_backend_properties_get_available_properties(struct backend_context *bctx, void *object, TALLOC_CTX *mem_ctx, struct SPropTagArray **propertiesp)
 {
-        return bctx->backend->properties.get_available_properties(object, mem_ctx, propertiesp);
+	return bctx->backend->properties.get_available_properties(mem_ctx, object, propertiesp);
 }
 
 enum mapistore_error mapistore_backend_properties_get_properties(struct backend_context *bctx,

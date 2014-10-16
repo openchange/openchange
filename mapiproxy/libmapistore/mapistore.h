@@ -232,7 +232,7 @@ struct mapistore_backend {
 
         /** oxcprpt operations */
         struct {
-                enum mapistore_error	(*get_available_properties)(void *, TALLOC_CTX *, struct SPropTagArray **);
+                enum mapistore_error	(*get_available_properties)(TALLOC_CTX *, void *, struct SPropTagArray **);
 		enum mapistore_error	(*get_properties)(TALLOC_CTX *, void *, uint16_t, enum MAPITAGS *, struct mapistore_property_data *);
                 enum mapistore_error	(*set_properties)(void *, struct SRow *);
         } properties;

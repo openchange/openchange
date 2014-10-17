@@ -95,8 +95,8 @@ def module_folders_head_folders(folder_id):
         handler.close_context()
 
     @after_this_request
-    def add_header_X_Mapistore_Rowcount(response):
-        response.headers['X-Mapistore-Rowcount'] = ret_val['item_count']
+    def add_header_X_mapistore_rowcount(response):
+        response.headers['X-mapistore-rowcount'] = ret_val['item_count']
         return response
 
     return jsonify()
@@ -207,8 +207,8 @@ def module_folders_head_messages(folder_id):
         handler.close_context()
 
     @after_this_request
-    def add_header_X_Mapistore_Rowcount(response):
-        response.headers['X-Mapistore-Rowcount'] = len(messages)
+    def add_header_X_mapistore_roowcount(response):
+        response.headers['X-mapistore-rowcount'] = len(messages)
         return response
 
     return jsonify()

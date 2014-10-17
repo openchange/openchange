@@ -175,7 +175,7 @@ static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args
 	/* Initialize mapistore */
 	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
 	if (mstore_ctx == NULL) {
-		DEBUG(0, ("[ERR][%s]: Error initialising MAPIStore\n", __location__));
+		DEBUG(0, ("[ERR][%s]: MAPIStore initialization failed\n", __location__));
 		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		return NULL;
 	}

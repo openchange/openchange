@@ -868,7 +868,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                                                          &(mapi_response->mapi_repl[idx]),
                                                          mapi_response->handles, &size);
 			break;
-		/* op_MAPI_DeleteAttach: 0x24 */
+                case op_MAPI_DeleteAttach: /* 0x24 */
+			retval = EcDoRpc_RopDeleteAttach(mem_ctx, emsmdbp_ctx,
+                                                         &(mapi_request->mapi_req[i]),
+                                                         &(mapi_response->mapi_repl[idx]),
+                                                         mapi_response->handles, &size);
+			break;
 		case op_MAPI_SaveChangesAttachment: /* 0x25 */
 			retval = EcDoRpc_RopSaveChangesAttachment(mem_ctx, emsmdbp_ctx,
                                                                   &(mapi_request->mapi_req[i]),

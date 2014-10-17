@@ -768,6 +768,20 @@ class MessageObject(BackendObject):
             return None
         return AttachmentObject(self.message["attachments"][attach_id], self, attach_id)
 
+    def delete_attachment(self, attach_id):
+        print '[PYTHON]: %s message.delete_attachment %d/%d' % (self.name, attach_id+1,
+                                                                len(self.message["attachments"]))
+        if attach_id > len(self.message["attachments"]):
+            return None
+      
+        del self.message["attachments"][attach_id]
+        
+        attachment_count = len(self.message["attachments"])
+        self.message["properties"]["PidTagContentCount"] = attachment_count
+      
+        if attachment_count is 0:
+            self.message["properties"]["PidTagHasAttachments"] = False
+        return 0
 
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)

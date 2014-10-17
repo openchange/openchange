@@ -375,6 +375,53 @@ end:
 	return NULL;
 }
 
+static PyObject *py_MAPIStoreMessage_delete_attachment(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
+{
+	TALLOC_CTX			*mem_ctx;
+	char				*kwnames[] = { "att_id", NULL };
+	void				*table_object;
+	enum mapistore_error		retval;
+	uint32_t			att_id, count;
+
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I", kwnames, &att_id)) {
+		return NULL;
+	}
+
+	/* Check for out of range error */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx, &table_object, &count);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	if (att_id >= count) {
+		DEBUG(0, ("[ERR][%s]: 'att_id' argument out of range\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+		goto end;
+	}
+
+	/* Delete the attachment*/
+	retval = mapistore_message_delete_attachment(self->context->mstore_ctx,
+			self->context->context_id, self->message_object, att_id);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	talloc_free(mem_ctx);
+	Py_RETURN_NONE;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
+}
+
 static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObject *self)
 {
 	PyMAPIStoreTableObject		*table;
@@ -426,8 +473,9 @@ static PyMethodDef mapistore_message_methods[] = {
 	{ "save", (PyCFunction)py_MAPIStoreMessage_save, METH_NOARGS },
 	{ "get_data", (PyCFunction)py_MAPIStoreMessage_get_message_data, METH_NOARGS },
 	{ "create_attachment", (PyCFunction)py_MAPIStoreMessage_create_attachment, METH_NOARGS },
-	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS },
 	{ "open_attachment", (PyCFunction)py_MAPIStoreMessage_open_attachment, METH_VARARGS|METH_KEYWORDS },
+	{ "delete_attachment", (PyCFunction)py_MAPIStoreMessage_delete_attachment, METH_VARARGS|METH_KEYWORDS },
+	{ "open_attachment_table", (PyCFunction)py_MAPIStoreMessage_open_attachment_table, METH_NOARGS },
 	{ NULL },
 };
 

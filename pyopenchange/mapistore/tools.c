@@ -127,7 +127,7 @@ enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore
 	}
 
 	retval = mapistore_properties_get_properties(mstore_ctx, context_id, object, mem_ctx,
-			properties->cValues, properties->aulPropTag, prop_data);
+						     properties->cValues, properties->aulPropTag, prop_data);
 	if (retval != MAPISTORE_SUCCESS) {
 		goto end;
 	}

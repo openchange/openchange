@@ -91,12 +91,12 @@ class BackendObject(object):
         contexts = [deadbeef, cababeef, cacabeef, cadabeef, cafebeef]
         return contexts
 
-    def create_context(self, uri):
+    def create_context(self, uri, username):
         """ Create a context.
         """
 
         print '[PYTHON]: %s backend.create_context: uri = %s' % (self.name, uri)
-        context = ContextObject()
+        context = ContextObject(username, uri)
 
         return (0, context)
 
@@ -105,8 +105,9 @@ class ContextObject(BackendObject):
 
     mapping = {}
 
-    def __init__(self):
-
+    def __init__(self, username, uri):
+        self.username = username
+        self.uri = uri
         #
         # Mail data
         #
@@ -940,7 +941,7 @@ if __name__ == '__main__':
 
             rows = c.select("SELECT MAX(id) FROM folders")
             fid = rows[0][0]
-            (ret,ctx) = backend.create_context(context["url"])
+            (ret,ctx) = backend.create_context(context["url"], username)
             (ret,fld) = ctx.get_root_folder(folder_id)
 
             props = fld.get_properties(None)

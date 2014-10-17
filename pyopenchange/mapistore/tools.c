@@ -51,7 +51,7 @@ enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore
 		return MAPISTORE_ERR_NO_MEMORY ;
 	}
 
-	if (list == NULL || (PyList_Check(list) && (PyList_Size(list) == 0))) {
+	if (list == NULL || ((PyList_Check(list) && (PyList_Size(list) == 0)))) {
 		/* If no list of needed properties is provided, return all */
 		properties = talloc_zero(mem_ctx, struct SPropTagArray);
 		if (properties == NULL) {

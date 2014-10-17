@@ -305,7 +305,9 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 				"url", contexts_list->url,
 				"role", contexts_list->role,
 				"main_folder", contexts_list->main_folder);
-		PyList_Append(py_ret, py_dict);
+		if (py_dict) {
+			PyList_Append(py_ret, py_dict);
+		}
 		contexts_list = contexts_list->next;
 	}
 

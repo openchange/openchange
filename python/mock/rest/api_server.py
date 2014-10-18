@@ -207,7 +207,7 @@ def module_folders_head_messages(folder_id):
         handler.close_context()
 
     @after_this_request
-    def add_header_X_mapistore_roowcount(response):
+    def add_header_X_mapistore_rowcount(response):
         response.headers['X-mapistore-rowcount'] = len(messages)
         return response
 

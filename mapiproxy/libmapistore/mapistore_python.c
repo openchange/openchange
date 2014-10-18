@@ -151,7 +151,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			if (PyInt_Check(value)) {
 				ll = (unsigned long long)PyInt_AsLong(value);
 			} else if (PyLong_Check(value)) {
-				ll = PyLong_AsLongLong(value);
+				ll = PyLong_AsUnsignedLongLong(value);
 			} else {
 				PyErr_SetString(PyExc_TypeError, "PT_I8: a ulonglong is required");
 				ll = -1;

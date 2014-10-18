@@ -21,6 +21,11 @@ of abstraction for data storage for Folder  Messages
 """
 import os
 import shelve
+import base64
+import uuid
+from datetime import datetime, timedelta
+from pytz import timezone
+
 from cPickle import HIGHEST_PROTOCOL
 from openchange import mapistore
 
@@ -131,6 +136,61 @@ class kissDB(object):
 
     @staticmethod
     def _default_provisioning():
+
+        appt1 = {}
+        appt1["PtypBinary"] = {}
+        appt1["id"] = 51
+        appt1["collection"] = "calendars"
+        appt1["parent_id"] = 4
+
+        appt1["PidTagAccess"] = 63
+        appt1["PidTagAccessLevel"] = 1
+        appt1["PidTagChangeKey"] = base64.b64encode(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        appt1["PidTagCreationTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        appt1["PidTagLastModificationTime"] = appt1["PidTagCreationTime"]
+        appt1["PidTagObjectType"] = 5
+        appt1["PidTagRecordKey"] = base64.b64encode(uuid.uuid1().bytes)
+        appt1["PidTagSearchKey"] = base64.b64encode(uuid.uuid1().bytes)
+
+        appt1["PidTagInstID"] = 51
+        appt1["PidTagInstanceNum"] = 0
+        appt1["PidTagRowType"] = 1
+        appt1["PidTagDepth"] = 0
+        appt1["PidTagMessageClass"] = "IPM.Appointment"
+        appt1["PidTagIconIndex"] = 0x400 # single-instance appointment 2.2.1.49 [MS-OXOCAL]
+        appt1["PidLidSideEffects"] = 0 # 2.2.2.1.16 [MS-OXCMSG]
+        appt1["PidTagMessageStatus"] = 0
+        appt1["PidTagMessageFlags"] = 0
+        appt1["PidLidLocation"] = "Location of the event"
+        appt1["PidLidAppointmentStateFlags"] = 0 # 2.2.1.10 [MS-OXOCAL]
+        appt1["PidLidReminderSet"] = True
+        appt1["PidLidAppointmentSubType"] = False
+
+        appt1["PidTagSubject"] = "Appointment served by REST backend + Flask/Mock server"
+        appt1["PidTagNormalizedSubject"] = appt1["PidTagSubject"]
+        appt1["PidTagHasAttachments"] = False
+        appt1["PidTagSensitivity"] = 1
+        appt1["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
+        appt1["PidTagBody"] = "Description of the event"
+        appt1["PidTagHtml"] = base64.b64encode(appt1["PidTagBody"])
+        appt1["PidNameKeywords"] = ["Blue Category", "OpenChange", ]
+        appt1["PidTagMessageDeliveryTime"] = appt1["PidTagCreationTime"]
+        appt1["PidLidAppointmentStartWhole"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=0)).strftime("%s.%f"))
+        appt1["PidLidCommonStart"] =  appt1["PidLidAppointmentStartWhole"]
+        appt1["PidLidAppointmentEndWhole"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=2)).strftime("%s.%f"))
+        appt1["PidLidCommonEnd"] =  appt1["PidLidAppointmentEndWhole"]
+
+        appt1["PidLidBusyStatus"] = 2
+        appt1["PidLidResponseStatus"] = 0
+
+        # Reminder
+        appt1["PidLidReminderSet"] = True
+        appt1["PidLidReminderTime"] = appt1["PidLidAppointmentStartWhole"]
+        appt1["PidLidReminderDelta"] = 59
+        appt1["PidLidReminderSignalTime"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(minutes=1)).strftime("%s.%f"))
+        appt1["PidLidReminderPlaySound"] = True
+
+
         return {
             'next_id': 100,
             'folders': {
@@ -140,7 +200,7 @@ class kissDB(object):
                 4: kissDB._folder_rec(4, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 0)
             },
             'messages': {
-                51: kissDB._message_rec(51, 1, 'Welcome', 'Welcome to the real world Neo'),
+                51: appt1,
             }
         }
 

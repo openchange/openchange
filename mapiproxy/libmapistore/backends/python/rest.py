@@ -31,6 +31,7 @@ sys.path.append(sysconfig.get_path('platlib'))
 import datetime
 import requests
 import json
+import base64
 
 from openchange import mapistore
 
@@ -138,6 +139,19 @@ class _RESTConn(object):
             return int(r.headers['x-mapistore-rowcount'])
         return 0
 
+    def get_messages(self, uri, properties):
+        """Get all messages from one folder."""
+        r = self.so.get('%s%smessages' % (self.base_url, uri))
+        self._dump_response(r)
+        msgs = r.json()
+        newlist = []
+        for i,msg in enumerate(msgs):
+            for key,value in msg.iteritems():
+                if mapistore.isPtypBinary(key):
+                    msg[key] = bytearray(base64.b64decode(str(value)))
+            newlist.append(msg)
+        return newlist
+
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
 
@@ -204,6 +218,7 @@ class BackendObject(object):
     description = "REST backend"
     namespace = "rest://"
 
+
     # Same hack than oxio backend for now
 
 
@@ -269,7 +284,6 @@ class ContextObject(object):
         if self.fmid != folderID:
             logger.error('[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID))
             return (mapistore.errors.MAPISTORE_ERR_INVALID_PARAMETER, None)
-        print self.rest_uri
         folder = FolderObject(self, self.uri, folderID, None)
         return (mapistore.errors.MAPISTORE_SUCCESS, folder)
 
@@ -296,9 +310,21 @@ class FolderObject(object):
         self.uri = uri
         self.parentFID = long(parentFID) if parentFID is not None else None
         self.folderID = long(folderID)
+        # List of messages
+        self.messages = []
 
         conn = _RESTConn.get_instance()
         self.properties = conn.get_folder(self.uri)
+
+    def _index_messages(self, messages):
+        self.messages = []
+        for msg in messages:
+            if 'id' in msg and 'collection' in msg:
+                conn = _RESTConn.get_instance()
+                uri = '%s/%s/%s/' % (BackendObject.namespace, msg['collection'], msg['id'])
+                msg[u'PidTagMid'] = self.ctx.indexing.add_uri(uri)
+                msg[u'PidTagFolderId'] = self.folderID
+                self.messages.append(MessageObject(self, msg, None))
 
 
     def get_properties(self, properties):
@@ -328,7 +354,7 @@ class FolderObject(object):
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
         factory = {1: self._open_table_any,
-                   2: self._open_table_any,
+                   2: self._open_table_messages,
                    3: self._open_table_any,
                    4: self._open_table_any,
                    5: self._open_table_any,
@@ -340,6 +366,11 @@ class FolderObject(object):
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
 
+    def _open_table_messages(self, table_type):
+        conn = _RESTConn.get_instance()
+        messages = conn.get_messages(self.uri, [])
+        self._index_messages(messages)
+        return self._open_table_any(table_type)
 
 
     def get_child_count(self, table_type):
@@ -361,10 +392,37 @@ class FolderObject(object):
     def _count_messages(self):
         conn = _RESTConn.get_instance()
         logger.info('[PYTHON][INTERNAL]: [%s] folder._count_messages(%s)' % (BackendObject.name, self.folderID))
-        return conn.get_message_count(self.uri)
+        return len(self.messages)
 
     def _count_zero(self):
         return 0
+
+    def open_message(self, mid, rw):
+        logger.info('[PYTHON]: folder.open_message(mid=%s, rw=%s)' % (mid, rw))
+        for msg in self.messages:
+            if 'PidTagMid' in msg.properties and mid == msg.properties['PidTagMid']:
+                return msg
+        logger.warn('No message with id %d found. messages -> %s' % (mid, self.messages))
+        return None
+
+
+class MessageObject(object):
+    def __init__(self, folder, msg=None, mid=None):
+        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, msg))
+        self.folder = folder
+        self.mid = mid or long(msg['id'])
+        self.folder_id = folder.folderID
+        self.properties = msg
+        self.recipients = []
+        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties))
+
+    def get_properties(self, properties):
+        return self.properties
+
+    def get_message_data(self):
+        logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
+        print self.properties
+        return (self.recipients, self.properties)
 
 
 class TableObject(object):
@@ -390,7 +448,7 @@ class TableObject(object):
             return (self.columns, {})
 
         getter = {1: self._get_row_folders,
-                  2: self._get_row_no_impl,
+                  2: self._get_row_messages,
                   3: self._get_row_not_impl,
                   4: self._get_row_not_impl,
                   5: self._get_row_not_impl,

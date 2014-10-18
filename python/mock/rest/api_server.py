@@ -263,7 +263,7 @@ def _messsage_create(handler, type, data):
 # Mail service
 ###############################################################################
 
-@app.route('/mail/', methods=['POST'])
+@app.route('/mails/', methods=['POST'])
 def module_mail_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
@@ -274,7 +274,7 @@ def module_mail_create():
     return jsonify(id=msg['id'])
 
 
-@app.route('/mail/<int:msg_id>/', methods=['GET'])
+@app.route('/mails/<int:msg_id>/', methods=['GET'])
 @app.route('/calendars/<int:msg_id>/', methods=['GET'])
 @app.route('/tasks/<int:msg_id>/', methods=['GET'])
 @app.route('/contacts/<int:msg_id>/', methods=['GET'])
@@ -292,7 +292,7 @@ def module_mail_get(msg_id=0):
     return jsonify(ret_val)
 
 
-@app.route('/mail/<int:msg_id>/', methods=['PUT'])
+@app.route('/mails/<int:msg_id>/', methods=['PUT'])
 @app.route('/calendars/<int:msg_id>/', methods=['PUT'])
 @app.route('/tasks/<int:msg_id>/', methods=['PUT'])
 @app.route('/contacts/<int:msg_id>/', methods=['PUT'])
@@ -310,7 +310,7 @@ def module_mail_put(msg_id):
     return "", 201
 
 
-@app.route('/mail/<int:msg_id>/', methods=['DELETE'])
+@app.route('/mails/<int:msg_id>/', methods=['DELETE'])
 @app.route('/calendars/<int:msg_id>/', methods=['DELETE'])
 @app.route('/tasks/<int:msg_id>/', methods=['DELETE'])
 @app.route('/contacts/<int:msg_id>/', methods=['DELETE'])

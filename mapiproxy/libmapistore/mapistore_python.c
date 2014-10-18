@@ -1729,13 +1729,14 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 
 	ret = PyDict_GetItemString(rdict, "PidTagNormalizedSubject");
 	if (ret != NULL) {
-		if (PyString_Check(ret) != true) {
+		if ((PyString_Check(ret) != true) && (PyUnicode_Check(ret) != true)) {
 			DEBUG(0, ("[ERR][%s][%s]: string expected to be returned but got '%s'\n",
 				  pyobj->name, __location__, ret->ob_type->tp_name));
 			Py_DECREF(pres);
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
-		msgdata->normalized_subject = talloc_strdup(mem_ctx, PyString_AsString(ret));
+		msgdata->normalized_subject = talloc_strdup(mem_ctx, PyUnicode_Check(ret) ? PyString_AsString(ret) :
+							    PyUnicode_AS_DATA(ret));
 		MAPISTORE_RETVAL_IF(!msgdata->normalized_subject, MAPISTORE_ERR_NO_MEMORY, msgdata);
 	} else {
 		msgdata->normalized_subject = NULL;

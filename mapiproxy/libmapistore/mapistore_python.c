@@ -2881,7 +2881,6 @@ static enum mapistore_error mapistore_python_table_get_row_count(void *table_obj
 	return MAPISTORE_SUCCESS;
 }
 
-
 /**
    \details Retrieve all available properties of a given object
 
@@ -3134,13 +3133,15 @@ static enum mapistore_error mapistore_python_properties_set_properties(void *obj
 	pyobj = (struct mapistore_python_object *) object;
 	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER) &&
-			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE) &&
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_ATTACHMENT),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	obj = (PyObject *)pyobj->private_object;
 	MAPISTORE_RETVAL_IF(!obj, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	MAPISTORE_RETVAL_IF(strcmp("FolderObject", obj->ob_type->tp_name) &&
-			    strcmp("MessageObject", obj->ob_type->tp_name),
+			    strcmp("MessageObject", obj->ob_type->tp_name) &&
+			    strcmp("AttachmentObject", obj->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	/* Build dictionary of properties */

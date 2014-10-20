@@ -268,9 +268,8 @@ PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, str
 			if (prop_data[i].data == 0x0){
 				DEBUG(0, ("[ERR][%s]: Invalid data pointer for tag 0x%x (and no associated error)\n",
 					  __location__, key));
-				continue; /* TODO: Restore error setting */
-//				Py_DECREF(py_ret);
-//				return NULL;
+				Py_DECREF(py_ret);
+				return NULL;
 			}
 			py_val = NULL;
 

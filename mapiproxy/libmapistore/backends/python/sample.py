@@ -144,6 +144,7 @@ class ContextObject(BackendObject):
         message1["attachments"] = [attachment1, ]
         message1["mid"] = 0xdead00010000001
         message1["fai"] = False
+        message1["next_aid"] = 1
         message1["attachment_cache"] = []
         message1["properties"] = {}
         message1["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
@@ -161,7 +162,7 @@ class ContextObject(BackendObject):
         message1["properties"]["PidTagHtml"] = bytearray("<html><head></head><h1>"+ message1["properties"]["PidTagBody"] + "</h1></body></html>")
         message1["properties"]["PidTagImportance"] = 2
         message1["properties"]["PidTagSensitivity"] = 1
-        message1["properties"]["PidTagHasAttachments"] = True
+        message1["properties"]["PidTagHasAttachments"] = len(message1["attachments"]) > 0
         message1["properties"]["PidTagContentCount"] = len(message1["attachments"])
         message1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
         message1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
@@ -214,6 +215,7 @@ class ContextObject(BackendObject):
         appt1["mid"] = 0xcaca00010000001
         appt1["fai"] = False
         appt1["properties"] = {}
+        appt1["next_aid"] = 0
 
         # General properties (read-only)
         appt1["properties"]["PidTagAccess"] = 63
@@ -312,6 +314,7 @@ class ContextObject(BackendObject):
         contact1["attachment_cache"] = []
         contact1["properties"] = {}
         contact1["attachments"] = [contact1_attachment1]
+        contact1["next_aid"] = 1
         contact1["properties"]["PidTagAccess"] = 63
         contact1["properties"]["PidTagAccessLevel"] = 1
         contact1["properties"]["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
@@ -416,6 +419,7 @@ class ContextObject(BackendObject):
         task1["attachments"] = []
         task1["mid"] = 0xcafe00010000001
         task1["fai"] = False
+        task1["next_aid"] = 0
         task1["attachment_cache"] = []
         task1["properties"] = {}
 
@@ -481,6 +485,7 @@ class ContextObject(BackendObject):
         note1["attachments"] = []
         note1["mid"] = 0xcaba00010000001
         note1["fai"] = False
+        note1["next_aid"] = 0
         note1["attachment_cache"] = []
         note1["properties"] = {}
 
@@ -639,6 +644,7 @@ class FolderObject(ContextObject):
         newmsg["attachments"] = []
         newmsg["mid"] = mid
         newmsg["fai"] = associated
+        newmsg["next_aid"] = 0
         newmsg["attachment_cache"] = []
         newmsg["properties"] = {}
         newmsg["properties"]["PidTagMessageId"] = newmsg["mid"]

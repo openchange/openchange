@@ -749,6 +749,13 @@ class MessageObject(BackendObject):
 
         return
 
+    def __del__(self):
+        print '[PYTHON]: %s message.__del__()' % (self.name)
+
+        for item in self.folder.basedict["message_cache"]:
+            if str(item["mid"]) == str(self.mid):
+                self.folder.badedict["message_cache"].remove(item)
+
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
 
@@ -846,6 +853,14 @@ class AttachmentObject(BackendObject):
         self.basedict = attachment
         self.message = message
         self.attachid = attachid
+        return
+
+    def __del__(self):
+        print '[PYTHON]: %s attachment.__del__()' % (self.name)
+
+        for item in self.message.basedict["attachment_cache"]:
+            if str(item["attachid"]) == str(self.attachid):
+                self.message.basedict["attachment_cache"].remove(item)
         return
 
     def get_properties(self, properties):

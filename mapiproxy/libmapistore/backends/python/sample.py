@@ -784,14 +784,19 @@ class MessageObject(BackendObject):
                 return AttachmentObject(item, self, attach_id)
         return None
 
-#     def create_attachment(self):
-#         print '[PYTHON]: %s message.create_attachment()' % self.name
-#         newatt = {}
-#         newatt["properties"] = {}
-#         newatt["properties"]["PidTagAttachNumber"] = len(self.message["attachments"])
-#
-#         self.message["attachments"].append(newatt)
-#         return AttachmentObject(newatt, self) #aid?
+    def create_attachment(self):
+        print '[PYTHON]: %s message.create_attachment():' % (self.name)
+
+        attach_id = self.message["next_aid"]
+        newatt = {}
+        newatt["attachid"] = attach_id
+        newatt["properties"] = {}
+        newatt["properties"]["PidTagAttachNumber"] = attach_id
+
+        self.message["attachment_cache"].append(newatt)
+        self.message["next_aid"] = attach_id + 1
+
+        return (AttachmentObject(newatt, self, attach_id), attach_id)
 
     def delete_attachment(self, attach_id):
         print '[PYTHON]: %s message.delete_attachment %d' % (self.name, attach_id)
@@ -808,6 +813,7 @@ class MessageObject(BackendObject):
 
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)
+
         table = TableObject(self, 5)
         return (table, self.get_child_count(5))
 
@@ -817,6 +823,7 @@ class AttachmentObject(BackendObject):
     def __init__(self, attachment, message, attachid):
         print '[PYTHON]: %s attachment.__init__()' % (self.name)
         print attachment
+
         self.attachment = attachment
         self.message = message
         self.attachid = attachid
@@ -824,6 +831,7 @@ class AttachmentObject(BackendObject):
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
+
         return self.attachment["properties"]
 
     def set_properties(self, properties):

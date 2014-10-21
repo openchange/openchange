@@ -757,6 +757,7 @@ class MessageObject(BackendObject):
 
         return
 
+
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
 
@@ -861,6 +862,21 @@ class AttachmentObject(BackendObject):
         self.message = message
         self.attachid = attachid
         return
+
+
+    def save(self):
+        print '[PYTHON]: %s attachment.save()' % (self.name)
+
+        if self.basedict not in self.message.basedict["attachment_cache"]:
+            return 17
+
+        for att in self.message.basedict["attachments"]:
+            if att["attachid"] == self.attachid:
+                self.message.basedict["attachments"].remove(att)
+                break
+
+        self.message.basedict["attachments"].append(self.basedict.copy())
+        return 0
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)

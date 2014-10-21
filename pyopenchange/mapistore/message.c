@@ -309,6 +309,7 @@ static PyObject *py_MAPIStoreMessage_create_attachment(PyMAPIStoreMessageObject 
 	Py_INCREF(attachment->context);
 
 	attachment->attachment_object = attachment_object;
+	attachment->aid = aid;
 
 	return (PyObject *)attachment;
 }
@@ -366,6 +367,7 @@ static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *s
 	attachment->context = self->context;
 	Py_INCREF(attachment->context);
 
+	attachment->aid = att_id;
 	attachment->attachment_object = attachment_object;
 
 	talloc_free(mem_ctx);

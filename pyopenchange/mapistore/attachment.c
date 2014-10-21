@@ -74,7 +74,13 @@ static PyMethodDef mapistore_attachment_methods[] = {
 	{ NULL },
 };
 
+static PyObject *py_MAPIStoreAttachment_get_aid(PyMAPIStoreAttachmentObject *self, void *closure)
+{
+	return PyLong_FromUnsignedLong(self->aid);
+}
+
 static PyGetSetDef mapistore_attachment_getsetters[] = {
+	{ (char *)"aid", (getter)py_MAPIStoreAttachment_get_aid, NULL, NULL },
 	{ NULL }
 };
 

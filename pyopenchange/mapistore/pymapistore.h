@@ -102,6 +102,7 @@ typedef struct {
 	TALLOC_CTX			*mem_ctx;
 	PyMAPIStoreContextObject	*context;
 	PyMAPIStoreFolderObject		*attachment_object;
+	uint32_t			aid;
 } PyMAPIStoreAttachmentObject;
 
 typedef struct {

@@ -2394,6 +2394,53 @@ static enum mapistore_error mapistore_python_message_delete_attachment(void *mes
 }
 
 /**
+   \details Commit the changes made to an attachment
+
+   \param mem_ctx pointer to the memory context
+   \param attachment_object pointer to the attachment object
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_attachment_save(TALLOC_CTX *mem_ctx,
+							     void *attachment_object)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*attachment;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!attachment_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the attachment object */
+	pyobj = (struct mapistore_python_object *) attachment_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_ATTACHMENT),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	attachment = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!attachment, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("AttachmentObject", attachment->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call save function */
+	pres = PyObject_CallMethod(attachment, "save", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+/**
    \details Open the attachment table
 
    \param mem_ctx pointer to the memory context
@@ -3436,6 +3483,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.delete_attachment = mapistore_python_message_delete_attachment;
 	backend.message.get_attachment_table = mapistore_python_message_get_attachment_table;
+	backend.message.save_attachment = mapistore_python_attachment_save;
 	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */
 
 	/* table */

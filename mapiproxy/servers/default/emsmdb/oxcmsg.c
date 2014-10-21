@@ -1625,7 +1625,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
                                                           struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                           uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25) -- valid stub\n"));
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*data;
+	bool			mapistore = false;
+	struct emsmdbp_object	*attachment_object;
+	uint32_t		contextID;
+	enum mapistore_error	ret;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1634,13 +1643,43 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	/* Initialise default empty SaveChangesAttachment reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->u.mapi_SaveChangesAttachment.handle_idx;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 
+	/* Convert the handle index into a handle, then get the attachment object */
+	handle = handles[mapi_req->u.mapi_SaveChangesAttachment.handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	attachment_object = (struct emsmdbp_object *)data;
+	if (!attachment_object || attachment_object->type != EMSMDBP_OBJECT_ATTACHMENT) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(attachment_object);
+
+	if (mapistore) {
+                contextID = emsmdbp_get_contextID(attachment_object);
+                ret = mapistore_attachment_save(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object, mem_ctx);
+		if (ret != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("Error saving the attachment\n"));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		}
+	} else {
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+	}
+end:
 	*size += libmapiserver_RopSaveChangesAttachment_size(mapi_repl);
 
-	return MAPI_E_SUCCESS;	
+	return MAPI_E_SUCCESS;
 }
 
 /**

@@ -29,6 +29,28 @@ static void py_MAPIStoreAttachment_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
+static PyObject *py_MAPIStoreAttachment_save(PyMAPIStoreAttachmentObject *self)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	retval = mapistore_attachment_save(self->context->mstore_ctx, self->context->context_id,
+			self->attachment_object, mem_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
 static PyObject *py_MAPIStoreAttachment_get_properties(PyMAPIStoreAttachmentObject *self, PyObject *args, PyObject *kwargs)
 {
 	char				*kwnames[] = { "list", NULL };
@@ -69,6 +91,7 @@ static PyObject *py_MAPIStoreAttachment_set_properties(PyMAPIStoreAttachmentObje
 }
 
 static PyMethodDef mapistore_attachment_methods[] = {
+	{ "save", (PyCFunction)py_MAPIStoreAttachment_save, METH_NOARGS },
 	{ "get_properties", (PyCFunction)py_MAPIStoreAttachment_get_properties, METH_VARARGS|METH_KEYWORDS },
 	{ "set_properties", (PyCFunction)py_MAPIStoreAttachment_set_properties, METH_VARARGS|METH_KEYWORDS },
 	{ NULL },

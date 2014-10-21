@@ -863,6 +863,18 @@ class AttachmentObject(BackendObject):
                 self.message.basedict["attachment_cache"].remove(item)
         return
 
+    def save(self):
+        print '[PYTHON]: %s attachment.save()' % (self.name)
+
+        for item in self.message.basedict["attachment_cache"]:
+            if str(item["attachid"]) == str(self.attachid):
+                for ex_item in self.message.basedict["attachments"]:
+                    if str(ex_item["attachid"]) == str(self.attachid):
+                        self.message.basedict["attachments"].remove(ex_item)
+                self.message.basedict["attachments"].append(item)
+                return 0
+        return 17
+
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
 

@@ -309,6 +309,7 @@ static PyObject *py_MAPIStoreMessage_create_attachment(PyMAPIStoreMessageObject 
 	Py_INCREF(attachment->context);
 
 	attachment->attachment_object = attachment_object;
+	attachment->aid = aid;
 
 	return (PyObject *)attachment;
 }
@@ -366,6 +367,7 @@ static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *s
 	attachment->context = self->context;
 	Py_INCREF(attachment->context);
 
+	attachment->aid = att_id;
 	attachment->attachment_object = attachment_object;
 
 	talloc_free(mem_ctx);
@@ -524,13 +526,13 @@ static PyObject *py_MAPIStoreMessage_get_attachment_count(PyMAPIStoreMessageObje
 	return PyLong_FromUnsignedLong(count);
 }
 
-static PyObject *py_MAPIStoreFolder_get_attachments(PyMAPIStoreMessageObject *self, void *closure)
+static PyObject *py_MAPIStoreMessage_get_attachments(PyMAPIStoreMessageObject *self, void *closure)
 {
 	TALLOC_CTX			*mem_ctx;
 	PyMAPIStoreAttachmentsObject	*attachment_list;
-	void				*table_object;
 	enum mapistore_error		retval;
-	uint32_t			list_size;
+	uint32_t			*aid_list;
+	uint16_t			list_size;
 
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
@@ -538,9 +540,9 @@ static PyObject *py_MAPIStoreFolder_get_attachments(PyMAPIStoreMessageObject *se
 		return NULL;
 	}
 
-	/* Get the attachment count */
-	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
-			self->message_object, mem_ctx, &table_object, &list_size);
+	/* Get the attachment ID list */
+	retval = mapistore_message_get_attachment_ids(self->context->mstore_ctx, self->context->context_id,
+			self->message_object, mem_ctx, &aid_list, &list_size);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		goto end;
@@ -553,12 +555,14 @@ static PyObject *py_MAPIStoreFolder_get_attachments(PyMAPIStoreMessageObject *se
 		goto end;
 	}
 
+	talloc_reference(self->mem_ctx, aid_list);
 	attachment_list->mem_ctx = self->mem_ctx;
 	attachment_list->message = self;
 	Py_INCREF(attachment_list->message);
 
 	attachment_list->count = list_size;
 	attachment_list->curr_index = 0;
+	attachment_list->aids = aid_list;
 
 	talloc_free(mem_ctx);
 	return (PyObject *) attachment_list;
@@ -571,7 +575,7 @@ static PyGetSetDef mapistore_message_getsetters[] = {
 	{ (char *)"uri", (getter)py_MAPIStoreMessage_get_uri, NULL, NULL },
 	{ (char *)"mid", (getter)py_MAPIStoreMessage_get_mid, NULL, NULL },
 	{ (char *)"attachment_count", (getter)py_MAPIStoreMessage_get_attachment_count, NULL, NULL },
-	{ (char *)"attachments", (getter)py_MAPIStoreFolder_get_attachments, NULL, NULL },
+	{ (char *)"attachments", (getter)py_MAPIStoreMessage_get_attachments, NULL, NULL },
 	{ NULL }
 };
 

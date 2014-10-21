@@ -74,7 +74,13 @@ static PyMethodDef mapistore_attachment_methods[] = {
 	{ NULL },
 };
 
+static PyObject *py_MAPIStoreAttachment_get_aid(PyMAPIStoreAttachmentObject *self, void *closure)
+{
+	return PyLong_FromUnsignedLong(self->aid);
+}
+
 static PyGetSetDef mapistore_attachment_getsetters[] = {
+	{ (char *)"aid", (getter)py_MAPIStoreAttachment_get_aid, NULL, NULL },
 	{ NULL }
 };
 
@@ -109,6 +115,7 @@ static PyObject *py_MAPIStoreAttachments_next(PyObject *_self)
 	PyMAPIStoreAttachmentObject	*attachment;
 	void				*attachment_object;
 	enum mapistore_error		retval;
+	uint32_t			aid;
 
 	self = (PyMAPIStoreAttachmentsObject *)_self;
 	if (!self) {
@@ -119,17 +126,19 @@ static PyObject *py_MAPIStoreAttachments_next(PyObject *_self)
 
 	/* Check if there are remaining attachments */
 	if(self->curr_index < self->count) {
-		/* Retrieve the attachment */
+		/* Retrieve the AID and increment the index */
+		aid = self->aids[self->curr_index];
+		self->curr_index += 1;
+
+		/* Use AID to open attachment */
 		retval = mapistore_message_open_attachment(self->message->context->mstore_ctx,
-				self->message->context->context_id, self->message->message_object,
-				self->mem_ctx, self->curr_index, &attachment_object);
+							   self->message->context->context_id,
+							   self->message->message_object,
+							   self->mem_ctx, aid, &attachment_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			PyErr_SetMAPIStoreError(retval);
 			return NULL;
 		}
-
-		/* Increment the index */
-		self->curr_index += 1;
 
 		/* Return the MAPIStoreAttachment object */
 		attachment = PyObject_New(PyMAPIStoreAttachmentObject, &PyMAPIStoreAttachment);
@@ -143,6 +152,7 @@ static PyObject *py_MAPIStoreAttachments_next(PyObject *_self)
 		Py_INCREF(attachment->context);
 
 		attachment->attachment_object = attachment_object;
+		attachment->aid = aid;
 
 		return (PyObject *)attachment;
 	} else {

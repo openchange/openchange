@@ -26,8 +26,6 @@
 #include <param.h>
 #include <samba/session.h>
 
-/* static PyTypeObject *SPropValue_Type; */
-
 extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
 
 void initmapistore(void);
@@ -382,165 +380,6 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	return (PyObject *) context;
 }
 
-/* static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	PyMAPIStoreContextObject	*context; */
-/* 	int				ret = MAPISTORE_SUCCESS; */
-
-/* 	if (!PyArg_ParseTuple(args, "O", &context)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	/\* mapistore_del_context(context->mstore_ctx, context->context_id); *\/ */
-/* 	/\* Py_XDECREF(context); *\/ */
-
-/* 	return PyInt_FromLong(ret); */
-/* } */
-
-/* static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	int		ret; */
-/* 	uint32_t	context_id = 0; */
-/* 	const char	*uri; */
-/* 	void		*backend_object; */
-
-/* 	if (!PyArg_ParseTuple(args, "s", &uri)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	ret = mapistore_search_context_by_uri(self->mstore_ctx, uri, &context_id, &backend_object); */
-/* 	if (ret != MAPISTORE_SUCCESS) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(context_id); */
-/* } */
-
-/* static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t	context_id = 0; */
-
-/* 	if (!PyArg_ParseTuple(args, "k", &context_id)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_create_folder(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		parent_fid; */
-/* 	uint64_t		fid; */
-/* 	PyObject		*mod_mapi; */
-/* 	PyObject		*pySPropValue; */
-/* 	PySPropValueObject	*SPropValue; */
-/* 	struct SRow		aRow; */
-
-/* 	mod_mapi = PyImport_ImportModule("openchange.mapi"); */
-/* 	if (mod_mapi == NULL) { */
-/* 		printf("Can't load module\n"); */
-/* 		return NULL; */
-/* 	} */
-/* 	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue"); */
-/* 	if (SPropValue_Type == NULL) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyArg_ParseTuple(args, "kKKO", &context_id, &parent_fid, &fid, &pySPropValue)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) { */
-/* 		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object"); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	SPropValue = (PySPropValueObject *)pySPropValue; */
-/* 	aRow.cValues = SPropValue->cValues; */
-/* 	aRow.lpProps = SPropValue->SPropValue; */
-
-/* 	return PyInt_FromLong(mapistore_folder_create_folder(self->mstore_ctx, context_id, parent_fid, fid, &aRow)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_delete_folder(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t	context_id; */
-/* 	uint64_t	parent_fid; */
-/* 	uint64_t	fid; */
-/* 	uint8_t		flags; */
-
-/* 	if (!PyArg_ParseTuple(args, "kKKH", &context_id, &parent_fid, &fid, &flags)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(mapistore_folder_delete_folder(self->mstore_ctx, context_id, parent_fid, fid, flags)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		fid; */
-/* 	uint8_t			object_type; */
-/* 	PyObject		*mod_mapi; */
-/* 	PyObject		*pySPropValue; */
-/* 	PySPropValueObject	*SPropValue; */
-/* 	struct SRow		aRow; */
-
-/* 	mod_mapi = PyImport_ImportModule("openchange.mapi"); */
-/* 	if (mod_mapi == NULL) { */
-/* 		printf("Can't load module\n"); */
-/* 		return NULL; */
-/* 	} */
-/* 	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue"); */
-/* 	if (SPropValue_Type == NULL) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyArg_ParseTuple(args, "kKbO", &context_id, &fid, &object_type, &pySPropValue)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) { */
-/* 		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object"); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	SPropValue = (PySPropValueObject *)pySPropValue; */
-/* 	aRow.cValues = SPropValue->cValues; */
-/* 	aRow.lpProps = SPropValue->SPropValue; */
-
-/* 	return PyInt_FromLong(mapistore_setprops(self->mstore_ctx, context_id, fid, object_type, &aRow)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		fid; */
-/* 	uint8_t			object_type; */
-/* 	uint32_t		RowCount = 0; */
-
-/* 	if (!PyArg_ParseTuple(args, "kKb", &context_id, &fid, &object_type)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	switch (object_type) { */
-/* 	case MAPISTORE_FOLDER: */
-/* 		mapistore_folder_get_folder_count(self->mstore_ctx, context_id,  */
-/* 						  fid, &RowCount); */
-/* 		break; */
-/* 	case MAPISTORE_MESSAGE: */
-/* 		mapistore_folder_get_message_count(self->mstore_ctx, context_id,  */
-/* 						   fid, MAPISTORE_MESSAGE_TABLE, &RowCount); */
-/* 		break; */
-/* 	default: */
-/* 		RowCount = 0; */
-/* 		break; */
-/* 	} */
-
-/* 	return PyInt_FromLong(RowCount); */
-/* } */
-
 static PyMethodDef mapistore_methods[] = {
 	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
 	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
@@ -549,13 +388,6 @@ static PyMethodDef mapistore_methods[] = {
 	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
-	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */
-	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
-	/* { "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS }, */
-	/* { "create_folder", (PyCFunction)py_MAPIStore_create_folder, METH_VARARGS }, */
-	/* { "delete_folder", (PyCFunction)py_MAPIStore_delete_folder, METH_VARARGS }, */
-	/* { "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS }, */
-	/* { "get_folder_count", (PyCFunction)py_MAPIStore_get_folder_count, METH_VARARGS }, */
 	{ NULL },
 };
 

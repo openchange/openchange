@@ -340,6 +340,10 @@ class FolderObject(object):
         role_properties[mapistore.ROLE_CALENDAR] = { 'PidTagContainerClass': 'IPF.Appointment',
                                                      'PidTagMessageClass': 'IPM.Appointment',
                                                      'PidTagDefaultPostMessageClass': 'IPM.Appointment' }
+        role_properties[mapistore.ROLE_CONTACTS] = { 'PidTagContainerClass': 'IPF.Contact',
+                                                     'PidTagMessageClass': 'IPM.Contact',
+                                                     'PidTagDefaultPostMessageClass': 'IPM.Contact'}
+
         properties = {}
         properties['PidTagFolderId'] = self.folderID
         properties['PidTagDisplayName'] = "REST-" + str(self.properties['PidTagDisplayName'])

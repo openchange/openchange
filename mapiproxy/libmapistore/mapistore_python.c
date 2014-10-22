@@ -2430,6 +2430,24 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 
 
 /**
+   \details Set sort order for rows in a table
+
+   \param table_object the table object to apply sort to
+   \param sort_order Pointer to the sort order criterias to apply
+   \param table_status pointer to the status of the table to return
+ */
+static enum mapistore_error mapistore_python_table_set_sort_order(void *table_object,
+								  struct SSortOrderSet *sort_order,
+								  uint8_t *table_status)
+{
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	*table_status = 0x0;
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Retrieve a particular row from a table
 
    \param mem_ctx pointer to the memory context
@@ -3096,7 +3114,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* backend.table.get_available_properties = mapistore_python_table_get_available_properties; */
 	backend.table.set_columns = mapistore_python_table_set_columns;
 	/* backend.table.set_restrictions = mapistore_python_table_set_restrictions; */
-	/* backend.table.set_sort_order = mapistore_python_table_set_sort_order; */
+	backend.table.set_sort_order = mapistore_python_table_set_sort_order;
 	backend.table.get_row = mapistore_python_table_get_row;
 	backend.table.get_row_count = mapistore_python_table_get_row_count;
 	/* backend.table.handle_destructor = mapistore_python_table_handle_destructor; */

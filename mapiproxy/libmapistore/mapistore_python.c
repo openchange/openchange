@@ -386,7 +386,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			MVszA = (struct StringArray_r *)data;
 			val = PyList_New(MVszA->cValues);
 			if (val == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
+				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n",
 					  __location__));
 				return NULL;
 			}
@@ -403,7 +403,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			MVszW = (struct StringArrayW_r *)data;
 			val = PyList_New(MVszW->cValues);
 			if (val == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialized Python List\n",
+				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n",
 					  __location__));
 				return NULL;
 			}

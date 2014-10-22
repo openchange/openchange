@@ -159,6 +159,16 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
+    def create_message(self, collection, msg):
+        # base64 PtypBinary properties
+        for key,value in msg.iteritems():
+            if mapistore.isPtypBinary(key):
+                msg[key] = base64.b64encode(value)
+        msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
+        headers = {'Content-Type': 'application/json'}
+        r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
+        return r.json()
+
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
 
@@ -425,6 +435,12 @@ class FolderObject(object):
         return None
 
 
+    def create_message(self, mid, associated):
+        logger.info('[PYTHON]: folder.create_message(mid=%s' % mid)
+        msg = {}
+        msg['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        return MessageObject(self, msg, mid)
+
 class MessageObject(object):
     def __init__(self, folder, msg=None, mid=None):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, msg))
@@ -438,10 +454,31 @@ class MessageObject(object):
     def get_properties(self, properties):
         return self.properties
 
+    def set_properties(self, properties):
+        logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
+        tmpdict = self.properties.copy()
+        tmpdict.update(properties)
+        self.properties = tmpdict
+        return mapistore.errors.MAPISTORE_SUCCESS
+
     def get_message_data(self):
         logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
         print self.properties
         return (self.recipients, self.properties)
+
+
+    def save(self):
+        conn = _RESTConn.get_instance()
+        # Check if the msg already exists
+        # Create the message
+        props = self.properties.copy()
+        props['parent_id'] = self.folder.uri
+        props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
+        msgid = conn.create_message('contacts', props)
+        # Index the record
+        uri = '%s/%s/%s' % (BackendObject.namespace, 'contacts', msgid)
+        self.folder.ctx.indexing.add_uri(uri)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 
 class TableObject(object):

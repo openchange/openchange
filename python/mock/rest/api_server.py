@@ -242,7 +242,7 @@ def module_folders_get_messages(folder_id):
 # common message implementation
 ###############################################################################
 
-def _messsage_create(handler, type, data):
+def _message_create(handler, collection, data):
     msg = {}
     try:
         if data is None:
@@ -253,7 +253,7 @@ def _messsage_create(handler, type, data):
         subject = data.get('PidTagSubject')
         if subject is None:
             abort(422, "PidTagSubject is a required parameter")
-        msg = handler.messages_create(type, data)
+        msg = handler.messages_create(collection, data)
     except KeyError, ke:
         abort(404, ke.message)
     return msg
@@ -268,7 +268,7 @@ def module_mail_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
-        msg = _messsage_create(handler, 'mail', data)
+        msg = _message_create(handler, 'mails', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
@@ -336,7 +336,7 @@ def module_calendars_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
-        msg = _messsage_create(handler, 'calendar', data)
+        msg = _message_create(handler, 'calendars', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
@@ -351,7 +351,7 @@ def module_tasks_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
-        msg = _messsage_create(handler, 'task', data)
+        msg = _message_create(handler, 'tasks', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
@@ -361,12 +361,14 @@ def module_tasks_create():
 # Contacts service
 ###############################################################################
 
+import pprint
+
 @app.route('/contacts/', methods=['POST'])
 def module_contacts_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
-        msg = _messsage_create(handler, 'contact', data)
+        msg = _message_create(handler, 'contacts', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])
@@ -381,7 +383,7 @@ def module_notes_create():
     data = request.get_json()
     handler = ApiHandler(user_id='any')
     try:
-        msg = _messsage_create(handler, 'note', data)
+        msg = _message_create(handler, 'notes', data)
     finally:
         handler.close_context()
     return jsonify(id=msg['id'])

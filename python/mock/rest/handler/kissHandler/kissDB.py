@@ -138,7 +138,6 @@ class kissDB(object):
     def _default_provisioning():
 
         appt1 = {}
-        appt1["PtypBinary"] = {}
         appt1["id"] = 51
         appt1["collection"] = "calendars"
         appt1["parent_id"] = 4
@@ -197,7 +196,8 @@ class kissDB(object):
 #                1: kissDB._folder_rec(1, 'INBOX', 'Inbox folder', mapistore.ROLE_MAIL 0),
 #                2: kissDB._folder_rec(2, 'Outbox', 'Outbox folder', mapistore.ROLE.OUTBOX, 0),
 #                3: kissDB._folder_rec(3, 'Sent', 'Sent items', mapistore.ROLE_SENTITEMS, 0),
-                4: kissDB._folder_rec(4, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 0)
+                4: kissDB._folder_rec(4, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 0),
+                5: kissDB._folder_rec(5, 'Contact', 'Contact', mapistore.ROLE_CONTACTS, 0)
             },
             'messages': {
                 51: appt1,
@@ -209,10 +209,10 @@ class kissDB(object):
         return {
             'id': id,
             'role': role,
-            'type': 'folder',
+            'collection': 'folders',
             'parent_id': parent_id,
             'PidTagDisplayName': name,
-            'PidTagComment': comment,
+            'PidTagComment': comment
         }
 
     @staticmethod

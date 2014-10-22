@@ -218,10 +218,6 @@ MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 		return *conn;
 	}
 
-	*conn = mysql_init(NULL);
-	reconnect = true;
-	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
-
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	if (!mem_ctx) return NULL;
 
@@ -235,14 +231,16 @@ MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 
 	*conn = mysql_init(NULL);
 
+	reconnect = true;
+	if (mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect)) {
+		DEBUG(1, ("[MYSQL] Can't set MYSQL_OPT_RECONNECT option"));
+	}
+
 	// First try to connect to the database, if it fails try to create it
 	if (mysql_real_connect(*conn, host, user, passwd, db, port, NULL, 0)) {
 		DEBUG(5, ("[MYSQL] Connection done\n"));
 		goto connected;
 	}
-
-	reconnect = true;
-	mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect);
 
 	// Try to create database
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, port, NULL, 0)) {

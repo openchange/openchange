@@ -116,6 +116,7 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 	struct Binary_r		*bin;
 	struct StringArray_r	*MVszA;
 	struct StringArrayW_r	*MVszW;
+	struct LongArray_r	*MVl;
 	NTTIME			nt;
 	struct FILETIME		*ft;
 	char			*str;
@@ -199,7 +200,19 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
 			break;
 		case PT_MV_LONG:
-			DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
+			MAPISTORE_RETVAL_IF(!PyList_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVl = talloc_zero(mem_ctx, struct LongArray_r);
+			MAPISTORE_RETVAL_IF(!MVl, MAPISTORE_ERR_NOT_FOUND, NULL);
+			MVl->cValues = PyList_Size(value);
+			MVl->lpl = (uint32_t *) talloc_array(MVl, uint32_t, MVl->cValues + 1);
+			for (count = 0; count < MVl->cValues; count++) {
+				item = PyList_GetItem(value, count);
+				MAPISTORE_RETVAL_IF(!item, MAPISTORE_ERR_INVALID_PARAMETER, MVl);
+				l = PyLong_AsLong(item);
+				MVl->lpl[count] = l;
+			}
+			*data = (void *) MVl;
+			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_MV_I8:
 			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
@@ -273,6 +286,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	struct Binary_r		*bin;
 	struct StringArrayW_r	*MVszW;
 	struct StringArray_r	*MVszA;
+	struct LongArray_r	*MVl;
 	NTTIME			nt;
 	struct FILETIME		*ft;
 	struct timeval		t;
@@ -349,7 +363,20 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
 			break;
 		case PT_MV_LONG:
-			DEBUG(5, ("[WARN][%s]: PT_MV_LONG case not implemented\n", __location__));
+			MVl = (struct LongArray_r *)data;
+			val = PyList_New(MVl->cValues);
+			if (val == NULL) {
+				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n", __location__));
+				return NULL;
+			}
+			for (i = 0; i < MVl->cValues; i++) {
+				item = PyLong_FromLong(MVl->lpl[i]);
+				if (PyList_SetItem(val, i, item) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
+						      __location__));
+					return NULL;
+				}
+			}
 			break;
 		case PT_MV_I8:
 			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));

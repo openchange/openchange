@@ -304,7 +304,8 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	for (count = 0; count < aRow->cValues; count++) {
 
 		/* Set the key of the dictionary entry */
-		if ((aRow->lpProps[count].ulPropTag >> 16) > 0x8000) {
+		skey = NULL;
+		if (((aRow->lpProps[count].ulPropTag >> 16) & 0xFFFF) > 0x8000) {
 			skey = openchangedb_named_properties_get_attribute(aRow->lpProps[count].ulPropTag);
 		} else {
 			skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);

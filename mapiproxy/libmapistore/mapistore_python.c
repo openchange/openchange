@@ -1743,7 +1743,7 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 	/* Message data */
 	ret = PyDict_GetItemString(rdict, "PidTagSubjectPrefix");
 	if (ret != NULL) {
-		if (PyString_Check(ret) == false) {
+		if ((PyString_Check(ret) == false) && (PyUnicode_Check(ret) == false)) {
 			DEBUG(0, ("[ERR][%s][%s]: string expected to be returned but got '%s'\n",
 				  pyobj->name, __location__, ret->ob_type->tp_name));
 			Py_DECREF(pres);
@@ -1763,8 +1763,7 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			Py_DECREF(pres);
 			return MAPISTORE_ERR_CONTEXT_FAILED;
 		}
-		msgdata->normalized_subject = talloc_strdup(mem_ctx, PyString_Check(ret) ? PyString_AsString(ret) :
-							    PyUnicode_AS_DATA(ret));
+		msgdata->normalized_subject = talloc_strdup(mem_ctx, PyString_AsString(ret));
 		MAPISTORE_RETVAL_IF(!msgdata->normalized_subject, MAPISTORE_ERR_NO_MEMORY, msgdata);
 	} else {
 		msgdata->normalized_subject = NULL;

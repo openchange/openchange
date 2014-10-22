@@ -28,9 +28,12 @@ __all__ = ["BackendObject",
 import sysconfig
 sys.path.append(sysconfig.get_path('platlib'))
 
-import datetime
+from datetime import datetime,timedelta
+from pytz import timezone
+
 import requests
 import json
+import uuid
 import base64
 
 from openchange import mapistore
@@ -350,10 +353,18 @@ class FolderObject(object):
         properties['PidTagComment'] = str(self.properties['PidTagComment'])
         properties['PidTagFolderType'] = mapistore.FOLDER_GENERIC
         properties['PidTagAccess'] = PidTagAccessFlag.Read|PidTagAccessFlag.HierarchyTable|PidTagAccessFlag.ContentsTable
+        properties['PidTagCreationTime'] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
+        properties['PidTagLastModificationTime'] = properties['PidTagCreationTime']
+        properties["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        properties['PidTagAccessLevel'] = 1
+        properties['PidTagRights'] = 2043
         properties['PidTagContainerClass'] = str(role_properties[self.properties['role']]['PidTagContainerClass'],)
         properties['PidTagDefaultPostMessageClass'] = str(role_properties[self.properties['role']]['PidTagDefaultPostMessageClass'])
         properties['PidTagSubfolders'] = True if conn.get_folder_count(self.uri) else False
-        properties['PidTagContentCount'] = int(conn.get_message_count(self.uri))
+        properties['PidTagContentCount'] = conn.get_message_count(self.uri)
+        properties['PidTagContentUnreadCount'] = 0
+        properties['PidTagAttributeHidden'] = False
+
         if self.parentFID is not None:
             properties['PidTagParentFolderId'] = self.parentFID
 

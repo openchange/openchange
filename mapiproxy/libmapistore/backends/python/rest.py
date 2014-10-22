@@ -400,7 +400,7 @@ class FolderObject(object):
     def _count_messages(self):
         conn = _RESTConn.get_instance()
         logger.info('[PYTHON][INTERNAL]: [%s] folder._count_messages(%s)' % (BackendObject.name, self.folderID))
-        return len(self.messages)
+        return conn.get_message_count(self.uri)
 
     def _count_zero(self):
         return 0

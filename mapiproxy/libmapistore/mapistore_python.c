@@ -2053,6 +2053,28 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 
 
 /**
+   \details Modify Recipients on a message
+
+   \param message_object pointer to the message object
+   \param columns array of properties set on each mapistore_message_recipient
+   \param count number of recipients
+   \param recipients pointer to the list of recipients
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_modify_recipients(void *message_object,
+								       struct SPropTagArray *columns,
+								       uint16_t count,
+								       struct mapistore_message_recipient *recipients)
+{
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+
+/**
    \details Save message
 
    \param mem_ctx pointer to the memory context
@@ -3060,7 +3082,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 
 	/* message */
 	backend.message.get_message_data = mapistore_python_message_get_message_data;
-	/* backend.message.modify_recipients = mapistore_python_message_modify_recipients; */
+	backend.message.modify_recipients = mapistore_python_message_modify_recipients;
 	/* backend.message.set_read_flag = mapistore_python_message_set_read_flag; */
 	backend.message.save = mapistore_python_message_save;
 	/* backend.message.submit = mapistore_python_message_submit; */

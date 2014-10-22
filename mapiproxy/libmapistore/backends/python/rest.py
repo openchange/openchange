@@ -149,6 +149,10 @@ class _RESTConn(object):
             for key,value in msg.iteritems():
                 if mapistore.isPtypBinary(key):
                     msg[key] = bytearray(base64.b64decode(str(value)))
+            msg['PidTagInstID'] = msg['id']
+            msg['PidTagInstanceNum'] = 0
+            msg['PidTagRowType'] = 1
+            msg['PidTagDepth'] = 0
             newlist.append(msg)
         return newlist
 

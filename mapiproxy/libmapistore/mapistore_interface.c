@@ -1432,7 +1432,7 @@ enum mapistore_error mapistore_message_get_message_data(struct mapistore_context
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Step 2. Call backend modifyrecipients */
+	/* Step 2. Call backend get_message_data */
 	return mapistore_backend_message_get_message_data(backend_ctx, message, mem_ctx, msg);
 }
 

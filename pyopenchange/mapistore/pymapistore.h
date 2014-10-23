@@ -111,6 +111,7 @@ typedef struct {
 	PyMAPIStoreMessageObject	*message;
 	size_t				curr_index;
 	size_t				count;
+	uint32_t			*aids;
 } PyMAPIStoreAttachmentsObject;
 
 typedef struct {

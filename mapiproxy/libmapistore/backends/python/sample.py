@@ -845,6 +845,11 @@ class MessageObject(BackendObject):
             return 0
         return 17
 
+    def get_attachment_ids(self):
+        print '[PYTHON]: %s message.get_attachment_ids' % (self.name)
+
+        return [att["attachid"] for att in self.basedict["attachments"]]
+
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)
 

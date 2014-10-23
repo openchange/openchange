@@ -185,6 +185,7 @@ enum mapistore_error mapistore_backend_message_set_read_flag(struct backend_cont
 enum mapistore_error mapistore_backend_message_save(struct backend_context *, void *, TALLOC_CTX *);
 enum mapistore_error mapistore_backend_message_submit(struct backend_context *, void *, enum SubmitFlags);
 enum mapistore_error mapistore_backend_message_get_attachment_table(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
+enum mapistore_error mapistore_backend_message_get_attachment_ids(struct backend_context *, void *, TALLOC_CTX *, uint32_t **, uint16_t *);
 enum mapistore_error mapistore_backend_message_open_attachment(struct backend_context *, void *, TALLOC_CTX *, uint32_t, void **);
 enum mapistore_error mapistore_backend_message_create_attachment(struct backend_context *, void *, TALLOC_CTX *, void **, uint32_t *);
 enum mapistore_error mapistore_backend_message_delete_attachment(struct backend_context *, void *, uint32_t);

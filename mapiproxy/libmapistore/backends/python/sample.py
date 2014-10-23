@@ -120,7 +120,7 @@ class ContextObject(BackendObject):
         attachment1["attachid"] = 0
         attachment1["properties"] = {}
         attachment1["properties"]["PidTagMid"] = 0xdead00010000001
-        attachment1["properties"]["PidTagAttachNumber"] = 0
+        attachment1["properties"]["PidTagAttachNumber"] = attachment1["attachid"]
         attachment1["properties"]["PidTagAttachMethod"] = 1
         attachment1["properties"]["PidTagAttachmentLinkId"] = 0x0
         attachment1["properties"]["PidTagAttachmentHidden"] = False
@@ -299,7 +299,7 @@ class ContextObject(BackendObject):
         contact1_attachment1["properties"] = {}
         contact1_attachment1["properties"]["PidTagMid"] = 0xcada00010000001
         contact1_attachment1["properties"]["PidTagAttachmentContactPhoto"] = True
-        contact1_attachment1["properties"]["PidTagAttachNumber"] = 0
+        contact1_attachment1["properties"]["PidTagAttachNumber"] = contact1_attachment1["attachid"]
         contact1_attachment1["properties"]["PidTagAttachMethod"] = 1
         contact1_attachment1["properties"]["PidTagAttachmentLinkId"] = 0x0
         contact1_attachment1["properties"]["PidTagAttachmentHidden"] = False

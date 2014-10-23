@@ -1833,7 +1833,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 		break;
 	}
 
- end:
+end:
 	*size += libmapiserver_RopOpenEmbeddedMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;	

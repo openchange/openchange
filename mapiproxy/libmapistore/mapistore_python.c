@@ -2544,7 +2544,85 @@ static enum mapistore_error mapistore_python_message_get_attachment_table(TALLOC
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Get the message's attachment IDs
 
+   \param mem_ctx pointer to the memory context
+   \param message_object pointer to the message object
+   \param table_object pointer to the table object to return
+   \param row_count pointer to the number of elements in the table created
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_get_attachment_ids(TALLOC_CTX *mem_ctx,
+									  void *message_object,
+									  uint32_t **attach_ids,
+									  uint16_t *id_count)
+{
+	struct mapistore_python_object		*pyobj;
+	PyObject				*message;
+	PyObject				*aid;
+	PyObject				*pres;
+	uint32_t				*aids;
+	Py_ssize_t				count;
+	Py_ssize_t				i;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!attach_ids, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!id_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *) pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the get_attachment_list function */
+	pres = PyObject_CallMethod(message, "get_attachment_ids", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a list was returned */
+	if (PyList_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: List expected to be returned in get_attachment_ids\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Build the attachment ID array */
+	count = PyList_Size(pres);
+
+	aids = talloc_zero_array(mem_ctx, uint32_t, count);
+	if (aids == NULL) {
+		DEBUG(0, ("[ERR][%s]: Insufficient free space in memory\n", __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < count; i++) {
+		aid = PyList_GetItem(pres, i);
+		aids[i] = PyLong_AsUnsignedLong(aid);
+	}
+
+	*attach_ids = aids;
+	*id_count = (uint16_t) count;
+
+	Py_DECREF(pres);
+	return MAPISTORE_SUCCESS;
+}
 /**
    \details Set columns on specified table
 
@@ -3483,6 +3561,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.delete_attachment = mapistore_python_message_delete_attachment;
 	backend.message.get_attachment_table = mapistore_python_message_get_attachment_table;
+	backend.message.get_attachment_ids = mapistore_python_message_get_attachment_ids;
 	backend.message.save_attachment = mapistore_python_attachment_save;
 	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */
 

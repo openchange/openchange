@@ -1558,7 +1558,21 @@ _PUBLIC_ enum mapistore_error mapistore_message_get_attachment_table(struct mapi
 	/* Step 2. Call backend operation */
 	return mapistore_backend_message_get_attachment_table(backend_ctx, message, mem_ctx, table, row_count);
 }
+_PUBLIC_ enum mapistore_error mapistore_message_get_attachment_ids(struct mapistore_context *mstore_ctx, uint32_t context_id,
+								   void *message, TALLOC_CTX *mem_ctx, uint32_t **attach_ids, uint16_t *count)
+{
+	struct backend_context	*backend_ctx;
 
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_message_get_attachment_ids(backend_ctx, message, mem_ctx, attach_ids, count);
+}
 _PUBLIC_ enum mapistore_error mapistore_message_open_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
 								void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
 {

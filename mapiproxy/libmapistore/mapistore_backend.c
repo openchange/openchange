@@ -744,6 +744,11 @@ enum mapistore_error mapistore_backend_message_get_attachment_table(struct backe
 	return bctx->backend->message.get_attachment_table(mem_ctx, message, table, row_count);
 }
 
+enum mapistore_error mapistore_backend_message_get_attachment_ids(struct backend_context *bctx, void *message, TALLOC_CTX *mem_ctx, uint32_t **attach_ids, uint16_t *count)
+{
+	return bctx->backend->message.get_attachment_ids(mem_ctx, message, attach_ids, count);
+}
+
 enum mapistore_error mapistore_backend_message_attachment_save(struct backend_context *bctx, void *attachment, TALLOC_CTX *mem_ctx)
 {
 	return bctx->backend->message.save_attachment(mem_ctx, attachment);

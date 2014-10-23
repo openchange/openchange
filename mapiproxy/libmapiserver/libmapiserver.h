@@ -163,6 +163,12 @@
 #define SIZE_DFLT_ROPOPENEMBEDDEDMESSAGE        15
 
 /**
+   \details: OpenGetValidAttachments has fixed response size for:
+   -# AttachmentIdCount: uint16_t
+ */
+#define SIZE_DFLT_ROPGETVALIDATTACHMENTS	2
+
+/**
    \details SetColumnsRop has fixed response size for:
    -# TableStatus: uint8_t
  */
@@ -508,6 +514,7 @@ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopDeleteAttach_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopSaveChangesAttachment_size(struct EcDoRpc_MAPI_REPL *);
 uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_REPL *response);
+uint16_t libmapiserver_RopGetValidAttachments_size(struct EcDoRpc_MAPI_REPL *response);
 
 /* definitions from libmapiserver_oxcnotif.c */
 uint16_t libmapiserver_RopRegisterNotification_size(void);

@@ -175,6 +175,11 @@ class _RESTConn(object):
         r = self.so.post('%s/folders/' % self.base_url, data=json.dumps(folder), headers=headers)
         return r.json()
 
+    def update_folder(self, uri, props):
+        headers = {'Content-Type': 'application/json'}
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(props), headers=headers)
+        return 0
+
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
 
@@ -383,8 +388,7 @@ class FolderObject(object):
         role_properties[mapistore.ROLE_CONTACTS] = { 'PidTagContainerClass': 'IPF.Contact',
                                                      'PidTagMessageClass': 'IPM.Contact',
                                                      'PidTagDefaultPostMessageClass': 'IPM.Contact'}
-
-        properties = {}
+        properties = self.properties.copy()
         properties['PidTagFolderId'] = self.folderID
         properties['PidTagDisplayName'] = "REST-" + str(self.properties['PidTagDisplayName'])
         properties['PidTagComment'] = str(self.properties['PidTagComment'])
@@ -395,8 +399,8 @@ class FolderObject(object):
         properties["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         properties['PidTagAccessLevel'] = 1
         properties['PidTagRights'] = 2043
-        properties['PidTagContainerClass'] = str(role_properties[self.properties['role']]['PidTagContainerClass'],)
-        properties['PidTagDefaultPostMessageClass'] = str(role_properties[self.properties['role']]['PidTagDefaultPostMessageClass'])
+        if not 'PidTagContainerClass' in properties and 'role' in self.properties:
+            properties['PidTagContainerClass'] = str(role_properties[self.properties['role']]['PidTagContainerClass'],)
         properties['PidTagSubfolders'] = True if conn.get_folder_count(self.uri) else False
         properties['PidTagContentCount'] = conn.get_message_count(self.uri)
         properties['PidTagContentUnreadCount'] = 0
@@ -406,6 +410,14 @@ class FolderObject(object):
             properties['PidTagParentFolderId'] = self.parentFID
 
         return properties
+
+    def set_properties(self, properties):
+        logger.info('[PYTHON]: [%s][%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties))
+        conn = _RESTConn.get_instance()
+        conn.update_folder(self.uri, properties)
+        tmpdict = self.properties.copy()
+        tmpdict.update(properties)
+        self.properties = tmpdict
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))

@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# OpenChange python sample backend
+# OpenChange python REST backend
 #
 # Copyright (C) Julien Kerihuel  <j.kerihuel@openchange.org> 2014
 # Copyright (C) Kamen Mazdrashki <kamenim@openchange.org> 2014

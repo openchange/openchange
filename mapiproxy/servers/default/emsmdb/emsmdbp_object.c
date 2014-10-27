@@ -2715,10 +2715,13 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 
 		retval = emsmdbp_object_get_properties_mapistore_root(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 	} else {
+		int contextID = -1;
+
 		mapistore = emsmdbp_is_mapistore(object);
+
 		/* Nasty hack */
-		if (!object) {
-			DEBUG(5, ("[%s] what's that hack!??\n", __location__));
+		contextID = emsmdbp_get_contextID(object);
+		if (contextID != -1) {
 			mapistore = true;
 		}
 

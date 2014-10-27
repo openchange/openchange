@@ -676,6 +676,9 @@ enum mapistore_error mapistore_backend_folder_get_child_fid_by_name(struct backe
 
 	talloc_free(mem_ctx);
 
+	/* FIXME: temporary hack */
+	return MAPISTORE_ERROR;
+
 	return ret;
 }
 

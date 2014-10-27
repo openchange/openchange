@@ -499,6 +499,9 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup(struct backend_context
    \param backend_list_ctx pointer to the backend context list
    \param uri the uri string to search
 
+   \note Longest-match URI lookup is performed to workaround. We try
+   to find the closest match
+
    \return Pointer to the mapistore_backend context on success,
    otherwise NULL
  */
@@ -506,19 +509,24 @@ _PUBLIC_ struct backend_context *mapistore_backend_lookup_by_uri(struct backend_
 								 const char *uri)
 {
 	struct backend_context_list	*el;
+	struct backend_context		*rec = NULL;
+	uint32_t			rec_len = 0;
 
 	/* sanity checks */
 	if (!backend_list_ctx) return NULL;
 	if (!uri) return NULL;
 
 	for (el = backend_list_ctx; el; el = el->next) {
-		if (el->ctx && el->ctx->uri &&
-		    !strcmp(el->ctx->uri, uri)) {
-			return el->ctx;
+		if (el->ctx && el->ctx->uri && !strncmp(el->ctx->uri, uri, strlen(uri))) {
+			/* Find the closest match */
+			if ((rec_len == 0) || (strlen(el->ctx->uri) < rec_len)) {
+				rec = el->ctx;
+				rec_len = strlen(el->ctx->uri);
+			}
 		}
 	}
 	
-	return NULL;
+	return rec;
 }
 
 /**

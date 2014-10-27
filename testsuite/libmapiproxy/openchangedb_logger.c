@@ -554,7 +554,6 @@ static enum MAPISTATUS mock_backend_init(TALLOC_CTX *mem_ctx,
 
 	OPENCHANGE_RETVAL_IF(oc_ctx == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 
-	ZERO_STRUCT(functions_called);
 //	oc_ctx->data = data;
 
 	// Initialize struct with function pointers
@@ -628,23 +627,28 @@ static void ocdb_logger_setup(void)
 	enum MAPISTATUS mapi_status;
 	struct openchangedb_context *backend_ctx;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
+
+	mem_ctx = talloc_new(NULL);
 
 	mapi_status = mock_backend_init(mem_ctx, &backend_ctx);
 	if (mapi_status != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Failed to initialize Mocked backend %d\n", mapi_status);
 		ck_abort();
 	}
-	mapi_status = openchangedb_logger_initialize(mem_ctx, 0, ">>> ", backend_ctx, &oc_ctx);
+	mapi_status = openchangedb_logger_initialize(mem_ctx, 1, ">>> ", backend_ctx, &oc_ctx);
 	if (mapi_status != MAPI_E_SUCCESS) {
 		fprintf(stderr, "Failed to initialize Logger backend %d\n", mapi_status);
 		ck_abort();
 	}
+
+	ZERO_STRUCT(functions_called);
 }
 
 static void ocdb_logger_teardown(void)
 {
 	talloc_free(mem_ctx);
+	fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
 }
 
 
@@ -655,7 +659,7 @@ static Suite *openchangedb_create_suite(SFun setup, SFun teardown)
 	Suite *s = suite_create(suite_name);
 
 	TCase *tc = tcase_create("Openchangedb Logger interface");
-	tcase_add_unchecked_fixture(tc, setup, teardown);
+	tcase_add_checked_fixture(tc, setup, teardown);
 
 	tcase_add_test(tc, test_call_get_SpecialFolderID);
 	tcase_add_test(tc, test_call_get_SystemFolderID);

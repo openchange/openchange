@@ -31,8 +31,14 @@
 #define NEXT_CHANGE_NUMBER 1234
 #define FOLDER_ID_EXPECTED 289356276058554369ul
 
-#define CHECK_SUCCESS(ret) ck_assert_int_eq((ret), MAPI_E_SUCCESS)
-#define CHECK_FAILURE(ret) ck_assert_int_ne((ret), MAPI_E_SUCCESS)
+#define CHECK_SUCCESS(fncall) do { \
+	enum MAPISTATUS ret = fncall; \
+	ck_assert_int_eq(ret, MAPI_E_SUCCESS); \
+} while(0)
+#define CHECK_FAILURE(fncall) do { \
+	enum MAPISTATUS ret = fncall; \
+	ck_assert_int_ne(ret, MAPI_E_SUCCESS); \
+} while(0)
 
 
 static TALLOC_CTX *mem_ctx;

@@ -683,7 +683,28 @@ class FolderObject(ContextObject):
         if found:
             return 0
         return 17
-       
+
+    def move_copy_messages(self, target_folder, source_mids, target_mids, want_copy):
+        print '[PYTHON]: %s folder.move_copy_messages()' % (self.name)
+
+        found = False
+
+        for msg in self.basedict["messages"]:
+            mid = msg["properties"]["PidTagMid"]
+            if mid in source_mids:
+                found = True
+
+                new_mid = target_mids[source_mids.index(mid)]
+                msg["properties"]["PidTagMid"] = new_mid
+                msg["mid"] = new_mid
+                target_folder.basedict["messages"].append(msg)
+
+                if not want_copy:
+                    self.delete_message(mid)
+        if found:
+            return 0
+        return 17
+
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)
 

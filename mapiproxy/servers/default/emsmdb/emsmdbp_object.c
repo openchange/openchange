@@ -152,7 +152,8 @@ _PUBLIC_ uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 	case EMSMDBP_OBJECT_MAILBOX:
 		return -1;
 	case EMSMDBP_OBJECT_FOLDER:
-		if (object->object.folder->mapistore_root) {
+		/* FIXME: REST hack */
+		if (object->object.folder->mapistore_root || (object->object.folder->contextID > 0)) {
 			return object->object.folder->contextID;
 		} else if (object->parent_object) {
 			return emsmdbp_get_contextID(object->parent_object);

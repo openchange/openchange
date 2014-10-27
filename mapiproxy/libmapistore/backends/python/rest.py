@@ -333,6 +333,11 @@ class FolderObject(object):
         conn = _RESTConn.get_instance()
         self.properties = conn.get_folder(self.uri)
 
+    def open_folder(self, folderID):
+        logger.info('[PYTHON]: [%s] folder.open(fid=%s)' % (BackendObject.name, folderID))
+        uri = self.ctx.indexing.uri_by_id(folderID)
+        return FolderObject(self.ctx, uri, folderID, 0)
+
     def _index_messages(self, messages):
         self.messages = []
         for msg in messages:

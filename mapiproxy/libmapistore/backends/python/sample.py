@@ -665,14 +665,12 @@ class FolderObject(ContextObject):
     def delete_message(self, mid):
         print '[PYTHON]: %s folder.delete_message()' % (self.name)
 
-        for item in self.basedict["messages"]:
-            if str(item["mid"]) == str(mid):
-                for cache_item in self.basedict["message_cache"]:
-                    if str(cache_item["mid"]) == str(mid):
-                        self.basedict["message_cache"].remove(cache_item)
-                self.basedict["messages"].remove(item)
-                return 0
-        return 17
+        messages = [self.basedict["messages"].pop(i) for i, msg in enumerate(self.basedict["messages"]) if msg["mid"] == mid]
+        if len(messages) == 0:
+            return 17
+
+        [self.basedict["message_cache"].pop(i) for i, msg in enumerate(self.basedict["message_cache"]) if msg["mid"] == mid]
+        return 0
 
     def move_copy_messages(self, target_folder, source_mids, target_mids, want_copy):
         print '[PYTHON]: %s folder.move_copy_messages()' % (self.name)

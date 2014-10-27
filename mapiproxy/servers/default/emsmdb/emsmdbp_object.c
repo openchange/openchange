@@ -622,7 +622,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 {
 	uint64_t		parent_fid;
 	enum mapistore_error	ret;
-	enum MAPISTATUS		retval;
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
 	struct emsmdbp_object   *mailbox_object;
 
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
@@ -656,8 +656,34 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 			return mapistore_error_to_mapi(ret);
 		}
 		else {
-			*folder_object_p = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, NULL);
-			return MAPI_E_SUCCESS;
+			uint32_t		contextID;
+			struct emsmdbp_object	*folder_object;
+			char			*owner;
+			char			*path;
+			void			*child_folder;
+
+			DEBUG(0, ("emsmdbp_object_open_folder_by_fid :: emsmdbp_object_folder_init\n"));
+
+			/* Step 1. Reuse an existing context to get access to REST layer */
+
+			/* Step 1.1. Initialize a fake object */
+			folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, mailbox_object);
+
+			/* Step 1.2. Search context with rest:// and leverage strcmp vs strncmp to return first occurrence */
+			ret = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, "rest://", &contextID,
+							      &folder_object->backend_object);
+			mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
+
+			folder_object->object.folder->mapistore_root = false;
+			folder_object->object.folder->contextID = contextID;
+
+			/* Step 2. Open the folder */
+			owner = emsmdbp_get_owner(folder_object);
+			retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, owner, fid, &path, true);
+			retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object,
+							      mem_ctx, fid, &child_folder);
+			folder_object->backend_object = child_folder;
+			*folder_object_p = folder_object;
 		}
 	}
 

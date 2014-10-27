@@ -510,12 +510,27 @@ _PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const
 	return ret;
 }
 
+/**
+   \details Deduce the parent_uri from uri by removing everything
+   after the trailing '/'
+
+   \note This is SOGo specific and does not match REST backend or any
+   other backend where URI are unique.
+
+   \param mem_ctx pointer to the memory context
+   \param uri The URI to deduce the parent from
+
+   \return the parent URI string on success otherwise NULL
+ */
 static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 {
 	char *parent_uri, *slash, *lastchar;
 	int len;
 
 	if (!uri) return NULL;
+
+	/* hack of the hack ... */
+	if ((strlen(uri) > strlen("rest://")) && (!strncmp(uri, "rest://", strlen("rest://")))) return uri;
 
 	parent_uri = talloc_strdup(mem_ctx, uri);
 	len = strlen(parent_uri);

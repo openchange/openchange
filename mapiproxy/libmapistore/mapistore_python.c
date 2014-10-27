@@ -2428,6 +2428,17 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 }
 
 
+static enum mapistore_error mapistore_python_table_set_restrictions(void *table_object,
+								    struct mapi_SRestriction *res,
+								    uint8_t *table_status)
+{
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	*table_status = 0x0;
+	return MAPISTORE_SUCCESS;
+}
+
+
 /**
    \details Set sort order for rows in a table
 
@@ -3112,7 +3123,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* table */
 	/* backend.table.get_available_properties = mapistore_python_table_get_available_properties; */
 	backend.table.set_columns = mapistore_python_table_set_columns;
-	/* backend.table.set_restrictions = mapistore_python_table_set_restrictions; */
+	backend.table.set_restrictions = mapistore_python_table_set_restrictions;
 	backend.table.set_sort_order = mapistore_python_table_set_sort_order;
 	backend.table.get_row = mapistore_python_table_get_row;
 	backend.table.get_row_count = mapistore_python_table_get_row_count;

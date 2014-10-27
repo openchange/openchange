@@ -169,6 +169,12 @@ class _RESTConn(object):
         r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
         return r.json()
 
+    def create_folder(self, parent_id, folder):
+        folder['parent_id'] = parent_id
+        headers = {'Content-Type': 'application/json'}
+        r = self.so.post('%s/folders/' % self.base_url, data=json.dumps(folder), headers=headers)
+        return r.json()
+
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
 
@@ -181,6 +187,12 @@ class _Indexing(object):
 
     def __init__(self, username):
         self.ictx = mapistore.Indexing(username)
+
+    def add_uri_with_fmid(self, uri, fmid):
+        mstore_uri = self.uri_rest_to_mstore(uri)
+        # FIXME: check if uri already exists
+        self.ictx.add_fmid(fmid, uri)
+        return 0
 
     def add_uri(self, uri):
         """
@@ -337,6 +349,16 @@ class FolderObject(object):
         logger.info('[PYTHON]: [%s] folder.open(fid=%s)' % (BackendObject.name, folderID))
         uri = self.ctx.indexing.uri_by_id(folderID)
         return FolderObject(self.ctx, uri, folderID, 0)
+
+
+    def create_folder(self, props, fid):
+        logger.info('[PYTHON]: [%s] folder.create' % (BackendObject.name))
+        conn = _RESTConn.get_instance()
+        rid = conn.create_folder(self.properties['id'], props)
+        base_url = '/folders/%s/' % rid['id']
+        uri = '%s%s' % (BackendObject.namespace, base_url)
+        self.ctx.indexing.add_uri_with_fmid(uri, fid)
+        return (mapistore.errors.MAPISTORE_SUCCESS, FolderObject(self.ctx, base_url, fid, self.folderID))
 
     def _index_messages(self, messages):
         self.messages = []

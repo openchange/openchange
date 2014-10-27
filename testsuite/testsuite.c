@@ -22,6 +22,10 @@
 
 #include <popt.h>
 #include <talloc.h>
+#include <param.h>
+
+/* options from command line */
+struct loadparm_context *cmdline_lp_ctx = NULL;
 
 static void popt_openchange_version_callback(poptContext con,
                                              enum poptCallbackReason reason,
@@ -37,7 +41,7 @@ static void popt_openchange_version_callback(poptContext con,
 }
 
 
-enum {OPT_LEAK_REPORT=1,OPT_LEAK_REPORT_FULL};
+enum {OPT_OPTION=1, OPT_DEBUG_LEVEL, OPT_LEAK_REPORT,OPT_LEAK_REPORT_FULL};
 
 struct poptOption popt_openchange_version[] = {
         { NULL, '\0', POPT_ARG_CALLBACK, (void *)popt_openchange_version_callback, '\0', NULL, NULL },
@@ -47,6 +51,8 @@ struct poptOption popt_openchange_version[] = {
 
 struct poptOption popt_openchange_testsuite_options[] = {
 	POPT_AUTOHELP
+	{ "debuglevel",	    'd', POPT_ARG_STRING, NULL, OPT_DEBUG_LEVEL, "Set debug level", "DEBUGLEVEL" },
+	{ "option",           0, POPT_ARG_STRING, NULL, OPT_OPTION, "Set smb.conf option from command line", "name=value" },
 	{ "leak-report",      0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT, "enable talloc leak reporting on exit", NULL },
 	{ "leak-report-full", 0, POPT_ARG_NONE, NULL, OPT_LEAK_REPORT_FULL, "enable full talloc leak reporting on exit", NULL },
 	{ NULL, 0, POPT_ARG_INCLUDE_TABLE, popt_openchange_version, 0, "Common openchange options:", NULL },
@@ -58,16 +64,25 @@ int main(int argc, const char *argv[])
 {
 	poptContext	pc;
 	int		opt;
+	const char	*arg;
 	SRunner		*sr;
 	int		nf;
+
+	cmdline_lp_ctx = loadparm_init_global(false);
 
 	pc = poptGetContext(NULL, argc, argv, popt_openchange_testsuite_options, 0);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
+		case OPT_DEBUG_LEVEL:
+			arg = poptGetOptArg(pc);
+			lpcfg_set_cmdline(cmdline_lp_ctx, "log level", arg);
+			break;
+		case OPT_OPTION:
+			lpcfg_set_option(cmdline_lp_ctx, poptGetOptArg(pc));
+			break;
 		case OPT_LEAK_REPORT:
 			talloc_enable_leak_report();
 			break;
-
 		case OPT_LEAK_REPORT_FULL:
 			talloc_enable_leak_report_full();
 			break;
@@ -77,6 +92,10 @@ int main(int argc, const char *argv[])
 		}
 	}
 	poptFreeContext(pc);
+
+	if (lpcfg_configfile(cmdline_lp_ctx) == NULL) {
+		lpcfg_load_default(cmdline_lp_ctx);
+	}
 
 	sr = srunner_create(suite_create("OpenChange unit testing"));
 

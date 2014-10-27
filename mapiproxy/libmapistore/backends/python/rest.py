@@ -136,6 +136,22 @@ class _RESTConn(object):
             return int(r.headers['x-mapistore-rowcount'])
         return 0
 
+    def get_folders(self, uri, properties):
+        r = self.so.get('%s%sfolders' % (self.base_url, uri))
+        self._dump_response(r)
+        folders = r.json()
+        newlist = []
+        for i,folder in enumerate(folders):
+            for key,value in folder.iteritems():
+                if mapistore.isPtypBinary(key):
+                    folder[key] = bytearray(base64.b64decode(str(value)))
+            folder['PidTagInstID'] = folder['id']
+            folder['PidTagInstanceNum'] = 0
+            folder['PidTagRowType'] = 1
+            folder['PidTagDepth'] = 0
+            newlist.append(folder)
+        return newlist
+
     def get_message_count(self, uri):
         r = self.so.head('%s%smessages' % (self.base_url, uri))
         if 'x-mapistore-rowcount' in r.headers:
@@ -346,6 +362,7 @@ class FolderObject(object):
         self.folderID = long(folderID)
         # List of messages
         self.messages = []
+        self.subfolders = []
 
         conn = _RESTConn.get_instance()
         self.properties = conn.get_folder(self.uri)
@@ -367,13 +384,22 @@ class FolderObject(object):
 
     def _index_messages(self, messages):
         self.messages = []
+        conn = _RESTConn.get_instance()
         for msg in messages:
             if 'id' in msg and 'collection' in msg:
-                conn = _RESTConn.get_instance()
                 uri = '%s/%s/%s/' % (BackendObject.namespace, msg['collection'], msg['id'])
                 msg[u'PidTagMid'] = self.ctx.indexing.add_uri(uri)
                 msg[u'PidTagFolderId'] = self.folderID
                 self.messages.append(MessageObject(self, msg, None))
+
+    def _index_folders(self, folders):
+        self.folders = []
+        conn = _RESTConn.get_instance()
+        for folder in folders:
+            if 'id' in folder:
+                uri = '/folders/%s/' % (folder['id'])
+                fid = self.ctx.indexing.add_uri(uri)
+                self.subfolders.append(FolderObject(self.ctx, uri, fid, self.folderID))
 
 
     def get_properties(self, properties):
@@ -421,7 +447,7 @@ class FolderObject(object):
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
-        factory = {1: self._open_table_any,
+        factory = {1: self._open_table_folders,
                    2: self._open_table_messages,
                    3: self._open_table_any,
                    4: self._open_table_any,
@@ -433,6 +459,12 @@ class FolderObject(object):
     def _open_table_any(self, table_type):
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
+
+    def _open_table_folders(self, table_type):
+        conn = _RESTConn.get_instance()
+        folders = conn.get_folders(self.uri, [])
+        self._index_folders(folders)
+        return self._open_table_any(table_type)
 
     def _open_table_messages(self, table_type):
         conn = _RESTConn.get_instance()
@@ -515,7 +547,7 @@ class MessageObject(object):
         props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
         msgid = conn.create_message('contacts', props)
         # Index the record
-        uri = '%s/%s/%s' % (BackendObject.namespace, 'contacts', msgid)
+        uri = '%s/%s/%s/' % (BackendObject.namespace, 'contacts', msgid)
         self.folder.ctx.indexing.add_uri(uri)
         return mapistore.errors.MAPISTORE_SUCCESS
 
@@ -552,14 +584,17 @@ class TableObject(object):
         return getter[self.table_type](row_no)
 
     def _get_row_folders(self, row_no):
+        logger.debug('*** _get_row_folders: row_no = %s', row_no)
+        print self.folder.subfolders
         folder = self.folder.subfolders[row_no]
-        logger.debug('*** _get_row_folders')
-        logger.debug(json.dumps(self.columns, indent=4))
-        logger.debug(json.dumps(folder, indent=4))
         row = {}
         for name in self.columns:
-            if name in folder:
-                row[name] = folder[name]
+            if name == 'PidTagFolderId':
+                row[name] = folder.folderID
+            elif name == 'PidTagParentFolderId' and folder.parentFID is not None:
+                row[name] = folder.parentFID
+            elif name in folder.properties:
+                row[name] = folder.properties[name]
         return (self.columns, row)
 
     def _get_row_messages(self, row_no):

@@ -565,23 +565,33 @@ static enum MAPISTATUS emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ct
 	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
+
+	/* Step 1. If parent_fid of fid is a mailbox */
 	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, true);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
+
+	/* Step 2. If parent_fid of fid is folder */
 	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, false);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
 
+	/* Step 3. Retrieve URI for fid and try to guess parent_fid from it */
 	ret = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
 	if (ret == MAPISTORE_SUCCESS) {
-		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
-		if (parent_uri) {
-			ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
-		}
-		else {
-			ret = MAPISTORE_ERR_NOT_FOUND;
+		/* This is SOGo specific */
+		if (uri && (strlen(uri) >= strlen("sogo://")) && (!strncmp(uri, "sogo://", strlen("sogo://")))) {
+			parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
+			if (parent_uri) {
+				ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
+			} else {
+				ret = MAPISTORE_ERR_NOT_FOUND;
+			}
+		} else {
+			ret = MAPISTORE_SUCCESS;
+			*parent_fidp = 0;
 		}
 	}
 	retval = mapistore_error_to_mapi(ret);

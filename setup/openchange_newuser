@@ -46,7 +46,7 @@ parser.add_option("--disable", action="store_true", metavar="DISABLE",
                   help="Disable access to OpenChange server")
 parser.add_option("--create", action="store_true", metavar="CREATE",
                   help="Create the OpenChange user account")
-parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
+parser.add_option("--mailbox", type="string", metavar="MAILBOX",
                   help="Create the OpenChange user mailbox")
 opts, args = parser.parse_args()
 

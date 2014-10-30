@@ -193,6 +193,9 @@ class _RESTConn(object):
 
     def update_folder(self, uri, props):
         headers = {'Content-Type': 'application/json'}
+        for key,value in props.iteritems():
+            if mapistore.isPtypBinary(key):
+                props[key] = base64.b64encode(value)
         r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(props), headers=headers)
         return 0
 

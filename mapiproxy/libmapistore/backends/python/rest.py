@@ -569,6 +569,7 @@ class TableObject(object):
         logger.info('[PYTHON]:[%s] table.__init__(%d, type=%s)' % (BackendObject.name, folder.folderID, table_type))
         self.folder = folder
         self.table_type = table_type
+        self.restrictions = None
         self.columns = None
 
     def set_columns(self, columns):
@@ -576,9 +577,23 @@ class TableObject(object):
         self.columns = columns
         return mapistore.errors.MAPISTORE_SUCCESS
 
+    def set_restrictions(self, restrictions):
+        logger.info('[PYTHON]:[%s] table.set_restrictions(%s)', BackendObject.name, restrictions)
+        self.restrictions = self._encode_restriction(restrictions)
+
+        print json.dumps(self.restrictions, indent=4)
+        return mapistore.errors.MAPISTORE_SUCCESS
+
     def get_row_count(self, query_type):
         logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
-        return self.folder.get_child_count(self.table_type)
+        if self.table_type == 2:
+            count = 0
+            for message in self.folder.messages:
+                if self._apply_restriction_message(self.restrictions, message) is True:
+                    count = count + 1
+            return count
+
+        return self.folder.get_child_count(self.table_type, self.restrictions)
 
     def get_row(self, row_no, query_type):
         logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))
@@ -608,9 +623,92 @@ class TableObject(object):
                 row[name] = folder.properties[name]
         return (self.columns, row)
 
+
+    def _encode_restriction(self, restriction):
+        if restriction is None:
+            return None
+
+        if restriction["type"] == "and":
+            for i,condition in enumerate(restriction["value"]):
+                restriction["value"][i] = self._encode_restriction(condition)
+
+        if restriction["type"] == "or":
+            for i,condition in enumerate(restriction["value"]):
+                restriction["value"][i] = self._encode_restriction(condition)
+
+        if restriction["type"] == "content":
+            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
+                restriction["value"] = base64.b64encode(str(restriction["value"]))
+
+        if restriction["type"] == "property":
+            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
+                restriction["value"] = base64.b64encode(str(restriction["value"]))
+
+        return restriction
+
+    def _apply_restriction_message(self, restriction, message):
+        if restriction is None:
+            return True
+
+        if (restriction["type"] == "and"):
+            for condition in restriction["value"]:
+                if self._apply_restriction_message(condition, message) == False:
+                    return False;
+            return True
+
+        if (restriction["type"] == "or"):
+            conditions = []
+            for condition in restriction["value"]:
+                conditions.append(self._apply_restriction_message(condition, message))
+            if True in conditions:
+                return True
+            return False
+
+        if (restriction["type"] == "content"):
+            if not restriction["property"] in message.properties:
+                return False
+
+            val1 = message.properties[restriction["property"]]
+            val2 = restriction["value"]
+
+            if "IGNORECASE" in restriction["fuzzyLevel"]:
+                val1 = val1.lower()
+                val2 = val2.lower()
+            if "FULLSTRING" in restriction["fuzzyLevel"]:
+                return val1 == val2
+            elif "SUBSTRING" in restriction["fuzzyLevel"]:
+                print '%s in %s' % (val2, val1)
+                print val1.find(val2)
+                print val1.find(val2) != -1
+                return val1.find(val2) != -1
+            elif "PREFIX" in restriction["fuzzyLevel"]:
+                return val1.startswith(val2)
+            return False
+
+        if (restriction["type"] == "property"):
+            print message
+            if not restriction["property"] in message.properties:
+                return False
+            if restriction["operator"] == 4:
+                if message.properties[restriction["property"]] == restriction["value"]:
+                    return True
+                return False
+
+        return False
+
+
     def _get_row_messages(self, row_no):
         assert row_no < len(self.folder.messages), "Index out of bounds for messages row=%s" % row_no
-        message = self.folder.messages[row_no]
+
+        # Filter messages
+        tmp_msg = []
+        for message in self.folder.messages:
+            if self._apply_restriction_message(self.restrictions, message) is True:
+                tmp_msg.append(message)
+
+        assert row_no < len(tmp_msg), "Index out of bounds of filtered data for message row=%s" % row_no
+        message = tmp_msg[row_no]
+
         (recipients, properties) = message.get_message_data()
         return (self.columns, properties)
 

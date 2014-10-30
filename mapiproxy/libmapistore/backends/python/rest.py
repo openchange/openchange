@@ -579,7 +579,10 @@ class TableObject(object):
 
     def set_restrictions(self, restrictions):
         logger.info('[PYTHON]:[%s] table.set_restrictions(%s)', BackendObject.name, restrictions)
-        self.restrictions = self._encode_restriction(restrictions)
+        if restrictions is None:
+            self.restrictions = []
+        else:
+            self.restrictions = self._encode_restriction(restrictions)
 
         print json.dumps(self.restrictions, indent=4)
         return mapistore.errors.MAPISTORE_SUCCESS

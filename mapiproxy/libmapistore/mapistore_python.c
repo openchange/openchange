@@ -2600,7 +2600,6 @@ static enum mapistore_error mapistore_python_table_set_restrictions(void *table_
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!res, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!table_status, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Retrieve the table object */
@@ -2614,11 +2613,16 @@ static enum mapistore_error mapistore_python_table_set_restrictions(void *table_
 	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-	pyres = mapistore_python_add_restriction(res);
-	if (pyres == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: Unable to process restrictions\n", pyobj->name, __location__));
-		*table_status = 0x0;
-		return MAPISTORE_ERR_INVALID_PARAMETER;
+	/* Special case where res is NULL - RopResetTable */
+	if (res == NULL) {
+		pyres = Py_None;
+	} else {
+		pyres = mapistore_python_add_restriction(res);
+		if (pyres == NULL) {
+			DEBUG(0, ("[ERR][%s][%s]: Unable to process restrictions\n", pyobj->name, __location__));
+			*table_status = 0x0;
+			return MAPISTORE_ERR_INVALID_PARAMETER;
+		}
 	}
 
 	/* Call set_restrictions function */

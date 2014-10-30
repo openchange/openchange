@@ -540,6 +540,12 @@ class MessageObject(object):
         print self.properties
         return (self.recipients, self.properties)
 
+    def _collection_from_messageClass(self, messageclass):
+        collections = {"IPM.Contact": "contacts",
+                       "IPM.Appointment": "calendars"}
+        if not messageclass in collections:
+            return "IPM.Note"
+        return collections[messageclass]
 
     def save(self):
         conn = _RESTConn.get_instance()
@@ -548,10 +554,12 @@ class MessageObject(object):
         props = self.properties.copy()
         props['parent_id'] = self.folder.uri
         props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
-        msgid = conn.create_message('contacts', props)
+        collection = self._collection_from_messageClass(props['PidTagMessageClass'])
+        msgid = conn.create_message(collection, props)
         # Index the record
-        uri = '%s/%s/%s/' % (BackendObject.namespace, 'contacts', msgid)
-        self.folder.ctx.indexing.add_uri(uri)
+        uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
+        self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
+        self.folder.messages.append(self)
         return mapistore.errors.MAPISTORE_SUCCESS
 
 

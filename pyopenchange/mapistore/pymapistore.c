@@ -479,6 +479,39 @@ static PyObject *py_mapistatus_errstr(PyObject *mod, PyObject *args)
 	Py_RETURN_NONE;
 }
 
+
+static PyObject *py_mapistore_isPtypServerId(PyMAPIStoreObject *self, PyObject *args)
+{
+	char		*sproptag = NULL;
+	uint32_t	proptag = 0;
+	bool		retval = false;
+
+	if (!PyArg_ParseTuple(args, "s", &sproptag)) {
+		return NULL;
+	}
+
+	if (strcasestr(sproptag, "0x")) {
+		proptag = strtoul(sproptag, NULL, 16);
+	} else {
+		proptag = openchangedb_property_get_tag(sproptag);
+		if (proptag == 0xFFFFFFFF) {
+			proptag = openchangedb_named_properties_get_tag(sproptag);
+			if (proptag == 0xFFFFFFFF) {
+				proptag = strtoul(sproptag, NULL, 16);
+			}
+		}
+	}
+
+
+	if ((proptag & 0xFFFF) == PT_SVREID) {
+		retval = true;
+	}
+
+	return PyBool_FromLong((uint32_t)retval);
+}
+
+
+
 static PyObject *py_mapistore_isPtypBinary(PyMAPIStoreObject *self, PyObject *args)
 {
 	char		*sproptag = NULL;
@@ -550,6 +583,10 @@ static PyMethodDef py_mapistore_global_methods[] = {
 		"Returns MAPISTATUS string presentation\n\n"
 		":param status: MAPISTATUS code\n"
 		":return string: String or None if MAPISTATUS is unknown" },
+	{ "isPtypServerId", (PyCFunction)py_mapistore_isPtypServerId, METH_VARARGS,
+		"Check if the property is of type PT_SRVEID\n\n"
+		":param paroperty: Property tag to lookup\n"
+		":return boolean: Boolean" },
 	{ "isPtypBinary", (PyCFunction)py_mapistore_isPtypBinary, METH_VARARGS,
 		"Check if the property is of type PT_BINARY\n\n"
 		":param paroperty: Property tag to lookup\n"

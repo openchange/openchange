@@ -466,6 +466,7 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	return pydict;
 }
 
+
 /**
    \details Initialize python backend
 
@@ -2432,14 +2433,208 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 }
 
 
+/**
+   \details Recursively builds a python object for MAPI restrictions
+
+   \param res Pointer to the MAPI restriction to map
+
+   \return Python object on success, otherwise NULL
+
+ */
+static PyObject *mapistore_python_add_restriction(struct mapi_SRestriction *res)
+{
+	TALLOC_CTX			*mem_ctx;
+	struct mapi_SRestriction	*_res;
+	struct SPropValue		*lpProp;
+	PyObject			*pyobj = NULL;
+	PyObject			*val = NULL;
+	PyObject			*item = NULL;
+	uint16_t			i;
+	uint16_t			idx = 0;
+
+	/* Initialize the dictionary */
+	pyobj = PyDict_New();
+	if (pyobj == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python dictionary\n", __location__));
+		return NULL;
+	}
+
+	switch (res->rt) {
+	case RES_AND:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("and"));
+		val = PyList_New(res->res.resAnd.cRes);
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python list for RES_AND\n", __location__));
+			return NULL;
+		}
+		for (i = 0, idx = 0; i < res->res.resAnd.cRes; i++) {
+			_res = (struct mapi_SRestriction *) &(res->res.resAnd.res[i]);
+			item = mapistore_python_add_restriction(_res);
+			if (item) {
+				if (PyList_SetItem(val, idx, item) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+				} else {
+					idx++;
+				}
+			}
+		}
+		PyDict_SetItemString(pyobj, "value", val);
+		break;
+	case RES_OR:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("or"));
+		val = PyList_New(res->res.resOr.cRes);
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python list for RES_OR\n", __location__));
+			return NULL;
+		}
+		for (i = 0, idx = 0; i < res->res.resOr.cRes; i++) {
+			_res = (struct mapi_SRestriction *) &(res->res.resOr.res[i]);
+			item = mapistore_python_add_restriction(_res);
+			if (item) {
+				if (PyList_SetItem(val, idx, item) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+				} else {
+					idx++;
+				}
+			}
+		}
+		PyDict_SetItemString(pyobj, "value", val);
+		break;
+	case RES_NOT:
+		break;
+	case RES_CONTENT:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("content"));
+		val = PyList_New(0);
+		switch (res->res.resContent.fuzzy & 0xFFFF) {
+		case FL_FULLSTRING:
+			item = PyString_FromString("FULLSTRING");
+			break;
+		case FL_SUBSTRING:
+			item = PyString_FromString("SUBSTRING");
+			break;
+		case FL_PREFIX:
+			item = PyString_FromString("PREFIX");
+			break;
+		}
+		if (PyList_Append(val, item) == -1) {
+			DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+		}
+
+		if (res->res.resContent.fuzzy & FL_IGNORECASE) {
+			PyList_Append(val, PyString_FromString("IGNORECASE"));
+		}
+		if (res->res.resContent.fuzzy & FL_IGNORENONSPACE) {
+			PyList_Append(val, PyString_FromString("IGNORENONSPACE"));
+		}
+		if (res->res.resContent.fuzzy & FL_LOOSE) {
+			PyList_Append(val, PyString_FromString("LOOSE"));
+		}
+		PyDict_SetItemString(pyobj, "fuzzyLevel", val);
+
+		item = mapistore_python_pyobject_from_proptag(res->res.resContent.ulPropTag);
+		PyDict_SetItemString(pyobj, "property", item);
+
+		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		lpProp = talloc_zero(mem_ctx, struct SPropValue);
+		cast_SPropValue(mem_ctx, &res->res.resProperty.lpProp, lpProp);
+		item = mapistore_pyobject_from_data(lpProp);
+		talloc_free(mem_ctx);
+		PyDict_SetItemString(pyobj, "value", item);
+		break;
+	case RES_PROPERTY:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("property"));
+		val = PyDict_New();
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python dictionary for RES_PROPERTY\n", __location__));
+			return NULL;
+		}
+		PyDict_SetItemString(pyobj, "operator", PyLong_FromLong(res->res.resProperty.relop));
+
+		item = mapistore_python_pyobject_from_proptag(res->res.resProperty.ulPropTag);
+		PyDict_SetItemString(pyobj, "property", item);
+
+		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		lpProp = talloc_zero(mem_ctx, struct SPropValue);
+		cast_SPropValue(mem_ctx, &res->res.resProperty.lpProp, lpProp);
+		item = mapistore_pyobject_from_data(lpProp);
+		talloc_free(mem_ctx);
+		PyDict_SetItemString(pyobj, "value", item);
+		break;
+	case RES_COMPAREPROPS:
+		break;
+	case RES_BITMASK:
+		break;
+	case RES_SIZE:
+		break;
+	case RES_EXIST:
+		break;
+	case RES_SUBRESTRICTION:
+		break;
+	case RES_COMMENT:
+		break;
+	}
+
+	return pyobj;
+}
+
+/**
+   \details Compile MAPI restrictions into a Python object
+
+   \param table_object the table object to set restrictions for
+   \param res Pointer to the restrictions to apply to the table
+   \param table_status pointer to the status of the table to return
+
+   \return MAPISTORE_SUCCESS on success,otherwise MAPISTORE error.
+ */
 static enum mapistore_error mapistore_python_table_set_restrictions(void *table_object,
 								    struct mapi_SRestriction *res,
 								    uint8_t *table_status)
 {
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*table;
+	PyObject			*pyres;
+	PyObject			*pres;
+
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!res, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!table_status, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the table object */
+	pyobj = (struct mapistore_python_object *) table_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	table = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	pyres = mapistore_python_add_restriction(res);
+	if (pyres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to process restrictions\n", pyobj->name, __location__));
+		*table_status = 0x0;
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Call set_restrictions function */
+	pres = PyObject_CallMethod(table, "set_restrictions", "O", pyres);
+	Py_DECREF(pyres);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ", pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
 	*table_status = 0x0;
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 

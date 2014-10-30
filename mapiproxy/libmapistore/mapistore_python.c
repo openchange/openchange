@@ -273,14 +273,10 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 	return retval;
 }
 
-static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
+static PyObject *mapistore_pyobject_from_data(struct SPropValue *lpProps)
 {
-	uint32_t		count;
 	uint32_t		i;
-	PyObject		*pydict;
 	const void		*data;
-	const char		*skey;
-	PyObject		*key;
 	PyObject		*val;
 	PyObject		*item;
 	struct Binary_r		*bin;
@@ -290,6 +286,156 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	NTTIME			nt;
 	struct FILETIME		*ft;
 	struct timeval		t;
+
+	/* Sanity checks */
+	if (!lpProps) return NULL;
+
+
+	/* Retrieve SPropValue data */
+	data = get_SPropValue_data(lpProps);
+	if (data == NULL) {
+		return NULL;
+	}
+
+	val = NULL;
+	switch (lpProps->ulPropTag & 0xFFFF) {
+	case PT_I2:
+		DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
+		break;
+	case PT_LONG:
+		val = PyLong_FromLong(*((uint32_t *)data));
+		break;
+	case PT_DOUBLE:
+		val = PyFloat_FromDouble(*((double *)data));
+		break;
+	case PT_BOOLEAN:
+		val = PyBool_FromLong(*((uint32_t *)data));
+		break;
+	case PT_I8:
+		val = PyLong_FromUnsignedLongLong(*((uint64_t *)data));
+		break;
+	case PT_STRING8:
+	case PT_UNICODE:
+		val = PyString_FromString((const char *)data);
+		break;
+	case PT_SYSTIME:
+		ft = (struct FILETIME *) data;
+		nt = ft->dwHighDateTime;
+		nt = nt << 32;
+		nt |= ft->dwLowDateTime;
+		nttime_to_timeval(&t, nt);
+		val = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
+		break;
+	case PT_CLSID:
+		DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
+		break;
+	case PT_SVREID:
+	case PT_BINARY:
+		bin = (struct Binary_r *)data;
+		val = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
+		break;
+	case PT_MV_SHORT:
+		DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
+		break;
+	case PT_MV_LONG:
+		MVl = (struct LongArray_r *)data;
+		val = PyList_New(MVl->cValues);
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n", __location__));
+			return NULL;
+		}
+		for (i = 0; i < MVl->cValues; i++) {
+			item = PyLong_FromLong(MVl->lpl[i]);
+			if (PyList_SetItem(val, i, item) == -1) {
+				DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+				return NULL;
+			}
+		}
+		break;
+	case PT_MV_I8:
+		DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
+		break;
+	case PT_MV_STRING8:
+		MVszA = (struct StringArray_r *)data;
+		val = PyList_New(MVszA->cValues);
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n", __location__));
+			return NULL;
+		}
+		for (i = 0; i < MVszA->cValues; i++) {
+			item = PyString_FromString(MVszA->lppszA[i]);
+			if (PyList_SetItem(val, i, item) == -1) {
+				DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+				return NULL;
+			}
+		}
+		break;
+	case PT_MV_UNICODE:
+		MVszW = (struct StringArrayW_r *)data;
+		val = PyList_New(MVszW->cValues);
+		if (val == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n", __location__));
+			return NULL;
+		}
+
+		for (i = 0; i < MVszW->cValues; i++) {
+			item = PyString_FromString(MVszW->lppszW[i]);
+			if (PyList_SetItem(val, i, item) == -1) {
+				DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+				return NULL;
+			}
+		}
+		break;
+	case PT_MV_SYSTIME:
+		DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
+		break;
+	case PT_MV_CLSID:
+		DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
+		break;
+	case PT_MV_BINARY:
+		DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
+		break;
+	case PT_NULL:
+		DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
+		break;
+	case PT_OBJECT:
+		DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
+		break;
+	default:
+		DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__, (lpProps->ulPropTag & 0xFFFF)));
+		break;
+	}
+
+	return val;
+}
+
+
+static PyObject *mapistore_python_pyobject_from_proptag(uint32_t proptag)
+{
+	const char	*sproptag = NULL;
+	PyObject	*item = NULL;
+
+	if (((proptag >> 16) & 0xFFFF) > 0x8000) {
+		sproptag = openchangedb_named_properties_get_attribute(proptag);
+	} else {
+		sproptag = openchangedb_property_get_attribute(proptag);
+	}
+	if (sproptag == NULL) {
+		item = PyString_FromFormat("0x%x", proptag);
+	} else {
+		item = PyString_FromString(sproptag);
+	}
+
+	return item;
+}
+
+
+static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
+{
+	uint32_t		count;
+	PyObject		*pydict;
+	PyObject		*key;
+	PyObject		*val;
 
 	/* Sanity checks */
 	if (!aRow) return NULL;
@@ -304,140 +450,10 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	for (count = 0; count < aRow->cValues; count++) {
 
 		/* Set the key of the dictionary entry */
-		skey = NULL;
-		if (((aRow->lpProps[count].ulPropTag >> 16) & 0xFFFF) > 0x8000) {
-			skey = openchangedb_named_properties_get_attribute(aRow->lpProps[count].ulPropTag);
-		} else {
-			skey = openchangedb_property_get_attribute(aRow->lpProps[count].ulPropTag);
-		}
-
-		if (skey == NULL) {
-			key = PyString_FromFormat("0x%x", aRow->lpProps[count].ulPropTag);
-		} else {
-			key = PyString_FromString(skey);
-		}
+		key = mapistore_python_pyobject_from_proptag(aRow->lpProps[count].ulPropTag);
 
 		/* Retrieve SPropValue data */
-		data = get_SPropValue_data(&(aRow->lpProps[count]));
-		if (data == NULL) {
-			return NULL;
-		}
-
-		val = NULL;
-		switch (aRow->lpProps[count].ulPropTag & 0xFFFF) {
-		case PT_I2:
-			DEBUG(5, ("[WARN][%s]: PT_I2 case not implemented\n", __location__));
-			break;
-		case PT_LONG:
-			val = PyLong_FromLong(*((uint32_t *)data));
-			break;
-		case PT_DOUBLE:
-			val = PyFloat_FromDouble(*((double *)data));
-			break;
-		case PT_BOOLEAN:
-			val = PyBool_FromLong(*((uint32_t *)data));
-			break;
-		case PT_I8:
-			val = PyLong_FromUnsignedLongLong(*((uint64_t *)data));
-			break;
-		case PT_STRING8:
-		case PT_UNICODE:
-			val = PyString_FromString((const char *)data);
-			break;
-		case PT_SYSTIME:
-			ft = (struct FILETIME *) data;
-			nt = ft->dwHighDateTime;
-			nt = nt << 32;
-			nt |= ft->dwLowDateTime;
-			nttime_to_timeval(&t, nt);
-			val = PyFloat_FromString(PyString_FromFormat("%ld.%ld", t.tv_sec, t.tv_usec), NULL);
-			break;
-		case PT_CLSID:
-			DEBUG(5, ("[WARN][%s]: PT_CLSID case not implemented\n", __location__));
-			break;
-		case PT_SVREID:
-		case PT_BINARY:
-			bin = (struct Binary_r *)data;
-			val = PyByteArray_FromStringAndSize((const char *)bin->lpb, bin->cb);
-			break;
-		case PT_MV_SHORT:
-			DEBUG(5, ("[WARN][%s]: PT_MV_I2 case not implemented\n", __location__));
-			break;
-		case PT_MV_LONG:
-			MVl = (struct LongArray_r *)data;
-			val = PyList_New(MVl->cValues);
-			if (val == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n", __location__));
-				return NULL;
-			}
-			for (i = 0; i < MVl->cValues; i++) {
-				item = PyLong_FromLong(MVl->lpl[i]);
-				if (PyList_SetItem(val, i, item) == -1) {
-					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
-						      __location__));
-					return NULL;
-				}
-			}
-			break;
-		case PT_MV_I8:
-			DEBUG(5, ("[WARN][%s]: PT_MV_I8 case not implemented\n", __location__));
-			break;
-		case PT_MV_STRING8:
-			MVszA = (struct StringArray_r *)data;
-			val = PyList_New(MVszA->cValues);
-			if (val == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n",
-					  __location__));
-				return NULL;
-			}
-			for (i = 0; i < MVszA->cValues; i++) {
-				item = PyString_FromString(MVszA->lppszA[i]);
-				if (PyList_SetItem(val, i, item) == -1) {
-					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
-						  __location__));
-					return NULL;
-				}
-			}
-			break;
-		case PT_MV_UNICODE:
-			MVszW = (struct StringArrayW_r *)data;
-			val = PyList_New(MVszW->cValues);
-			if (val == NULL) {
-				DEBUG(0, ("[ERR][%s]: Unable to initialize Python List\n",
-					  __location__));
-				return NULL;
-			}
-
-			for (i = 0; i < MVszW->cValues; i++) {
-				item = PyString_FromString(MVszW->lppszW[i]);
-				if (PyList_SetItem(val, i, item) == -1) {
-					DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n",
-						  __location__));
-					return NULL;
-				}
-			}
-			break;
-		case PT_MV_SYSTIME:
-			DEBUG(5, ("[WARN][%s]: PT_MV_SYSTIME case not implemented\n", __location__));
-			break;
-		case PT_MV_CLSID:
-			DEBUG(5, ("[WARN][%s]: PT_MV_CLSID case not implemented\n", __location__));
-			break;
-		case PT_MV_BINARY:
-			DEBUG(5, ("[WARN][%s]: PT_MV_BINARY case not implemented\n", __location__));
-			break;
-		case PT_NULL:
-			DEBUG(5, ("[WARN][%s]: PT_NULL case not implemented\n", __location__));
-			break;
-		case PT_OBJECT:
-			DEBUG(5, ("[WARN][%s]: PT_OBJECT case not implemented\n", __location__));
-			break;
-		default:
-			DEBUG(5, ("[WARN][%s]: 0x%x case not implemented\n", __location__,
-				  (aRow->lpProps[count].ulPropTag & 0xFFFF)));
-			break;
-		}
-
+		val = mapistore_pyobject_from_data(&(aRow->lpProps[count]));
 		if (val) {
 			if (PyDict_SetItem(pydict, key, val) == -1) {
 				DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
@@ -2361,7 +2377,6 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 	PyObject			*table;
 	PyObject			*pres;
 	PyObject			*proplist;
-	const char			*value;
 	PyObject			*item;
 	uint16_t			i;
 
@@ -2372,7 +2387,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 	MAPISTORE_RETVAL_IF(!count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!properties, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
-	/* Retrieve the folder object */
+	/* Retrieve the table object */
 	pyobj = (struct mapistore_python_object *) table_object;
 	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
@@ -2392,18 +2407,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 	}
 
 	for (i = 0; i < count; i++) {
-		if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
-			value = openchangedb_named_properties_get_attribute(properties[i]);
-		} else {
-			value = openchangedb_property_get_attribute(properties[i]);
-		}
-
-		if (value == NULL) {
-			item = PyString_FromFormat("0x%x", properties[i]);
-		} else {
-			item = PyString_FromString(value);
-		}
-
+		item = mapistore_python_pyobject_from_proptag(properties[i]);
 		if (PyList_SetItem(proplist, i, item) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
 				  pyobj->name, __location__));
@@ -2836,20 +2840,9 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	}
 
 	for (i = 0; i < count; i++) {
-		if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
-			sproptag = openchangedb_named_properties_get_attribute(properties[i]);
-		} else {
-			sproptag = openchangedb_property_get_attribute(properties[i]);
-		}
-
-		if (sproptag == NULL) {
-			item = PyString_FromFormat("0x%x", properties[i]);
-		} else {
-			item = PyString_FromString(sproptag);
-		}
-
+		item = mapistore_python_pyobject_from_proptag(properties[i]);
 		if (PyList_SetItem(proplist, i, item) == -1) {
-			DEBUG(0, ("[ERR][[%s][%s]: Unable to append entry to Python list\n",
+			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
 				  pyobj->name, __location__));
 			Py_DECREF(proplist);
 			return MAPISTORE_ERR_NO_MEMORY;
@@ -2897,16 +2890,7 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	} else {
 		/* Map data */
 		for (i = 0; i < count; i++) {
-			if (((properties[i] >> 16) & 0xFFFF) > 0x8000) {
-				sproptag = openchangedb_named_properties_get_attribute(properties[i]);
-			} else {
-				sproptag = openchangedb_property_get_attribute(properties[i]);
-			}
-			if (sproptag == NULL) {
-				item = PyString_FromFormat("0x%x", properties[i]);
-			} else {
-				item = PyString_FromString(sproptag);
-			}
+			item = mapistore_python_pyobject_from_proptag(properties[i]);
 			value = PyDict_GetItem(pres, item);
 			if (value == NULL) {
 				data[i].error = MAPISTORE_ERR_NOT_FOUND;

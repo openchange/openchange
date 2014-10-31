@@ -436,7 +436,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	/* Ensure we are in a case which we can handle, until the featureset is complete. */
 	if (!request->ForwardRead) {
 		DEBUG(0, ("  !ForwardRead is not supported yet\n"));
-		abort();
+		goto finish;
 	}
 
         /* Lookup the properties */

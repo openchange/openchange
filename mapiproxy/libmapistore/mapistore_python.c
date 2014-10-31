@@ -2955,7 +2955,13 @@ static enum mapistore_error mapistore_python_properties_get_available_properties
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	p = *propertiesp;
+	p = talloc_zero(mem_ctx, struct SPropTagArray);
+	if (p == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to allocate memory for SPropTagArray\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
 
 	cnt = 0;
 	while (PyDict_Next(pres, &cnt, &key, &value)) {

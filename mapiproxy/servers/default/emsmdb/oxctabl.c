@@ -332,6 +332,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRestrict(TALLOC_CTX *mem_ctx,
 			goto end;
 		}
 
+		table->numerator = 0;
 		mapistore_table_get_row_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_PREFILTERED_QUERY, &object->object.table->denominator);
 		
 		mapi_repl->u.mapi_Restrict.TableStatus = status;

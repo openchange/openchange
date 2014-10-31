@@ -441,7 +441,7 @@ class FolderObject(object):
         return properties
 
     def set_properties(self, properties):
-        logger.info('[PYTHON]: [%s][%s]: folder.set_properties(%s)' % (BackendObject.name, self.uri, properties))
+        logger.info('[PYTHON]: [%s][%s]: folder.set_properties' % (BackendObject.name, self.uri))
         conn = _RESTConn.get_instance()
         conn.update_folder(self.uri, properties)
         tmpdict = self.properties.copy()

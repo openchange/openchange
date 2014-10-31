@@ -2409,7 +2409,7 @@ static enum mapistore_error mapistore_python_table_set_columns(void *table_objec
 
 	for (i = 0; i < count; i++) {
 		item = mapistore_python_pyobject_from_proptag(properties[i]);
-		if (PyList_SetItem(proplist, i, item) == -1) {
+		if (!item || PyList_SetItem(proplist, i, item) == -1) {
 			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
 				  pyobj->name, __location__));
 			return MAPISTORE_ERR_NO_MEMORY;

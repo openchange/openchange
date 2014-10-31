@@ -321,7 +321,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesList(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*rec = NULL;
 	void			*private_data = NULL;
 	struct emsmdbp_object	*object;
-	struct SPropTagArray	*SPropTagArray;
+	struct SPropTagArray	*SPropTagArray = NULL;
 	
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertiesList (0x9)\n"));
 

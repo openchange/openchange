@@ -656,11 +656,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
                 if (next_position < 0) {
                         next_position = 0;
                         mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
-                }
-                else if (next_position >= table->denominator) {
-                        next_position = table->denominator - 1;
+                } else if (next_position > table->denominator) {
+			next_position = table->denominator - 1;
                         mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
-                }
+		} else if (next_position == table->denominator) {
+			next_position = table->denominator;
+                        mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
+		}
+
                 if (mapi_req->u.mapi_SeekRow.WantRowMovedCount) {
                         mapi_repl->u.mapi_SeekRow.RowsSought = (next_position - table->numerator);
                 }

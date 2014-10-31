@@ -428,18 +428,20 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	if (r->in.lpETable == NULL) {
 		/* Step 2.1 Fill ppRows for supplied Container ID */
 		struct ldb_result	*ldb_res;
-		
+
 		retval = emsabp_ab_container_enum(mem_ctx, emsabp_ctx,
 						  r->in.pStat->ContainerID, &ldb_res);
 		if (retval != MAPI_E_SUCCESS)  {
 			goto failure;
 		}
-	
-		if (((int)(ldb_res->count - r->in.pStat->NumPos)) < 0) {
-			count = 0;
-		} else {
-			count = ldb_res->count - r->in.pStat->NumPos;
+
+		if (ldb_res->count < r->in.pStat->NumPos) {
+			/* Bad position */
+			retval = MAPI_E_INVALID_PARAMETER;
+			goto failure;
 		}
+
+		count = ldb_res->count - r->in.pStat->NumPos;
 
 		if (r->in.Count < count) {
 			count = r->in.Count;
@@ -486,6 +488,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	memcpy(r->out.pStat, r->in.pStat, sizeof (struct STAT));
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+
 failure:
 	r->out.pStat = r->in.pStat;
 	*r->out.ppRows = NULL;

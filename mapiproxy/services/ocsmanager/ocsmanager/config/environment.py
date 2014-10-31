@@ -34,16 +34,14 @@ from ocsmanager.config.routing import make_map
 from ocsmanager.lib.openchangedb import get_openchangedb
 from ocsmanager.lib.samdb import SamDBWrapper
 
-
 # samba
 import samba.param
 from samba.auth import system_session, admin_session
 from samba.credentials import Credentials
+import ldb
 
-
-FIRST_ORGANIZATION = "First Organization"
-FIRST_ORGANIZATION_UNIT = "First Administrative Group"
-
+import logging
+logger = logging.getLogger(__name__)
 
 def _load_samba_environment():
     """Load the samba configuration vars from smb.conf and the sam.db."""
@@ -72,10 +70,26 @@ def _load_samba_environment():
 
     rootdn = domaindn
     configdn = "CN=Configuration," + rootdn
-    # FIXME: Hardcoded strings, those should be queried to LDB, just like
-    # openchange.provision.guess_names_from_smbconf does.
-    firstorg = FIRST_ORGANIZATION
-    firstou = FIRST_ORGANIZATION_UNIT
+
+    firstorg = None
+    firstorg_basedn = 'CN=Microsoft Exchange,CN=Services,' + configdn
+    res = samdb_ldb.search(base=firstorg_basedn, scope=ldb.SCOPE_ONELEVEL, expression='(objectClass=msExchOrganizationContainer)', attrs=['cn'])
+    if res:
+        if len(res) > 1:
+            logger.warn('More than one exchange organization found')
+        firstorg = res[0]['cn'][0]
+    if not firstorg:
+        raise Exception("Cannot find first exchange organization in samba database")
+
+    firstou = None
+    firstou_basedn = "CN=Administrative Groups,CN=%s,%s" %(firstorg, firstorg_basedn)
+    res = samdb_ldb.search(base=firstou_basedn, scope=ldb.SCOPE_ONELEVEL, expression='(objectClass=msExchAdminGroup)', attrs=['cn'])
+    if res:
+        if len(res) > 1:
+            logger.warn('More than one exchange administration group found')
+        firstou = res[0]['cn'][0]
+    if not firstou:
+        raise Exception("Cannot find exchange first organization unit in samba database")    
 
     username_mail = False
     if params.get("auth:usernames are emails") == 'yes':

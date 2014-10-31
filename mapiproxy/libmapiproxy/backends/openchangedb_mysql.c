@@ -2155,7 +2155,7 @@ static const char **get_folders_names(TALLOC_CTX *parent_ctx,
 	MYSQL			*conn;
 	char			*table, *sql, *short_locale;
 	const char		**ret = NULL;
-	struct StringArrayW_r	*results;
+	struct StringArrayW_r	*results = NULL;
 
 	mem_ctx = talloc_named(NULL, 0, "get_folders_name");
 	if (!mem_ctx) return NULL;

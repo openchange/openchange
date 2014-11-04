@@ -201,6 +201,9 @@ end:
 
 _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision(struct emsmdbp_context *emsmdbp_ctx, const char *username)
 {
+
+	return MAPI_E_SUCCESS;
+
 /* auto-provisioning:
 
   During private logon:

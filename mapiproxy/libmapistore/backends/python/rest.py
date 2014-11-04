@@ -243,7 +243,6 @@ class _Indexing(object):
         return self.uri_mstore_to_rest(mstore_uri)
 
     def id_for_uri(self, uri):
-#        mstore_uri = self.uri_rest_to_mstore(uri)
         mstore_uri = uri
         return self.ictx.fmid_for_uri(mstore_uri)
 

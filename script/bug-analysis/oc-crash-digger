@@ -309,6 +309,9 @@ class CrashDigger(object):
                 if readable_stacktrace(report):
                     valid_stacktrace = True
                     break
+            elif self.gdb:
+                # Run gdb just once
+                break
 
         if self.upload or self.stacktrace_file:
             if not valid_stacktrace:

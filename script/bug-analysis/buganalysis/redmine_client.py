@@ -88,12 +88,9 @@ class RedmineClient(object):
         if '_OrigURL' in report:
             _, base_name = report['_OrigURL'].rsplit('/', 1)
             description += "Crash file: %s\n" % base_name
-        if 'DistroRelease' in report:
-            description += '\nDistro Release: {0}\n'.format(report['DistroRelease'])
-        if 'Dependencies' in report:
-            pkgs = (e for e in report['Dependencies'].split('\n') if e.startswith('openchangeserver'))
-            for pkg in pkgs:
-                description += '\nPackage: {0}\n'.format(pkg)
+
+        description += self._dump_distro_release(report)
+        description += self._dump_package(report)
 
         issue.description = description
         custom_fields = []
@@ -126,16 +123,21 @@ class RedmineClient(object):
         issue.save()
         return issue
 
-    def add_duplicate(self, issue_id, dup_crash_url):
+    def add_duplicate(self, report, issue_id, dup_crash_url):
         """Add a duplicate to the journal of a given issue.
 
+        Re-open an issue if it is closed if supported.
+
+        :param Report report: the duplicated report
         :param int issue_id: the issue identifier
         :param str dup_crash_url: the URL of the duplicate crash
         :returns: if the action of adding was successful
         :rtype: bool
         """
         _, base_name = dup_crash_url.rsplit('/', 1)
-        note = 'A new duplicate has been found: {0}'.format(base_name)
+        note = 'A new duplicate has been found: {0}\n'.format(base_name)
+        note += self._dump_distro_release(report)
+        note += self._dump_package(report)
         try:
             self.redmine.issue.update(issue_id,
                                       notes=note)
@@ -143,3 +145,17 @@ class RedmineClient(object):
         except redmine.exceptions.ResourceNotFoundError:
             # We cannot add the duplicate
             return False
+
+    # Helper methods to dump info to Redmine in plain text
+    def _dump_distro_release(self, report):
+        if 'DistroRelease' in report:
+            return '\nDistro Release: {0}\n'.format(report['DistroRelease'])
+        return ""
+
+    def _dump_package(self, report):
+        dumped = ""
+        if 'Dependencies' in report:
+            pkgs = (e for e in report['Dependencies'].split('\n') if e.startswith('openchangeserver'))
+            for pkg in pkgs:
+                dumped += '\nPackage: {0}\n'.format(pkg)
+        return dumped

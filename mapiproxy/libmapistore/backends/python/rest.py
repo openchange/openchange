@@ -575,7 +575,7 @@ class MessageObject(object):
         collections = {"IPM.Contact": "contacts",
                        "IPM.Appointment": "calendars"}
         if not messageclass in collections:
-            return "IPM.Note"
+            return "mails"
         return collections[messageclass]
 
     def save(self):

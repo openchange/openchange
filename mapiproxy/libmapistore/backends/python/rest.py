@@ -662,6 +662,9 @@ class TableObject(object):
         if restriction is None:
             return None
 
+        if not 'type' in restriction:
+            return None
+
         if restriction["type"] == "and":
             for i,condition in enumerate(restriction["value"]):
                 restriction["value"][i] = self._encode_restriction(condition)

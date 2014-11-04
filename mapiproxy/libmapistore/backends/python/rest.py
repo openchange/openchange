@@ -348,9 +348,9 @@ class ContextObject(object):
 
     def get_root_folder(self, folderID):
         logger.info('[PYTHON]: [%s] context.get_root_folder(%s)' % (self._log_marker(), folderID))
-        if self.fmid != folderID:
-            logger.error('[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID))
-            return (mapistore.errors.MAPISTORE_ERR_INVALID_PARAMETER, None)
+#        if self.fmid != folderID:
+#            logger.error('[PYTHON]: [%s] get_root_folder called with not Root FMID(%s)' % (self._log_marker(), folderID))
+#            return (mapistore.errors.MAPISTORE_ERR_INVALID_PARAMETER, None)
         folder = FolderObject(self, self.uri, folderID, None)
         return (mapistore.errors.MAPISTORE_SUCCESS, folder)
 

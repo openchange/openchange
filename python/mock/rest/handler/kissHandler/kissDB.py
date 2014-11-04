@@ -193,11 +193,29 @@ class kissDB(object):
         return {
             'next_id': 100,
             'folders': {
-#                1: kissDB._folder_rec(1, 'INBOX', 'Inbox folder', mapistore.ROLE_MAIL 0),
-#                2: kissDB._folder_rec(2, 'Outbox', 'Outbox folder', mapistore.ROLE.OUTBOX, 0),
-#                3: kissDB._folder_rec(3, 'Sent', 'Sent items', mapistore.ROLE_SENTITEMS, 0),
-                4: kissDB._folder_rec(4, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 0),
-                5: kissDB._folder_rec(5, 'Contact', 'Contact', mapistore.ROLE_CONTACTS, 0)
+                # Root of the mailbox
+                0: kissDB._folder_rec(0, 'Root', '/', -1, -1, True),
+                1: kissDB._folder_rec(1, 'Top Information Store', 'NON_IPM_SUBTREE', 0, 12, True),
+                2: kissDB._folder_rec(2, 'INBOX', 'Inbox folder', mapistore.ROLE_MAIL, 1, 13),
+                3: kissDB._folder_rec(3, 'Outbox', 'Outbox', mapistore.ROLE_OUTBOX, 1, 14),
+                4: kissDB._folder_rec(4, 'Sent', 'Sent Items', mapistore.ROLE_SENTITEMS, 1, 15),
+                5: kissDB._folder_rec(5, 'Deleted Items', 'Deleted Items', mapistore.ROLE_DELETEDITEMS, 1, 16),
+
+                # 6: kissDB._folder_rec(6, 'Drafts', 'Drafts', mapistore.ROLE_DRAFTS, 1, 0),
+                # 7: kissDB._folder_rec(7, 'Calendar', 'Calendar', mapistore.ROLE_CALENDAR, 1, -1),
+                # 8: kissDB._folder_rec(8, 'Contacts', 'Contacts', mapistore.ROLE_CONTACTS, 1, -1),
+                # 9: kissDB._folder_rec(9, 'Tasks', 'Tasks', mapistore.ROLE_TASKS, 1, -1),
+                # 10: kissDB._folder_rec(10, 'Notes', 'Sticky Notes', mapistore.ROLE_NOTES, 1, -1),
+                # 11: kissDB._folder_rec(11, 'Journal', 'Journal', mapistore.ROLE_JOURNAL, 1, -1),
+
+                # System Folders
+                13: kissDB._folder_rec(13, 'Deferred Action', 'Deferred Action', mapistore.ROLE_FALLBACK, 0, 2, True),
+                14: kissDB._folder_rec(14, 'Spooler Queue', 'Spooler Queue', mapistore.ROLE_FALLBACK, 0, 3, True),
+                15: kissDB._folder_rec(15, 'Common Views', 'Common Views', mapistore.ROLE_FALLBACK, 0, 4, True),
+                16: kissDB._folder_rec(16, 'Schedule', 'Schedule', mapistore.ROLE_FALLBACK, 0, 5, True),
+                17: kissDB._folder_rec(17, 'Finder', 'Finder', mapistore.ROLE_FALLBACK, 0, 6, True),
+                18: kissDB._folder_rec(18, 'View', 'Views', mapistore.ROLE_FALLBACK, 0, 7, True),
+                19: kissDB._folder_rec(19, 'Shortcuts', 'Shortcuts', mapistore.ROLE_FALLBACK, 0, 8, True)
             },
             'messages': {
                 51: appt1,
@@ -205,12 +223,14 @@ class kissDB(object):
         }
 
     @staticmethod
-    def _folder_rec(id, name, comment, role, parent_id):
+    def _folder_rec(id, name, comment, role, parent_id, system_idx=-1, hidden=False):
         return {
             'id': id,
             'role': role,
             'collection': 'folders',
             'parent_id': parent_id,
+            'system_idx': system_idx,
+            'hidden': hidden,
             'PidTagDisplayName': name,
             'PidTagComment': comment
         }

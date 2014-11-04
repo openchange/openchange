@@ -411,18 +411,35 @@ class FolderObject(object):
         conn = _RESTConn.get_instance()
 
         role_properties = {}
+        role_properties[mapistore.ROLE_MAIL] = { 'PidTagContainerClass': 'IPF.Note',
+                                                 'PidTagMessageClass': 'IPM.Note',
+                                                 'PidTagDefaultPostMessageClass': 'IPM.Note' }
+        role_properties[mapistore.ROLE_OUTBOX] = role_properties[mapistore.ROLE_MAIL]
+        role_properties[mapistore.ROLE_SENTITEMS] = role_properties[mapistore.ROLE_MAIL]
+        role_properties[mapistore.ROLE_DELETEDITEMS] = role_properties[mapistore.ROLE_MAIL]
+        role_properties[mapistore.ROLE_DRAFTS] = role_properties[mapistore.ROLE_MAIL]
         role_properties[mapistore.ROLE_CALENDAR] = { 'PidTagContainerClass': 'IPF.Appointment',
                                                      'PidTagMessageClass': 'IPM.Appointment',
                                                      'PidTagDefaultPostMessageClass': 'IPM.Appointment' }
         role_properties[mapistore.ROLE_CONTACTS] = { 'PidTagContainerClass': 'IPF.Contact',
                                                      'PidTagMessageClass': 'IPM.Contact',
                                                      'PidTagDefaultPostMessageClass': 'IPM.Contact'}
+        role_properties[mapistore.ROLE_TASKS] = { 'PidTagContainerClass': 'IPF.Task',
+                                                  'PidTagMessageClass': 'IPM.Task',
+                                                  'PidTagDefaultPostMessageClass': 'IPM.Task'}
+        role_properties[mapistore.ROLE_NOTES] = { 'PidTagContainerClass': 'IPF.StickyNote',
+                                                  'PidTagMessageClass': 'IPM.StickyNote',
+                                                  'PidTagDefaultPostMessageClass': 'IPM.StickyNote'}
+        role_properties[mapistore.ROLE_JOURNAL] = { 'PidTagContainerClass': 'IPF.Journal',
+                                                    'PidTagMessageClass': 'IPM.Journal',
+                                                    'PidTagDefaultPostMessageClass': 'IPM.Journal'}
+        role_properties[mapistore.ROLE_FALLBACK] = role_properties[mapistore.ROLE_MAIL]
         properties = self.properties.copy()
         properties['PidTagFolderId'] = self.folderID
-        properties['PidTagDisplayName'] = "REST-" + str(self.properties['PidTagDisplayName'])
+        properties['PidTagDisplayName'] = str(self.properties['PidTagDisplayName'])
         properties['PidTagComment'] = str(self.properties['PidTagComment'])
         properties['PidTagFolderType'] = mapistore.FOLDER_GENERIC
-        properties['PidTagAccess'] = PidTagAccessFlag.Read|PidTagAccessFlag.HierarchyTable|PidTagAccessFlag.ContentsTable
+        properties['PidTagAccess'] = PidTagAccessFlag.Read|PidTagAccessFlag.HierarchyTable|PidTagAccessFlag.ContentsTable|PidTagAccessFlag.AssocContentsTable
         properties['PidTagCreationTime'] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
         properties['PidTagLastModificationTime'] = properties['PidTagCreationTime']
         properties["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
@@ -859,14 +876,43 @@ if __name__ == '__main__':
 
         ictx = _Indexing(username)
         backend = BackendObject()
+
+        # Provision root folders (/folders/0/)
+        conn = _RESTConn.get_instance()
+        folders = conn.get_folders('/folders/0/', [])
+        for folder in folders:
+            url = '/folders/%d/' % int(folder['id'])
+            furl = '%s%s' % (BackendObject.namespace, url)
+            folder_id = ictx.add_uri(url)
+            c.insert("INSERT INTO folders (ou_id,folder_id,folder_class,mailbox_id,"
+                     "parent_folder_id,FolderType,SystemIdx,MAPIStoreURI) VALUES "
+                     "(%s, %s, \"system\", %s, NULL, 1, %s, %s)",
+                     (ou_id, folder_id, mailbox_id, folder['system_idx'], furl))
+
+            rows = c.select("SELECT MAX(id) FROM folders")
+            fid = rows[0][0]
+
+            (ret,ctx) = backend.create_context(url, username)
+            (ret,fld) = ctx.get_root_folder(folder_id)
+
+            props = fld.get_properties(None)
+
+            for prop in props:
+                c.insert("INSERT INTO folders_properties (folder_id, name, value) VALUES (%s, %s, %s)", (fid, prop, props[prop]))
+                c.insert("INSERT INTO folders_properties (folder_id, name, value) VALUES (%s, \"PidTagParentFolderId\", %s)", (fid, parent_id))
+
+        # Provision folders under Top of Information Store (/folders/1/)
         contexts = backend.list_contexts(username)
         for context in contexts:
             folder_id = ictx.add_uri(context["url"])
+            if context['role'] == mapistore.ROLE_FALLBACK:
+                continue
+
             print "%d" % long(folder_id)
             c.insert("INSERT INTO folders (ou_id,folder_id,folder_class,mailbox_id,"
                      "parent_folder_id,FolderType,SystemIdx,MAPIStoreURI) VALUES "
-                     "(%s, %s, \"system\", %s, %s, 1, -1, %s)",
-                     (ou_id, folder_id, mailbox_id, system_id, context["url"]))
+                     "(%s, %s, \"system\", %s, %s, 1, %s, %s)",
+                     (ou_id, folder_id, mailbox_id, system_id, context["system_idx"], context["url"]))
 
             rows = c.select("SELECT MAX(id) FROM folders")
             fid = rows[0][0]

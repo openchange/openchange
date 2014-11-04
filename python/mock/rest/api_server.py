@@ -28,6 +28,7 @@ from flask import (Flask,
                    send_from_directory)
 from flask.ctx import after_this_request
 from handler.kissHandler import ApiHandler
+from openchange import mapistore
 
 app = Flask(__name__)
 app.config.from_object(__name__)
@@ -59,9 +60,17 @@ def module_info():
             'url': '/folders/%s/' % folder['id'],
             'role': folder['role'],
             'name': folder['PidTagDisplayName'],
-            'main_folder': True
+            'main_folder': True,
+            'system_idx': folder['system_idx']
         }
     contexts = [_contexts_info(ctx) for ctx in ret_val['contexts']]
+    contexts.append({
+        'url': '/folders/',
+        'role': mapistore.ROLE_FALLBACK,
+        'name': 'Fallback',
+        'main_folder': True,
+        'sytem_idx': str(-1)
+    })
     ret_val['contexts'] = contexts
     handler.close_context()
     return jsonify(ret_val)
@@ -104,7 +113,7 @@ def module_folders_head_folders(folder_id):
 
 @app.route('/folders/', methods=['GET'])
 @app.route('/folders/<int:folder_id>/folders', methods=['GET'])
-def module_folders_get_folders(folder_id=0):
+def module_folders_get_folders(folder_id=1):
     """List root level folders"""
     properties = request.args.get('properties')
     if properties is None:

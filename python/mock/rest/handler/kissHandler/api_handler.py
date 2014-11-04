@@ -45,7 +45,10 @@ class ApiHandler(object):
         """get static description for this handler implementation"""
         # build main folders list
         folders = self._db.get_folders()
-        contexts = [folders[i] for i in folders if i < 100]
+        contexts = []
+        for i in folders:
+            if i < 100 and folders[i]['parent_id'] == 1:
+                contexts.append(folders[i])
         return {
             'name': ApiHandler.NAME,
             'version': ApiHandler.VERSION,
@@ -64,13 +67,13 @@ class ApiHandler(object):
         folder_obj = fold_dict[folder_id]
         return self._folder_rec(folder_obj, fold_dict)
 
-    def folders_dir(self, parent_folder_id=0):
+    def folders_dir(self, parent_folder_id=1):
         """List child folders for a given folder ID
         :param int parent_folder_id: Folder to enumerate
         :return list: List of folder records
         """
         fold_dict = self._db.get_folders()
-        if parent_folder_id != 0 and not (parent_folder_id in fold_dict):
+        if parent_folder_id != 1 and not (parent_folder_id in fold_dict):
             raise KeyError('No folder with id = %d' % parent_folder_id)
 
         return [self._folder_rec(f, fold_dict)

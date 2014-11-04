@@ -115,7 +115,8 @@ class CrashDigger(object):
                                                          project=tracker_conf.get('project_id', None),
                                                          component_conf=tracker_conf.get('component_conf', {}),
                                                          custom_fields=tracker_conf.get('custom_fields', []),
-                                                         reporter_field=tracker_conf.get('reporter_field', None))
+                                                         reporter_field=tracker_conf.get('reporter_field', None),
+                                                         status=tracker_conf.get('status', {}))
                         except ImportError:
                             self.log("WARNING: python-redmine module is not installed")
                             # No redmine

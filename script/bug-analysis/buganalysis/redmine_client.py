@@ -28,7 +28,7 @@ class RedmineClient(object):
     """Wrapper to manage redmine integration"""
 
     def __init__(self, url, key, project=None, component_conf={},
-                 custom_fields=[], reporter_field=None):
+                 custom_fields=[], reporter_field=None, status={}):
         """Initialise the client
 
         :param str url: the URL where the redmine is hosted
@@ -40,6 +40,13 @@ class RedmineClient(object):
         :param list custom_fields: the custom fields that are mandatory to set
                                    when creating the issue.
         :param dict reporter_field: field to set reporter email
+
+        :param dict status: indicate which are valid closed status
+                            identifiers and reopened status
+                            identifiers for reopening closed issues
+                            once a new duplicate is uploaded.
+                            *closed* is a tuple with valid closed status ids
+                            *reopened* is the status to go after reopening an issue
         """
         self.redmine = redmine.Redmine(url, key=key)
         self.project = project
@@ -53,6 +60,14 @@ class RedmineClient(object):
             self.tracker_id = tracker_elems[0]['id']
         else:
             self.tracker_id = None
+
+        self.status = None
+        # Make sure closed and reopened are consistent
+        if 'closed' in status and 'reopened' in status:
+            self.status = status
+            # Make sure an iterable is always used for closed status
+            if not hasattr(self.status['closed'], '__contains__'):
+                self.status['closed'] = (self.status['closed'],)
 
     def create_issue(self, id, report, comps=None, reporter=None):
         """Create a new issue based on a report.
@@ -141,10 +156,17 @@ class RedmineClient(object):
         try:
             self.redmine.issue.update(issue_id,
                                       notes=note)
-            return True
         except redmine.exceptions.ResourceNotFoundError:
             # We cannot add the duplicate
             return False
+
+        # Re-open the issue if it closed
+        if self.status is not None:
+            issue = self.redmine.issue.get(issue_id)
+            if issue.status.id in self.status['closed']:
+                self.redmine.issue.update(issue_id,
+                                          status_id=self.status['reopened'])
+        return True
 
     # Helper methods to dump info to Redmine in plain text
     def _dump_distro_release(self, report):

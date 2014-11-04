@@ -307,6 +307,21 @@ class BackendObject(object):
 
         return info['contexts']
 
+    def create_root_folder(self, username, name, fid):
+        """ Create a root folder
+        """
+        logger.info('[PYTHON]: [%s] backend.create_root_folder()' % (self.name))
+        conn = _RESTConn.get_instance()
+        props = {}
+        props['PidTagDisplayName'] = name
+        rid = conn.create_folder(1, props)
+        base_url = '/folders/%s/' % rid['id']
+        uri = '%s%s' % (BackendObject.namespace, base_url)
+
+        indexing = _Indexing(username)
+        indexing.add_uri_with_fmid(uri, fid)
+        return (mapistore.errors.MAPISTORE_SUCCESS, uri)
+
     def create_context(self, uri, username):
         """ Create a REST context.
         """

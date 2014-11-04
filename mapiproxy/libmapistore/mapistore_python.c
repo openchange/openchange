@@ -916,6 +916,133 @@ static enum mapistore_error mapistore_python_backend_create_context(TALLOC_CTX *
 
 
 /**
+   \details Create a root folder
+
+   \param mem_ctx pointer to the memory context
+   \param module_name the name of the module
+   \param username the username for who we create the folder
+   \param ctx_role the mapistore context role of the folder
+   \param fid the folder identifier of the folder
+   \param name the name of the folder
+   \param mapistore_urip pointer on pointer the mapistore URI to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+*/
+static enum mapistore_error mapistore_python_backend_create_root_folder(TALLOC_CTX *mem_ctx,
+									const char *module_name,
+									const char *username,
+									enum mapistore_context_role role,
+									uint64_t fid,
+									const char *name,
+									char **mapistore_urip)
+{
+	PyObject	*module;
+	PyObject	*backend, *pres, *pinst;
+	PyObject	*res;
+	long		l;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!module_name, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(!mapistore_urip, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Import the module */
+	module = PyImport_ImportModule(module_name);
+	if (module == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to load python module: ", module_name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve backend object */
+	backend = PyObject_GetAttrString(module, "BackendObject");
+	if (backend == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to retrieve BackendObject\n", module_name, __location__));
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Instantiate BackendObject and implicitly call __init__ */
+	pinst = PyObject_CallFunction(backend, NULL);
+	if (pinst == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: __init__ failed\n", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Call create_root_folder function */
+	pres = PyObject_CallMethod(pinst, "create_root_folder", "ssK", username, name, fid);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: create_root_folder failed\n", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in create_root_folder\n",
+			  module_name, __location__));
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve return value (item 0 of the tuple) */
+	res = PyTuple_GetItem(pres, 0);
+	if (res == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	l = PyLong_AsLong(res);
+	if (l == -1) {
+		DEBUG(0, ("[ERR][%s][%s]: Overflow error\n", module_name, __location__));
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Retrieve mapistore URI (item 1 of the tuple) */
+	res = PyTuple_GetItem(pres, 1);
+	if (res == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", module_name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+	*mapistore_urip = talloc_strdup(mem_ctx, PyString_AsString(res));
+	if (*mapistore_urip == NULL) {
+		PyErr_Print();
+		Py_DECREF(pres);
+		Py_DECREF(pinst);
+		Py_DECREF(backend);
+		Py_DECREF(module);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
    \details Open a root folder
 
    \param mem_ctx pointer to the memory context
@@ -3780,7 +3907,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.backend.init = mapistore_python_backend_init;
 	backend.backend.list_contexts = mapistore_python_backend_list_contexts;
 	backend.backend.create_context = mapistore_python_backend_create_context;
-	/* backend.backend.create_root_folder = mapistore_python_backend_create_root_folder; */
+	backend.backend.create_root_folder = mapistore_python_backend_create_root_folder;
 
 	/* context */
 	backend.context.get_path = mapistore_python_context_get_path;

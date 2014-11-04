@@ -423,7 +423,7 @@ enum mapistore_error mapistore_backend_create_root_folder(const char *username, 
 	int				i;
 
 	for (i = 0; retval == MAPISTORE_ERR_NOT_FOUND && i < num_backends; i++) {
-		retval = backends[i].backend->backend.create_root_folder(username, ctx_role, fid, name, mem_ctx, mapistore_urip);
+		retval = backends[i].backend->backend.create_root_folder(mem_ctx, backends[i].backend->backend.name, username, ctx_role, fid, name, mapistore_urip);
 	}
 
 	return retval;

@@ -585,6 +585,7 @@ class FolderObject(ContextObject):
         folder["fid"] = folderID
         folder["properties"] = {}
         folder["properties"]["PidTagFolderId"] = folder["fid"]
+        folder["properties"]["PidTagParentFolderId"] = self.basedict["fid"]
         if properties.has_key("PidTagDisplayName"):
             folder["properties"]["PidTagDisplayName"] = properties["PidTagDisplayName"]
         if properties.has_key("PidTagComment"):
@@ -594,6 +595,8 @@ class FolderObject(ContextObject):
         folder["message_cache"] = []
 
         self.basedict["subfolders"].append(folder)
+        self.basedict["properties"]["PidTagChildFolderCount"] = len(self.basedict["subfolders"])
+        self.basedict["properties"]["PidTagSubfolders"] = len(self.basedict["subfolders"]) > 0
 
         return (0, FolderObject(folder, self.basedict, folderID, self.folderID))
 
@@ -605,6 +608,9 @@ class FolderObject(ContextObject):
 
         if self.basedict in self.parentdict["subfolders"]:
             self.parentdict["subfolders"].remove(self.basedict)
+            child_folder_count = len(self.parentdict["subfolders"])
+            self.parentdict["properties"]["PidTagChildFolderCount"] = child_folder_count
+            self.parentdict["properties"]["PidTagSubfolders"] = child_folder_count > 0
             return 0
         return 17
 
@@ -652,6 +658,7 @@ class FolderObject(ContextObject):
 
     def create_message(self, mid, associated):
         print '[PYTHON]: %s folder.create_message()' % self.name
+
         newmsg = {}
         newmsg["recipients"] = []
         newmsg["attachments"] = []
@@ -660,8 +667,10 @@ class FolderObject(ContextObject):
         newmsg["next_aid"] = 0
         newmsg["attachment_cache"] = []
         newmsg["properties"] = {}
-        newmsg["properties"]["PidTagMessageId"] = newmsg["mid"]
+        newmsg["properties"]["PidTagMid"] = mid
+        newmsg["properties"]["PidTagFolderId"] = self.basedict["properties"]["PidTagFolderId"]
         self.basedict["message_cache"].append(newmsg)
+
         return MessageObject(newmsg, self, mid, 1)
 
     def delete_message(self, mid):
@@ -673,6 +682,7 @@ class FolderObject(ContextObject):
             if msg["properties"]["PidTagMid"] == mid:
                 found = True
                 self.basedict["messages"].remove(msg)
+                self.basedict["properties"]["PidTagContentCount"] = len(self.basedict["messages"])
 
         for cached_msg in self.basedict["message_cache"]:
             found = True
@@ -694,9 +704,11 @@ class FolderObject(ContextObject):
                 found = True
 
                 new_mid = target_mids[source_mids.index(mid)]
+                msg["properties"]["PidTagFolderId"] = target_folder.basedict["properties"]["PidTagFolderId"]
                 msg["properties"]["PidTagMid"] = new_mid
                 msg["mid"] = new_mid
                 target_folder.basedict["messages"].append(msg)
+                target_folder.basedict["properties"]["PidTagContentCount"] = len(target_folder.basedict["messages"])
 
                 if not want_copy:
                     self.delete_message(mid)
@@ -727,6 +739,8 @@ class FolderObject(ContextObject):
         if not recursive:
             folder["subfolders"] = []
         target_folder.basedict["subfolders"].append(folder)
+        target_folder.basedict["PidTagChildFolderCount"] = len(target_folder.basedict["subfolders"])
+        target_folder.basedict["PidTagSubfolders"] = len(target_folder.basedict["subfolders"]) > 0
         return 0
 
     def get_properties(self, properties):
@@ -831,6 +845,7 @@ class MessageObject(BackendObject):
                 self.folder.basedict["messages"].remove(msg)
 
         self.folder.basedict["messages"].append(self.basedict.copy())
+        self.folder.basedict["properties"]["PidTagContentCount"] = len(self.folder.basedict["messages"])
         return 0
 
     def _count_attachments(self):
@@ -863,6 +878,7 @@ class MessageObject(BackendObject):
         newatt["attachid"] = attach_id
         newatt["properties"] = {}
         newatt["properties"]["PidTagAttachNumber"] = attach_id
+        newatt["properties"]["PidTagMid"] = self.basedict["properties"]["PidTagMid"]
 
         self.basedict["attachment_cache"].append(newatt)
         self.basedict["next_aid"] = attach_id + 1
@@ -882,6 +898,8 @@ class MessageObject(BackendObject):
             if cached_att["attachid"] == attach_id:
                 found = True
                 self.basedict["attachment_cache"].remove(cached_att)
+        self.basedict["PidTagContentCount"] = len(self.basedict["attachments"])
+        self.basedict["properties"]["PidTagHasAttachments"] = len(self.basedict["attachments"]) > 0
         if found:
             return 0
         return 17
@@ -921,6 +939,8 @@ class AttachmentObject(BackendObject):
                 self.message.basedict["attachments"].remove(att)
 
         self.message.basedict["attachments"].append(self.basedict.copy())
+        self.message.basedict["properties"]["PidTagContentCount"] = len(self.message.basedict["attachments"])
+        self.message.basedict["properties"]["PidTagHasAttachments"] = len(self.message.basedict["attachments"]) > 0
         return 0
 
     def get_properties(self, properties):

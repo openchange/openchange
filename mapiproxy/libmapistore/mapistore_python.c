@@ -1654,6 +1654,137 @@ static enum mapistore_error mapistore_python_folder_move_copy_messages(void *tar
 }
 
 /**
+   \details Move a subfolder into another parent folder
+
+   \param move_folder the subfolder that is moved between parents
+   \param target_folder the parent folder after the operation
+   \param new_folder_name the name of the moved folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_move_folder(void *move_folder,
+								void *target_folder,
+								TALLOC_CTX *mem_ctx,
+								const char *new_folder_name)
+{
+	struct mapistore_python_object		*mv_pyobj;
+	struct mapistore_python_object		*tgt_pyobj;
+	PyObject				*mv_folder;
+	PyObject				*tgt_folder;
+	PyObject				*pres;
+	enum mapistore_error			retval;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!move_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!target_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder objects */
+	mv_pyobj = (struct mapistore_python_object *) move_folder;
+	MAPISTORE_RETVAL_IF(!mv_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((mv_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	mv_folder = (PyObject *)mv_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!mv_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", mv_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_pyobj = (struct mapistore_python_object *) target_folder;
+	MAPISTORE_RETVAL_IF(!tgt_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((tgt_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_folder = (PyObject *)tgt_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!tgt_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", tgt_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the move_folder method */
+	pres = PyObject_CallMethod(mv_folder, "move_folder", "Os", tgt_folder, new_folder_name);
+	Py_DECREF(tgt_folder);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  mv_pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
+
+/**
+   \details Copy a subfolder into another parent folder
+
+   \param move_folder the subfolder that is copied between parents
+   \param target_folder the parent folder of the copy
+   \param recursive the flag that indicates if the contents of the
+   folder are also copied
+   \param new_folder_name the name of the copied folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_copy_folder(void *move_folder,
+								void *target_folder,
+								TALLOC_CTX *mem_ctx,
+								bool recursive,
+								const char *new_folder_name)
+{
+	struct mapistore_python_object		*cp_pyobj;
+	struct mapistore_python_object		*tgt_pyobj;
+	PyObject				*cp_folder;
+	PyObject				*tgt_folder;
+	PyObject				*pres;
+	enum mapistore_error			retval;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!move_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!target_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder objects */
+	cp_pyobj = (struct mapistore_python_object *) move_folder;
+	MAPISTORE_RETVAL_IF(!cp_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((cp_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	cp_folder = (PyObject *)cp_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!cp_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", cp_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_pyobj = (struct mapistore_python_object *) target_folder;
+	MAPISTORE_RETVAL_IF(!tgt_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((tgt_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_folder = (PyObject *)tgt_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!tgt_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", tgt_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the move_folder method */
+	pres = PyObject_CallMethod(cp_folder, "copy_folder", "OHs", tgt_folder, (uint16_t)recursive, new_folder_name);
+	Py_DECREF(tgt_folder);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  cp_pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
+
+/**
    \details Retrieve the number of children object of a given type
    within a folder
 
@@ -3663,6 +3794,8 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.create_message = mapistore_python_folder_create_message;
 	backend.folder.delete_message = mapistore_python_folder_delete_message;
 	backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages;
+	backend.folder.move_folder = mapistore_python_folder_move_folder;
+	backend.folder.copy_folder = mapistore_python_folder_copy_folder;
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
 	backend.folder.get_child_count = mapistore_python_folder_get_child_count;
 	backend.folder.open_table = mapistore_python_folder_open_table;

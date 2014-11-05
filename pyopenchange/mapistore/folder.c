@@ -447,7 +447,7 @@ static PyObject *py_MAPIStoreFolder_create_message(PyMAPIStoreFolderObject *self
 	}
 
 	/* Get the MID for the new message */
-	retval = mapistore_indexing_reserve_fmid_range(self->context->mstore_ctx, 1, &mid);
+	retval = mapistore_indexing_get_new_folderID(self->context->mstore_ctx, &mid);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
 		return NULL;
@@ -629,7 +629,7 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 		return NULL;
 	}
 
-	source_mids = talloc_array(mem_ctx, uint64_t,count);
+	source_mids = talloc_zero_array(mem_ctx, uint64_t,count);
 	if (source_mids == NULL) {
 		PyErr_NoMemory();
 		goto end;
@@ -663,7 +663,7 @@ static PyObject *py_MAPIStoreFolder_copy_messages(PyMAPIStoreFolderObject *self,
 	}
 
 	/* Build target MID list */
-	target_mids = talloc_array(mem_ctx, uint64_t, count);
+	target_mids = talloc_zero_array(mem_ctx, uint64_t, count);
 	if (target_mids == NULL) {
 		PyErr_NoMemory();
 		goto end;

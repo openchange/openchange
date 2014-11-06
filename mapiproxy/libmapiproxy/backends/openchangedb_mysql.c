@@ -1289,7 +1289,8 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 		value = row->lpProps + i;
 		tag = value->ulPropTag;
 		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY || tag == PR_PARENT_SOURCE_KEY ||
-		    tag == PR_CREATION_TIME || tag == PR_LAST_MODIFICATION_TIME) {
+		    tag == PR_CREATION_TIME || tag == PR_LAST_MODIFICATION_TIME ||
+		    tag == PidTagChangeNumber) {
 			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", tag));
 			continue;
 		}

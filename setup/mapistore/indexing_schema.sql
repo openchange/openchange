@@ -11,6 +11,18 @@ CREATE TABLE IF NOT EXISTS `mapistore_indexing` (
 ENGINE = InnoDB;
 
 -- -----------------------------------------------------
+-- Indexes from `mapistore_indexing`
+-- -----------------------------------------------------
+CREATE INDEX `mapistore_indexing_username_idx` ON `mapistore_indexing`
+  (`username`(255) ASC);
+
+CREATE INDEX `mapistore_indexing_username_url_idx` ON `mapistore_indexing`
+  (`username`(255) ASC, `url`(255) ASC);
+
+CREATE INDEX `mapistore_indexing_username_fmid_idx` ON `mapistore_indexing`
+  (`username`(255) ASC, `fmid` ASC);
+
+-- -----------------------------------------------------
 -- Table `mapistore_indexes`
 -- -----------------------------------------------------
 CREATE TABLE IF NOT EXISTS `mapistore_indexes` (
@@ -20,4 +32,8 @@ CREATE TABLE IF NOT EXISTS `mapistore_indexes` (
   PRIMARY KEY (`id`))
 ENGINE = InnoDB;
 
-
+-- -----------------------------------------------------
+-- Indexes from `mapistore_indexes`
+-- -----------------------------------------------------
+CREATE INDEX `mapistore_indexes_username_idx` ON `mapistore_indexes`
+  (`username`(255) ASC);

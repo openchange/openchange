@@ -115,7 +115,8 @@ class CrashDigger(object):
                                                          project=tracker_conf.get('project_id', None),
                                                          component_conf=tracker_conf.get('component_conf', {}),
                                                          custom_fields=tracker_conf.get('custom_fields', []),
-                                                         reporter_field=tracker_conf.get('reporter_field', None))
+                                                         reporter_field=tracker_conf.get('reporter_field', None),
+                                                         status=tracker_conf.get('status', {}))
                         except ImportError:
                             self.log("WARNING: python-redmine module is not installed")
                             # No redmine
@@ -309,6 +310,9 @@ class CrashDigger(object):
                 if readable_stacktrace(report):
                     valid_stacktrace = True
                     break
+            elif self.gdb:
+                # Run gdb just once
+                break
 
         if self.upload or self.stacktrace_file:
             if not valid_stacktrace:
@@ -341,7 +345,7 @@ class CrashDigger(object):
                         crash_file_url = 'file://' + os.path.abspath(crash_file)
                         self.crashdb.add_client_side_duplicate(master_id,
                                                                crash_file_url)
-                        self.add_duplicate_tracker(master_id, crash_file_url)
+                        self.add_duplicate_tracker(report, master_id, crash_file_url)
 
                     if self.notified_email and self.tracker and 'email' in self.oc_cd_conf:
                         if master_id:
@@ -516,10 +520,11 @@ class CrashDigger(object):
             self.crashdb.set_tracker_url(crash_id, issue.url)
             self.log("Create a new issue: %s" % issue.url)
 
-    def add_duplicate_tracker(self, crash_id, dup_crash_url):
+    def add_duplicate_tracker(self, report, crash_id, dup_crash_url):
         """Add a duplicate note entry to the tracker using tracker
         configuration available in oc-cd-conf parameter.
 
+        :param Report report: the duplicated crash report
         :param int crash_id: the crash identifier in the DB
         :param str dup_crash_url: the duplicated crash URL
         """
@@ -527,7 +532,7 @@ class CrashDigger(object):
             issue_url = self.crashdb.get_tracker_url(crash_id)
             if issue_url:  # Check there is a tracker issue
                 _, issue_id = issue_url.rsplit('/', 1)
-                ret = self.tracker.add_duplicate(issue_id, dup_crash_url)
+                ret = self.tracker.add_duplicate(report, issue_id, dup_crash_url)
                 if ret:
                     self.log("Adding duplicate to: %s" % issue_url)
                 else:

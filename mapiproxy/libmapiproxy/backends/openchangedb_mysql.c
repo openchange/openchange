@@ -45,7 +45,7 @@ static enum MAPISTATUS _not_implemented(const char *caller) {
 }
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
 
-// Status map from MYSQL methods
+/* Status map from MYSQL methods */
 static enum MAPISTATUS status(enum MYSQLRESULT ret) {
 	switch (ret) {
 	case MYSQL_SUCCESS: return MAPI_E_SUCCESS;
@@ -53,6 +53,11 @@ static enum MAPISTATUS status(enum MYSQLRESULT ret) {
 	default: return MAPI_E_CALL_FAILED;
 	}
 };
+
+/* forward declaration */
+static enum MAPISTATUS transaction_start(struct openchangedb_context *self);
+static enum MAPISTATUS transaction_rollback(struct openchangedb_context *self);
+static enum MAPISTATUS transaction_commit(struct openchangedb_context *self);
 
 // v openchangedb -------------------------------------------------------------
 static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
@@ -1284,7 +1289,8 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 		value = row->lpProps + i;
 		tag = value->ulPropTag;
 		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY || tag == PR_PARENT_SOURCE_KEY ||
-		    tag == PR_CREATION_TIME || tag == PR_LAST_MODIFICATION_TIME) {
+		    tag == PR_CREATION_TIME || tag == PR_LAST_MODIFICATION_TIME ||
+		    tag == PidTagChangeNumber) {
 			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", tag));
 			continue;
 		}
@@ -1343,28 +1349,42 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 		"DELETE FROM %s WHERE %s = %"PRIu64" AND name IN (%s)",
 		table, column_id, id, names_for_sql);
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	transaction_start(self);
 	retval = status(execute_query(conn, sql));
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
+	if (retval != MAPI_E_SUCCESS) goto end;
 
 	// Insert new values
 	values_for_sql = talloc_asprintf(mem_ctx, "(%"PRIu64", '%s', '%s')",
 					 id, _sql(mem_ctx, names[0]),
 					 _sql(mem_ctx, values[0]));
-	OPENCHANGE_RETVAL_IF(!values_for_sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (values_for_sql == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	for (i = 1; names[i]; i++) {
 		values_for_sql = talloc_asprintf_append_buffer(values_for_sql,
 			",(%"PRIu64", '%s', '%s')", id, _sql(mem_ctx, names[i]),
 			_sql(mem_ctx, values[i]));
-		OPENCHANGE_RETVAL_IF(!values_for_sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+		if (values_for_sql == NULL) {
+			retval = MAPI_E_NOT_ENOUGH_MEMORY;
+			goto end;
+		}
 	}
 	sql = talloc_asprintf(mem_ctx, "INSERT INTO %s VALUES %s", table, values_for_sql);
-	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (sql == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	retval = status(execute_query(conn, sql));
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
-
+end:
+	if (retval == MAPI_E_SUCCESS) {
+		transaction_commit(self);
+	} else {
+		transaction_rollback(self);
+	}
 	talloc_free(mem_ctx);
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 static enum MAPISTATUS get_table_property(TALLOC_CTX *parent_ctx,
@@ -1833,55 +1853,102 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 		}
 	}
 	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	transaction_start(self);
 	retval = status(execute_query(conn, sql));
-	// FIXME return MAPI_E_COLLISION if applies
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
+	if (retval != MAPI_E_SUCCESS) goto end;
 
 	// Insert mailboxes properties
 	l = (const char **) str_list_make_empty(mem_ctx);
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagContentUnreadCount', '0')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagContentCount', '0')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeHidden', '0')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeSystem', '0')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAttributeReadOnly', '0')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	/* FIXME: PidTagAccess and PidTagRights are user-specific */
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagAccess', '63')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	l = str_list_add(l, "(LAST_INSERT_ID(), 'PidTagRights', '2043')");
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	value = talloc_asprintf(mem_ctx,
 		"(LAST_INSERT_ID(), 'PidTagCreationTime', '%"PRId64"')", now);
-	OPENCHANGE_RETVAL_IF(!value, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (value == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	l = str_list_add(l, value);
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	value = talloc_asprintf(mem_ctx,
 		"(LAST_INSERT_ID(), 'PidTagChangeNumber', '%"PRIu64"')", change_number);
-	OPENCHANGE_RETVAL_IF(!value, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (value == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	l = str_list_add(l, value);
-	OPENCHANGE_RETVAL_IF(!l, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (l == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 
 	values_sql = str_list_join(mem_ctx, l, ',');
-	OPENCHANGE_RETVAL_IF(!values_sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (values_sql == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	sql = talloc_asprintf(mem_ctx,
 		"INSERT INTO folders_properties VALUES %s", values_sql);
-	OPENCHANGE_RETVAL_IF(!sql, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	if (sql == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto end;
+	}
 	retval = status(execute_query(conn, sql));
-
+end:
+	if (retval == MAPI_E_SUCCESS) {
+		transaction_commit(self);
+	} else {
+		transaction_rollback(self);
+	}
 	talloc_free(mem_ctx);
 	return retval;
 }

@@ -781,6 +781,7 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/openchangedb_named_properties.po	\
 							mapiproxy/libmapiproxy/backends/openchangedb_ldb.po	\
 							mapiproxy/libmapiproxy/backends/openchangedb_mysql.po	\
+							mapiproxy/libmapiproxy/backends/openchangedb_logger.po	\
 							mapiproxy/libmapiproxy/mapi_handles.po			\
 							mapiproxy/libmapiproxy/entryid.po			\
 							mapiproxy/libmapiproxy/modules.po			\
@@ -1339,6 +1340,8 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapiproxy/openchangedb.c				\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c					\
+				testsuite/libmapiproxy/openchangedb_logger.c		\
+				mapiproxy/libmapiproxy/backends/openchangedb_logger.c \
 				testsuite/libmapi/mapi_property.c					\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)

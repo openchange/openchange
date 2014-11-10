@@ -242,7 +242,7 @@ if __name__ == "__main__":
     parser.add_option("--users", action="store_true", help="List active openchange users")
     parser.add_option("--dry-run", action="store_true", help="Do not perform any action")
     parser.add_option("--ignore", action="append", help=("Ignore to perform some cleaner"
-                      "actions. The ones that exist are: openchange, sogo, imap"))
+                      " actions. The ones that exist are: openchange, sogo, imap"))
     opts, args = parser.parse_args()
 
     samba_helper = SambaOCHelper()

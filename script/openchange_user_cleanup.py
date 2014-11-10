@@ -62,7 +62,8 @@ class SambaOCHelper(object):
 
 
 class ImapCleaner(object):
-    def __init__(self, imap_host="127.0.0.1", imap_port=143, dry_run=False, samba_helper=SambaOCHelper()):
+    def __init__(self, imap_host="127.0.0.1", imap_port=143, dry_run=False,
+                 samba_helper=SambaOCHelper()):
         self.imap_host = imap_host
         self.imap_port = imap_port
         self.dry_run = dry_run
@@ -175,38 +176,41 @@ class SOGoCleaner(object):
         return "".join(new_chars)
 
     def sogo_mysql_cleanup(self, dbhost, dbport, dbuser, dbpass, dbname, username):
-        conn = MySQLdb.connect(host=dbhost, port=int(dbport), user=dbuser, passwd=dbpass, db=dbname)
+        conn = MySQLdb.connect(host=dbhost, port=int(dbport), user=dbuser, passwd=dbpass,
+                               db=dbname)
         c = conn.cursor()
         tablename = "sogo_cache_folder_%s" % self._as_css_id(username)
         if not self.dry_run:
             c.execute("TRUNCATE TABLE %s" % tablename)
         print " [SOGo MySQL] Table %s deleted" % tablename
 
-    def _get_OCSFolderInfoURL(self):
-        OCSFolderInfoURL = ""
+    def _get_connection_url(self):
+        connection_url = None
         # read defaults from defaults files
         # order is important, user defaults must have precedence
         for f in [self.system_defaults_file, self.user_defaults_file]:
           if os.path.exists(f):
-            p1 = subprocess.Popen(["sogo-tool", "dump-defaults", "-f", f], stdout=subprocess.PIPE)
-            p2 = subprocess.Popen(["awk", "-F\"", "/ OCSFolderInfoURL =/ {print $2}"], stdin=p1.stdout, stdout=subprocess.PIPE)
+            p1 = subprocess.Popen(["sogo-tool", "dump-defaults", "-f", f],
+                                  stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(["awk", "-F\"", "/ OCSFolderInfoURL =/ {print $2}"],
+                                  stdin=p1.stdout, stdout=subprocess.PIPE)
             p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
             tmp = p2.communicate()[0]
             if tmp:
-                OCSFolderInfoURL = tmp
-        return OCSFolderInfoURL
+                connection_url = tmp
+        return connection_url
 
     def cleanup(self, username):
         print "===== SOGo cleanup ====="
-        OCSFolderInfoURL = self._get_OCSFolderInfoURL()
-        if OCSFolderInfoURL is None:
+        connection_url = self._get_connection_url()
+        if connection_url is None:
             raise Exception("Couldn't fetch OCSFolderInfoURL")
 
         # mysql://sogo:sogo@127.0.0.1:5432/sogo/sogo_folder_info
-        m = re.search("(.+)://(.+):(.+)@(.+):(\d+)/(.+)/(.+)", OCSFolderInfoURL)
+        m = re.search("(.+)://(.+):(.+)@(.+):(\d+)/(.+)/(.+)", connection_url)
         if not m:
             raise Exception("ERROR Unable to parse OCSFolderInfoURL: %s" %
-                            OCSFolderInfoURL)
+                            connection_url)
 
         dbuser = m.group(2)
         dbpass = m.group(3)
@@ -220,8 +224,10 @@ class SOGoCleaner(object):
 
 if __name__ == "__main__":
 
-    def cleanup(username, samba_helper, dry_run=False):
+    def cleanup(username, samba_helper, ignore=[], dry_run=False):
         for klass in (OpenchangeCleaner, SOGoCleaner, ImapCleaner):
+            if klass.__name__.split('Cleaner')[0].lower() in ignore:
+                continue
             cleaner = klass(dry_run=dry_run, samba_helper=samba_helper)
             try:
                 cleaner.cleanup(username)
@@ -235,6 +241,8 @@ if __name__ == "__main__":
     parser = optparse.OptionParser("%s [options] <username>" % os.path.basename(sys.argv[0]))
     parser.add_option("--users", action="store_true", help="List active openchange users")
     parser.add_option("--dry-run", action="store_true", help="Do not perform any action")
+    parser.add_option("--ignore", action="append", help=("Ignore to perform some cleaner"
+                      "actions. The ones that exist are: openchange, sogo, imap"))
     opts, args = parser.parse_args()
 
     samba_helper = SambaOCHelper()
@@ -254,4 +262,4 @@ if __name__ == "__main__":
         print "User %s is not an active openchange user" % username
         sys.exit(2)
 
-    cleanup(username, samba_helper, opts.dry_run)
+    cleanup(username, samba_helper, opts.ignore, opts.dry_run)

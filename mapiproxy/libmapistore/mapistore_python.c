@@ -3006,13 +3006,9 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	struct mapistore_python_object	*pyobj;
 	PyObject			*obj;
 	PyObject			*proplist;
-	PyObject			*key;
 	PyObject			*value;
 	PyObject			*item;
 	PyObject			*pres;
-	uint32_t			proptag;
-	const char			*sproptag;
-	Py_ssize_t			cnt;
 	uint16_t			i;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
@@ -3072,45 +3068,24 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Map all data */
-	if (count == 0) {
-		cnt = 0;
-		while (PyDict_Next(pres, &cnt, &key, &value)) {
-			sproptag = PyString_AsString(key);
-			proptag = openchangedb_named_properties_get_tag((char *)sproptag);
-			if (proptag == 0xFFFFFFFF) {
-				proptag = openchangedb_property_get_tag((char *)sproptag);
-				if (proptag == 0xFFFFFFFF) {
-					proptag = strtol(sproptag, NULL, 16);
-				}
-			}
-
-			if (value) {
-				data[cnt].error = mapistore_data_from_pyobject(mem_ctx, proptag, value, &data[cnt].data);
-				if (data[cnt].error != MAPISTORE_SUCCESS) {
-					data[cnt].data = NULL;
-				}
-			}
-		}
-	} else {
-		/* Map data */
-		for (i = 0; i < count; i++) {
-			item = mapistore_python_pyobject_from_proptag(properties[i]);
-			value = PyDict_GetItem(pres, item);
-			if (value == NULL) {
-				data[i].error = MAPISTORE_ERR_NOT_FOUND;
+	/* Map data */
+	for (i = 0; i < count; i++) {
+		item = mapistore_python_pyobject_from_proptag(properties[i]);
+		value = PyDict_GetItem(pres, item);
+		if (value == NULL) {
+			data[i].error = MAPISTORE_ERR_NOT_FOUND;
+			data[i].data = NULL;
+		} else {
+			/* Map dict data to void */
+			data[i].error = mapistore_data_from_pyobject(mem_ctx, properties[i],
+								     value, &data[i].data);
+			if (data[i].error != MAPISTORE_SUCCESS) {
 				data[i].data = NULL;
-			} else {
-				/* Map dict data to void */
-				data[i].error = mapistore_data_from_pyobject(mem_ctx, properties[i],
-									     value, &data[i].data);
-				if (data[i].error != MAPISTORE_SUCCESS) {
-					data[i].data = NULL;
-				}
 			}
-			Py_DECREF(item);
 		}
+		Py_DECREF(item);
 	}
+
 	Py_DECREF(pres);
 
 	return MAPISTORE_SUCCESS;

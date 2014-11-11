@@ -40,9 +40,10 @@ enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore
 	PyObject			*py_key, *py_ret = NULL;
 	struct SPropTagArray		*properties;
 	struct mapistore_property_data  *prop_data;
+	const char			*sproptag;
 	enum mapistore_error		retval;
 	enum MAPISTATUS			ret;
-	enum MAPITAGS			tag;
+	enum MAPITAGS			proptag;
 	Py_ssize_t			i, count;
 
 	/* Get the available properties */
@@ -51,20 +52,20 @@ enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore
 		return MAPISTORE_ERR_NO_MEMORY ;
 	}
 
-	if (list == NULL || ((PyList_Check(list) && (PyList_Size(list) == 0)))) {
+	properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	if (properties == NULL) {
+		retval = MAPISTORE_ERR_NO_MEMORY;
+		goto end;
+	}
+
+	properties->aulPropTag = talloc_zero(properties, void);
+	if (properties->aulPropTag == NULL) {
+		retval = MAPISTORE_ERR_NO_MEMORY;
+		goto end;
+	}
+
+	if (list == NULL) {
 		/* If no list of needed properties is provided, return all */
-		properties = talloc_zero(mem_ctx, struct SPropTagArray);
-		if (properties == NULL) {
-			retval = MAPISTORE_ERR_NO_MEMORY;
-			goto end;
-		}
-
-		properties->aulPropTag = talloc_zero(properties, void);
-		if (properties->aulPropTag == NULL) {
-			retval = MAPISTORE_ERR_NO_MEMORY;
-			goto end;
-		}
-
 		retval = mapistore_properties_get_available_properties(mstore_ctx, context_id,
 				object, mem_ctx, &properties);
 		if (retval != MAPISTORE_SUCCESS) {
@@ -81,37 +82,19 @@ enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore
 		/* Build the SPropTagArray structure */
 		count = PyList_Size(list);
 
-		properties = talloc_zero(mem_ctx, struct SPropTagArray);
-		if (properties == NULL) {
-			retval = MAPISTORE_ERR_NO_MEMORY;
-			goto end;
-		}
-
-		properties->aulPropTag = talloc_zero(properties, void);
-		if (properties->aulPropTag == NULL) {
-			retval = MAPISTORE_ERR_NO_MEMORY;
-			goto end;
-		}
 		for (i = 0; i < count; i++) {
 			py_key = PyList_GetItem(list, i);
-			if (PyString_Check(py_key)) {
-				tag = openchangedb_property_get_tag(PyString_AsString(py_key));
-				if (tag == 0xFFFFFFFF) {
-					DEBUG(0, ("[WARN][%s]: Unsupported property tag '%s'\n",
-							__location__, PyString_AsString(py_key)));
-					retval = MAPISTORE_ERR_INVALID_DATA;
-					goto end;
+
+			sproptag = PyString_AsString(py_key);
+			proptag = openchangedb_named_properties_get_tag((char *)sproptag);
+			if (proptag == 0xFFFFFFFF) {
+				proptag = openchangedb_property_get_tag((char *)sproptag);
+				if (proptag == 0xFFFFFFFF) {
+					proptag = strtol(sproptag, NULL, 16);
 				}
-			} else if (PyInt_Check(py_key)) {
-				tag = PyInt_AsUnsignedLongMask(py_key);
-			} else {
-				DEBUG(0, ("[ERR][%s]: Invalid type in list: only strings and integers accepted\n",
-						__location__));
-				retval = MAPISTORE_ERR_INVALID_PARAMETER;
-				goto end;
 			}
 
-			ret = SPropTagArray_add(mem_ctx, properties, tag);
+			ret = SPropTagArray_add(mem_ctx, properties, proptag);
 			if (ret != MAPI_E_SUCCESS) {
 				retval = MAPISTORE_ERROR;
 				goto end;

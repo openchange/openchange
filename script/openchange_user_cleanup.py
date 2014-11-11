@@ -182,7 +182,7 @@ class SOGoCleaner(object):
         c = conn.cursor()
         tablename = "sogo_cache_folder_%s" % self._as_css_id(username)
         if not self.dry_run:
-            c.execute("TRUNCATE TABLE %s" % tablename)
+            c.execute("DROP TABLE %s" % tablename)
         print " [SOGo MySQL] Table %s deleted" % tablename
 
     def _get_connection_url(self):

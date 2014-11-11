@@ -968,12 +968,7 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 			new_range->low = exchange_globcnt(work_eid + 1);
 			new_range->high = range->high;
 			range->high = exchange_globcnt(work_eid - 1);
-			new_range->next = range->next;
-			new_range->prev = range;
-			range->next = new_range;
-			if (new_range->next == NULL) {
-				idset->ranges->prev = new_range;
-			}
+			DLIST_ADD_AFTER(idset->ranges, new_range, range);
 			idset->range_count++;
 			done = true;
 		}

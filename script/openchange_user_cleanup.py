@@ -39,8 +39,10 @@ class SambaOCHelper(object):
             raise Exception("mapiproxy:openchangedb should start with mysql:// (we got %s)",
                             group_dict['scheme'])
 
-        return MySQLdb.connect(host=group_dict['host'], user=group_dict['user'],
+        conn = MySQLdb.connect(host=group_dict['host'], user=group_dict['user'],
                                passwd=group_dict['pass'], db=group_dict['db'])
+        conn.autocommit(True)
+        return conn
 
     def invalid_user(self, username):
         ret = self.samdb.search(base=self.samdb.domain_dn(),

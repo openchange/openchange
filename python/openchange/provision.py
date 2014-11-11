@@ -451,22 +451,30 @@ def get_user_dn(ldb, basedn, username):
     return user_dn
 
 
-def newuser(names, lp, creds, username=None):
+def newuser(names, lp, creds, username=None, mail=None):
     """extend user record with OpenChange settings.
 
     :param lp: Loadparm context
     :param creds: Credentials context
     :param names: provision names object.
     :param username: Name of user to extend
+    :param mail: The user email address. If not specified, it will be set
+                 to <samAccountName>@<dnsdomain>
     """
 
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
-        smtp_user = username
+        if mail:
+            smtp_user = mail
+        else:
+            smtp_user = username
         if '@' not in smtp_user:
             smtp_user += '@%s' % names.dnsdomain
+            mail_domain = names.dnsdomain
+        else:
+            mail_domain = smtp_user.split('@')[1]
 
         extended_user = """
 dn: %(user_dn)s
@@ -481,7 +489,7 @@ add: legacyExchangeDN
 legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
 proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
-proxyAddresses: smtp:postmaster@%(dnsdomain)s
+proxyAddresses: smtp:postmaster@%(mail_domain)s
 proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
 proxyAddresses: SMTP:%(smtp_user)s
 replace: msExchUserAccountControl
@@ -496,7 +504,8 @@ msExchUserAccountControl: 0
                                       "firstou_x400": names.firstou[:64],
                                       "domaindn": names.domaindn,
                                       "dnsdomain": names.dnsdomain,
-                                      "smtp_user": smtp_user}
+                                      "smtp_user": smtp_user,
+                                      "mail_domain": mail_domain}
         db.modify_ldif(ldif_value)
 
         res = db.search(base=user_dn, scope=SCOPE_BASE, attrs=["*"])
@@ -511,7 +520,7 @@ msExchUserAccountControl: 0
             db.modify_ldif(extended_user)
 
         if "mail" not in record_keys:
-            extended_user = "dn: %s\nadd: mail\nmail: %s@%s\n" % (user_dn, username, names.dnsdomain)
+            extended_user = "dn: %s\nadd: mail\nmail: %s\n" % (user_dn, smtp_user)
             db.modify_ldif(extended_user)
 
         print "[+] User %s extended and enabled" % username

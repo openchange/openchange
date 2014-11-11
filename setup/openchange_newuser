@@ -48,6 +48,9 @@ parser.add_option("--create", action="store_true", metavar="CREATE",
                   help="Create the OpenChange user account")
 parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
                   help="Create the OpenChange user mailbox")
+parser.add_option("--mail", type="string", metavar="MAIL",
+                  help="User email address. If not specified, the email "
+                       "will be samaccountname@realm")
 opts, args = parser.parse_args()
 
 if len(args) == 0:
@@ -64,7 +67,7 @@ def setup_path(*args):
 
 
 if opts.create == True:
-    openchange.newuser(provisionnames, lp, creds, username=args[0])
+    openchange.newuser(provisionnames, lp, creds, username=args[0], mail=opts.mail)
 
 if opts.mailbox == True:
     print "Mailbox provisioning is now performed automatically at user logon"

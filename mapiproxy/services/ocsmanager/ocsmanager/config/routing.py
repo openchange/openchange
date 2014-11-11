@@ -19,8 +19,8 @@ def make_map(config):
     map.connect('/error/{action}/{id}', controller='error')
 
     # CUSTOM ROUTES HERE
-
     map.connect('/autodiscover/{action}.xml', controller="autodiscover")
+    map.connect('/ews/oab.xml', controller="oab", action="oab")
     map.connect('/ews/{controller}')
     map.connect('/ews/{controller}.wsdl')
     map.connect('/{controller}/{action}')

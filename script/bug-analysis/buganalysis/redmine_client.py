@@ -28,7 +28,7 @@ class RedmineClient(object):
     """Wrapper to manage redmine integration"""
 
     def __init__(self, url, key, project=None, component_conf={},
-                 custom_fields=[], reporter_field=None):
+                 custom_fields=[], reporter_field=None, status={}):
         """Initialise the client
 
         :param str url: the URL where the redmine is hosted
@@ -40,6 +40,13 @@ class RedmineClient(object):
         :param list custom_fields: the custom fields that are mandatory to set
                                    when creating the issue.
         :param dict reporter_field: field to set reporter email
+
+        :param dict status: indicate which are valid closed status
+                            identifiers and reopened status
+                            identifiers for reopening closed issues
+                            once a new duplicate is uploaded.
+                            *closed* is a tuple with valid closed status ids
+                            *reopened* is the status to go after reopening an issue
         """
         self.redmine = redmine.Redmine(url, key=key)
         self.project = project
@@ -53,6 +60,14 @@ class RedmineClient(object):
             self.tracker_id = tracker_elems[0]['id']
         else:
             self.tracker_id = None
+
+        self.status = None
+        # Make sure closed and reopened are consistent
+        if 'closed' in status and 'reopened' in status:
+            self.status = status
+            # Make sure an iterable is always used for closed status
+            if not hasattr(self.status['closed'], '__contains__'):
+                self.status['closed'] = (self.status['closed'],)
 
     def create_issue(self, id, report, comps=None, reporter=None):
         """Create a new issue based on a report.
@@ -88,12 +103,9 @@ class RedmineClient(object):
         if '_OrigURL' in report:
             _, base_name = report['_OrigURL'].rsplit('/', 1)
             description += "Crash file: %s\n" % base_name
-        if 'DistroRelease' in report:
-            description += '\nDistro Release: {0}\n'.format(report['DistroRelease'])
-        if 'Dependencies' in report:
-            pkgs = (e for e in report['Dependencies'].split('\n') if e.startswith('openchangeserver'))
-            for pkg in pkgs:
-                description += '\nPackage: {0}\n'.format(pkg)
+
+        description += self._dump_distro_release(report)
+        description += self._dump_package(report)
 
         issue.description = description
         custom_fields = []
@@ -126,20 +138,46 @@ class RedmineClient(object):
         issue.save()
         return issue
 
-    def add_duplicate(self, issue_id, dup_crash_url):
+    def add_duplicate(self, report, issue_id, dup_crash_url):
         """Add a duplicate to the journal of a given issue.
 
+        Re-open an issue if it is closed if supported.
+
+        :param Report report: the duplicated report
         :param int issue_id: the issue identifier
         :param str dup_crash_url: the URL of the duplicate crash
         :returns: if the action of adding was successful
         :rtype: bool
         """
         _, base_name = dup_crash_url.rsplit('/', 1)
-        note = 'A new duplicate has been found: {0}'.format(base_name)
+        note = 'A new duplicate has been found: {0}\n'.format(base_name)
+        note += self._dump_distro_release(report)
+        note += self._dump_package(report)
         try:
             self.redmine.issue.update(issue_id,
                                       notes=note)
-            return True
         except redmine.exceptions.ResourceNotFoundError:
             # We cannot add the duplicate
             return False
+
+        # Re-open the issue if it closed
+        if self.status is not None:
+            issue = self.redmine.issue.get(issue_id)
+            if issue.status.id in self.status['closed']:
+                self.redmine.issue.update(issue_id,
+                                          status_id=self.status['reopened'])
+        return True
+
+    # Helper methods to dump info to Redmine in plain text
+    def _dump_distro_release(self, report):
+        if 'DistroRelease' in report:
+            return '\nDistro Release: {0}\n'.format(report['DistroRelease'])
+        return ""
+
+    def _dump_package(self, report):
+        dumped = ""
+        if 'Dependencies' in report:
+            pkgs = (e for e in report['Dependencies'].split('\n') if e.startswith('openchangeserver'))
+            for pkg in pkgs:
+                dumped += '\nPackage: {0}\n'.format(pkg)
+        return dumped

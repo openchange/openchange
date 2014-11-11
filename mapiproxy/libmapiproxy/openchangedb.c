@@ -36,6 +36,7 @@
 
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_logger.h"
 
 const char *nil_string = "<nil>";
 
@@ -44,17 +45,31 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 						 struct loadparm_context *lp_ctx,
 						 struct openchangedb_context **oc_ctx)
 {
+	enum MAPISTATUS retval;
 	const char *openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
 							     "openchangedb");
 	if (openchangedb_backend) {
 		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n", openchangedb_backend));
-		return openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
+		retval = openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
 	} else {
 		DEBUG(0, ("Using default backend for openchangedb\n"));
-		return openchangedb_ldb_initialize(mem_ctx,
-						   lpcfg_private_dir(lp_ctx),
-						   oc_ctx);
+		retval = openchangedb_ldb_initialize(mem_ctx,
+						     lpcfg_private_dir(lp_ctx),
+						     oc_ctx);
 	}
+
+	if (retval != MAPI_E_SUCCESS) {
+		return retval;
+	}
+
+	if (lpcfg_parm_bool(lp_ctx, NULL, "mapiproxy", "openchangedb_logger", false)) {
+		const char *prefix = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
+						       "openchangedb_logger_prefix");
+		DEBUG(0, ("Loading OpenchangeDB logger module\n"));
+		retval = openchangedb_logger_initialize(mem_ctx, 0, prefix, *oc_ctx, oc_ctx);
+	}
+
+	return retval;
 }
 
 /**

@@ -29,19 +29,18 @@ class SambaOCHelper(object):
         if not connection_string:
             raise Exception("Not found mapiproxy:openchangedb on samba configuration")
         # mysql://openchange:password@localhost/openchange
-        m = re.search("(.+)://(.+):(.+)@(.+)/(.+)", connection_string)
+        m = re.search(r'(?P<scheme>.+)://(?P<user>.+):(?P<pass>.+)@(?P<host>.+)/(?P<db>.+)',
+                      connection_string)
         if not m:
             raise Exception("Unable to parse mapiproxy:openchangedb: %s" %
                             connection_string)
-        if m.group(1) != 'mysql':
-            raise Exception("mapiproxy:openchangedb should start with mysql:// (we got %s)")
+        group_dict = m.groupdict()
+        if group_dict['scheme'] != 'mysql':
+            raise Exception("mapiproxy:openchangedb should start with mysql:// (we got %s)",
+                            group_dict['scheme'])
 
-        dbuser = m.group(2)
-        dbpass = m.group(3)
-        dbhost = m.group(4)
-        dbname = m.group(5)
-
-        return MySQLdb.connect(host=dbhost, user=dbuser, passwd=dbpass, db=dbname)
+        return MySQLdb.connect(host=group_dict['host'], user=group_dict['user'],
+                               passwd=group_dict['pass'], db=group_dict['db'])
 
     def invalid_user(self, username):
         ret = self.samdb.search(base=self.samdb.domain_dn(),
@@ -207,18 +206,20 @@ class SOGoCleaner(object):
             raise Exception("Couldn't fetch OCSFolderInfoURL")
 
         # mysql://sogo:sogo@127.0.0.1:5432/sogo/sogo_folder_info
-        m = re.search("(.+)://(.+):(.+)@(.+):(\d+)/(.+)/(.+)", connection_url)
+        m = re.search('(?P<scheme>.+)://(?P<user>.+):(?P<pass>.+)@'
+                      '(?P<host>.+):(?P<port>\d+)/(?P<db>.+)/(?P<table>.+)',
+                      connection_url)
         if not m:
             raise Exception("ERROR Unable to parse OCSFolderInfoURL: %s" %
                             connection_url)
-
-        dbuser = m.group(2)
-        dbpass = m.group(3)
-        dbhost = m.group(4)
-        dbport = m.group(5)
-        dbname = m.group(6)
-
-        self.sogo_mysql_cleanup(dbhost, dbport, dbuser, dbpass, dbname, username)
+        group_dict = m.groupdict()
+        if group_dict['scheme'] != 'mysql':
+            raise Exception("OCSFolderInfoURL should start with mysql:// "
+                            "(we got %s)", group_dict['scheme'])
+            
+        self.sogo_mysql_cleanup(group_dict['host'], group_dict['port'],
+                                group_dict['user'], group_dict['pass'],
+                                group_dict['db'], username)
 
 # -----------------------------------------------------------------------------
 

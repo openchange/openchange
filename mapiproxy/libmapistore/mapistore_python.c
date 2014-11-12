@@ -2898,15 +2898,16 @@ static enum mapistore_error mapistore_python_properties_get_available_properties
 										 struct SPropTagArray **propertiesp)
 {
 	struct mapistore_python_object	*pyobj;
-	struct SPropTagArray		*p;
+	struct SPropTagArray		*props;
 	PyObject			*obj;
 	PyObject			*proplist;
 	PyObject			*pres;
 	PyObject			*key;
 	PyObject			*value;
 	Py_ssize_t			cnt;
-	uint32_t			proptag;
 	const char			*sproptag;
+	enum MAPITAGS			proptag;
+	enum MAPISTATUS			retval;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
@@ -2955,9 +2956,17 @@ static enum mapistore_error mapistore_python_properties_get_available_properties
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	p = talloc_zero(mem_ctx, struct SPropTagArray);
-	if (p == NULL) {
+	props = talloc_zero(mem_ctx, struct SPropTagArray);
+	if (props == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: Unable to allocate memory for SPropTagArray\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	props->aulPropTag = talloc_zero(props, void);
+	if (props->aulPropTag == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to allocate memory for SPropTagArray->aulPropTag\n",
 			  pyobj->name, __location__));
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_NO_MEMORY;
@@ -2974,11 +2983,17 @@ static enum mapistore_error mapistore_python_properties_get_available_properties
 					proptag = strtol(sproptag, NULL, 16);
 				}
 			}
-			SPropTagArray_add(p, p, proptag);
+			retval = SPropTagArray_add(props, props, proptag);
+			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(0, ("[ERR][%s][%s]: Error getting the available properties\n",
+					  pyobj->name, __location__));
+				Py_DECREF(pres);
+				return MAPISTORE_ERR_CONTEXT_FAILED;
+			}
 		}
 	}
 	Py_DECREF(pres);
-	*propertiesp = p;
+	*propertiesp = props;
 
 	return MAPISTORE_SUCCESS;
 }
@@ -3006,13 +3021,9 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 	struct mapistore_python_object	*pyobj;
 	PyObject			*obj;
 	PyObject			*proplist;
-	PyObject			*key;
 	PyObject			*value;
 	PyObject			*item;
 	PyObject			*pres;
-	uint32_t			proptag;
-	const char			*sproptag;
-	Py_ssize_t			cnt;
 	uint16_t			i;
 
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
@@ -3072,45 +3083,24 @@ static enum mapistore_error mapistore_python_properties_get_properties(TALLOC_CT
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Map all data */
-	if (count == 0) {
-		cnt = 0;
-		while (PyDict_Next(pres, &cnt, &key, &value)) {
-			sproptag = PyString_AsString(key);
-			proptag = openchangedb_named_properties_get_tag((char *)sproptag);
-			if (proptag == 0xFFFFFFFF) {
-				proptag = openchangedb_property_get_tag((char *)sproptag);
-				if (proptag == 0xFFFFFFFF) {
-					proptag = strtol(sproptag, NULL, 16);
-				}
-			}
-
-			if (value) {
-				data[cnt].error = mapistore_data_from_pyobject(mem_ctx, proptag, value, &data[cnt].data);
-				if (data[cnt].error != MAPISTORE_SUCCESS) {
-					data[cnt].data = NULL;
-				}
-			}
-		}
-	} else {
-		/* Map data */
-		for (i = 0; i < count; i++) {
-			item = mapistore_python_pyobject_from_proptag(properties[i]);
-			value = PyDict_GetItem(pres, item);
-			if (value == NULL) {
-				data[i].error = MAPISTORE_ERR_NOT_FOUND;
+	/* Map data */
+	for (i = 0; i < count; i++) {
+		item = mapistore_python_pyobject_from_proptag(properties[i]);
+		value = PyDict_GetItem(pres, item);
+		if (value == NULL) {
+			data[i].error = MAPISTORE_ERR_NOT_FOUND;
+			data[i].data = NULL;
+		} else {
+			/* Map dict data to void */
+			data[i].error = mapistore_data_from_pyobject(mem_ctx, properties[i],
+								     value, &data[i].data);
+			if (data[i].error != MAPISTORE_SUCCESS) {
 				data[i].data = NULL;
-			} else {
-				/* Map dict data to void */
-				data[i].error = mapistore_data_from_pyobject(mem_ctx, properties[i],
-									     value, &data[i].data);
-				if (data[i].error != MAPISTORE_SUCCESS) {
-					data[i].data = NULL;
-				}
 			}
-			Py_DECREF(item);
 		}
+		Py_DECREF(item);
 	}
+
 	Py_DECREF(pres);
 
 	return MAPISTORE_SUCCESS;

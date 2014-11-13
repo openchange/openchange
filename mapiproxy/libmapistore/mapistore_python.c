@@ -1489,6 +1489,52 @@ static enum mapistore_error mapistore_python_folder_create_message(TALLOC_CTX *m
 	return MAPISTORE_SUCCESS;
 }
 
+/*
+\param folder_object pointer to the folder object
+\param mid the message identifier
+\param flags specifies partial or temporary deletion
+
+\return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+*/
+static enum mapistore_error mapistore_python_folder_delete_message(void *folder_object,
+								   uint64_t mid,
+								   uint8_t flags)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*folder;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the "delete_folder" method */
+	pres = PyObject_CallMethod(folder, "delete_message", "K", mid);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
 
 /**
    \details Retrieve the number of children object of a given type
@@ -3280,7 +3326,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.delete = mapistore_python_folder_delete;
 	backend.folder.open_message = mapistore_python_folder_open_message;
 	backend.folder.create_message = mapistore_python_folder_create_message;
-	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
+	backend.folder.delete_message = mapistore_python_folder_delete_message;
 	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
 	backend.folder.get_child_count = mapistore_python_folder_get_child_count;

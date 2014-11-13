@@ -664,6 +664,26 @@ class FolderObject(ContextObject):
         self.basedict["message_cache"].append(newmsg)
         return MessageObject(newmsg, self, mid, 1)
 
+    def delete_message(self, mid):
+        print '[PYTHON]: %s folder.delete_message()' % (self.name)
+
+        found = False
+
+        for msg in self.basedict["messages"]:
+            if msg["properties"]["PidTagMid"] == mid:
+                found = True
+                self.basedict["messages"].remove(msg)
+                break
+
+        for cached_msg in self.basedict["message_cache"]:
+            found = True
+            if cached_msg["properties"]["PidTagMid"] == mid:
+                self.basedict["message_cache"].remove(cached_msg)
+
+        if found:
+            return 0
+        return 17
+       
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)
 

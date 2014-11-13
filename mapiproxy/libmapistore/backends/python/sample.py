@@ -743,7 +743,7 @@ class MessageObject(BackendObject):
         print '[PYTHON]: %s message.__init__()' % (self.name)
 
         self.folder = folder
-        self.message = message
+        self.basedict = message
         self.mid = mid
         self.rw = rw
 
@@ -752,21 +752,21 @@ class MessageObject(BackendObject):
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
 
-        return (self.message["recipients"], self.message["properties"])
+        return (self.basedict["recipients"], self.basedict["properties"])
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
 
-        return self.message["properties"]
+        return self.basedict["properties"]
 
     def set_properties(self, properties):
         print '[PYTHON]: %s message.set_properties()' % (self.name)
 
-        tmpdict = self.message["properties"].copy()
+        tmpdict = self.basedict["properties"].copy()
         tmpdict.update(properties)
-        self.message["properties"] = tmpdict;
+        self.basedict["properties"] = tmpdict;
 
-        print self.message["properties"]
+        print self.basedict["properties"]
         return 0
 
     def save(self):
@@ -783,9 +783,9 @@ class MessageObject(BackendObject):
         return 17
 
     def _count_attachments(self):
-        print '[PYTHON][INTERNAL]: %s message._count_folders(0x%x): %d' % (self.name, self.mid, len(self.message["attachments"]))
+        print '[PYTHON][INTERNAL]: %s message._count_attachments(0x%x): %d' % (self.name, self.mid, len(self.basedict["attachments"]))
 
-        return len(self.message["attachments"])
+        return len(self.basedict["attachments"])
 
     def get_child_count(self, table_type):
         print '[PYTHON]: %s message.get_child_count' % (self.name)
@@ -796,38 +796,38 @@ class MessageObject(BackendObject):
     def open_attachment(self, attach_id):
         print '[PYTHON]: %s message.open_attachment(): %d' % (self.name, attach_id)
 
-        for item in self.message["attachments"]:
+        for item in self.basedict["attachments"]:
             if str(item["attachid"]) == str(attach_id):
                 print '[PYTHON]: attachID 0x%x found\n' % (attach_id)
                 tmpatt = item.copy()
-                self.message["attachment_cache"].append(tmpatt)
+                self.basedict["attachment_cache"].append(tmpatt)
                 return AttachmentObject(item, self, attach_id)
         return None
 
     def create_attachment(self):
         print '[PYTHON]: %s message.create_attachment():' % (self.name)
 
-        attach_id = self.message["next_aid"]
+        attach_id = self.basedict["next_aid"]
+
         newatt = {}
         newatt["attachid"] = attach_id
         newatt["properties"] = {}
         newatt["properties"]["PidTagAttachNumber"] = attach_id
 
-        self.message["attachment_cache"].append(newatt)
-        self.message["next_aid"] = attach_id + 1
+        self.basedict["attachment_cache"].append(newatt)
+        self.basedict["next_aid"] = attach_id + 1
 
         return (AttachmentObject(newatt, self, attach_id), attach_id)
 
     def delete_attachment(self, attach_id):
         print '[PYTHON]: %s message.delete_attachment %d' % (self.name, attach_id)
 
-        for item in self.message["attachments"]:
+        for item in self.basedict["attachments"]:
             if str(item["attachid"]) == str(attach_id):
-                for cache_item in self.message["attachment_cache"]:
+                for cache_item in self.basedict["attachment_cache"]:
                     if str(cache_item["attachid"] == str(attach_id)):
-                        self.message["attachment_cache"].remove(cache_item)
-                self.message["attachments"].remove(item)
-
+                        self.basedict["attachment_cache"].remove(cache_item)
+                self.basedict["attachments"].remove(item)
                 return 0
         return 17
 
@@ -844,7 +844,7 @@ class AttachmentObject(BackendObject):
         print '[PYTHON]: %s attachment.__init__()' % (self.name)
         print attachment
 
-        self.attachment = attachment
+        self.basedict = attachment
         self.message = message
         self.attachid = attachid
         return
@@ -852,16 +852,16 @@ class AttachmentObject(BackendObject):
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
 
-        return self.attachment["properties"]
+        return self.basedict["properties"]
 
     def set_properties(self, properties):
         print '[PYTHON]: %s folder.set_properties()' % (self.name)
 
-        tmpdict = self.attachment["properties"].copy()
+        tmpdict = self.basedict["properties"].copy()
         tmpdict.update(properties)
-        self.attachment["properties"] = tmpdict
+        self.basedict["properties"] = tmpdict
 
-        print self.attachment["properties"]
+        print self.basedict["properties"]
         return 0
 
 

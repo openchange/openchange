@@ -569,11 +569,11 @@ class FolderObject(ContextObject):
     def open_folder(self, folderID):
         print '[PYTHON]: %s folder.open_folder(0x%x)' % (self.name, folderID)
 
-        for item in self.basedict["subfolders"]:
-            if str(item["fid"]) == str(folderID):
+        for fld in self.basedict["subfolders"]:
+            if fld["properties"]["PidTagFolderID"] == folderID:
                 print '[PYTHON]: folderID 0x%x found\n' % (folderID)
-                return FolderObject(item, self.basedict, folderID, self.folderID)
-        return None
+                return FolderObject(fld, self.basedict, folderID, self.folderID)
+        return 17
 
     def create_folder(self, properties, folderID):
         print '[PYTHON]: %s folder.create_folder(%s)' % (self.name, folderID)
@@ -600,10 +600,12 @@ class FolderObject(ContextObject):
     def delete(self):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
 
-        for item in self.parentdict["subfolders"]:
-            if str(item["fid"]) == str(self.folderID):
-                self.parentdict["subfolders"].remove(item)
-                return 0
+        if self.parentdict is None:
+            return 23
+
+        if self.basedict in self.parentdict["subfolders"]:
+            self.parentdict["subfolders"].remove(self.basedict)
+            return 0
         return 17
 
     def open_table(self, table_type):
@@ -640,13 +642,13 @@ class FolderObject(ContextObject):
     def open_message(self, mid, rw):
         print '[PYTHON]: %s folder.open_message()' % self.name
 
-        for item in self.basedict["messages"]:
-            if str(item["mid"]) == str(mid):
+        for msg in self.basedict["messages"]:
+            if msg["properties"]["PidTagMid"] == mid:
                 print '[PYTHON]: messageID 0x%x found\n' % (mid)
-                tmpmsg = item.copy()
-                self.basedict["message_cache"].append(tmpmsg)
-                return MessageObject(item, self, mid, rw)
-        return None
+                msg_copy = msg.copy()
+                self.basedict["message_cache"].append(msg)
+                return MessageObject(msg_copy, self, mid, rw)
+        return 17
 
     def create_message(self, mid, associated):
         print '[PYTHON]: %s folder.create_message()' % self.name
@@ -756,15 +758,16 @@ class MessageObject(BackendObject):
     def save(self):
         print '[PYTHON]: %s message.save()' % (self.name)
 
-        for item in self.folder.basedict["message_cache"]:
-            if str(item["mid"]) == str(self.mid):
-                for ex_item in self.folder.basedict["messages"]:
-                    if str(ex_item["mid"]) == str(self.mid):
-                        self.folder.basedict["messages"].remove(ex_item)
-                self.folder.basedict["messages"].append(item)
-                self.folder.basedict["message_cache"].remove(item)
-                return 0
-        return 17
+        if self.basedict not in self.folder.basedict["message_cache"]:
+            return 17
+
+        for msg in self.folder.basedict["messages"]:
+            if msg["mid"] == self.mid:
+                self.folder.basedict["messages"].remove(msg)
+                break
+
+        self.folder.basedict["messages"].append(self.basedict.copy())
+        return 0
 
     def _count_attachments(self):
         print '[PYTHON][INTERNAL]: %s message._count_attachments(0x%x): %d' % (self.name, self.mid, len(self.basedict["attachments"]))
@@ -780,24 +783,30 @@ class MessageObject(BackendObject):
     def open_attachment(self, attach_id):
         print '[PYTHON]: %s message.open_attachment(): %d' % (self.name, attach_id)
 
-        for item in self.basedict["attachments"]:
-            if str(item["attachid"]) == str(attach_id):
-                print '[PYTHON]: attachID 0x%x found\n' % (attach_id)
-                tmpatt = item.copy()
-                self.basedict["attachment_cache"].append(tmpatt)
-                return AttachmentObject(item, self, attach_id)
-        return None
+        for att in self.basedcict["attachments"]:
+            if att["attachid"] == attach_id:
+                '[PYTHON]: attachID 0x%x found\n' % (attach_id)
+                self.basedict["attachment_cache"].append(att)
+                return AttachmentObject(att, self, attach_id)
+        return 17
 
     def delete_attachment(self, attach_id):
         print '[PYTHON]: %s message.delete_attachment %d' % (self.name, attach_id)
 
-        for item in self.basedict["attachments"]:
-            if str(item["attachid"]) == str(attach_id):
-                for cache_item in self.basedict["attachment_cache"]:
-                    if str(cache_item["attachid"] == str(attach_id)):
-                        self.basedict["attachment_cache"].remove(cache_item)
-                self.basedict["attachments"].remove(item)
-                return 0
+        found = False
+        for att in self.basedict["attachments"]:
+            if att["attachid"] == attach_id:
+                found = True
+                self.basedict["attachments"].remove(att)
+                break
+
+        for cached_att in self.basedict["attachment_cache"]:
+            if cached_att["attachid"] == attach_id:
+                found = True
+                self.basedict["attachment_cache"].remove(cached_att)
+
+        if found:
+            return 0
         return 17
 
     def get_attachment_table(self):

@@ -663,9 +663,7 @@ class FolderObject(ContextObject):
     def set_properties(self, properties):
         print '[PYTHON]: %s folder.set_properties()' % (self.name)
 
-        tmpdict = self.basedict["properties"].copy()
-        tmpdict.update(properties)
-        self.basedict["properties"] = tmpdict
+        self.basedict["properties"].update(properties)
 
         print self.basedict["properties"]
         return 0
@@ -742,9 +740,7 @@ class MessageObject(BackendObject):
     def set_properties(self, properties):
         print '[PYTHON]: %s message.set_properties()' % (self.name)
 
-        tmpdict = self.basedict["properties"].copy()
-        tmpdict.update(properties)
-        self.basedict["properties"] = tmpdict;
+        self.basedict["properties"].update(properties);
 
         print self.basedict["properties"]
         return 0

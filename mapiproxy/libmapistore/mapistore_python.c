@@ -2254,6 +2254,98 @@ static enum mapistore_error mapistore_python_message_open_attachment(TALLOC_CTX 
 	return MAPISTORE_SUCCESS;
 }
 
+static enum mapistore_error mapistore_python_message_create_attachment(TALLOC_CTX *mem_ctx,
+								       void *message_object,
+								       void **attachment_object,
+								       uint32_t *aid) {
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pyattach;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject			*attach;
+	PyObject			*attach_id;
+	uint32_t			id;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!attachment_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call create_attachment function */
+	pres = PyObject_CallMethod(message, "create_attachment", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in create_attachment\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve attachment object (item 0 of the tuple) */
+	attach = PyTuple_GetItem(pres, 0);
+	if (attach == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTiple_GetItem failed\n", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp("AttachmentObject", attach->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected AttachmentObject and got '%s'\n",
+			  pyobj->name, __location__, attach->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Retrieve attachment ID (item 1 of the tuple) */
+	attach_id = PyTuple_GetItem(pres, 1);
+	if (attach_id == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	id = PyLong_AsUnsignedLong(attach_id);
+	Py_DECREF(attach_id);
+
+	/* Return the attachment object and the Attachment ID */
+	pyattach = talloc_zero(pyobj, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pyattach, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pyattach->obj_type = MAPISTORE_PYTHON_OBJECT_ATTACHMENT;
+	pyattach->name = talloc_strdup(pyattach, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pyattach->name, MAPISTORE_ERR_NO_MEMORY, pyattach);
+	pyattach->conn = pyobj->conn;
+	pyattach->ictx = pyobj->ictx;
+	pyattach->module = pyobj->module;
+	pyattach->private_object = attach;
+
+	talloc_set_destructor((void *)pyattach, (int (*)(void *))mapistore_python_object_destructor);
+
+	*attachment_object = pyattach;
+	*aid = id;
+
+	Py_INCREF(attach);
+	return MAPISTORE_SUCCESS;
+}
+
 /**
    \details Delete an attachment object
 
@@ -3341,7 +3433,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.save = mapistore_python_message_save;
 	/* backend.message.submit = mapistore_python_message_submit; */
 	backend.message.open_attachment = mapistore_python_message_open_attachment;
-	/* backend.message.create_attachment = mapistore_python_message_create_attachment; */
+	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.delete_attachment = mapistore_python_message_delete_attachment;
 	backend.message.get_attachment_table = mapistore_python_message_get_attachment_table;
 	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */

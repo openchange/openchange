@@ -810,6 +810,21 @@ class MessageObject(BackendObject):
                 return AttachmentObject(att, self, attach_id)
         return 17
 
+    def create_attachment(self):
+        print '[PYTHON]: %s message.create_attachment():' % (self.name)
+
+        attach_id = self.basedict["next_aid"]
+
+        newatt = {}
+        newatt["attachid"] = attach_id
+        newatt["properties"] = {}
+        newatt["properties"]["PidTagAttachNumber"] = attach_id
+
+        self.basedict["attachment_cache"].append(newatt)
+        self.basedict["next_aid"] = attach_id + 1
+
+        return (AttachmentObject(newatt, self, attach_id), attach_id)
+
     def delete_attachment(self, attach_id):
         print '[PYTHON]: %s message.delete_attachment %d' % (self.name, attach_id)
 

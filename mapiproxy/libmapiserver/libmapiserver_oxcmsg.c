@@ -335,3 +335,27 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_
         
         return size;
 }
+
+/**
+   \details Calculate GetValidAttachments (0x52) Rop size
+
+   \param response pointer to the GetValidAttachments EcDoRpc_MAPI_REPL
+
+   \return Size of GetValidAttachments response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetValidAttachments_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+	uint8_t		i;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETVALIDATTACHMENTS;
+
+	/* AttachmentIdArray */
+	size += response->u.mapi_GetValidAttachments.AttachmentIdCount * sizeof (uint32_t);
+
+	return size;
+}

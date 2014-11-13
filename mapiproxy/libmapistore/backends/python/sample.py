@@ -41,18 +41,21 @@ class BackendObject(object):
 
     def __init__(self):
         print '[PYTHON]: %s backend class __init__' % self.name
+
         return
 
     def init(self):
         """ Initialize sample backend
         """
         print '[PYTHON]: %s backend.init: init()' % self.name
+
         return 0
 
     def list_contexts(self, username):
         """ List context capabilities of this backend.
         """
         print '[PYTHON]: %s backend.list_contexts(): username = %s' % (self.name, username)
+
         deadbeef = {}
         deadbeef["url"] = "sample://deadbeef0000001/"
         deadbeef["name"] = "deadbeef"
@@ -94,8 +97,8 @@ class BackendObject(object):
     def create_context(self, uri, username):
         """ Create a context.
         """
-
         print '[PYTHON]: %s backend.create_context: uri = %s' % (self.name, uri)
+
         context = ContextObject(username, uri)
 
         return (0, context)
@@ -116,7 +119,7 @@ class ContextObject(BackendObject):
         attachment1 = {}
         attachment1["properties"] = {}
         attachment1["properties"]["PidTagMid"] = 0xdead00010000001
-        attachment1["properties"]["PidTagAttachNumber"] = 0
+        attachment1["properties"]["PidTagAttachNumber"] = attachment1["attachid"]
         attachment1["properties"]["PidTagAttachMethod"] = 1
         attachment1["properties"]["PidTagAttachmentLinkId"] = 0x0
         attachment1["properties"]["PidTagAttachmentHidden"] = False
@@ -297,7 +300,7 @@ class ContextObject(BackendObject):
         contact1_attachment1["properties"] = {}
         contact1_attachment1["properties"]["PidTagMid"] = 0xcada00010000001
         contact1_attachment1["properties"]["PidTagAttachmentContactPhoto"] = True
-        contact1_attachment1["properties"]["PidTagAttachNumber"] = 0
+        contact1_attachment1["properties"]["PidTagAttachNumber"] = contact1_attachment1["attachid"]
         contact1_attachment1["properties"]["PidTagAttachMethod"] = 1
         contact1_attachment1["properties"]["PidTagAttachmentLinkId"] = 0x0
         contact1_attachment1["properties"]["PidTagAttachmentHidden"] = False
@@ -541,6 +544,7 @@ class ContextObject(BackendObject):
 
     def get_path(self, fmid):
         print '[PYTHON]: %s context.get_path' % self.name
+
         if fmid in self.mapping:
             print '[PYTHON]: %s get_path URI: %s' % (self.name, self.mapping[fmid]["uri"])
             return self.mapping[fmid]["uri"]
@@ -550,6 +554,7 @@ class ContextObject(BackendObject):
 
     def get_root_folder(self, folderID):
         print '[PYTHON]: %s context.get_root_folder' % self.name
+
         folder = FolderObject(self.mapping[folderID], None, folderID, 0x0)
         return (0, folder)
 
@@ -558,6 +563,7 @@ class FolderObject(ContextObject):
 
     def __init__(self, basedict, parentdict, folderID, parentFID):
         print '[PYTHON]: %s folder.__init__(fid=%s)' % (self.name, folderID)
+
         self.basedict = basedict
         self.parentdict = parentdict
         self.parentFID = parentFID;
@@ -599,6 +605,7 @@ class FolderObject(ContextObject):
 
     def delete(self):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
+
         for item in self.parentdict["subfolders"]:
             if str(item["fid"]) == str(self.folderID):
                 self.parentdict["subfolders"].remove(item)
@@ -607,11 +614,13 @@ class FolderObject(ContextObject):
 
     def open_table(self, table_type):
         print '[PYTHON]: %s folder.open_table' % (self.name)
+
         table = TableObject(self, table_type)
         return (table, self.get_child_count(table_type))
 
     def get_child_count(self, table_type):
         print '[PYTHON]: %s folder.get_child_count' % (self.name)
+
         counter = { 1: self._count_folders,
                     2: self._count_messages,
                     3: self._count_zero,
@@ -623,10 +632,12 @@ class FolderObject(ContextObject):
 
     def _count_folders(self):
         print '[PYTHON][INTERNAL]: %s folder._count_folders(0x%x): %d' % (self.name, self.folderID, len(self.basedict["subfolders"]))
+
         return len(self.basedict["subfolders"])
 
     def _count_messages(self):
         print '[PYTHON][INTERNAL]: %s folder._count_messages(0x%x): %d' % (self.name, self.folderID, len(self.basedict["messages"]))
+
         return len(self.basedict["messages"])
 
     def _count_zero(self):
@@ -656,6 +667,7 @@ class FolderObject(ContextObject):
 
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)
+
         print properties
         return self.basedict["properties"]
 
@@ -673,6 +685,7 @@ class TableObject(BackendObject):
 
     def __init__(self, folder, tableType):
         print '[PYTHON]: %s table.__init__()' % (self.name)
+
         self.folder = folder
         self.tableType = tableType
         self.properties = []
@@ -680,6 +693,7 @@ class TableObject(BackendObject):
 
     def set_columns(self, properties):
         print '[PYTHON]: %s table.set_columns()' % (self.name)
+
         self.properties = properties
         print 'properties: [%s]\n' % ', '.join(map(str, self.properties))
         return 0
@@ -711,12 +725,14 @@ class TableObject(BackendObject):
 
     def get_row_count(self, query_type):
         print '[PYTHON]: %s table.get_row_count()' % (self.name)
+
         return self.folder.get_child_count(self.tableType)
 
 class MessageObject(BackendObject):
 
     def __init__(self, message, folder, mid, rw):
         print '[PYTHON]: %s message.__init__()' % (self.name)
+
         self.folder = folder
         self.message = message
         self.mid = mid
@@ -726,10 +742,12 @@ class MessageObject(BackendObject):
 
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
+
         return (self.message["recipients"], self.message["properties"])
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
+
         return self.message["properties"]
 
     def set_properties(self, properties):
@@ -754,10 +772,12 @@ class MessageObject(BackendObject):
 
     def _count_attachments(self):
         print '[PYTHON][INTERNAL]: %s message._count_folders(0x%x): %d' % (self.name, self.mid, len(self.message["attachments"]))
+
         return len(self.message["attachments"])
 
     def get_child_count(self, table_type):
         print '[PYTHON]: %s message.get_child_count' % (self.name)
+
         counter = { 5: self._count_attachments }
         return counter[table_type]()
 
@@ -785,6 +805,7 @@ class MessageObject(BackendObject):
 
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)
+
         table = TableObject(self, 5)
         return (table, self.get_child_count(5))
 

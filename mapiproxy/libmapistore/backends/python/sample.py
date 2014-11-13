@@ -778,7 +778,6 @@ class MessageObject(BackendObject):
                     if str(ex_item["mid"]) == str(self.mid):
                         self.folder.basedict["messages"].remove(ex_item)
                 self.folder.basedict["messages"].append(item)
-                self.folder.basedict["message_cache"].remove(item)
                 return 0
         return 17
 

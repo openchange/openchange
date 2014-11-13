@@ -852,6 +852,13 @@ class AttachmentObject(BackendObject):
 
         return self.basedict["properties"]
 
+    def set_properties(self, properties):
+        print '[PYTHON]: %s folder.set_properties()' % (self.name)
+
+        self.basedict["properties"].update(properties)
+
+        print self.basedict["properties"]
+        return 0
 
 
 ###################################################################################################################################

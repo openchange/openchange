@@ -42,8 +42,6 @@ class BackendObject(object):
     def __init__(self):
         print '[PYTHON]: %s backend class __init__' % self.name
 
-        return
-
     def init(self):
         """ Initialize sample backend
         """
@@ -536,7 +534,6 @@ class ContextObject(BackendObject):
         self.mapping[0xcababeef0000001]["message_cache"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
-        return
 
     def get_path(self, fmid):
         print '[PYTHON]: %s context.get_path' % self.name
@@ -564,7 +561,6 @@ class FolderObject(ContextObject):
         self.parentdict = parentdict
         self.parentFID = parentFID;
         self.folderID = folderID;
-        return
 
     def open_folder(self, folderID):
         print '[PYTHON]: %s folder.open_folder(0x%x)' % (self.name, folderID)
@@ -766,7 +762,6 @@ class TableObject(BackendObject):
         self.folder = folder
         self.tableType = tableType
         self.properties = []
-        return
 
     def set_columns(self, properties):
         print '[PYTHON]: %s table.set_columns()' % (self.name)
@@ -814,8 +809,6 @@ class MessageObject(BackendObject):
         self.basedict = message
         self.mid = mid
         self.rw = rw
-
-        return
 
 
     def get_message_data(self):
@@ -929,8 +922,6 @@ class AttachmentObject(BackendObject):
         self.basedict = attachment
         self.message = message
         self.attachid = attachid
-        return
-
 
     def save(self):
         print '[PYTHON]: %s attachment.save()' % (self.name)
@@ -1022,7 +1013,6 @@ class OpenchangeDBWithMySQL():
         cur.execute(sql, params)
         self.db.commit()
         cur.close()
-        return
 
 if __name__ == '__main__':
     parser = optparse.OptionParser("sample.py [options]")

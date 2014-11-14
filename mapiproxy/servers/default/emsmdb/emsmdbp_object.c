@@ -1746,7 +1746,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 					local_data_pointers = emsmdbp_object_get_properties(data_pointers, emsmdbp_ctx, rowobject, &props, &local_retvals);
 					data_pointers[i] = local_data_pointers[0];
-					retvals[i] = local_retvals[0];
+					retval = local_retvals[0];
 				}
 					break;
 				case PidTagSourceKey:

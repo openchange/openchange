@@ -143,8 +143,8 @@ class ContextObject(BackendObject):
         DummyTo["PidTagDisplayTo"] = "dummy@openchange.org"
 
         message1 = {}
-        message1["recipients"] = [DummyTo, ]
-        message1["attachments"] = [attachment1, ]
+        message1["recipients"] = [DummyTo]
+        message1["attachments"] = [attachment1]
         message1["mid"] = 0xdead00010000001
         message1["fai"] = False
         message1["next_aid"] = 1
@@ -196,8 +196,8 @@ class ContextObject(BackendObject):
 
         self.mapping[0xdeadbeef0000001] = {}
         self.mapping[0xdeadbeef0000001]["uri"] = "deadbeef0000001/"
-        self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder, ]
-        self.mapping[0xdeadbeef0000001]["messages"] = [message1, ]
+        self.mapping[0xdeadbeef0000001]["subfolders"] = [subfolder]
+        self.mapping[0xdeadbeef0000001]["messages"] = [message1]
         self.mapping[0xdeadbeef0000001]["properties"] = {}
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagFolderId"] = 0xdeadbeef0000001
         self.mapping[0xdeadbeef0000001]["properties"]["PidTagDisplayName"] = "SampleMail"
@@ -257,7 +257,7 @@ class ContextObject(BackendObject):
         appt1["properties"]["PidTagInternetMessageId"] = "internet-message-id@openchange.org"
         appt1["properties"]["PidTagBody"] = "Description of the event"
         appt1["properties"]["PidTagHtml"] = bytearray(appt1["properties"]["PidTagBody"])
-        appt1["properties"]["PidNameKeywords"] = ["Blue Category", "OpenChange", ]
+        appt1["properties"]["PidNameKeywords"] = ["Blue Category", "OpenChange"]
         appt1["properties"]["PidTagMessageDeliveryTime"] = appt1["properties"]["PidTagCreationTime"]
         appt1["properties"]["PidLidAppointmentStartWhole"] = float((datetime.now(tz=timezone('Europe/Madrid')) + timedelta(hours=0)).strftime("%s.%f"))
         appt1["properties"]["PidLidCommonStart"] =  appt1["properties"]["PidLidAppointmentStartWhole"]
@@ -285,7 +285,7 @@ class ContextObject(BackendObject):
         self.mapping[0xcacabeef0000001]["properties"]["PidTagAccess"] = 63
         self.mapping[0xcacabeef0000001]["properties"]["PidTagRights"] = 2043
         self.mapping[0xcacabeef0000001]["subfolders"] = []
-        self.mapping[0xcacabeef0000001]["messages"] = [appt1,]
+        self.mapping[0xcacabeef0000001]["messages"] = [appt1]
         self.mapping[0xcacabeef0000001]["message_cache"] = []
 
 

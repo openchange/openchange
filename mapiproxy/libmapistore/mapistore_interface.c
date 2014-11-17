@@ -1558,7 +1558,21 @@ _PUBLIC_ enum mapistore_error mapistore_message_get_attachment_table(struct mapi
 	/* Step 2. Call backend operation */
 	return mapistore_backend_message_get_attachment_table(backend_ctx, message, mem_ctx, table, row_count);
 }
+_PUBLIC_ enum mapistore_error mapistore_message_get_attachment_ids(struct mapistore_context *mstore_ctx, uint32_t context_id,
+								   void *message, TALLOC_CTX *mem_ctx, uint32_t **attach_ids, uint16_t *count)
+{
+	struct backend_context	*backend_ctx;
 
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend operation */
+	return mapistore_backend_message_get_attachment_ids(backend_ctx, message, mem_ctx, attach_ids, count);
+}
 _PUBLIC_ enum mapistore_error mapistore_message_open_attachment(struct mapistore_context *mstore_ctx, uint32_t context_id,
 								void *message, TALLOC_CTX *mem_ctx, uint32_t aid, void **attachment)
 {
@@ -1605,6 +1619,21 @@ _PUBLIC_ enum mapistore_error mapistore_message_delete_attachment(struct mapisto
 
 	/* Step 2. Call backend operation */
 	return mapistore_backend_message_delete_attachment(backend_ctx, message, aid);
+}
+
+_PUBLIC_ enum mapistore_error mapistore_attachment_save(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx)
+{
+	struct backend_context	*backend_ctx;
+
+	/* Sanity checks */
+	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+
+	/* Step 1. Search the context */
+	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Step 2. Call backend save_attachment */
+	return mapistore_backend_message_attachment_save(backend_ctx, attachment, mem_ctx);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_message_attachment_open_embedded_message(struct mapistore_context *mstore_ctx, uint32_t context_id, void *attachment, TALLOC_CTX *mem_ctx, void **embedded_message, uint64_t *mid, struct mapistore_message **msg)

@@ -248,10 +248,26 @@ static enum mapistore_error mapistore_op_defaults_delete_attachment(void *messag
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
+static enum mapistore_error mapistore_op_defaults_save_attachment(TALLOC_CTX *mem_ctx,
+								  void *attachment_object)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
 static enum mapistore_error mapistore_op_defaults_get_attachment_table(void *message_object,
 								       TALLOC_CTX *mem_ctx,
 								       void **table_object,
 								       uint32_t *row_count)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_attachment_ids(void *message_object,
+								     TALLOC_CTX *mem_ctx,
+								     uint32_t **attach_ids,
+								     uint16_t *count)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
@@ -392,7 +408,9 @@ extern enum mapistore_error mapistore_backend_init_defaults(struct mapistore_bac
 	backend->message.open_attachment = mapistore_op_defaults_open_attachment;
 	backend->message.create_attachment = mapistore_op_defaults_create_attachment;
 	backend->message.delete_attachment = mapistore_op_defaults_delete_attachment;
+	backend->message.save_attachment = mapistore_op_defaults_save_attachment;
 	backend->message.get_attachment_table = mapistore_op_defaults_get_attachment_table;
+	backend->message.get_attachment_ids = mapistore_op_defaults_get_attachment_ids;
 	backend->message.open_embedded_message = mapistore_op_defaults_open_embedded_message;
 
 	/* oxctabl operations */

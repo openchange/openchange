@@ -1489,6 +1489,300 @@ static enum mapistore_error mapistore_python_folder_create_message(TALLOC_CTX *m
 	return MAPISTORE_SUCCESS;
 }
 
+/*
+\param folder_object pointer to the folder object
+\param mid the message identifier
+\param flags specifies partial or temporary deletion
+
+\return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+*/
+static enum mapistore_error mapistore_python_folder_delete_message(void *folder_object,
+								   uint64_t mid,
+								   uint8_t flags)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*folder;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder object */
+	pyobj = (struct mapistore_python_object *) folder_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	folder = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the "delete_folder" method */
+	pres = PyObject_CallMethod(folder, "delete_message", "K", mid);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
+
+/**
+   \details Copy or move a set of messages from a folder to another
+
+   \param target_folder_object the folder where the messages are going to be
+   copied/moved to
+   \param source_folder_object the folder where the messages are located
+   \param mid_count the number of messages to be copied/moved
+   \param source_mids array with the MIDs of the original messages
+   \param target_mids array with the the MIDs of the target messages
+   \param want_copy flag that indicates if the original messages must be
+   deleted after the copy
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_move_copy_messages(void *target_folder_object,
+								       void *source_folder_object,
+								       TALLOC_CTX *mem_ctx,
+								       uint32_t mid_count,
+								       uint64_t *source_mids,
+								       uint64_t *target_mids,
+								       struct Binary_r **target_change_keys,
+								       uint8_t want_copy)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*tgt_pyobj;
+	struct mapistore_python_object	*src_pyobj;
+	PyObject			*target_folder;
+	PyObject			*source_folder;
+	PyObject			*tgt_mid_list;
+	PyObject			*src_mid_list;
+	PyObject			*tgt_mid;
+	PyObject			*src_mid;
+	PyObject			*pres;
+	uint32_t			i;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!target_folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!source_folder_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mid_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!source_mids, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!target_mids, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!want_copy, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the target folder object */
+	tgt_pyobj = (struct mapistore_python_object *) target_folder_object;
+	MAPISTORE_RETVAL_IF(!tgt_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((tgt_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	target_folder = (PyObject *)tgt_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!target_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", target_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Retrieve the source folder object */
+	src_pyobj = (struct mapistore_python_object *) source_folder_object;
+	MAPISTORE_RETVAL_IF(!src_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((src_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	source_folder = (PyObject *)src_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!source_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", source_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Build the source and target MID lists */
+	tgt_mid_list = PyList_New(mid_count);
+	if (tgt_mid_list == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python list\n",
+			  src_pyobj->name, __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	src_mid_list = PyList_New(mid_count);
+	if (src_mid_list == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python list\n",
+			  src_pyobj->name, __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < mid_count; i++) {
+		tgt_mid = PyLong_FromUnsignedLongLong(target_mids[i]);
+		if (PyList_SetItem(tgt_mid_list, i, tgt_mid) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
+					src_pyobj->name, __location__));
+			return MAPISTORE_ERR_NO_MEMORY;
+		}
+
+		src_mid = PyLong_FromUnsignedLongLong(target_mids[i]);
+		if (PyList_SetItem(src_mid_list, i, src_mid) == -1) {
+			DEBUG(0, ("[ERR][%s][%s]: Unable to append entry to Python list\n",
+					src_pyobj->name, __location__));
+			return MAPISTORE_ERR_NO_MEMORY;
+		}
+	}
+
+	/* Call the move_copy_messages method */
+	pres = PyObject_CallMethod(source_folder, "move_copy_messages", "OOOH", target_folder,
+				   src_mid_list, tgt_mid_list, (uint16_t) want_copy);
+	Py_DECREF(target_folder);
+	Py_DECREF(src_mid_list);
+	Py_DECREF(tgt_mid_list);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  src_pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
+
+/**
+   \details Move a subfolder into another parent folder
+
+   \param move_folder the subfolder that is moved between parents
+   \param target_folder the parent folder after the operation
+   \param new_folder_name the name of the moved folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_move_folder(void *move_folder,
+								void *target_folder,
+								TALLOC_CTX *mem_ctx,
+								const char *new_folder_name)
+{
+	struct mapistore_python_object		*mv_pyobj;
+	struct mapistore_python_object		*tgt_pyobj;
+	PyObject				*mv_folder;
+	PyObject				*tgt_folder;
+	PyObject				*pres;
+	enum mapistore_error			retval;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!move_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!target_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder objects */
+	mv_pyobj = (struct mapistore_python_object *) move_folder;
+	MAPISTORE_RETVAL_IF(!mv_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((mv_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	mv_folder = (PyObject *)mv_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!mv_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", mv_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_pyobj = (struct mapistore_python_object *) target_folder;
+	MAPISTORE_RETVAL_IF(!tgt_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((tgt_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_folder = (PyObject *)tgt_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!tgt_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", tgt_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the move_folder method */
+	pres = PyObject_CallMethod(mv_folder, "move_folder", "Os", tgt_folder, new_folder_name);
+	Py_DECREF(tgt_folder);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  mv_pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
+
+/**
+   \details Copy a subfolder into another parent folder
+
+   \param move_folder the subfolder that is copied between parents
+   \param target_folder the parent folder of the copy
+   \param recursive the flag that indicates if the contents of the
+   folder are also copied
+   \param new_folder_name the name of the copied folder
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_folder_copy_folder(void *move_folder,
+								void *target_folder,
+								TALLOC_CTX *mem_ctx,
+								bool recursive,
+								const char *new_folder_name)
+{
+	struct mapistore_python_object		*cp_pyobj;
+	struct mapistore_python_object		*tgt_pyobj;
+	PyObject				*cp_folder;
+	PyObject				*tgt_folder;
+	PyObject				*pres;
+	enum mapistore_error			retval;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!move_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!target_folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the folder objects */
+	cp_pyobj = (struct mapistore_python_object *) move_folder;
+	MAPISTORE_RETVAL_IF(!cp_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((cp_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	cp_folder = (PyObject *)cp_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!cp_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", cp_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_pyobj = (struct mapistore_python_object *) target_folder;
+	MAPISTORE_RETVAL_IF(!tgt_pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((tgt_pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	tgt_folder = (PyObject *)tgt_pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!tgt_folder, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("FolderObject", tgt_folder->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the move_folder method */
+	pres = PyObject_CallMethod(cp_folder, "copy_folder", "OHs", tgt_folder, (uint16_t)recursive, new_folder_name);
+	Py_DECREF(tgt_folder);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  cp_pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+
+	Py_DECREF(pres);
+	return retval;
+}
 
 /**
    \details Retrieve the number of children object of a given type
@@ -2208,6 +2502,98 @@ static enum mapistore_error mapistore_python_message_open_attachment(TALLOC_CTX 
 	return MAPISTORE_SUCCESS;
 }
 
+static enum mapistore_error mapistore_python_message_create_attachment(TALLOC_CTX *mem_ctx,
+								       void *message_object,
+								       void **attachment_object,
+								       uint32_t *aid) {
+	struct mapistore_python_object	*pyobj;
+	struct mapistore_python_object	*pyattach;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject			*attach;
+	PyObject			*attach_id;
+	uint32_t			id;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!attachment_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call create_attachment function */
+	pres = PyObject_CallMethod(message, "create_attachment", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a tuple was returned */
+	if (PyTuple_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in create_attachment\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve attachment object (item 0 of the tuple) */
+	attach = PyTuple_GetItem(pres, 0);
+	if (attach == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTiple_GetItem failed\n", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	} else if (strcmp("AttachmentObject", attach->ob_type->tp_name)) {
+		DEBUG(0, ("[ERR][%s][%s]: Expected AttachmentObject and got '%s'\n",
+			  pyobj->name, __location__, attach->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	/* Retrieve attachment ID (item 1 of the tuple) */
+	attach_id = PyTuple_GetItem(pres, 1);
+	if (attach_id == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ", pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+	id = PyLong_AsUnsignedLong(attach_id);
+	Py_DECREF(attach_id);
+
+	/* Return the attachment object and the Attachment ID */
+	pyattach = talloc_zero(pyobj, struct mapistore_python_object);
+	MAPISTORE_RETVAL_IF(!pyattach, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	pyattach->obj_type = MAPISTORE_PYTHON_OBJECT_ATTACHMENT;
+	pyattach->name = talloc_strdup(pyattach, pyobj->name);
+	MAPISTORE_RETVAL_IF(!pyattach->name, MAPISTORE_ERR_NO_MEMORY, pyattach);
+	pyattach->conn = pyobj->conn;
+	pyattach->ictx = pyobj->ictx;
+	pyattach->module = pyobj->module;
+	pyattach->private_object = attach;
+
+	talloc_set_destructor((void *)pyattach, (int (*)(void *))mapistore_python_object_destructor);
+
+	*attachment_object = pyattach;
+	*aid = id;
+
+	Py_INCREF(attach);
+	return MAPISTORE_SUCCESS;
+}
+
 /**
    \details Delete an attachment object
 
@@ -2242,6 +2628,53 @@ static enum mapistore_error mapistore_python_message_delete_attachment(void *mes
 
 	/* Call delete_attachment function */
 	pres = PyObject_CallMethod(message, "delete_attachment", "i", attach_id);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+/**
+   \details Commit the changes made to an attachment
+
+   \param mem_ctx pointer to the memory context
+   \param attachment_object pointer to the attachment object
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_attachment_save(TALLOC_CTX *mem_ctx,
+							     void *attachment_object)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*attachment;
+	PyObject			*pres;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!attachment_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the attachment object */
+	pyobj = (struct mapistore_python_object *) attachment_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_ATTACHMENT),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	attachment = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!attachment, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("AttachmentObject", attachment->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call save function */
+	pres = PyObject_CallMethod(attachment, "save", NULL);
 	if (pres == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
 			  pyobj->name, __location__));
@@ -2359,7 +2792,85 @@ static enum mapistore_error mapistore_python_message_get_attachment_table(TALLOC
 	return MAPISTORE_SUCCESS;
 }
 
+/**
+   \details Get the message's attachment IDs
 
+   \param mem_ctx pointer to the memory context
+   \param message_object pointer to the message object
+   \param table_object pointer to the table object to return
+   \param row_count pointer to the number of elements in the table created
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_get_attachment_ids(TALLOC_CTX *mem_ctx,
+									  void *message_object,
+									  uint32_t **attach_ids,
+									  uint16_t *id_count)
+{
+	struct mapistore_python_object		*pyobj;
+	PyObject				*message;
+	PyObject				*aid;
+	PyObject				*pres;
+	uint32_t				*aids;
+	Py_ssize_t				count;
+	Py_ssize_t				i;
+
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!attach_ids, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!id_count, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *) pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Call the get_attachment_list function */
+	pres = PyObject_CallMethod(message, "get_attachment_ids", NULL);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Ensure a list was returned */
+	if (PyList_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: List expected to be returned in get_attachment_ids\n",
+			  pyobj->name, __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Build the attachment ID array */
+	count = PyList_Size(pres);
+
+	aids = talloc_zero_array(mem_ctx, uint32_t, count);
+	if (aids == NULL) {
+		DEBUG(0, ("[ERR][%s]: Insufficient free space in memory\n", __location__));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < count; i++) {
+		aid = PyList_GetItem(pres, i);
+		aids[i] = PyLong_AsUnsignedLong(aid);
+	}
+
+	*attach_ids = aids;
+	*id_count = (uint16_t) count;
+
+	Py_DECREF(pres);
+	return MAPISTORE_SUCCESS;
+}
 /**
    \details Set columns on specified table
 
@@ -2881,7 +3392,6 @@ static enum mapistore_error mapistore_python_table_get_row_count(void *table_obj
 	return MAPISTORE_SUCCESS;
 }
 
-
 /**
    \details Retrieve all available properties of a given object
 
@@ -3134,13 +3644,15 @@ static enum mapistore_error mapistore_python_properties_set_properties(void *obj
 	pyobj = (struct mapistore_python_object *) object;
 	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_FOLDER) &&
-			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE) &&
+			    (pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_ATTACHMENT),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	obj = (PyObject *)pyobj->private_object;
 	MAPISTORE_RETVAL_IF(!obj, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 	MAPISTORE_RETVAL_IF(strcmp("FolderObject", obj->ob_type->tp_name) &&
-			    strcmp("MessageObject", obj->ob_type->tp_name),
+			    strcmp("MessageObject", obj->ob_type->tp_name) &&
+			    strcmp("AttachmentObject", obj->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
 	/* Build dictionary of properties */
@@ -3280,8 +3792,10 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.folder.delete = mapistore_python_folder_delete;
 	backend.folder.open_message = mapistore_python_folder_open_message;
 	backend.folder.create_message = mapistore_python_folder_create_message;
-	/* backend.folder.delete_message = mapistore_python_folder_delete_message; */
-	/* backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages; */
+	backend.folder.delete_message = mapistore_python_folder_delete_message;
+	backend.folder.move_copy_messages = mapistore_python_folder_move_copy_messages;
+	backend.folder.move_folder = mapistore_python_folder_move_folder;
+	backend.folder.copy_folder = mapistore_python_folder_copy_folder;
 	/* backend.folder.get_deleted_fmids = mapistore_python_folder_get_deleted_fmids; */
 	backend.folder.get_child_count = mapistore_python_folder_get_child_count;
 	backend.folder.open_table = mapistore_python_folder_open_table;
@@ -3294,9 +3808,11 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.save = mapistore_python_message_save;
 	/* backend.message.submit = mapistore_python_message_submit; */
 	backend.message.open_attachment = mapistore_python_message_open_attachment;
-	/* backend.message.create_attachment = mapistore_python_message_create_attachment; */
+	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.delete_attachment = mapistore_python_message_delete_attachment;
 	backend.message.get_attachment_table = mapistore_python_message_get_attachment_table;
+	backend.message.get_attachment_ids = mapistore_python_message_get_attachment_ids;
+	backend.message.save_attachment = mapistore_python_attachment_save;
 	/* backend.message.open_embedded_message = mapistore_python_message_open_embedded_message; */
 
 	/* table */

@@ -42,14 +42,12 @@ class BackendObject(object):
     def __init__(self):
         print '[PYTHON]: %s backend class __init__' % self.name
 
-        return
-
     def init(self):
         """ Initialize sample backend
         """
         print '[PYTHON]: %s backend.init: init()' % self.name
 
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def list_contexts(self, username):
         """ List context capabilities of this backend.
@@ -101,7 +99,7 @@ class BackendObject(object):
 
         context = ContextObject(username, uri)
 
-        return (0, context)
+        return (mapistore.errors.MAPISTORE_SUCCESS, context)
 
 
 class ContextObject(BackendObject):
@@ -536,7 +534,6 @@ class ContextObject(BackendObject):
         self.mapping[0xcababeef0000001]["message_cache"] = []
 
         print '[PYTHON]: %s context class __init__' % self.name
-        return
 
     def get_path(self, fmid):
         print '[PYTHON]: %s context.get_path' % self.name
@@ -552,7 +549,7 @@ class ContextObject(BackendObject):
         print '[PYTHON]: %s context.get_root_folder' % self.name
 
         folder = FolderObject(self.mapping[folderID], None, folderID, 0x0)
-        return (0, folder)
+        return (mapistore.errors.MAPISTORE_SUCCESS, folder)
 
 
 class FolderObject(ContextObject):
@@ -564,7 +561,6 @@ class FolderObject(ContextObject):
         self.parentdict = parentdict
         self.parentFID = parentFID;
         self.folderID = folderID;
-        return
 
     def open_folder(self, folderID):
         print '[PYTHON]: %s folder.open_folder(0x%x)' % (self.name, folderID)
@@ -573,7 +569,7 @@ class FolderObject(ContextObject):
             if fld["properties"]["PidTagFolderID"] == folderID:
                 print '[PYTHON]: folderID 0x%x found\n' % (folderID)
                 return FolderObject(fld, self.basedict, folderID, self.folderID)
-        return 17
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
 
     def create_folder(self, properties, folderID):
         print '[PYTHON]: %s folder.create_folder(%s)' % (self.name, folderID)
@@ -585,6 +581,7 @@ class FolderObject(ContextObject):
         folder["fid"] = folderID
         folder["properties"] = {}
         folder["properties"]["PidTagFolderId"] = folder["fid"]
+        folder["properties"]["PidTagParentFolderId"] = self.basedict["fid"]
         if properties.has_key("PidTagDisplayName"):
             folder["properties"]["PidTagDisplayName"] = properties["PidTagDisplayName"]
         if properties.has_key("PidTagComment"):
@@ -594,19 +591,24 @@ class FolderObject(ContextObject):
         folder["message_cache"] = []
 
         self.basedict["subfolders"].append(folder)
+        self.basedict["properties"]["PidTagChildFolderCount"] = len(self.basedict["subfolders"])
+        self.basedict["properties"]["PidTagSubfolders"] = len(self.basedict["subfolders"]) > 0
 
-        return (0, FolderObject(folder, self.basedict, folderID, self.folderID))
+        return (mapistore.errors.MAPISTORE_SUCCESS, FolderObject(folder, self.basedict, folderID, self.folderID))
 
     def delete(self):
         print '[PYTHON]: %s folder.delete(%s)' % (self.name, self.folderID)
 
         if self.parentdict is None:
-            return 23
+            mapistore.errors.MAPISTORE_ERR_DENIED
 
         if self.basedict in self.parentdict["subfolders"]:
             self.parentdict["subfolders"].remove(self.basedict)
-            return 0
-        return 17
+            child_folder_count = len(self.parentdict["subfolders"])
+            self.parentdict["properties"]["PidTagChildFolderCount"] = child_folder_count
+            self.parentdict["properties"]["PidTagSubfolders"] = child_folder_count > 0
+            return mapistore.errors.MAPISTORE_SUCCESS
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
 
     def open_table(self, table_type):
         print '[PYTHON]: %s folder.open_table' % (self.name)
@@ -617,12 +619,12 @@ class FolderObject(ContextObject):
     def get_child_count(self, table_type):
         print '[PYTHON]: %s folder.get_child_count' % (self.name)
 
-        counter = { 1: self._count_folders,
-                    2: self._count_messages,
-                    3: self._count_zero,
-                    4: self._count_zero,
-                    5: self._count_zero,
-                    6: self._count_zero
+        counter = { mapistore.FOLDER_TABLE: self._count_folders,
+                    mapistore.MESSAGE_TABLE: self._count_messages,
+                    mapistore.FAI_TABLE: self._count_zero,
+                    mapistore.RULE_TABLE: self._count_zero,
+                    mapistore.ATTACHMENT_TABLE: self._count_zero,
+                    mapistore.PERMISSIONS_TABLE: self._count_zero
                 }
         return counter[table_type]()
 
@@ -637,7 +639,7 @@ class FolderObject(ContextObject):
         return len(self.basedict["messages"])
 
     def _count_zero(self):
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def open_message(self, mid, rw):
         print '[PYTHON]: %s folder.open_message()' % self.name
@@ -648,10 +650,11 @@ class FolderObject(ContextObject):
                 msg_copy = msg.copy()
                 self.basedict["message_cache"].append(msg)
                 return MessageObject(msg_copy, self, mid, rw)
-        return 17
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
 
     def create_message(self, mid, associated):
         print '[PYTHON]: %s folder.create_message()' % self.name
+
         newmsg = {}
         newmsg["recipients"] = []
         newmsg["attachments"] = []
@@ -660,9 +663,82 @@ class FolderObject(ContextObject):
         newmsg["next_aid"] = 0
         newmsg["attachment_cache"] = []
         newmsg["properties"] = {}
-        newmsg["properties"]["PidTagMessageId"] = newmsg["mid"]
+        newmsg["properties"]["PidTagMid"] = mid
+        newmsg["properties"]["PidTagFolderId"] = self.basedict["properties"]["PidTagFolderId"]
         self.basedict["message_cache"].append(newmsg)
+
         return MessageObject(newmsg, self, mid, 1)
+
+    def delete_message(self, mid):
+        print '[PYTHON]: %s folder.delete_message()' % (self.name)
+
+        found = False
+
+        for msg in self.basedict["messages"]:
+            if msg["properties"]["PidTagMid"] == mid:
+                found = True
+                self.basedict["messages"].remove(msg)
+                self.basedict["properties"]["PidTagContentCount"] = len(self.basedict["messages"])
+                break
+
+        for cached_msg in self.basedict["message_cache"]:
+            found = True
+            if cached_msg["properties"]["PidTagMid"] == mid:
+                self.basedict["message_cache"].remove(cached_msg)
+
+        if found:
+            return mapistore.errors.MAPISTORE_SUCCESS
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+
+    def move_copy_messages(self, target_folder, source_mids, target_mids, want_copy):
+        print '[PYTHON]: %s folder.move_copy_messages()' % (self.name)
+
+        found = False
+
+        for msg in self.basedict["messages"]:
+            mid = msg["properties"]["PidTagMid"]
+            if mid in source_mids:
+                found = True
+
+                new_mid = target_mids[source_mids.index(mid)]
+                msg["properties"]["PidTagFolderId"] = target_folder.basedict["properties"]["PidTagFolderId"]
+                msg["properties"]["PidTagMid"] = new_mid
+                msg["mid"] = new_mid
+                target_folder.basedict["messages"].append(msg)
+                target_folder.basedict["properties"]["PidTagContentCount"] = len(target_folder.basedict["messages"])
+
+                if not want_copy:
+                    self.delete_message(mid)
+        if found:
+            return mapistore.errors.MAPISTORE_SUCCESS
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+
+    def move_folder(self, target_folder, new_name):
+        print '[PYTHON]: %s folder.move_folder()' % (self.name)
+
+        if self.parentdict is None:
+            mapistore.errors.MAPISTORE_ERR_DENIED
+
+        self.copy_folder(target_folder, True, new_name)
+        self.delete()
+
+        return mapistore.errors.MAPISTORE_SUCCESS
+
+    def copy_folder(self, target_folder, recursive, new_name):
+        print '[PYTHON]: %s folder.copy_folder()' % (self.name)
+
+        if self.parentdict is None:
+            mapistore.errors.MAPISTORE_ERR_DENIED
+
+        folder = self.basedict.copy()
+        folder["properties"]["PidTagDisplayName"] = new_name
+        folder["properties"]["PidTagParentFolderId"] = target_folder.basedict["properties"]["PidTagFolderId"]
+        if not recursive:
+            folder["subfolders"] = []
+        target_folder.basedict["subfolders"].append(folder)
+        target_folder.basedict["PidTagChildFolderCount"] = len(target_folder.basedict["subfolders"])
+        target_folder.basedict["PidTagSubfolders"] = len(target_folder.basedict["subfolders"]) > 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_properties(self, properties):
         print '[PYTHON]: %s folder.get_properties()' % (self.name)
@@ -676,7 +752,7 @@ class FolderObject(ContextObject):
         self.basedict["properties"].update(properties)
 
         print self.basedict["properties"]
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 class TableObject(BackendObject):
 
@@ -686,32 +762,31 @@ class TableObject(BackendObject):
         self.folder = folder
         self.tableType = tableType
         self.properties = []
-        return
 
     def set_columns(self, properties):
         print '[PYTHON]: %s table.set_columns()' % (self.name)
 
         self.properties = properties
         print 'properties: [%s]\n' % ', '.join(map(str, self.properties))
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_row(self, rowId, query_type):
         print '[PYTHON]: %s table.get_row()' % (self.name)
 
         rowdata = None
-        if self.tableType == 1:
+        if self.tableType == mapistore.FOLDER_TABLE:
             subfolders = self.folder.basedict["subfolders"]
             if (len(subfolders) > rowId and
                 subfolders[rowId] and
                 subfolders[rowId].has_key("properties")):
                 rowdata = subfolders[rowId]["properties"]
-        elif self.tableType == 2:
+        elif self.tableType == mapistore.MESSAGE_TABLE:
             messages = self.folder.basedict["messages"]
             if (len(messages) > rowId and
                 messages[rowId] and
                 messages[rowId].has_key("properties")):
                 rowdata = messages[rowId]["properties"]
-        elif self.tableType == 5:
+        elif self.tableType == mapistore.ATTACHMENT_TABLE:
             attachments = self.folder.message["attachments"]
             if (len(attachments) > rowId and
                 attachments[rowId] and
@@ -735,7 +810,6 @@ class MessageObject(BackendObject):
         self.mid = mid
         self.rw = rw
 
-        return
 
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
@@ -753,13 +827,13 @@ class MessageObject(BackendObject):
         self.basedict["properties"].update(properties);
 
         print self.basedict["properties"]
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def save(self):
         print '[PYTHON]: %s message.save()' % (self.name)
 
         if self.basedict not in self.folder.basedict["message_cache"]:
-            return 17
+            return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
 
         for msg in self.folder.basedict["messages"]:
             if msg["mid"] == self.mid:
@@ -767,7 +841,8 @@ class MessageObject(BackendObject):
                 break
 
         self.folder.basedict["messages"].append(self.basedict.copy())
-        return 0
+        self.folder.basedict["properties"]["PidTagContentCount"] = len(self.folder.basedict["messages"])
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def _count_attachments(self):
         print '[PYTHON][INTERNAL]: %s message._count_attachments(0x%x): %d' % (self.name, self.mid, len(self.basedict["attachments"]))
@@ -777,7 +852,7 @@ class MessageObject(BackendObject):
     def get_child_count(self, table_type):
         print '[PYTHON]: %s message.get_child_count' % (self.name)
 
-        counter = { 5: self._count_attachments }
+        counter = { mapistore.ATTACHMENT_TABLE: self._count_attachments }
         return counter[table_type]()
 
     def open_attachment(self, attach_id):
@@ -788,7 +863,23 @@ class MessageObject(BackendObject):
                 '[PYTHON]: attachID 0x%x found\n' % (attach_id)
                 self.basedict["attachment_cache"].append(att)
                 return AttachmentObject(att, self, attach_id)
-        return 17
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+
+    def create_attachment(self):
+        print '[PYTHON]: %s message.create_attachment():' % (self.name)
+
+        attach_id = self.basedict["next_aid"]
+
+        newatt = {}
+        newatt["attachid"] = attach_id
+        newatt["properties"] = {}
+        newatt["properties"]["PidTagAttachNumber"] = attach_id
+        newatt["properties"]["PidTagMid"] = self.basedict["properties"]["PidTagMid"]
+
+        self.basedict["attachment_cache"].append(newatt)
+        self.basedict["next_aid"] = attach_id + 1
+
+        return (AttachmentObject(newatt, self, attach_id), attach_id)
 
     def delete_attachment(self, attach_id):
         print '[PYTHON]: %s message.delete_attachment %d' % (self.name, attach_id)
@@ -804,16 +895,22 @@ class MessageObject(BackendObject):
             if cached_att["attachid"] == attach_id:
                 found = True
                 self.basedict["attachment_cache"].remove(cached_att)
-
+        self.basedict["PidTagContentCount"] = len(self.basedict["attachments"])
+        self.basedict["properties"]["PidTagHasAttachments"] = len(self.basedict["attachments"]) > 0
         if found:
-            return 0
-        return 17
+            return mapistore.errors.MAPISTORE_SUCCESS
+        return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+
+    def get_attachment_ids(self):
+        print '[PYTHON]: %s message.get_attachment_ids' % (self.name)
+
+        return [att["attachid"] for att in self.basedict["attachments"]]
 
     def get_attachment_table(self):
         print '[PYTHON]: %s message.get_attachment_table()' % (self.name)
 
-        table = TableObject(self, 5)
-        return (table, self.get_child_count(5))
+        table = TableObject(self, mapistore.ATTACHMENT_TABLE)
+        return (table, self.get_child_count(mapistore.ATTACHMENT_TABLE))
 
 
 class AttachmentObject(BackendObject):
@@ -825,13 +922,35 @@ class AttachmentObject(BackendObject):
         self.basedict = attachment
         self.message = message
         self.attachid = attachid
-        return
+
+    def save(self):
+        print '[PYTHON]: %s attachment.save()' % (self.name)
+
+        if self.basedict not in self.message.basedict["attachment_cache"]:
+            return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+
+        for att in self.message.basedict["attachments"]:
+            if att["attachid"] == self.attachid:
+                self.message.basedict["attachments"].remove(att)
+                break
+
+        self.message.basedict["attachments"].append(self.basedict.copy())
+        self.message.basedict["properties"]["PidTagContentCount"] = len(self.message.basedict["attachments"])
+        self.message.basedict["properties"]["PidTagHasAttachments"] = len(self.message.basedict["attachments"]) > 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_properties(self, properties):
         print '[PYTHON]: %s message.get_properties()' % (self.name)
 
         return self.basedict["properties"]
 
+    def set_properties(self, properties):
+        print '[PYTHON]: %s folder.set_properties()' % (self.name)
+
+        self.basedict["properties"].update(properties)
+
+        print self.basedict["properties"]
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 
 ###################################################################################################################################
@@ -894,7 +1013,6 @@ class OpenchangeDBWithMySQL():
         cur.execute(sql, params)
         self.db.commit()
         cur.close()
-        return
 
 if __name__ == '__main__':
     parser = optparse.OptionParser("sample.py [options]")

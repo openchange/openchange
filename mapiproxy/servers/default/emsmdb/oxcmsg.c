@@ -1625,7 +1625,16 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
                                                           struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                           uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25) -- valid stub\n"));
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*data;
+	bool			mapistore = false;
+	struct emsmdbp_object	*attachment_object;
+	uint32_t		contextID;
+	enum mapistore_error	ret;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1634,13 +1643,43 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
+	/* Initialise default empty SaveChangesAttachment reply */
 	mapi_repl->opnum = mapi_req->opnum;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
-	mapi_repl->handle_idx = mapi_req->u.mapi_SaveChangesAttachment.handle_idx;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
 
+	/* Convert the handle index into a handle, then get the attachment object */
+	handle = handles[mapi_req->u.mapi_SaveChangesAttachment.handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	attachment_object = (struct emsmdbp_object *)data;
+	if (!attachment_object || attachment_object->type != EMSMDBP_OBJECT_ATTACHMENT) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(attachment_object);
+
+	if (mapistore) {
+                contextID = emsmdbp_get_contextID(attachment_object);
+                ret = mapistore_attachment_save(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object, mem_ctx);
+		if (ret != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("Error saving the attachment\n"));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		}
+	} else {
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+	}
+end:
 	*size += libmapiserver_RopSaveChangesAttachment_size(mapi_repl);
 
-	return MAPI_E_SUCCESS;	
+	return MAPI_E_SUCCESS;
 }
 
 /**
@@ -1798,4 +1837,88 @@ end:
 	*size += libmapiserver_RopOpenEmbeddedMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;	
+}
+
+/**
+   \details EcDoRpc GetValidAttachments (0x46) Rop. This operation gets an array
+   with the attachment IDs and the attachment count
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the OpenEmbeddedMessage EcDoRpc_MAPI_REQ
+   structure
+   \param mapi_repl pointer to the OpenEmbeddedMessage
+   EcDoRpc_MAPI_REPL structure
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetValidAttachments(TALLOC_CTX *mem_ctx,
+                                                        struct emsmdbp_context *emsmdbp_ctx,
+                                                        struct EcDoRpc_MAPI_REQ *mapi_req,
+                                                        struct EcDoRpc_MAPI_REPL *mapi_repl,
+                                                        uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+	uint32_t		handle;
+	struct mapi_handles	*rec = NULL;
+	void			*data;
+	bool			mapistore = false;
+	struct emsmdbp_object	*message_object;
+	uint32_t		contextID;
+	enum mapistore_error	ret;
+	uint16_t		count;
+	uint32_t		*attach_ids;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetValidAttachments (0x46)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Initialize default empty GetValidAttachments reply */
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->error_code = MAPI_E_SUCCESS;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->u.mapi_GetValidAttachments.AttachmentIdCount = 0;
+
+	/* Convert the handle index into a handle, then get the message object */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		goto end;
+	}
+
+	retval = mapi_handles_get_private_data(rec, &data);
+	message_object = (struct emsmdbp_object *)data;
+	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+		/* TODO: Figure out data type */
+		DEBUG(0, ("[ERROR][%s]: data object is %d instead of EMSMDBP_OBJECT_MESSAGE", __location__, message_object->type));
+		goto end;
+	}
+
+	mapistore = emsmdbp_is_mapistore(message_object);
+	if (mapistore) {
+	        contextID = emsmdbp_get_contextID(message_object);
+	        ret = mapistore_message_get_attachment_ids(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx, &attach_ids, &count);
+	        if (ret != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("Error saving the attachment\n"));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+			goto end;
+	        }
+	        mapi_repl->u.mapi_GetValidAttachments.AttachmentIdCount = count;
+	        mapi_repl->u.mapi_GetValidAttachments.AttachmentIdArray = attach_ids;
+	} else {
+		/* system/special folder */
+		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+	}
+end:
+	*size += libmapiserver_RopGetValidAttachments_size(mapi_repl);
+	return MAPI_E_SUCCESS;
 }

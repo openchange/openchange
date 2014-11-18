@@ -434,7 +434,7 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     """
     if reporter is None:
         reporter = TextProgressReporter()
-
+    
     try:
         provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
         modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects")

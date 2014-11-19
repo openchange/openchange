@@ -103,19 +103,6 @@ class ProvisionNames(object):
     def domain(self, value):
         self._domain = value
 
-def _get_domaindn(lp):
-    serverrole = lp.get("server role")
-    if "domain controller" in serverrole or serverrole == "member server":
-        dnsdomain = lp.get("realm")
-        dnsdomain = dnsdomain.lower()
-        domaindn = "DC=" + dnsdomain.replace(".", ",DC=")
-        return domaindn
-    else:
-        netbiosname = lp.get("netbios name")        
-        domaindn = "CN=" + netbiosname
-        return domaindn
-        
-
 def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
 
@@ -662,16 +649,15 @@ def provision(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     # raise error if there is already a organization in the director
-    db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
-             credentials=creds, lp=lp)    
-    domaindn = _get_domaindn(lp)
-    basedn = 'CN=Services,CN=Configuration,'  + domaindn
+    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=system_session(),
+             credentials=creds, lp=lp)
+    basedn = 'CN=Services,' + db.get_config_basedn().get_linearized()
     ret = db.search(
         attrs=['name'], base=basedn, expression='(objectclass=msExchOrganizationContainer)',
         scope=ldb.SCOPE_SUBTREE)
     if len(ret) > 0:
        firstorg = ret[0]['name'][0]
-       raise Exception('There is already at least one provisioned organization: %(name)s' % {'name': firstorg})
+       raise Exception('There is already, at least, one provisioned organization: %(name)s' % {'name': firstorg})
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds, reporter)

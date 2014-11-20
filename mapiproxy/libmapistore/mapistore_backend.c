@@ -532,6 +532,9 @@ enum mapistore_error mapistore_backend_get_path(struct backend_context *bctx, TA
 	} else {
 		*path = NULL;
 	}
+	if (bpath != NULL) {
+		talloc_free(bpath);
+	}
 
 	return ret;
 }

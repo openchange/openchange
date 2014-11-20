@@ -263,7 +263,7 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 {
 	int		ret;
 	char		*sql;
-	MYSQL_RES	*res;
+	MYSQL_RES	*res = NULL;
 	MYSQL_ROW	row;
 
 	/* Sanity checks */
@@ -278,6 +278,7 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 		"SELECT url, soft_deleted FROM %s "
 		"WHERE username = '%s' AND fmid = %"PRIu64,
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid);
+	MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	ret = select_without_fetch(MYSQL(ictx), sql, &res);
 	MAPISTORE_RETVAL_IF(ret == MYSQL_NOT_FOUND, MAPISTORE_ERR_NOT_FOUND, sql);
@@ -288,7 +289,11 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 	*urip = talloc_strdup(mem_ctx, row[0]);
 	*soft_deletedp = strtoull(row[1], NULL, 0) == 1;
 
+	if (res) {
+		mysql_free_result(res);
+	}
 	talloc_free(sql);
+
 	return MAPISTORE_SUCCESS;
 }
 

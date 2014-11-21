@@ -331,3 +331,157 @@ _PUBLIC_ bool mapitest_zentyal_1804(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+    \details Test #4872 ModifyRecipients and try to build RecipientRow
+    with additional properties and not all are set in the ModifyRecipientsROP
+    but a subset.
+
+    It is identified as CR-657 (https://projects.zentyal.com/issues/8258)
+
+    \param mt pointer to the top level mapitest structure
+
+    \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_zentyal_4872(struct mapitest *mt)
+{
+	enum MAPISTATUS			retval;
+	mapi_object_t			obj_store;
+	mapi_object_t			obj_folder;
+	mapi_object_t			obj_message;
+	mapi_id_t			id_folder;
+	char				**username = NULL;
+	struct SPropTagArray		*SPropTagArray = NULL;
+	struct PropertyValue_r		value;
+	struct PropertyRowSet_r		*RowSet = NULL;
+	struct SRowSet			*SRowSet = NULL;
+	struct PropertyTagArray_r	*flaglist = NULL;
+	mapi_id_t			id_msgs[1];
+	uint32_t			prop_i;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Outbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderOutbox);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Create the message */
+	mapi_object_init(&obj_message);
+	retval = CreateMessage(&obj_folder, &obj_message);
+	mapitest_print_retval(mt, "CreateMessage");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+
+	/* Step 4. Resolve the recipients and call ModifyRecipients */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0xA,
+					  PR_ENTRYID,
+					  PR_DISPLAY_NAME_UNICODE,
+					  PR_OBJECT_TYPE,
+					  PR_DISPLAY_TYPE,
+					  PR_TRANSMITTABLE_DISPLAY_NAME_UNICODE,
+					  PR_EMAIL_ADDRESS_UNICODE,
+					  PR_ADDRTYPE_UNICODE,
+					  PR_SEND_RICH_INFO,
+					  PR_7BIT_DISPLAY_NAME_UNICODE,
+					  PR_SMTP_ADDRESS_UNICODE);
+
+	username = talloc_array(mt->mem_ctx, char *, 2);
+	username[0] = (char *)mt->profile->username;
+	username[1] = NULL;
+
+	retval = ResolveNames(mapi_object_get_session(&obj_message),
+			      (const char **)username, SPropTagArray,
+			      &RowSet, &flaglist, MAPI_UNICODE);
+	mapitest_print_retval_clean(mt, "ResolveNames", retval);
+	if (retval != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	if (!RowSet) {
+		mapitest_print(mt, "Null RowSet\n");
+		return false;
+	}
+	if (!RowSet->cRows) {
+		mapitest_print(mt, "No values in RowSet\n");
+		MAPIFreeBuffer(RowSet);
+		return false;
+	}
+
+	value.ulPropTag = PR_SEND_INTERNET_ENCODING;
+	value.value.l = 0;
+	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
+
+	/* Set we want to send 2 additional properties but,
+	   actually, we are sending just one in the recipient row */
+
+	/* PT_MV_BINARY */
+	value.ulPropTag = PidTagUserX509Certificate;
+	value.value.MVbin.cValues = 2;
+	value.value.MVbin.lpbin = talloc_array(mt->mem_ctx, struct Binary_r, value.value.MVbin.cValues);
+	value.value.MVbin.lpbin[0].cb = 9;
+	value.value.MVbin.lpbin[0].lpb = (uint8_t *)"string 1";
+	value.value.MVbin.lpbin[1].cb = 9;
+	value.value.MVbin.lpbin[1].lpb = (uint8_t *)"string 2";
+	PropertyRowSet_propcpy(mt->mem_ctx, RowSet, value);
+
+	/* Create another row with the same data but without the latest binary property in it */
+	RowSet->cRows += 1;
+	RowSet->aRow = talloc_realloc(mt->mem_ctx, RowSet->aRow, struct PropertyRow_r, RowSet->cRows);
+	RowSet->aRow[1].cValues = 0;
+	RowSet->aRow[1].lpProps = talloc_zero(mt->mem_ctx, struct PropertyValue_r);
+	for (prop_i = 0; prop_i < RowSet->aRow[0].cValues - 1; prop_i++) {
+		PropertyRow_addprop(&RowSet->aRow[1], RowSet->aRow[0].lpProps[prop_i]);
+	}
+
+	SRowSet = talloc_zero(RowSet, struct SRowSet);
+	cast_PropertyRowSet_to_SRowSet(SRowSet, RowSet, SRowSet);
+
+	SetRecipientType(&(SRowSet->aRow[0]), MAPI_TO);
+	mapitest_print_retval(mt, "SetRecipientType TO");
+	SetRecipientType(&(SRowSet->aRow[1]), MAPI_CC);
+	mapitest_print_retval(mt, "SetRecipientType CC");
+
+	retval = ModifyRecipients(&obj_message, SRowSet);
+	mapitest_print_retval_fmt(mt, "ModifyRecipients", "(%s)", "MAPI_TO");
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(RowSet);
+		MAPIFreeBuffer(flaglist);
+		return false;
+	}
+
+	/* Step 5. Delete the message */
+	id_msgs[0] = mapi_object_get_id(&obj_message);
+	retval = DeleteMessage(&obj_folder, id_msgs, 1);
+	mapitest_print_retval(mt, "DeleteMessage");
+	if (retval != MAPI_E_SUCCESS) {
+		MAPIFreeBuffer(RowSet);
+		MAPIFreeBuffer(flaglist);
+		return false;
+	}
+	/* Release */
+	MAPIFreeBuffer(RowSet);
+	MAPIFreeBuffer(flaglist);
+	mapi_object_release(&obj_message);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return true;
+}

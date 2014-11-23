@@ -60,7 +60,7 @@ static int emsmdbp_mapi_store_destructor(void *data)
 	struct mapistore_context *mstore_ctx = (struct mapistore_context *) data;
 
 	mapistore_release(mstore_ctx);
-	DEBUG(6, ("[%s:%d]: MAPISTORE context released\n", __FUNCTION__, __LINE__));
+	DEBUG(6, ("MAPISTORE context released\n"));
 	return true;
 }
 
@@ -78,7 +78,7 @@ static int emsmdbp_mapi_handles_destructor(void *data)
 	struct mapi_handles_context	*handles_ctx = (struct mapi_handles_context *) data;
 
 	retval = mapi_handles_release(handles_ctx);
-	DEBUG(6, ("[%s:%d]: MAPI handles context released (%s)\n", __FUNCTION__, __LINE__,
+	DEBUG(6, ("MAPI handles context released (%s)\n",
 		  mapi_get_errstr(retval)));
 
 	return (retval == MAPI_E_SUCCESS) ? 0 : -1;
@@ -140,17 +140,17 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
-		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n"));
 		return NULL;
 	}
 
 	/* Reference global OpenChange dispatcher database pointer within current context */
 	emsmdbp_ctx->oc_ctx = oc_ctx;
 
-	/* Initialize the mapistore context */		
+	/* Initialize the mapistore context */
 	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!emsmdbp_ctx->mstore_ctx) {
-		DEBUG(0, ("[%s:%d]: MAPISTORE initialization failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("MAPISTORE initialization failed\n"));
 
 		talloc_free(mem_ctx);
 		return NULL;
@@ -158,7 +158,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 	ret = mapistore_set_connection_info(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->samdb_ctx, emsmdbp_ctx->oc_ctx, username);
 	if (ret != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: MAPISTORE connection info initialization failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("MAPISTORE connection info initialization failed\n"));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -167,7 +167,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	/* Initialize MAPI handles context */
 	emsmdbp_ctx->handles_ctx = mapi_handles_init(mem_ctx);
 	if (!emsmdbp_ctx->handles_ctx) {
-		DEBUG(0, ("[%s:%d]: MAPI handles context initialization failed\n", __FUNCTION__, __LINE__));
+		DEBUG(0, ("MAPI handles context initialization failed\n"));
 		talloc_free(mem_ctx);
 		return NULL;
 	}
@@ -205,7 +205,7 @@ _PUBLIC_ bool emsmdbp_destructor(void *data)
 	talloc_unlink(emsmdbp_ctx, emsmdbp_ctx->oc_ctx);
 	talloc_free(emsmdbp_ctx->mem_ctx);
 
-	DEBUG(0, ("[%s:%d]: emsmdbp_ctx found and released\n", __FUNCTION__, __LINE__));
+	DEBUG(0, ("emsmdbp_ctx found and released\n"));
 
 	return true;
 }

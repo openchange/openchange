@@ -829,7 +829,7 @@ static void *get_property_data_message(TALLOC_CTX *mem_ctx, struct ldb_message *
 		data = (void *)long_array;
 		break;
 	default:
-		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		DEBUG(0, ("Property Type 0x%.4x not supported\n", (proptag & 0xFFFF)));
 		abort();
 		return NULL;
 	}

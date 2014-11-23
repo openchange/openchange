@@ -150,29 +150,29 @@ static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct tce_async_context	*actx = talloc_get_type(req->context, struct tce_async_context);
 
-        switch (ares->type) {
+	switch (ares->type) {
 
-        case LDB_REPLY_ENTRY:
+	case LDB_REPLY_ENTRY:
 		if (ldb_msg_find_element(ares->message, "msExchMailboxGuid") != NULL) {
-			DEBUG(3, ("[%s:%d]: msExchMailboxGuid found!\n", __FUNCTION__, __LINE__));
+			DEBUG(3, ("msExchMailboxGuid found!\n"));
 			actx->found = 1;
 			talloc_free(ares);
 			return ldb_request_done(req, LDB_SUCCESS);
 		}
-                break;
-        case LDB_REPLY_DONE:
-                break;
-        default:
-		DEBUG(3, ("[%s:%d]: unknown Reply Type ignore it\n", __FUNCTION__, __LINE__));
+		break;
+	case LDB_REPLY_DONE:
+		break;
+	default:
+		DEBUG(3, ("unknown Reply Type ignore it\n"));
 		talloc_free(ares);
-                return LDB_ERR_OTHER;
-        }
+		return LDB_ERR_OTHER;
+	}
 
-        if (talloc_free(ares) == -1) {
-		DEBUG(3, ("[%s:%d]: talloc_free failed\n", __FUNCTION__, __LINE__));
-                return LDB_ERR_OPERATIONS_ERROR;
-        }
-	
+	if (talloc_free(ares) == -1) {
+		DEBUG(3, ("talloc_free failed\n"));
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 

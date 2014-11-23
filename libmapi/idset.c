@@ -250,7 +250,7 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 
 	while (!end && !parser->error) {
 		if (parser->buffer_position >= parser->buffer.length) {
-			DEBUG(4, ("%s: end of buffer reached unexpectedly at position %Ld\n", __FUNCTION__,
+			DEBUG(4, ("end of buffer reached unexpectedly at position %Ld\n",
 				  (unsigned long long) parser->buffer_position));
 			parser->error = true;
 		}

@@ -191,7 +191,7 @@ class _RESTConn(object):
                 props[key] = base64.b64encode(value)
         headers = {'Content-Type': 'application/json'}
         r = self.so.put('%s/%s/%s/' % (self.base_url, collection, props["id"]), data=json.dumps(props), headers=headers)
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def create_folder(self, parent_id, folder):
         folder['parent_id'] = parent_id
@@ -205,7 +205,7 @@ class _RESTConn(object):
             if mapistore.isPtypBinary(key):
                 props[key] = base64.b64encode(value)
         r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(props), headers=headers)
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
@@ -224,7 +224,7 @@ class _Indexing(object):
         mstore_uri = self.uri_rest_to_mstore(uri)
         # FIXME: check if uri already exists
         self.ictx.add_fmid(fmid, uri)
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def add_uri(self, uri):
         """
@@ -284,7 +284,6 @@ class BackendObject(object):
 
     def __init__(self):
         logger.info('[PYTHON]: [%s] backend class __init__' % self.name)
-        return
 
     def init(self):
         """ Initialize REST backend
@@ -398,7 +397,8 @@ class FolderObject(object):
     def open_folder(self, folderID):
         logger.info('[PYTHON]: [%s] folder.open(fid=%s)' % (BackendObject.name, folderID))
         uri = self.ctx.indexing.uri_by_id(folderID)
-        return FolderObject(self.ctx, uri, folderID, 0)
+        return FolderObject(self.ctx, uri, folderID,
+                mapistore.errors.MAPISTORE_SUCCESS)
 
 
     def create_folder(self, props, fid):
@@ -493,12 +493,12 @@ class FolderObject(object):
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
-        factory = {1: self._open_table_folders,
-                   2: self._open_table_messages,
-                   3: self._open_table_any,
-                   4: self._open_table_any,
-                   5: self._open_table_any,
-                   6: self._open_table_any
+        factory = {mapistore.FOLDER_TABLE: self._open_table_folders,
+                   mapistore.MESSAGE_TABLE: self._open_table_messages,
+                   mapistore.FAI_TABLE: self._open_table_any,
+                   mapistore.RULE_TABLE: self._open_table_any,
+                   mapistore.ATTACHMENT_TABLE: self._open_table_any,
+                   mapistore.PERMISSIONS_TABLE: self._open_table_any
                    }
         return factory[table_type](table_type)
 
@@ -518,15 +518,14 @@ class FolderObject(object):
         self._index_messages(messages)
         return self._open_table_any(table_type)
 
-
     def get_child_count(self, table_type):
         logger.info('[PYTHON]: [%s] folder.fet_child_count with table_type = %d' % (BackendObject.name, table_type))
-        counter = { 1: self._count_folders,
-                    2: self._count_messages,
-                    3: self._count_zero,
-                    4: self._count_zero,
-                    5: self._count_zero,
-                    6: self._count_zero
+        counter = { mapistore.FOLDER_TABLE: self._count_folders,
+                    mapistore.MESSAGE_TABLE: self._count_messages,
+                    mapistore.FAI_TABLE: self._count_zero,
+                    mapistore.RULE_TABLE: self._count_zero,
+                    mapistore.ATTACHMENT_TABLE: self._count_zero,
+                    mapistore.PERMISSIONS_TABLE: self._count_zero
                 }
         return counter[table_type]()
 
@@ -644,7 +643,7 @@ class TableObject(object):
 
     def get_row_count(self, query_type):
         logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
-        if self.table_type == 2:
+        if self.table_type == mapistore.MESSAGE_TABLE:
             count = 0
             for message in self.folder.messages:
                 if self._apply_restriction_message(self.restrictions, message) is True:
@@ -658,12 +657,12 @@ class TableObject(object):
         if self.get_row_count(self.table_type) == 0:
             return (self.columns, {})
 
-        getter = {1: self._get_row_folders,
-                  2: self._get_row_messages,
-                  3: self._get_row_not_impl,
-                  4: self._get_row_not_impl,
-                  5: self._get_row_not_impl,
-                  6: self._get_row_not_impl
+        getter = {mapistore.FOLDER_TABLE: self._get_row_folders,
+                  mapistore.MESSAGE_TABLE: self._get_row_messages,
+                  mapistore.FAI_TABLE: self._get_row_not_impl,
+                  mapistore.RULE_TABLE: self._get_row_not_impl,
+                  mapistore.ATTACHMENT_TABLE: self._get_row_not_impl,
+                  mapistore.PERMISSIONS_TABLE: self._get_row_not_impl
                   }
         return getter[self.table_type](row_no)
 

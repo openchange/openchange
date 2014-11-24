@@ -289,9 +289,7 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 	*urip = talloc_strdup(mem_ctx, row[0]);
 	*soft_deletedp = strtoull(row[1], NULL, 0) == 1;
 
-	if (res) {
-		mysql_free_result(res);
-	}
+	mysql_free_result(res);
 	talloc_free(sql);
 
 	return MAPISTORE_SUCCESS;

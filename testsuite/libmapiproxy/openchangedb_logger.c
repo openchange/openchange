@@ -204,14 +204,6 @@ static enum MAPISTATUS get_distinguishedName(TALLOC_CTX *parent_ctx,
 	return MAPI_E_SUCCESS;
 }
 
-static enum MAPISTATUS get_mailboxDN(TALLOC_CTX *parent_ctx,
-				     struct openchangedb_context *self,
-				     uint64_t fid,
-				     char **mailboxDN)
-{
-	return MAPI_E_NOT_IMPLEMENTED;
-}
-
 static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 				       const char *recipient,
 				       struct GUID *MailboxGUID)

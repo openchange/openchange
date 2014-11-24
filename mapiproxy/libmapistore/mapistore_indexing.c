@@ -158,11 +158,15 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	struct backend_context		*backend_ctx;
 	struct indexing_context		*ictx;
 	char				*mapistore_URI = NULL;
+	TALLOC_CTX			*mem_ctx;
+	bool				invalid_type;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	invalid_type = type != MAPISTORE_FOLDER && type != MAPISTORE_MESSAGE;
+	MAPISTORE_RETVAL_IF(invalid_type, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
@@ -174,23 +178,16 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx , MAPISTORE_ERR_NO_MEMORY, NULL);
 	/* Retrieve the mapistore URI given context_id and fmid */
-	mapistore_backend_get_path(backend_ctx, NULL, fmid, &mapistore_URI);
-	/* DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI)); */
-	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
-
+	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, fmid, &mapistore_URI);
+	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, mem_ctx);
 
 	/* Add the record given its fid and mapistore_uri */
-	switch(type) {
-	case MAPISTORE_FOLDER:
-	case MAPISTORE_MESSAGE:
-		ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
-		break;
-	default:
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
-	talloc_free(mapistore_URI);
+	ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
 
+	talloc_free(mem_ctx);
 	return ret;
 }
 

@@ -178,7 +178,7 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
-	mem_ctx = talloc_named(0, NULL, __FUNCTION__);
+	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx , MAPISTORE_ERR_NO_MEMORY, NULL);
 	/* Retrieve the mapistore URI given context_id and fmid */
 	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, fmid, &mapistore_URI);

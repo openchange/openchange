@@ -487,9 +487,8 @@ class FolderObject(object):
         logger.info('[PYTHON]: [%s][%s]: folder.set_properties' % (BackendObject.name, self.uri))
         conn = _RESTConn.get_instance()
         conn.update_folder(self.uri, properties)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
+        self.properties.update(properties)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
@@ -572,9 +571,7 @@ class MessageObject(object):
 
     def set_properties(self, properties):
         logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
+        self.properties.update(properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_message_data(self):
@@ -591,10 +588,7 @@ class MessageObject(object):
 
     def update(self, properties):
         logger.info('[PYTHON]:[%s] message.update()' % BackendObject.name)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
-
+        self.properties.update(properties)
         conn = _RESTConn.get_instance()
         collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
         conn.update_message(collection, self.properties)

@@ -1992,70 +1992,69 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncConfigure(TALLOC_CTX *mem_ctx,
 
 	/* we instantiate a table object that will help us retrieve the list of available properties */
 	/* FIXME: the table_get_available_properties operations should actually be replaced with per-object requests, since not all message/folder types return the same available properties */
-	if (!include_props) {
-		if (synccontext->request.contents_mode) {
-			if (synccontext->request.normal) {
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
-				if (!table_object) {
-					DEBUG(5, ("could not open message table\n"));
-					abort();
-				}
-				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
-					for (j = 0; j < available_properties->cValues; j++) {
-						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
-						if (!properties_exclusion[i]) {
-							properties_exclusion[i] = true;
-							SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
-						}
-					}
-					talloc_free(available_properties->aulPropTag);
-					talloc_free(available_properties);
-				}
-				talloc_free(table_object);
-			}
+        if (!include_props && synccontext->request.contents_mode && synccontext->request.normal) {
+                table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_MESSAGE_TABLE, 0);
+                if (!table_object) {
+                        DEBUG(5, ("could not open message table\n"));
+                        abort();
+                }
+                if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
+                        for (j = 0; j < available_properties->cValues; j++) {
+                                i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
+                                if (!properties_exclusion[i]) {
+                                        properties_exclusion[i] = true;
+                                        SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
+                                }
+                        }
+                        talloc_free(available_properties->aulPropTag);
+                        talloc_free(available_properties);
+                }
+                talloc_free(table_object);
+        }
 
-			if (synccontext->request.fai) {
-				synccontext->fai_properties.cValues = synccontext->properties.cValues;
-				synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
+        if (synccontext->request.contents_mode && synccontext->request.fai) {
+                synccontext->fai_properties.cValues = synccontext->properties.cValues;
+                synccontext->fai_properties.aulPropTag = talloc_memdup(synccontext, synccontext->properties.aulPropTag, synccontext->properties.cValues * sizeof (enum MAPITAGS));
 
-				table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FAI_TABLE, 0);
-				if (!table_object) {
-					DEBUG(5, ("could not open FAI table\n"));
-					abort();
-				}
-				if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
-					for (j = 0; j < available_properties->cValues; j++) {
-						i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
-						if (!properties_exclusion[i]) {
-							properties_exclusion[i] = true;
-							SPropTagArray_add(synccontext, &synccontext->fai_properties, available_properties->aulPropTag[j]);
-						}
-					}
-					talloc_free(available_properties->aulPropTag);
-					talloc_free(available_properties);
-				}
-				talloc_free(table_object);
-			}
-		}
-		else {
-			table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FOLDER_TABLE, 0);
-			if (!table_object) {
-				DEBUG(5, ("could not open folder table\n"));
-				abort();
-			}
-			if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
-				for (j = 0; j < available_properties->cValues; j++) {
-					i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
-					if (!properties_exclusion[i]) {
-						properties_exclusion[i] = true;
-						SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
-					}
-				}
-				talloc_free(available_properties->aulPropTag);
-				talloc_free(available_properties);
-			}
-			talloc_free(table_object);
-		}
+                if (!include_props || synccontext->request.ignored_specified_on_fai) {
+                        table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FAI_TABLE, 0);
+                        if (!table_object) {
+                                DEBUG(5, ("could not open FAI table\n"));
+                                abort();
+                        }
+                        if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
+                                for (j = 0; j < available_properties->cValues; j++) {
+                                        i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
+                                        if (!properties_exclusion[i]) {
+                                                properties_exclusion[i] = true;
+                                                SPropTagArray_add(synccontext, &synccontext->fai_properties, available_properties->aulPropTag[j]);
+                                        }
+                                }
+                                talloc_free(available_properties->aulPropTag);
+                                talloc_free(available_properties);
+                        }
+                        talloc_free(table_object);
+                }
+        }
+
+        if (!include_props && ! synccontext->request.contents_mode) {
+                table_object = emsmdbp_folder_open_table(NULL, folder_object, MAPISTORE_FOLDER_TABLE, 0);
+                if (!table_object) {
+                        DEBUG(5, ("could not open folder table\n"));
+                        abort();
+                }
+                if (emsmdbp_object_table_get_available_properties(mem_ctx, emsmdbp_ctx, table_object, &available_properties) == MAPISTORE_SUCCESS) {
+                        for (j = 0; j < available_properties->cValues; j++) {
+                                i = (available_properties->aulPropTag[j] & 0xffff0000) >> 16;
+                                if (!properties_exclusion[i]) {
+                                        properties_exclusion[i] = true;
+                                        SPropTagArray_add(synccontext, &synccontext->properties, available_properties->aulPropTag[j]);
+                                }
+                        }
+                        talloc_free(available_properties->aulPropTag);
+                        talloc_free(available_properties);
+                }
+                talloc_free(table_object);
 	}
 	talloc_free(properties_exclusion);
 

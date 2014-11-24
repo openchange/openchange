@@ -856,7 +856,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 			break;
 		}
 
-		RecipientRow->prop_count = request.prop_count;
+		RecipientRow->prop_count = 0;
 		size += sizeof(uint16_t);
 		RecipientRow->layout = 0;
 		size += sizeof(uint8_t);
@@ -874,6 +874,7 @@ _PUBLIC_ enum MAPISTATUS ModifyRecipients(mapi_object_t *obj_message,
 
 					cast_mapi_SPropValue(mem_ctx, &mapi_sprop, &aRow->lpProps[j]);
 					ndr_push_mapi_SPropValue_CTR(ndr, NDR_SCALARS, &mapi_sprop.value);
+					RecipientRow->prop_count += 1;
 				}
 			}
 		}

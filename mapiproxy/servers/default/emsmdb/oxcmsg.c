@@ -766,13 +766,14 @@ static enum MAPISTATUS oxcmsg_resolve_partial_x500name(TALLOC_CTX *mem_ctx,
 
 static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
 						       struct ModifyRecipientRow *recipient_row,
-						       uint16_t prop_count, enum MAPITAGS *properties,
+						       uint16_t modify_recipients_prop_count, enum MAPITAGS *properties,
 						       struct mapistore_message_recipient *recipient)
 {
 	int			i;
 	uint32_t		data_pos;
 	const void		*prop_value;
 	enum MAPISTATUS		retval;
+	const uint16_t          prop_count = recipient_row->RecipientRow.prop_count;
 
 	recipient->type = recipient_row->RecipClass;
 
@@ -785,7 +786,7 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 		OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
 	}
 
-	recipient->data = talloc_array(mem_ctx, void *, prop_count + 2);
+	recipient->data = talloc_array(mem_ctx, void *, modify_recipients_prop_count + 2);
 
 	/* PR_DISPLAY_NAME_UNICODE */
 	switch ((recipient_row->RecipientRow.RecipientFlags & 0x210)) {
@@ -835,6 +836,12 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 			return MAPI_E_TYPE_NO_SUPPORT;
 		}
 		recipient->data[i+2] = discard_const(prop_value);
+	}
+	/* There are cases where the number of properties set by recipient row
+	   is lower than the general modify recipients ROP, setting NULL to be
+	   consistent in mapistore layer and more simple */
+	for (i = 0; i < modify_recipients_prop_count - prop_count; i++) {
+		recipient->data[i+2+prop_count] = NULL;
 	}
 
 	return MAPI_E_SUCCESS;

@@ -96,7 +96,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
 		wire_handle.uuid = GUID_zero();
 		*r->out.handle = wire_handle;
-		
+
 		r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
 		r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
 		r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
@@ -125,8 +125,8 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
-		smb_panic("unable to initialize emsmdbp context");
-		return MAPI_E_FAILONEPROVIDER;
+		DEBUG(0, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context"));
+		goto failure;
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
@@ -2011,7 +2011,8 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	/* Open read/write context on OpenChange dispatcher database */
 	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
 	if (!openchange_db_ctx) {
-		smb_panic("unable to initialize 'openchange db' context");
+		DEBUG(0, ("[exchange_emsmdb] Unable to initialize openchangedb"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	return NT_STATUS_OK;

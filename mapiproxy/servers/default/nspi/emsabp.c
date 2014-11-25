@@ -101,7 +101,8 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	 * temporary MId used within EMSABP */
 	emsabp_ctx->ttdb_ctx = emsabp_tdb_init_tmp(emsabp_ctx->mem_ctx);
 	if (!emsabp_ctx->ttdb_ctx) {
-		smb_panic("unable to create on-memory TDB database");
+		DEBUG(0 , ("[nspi] Unable to create on-memory TDB database"));
+		return NULL;
 	}
 
 	return emsabp_ctx;

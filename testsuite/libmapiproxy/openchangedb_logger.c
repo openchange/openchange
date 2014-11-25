@@ -666,6 +666,12 @@ static Suite *openchangedb_create_suite(SFun setup, SFun teardown)
 	tcase_add_test(tc, test_call_get_MailboxGuid);
 	tcase_add_test(tc, test_call_get_MailboxReplica);
 	tcase_add_test(tc, test_call_get_PublicFolderReplica);
+        tcase_add_test(tc, test_call_get_mapistoreURI);
+        tcase_add_test(tc, test_call_set_mapistoreURI);
+        tcase_add_test(tc, test_call_get_parent_fid);
+        tcase_add_test(tc, test_call_get_fid);
+        tcase_add_test(tc, test_call_get_MAPIStoreURIs);
+        tcase_add_test(tc, test_call_get_ReceiveFolder);
 
 	suite_add_tcase(s, tc);
 	return s;

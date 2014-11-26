@@ -336,6 +336,33 @@ def module_mail_delete(msg_id):
         handler.close_context()
     return "", 204
 
+@app.route('/mails/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/calendars/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/tasks/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/contacts/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/notes/<int:msg_id>/attachments', methods=['GET'])
+def module_messages_get_attachments(msg_id):
+    """List of attachments within specified message"""
+    properties = request.args.get('properties')
+    if properties is None:
+        properties = None
+    else:
+        properties = set(properties.split(','))
+    handler = ApiHandler(user_id='any')
+    attachments = ''
+    try:
+        attachments = handler.messages_get_attachments(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    # filter only requested properties
+    attachments = [{k: v
+                 for (k, v) in att.items()
+                 if properties is None or k in properties}
+                 for att in attachments]
+    return Response(json.dumps(attachments),  mimetype='application/json')
+
 
 ###############################################################################
 # Calendar
@@ -419,6 +446,19 @@ def module_attachments_create():
     finally:
         handler.close_context()
     return jsonify(id=att['id'])
+
+@app.route('/attachments/<int:att_id>/', methods=['GET'])
+def module_attachments_get(att_id):
+    """Fetch single attachment by its ID"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.attachments_get(att_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(ret_val)
 
 @app.route('/attachments/<int:att_id>/', methods=['PUT'])
 def module_attachments_put(att_id):

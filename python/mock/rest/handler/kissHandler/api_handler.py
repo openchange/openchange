@@ -159,6 +159,10 @@ class ApiHandler(object):
             raise KeyError('No message with id = %d' % msg_id)
         self._db.delete_message(msg_id)
 
+    def messages_get_attachments(self, msg_id):
+        att_dict = self._db.get_attachments()
+        return [att for att in att_dict.values() if msg_id == att['parent_id']]
+
     def attachments_create(self, props):
         # we rely on API server to check preconditions
         # but anyway, assert here too
@@ -169,6 +173,12 @@ class ApiHandler(object):
             raise KeyError('No item with id = %d' % parent_id)
         # create new attachment
         return self._db.create_attachment(props)
+
+    def attachments_get(self, att_id):
+        att_dict = self._db.get_attachments()
+        if att_id not in att_dict:
+            raise KeyError('No item with id = %d' % att_id)
+        return att_dict[att_id]
 
     def attachments_update(self, att_id, props):
         # load what we have

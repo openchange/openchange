@@ -37,6 +37,18 @@ class AttachmentsInterfaceTestCase(MockApiBaseTestCase):
         self.assertEqual(status, 200)
         self.assertIn('id', self._to_json_ret(text))
 
+    def test_get(self):
+        # create some test item to play with
+        status, text, headers = self._create_test_att(name='attachment')
+        item = self._to_json_ret(text)
+        # fetch the message
+        path = '/attachments/%d/' % item['id']
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 200)
+        res = self._to_json_ret(text)
+        self.assertEqual(res['id'], item['id'])
+        self.assertEqual(res['PidTagDisplayName'], 'attachment')
+
     def test_update(self):
         # create some test item to play with
         status, text, headers = self._create_test_att()
@@ -49,6 +61,11 @@ class AttachmentsInterfaceTestCase(MockApiBaseTestCase):
         status, text, headers = self.put_req(path, data)
         self.assertEqual(status, 201)
         self.assertEqual(text, "")
+        # check changes took effect
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 200)
+        res = self._to_json_ret(text)
+        self.assertEqual(res['PidTagDisplayName'], 'updated attachment')
 
 if __name__ == '__main__':
     unittest.main()

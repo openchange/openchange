@@ -25,7 +25,14 @@ import test
 class MailInterfaceTestCase(test.MockApiBaseTestCase):
     """Basic tests for Mail module interface"""
 
-    def _create_test_msg(self, parent_id=1, subject='Message', body='Message body'):
+    def _create_test_att(self, name='Attachment', parent_id=1):
+        data = {
+            'parent_id': parent_id,
+            'PidTagDisplayName': name
+        }
+        return self.post_req('/attachments/', data)
+
+    def _create_test_msg(self, parent_id=1, subject='Message ', body='Message body'):
         data = {
             'parent_id': parent_id,
             'PidTagSubject': subject,
@@ -86,6 +93,23 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 204)
         self.assertEqual(text, "")
 
+    def test_attachment_get(self):
+        # create some test items to play with
+        status, text, headers = self._create_test_msg()
+        msg_item = self._to_json_ret(text)
+        status, text, headers = self._create_test_att(name='my attachment',
+                parent_id=msg_item['id'])
+        att_item = self._to_json_ret(text)
+        # fetch the message
+        path = '/mails/%d/attachments?properties=PidTagDisplayName,id' % msg_item['id']
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 200)
+        res = self._to_json_ret(text)
+        self.assertEqual(len(res), 1)
+        att_props = res[0]
+        self.assertEqual(len(att_props), 2)
+        self.assertEqual(att_props['PidTagDisplayName'], 'my attachment')
+        self.assertEqual(att_props['id'], att_item['id'])
 
 if __name__ == '__main__':
     unittest.main()

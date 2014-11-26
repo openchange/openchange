@@ -27,6 +27,13 @@ import test
 class CalendarInterfaceTestCase(test.MockApiBaseTestCase):
     """Basic tests for Calendars module interface"""
 
+    def _create_test_att(self, name='Attachment', parent_id=1):
+        data = {
+            'parent_id': parent_id,
+            'PidTagDisplayName': name
+        }
+        return self.post_req('/attachments/', data)
+
     def _create_test_item(self, parent_id=1, subject='Calendar 1', body='Cal text body'):
         data = {
             'parent_id': 1,
@@ -86,6 +93,23 @@ class CalendarInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 204)
         self.assertEqual(text, "")
 
+    def test_attachment_get(self):
+        # create some test items to play with
+        status, text, headers = self._create_test_item()
+        cal_item = self._to_json_ret(text)
+        status, text, headers = self._create_test_att(name='my attachment',
+                parent_id=cal_item['id'])
+        att_item = self._to_json_ret(text)
+        # fetch the message
+        path = '/calendars/%d/attachments?properties=PidTagDisplayName,id' % cal_item['id']
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 200)
+        res = self._to_json_ret(text)
+        self.assertEqual(len(res), 1)
+        att_props = res[0]
+        self.assertEqual(len(att_props), 2)
+        self.assertEqual(att_props['PidTagDisplayName'], 'my attachment')
+        self.assertEqual(att_props['id'], att_item['id'])
 
 if __name__ == '__main__':
     unittest.main()

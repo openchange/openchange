@@ -28,6 +28,7 @@
 
 #define TEVENT_DEPRECATED
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "dcesrv_exchange_nsp.h"
 #include "ldb.h"
 
@@ -101,7 +102,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	 * temporary MId used within EMSABP */
 	emsabp_ctx->ttdb_ctx = emsabp_tdb_init_tmp(emsabp_ctx->mem_ctx);
 	if (!emsabp_ctx->ttdb_ctx) {
-		DEBUG(0 , ("[nspi] Unable to create on-memory TDB database"));
+		OC_ABORT(false , ("[nspi] Unable to create on-memory TDB database"));
 		return NULL;
 	}
 

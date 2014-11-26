@@ -28,6 +28,7 @@
 #include <sys/time.h>
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
@@ -125,7 +126,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
-		DEBUG(0, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context"));
+		OC_ABORT(false, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context"));
 		goto failure;
 	}
 
@@ -2011,7 +2012,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	/* Open read/write context on OpenChange dispatcher database */
 	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
 	if (!openchange_db_ctx) {
-		DEBUG(0, ("[exchange_emsmdb] Unable to initialize openchangedb"));
+		OC_ABORT(false, ("[exchange_emsmdb] Unable to initialize openchangedb"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

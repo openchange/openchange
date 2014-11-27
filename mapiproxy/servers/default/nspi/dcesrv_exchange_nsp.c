@@ -131,26 +131,14 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if ((emsabp_verify_user(dce_call, emsabp_ctx) == false) && (r->in.dwFlags & fAnonymousLogin)) {
-		talloc_free(emsabp_ctx);
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, emsabp_tdb_ctx);
+		retval = MAPI_E_LOGON_FAILED;
+		goto failure;
 	}
 
 	/* Step 3. Check if valid cpID has been supplied */
 	if (emsabp_verify_codepage(emsabp_ctx, r->in.pStat->CodePage) == false) {
-		talloc_free(emsabp_ctx);
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_UNKNOWN_CPID, emsabp_tdb_ctx);
+		retval = MAPI_E_UNKNOWN_CPID;
+		goto failure;
 	}
 
 	/* Step 4. Retrieve OpenChange server GUID */

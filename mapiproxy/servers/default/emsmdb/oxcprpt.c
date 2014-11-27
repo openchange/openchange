@@ -56,6 +56,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
+	TALLOC_CTX		*local_mem_ctx;
 	enum MAPISTATUS		retval;
 	struct GetProps_req	*request;
 	struct GetProps_repl	*response;
@@ -118,10 +119,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-        properties = talloc_zero(NULL, struct SPropTagArray);
+        local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+        OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+        properties = talloc_zero(local_mem_ctx, struct SPropTagArray);
         properties->cValues = request->prop_count;
         properties->aulPropTag = talloc_array(properties, enum MAPITAGS, request->prop_count);
-        untyped_status = talloc_array(NULL, bool, request->prop_count);
+        untyped_status = talloc_array(local_mem_ctx, bool, request->prop_count);
 
         for (i = 0; i < request->prop_count; i++) {
                 properties->aulPropTag[i] = request->properties[i];
@@ -148,7 +152,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
                 }
         }
 
-        data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, properties, &retvals);
+        data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, object, properties, &retvals);
         if (data_pointers) {
 		for (i = 0; i < request->prop_count; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
@@ -176,7 +180,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				}
 			}
 		}
-                mapi_repl->error_code = MAPI_E_SUCCESS;
+		mapi_repl->error_code = MAPI_E_SUCCESS;
 		emsmdbp_fill_row_blob(mem_ctx,
 				      emsmdbp_ctx,
 				      &response->layout,
@@ -185,10 +189,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				      data_pointers,
 				      retvals,
 				      untyped_status);
-                talloc_free(data_pointers);
-        }
-        talloc_free(properties);
-        talloc_free(retvals);
+	}
+	talloc_free(local_mem_ctx);
 
  end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);

@@ -23,6 +23,7 @@ import os,sys
 __all__ = ["BackendObject",
            "ContextObject",
            "FolderObject",
+           "AttachmentObject",
            "TableObject"]
 
 import sysconfig
@@ -565,7 +566,6 @@ class MessageObject(object):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, msg))
         self.folder = folder
         self.mid = mid or long(msg['id'])
-        self.folder_id = folder.folderID
         self.properties = msg
         self.recipients = []
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties))
@@ -614,6 +614,29 @@ class MessageObject(object):
         self.folder.count["messages"] = self.folder.count["messages"] + 1
         return mapistore.errors.MAPISTORE_SUCCESS
 
+    def create_attachment(self):
+        logger.info('[PYTHON]: message.create_attachment()')
+        attach_id = self.next_aid  # Provisional AID
+        self.next_aid = attach_id + 1
+        att = {}
+        att['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
+        return (AttachmentObject(self, att), attach_id)
+
+class AttachmentObject(object):
+    def __init__(self, message, att=None, aid=None):
+        logger.info('[PYTHON]:[%s] attachment.__init__(%s)' % (BackendObject.name, att))
+        self.message = message
+        self.properties = att
+        self.att_id = aid
+
+    def get_properties(self, properties):
+        logger.info('[PYTHON][%s]: attachment.get_properties()' % BackendObject.name)
+        return self.properties
+
+    def set_properties(self, properties):
+        logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
+        self.properties.update(properties)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 class TableObject(object):
 

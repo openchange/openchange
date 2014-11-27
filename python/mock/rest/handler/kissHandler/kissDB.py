@@ -146,6 +146,14 @@ class kissDB(object):
         """@:return dict: Dictionary {attachment_id -> data}"""
         return self._get_data('attachments')
 
+    def delete_attachment(self, att_id):
+        """Delete an attachment record
+        :param att_id: Target object ID
+        """
+        attachments = self._get_data('attachments')
+        del attachments[att_id]
+        self._set_data('attachments', attachments, True)
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB

@@ -506,6 +506,18 @@ def module_attachments_head(att_id):
     return jsonify()
 
 
+@app.route('/attachments/<int:att_id>/', methods=['DELETE'])
+def module_attachment_delete(att_id):
+    """Delete attachment with att_id"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.attachments_delete(att_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
 ###############################################################################
 # Main loop
 ###############################################################################

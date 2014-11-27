@@ -75,6 +75,24 @@ class AttachmentsInterfaceTestCase(MockApiBaseTestCase):
         path = '/attachments/%d/' % item['id']
         status, text, headers = self.head_req(path)
         self.assertEqual(status, 200)
+        # check response for unexistent attachment
+        status, text, headers = self.delete_req(path)
+        self.assertEqual(status, 204)
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 404)
+
+    def test_delete(self):
+        # create some test item to play with
+        status, text, headers = self._create_test_att()
+        item = self._to_json_ret(text)
+        # check attachment exists
+        path = '/attachments/%d/' % item['id']
+        status, text, headers = self.delete_req(path)
+        self.assertEqual(status, 204)
+        self.assertEqual(text, "")
+        # check that the attachment doesn't exist anymore
+        status, text, headers = self.get_req(path)
+        self.assertEqual(status, 404)
 
 if __name__ == '__main__':
     unittest.main()

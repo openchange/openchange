@@ -420,6 +420,18 @@ def module_attachments_create():
         handler.close_context()
     return jsonify(id=att['id'])
 
+@app.route('/attachments/<int:att_id>/', methods=['PUT'])
+def module_attachments_put(att_id):
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.attachments_update(att_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
 ###############################################################################
 # Main loop
 ###############################################################################

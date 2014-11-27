@@ -132,6 +132,20 @@ class kissDB(object):
         self._set_data('attachments', attachments, True)
         return att
 
+    def update_attachment(self, att_id, att_props):
+        """Update attachment properties
+        :param att_props: Dictionary with the object data
+        :param att_id: Target object ID
+        """
+        attachments = self._get_data('attachments')
+        att = attachments[att_id]
+        att.update(att_props)
+        self._set_data('attachments', attachments, True)
+
+    def get_attachments(self):
+        """@:return dict: Dictionary {attachment_id -> data}"""
+        return self._get_data('attachments')
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB

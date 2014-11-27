@@ -170,6 +170,15 @@ class ApiHandler(object):
         # create new attachment
         return self._db.create_attachment(props)
 
+    def attachments_update(self, att_id, props):
+        # load what we have
+        attachments = self._db.get_attachments()
+        # check att id
+        if att_id not in attachments:
+            raise KeyError('No attachment with id = %d' % att_id)
+        # update properties
+        self._db.update_attachment(att_id, props)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

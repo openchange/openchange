@@ -50,7 +50,7 @@ class CalendarInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['type'], 'calendar')
+        self.assertEqual(res['collection'], 'calendars')
         self.assertEqual(res['PidTagSubject'], 'tget')
         self.assertEqual(res['PidTagBody'], 'tget body')
 

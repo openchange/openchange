@@ -48,7 +48,7 @@ class ContactsInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['type'], 'contact')
+        self.assertEqual(res['collection'], 'contacts')
         self.assertEqual(res['PidTagSubject'], 'contacts tget')
         self.assertEqual(res['PidTagBody'], 'contacts tget body')
 

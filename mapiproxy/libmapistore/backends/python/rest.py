@@ -634,7 +634,7 @@ class TableObject(object):
         if restrictions is None:
             self.restrictions = []
         else:
-            self.restrictions = self._encode_restriction(restrictions)
+            self.restrictions = self._encode_restrictions(restrictions)
 
         print json.dumps(self.restrictions, indent=4)
         return mapistore.errors.MAPISTORE_SUCCESS

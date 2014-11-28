@@ -399,5 +399,30 @@ def module_notes_create():
     return jsonify(id=msg['id'])
 
 
+###############################################################################
+# Attachment
+###############################################################################
+@app.route('/attachments/', methods=['POST'])
+def module_attachments_create():
+    data = request.get_json()
+    if data is None:
+        abort(422, "You must supply parent_id at least")
+    parent_id = data.get('parent_id', None)
+    if parent_id is None:
+        abort(422, "parent_id is a required parameter")
+    handler = ApiHandler(user_id='any')
+    att = {}
+    try:
+        att = handler.attachments_create(data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(id=att['id'])
+
+###############################################################################
+# Main loop
+###############################################################################
+
 if __name__ == '__main__':
     app.run()

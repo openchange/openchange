@@ -159,6 +159,17 @@ class ApiHandler(object):
             raise KeyError('No message with id = %d' % msg_id)
         self._db.delete_message(msg_id)
 
+    def attachments_create(self, props):
+        # we rely on API server to check preconditions
+        # but anyway, assert here too
+        assert 'parent_id' in props, 'parent_id is required'
+        # check parent ID
+        parent_id = props['parent_id']
+        if not self.messages_id_exists(parent_id):
+            raise KeyError('No item with id = %d' % parent_id)
+        # create new attachment
+        return self._db.create_attachment(props)
+
     @staticmethod
     def _folder_rec(fval, fold_dict):
         """Prepare a folder record suitable for jsonify

@@ -118,6 +118,20 @@ class kissDB(object):
         del messages[msg_id]
         self._set_data('messages', messages, True)
 
+    def create_attachment(self, att_props):
+        """Create new attachment and return the record
+        :param att_props: Dictionary with the object data
+        """
+        att = att_props.copy()
+        next_id = self._get_data('next_id')
+        att['id'] = next_id
+        basedict = self._db['kissdb']
+        attachments = self._get_data('attachments')
+        attachments[next_id] = att
+        self._set_data('next_id', next_id + 1)
+        self._set_data('attachments', attachments, True)
+        return att
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB
@@ -223,6 +237,13 @@ class kissDB(object):
             },
             'messages': {
                 51: appt1
+            },
+            'attachments': {
+                78: {
+                    'id': 78,
+                    'parent_id': 51,
+                    'PidTagDisplayName': 'sample attachment'
+                    }
             }
         }
 

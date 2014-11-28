@@ -222,7 +222,7 @@ class kissDB(object):
                 19: kissDB._folder_rec(19, 'Shortcuts', 'Shortcuts', mapistore.ROLE_FALLBACK, 0, 8, True)
             },
             'messages': {
-                51: appt1,
+                51: appt1
             }
         }
 
@@ -246,5 +246,5 @@ class kissDB(object):
             'parent_id': fid,
             'PidTagSubject': subject,
             'PidTagBody': body,
-            'type': 'mail',
+            'type': 'mail'
         }

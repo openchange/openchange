@@ -117,6 +117,10 @@ class ApiHandler(object):
         msg_dict = self._db.get_messages()
         return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
 
+    def messages_id_exists(self, msg_id):
+        msg_dict = self._db.get_messages()
+        return msg_id in msg_dict
+
     def messages_create(self, collection, props):
         # we rely on API server to check preconditions
         # but anyway, assert here too
@@ -142,7 +146,7 @@ class ApiHandler(object):
         # load what we have
         messages = self._db.get_messages()
         # check msg id
-        if msg_id not in messages:
+        if not self.messages_id_exists(msg_id):
             raise KeyError('No message with id = %d' % msg_id)
         # update properties
         self._db.update_message(msg_id, props)

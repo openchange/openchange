@@ -605,7 +605,7 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 {
 	NTSTATUS		ret;
 	struct dcesrv_interface	iface;
-	char     		**ifaces;
+	const char     		**ifaces;
 	uint32_t		i;
 	static bool		initialized = false;
 
@@ -619,7 +619,7 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 	ret = mapiproxy_server_init(dce_ctx);
 	NT_STATUS_NOT_OK_RETURN(ret);
 
-	ifaces = str_list_make(dce_ctx, lpcfg_parm_string(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces"), NULL);
+	ifaces = lpcfg_parm_string_list(dce_ctx, dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces", NULL);
 
 	for (i = 0; ifaces[i]; i++) {
 		/* Register the interface */

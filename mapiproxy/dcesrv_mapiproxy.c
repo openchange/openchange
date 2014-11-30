@@ -28,6 +28,9 @@
 #include "libmapi/libmapi_private.h"
 #include <util/debug.h>
 
+/* Default interfaces to use if no others were specified in smb.conf. */
+#define DEFAULT_INTERFACES "exchange_emsmdb, exchange_nsp, exchange_ds_rfr"
+
 static int dispatch_nbr = 0;
 
 /**
@@ -235,7 +238,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 		  dce_call->conn->server_id.pid, dce_call->conn->server_id.task_id, dce_call->conn->server_id.vnn));
 
 	/* Retrieve server mode parametric option */
-	server_mode = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
+	server_mode = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", true);
 
 	/* Retrieve ndrdump parametric option */
 	ndrdump = lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "ndrdump", false);
@@ -620,6 +623,10 @@ static NTSTATUS mapiproxy_op_init_server(struct dcesrv_context *dce_ctx, const s
 	NT_STATUS_NOT_OK_RETURN(ret);
 
 	ifaces = lpcfg_parm_string_list(dce_ctx, dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "interfaces", NULL);
+
+	if (ifaces == NULL) {
+		ifaces = discard_const_p(const char *, str_list_make(dce_ctx, DEFAULT_INTERFACES, NULL));
+	}
 
 	for (i = 0; ifaces[i]; i++) {
 		/* Register the interface */

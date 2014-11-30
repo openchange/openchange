@@ -729,6 +729,18 @@ NTSTATUS dcerpc_server_mapiproxy_init(void)
 }
 
 /**
+   \details override defaults in loadparm to enable mapiproxy by default.
+
+   \return true on success, otherwise false
+  */
+static bool dcesrv_mapiproxy_lp_defaults(struct loadparm_context *lp_ctx)
+{
+	lpcfg_do_global_parameter(lp_ctx, "dcerpc endpoint servers",  "+mapiproxy");
+
+	return true;
+}
+
+/**
    \details Register mapiproxy dynamic shared object modules
 
    This function registers mapiproxy modules located
@@ -769,6 +781,12 @@ NTSTATUS samba_init_module(void)
 	/* Step3. Finally register mapiproxy endpoint */
 	status = dcerpc_server_mapiproxy_init();
 	NT_STATUS_NOT_OK_RETURN(status);
+
+	/* TODO: #ifdef around this block to only use this on Samba versions that support it. */
+	/* Step4. Register configuration default hook */
+	if (!lpcfg_register_defaults_hook("dcesrv_mapiproxy", dcesrv_mapiproxy_lp_defaults)) {
+		return NT_STATUS_UNSUCCESSFUL;
+	}
 
 	return NT_STATUS_OK;
 }

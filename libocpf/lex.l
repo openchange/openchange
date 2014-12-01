@@ -31,27 +31,6 @@
 #define	YY_EXTRA_TYPE	struct ocpf_context *
 #define	YY_NO_UNPUT
 
-/*
- * Prototypes
- */
-
-int	yylex(YYSTYPE *, void *);
-int	yyget_lineno(void *);
-FILE	*yyget_in(void *);
-FILE	*yyget_out(void *);
-int	yyget_leng(void *);
-char	*yyget_text(void *);
-void	yyset_lineno(int, void *);
-void	yyset_extra(YY_EXTRA_TYPE, void *);
-void	yyset_in (FILE *, void *);
-void	yyset_out (FILE *, void *);
-int	yyget_debug(void *);
-void	yyset_debug(int, void *);
-int	yylex_destroy(void *);
-void	yyset_column(int, void *);
-int	yyget_column(void *);
-
-
 static void unterminated(struct ocpf_context *, const char *, unsigned int);
 
 %}

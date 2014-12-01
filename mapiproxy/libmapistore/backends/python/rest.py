@@ -683,10 +683,9 @@ class AttachmentObject(object):
         return mapistore.errors.MAPISTORE_SUCCESS
 
 class TableObject(object):
-
-    def __init__(self, folder, table_type):
-        logger.info('[PYTHON]:[%s] table.__init__(%d, type=%s)' % (BackendObject.name, folder.folderID, table_type))
-        self.folder = folder
+    def __init__(self, parent, table_type):
+        logger.info('[PYTHON]:[%s] table.__init__(type=%s)' % (BackendObject.name, table_type))
+        self.parent = parent
         self.table_type = table_type
         self.restrictions = None
         self.columns = None
@@ -710,12 +709,12 @@ class TableObject(object):
         logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
         if self.table_type == mapistore.MESSAGE_TABLE:
             count = 0
-            for message in self.folder.messages:
+            for message in self.parent.messages:
                 if self._apply_restriction_message(self.restrictions, message) is True:
                     count = count + 1
             return count
 
-        return self.folder.get_child_count(self.table_type, self.restrictions)
+        return self.parent.get_child_count(self.table_type, self.restrictions)
 
     def get_row(self, row_no, query_type):
         logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))
@@ -733,8 +732,8 @@ class TableObject(object):
 
     def _get_row_folders(self, row_no):
         logger.debug('*** _get_row_folders: row_no = %s', row_no)
-        print self.folder.subfolders
-        folder = self.folder.subfolders[row_no]
+        print self.parent.subfolders
+        folder = self.parent.subfolders[row_no]
         row = {}
         for name in self.columns:
             if name == 'PidTagFolderId':
@@ -822,13 +821,12 @@ class TableObject(object):
 
         return False
 
-
     def _get_row_messages(self, row_no):
-        assert row_no < len(self.folder.messages), "Index out of bounds for messages row=%s" % row_no
+        assert row_no < len(self.parent.messages), "Index out of bounds for messages row=%s" % row_no
 
         # Filter messages
         tmp_msg = []
-        for message in self.folder.messages:
+        for message in self.parent.messages:
             if self._apply_restriction_message(self.restrictions, message) is True:
                 tmp_msg.append(message)
 

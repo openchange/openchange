@@ -632,7 +632,7 @@ class TableObject(object):
     def set_restrictions(self, restrictions):
         logger.info('[PYTHON]:[%s] table.set_restrictions(%s)', BackendObject.name, restrictions)
         if restrictions is None:
-            self.restrictions = []
+            self.restrictions = {}
         else:
             self.restrictions = self._encode_restrictions(restrictions)
 
@@ -678,22 +678,22 @@ class TableObject(object):
                 row[name] = folder.properties[name]
         return (self.columns, row)
 
-    def _encode_restriction(self, restriction):
-        if restriction is None:
-            return None
+    def _encode_restrictions(self, restrictions):
+        if restrictions is None:
+            return {}
 
-        if not 'type' in restriction:
-            return None
+        if not 'type' in restrictions:
+            return {}
 
-        rst = restriction.copy()
+        rst = restrictions.copy()
 
         if rst["type"] == "and":
             for i,condition in enumerate(rst["value"]):
-                rst["value"][i] = self._encode_restriction(condition)
+                rst["value"][i] = self._encode_restrictions(condition)
 
         if rst["type"] == "or":
             for i,condition in enumerate(rst["value"]):
-                rst["value"][i] = self._encode_restriction(condition)
+                rst["value"][i] = self._encode_restrictions(condition)
 
         if rst["type"] == "content":
             if mapistore.isPtypBinary(rst["property"]) or mapistore.isPtypServerId(rst["property"]):

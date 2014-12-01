@@ -176,6 +176,12 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
+    def get_attachment_count(self, uri):
+        r = self.so.head('%s%sattachments' % (self.base_url, uri))
+        if 'x-mapistore-rowcount' in r.headers:
+            return int(r.headers['x-mapistore-rowcount'])
+        return 0
+
     def create_attachment(self, parent_id, props):
         att = props.copy();
         att['parent_id'] = parent_id
@@ -647,6 +653,13 @@ class MessageObject(object):
         att = {}
         att['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         return (AttachmentObject(self, att), attach_id)
+
+    def get_child_count(self, table_type):
+        logger.info('[PYTHON][%s][%s]: message.get_child_count' % (BackendObject.name, self.uri))
+        if table_type != mapistore.ATTACHMENT_TABLE:
+            return 0
+        conn = _RESTConn.get_instance()
+        return conn.get_attachment_count(self.uri)
 
 class AttachmentObject(object):
     def __init__(self, message, att=None, aid=None):

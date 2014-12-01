@@ -54,7 +54,7 @@ class kissDB(object):
 
     def create_folder(self, folder_props):
         """Create new folder and return a folder record
-        :param folder_props:
+        :param folder_props: Dictionary with the object data
         """
         next_id = self._get_data('next_id')
         fld = folder_props.copy()
@@ -67,8 +67,8 @@ class kissDB(object):
 
     def update_folder(self, folder_id, folder_props):
         """Update folder properties
-        :param folder_props:
-        :param folder_id:
+        :param folder_props: Dictionary with the object data
+        :param folder_id: Target object ID
         """
         folders = self._get_data('folders')
         fld = folders[folder_id]
@@ -77,7 +77,7 @@ class kissDB(object):
 
     def delete_folder(self, folder_id):
         """Update folder properties
-        :param folder_id:
+        :param folder_id: Target object ID
         """
         folders = self._get_data('folders')
         del folders[folder_id]
@@ -89,7 +89,7 @@ class kissDB(object):
 
     def create_message(self, msg_props):
         """Create new message and return the record
-        :param msg_props:
+        :param msg_props: Dictionary with the object data
         """
         msg = msg_props.copy()
         next_id = self._get_data('next_id')
@@ -102,8 +102,8 @@ class kissDB(object):
 
     def update_message(self, msg_id, msg_props):
         """Update message properties
-        :param msg_props:
-        :param msg_id:
+        :param msg_props: Dictionary with the object data
+        :param msg_id: Target object ID
         """
         messages = self._get_data('messages')
         msg = messages[msg_id]
@@ -112,7 +112,7 @@ class kissDB(object):
 
     def delete_message(self, msg_id):
         """Delete a message record
-        :param msg_id:
+        :param msg_id: Target object ID
         """
         messages = self._get_data('messages')
         del messages[msg_id]

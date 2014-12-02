@@ -176,6 +176,17 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
+    def get_attachment(self, att_uri):
+        """Fetch attachment record
+        :param att_uri: path to the attachment on remote
+        """
+        r = self.so.get('%s%s' % (self.base_url, att_uri))
+        att = r.json()
+        for key,value in att.iteritems():
+            if mapistore.isPtypBinary(key):
+                att[key] = bytearray(base64.b64decode(str(value)))
+        return att
+
     def get_attachment_count(self, uri):
         r = self.so.head('%s%sattachments' % (self.base_url, uri))
         if 'x-mapistore-rowcount' in r.headers:
@@ -658,8 +669,12 @@ class MessageObject(object):
         logger.info('[PYTHON][%s][%s]: message.get_child_count' % (BackendObject.name, self.uri))
         if table_type != mapistore.ATTACHMENT_TABLE:
             return 0
-        conn = _RESTConn.get_instance()
-        return conn.get_attachment_count(self.uri)
+        return len(self.attachment_ids)
+
+    def get_attachment_table(self):
+        table_type = mapistore.ATTACHMENT_TABLE
+        table = TableObject(self, table_type)
+        return (table, self.get_child_count(table_type))
 
 class AttachmentObject(object):
     def __init__(self, message, att=None, aid=None):
@@ -714,7 +729,7 @@ class TableObject(object):
                     count = count + 1
             return count
 
-        return self.parent.get_child_count(self.table_type, self.restrictions)
+        return self.parent.get_child_count(self.table_type)
 
     def get_row(self, row_no, query_type):
         logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))
@@ -725,7 +740,7 @@ class TableObject(object):
                   mapistore.MESSAGE_TABLE: self._get_row_messages,
                   mapistore.FAI_TABLE: self._get_row_not_impl,
                   mapistore.RULE_TABLE: self._get_row_not_impl,
-                  mapistore.ATTACHMENT_TABLE: self._get_row_not_impl,
+                  mapistore.ATTACHMENT_TABLE: self._get_row_attachments,
                   mapistore.PERMISSIONS_TABLE: self._get_row_not_impl
                   }
         return getter[self.table_type](row_no)
@@ -835,6 +850,22 @@ class TableObject(object):
 
         (recipients, properties) = message.get_message_data()
         return (self.columns, properties)
+
+    def _get_row_attachments(self, row_no):
+        logger.info('[PYTHON]:[%s] table.get_attachment_row(%d)' % (BackendObject.name, row_no))
+        assert row_no < len(self.parent.attachment_ids), "Index out of bounds row=%s" % row_no
+        # Fetch the entire attachment record
+        conn = _RESTConn.get_instance()
+        att_uri = '/attachments/%d/' % self.parent.attachment_ids[row_no]
+        att = conn.get_attachment(att_uri)
+        att['PidTagAttachNumber'] = att['id']
+        att['PidTagMid'] = self.parent.mid
+        # Filter the requested properties
+        att_row = {}
+        for name in self.columns:
+            if name in att:
+                att_row[name] = att[name]
+        return (self.columns, att_row)
 
     def _get_row_not_impl(self, row_no):
         return (self.columns, {})

@@ -177,7 +177,7 @@ class RPCPacket(object):
     def from_file(input_file, logger=None):
         """This static method acts as a constructor and returns an input
         packet with the proper class, based on the packet headers.
-        The "input_file" parameter must either be a file or a sockect object.
+        The "input_file" parameter must either be a file or a socket object.
 
         """
 
@@ -260,7 +260,6 @@ class RPCPacket(object):
             values.append(self.header[field])
 
         return (fields, values)
-
 
 
 # fault PDU (stub)
@@ -360,13 +359,13 @@ class RPCRTSPacket(RPCPacket):
         self.offset = self.offset + count
         return data_blob
 
-    def _parse_command_client_address(self, data_blob):
+    def _parse_command_client_address(self, data_size):
         (address_type,) = unpack_from("<l", self.data, self.offset)
         self.offset = self.offset + 4
 
-        if address_type == 0: # ipv4
+        if address_type == 0:  # ipv4
             address_size = 4
-        elif address_type == 1: # ipv6
+        elif address_type == 1:  # ipv6
             address_size = 16
         else:
             raise RTSParsingException("unknown client address type: %d"
@@ -377,7 +376,7 @@ class RPCRTSPacket(RPCPacket):
         # compute offset with padding, which is ignored
         self.offset = self.offset + address_size + 12
 
-        return data_value
+        return data_blob
 
     def make_dump_output(self):
         (fields, values) = RPCPacket.make_dump_output(self)

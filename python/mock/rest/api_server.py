@@ -336,6 +336,29 @@ def module_mail_delete(msg_id):
         handler.close_context()
     return "", 204
 
+@app.route('/mails/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/calendars/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/tasks/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/contacts/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/notes/<int:msg_id>/attachments', methods=['HEAD'])
+def module_messages_head_attachments(msg_id):
+    """Get number of attachments in a message"""
+    handler = ApiHandler(user_id='any')
+    attachments = ''
+    try:
+        attachments = handler.messages_get_attachments(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+
+    @after_this_request
+    def add_header_X_mapistore_rowcount(response):
+        response.headers['X-mapistore-rowcount'] = len(attachments)
+        return response
+
+    return jsonify()
+
 @app.route('/mails/<int:msg_id>/attachments', methods=['GET'])
 @app.route('/calendars/<int:msg_id>/attachments', methods=['GET'])
 @app.route('/tasks/<int:msg_id>/attachments', methods=['GET'])
@@ -471,6 +494,17 @@ def module_attachments_put(att_id):
     finally:
         handler.close_context()
     return "", 201
+
+@app.route('/attachments/<int:att_id>/', methods=['HEAD'])
+def module_attachments_head(att_id):
+    """List root level attachments"""
+    handler = ApiHandler(user_id='any')
+    ret_val = handler.attachments_id_exists(att_id)
+    handler.close_context()
+    if not ret_val:
+        abort(404)
+    return jsonify()
+
 
 ###############################################################################
 # Main loop

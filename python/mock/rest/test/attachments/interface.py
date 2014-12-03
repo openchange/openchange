@@ -67,5 +67,14 @@ class AttachmentsInterfaceTestCase(MockApiBaseTestCase):
         res = self._to_json_ret(text)
         self.assertEqual(res['PidTagDisplayName'], 'updated attachment')
 
+    def test_head(self):
+        # create some test item to play with
+        status, text, headers = self._create_test_att()
+        item = self._to_json_ret(text)
+        # check attachment exists
+        path = '/attachments/%d/' % item['id']
+        status, text, headers = self.head_req(path)
+        self.assertEqual(status, 200)
+
 if __name__ == '__main__':
     unittest.main()

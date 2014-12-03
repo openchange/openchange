@@ -109,5 +109,21 @@ class NotesInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(att_props['PidTagDisplayName'], 'my attachment')
         self.assertEqual(att_props['id'], att_item['id'])
 
+    def test_attachment_head(self):
+        # create some test items to play with
+        status, text, headers = self._create_test_msg()
+        msg_item = self._to_json_ret(text)
+        status, text, headers = self._create_test_att(name='my attachment',
+                parent_id=msg_item['id'])
+        status, text, headers = self._create_test_att(name='my other attachment',
+                parent_id=msg_item['id'])
+        # fetch the message
+        path = '/notes/%d/attachments' % msg_item['id']
+        status, text, headers = self.head_req(path)
+        self.assertEqual(status, 200)
+        self.assertIn('x-mapistore-rowcount', headers)
+        rowcount = int(headers['x-mapistore-rowcount'])
+        self.assertEqual(rowcount, 2)
+
 if __name__ == '__main__':
     unittest.main()

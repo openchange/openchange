@@ -174,6 +174,10 @@ class ApiHandler(object):
         # create new attachment
         return self._db.create_attachment(props)
 
+    def attachments_id_exists(self, att_id):
+        att_dict = self._db.get_attachments()
+        return att_id in att_dict
+
     def attachments_get(self, att_id):
         att_dict = self._db.get_attachments()
         if att_id not in att_dict:

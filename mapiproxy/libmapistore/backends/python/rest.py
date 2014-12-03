@@ -228,6 +228,13 @@ class _RESTConn(object):
         r = self.so.post('%s/attachments/' % self.base_url, data=json.dumps(att), headers=headers)
         return r.json()['id']
 
+    def delete_attachment(self, uri):
+        """Delete an attachment given its ID
+        :param uri: path to the attachment on remote
+        """
+        r = self.so.delete('%s%s' % (self.base_url, uri))
+        return mapistore.errors.MAPISTORE_SUCCESS
+
     def create_message(self, collection, parent_id, props):
         msg = props.copy()
         msg['parent_id'] = parent_id
@@ -690,6 +697,15 @@ class MessageObject(object):
         att = {}
         att['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         return (AttachmentObject(self, att), attach_id)
+
+    def delete_attachment(self, att_id):
+        logger.info('[PYTHON][%s][%s]: message.delete_attachment(aid=%d)' % (BackendObject.name, self.uri, att_id))
+        if att_id not in self.attachment_ids:
+            return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+        conn = _RESTConn.get_instance()
+        conn.delete_attachment('/attachments/%d/' % att_id)
+        self.attachment_ids.remove(att_id)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_child_count(self, table_type):
         logger.info('[PYTHON][%s][%s]: message.get_child_count' % (BackendObject.name, self.uri))

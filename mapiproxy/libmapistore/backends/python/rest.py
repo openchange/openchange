@@ -698,6 +698,14 @@ class MessageObject(object):
         att['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         return (AttachmentObject(self, att), attach_id)
 
+    def open_attachment(self, att_id):
+        logger.info('[PYTHON][%s][%s]: message.open_attachment(aid=%d)' % (BackendObject.name, self.uri, att_id))
+        if att_id not in self.attachment_ids:
+            return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
+        conn = _RESTConn.get_instance()
+        att_dict = conn.get_attachment('/attachments/%d/' % att_id)
+        return AttachmentObject(self, att_dict, att_id)
+
     def delete_attachment(self, att_id):
         logger.info('[PYTHON][%s][%s]: message.delete_attachment(aid=%d)' % (BackendObject.name, self.uri, att_id))
         if att_id not in self.attachment_ids:

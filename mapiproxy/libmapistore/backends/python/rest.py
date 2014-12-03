@@ -153,6 +153,13 @@ class _RESTConn(object):
             newlist.append(folder)
         return newlist
 
+    def get_message(self, msg_uri):
+        """Fetch message record
+        :param msg_uri: path to the message on remote
+        """
+        r = self.so.get('%s%s' % (self.base_url, msg_uri))
+        return r.json()
+
     def get_message_count(self, uri):
         r = self.so.head('%s%smessages' % (self.base_url, uri))
         if 'x-mapistore-rowcount' in r.headers:
@@ -192,6 +199,23 @@ class _RESTConn(object):
         if 'x-mapistore-rowcount' in r.headers:
             return int(r.headers['x-mapistore-rowcount'])
         return 0
+
+    def get_attachments(self, uri, properties):
+        """Get all attachments from one message.
+        :param uri: path to the message on remote
+        :param properties: list with the requested properties
+        """
+        req_uri = '%s%sattachments' % (self.base_url, uri)
+        req_props = ','.join(properties)
+        r = self.so.get(req_uri, params={'properties': req_props})
+        atts = r.json()
+        newlist = []
+        for i,att in enumerate(atts):
+            for key,value in att.iteritems():
+                if mapistore.isPtypBinary(key):
+                    att[key] = bytearray(base64.b64decode(str(value)))
+            newlist.append(att)
+        return newlist
 
     def create_attachment(self, parent_id, props):
         att = props.copy();
@@ -566,12 +590,14 @@ class FolderObject(object):
 
     def open_message(self, mid, rw):
         logger.info('[PYTHON]: folder.open_message(mid=%s, rw=%s)' % (mid, rw))
-        for msg in self.messages:
-            if 'PidTagMid' in msg.properties and mid == msg.properties['PidTagMid']:
-                return msg
-        logger.warn('No message with id %d found. messages -> %s' % (mid, self.messages))
-        return None
-
+        # Retrieve the message object from remote
+        conn = _RESTConn.get_instance()
+        msg_uri = self.ctx.indexing.uri_by_id(mid)
+        msg_dict = conn.get_message(msg_uri)
+        # Get the attachment ids
+        att_list = conn.get_attachments(msg_uri, ['id'])
+        att_ids = [att['id'] for att in att_list]
+        return MessageObject(self, msg_dict, mid, msg_uri, att_ids)
 
     def create_message(self, mid, associated):
         logger.info('[PYTHON]: folder.create_message(mid=%s' % mid)
@@ -580,15 +606,15 @@ class FolderObject(object):
         return MessageObject(self, msg, mid)
 
 class MessageObject(object):
-    def __init__(self, folder, msg=None, mid=None):
+    def __init__(self, folder, msg=None, mid=None, uri=None, att_ids=[]):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, msg))
         self.folder = folder
         self.mid = mid or long(msg['id'])
-        self.uri = None
+        self.uri = uri
         self.properties = msg
         self.recipients = []
         self.cached_attachments = []
-        self.attachment_ids = []
+        self.attachment_ids = att_ids
         self.next_aid = 0  # Provisional AID
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties))
 

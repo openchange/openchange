@@ -721,6 +721,10 @@ class MessageObject(object):
             return 0
         return len(self.attachment_ids)
 
+    def get_attachment_ids(self):
+        logger.info('[PYTHON][%s][%s]: message.get_attachment_ids' % (BackendObject.name, self.uri))
+        return self.attachment_ids
+
     def get_attachment_table(self):
         table_type = mapistore.ATTACHMENT_TABLE
         table = TableObject(self, table_type)

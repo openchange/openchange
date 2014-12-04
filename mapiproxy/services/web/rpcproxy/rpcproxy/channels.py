@@ -16,7 +16,7 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from operator import itemgetter
 import os
 from select import poll, POLLIN, POLLHUP
 from socket import socket, AF_INET, AF_UNIX, SOCK_STREAM, MSG_WAITALL, \
@@ -26,12 +26,17 @@ import sys
 from time import time, sleep
 from uuid import UUID
 
+
 # from rpcproxy.RPCH import RPCH, RTS_FLAG_ECHO
 from openchange.utils.fdunix import send_socket, receive_socket
-from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
-    RTS_CMD_VERSION, RTS_CMD_RECEIVE_WINDOW_SIZE, \
-    RTS_CMD_CONNECTION_TIMEOUT, RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, \
-    RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket
+from openchange.utils.packets import (RTS_CMD_CONNECTION_TIMEOUT,
+                                      RTS_CMD_CUSTOM_OUT,
+                                      RTS_CMD_DESTINATION,
+                                      RTS_CMD_FLOW_CONTROL_ACK,
+                                      RTS_CMD_RECEIVE_WINDOW_SIZE,
+                                      RTS_CMD_VERSION,
+                                      RTS_FLAG_ECHO,
+                                      RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket)
 
 
 """Documentation:
@@ -63,7 +68,7 @@ from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
  IN -> OUT: in_window_size
  IN -> OUT: in_conn_timeout
  OUT -> IN: sends connection to OpenChange
- (TODO: socket close at this point?)
+ The UNIX socket is open to transmit packets from IN to OUT channel using RTS CMD
 
  * channel recycling (unused yet, hypothethical)
  When new OUT conn arrives:
@@ -250,7 +255,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 # shutting down sockets
                 self.logger.debug("notifying OUT channel of shutdown")
                 try:
-                    self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
+                    packet = RPCRTSOutPacket(self.logger)
+                    packet.add_command(RTS_CMD_CUSTOM_OUT)
+                    self.unix_socket.sendall(packet.make())
                     _safe_close(self.unix_socket)
                     self.logger.debug("OUT channel successfully notified")
                 except socket_error:
@@ -428,10 +435,22 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
                 # FIXME: notify IN channel?
                 self.logger.debug("connection closed from IN channel")
                 status = False
-            self.logger.debug("ignored event '%d' on unix socket (closing)"
-                              % event_no)
-            # FIXME: we should listen to what the IN channel has to say
-            status = False
+            elif event_no & POLLIN > 0:
+                oc_packet = RPCPacket.from_file(self.unix_socket, self.logger)
+                self.logger.debug("packet headers = "
+                                  + oc_packet.pretty_dump())
+                if not isinstance(oc_packet, RPCRTSPacket):
+                    raise Exception('Unexpected non-RTS RPC packet received from IN channel')
+
+                if RTS_CMD_CUSTOM_OUT in map(itemgetter('type'), oc_packet.commands):
+                    self.logger.debug('Notified the IN channel has left out')
+                    status = False
+                else:
+                    self.logger.debug('Sending RTS RPC packet to client')
+                    self.bytes_read += oc_packet.size
+
+                    server_data = oc_packet.data
+
         else:
             raise Exception("invalid poll event: %s" % str(data))
 

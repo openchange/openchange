@@ -115,8 +115,9 @@ RTS_CMD_CLIENT_ADDRESS = 11
 RTS_CMD_ASSOCIATION_GROUP_ID = 12
 RTS_CMD_DESTINATION = 13
 RTS_CMD_PING_TRAFFIC_SENT_NOTIFY = 14
+RTS_CMD_CUSTOM_OUT = 15  # Custom RTS command to notifying a channel OUT shutdown
 
-RTS_CMD_SIZES = (8, 28, 8, 20, 8, 8, 8, 4, 8, 4, 4, 8, 20, 8, 8)
+RTS_CMD_SIZES = (8, 28, 8, 20, 8, 8, 8, 4, 8, 4, 4, 8, 20, 8, 8, 4)
 RTS_CMD_DATA_LABELS = ("ReceiveWindowSize",
                        "FlowControlAck",
                        "ConnectionTimeout",
@@ -131,7 +132,8 @@ RTS_CMD_DATA_LABELS = ("ReceiveWindowSize",
                        "ClientAddress",
                        "AssociationGroupId",
                        "Destination",
-                       "PingTrafficSentNotify")
+                       "PingTrafficSentNotify",
+                       "CustomNotifyOUTChannel")
 
 RPC_C_AUTHN_NONE = 0x0
 RPC_C_AUTHN_GSS_NEGOTIATE = 0x9 # SPNEGO

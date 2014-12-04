@@ -664,12 +664,21 @@ class RPCRTSOutPacket(object):
 
         self.command_data.append("".join(values))
 
-    def _make_command_flow_control_ack(self, data_blob):
-        # dumb method
+    def _make_command_flow_control_ack(self, data_dict):
+        # Follow [MS-RPCH] Section 2.2.4.50
+        self.flags = RTS_FLAG_OTHER_CMD
+
+        if 'bytes_received' not in data_dict:
+            raise RTSParsingException('Expected bytes_received, available_window'
+                                      + ' and channel_cookie keys to make FlowControlAck packet')
+
+        data_blob = pack("<ll", data_dict['bytes_received'], data_dict['available_window'])
+        data_blob += UUID(data_dict['channel_cookie']).bytes
+
         len_data = len(data_blob)
         if len_data != 24:
-            raise RTSParsingException("expected a length of %d bytes,"
-                                      " received %d" % (24, len_data))
+            raise RTSParsingException('Expected %d bytes for FlowControlAck RTS command' % 24)
+
         self.size = self.size + len_data
 
         return data_blob

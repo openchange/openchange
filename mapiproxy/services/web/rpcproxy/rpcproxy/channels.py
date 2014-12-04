@@ -1,7 +1,9 @@
 # channels.py -- OpenChange RPC-over-HTTP implementation
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2012  Julien Kerihuel <j.kerihuel@openchange.org>
-#                     Wolfgang Sourdeau <wsourdeau@inverse.ca>
+# Copyright (C) 2012-2014  Julien Kerihuel <j.kerihuel@openchange.org>
+#                          Wolfgang Sourdeau <wsourdeau@inverse.ca>
+#                          Enrique J. Hernández <ejhernandez@zentyal.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -132,10 +134,12 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
     def __init__(self, sockets_dir, logger):
         RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
         self.oc_conn = None
-        self.window_size = 0
+        # Window_size to 256KiB (max size allowed)
+        self.window_size = 256 * 1024
         self.conn_timeout = 0
         self.client_keepalive = 0
         self.association_group_id = None
+        self.local_available_window = self.window_size
 
     def _receive_conn_b1(self):
         # CONN/B1 RTS PDU (TODO: validation)
@@ -184,18 +188,34 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
             # send window_size to 256Kib (max size allowed)
             # and conn_timeout (in milliseconds, max size allowed)
-            unix_socket.sendall(pack("<ll", (256 * 1024), 120000))
+            unix_socket.sendall(pack("<ll", self.window_size, 120000))
 
             # recv oc socket
             self.oc_conn = receive_socket(unix_socket)
 
             self.logger.debug("oc_conn received (fileno=%d)"
-                             % self.oc_conn.fileno())
+                              % self.oc_conn.fileno())
         else:
             self.logger.error("too many failed attempts to establish a"
                               " connection to OUT channel")
 
         return connected
+
+    def _send_flow_control_ack(self):
+        """Send FlowControlAckWithDestination RTS command to say the client there
+        is room for sending more information"""
+        self.logger.debug('Send to client the FlowControlAckWithDestination RTS command '
+                          'after %d of avalaible window size' % self.local_available_window)
+        rts_packet = RPCRTSOutPacket(self.logger)
+        # We always returns back the same available maximum received size
+        rts_packet.add_command(RTS_CMD_DESTINATION, 0)  # Forward this to client
+        rts_packet.add_command(RTS_CMD_FLOW_CONTROL_ACK,
+                               {'bytes_received': self.bytes_read,
+                                'available_window': self.window_size,
+                                'channel_cookie': self.channel_cookie})
+
+        # Send the message to the OUT channel
+        self.unix_socket.sendall(rts_packet.make())
 
     def _runloop(self):
         self.logger.debug("runloop")
@@ -208,6 +228,13 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("packet headers = "
                                   + oc_packet.pretty_dump())
                 self.bytes_read = self.bytes_read + oc_packet.size
+
+                # Flow control
+                self.local_available_window -= oc_packet.size
+                # This check can be any as it is not explicitly specified
+                if self.local_available_window < self.window_size / 2:
+                    self._send_flow_control_ack()
+                    self.local_available_window = self.window_size
 
                 if isinstance(oc_packet, RPCRTSPacket):
                     labels = [RTS_CMD_DATA_LABELS[command["type"]]

@@ -409,9 +409,8 @@ RPCRTSPacket.parsers = {RTS_CMD_FLOW_CONTROL_ACK: RPCRTSPacket._parse_command_fl
                         RTS_CMD_PADDING: RPCRTSPacket._parse_command_padding_data,
                         RTS_CMD_CLIENT_ADDRESS: RPCRTSPacket._parse_command_client_address}
 
-
-
 ### OUT packets
+
 
 # bind PDU (strict minimum required for NTLMSSP auth)
 class RPCBindOutPacket(object):
@@ -441,7 +440,6 @@ class RPCBindOutPacket(object):
         else:
             padding = ""
         len_padding = len(padding)
-
 
         # rfr: 1544f5e0-613c-11d1-93df-00c04fd7bd09, v1
         # mgmt: afa8bd80-7d8a-11c9-bef4-08002b102989, v1
@@ -608,7 +606,7 @@ class RPCRTSOutPacket(object):
         data = "".join(self.command_data)
         data_size = len(data)
 
-        if (data_size != self.size):
+        if data_size != self.size:
             raise RTSParsingException("sizes do not match: declared = %d,"
                                       " actual = %d" % (self.size, data_size))
         self.command_data = None
@@ -620,14 +618,14 @@ class RPCRTSOutPacket(object):
 
     def _make_header(self):
         header_data = pack("<bbbbbbbbhhlhh",
-                           5, 0, # rpc_vers, rpc_vers_minor
-                           DCERPC_PKT_RTS, # ptype
-                           PFC_FIRST_FRAG | PFC_LAST_FRAG, # pfc_flags
+                           5, 0,  # rpc_vers, rpc_vers_minor
+                           DCERPC_PKT_RTS,  # ptype
+                           PFC_FIRST_FRAG | PFC_LAST_FRAG,  # pfc_flags
                            # drep: RPC spec chap14.htm (Data Representation Format Label)
                            (1 << 4) | 0, 0, 0, 0,
-                           (20 + self.size), # frag_length
-                           0, # auth_length
-                           0, # call_id
+                           (20 + self.size),  # frag_length
+                           0,  # auth_length
+                           0,  # call_id
                            self.flags,
                            len(self.command_data))
         self.command_data.insert(0, header_data)

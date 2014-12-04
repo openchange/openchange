@@ -9,12 +9,12 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
@@ -101,7 +101,7 @@ class RPCProxyChannelHandler(object):
         self.logger = logger
 
         self.unix_socket = None
-        self.client_socket = None # placeholder for wsgi.input
+        self.client_socket = None  # placeholder for wsgi.input
 
         self.bytes_read = 0
         self.bytes_written = 0
@@ -125,9 +125,9 @@ class RPCProxyChannelHandler(object):
 
     def log_connection_stats(self):
         self.logger.debug("channel kept alive during %f secs;"
-                         " %d bytes received; %d bytes sent"
-                         % ((time() - self.startup_time),
-                            self.bytes_read, self.bytes_written))
+                          " %d bytes received; %d bytes sent"
+                          % ((time() - self.startup_time),
+                             self.bytes_read, self.bytes_written))
 
 
 class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
@@ -154,15 +154,14 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
         self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
         self.client_keepalive = packet.commands[4]["ClientKeepalive"]
-        self.association_group_id = str(UUID(bytes=packet.commands[5] \
-                                                 ["AssociationGroupId"]))
+        self.association_group_id = str(UUID(bytes=packet.commands[5]["AssociationGroupId"]))
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
         # connect as a client to the cookie unix socket
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("connecting to OUT via unix socket '%s'"
-                         % socket_name)
+                          % socket_name)
         unix_socket = socket(AF_UNIX, SOCK_STREAM)
         connected = False
         attempt = 0
@@ -174,7 +173,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 connected = True
             except socket_error:
                 self.logger.debug("handling socket.error: %s"
-                                 % str(sys.exc_info()))
+                                  % str(sys.exc_info()))
                 self.logger.warn("reattempting to connect to OUT"
                                  " channel... (%d/10)" % attempt)
                 sleep(1)
@@ -296,7 +295,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
             self.log_connection_stats()
             self.logger.debug("exiting from main sequence")
-            
+
             # TODO: error handling
             start_response("200 Success",
                            [("Content-length", "0"),
@@ -317,6 +316,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         #                           ("Content-length", "%s" % len(msg))])
 
         # return [msg]
+
 
 class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def __init__(self, sockets_dir, samba_host, logger):
@@ -375,7 +375,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("failure to connect, retrying...")
                 sleep(1)
         self.logger.debug("connection to OC succeeeded (fileno=%d)"
-                         % oc_conn.fileno())
+                          % oc_conn.fileno())
         self.oc_conn = oc_conn
 
     def _setup_channel_socket(self):
@@ -431,7 +431,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             self.logger.info("IN channel failed to connect in the last"
                              " 10 seconds")
             connected = False
-        
+
         return connected
 
     def _process_server_event(self, unix_fd, oc_fd, data):
@@ -516,7 +516,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def _terminate_sockets(self):
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("removing and closing unix socket '%s'"
-                         % socket_name)
+                          % socket_name)
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
         if self.unix_socket is not None:

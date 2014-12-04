@@ -2510,7 +2510,6 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 }
 
 
-
 /**
    \details Save message
 
@@ -2551,6 +2550,77 @@ static enum mapistore_error mapistore_python_message_save(TALLOC_CTX *mem_ctx,
 		PyErr_Print();
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
+
+
+/**
+   \details Set the read status of a message and upate the
+   PidTagMessageFlags property
+
+   \param message_object pointer to the message object on which we
+   want to set the property
+   \param flags the flags to set on the message
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error mapistore_python_message_set_read_flag(void *message_object,
+								   uint8_t flags)
+{
+	enum mapistore_error		retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject			*key;
+	PyObject			*val;
+	PyObject			*pydict;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Set PidTagMessageFlags */
+	pydict = PyDict_New();
+	if (pydict == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python Dictionary\n", __location__));
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+
+	key = PyString_FromString("PidTagMessageFlags");
+	val = PyLong_FromLong((uint32_t)flags);
+	if (PyDict_SetItem(pydict, key, val) == -1) {
+		DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
+			  __location__));
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+
+	/* Call set_properties function */
+	pres = PyObject_CallMethod(message, "update", "O", pydict);
+	Py_DECREF(pydict);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* TODO Send Receipt */
 
 	retval = PyLong_AsLong(pres);
 	Py_DECREF(pres);
@@ -3931,7 +4001,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	/* message */
 	backend.message.get_message_data = mapistore_python_message_get_message_data;
 	backend.message.modify_recipients = mapistore_python_message_modify_recipients;
-	/* backend.message.set_read_flag = mapistore_python_message_set_read_flag; */
+	backend.message.set_read_flag = mapistore_python_message_set_read_flag;
 	backend.message.save = mapistore_python_message_save;
 	/* backend.message.submit = mapistore_python_message_submit; */
 	backend.message.open_attachment = mapistore_python_message_open_attachment;

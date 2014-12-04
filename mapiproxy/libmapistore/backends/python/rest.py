@@ -185,6 +185,14 @@ class _RESTConn(object):
         r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
         return r.json()
 
+    def update_message(self, collection, props):
+        for key,value in props.iteritems():
+            if mapistore.isPtypBinary(key):
+                props[key] = base64.b64encode(value)
+        headers = {'Content-Type': 'application/json'}
+        r = self.so.put('%s/%s/%s/' % (self.base_url, collection, props["id"]), data=json.dumps(props), headers=headers)
+        return 0
+
     def create_folder(self, parent_id, folder):
         folder['parent_id'] = parent_id
         headers = {'Content-Type': 'application/json'}
@@ -383,6 +391,9 @@ class FolderObject(object):
 
         conn = _RESTConn.get_instance()
         self.properties = conn.get_folder(self.uri)
+        self.count = {}
+        self.count["folders"] = conn.get_folder_count(self.uri)
+        self.count["messages"] = conn.get_message_count(self.uri)
 
     def open_folder(self, folderID):
         logger.info('[PYTHON]: [%s] folder.open(fid=%s)' % (BackendObject.name, folderID))
@@ -397,6 +408,7 @@ class FolderObject(object):
         base_url = '/folders/%s/' % rid['id']
         uri = '%s%s' % (BackendObject.namespace, base_url)
         self.ctx.indexing.add_uri_with_fmid(uri, fid)
+        self.count["folders"] = self.count["folders"] + 1
         return (mapistore.errors.MAPISTORE_SUCCESS, FolderObject(self.ctx, base_url, fid, self.folderID))
 
     def _index_messages(self, messages):
@@ -461,8 +473,8 @@ class FolderObject(object):
         properties['PidTagRights'] = 2043
         if not 'PidTagContainerClass' in properties and 'role' in self.properties:
             properties['PidTagContainerClass'] = str(role_properties[self.properties['role']]['PidTagContainerClass'],)
-        properties['PidTagSubfolders'] = True if conn.get_folder_count(self.uri) else False
-        properties['PidTagContentCount'] = conn.get_message_count(self.uri)
+        properties['PidTagSubfolders'] = True if self.count["folders"] else False
+        properties['PidTagContentCount'] = self.count["messages"]
         properties['PidTagContentUnreadCount'] = 0
         properties['PidTagAttributeHidden'] = False
 
@@ -578,10 +590,21 @@ class MessageObject(object):
             return "mails"
         return collections[messageclass]
 
+    def update(self, properties):
+        logger.info('[PYTHON]:[%s] message.update()' % BackendObject.name)
+        tmpdict = self.properties.copy()
+        tmpdict.update(properties)
+        self.properties = tmpdict
+
+        conn = _RESTConn.get_instance()
+        collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
+        conn.update_message(collection, self.properties)
+        return mapistore.errors.MAPISTORE_SUCCESS
+
     def save(self):
         conn = _RESTConn.get_instance()
         # Check if the msg already exists
-        # Create the message
+        # else Create the message
         props = self.properties.copy()
         props['parent_id'] = self.folder.uri
         props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
@@ -591,6 +614,7 @@ class MessageObject(object):
         uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
         self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
         self.folder.messages.append(self)
+        self.folder.count["messages"] = self.count["messages"] + 1
         return mapistore.errors.MAPISTORE_SUCCESS
 
 

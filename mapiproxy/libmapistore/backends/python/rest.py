@@ -175,7 +175,9 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
-    def create_message(self, collection, msg):
+    def create_message(self, collection, parent_id, props):
+        msg = props.copy()
+        msg['parent_id'] = parent_id
         # base64 PtypBinary properties
         for key,value in msg.iteritems():
             if mapistore.isPtypBinary(key):
@@ -185,12 +187,13 @@ class _RESTConn(object):
         r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
         return r.json()
 
-    def update_message(self, collection, props):
-        for key,value in props.iteritems():
+    def update_message(self, uri, props):
+        msg = props.copy()
+        for key,value in msg.iteritems():
             if mapistore.isPtypBinary(key):
-                props[key] = base64.b64encode(value)
+                msg[key] = base64.b64encode(value)
         headers = {'Content-Type': 'application/json'}
-        r = self.so.put('%s/%s/%s/' % (self.base_url, collection, props["id"]), data=json.dumps(props), headers=headers)
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg), headers=headers)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def create_folder(self, parent_id, folder):
@@ -200,11 +203,12 @@ class _RESTConn(object):
         return r.json()
 
     def update_folder(self, uri, props):
+        fld = props.copy()
         headers = {'Content-Type': 'application/json'}
-        for key,value in props.iteritems():
+        for key,value in fld.iteritems():
             if mapistore.isPtypBinary(key):
-                props[key] = base64.b64encode(value)
-        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(props), headers=headers)
+                fld[key] = base64.b64encode(value)
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(fld), headers=headers)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
@@ -599,10 +603,10 @@ class MessageObject(object):
         # Check if the msg already exists
         # else Create the message
         props = self.properties.copy()
-        props['parent_id'] = self.folder.uri
-        props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
+        parent_id = self.folder.uri
+        parent_id = int(parent_id.replace('/folders/', '').rstrip('/'))
         collection = self._collection_from_messageClass(props['PidTagMessageClass'])
-        msgid = conn.create_message(collection, props)
+        msgid = conn.create_message(collection, parent_id, props)
         # Index the record
         uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
         self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
@@ -674,7 +678,6 @@ class TableObject(object):
                 row[name] = folder.properties[name]
         return (self.columns, row)
 
-
     def _encode_restriction(self, restriction):
         if restriction is None:
             return None
@@ -682,23 +685,25 @@ class TableObject(object):
         if not 'type' in restriction:
             return None
 
-        if restriction["type"] == "and":
-            for i,condition in enumerate(restriction["value"]):
-                restriction["value"][i] = self._encode_restriction(condition)
+        rst = restriction.copy()
 
-        if restriction["type"] == "or":
-            for i,condition in enumerate(restriction["value"]):
-                restriction["value"][i] = self._encode_restriction(condition)
+        if rst["type"] == "and":
+            for i,condition in enumerate(rst["value"]):
+                rst["value"][i] = self._encode_restriction(condition)
 
-        if restriction["type"] == "content":
-            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
-                restriction["value"] = base64.b64encode(str(restriction["value"]))
+        if rst["type"] == "or":
+            for i,condition in enumerate(rst["value"]):
+                rst["value"][i] = self._encode_restriction(condition)
 
-        if restriction["type"] == "property":
-            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
-                restriction["value"] = base64.b64encode(str(restriction["value"]))
+        if rst["type"] == "content":
+            if mapistore.isPtypBinary(rst["property"]) or mapistore.isPtypServerId(rst["property"]):
+                rst["value"] = base64.b64encode(str(rst["value"]))
 
-        return restriction
+        if rst["type"] == "property":
+            if mapistore.isPtypBinary(rst["property"]) or mapistore.isPtypServerId(rst["property"]):
+                rst["value"] = base64.b64encode(str(rst["value"]))
+
+        return rst
 
     def _apply_restriction_message(self, restriction, message):
         if restriction is None:

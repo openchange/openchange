@@ -151,10 +151,10 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             raise Exception("Unexpected non-rts packet received for CONN/B1")
         self.logger.debug("packet headers = " + packet.pretty_dump())
 
-        self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
-        self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
+        self.connection_cookie = str(UUID(bytes_le=packet.commands[1]["Cookie"]))
+        self.channel_cookie = str(UUID(bytes_le=packet.commands[2]["Cookie"]))
         self.client_keepalive = packet.commands[4]["ClientKeepalive"]
-        self.association_group_id = str(UUID(bytes=packet.commands[5]["AssociationGroupId"]))
+        self.association_group_id = str(UUID(bytes_le=packet.commands[5]["AssociationGroupId"]))
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
@@ -335,8 +335,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             raise Exception("Unexpected non-rts packet received for CONN/A1")
         self.logger.debug("packet headers = " + packet.pretty_dump())
 
-        self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
-        self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
+        self.connection_cookie = str(UUID(bytes_le=packet.commands[1]["Cookie"]))
+        self.channel_cookie = str(UUID(bytes_le=packet.commands[2]["Cookie"]))
 
     def _send_conn_a3(self):
         self.logger.debug("sending CONN/A3 to client")

@@ -671,7 +671,7 @@ class RPCRTSOutPacket(object):
                                       + ' and channel_cookie keys to make FlowControlAck packet')
 
         data_blob = pack("<ll", data_dict['bytes_received'], data_dict['available_window'])
-        data_blob += UUID(data_dict['channel_cookie']).bytes
+        data_blob += UUID(data_dict['channel_cookie']).bytes_le
 
         len_data = len(data_blob)
         if len_data != 24:

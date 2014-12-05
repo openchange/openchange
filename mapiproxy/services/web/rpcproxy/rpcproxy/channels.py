@@ -139,7 +139,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         self.conn_timeout = 0
         self.client_keepalive = 0
         self.association_group_id = None
+        # Variables required to flow control
         self.local_available_window = self.window_size
+        self.rpc_pdu_bytes_received = 0
 
     def _receive_conn_b1(self):
         # CONN/B1 RTS PDU (TODO: validation)
@@ -209,7 +211,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
         # We always returns back the same available maximum received size
         rts_packet.add_command(RTS_CMD_DESTINATION, 0)  # Forward this to client
         rts_packet.add_command(RTS_CMD_FLOW_CONTROL_ACK,
-                               {'bytes_received': self.bytes_read,
+                               {'bytes_received': self.rpc_pdu_bytes_received,  # Only RPC PDUs are subject to flow control
                                 'available_window': self.window_size,
                                 'channel_cookie': self.channel_cookie})
 
@@ -228,13 +230,6 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                                   + oc_packet.pretty_dump())
                 self.bytes_read = self.bytes_read + oc_packet.size
 
-                # Flow control
-                self.local_available_window -= oc_packet.size
-                # This check can be any as it is not explicitly specified
-                if self.local_available_window < self.window_size / 2:
-                    self._send_flow_control_ack()
-                    self.local_available_window = self.window_size
-
                 if isinstance(oc_packet, RPCRTSPacket):
                     labels = [RTS_CMD_DATA_LABELS[command["type"]]
                               for command in oc_packet.commands]
@@ -244,6 +239,15 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                     self.logger.debug("sending packet to OC")
                     self.oc_conn.sendall(oc_packet.data)
                     self.bytes_written = self.bytes_written + oc_packet.size
+
+                    # Flow control (only subject to RPC PDUs)
+                    self.local_available_window -= oc_packet.size
+                    self.rpc_pdu_bytes_received += oc_packet.size
+                    # This check can be any as it is not explicitly specified
+                    if self.local_available_window < self.window_size / 2:
+                        self._send_flow_control_ack()
+                        self.local_available_window = self.window_size
+
             except IOError:
                 status = False
                 self.logger.debug("handling socket.error: %s"

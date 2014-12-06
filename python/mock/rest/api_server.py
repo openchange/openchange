@@ -30,9 +30,10 @@ from flask.ctx import after_this_request
 from handler.kissHandler import ApiHandler
 from openchange import mapistore
 
+
 app = Flask(__name__)
-app.config.from_object(__name__)
-# app.config.from_pyfile()
+app.config.from_object('default_config')
+app.config.from_envvar('API_SERVER_SETTINGS', silent=True)
 
 
 @app.route('/', methods=['GET'])
@@ -399,5 +400,4 @@ def module_notes_create():
 
 
 if __name__ == '__main__':
-    app.debug = True
-    app.run(port=5001)
+    app.run(host=app.config['HOST'])

@@ -176,6 +176,17 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
+    def create_attachment(self, parent_id, props):
+        att = props.copy();
+        att['parent_id'] = parent_id
+        # base64 PtypBinary properties
+        for key,value in att.iteritems():
+            if mapistore.isPtypBinary(key):
+                att[key] = base64.b64encode(value)
+        headers = {'Content-Type': 'application/json'}
+        r = self.so.post('%s/attachments/' % self.base_url, data=json.dumps(att), headers=headers)
+        return r.json()['id']
+
     def create_message(self, collection, parent_id, props):
         msg = props.copy()
         msg['parent_id'] = parent_id
@@ -186,16 +197,7 @@ class _RESTConn(object):
         msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
         headers = {'Content-Type': 'application/json'}
         r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
-        return r.json()
-
-    def update_message(self, uri, props):
-        msg = props.copy()
-        for key,value in msg.iteritems():
-            if mapistore.isPtypBinary(key):
-                msg[key] = base64.b64encode(value)
-        headers = {'Content-Type': 'application/json'}
-        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg), headers=headers)
-        return mapistore.errors.MAPISTORE_SUCCESS
+        return r.json()['id']
 
     def create_folder(self, parent_id, folder):
         folder['parent_id'] = parent_id
@@ -203,13 +205,13 @@ class _RESTConn(object):
         r = self.so.post('%s/folders/' % self.base_url, data=json.dumps(folder), headers=headers)
         return r.json()
 
-    def update_folder(self, uri, props):
-        fld = props.copy()
+    def update_object(self, uri, props):
+        obj = props.copy()
         headers = {'Content-Type': 'application/json'}
-        for key,value in fld.iteritems():
+        for key,value in obj.iteritems():
             if mapistore.isPtypBinary(key):
-                fld[key] = base64.b64encode(value)
-        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(fld), headers=headers)
+                obj[key] = base64.b64encode(value)
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(obj), headers=headers)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
@@ -295,7 +297,6 @@ class BackendObject(object):
         """
         logger.info('[PYTHON]: [%s] backend.init: init()' % self.name)
         return mapistore.errors.MAPISTORE_SUCCESS
-
 
     def list_contexts(self, username):
         """ List context capabilities of this backend
@@ -491,7 +492,7 @@ class FolderObject(object):
     def set_properties(self, properties):
         logger.info('[PYTHON]: [%s][%s]: folder.set_properties' % (BackendObject.name, self.uri))
         conn = _RESTConn.get_instance()
-        conn.update_folder(self.uri, properties)
+        conn.update_object(self.uri, properties)
         self.properties.update(properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
@@ -566,20 +567,25 @@ class MessageObject(object):
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, msg))
         self.folder = folder
         self.mid = mid or long(msg['id'])
+        self.uri = None
         self.properties = msg
         self.recipients = []
+        self.cached_attachments = []
+        self.attachment_ids = []
+        self.next_aid = 0  # Provisional AID
         logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name, self.properties))
 
     def get_properties(self, properties):
+        logger.info('[PYTHON]:[%s][%s] message.get_properties()' % (BackendObject.name, self.uri))
         return self.properties
 
     def set_properties(self, properties):
-        logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
+        logger.info('[PYTHON]:[%s][%s] message.set_properties()' % (BackendObject.name, self.uri))
         self.properties.update(properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_message_data(self):
-        logger.info('[PYTHON]: message.get_message_data(mid=%d)' % self.mid)
+        logger.info('[PYTHON][%s][%s]: message.get_message_data' % (BackendObject.name, self.uri))
         print self.properties
         return (self.recipients, self.properties)
 
@@ -592,26 +598,46 @@ class MessageObject(object):
 
     def update(self, properties):
         logger.info('[PYTHON]:[%s] message.update()' % BackendObject.name)
+        if self.uri is None:
+            return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
         self.properties.update(properties)
         conn = _RESTConn.get_instance()
-        collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
-        conn.update_message(collection, self.properties)
+        conn.update_object(self.uri, properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def save(self):
+        logger.info('[PYTHON][%s][%s]: message.save' % (BackendObject.name, self.uri))
         conn = _RESTConn.get_instance()
-        # Check if the msg already exists
-        # else Create the message
-        props = self.properties.copy()
-        parent_id = self.folder.uri
-        parent_id = int(parent_id.replace('/folders/', '').rstrip('/'))
-        collection = self._collection_from_messageClass(props['PidTagMessageClass'])
-        msgid = conn.create_message(collection, parent_id, props)
-        # Index the record
-        uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
-        self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
-        self.folder.messages.append(self)
-        self.folder.count["messages"] = self.folder.count["messages"] + 1
+        collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
+        # Check if the message already exists
+        if self.uri is not None:
+            # Update the message
+            conn.update_object(self.uri, self.properties)
+            msgid = self.uri
+            msgid = int(msgid.replace('/%s/' % collection, '').rstrip('/'))
+        else:
+            # Create the message
+            folder_id = self.folder.uri
+            folder_id = int(folder_id.replace('/folders/', '').rstrip('/'))
+            msgid = conn.create_message(collection, folder_id, self.properties)
+            self.uri = '/%s/%d/' % (collection, msgid)
+            # Index the record
+            uri = '%s%s' % (BackendObject.namespace, self.uri)
+            self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
+            self.folder.messages.append(self)
+            self.folder.count["messages"] = self.folder.count["messages"] + 1
+        # If it has cached attachments, post them as well
+        for att in self.cached_attachments:
+            # Check if the attachment already exists
+            if att.att_id in self.attachment_ids:
+                att_uri = '/attachments/%d/' % att.att_id
+                conn.update_object(att_uri, att.properties)
+            else:
+                # Create the attachment
+                parent_id = msgid
+                att.att_id = conn.create_attachment(parent_id, att.properties)
+                self.attachment_ids.append(att.att_id)
+        self.cached_attachments = []
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def create_attachment(self):
@@ -628,6 +654,11 @@ class AttachmentObject(object):
         self.message = message
         self.properties = att
         self.att_id = aid
+
+    def save(self):
+        if self.properties not in self.message.cached_attachments:
+            self.message.cached_attachments.append(self)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_properties(self, properties):
         logger.info('[PYTHON][%s]: attachment.get_properties()' % BackendObject.name)

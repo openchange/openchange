@@ -316,35 +316,14 @@ static PyObject *py_MAPIStoreMessage_create_attachment(PyMAPIStoreMessageObject 
 
 static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
 {
-	TALLOC_CTX			*mem_ctx;
 	char				*kwnames[] = { "att_id", NULL };
 	PyMAPIStoreAttachmentObject	*attachment;
-	void				*attachment_object, *table_object;
+	void				*attachment_object;
 	enum mapistore_error		retval;
-	uint32_t			att_id, count;
+	uint32_t			att_id;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I", kwnames, &att_id)) {
 		return NULL;
-	}
-
-	/* Check for out of range error*/
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
-			self->message_object, mem_ctx, &table_object, &count);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	if (att_id >= count) {
-		DEBUG(0, ("[ERR][%s]: 'att_id' argument out of range\n", __location__));
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
-		goto end;
 	}
 
 	/* Retrieve the attachment */
@@ -353,14 +332,14 @@ static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *s
 			self->mem_ctx, att_id, &attachment_object);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		goto end;
+		return NULL;
 	}
 
 	/* Return the MAPIStoreAttachment object */
 	attachment = PyObject_New(PyMAPIStoreAttachmentObject, &PyMAPIStoreAttachment);
 	if (attachment == NULL) {
 		PyErr_NoMemory();
-		goto end;
+		return NULL;
 	}
 
 	attachment->mem_ctx = self->mem_ctx;
@@ -370,43 +349,17 @@ static PyObject *py_MAPIStoreMessage_open_attachment(PyMAPIStoreMessageObject *s
 	attachment->aid = att_id;
 	attachment->attachment_object = attachment_object;
 
-	talloc_free(mem_ctx);
 	return (PyObject *)attachment;
-end:
-	talloc_free(mem_ctx);
-	return NULL;
 }
 
 static PyObject *py_MAPIStoreMessage_delete_attachment(PyMAPIStoreMessageObject *self, PyObject *args, PyObject *kwargs)
 {
-	TALLOC_CTX			*mem_ctx;
 	char				*kwnames[] = { "att_id", NULL };
-	void				*table_object;
 	enum mapistore_error		retval;
-	uint32_t			att_id, count;
+	uint32_t			att_id;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "I", kwnames, &att_id)) {
 		return NULL;
-	}
-
-	/* Check for out of range error */
-	mem_ctx = talloc_new(NULL);
-	if (mem_ctx == NULL) {
-		PyErr_NoMemory();
-		return NULL;
-	}
-
-	retval = mapistore_message_get_attachment_table(self->context->mstore_ctx, self->context->context_id,
-			self->message_object, mem_ctx, &table_object, &count);
-	if (retval != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(retval);
-		goto end;
-	}
-
-	if (att_id >= count) {
-		DEBUG(0, ("[ERR][%s]: 'att_id' argument out of range\n", __location__));
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
-		goto end;
 	}
 
 	/* Delete the attachment*/
@@ -414,14 +367,10 @@ static PyObject *py_MAPIStoreMessage_delete_attachment(PyMAPIStoreMessageObject 
 			self->context->context_id, self->message_object, att_id);
 	if (retval != MAPISTORE_SUCCESS) {
 		PyErr_SetMAPIStoreError(retval);
-		goto end;
+		return NULL;
 	}
 
-	talloc_free(mem_ctx);
 	Py_RETURN_NONE;
-end:
-	talloc_free(mem_ctx);
-	return NULL;
 }
 
 static PyObject *py_MAPIStoreMessage_open_attachment_table(PyMAPIStoreMessageObject *self)

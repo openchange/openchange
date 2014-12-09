@@ -479,6 +479,9 @@ _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_
 {
 	struct indexing_context		*ictx;
 
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!owner, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	mapistore_indexing_add(mstore_ctx, owner, &ictx);
 	/* TODO change backend definition to accept indexing_context instead of tdb_wrap */
 	return mapistore_backend_list_contexts(owner, ictx, mem_ctx, contexts_listp);

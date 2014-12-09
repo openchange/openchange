@@ -336,6 +336,56 @@ def module_mail_delete(msg_id):
         handler.close_context()
     return "", 204
 
+@app.route('/mails/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/calendars/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/tasks/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/contacts/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/notes/<int:msg_id>/attachments', methods=['HEAD'])
+def module_messages_head_attachments(msg_id):
+    """Get number of attachments in a message"""
+    handler = ApiHandler(user_id='any')
+    attachments = ''
+    try:
+        attachments = handler.messages_get_attachments(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+
+    @after_this_request
+    def add_header_X_mapistore_rowcount(response):
+        response.headers['X-mapistore-rowcount'] = len(attachments)
+        return response
+
+    return jsonify()
+
+@app.route('/mails/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/calendars/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/tasks/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/contacts/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/notes/<int:msg_id>/attachments', methods=['GET'])
+def module_messages_get_attachments(msg_id):
+    """List of attachments within specified message"""
+    properties = request.args.get('properties')
+    if properties is None:
+        properties = None
+    else:
+        properties = set(properties.split(','))
+    handler = ApiHandler(user_id='any')
+    attachments = ''
+    try:
+        attachments = handler.messages_get_attachments(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    # filter only requested properties
+    attachments = [{k: v
+                 for (k, v) in att.items()
+                 if properties is None or k in properties}
+                 for att in attachments]
+    return Response(json.dumps(attachments),  mimetype='application/json')
+
 
 ###############################################################################
 # Calendar
@@ -398,6 +448,79 @@ def module_notes_create():
         handler.close_context()
     return jsonify(id=msg['id'])
 
+
+###############################################################################
+# Attachment
+###############################################################################
+@app.route('/attachments/', methods=['POST'])
+def module_attachments_create():
+    data = request.get_json()
+    if data is None:
+        abort(422, "You must supply parent_id at least")
+    parent_id = data.get('parent_id', None)
+    if parent_id is None:
+        abort(422, "parent_id is a required parameter")
+    handler = ApiHandler(user_id='any')
+    att = {}
+    try:
+        att = handler.attachments_create(data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(id=att['id'])
+
+@app.route('/attachments/<int:att_id>/', methods=['GET'])
+def module_attachments_get(att_id):
+    """Fetch single attachment by its ID"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.attachments_get(att_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(ret_val)
+
+@app.route('/attachments/<int:att_id>/', methods=['PUT'])
+def module_attachments_put(att_id):
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.attachments_update(att_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
+@app.route('/attachments/<int:att_id>/', methods=['HEAD'])
+def module_attachments_head(att_id):
+    """List root level attachments"""
+    handler = ApiHandler(user_id='any')
+    ret_val = handler.attachments_id_exists(att_id)
+    handler.close_context()
+    if not ret_val:
+        abort(404)
+    return jsonify()
+
+
+@app.route('/attachments/<int:att_id>/', methods=['DELETE'])
+def module_attachment_delete(att_id):
+    """Delete attachment with att_id"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.attachments_delete(att_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
+###############################################################################
+# Main loop
+###############################################################################
 
 if __name__ == '__main__':
     app.run()

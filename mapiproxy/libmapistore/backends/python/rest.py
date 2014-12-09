@@ -607,7 +607,7 @@ class MessageObject(object):
         uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
         self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
         self.folder.messages.append(self)
-        self.folder.count["messages"] = self.count["messages"] + 1
+        self.folder.count["messages"] = self.folder.count["messages"] + 1
         return mapistore.errors.MAPISTORE_SUCCESS
 
 

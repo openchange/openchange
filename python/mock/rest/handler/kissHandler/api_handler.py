@@ -103,7 +103,8 @@ class ApiHandler(object):
         if folder_id not in folders:
             raise KeyError('No folder with id = %d' % folder_id)
         # update properties
-        self._db.update_folder(folder_id, props)
+        props['id'] = folder_id
+        self._db.update_folder(props)
 
     def folders_delete(self, folder_id):
         # load what we have
@@ -145,7 +146,8 @@ class ApiHandler(object):
         if msg_id not in messages:
             raise KeyError('No message with id = %d' % msg_id)
         # update properties
-        self._db.update_message(msg_id, props)
+        props['id'] = msg_id
+        self._db.update_message(props)
 
     def messages_delete(self, msg_id):
         # load what we have

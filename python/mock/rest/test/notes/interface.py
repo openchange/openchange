@@ -48,7 +48,7 @@ class NotesInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['collection'], 'notes')
+        self.assertEqual(res['type'], 'note')
         self.assertEqual(res['PidTagSubject'], 'notes tget')
         self.assertEqual(res['PidTagBody'], 'notes tget body')
 

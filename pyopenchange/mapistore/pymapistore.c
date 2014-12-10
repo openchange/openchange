@@ -280,12 +280,6 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 	struct mapistore_contexts_list 	*contexts_list;
 	enum mapistore_error		retval;
 
-	if ((self->mstore_ctx == NULL) || (self->username == NULL)) {
-		DEBUG(0,("[ERR][%s]: Can't list capabilities before initialising MAPIStore\n", __location__));
-		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
-		return NULL;
-	}
-
 	mem_ctx = talloc_new(NULL);
 	if (mem_ctx == NULL) {
 		PyErr_NoMemory();
@@ -295,6 +289,7 @@ static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
 	/* list contexts */
 	retval = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, mem_ctx, &contexts_list);
 	if (retval != MAPISTORE_SUCCESS) {
+		talloc_free(mem_ctx);
 		PyErr_SetMAPIStoreError(retval);
 		talloc_free(mem_ctx);
 		return NULL;

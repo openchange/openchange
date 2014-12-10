@@ -54,28 +54,30 @@ class kissDB(object):
 
     def create_folder(self, folder_props):
         """Create new folder and return a folder record
-        :param folder_props:
+        :param folder_props: Dictionary with the object data
         """
         next_id = self._get_data('next_id')
-        folder_props['id'] = next_id
+        fld = folder_props.copy()
+        fld['id'] = next_id
         folders = self._get_data('folders')
-        folders[next_id] = folder_props
+        folders[next_id] = fld
         self._set_data('next_id', next_id + 1)
         self._set_data('folders', folders, True)
-        return folder_props
+        return fld
 
-    def update_folder(self, folder_props):
+    def update_folder(self, folder_id, folder_props):
         """Update folder properties
-        :param folder_props:
+        :param folder_props: Dictionary with the object data
+        :param folder_id: Target object ID
         """
         folders = self._get_data('folders')
-        f = folders[folder_props['id']]
-        f.update(folder_props)
+        fld = folders[folder_id]
+        fld.update(folder_props)
         self._set_data('folders', folders, True)
 
     def delete_folder(self, folder_id):
         """Update folder properties
-        :param folder_props:
+        :param folder_id: Target object ID
         """
         folders = self._get_data('folders')
         del folders[folder_id]
@@ -87,28 +89,30 @@ class kissDB(object):
 
     def create_message(self, msg_props):
         """Create new message and return the record
-        :param msg_props:
+        :param msg_props: Dictionary with the object data
         """
+        msg = msg_props.copy()
         next_id = self._get_data('next_id')
-        msg_props['id'] = next_id
+        msg['id'] = next_id
         messages = self._get_data('messages')
-        messages[next_id] = msg_props
+        messages[next_id] = msg
         self._set_data('next_id', next_id + 1)
         self._set_data('messages', messages, True)
-        return msg_props
+        return msg
 
-    def update_message(self, msg_props):
+    def update_message(self, msg_id, msg_props):
         """Update message properties
-        :param msg_props:
+        :param msg_props: Dictionary with the object data
+        :param msg_id: Target object ID
         """
         messages = self._get_data('messages')
-        msg = messages[msg_props['id']]
+        msg = messages[msg_id]
         msg.update(msg_props)
         self._set_data('messages', messages, True)
 
     def delete_message(self, msg_id):
         """Delete a message record
-        :param msg_id:
+        :param msg_id: Target object ID
         """
         messages = self._get_data('messages')
         del messages[msg_id]
@@ -218,7 +222,7 @@ class kissDB(object):
                 19: kissDB._folder_rec(19, 'Shortcuts', 'Shortcuts', mapistore.ROLE_FALLBACK, 0, 8, True)
             },
             'messages': {
-                51: appt1,
+                51: appt1
             }
         }
 
@@ -242,5 +246,5 @@ class kissDB(object):
             'parent_id': fid,
             'PidTagSubject': subject,
             'PidTagBody': body,
-            'type': 'mail',
+            'type': 'mail'
         }

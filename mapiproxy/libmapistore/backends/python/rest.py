@@ -175,7 +175,9 @@ class _RESTConn(object):
             newlist.append(msg)
         return newlist
 
-    def create_message(self, collection, msg):
+    def create_message(self, collection, parent_id, props):
+        msg = props.copy()
+        msg['parent_id'] = parent_id
         # base64 PtypBinary properties
         for key,value in msg.iteritems():
             if mapistore.isPtypBinary(key):
@@ -185,13 +187,14 @@ class _RESTConn(object):
         r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
         return r.json()
 
-    def update_message(self, collection, props):
-        for key,value in props.iteritems():
+    def update_message(self, uri, props):
+        msg = props.copy()
+        for key,value in msg.iteritems():
             if mapistore.isPtypBinary(key):
-                props[key] = base64.b64encode(value)
+                msg[key] = base64.b64encode(value)
         headers = {'Content-Type': 'application/json'}
-        r = self.so.put('%s/%s/%s/' % (self.base_url, collection, props["id"]), data=json.dumps(props), headers=headers)
-        return 0
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg), headers=headers)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def create_folder(self, parent_id, folder):
         folder['parent_id'] = parent_id
@@ -200,12 +203,13 @@ class _RESTConn(object):
         return r.json()
 
     def update_folder(self, uri, props):
+        fld = props.copy()
         headers = {'Content-Type': 'application/json'}
-        for key,value in props.iteritems():
+        for key,value in fld.iteritems():
             if mapistore.isPtypBinary(key):
-                props[key] = base64.b64encode(value)
-        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(props), headers=headers)
-        return 0
+                fld[key] = base64.b64encode(value)
+        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(fld), headers=headers)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
         print json.dumps(payload, indent=4)
@@ -224,7 +228,7 @@ class _Indexing(object):
         mstore_uri = self.uri_rest_to_mstore(uri)
         # FIXME: check if uri already exists
         self.ictx.add_fmid(fmid, uri)
-        return 0
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def add_uri(self, uri):
         """
@@ -284,7 +288,6 @@ class BackendObject(object):
 
     def __init__(self):
         logger.info('[PYTHON]: [%s] backend class __init__' % self.name)
-        return
 
     def init(self):
         """ Initialize REST backend
@@ -398,7 +401,8 @@ class FolderObject(object):
     def open_folder(self, folderID):
         logger.info('[PYTHON]: [%s] folder.open(fid=%s)' % (BackendObject.name, folderID))
         uri = self.ctx.indexing.uri_by_id(folderID)
-        return FolderObject(self.ctx, uri, folderID, 0)
+        return FolderObject(self.ctx, uri, folderID,
+                mapistore.errors.MAPISTORE_SUCCESS)
 
 
     def create_folder(self, props, fid):
@@ -487,18 +491,17 @@ class FolderObject(object):
         logger.info('[PYTHON]: [%s][%s]: folder.set_properties' % (BackendObject.name, self.uri))
         conn = _RESTConn.get_instance()
         conn.update_folder(self.uri, properties)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
+        self.properties.update(properties)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
     def open_table(self, table_type):
         logger.info('[PYTHON]: [%s] folder.open_table(table_type=%s)' % (BackendObject.name, table_type))
-        factory = {1: self._open_table_folders,
-                   2: self._open_table_messages,
-                   3: self._open_table_any,
-                   4: self._open_table_any,
-                   5: self._open_table_any,
-                   6: self._open_table_any
+        factory = {mapistore.FOLDER_TABLE: self._open_table_folders,
+                   mapistore.MESSAGE_TABLE: self._open_table_messages,
+                   mapistore.FAI_TABLE: self._open_table_any,
+                   mapistore.RULE_TABLE: self._open_table_any,
+                   mapistore.ATTACHMENT_TABLE: self._open_table_any,
+                   mapistore.PERMISSIONS_TABLE: self._open_table_any
                    }
         return factory[table_type](table_type)
 
@@ -518,15 +521,14 @@ class FolderObject(object):
         self._index_messages(messages)
         return self._open_table_any(table_type)
 
-
     def get_child_count(self, table_type):
         logger.info('[PYTHON]: [%s] folder.fet_child_count with table_type = %d' % (BackendObject.name, table_type))
-        counter = { 1: self._count_folders,
-                    2: self._count_messages,
-                    3: self._count_zero,
-                    4: self._count_zero,
-                    5: self._count_zero,
-                    6: self._count_zero
+        counter = { mapistore.FOLDER_TABLE: self._count_folders,
+                    mapistore.MESSAGE_TABLE: self._count_messages,
+                    mapistore.FAI_TABLE: self._count_zero,
+                    mapistore.RULE_TABLE: self._count_zero,
+                    mapistore.ATTACHMENT_TABLE: self._count_zero,
+                    mapistore.PERMISSIONS_TABLE: self._count_zero
                 }
         return counter[table_type]()
 
@@ -573,9 +575,7 @@ class MessageObject(object):
 
     def set_properties(self, properties):
         logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
+        self.properties.update(properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_message_data(self):
@@ -592,10 +592,7 @@ class MessageObject(object):
 
     def update(self, properties):
         logger.info('[PYTHON]:[%s] message.update()' % BackendObject.name)
-        tmpdict = self.properties.copy()
-        tmpdict.update(properties)
-        self.properties = tmpdict
-
+        self.properties.update(properties)
         conn = _RESTConn.get_instance()
         collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
         conn.update_message(collection, self.properties)
@@ -606,15 +603,15 @@ class MessageObject(object):
         # Check if the msg already exists
         # else Create the message
         props = self.properties.copy()
-        props['parent_id'] = self.folder.uri
-        props['parent_id'] = int(props['parent_id'].replace('/folders/', '').rstrip('/'))
+        parent_id = self.folder.uri
+        parent_id = int(parent_id.replace('/folders/', '').rstrip('/'))
         collection = self._collection_from_messageClass(props['PidTagMessageClass'])
-        msgid = conn.create_message(collection, props)
+        msgid = conn.create_message(collection, parent_id, props)
         # Index the record
         uri = '%s/%s/%s/' % (BackendObject.namespace, collection, msgid['id'])
         self.folder.ctx.indexing.add_uri_with_fmid(uri, self.mid)
         self.folder.messages.append(self)
-        self.folder.count["messages"] = self.count["messages"] + 1
+        self.folder.count["messages"] = self.folder.count["messages"] + 1
         return mapistore.errors.MAPISTORE_SUCCESS
 
 
@@ -635,16 +632,16 @@ class TableObject(object):
     def set_restrictions(self, restrictions):
         logger.info('[PYTHON]:[%s] table.set_restrictions(%s)', BackendObject.name, restrictions)
         if restrictions is None:
-            self.restrictions = []
+            self.restrictions = {}
         else:
-            self.restrictions = self._encode_restriction(restrictions)
+            self.restrictions = self._encode_restrictions(restrictions)
 
         print json.dumps(self.restrictions, indent=4)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_row_count(self, query_type):
         logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
-        if self.table_type == 2:
+        if self.table_type == mapistore.MESSAGE_TABLE:
             count = 0
             for message in self.folder.messages:
                 if self._apply_restriction_message(self.restrictions, message) is True:
@@ -658,12 +655,12 @@ class TableObject(object):
         if self.get_row_count(self.table_type) == 0:
             return (self.columns, {})
 
-        getter = {1: self._get_row_folders,
-                  2: self._get_row_messages,
-                  3: self._get_row_not_impl,
-                  4: self._get_row_not_impl,
-                  5: self._get_row_not_impl,
-                  6: self._get_row_not_impl
+        getter = {mapistore.FOLDER_TABLE: self._get_row_folders,
+                  mapistore.MESSAGE_TABLE: self._get_row_messages,
+                  mapistore.FAI_TABLE: self._get_row_not_impl,
+                  mapistore.RULE_TABLE: self._get_row_not_impl,
+                  mapistore.ATTACHMENT_TABLE: self._get_row_not_impl,
+                  mapistore.PERMISSIONS_TABLE: self._get_row_not_impl
                   }
         return getter[self.table_type](row_no)
 
@@ -681,31 +678,32 @@ class TableObject(object):
                 row[name] = folder.properties[name]
         return (self.columns, row)
 
+    def _encode_restrictions(self, restrictions):
+        if restrictions is None:
+            return {}
 
-    def _encode_restriction(self, restriction):
-        if restriction is None:
-            return None
+        if not 'type' in restrictions:
+            return {}
 
-        if not 'type' in restriction:
-            return None
+        rst = restrictions.copy()
 
-        if restriction["type"] == "and":
-            for i,condition in enumerate(restriction["value"]):
-                restriction["value"][i] = self._encode_restriction(condition)
+        if rst["type"] == "and":
+            for i,condition in enumerate(rst["value"]):
+                rst["value"][i] = self._encode_restrictions(condition)
 
-        if restriction["type"] == "or":
-            for i,condition in enumerate(restriction["value"]):
-                restriction["value"][i] = self._encode_restriction(condition)
+        if rst["type"] == "or":
+            for i,condition in enumerate(rst["value"]):
+                rst["value"][i] = self._encode_restrictions(condition)
 
-        if restriction["type"] == "content":
-            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
-                restriction["value"] = base64.b64encode(str(restriction["value"]))
+        if rst["type"] == "content":
+            if mapistore.isPtypBinary(rst["property"]) or mapistore.isPtypServerId(rst["property"]):
+                rst["value"] = base64.b64encode(str(rst["value"]))
 
-        if restriction["type"] == "property":
-            if mapistore.isPtypBinary(restriction["property"]) or mapistore.isPtypServerId(restriction["property"]):
-                restriction["value"] = base64.b64encode(str(restriction["value"]))
+        if rst["type"] == "property":
+            if mapistore.isPtypBinary(rst["property"]) or mapistore.isPtypServerId(rst["property"]):
+                rst["value"] = base64.b64encode(str(rst["value"]))
 
-        return restriction
+        return rst
 
     def _apply_restriction_message(self, restriction, message):
         if restriction is None:

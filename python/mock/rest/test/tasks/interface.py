@@ -48,7 +48,7 @@ class TasksInterfaceTestCase(test.MockApiBaseTestCase):
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['collection'], 'tasks')
+        self.assertEqual(res['type'], 'task')
         self.assertEqual(res['PidTagSubject'], 'tasks tget')
         self.assertEqual(res['PidTagBody'], 'tasks tget body')
 

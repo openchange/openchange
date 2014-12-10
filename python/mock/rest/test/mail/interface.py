@@ -25,14 +25,14 @@ import test
 class MailInterfaceTestCase(test.MockApiBaseTestCase):
     """Basic tests for Mail module interface"""
 
-    def _create_test_msg(self, parent_id=1, subject='Message', body='Message body'):
+    def _create_test_msg(self, parent_id=1, subject='Message ', body='Message body'):
         data = {
             'parent_id': parent_id,
             'PidTagSubject': subject,
             'PidTagBody': body,
             'PidTagBodyHtml': '<html>%s</html>' % body
         }
-        return self.post_req('/mails/', data)
+        return self.post_req('/mail/', data)
 
     def test_create(self):
         status, text, headers = self._create_test_msg()
@@ -44,12 +44,12 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
         status, text, headers = self._create_test_msg(subject='tget', body='tget body')
         item = self._to_json_ret(text)
         # fetch the message
-        path = '/mails/%d/?properties=id,type,PidTagSubject,PidTagBody,PidTagBodyHtml' % item['id']
+        path = '/mail/%d/?properties=id,type,PidTagSubject,PidTagBody,PidTagBodyHtml' % item['id']
         status, text, headers = self.get_req(path)
         self.assertEqual(status, 200)
         res = self._to_json_ret(text)
         self.assertEqual(res['id'], item['id'])
-        self.assertEqual(res['collection'], 'mails')
+        self.assertEqual(res['type'], 'mail')
         self.assertEqual(res['PidTagSubject'], 'tget')
         self.assertEqual(res['PidTagBody'], 'tget body')
         self.assertTrue(res['PidTagBodyHtml'].startswith('<html>'))
@@ -62,7 +62,7 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
         data = {
             'PidTagBody': 'Updated body'
         }
-        path = '/mails/%d/' % item['id']
+        path = '/mail/%d/' % item['id']
         status, text, headers = self.put_req(path, data)
         self.assertEqual(status, 201)
         self.assertEqual(text, "")
@@ -72,7 +72,7 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
         status, text, headers = self._create_test_msg()
         item = self._to_json_ret(text)
         # check message exists
-        path = '/mails/%d/' % item['id']
+        path = '/mail/%d/' % item['id']
         status, text, headers = self.head_req(path)
         self.assertEqual(status, 200)
 
@@ -81,7 +81,7 @@ class MailInterfaceTestCase(test.MockApiBaseTestCase):
         status, text, headers = self._create_test_msg()
         item = self._to_json_ret(text)
         # check message exists
-        path = '/mails/%d/' % item['id']
+        path = '/mail/%d/' % item['id']
         status, text, headers = self.delete_req(path)
         self.assertEqual(status, 204)
         self.assertEqual(text, "")

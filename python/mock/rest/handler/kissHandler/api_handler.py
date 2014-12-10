@@ -103,8 +103,7 @@ class ApiHandler(object):
         if folder_id not in folders:
             raise KeyError('No folder with id = %d' % folder_id)
         # update properties
-        props['id'] = folder_id
-        self._db.update_folder(props)
+        self._db.update_folder(folder_id, props)
 
     def folders_delete(self, folder_id):
         # load what we have
@@ -117,6 +116,10 @@ class ApiHandler(object):
     def folders_get_messages(self, folder_id):
         msg_dict = self._db.get_messages()
         return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
+
+    def messages_id_exists(self, msg_id):
+        msg_dict = self._db.get_messages()
+        return msg_id in msg_dict
 
     def messages_create(self, collection, props):
         # we rely on API server to check preconditions
@@ -143,11 +146,10 @@ class ApiHandler(object):
         # load what we have
         messages = self._db.get_messages()
         # check msg id
-        if msg_id not in messages:
+        if not self.messages_id_exists(msg_id):
             raise KeyError('No message with id = %d' % msg_id)
         # update properties
-        props['id'] = msg_id
-        self._db.update_message(props)
+        self._db.update_message(msg_id, props)
 
     def messages_delete(self, msg_id):
         # load what we have
@@ -156,6 +158,49 @@ class ApiHandler(object):
         if msg_id not in messages:
             raise KeyError('No message with id = %d' % msg_id)
         self._db.delete_message(msg_id)
+
+    def messages_get_attachments(self, msg_id):
+        att_dict = self._db.get_attachments()
+        return [att for att in att_dict.values() if msg_id == att['parent_id']]
+
+    def attachments_create(self, props):
+        # we rely on API server to check preconditions
+        # but anyway, assert here too
+        assert 'parent_id' in props, 'parent_id is required'
+        # check parent ID
+        parent_id = props['parent_id']
+        if not self.messages_id_exists(parent_id):
+            raise KeyError('No item with id = %d' % parent_id)
+        # create new attachment
+        return self._db.create_attachment(props)
+
+    def attachments_id_exists(self, att_id):
+        att_dict = self._db.get_attachments()
+        return att_id in att_dict
+
+    def attachments_get(self, att_id):
+        att_dict = self._db.get_attachments()
+        if att_id not in att_dict:
+            raise KeyError('No item with id = %d' % att_id)
+        return att_dict[att_id]
+
+    def attachments_update(self, att_id, props):
+        # load what we have
+        attachments = self._db.get_attachments()
+        # check att id
+        if att_id not in attachments:
+            raise KeyError('No attachment with id = %d' % att_id)
+        # update properties
+        self._db.update_attachment(att_id, props)
+
+    def attachments_delete(self, att_id):
+        # load what we have
+        attachments = self._db.get_attachments()
+        # check att id
+        if att_id not in attachments:
+            raise KeyError('No attachment with id = %d' % att_id)
+        # delete attachment
+        self._db.delete_attachment(att_id)
 
     @staticmethod
     def _folder_rec(fval, fold_dict):

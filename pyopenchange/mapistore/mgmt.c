@@ -137,19 +137,20 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 
 static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, PyObject *args)
 {
-	PyObject	*dict;
-	PyObject	*userlist;
-	PyObject	*item;
-	char		**MAPIStoreURI;
-	char		**users;
-	uint32_t	count;
-	char		*uri;
-	const char	*backend;
-	const char	*vuser;
-	const char	*folder;
-	int		ret;
-	int		i;
-	PyMAPIStoreGlobals *globals;
+	PyObject	        *dict;
+	PyObject	        *userlist;
+	PyObject	        *item;
+	char		        **MAPIStoreURI;
+	char		        **users;
+	uint32_t	        count;
+	char		        *uri;
+	const char	        *backend;
+	const char	        *vuser;
+	const char	        *folder;
+	enum mapistore_error    retval;
+	enum MAPISTATUS         ret;
+	int		        i;
+	PyMAPIStoreGlobals      *globals;
 
 	if (!PyArg_ParseTuple(args, "sss", &backend, &vuser, &folder)) {
 		return NULL;
@@ -162,14 +163,14 @@ static PyObject *py_MAPIStoreMGMT_existing_users(PyMAPIStoreMGMTObject *self, Py
 	PyDict_SetItemString(dict, "count", PyLong_FromLong(0));
 	PyDict_SetItem(dict, PyString_FromString("infos"), userlist);
 
-	ret = mapistore_mgmt_generate_uri(self->mgmt_ctx, backend, vuser, folder, NULL, NULL, &uri);
-	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
+	retval = mapistore_mgmt_generate_uri(self->mgmt_ctx, backend, vuser, folder, NULL, NULL, &uri);
+	if (retval != MAPISTORE_SUCCESS) return (PyObject *)dict;
 	printf("uri: %s\n", uri);
 
 	globals = get_PyMAPIStoreGlobals();
 	ret = openchangedb_get_users_from_partial_uri(self->mgmt_ctx, globals->ocdb_ctx, uri, 
 						      &count, &MAPIStoreURI, &users);
-	if (ret != MAPISTORE_SUCCESS) return (PyObject *)dict;
+	if (ret != MAPI_E_SUCCESS) return (PyObject *)dict;
 
 	PyDict_SetItemString(dict, "count", PyLong_FromLong(count));
 	for (i = 0; i != count; i++) {
@@ -212,24 +213,25 @@ static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject 
 
 static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyObject *args)
 {
-	int		ret;
-	const char	*username;
-	const char	*storeuser;
-	const char	*FolderURI;
-	const char	*MessageURI;
-	uint64_t	FolderID;
-	uint64_t	MessageID;
-	bool		softdeleted;
-	PyMAPIStoreGlobals *globals;
+	enum mapistore_error    retval;
+	enum MAPISTATUS         ret;
+	const char	        *username;
+	const char	        *storeuser;
+	const char	        *FolderURI;
+	const char	        *MessageURI;
+	uint64_t	        FolderID;
+	uint64_t	        MessageID;
+	bool		        softdeleted;
+	PyMAPIStoreGlobals      *globals;
 
 	if (!PyArg_ParseTuple(args, "ssss", &username, &storeuser, &FolderURI, &MessageURI)) {
 		return NULL;
 	}
 
 	/* Turn MessageURI into MessageID from indexing database */
-	ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, storeuser, MessageURI, 
+	retval = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, storeuser, MessageURI,
 						 false, &MessageID, &softdeleted);
-	if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+	if (retval != MAPISTORE_SUCCESS || softdeleted == true) {
 		return PyBool_FromLong(false);
 	}
 
@@ -237,18 +239,18 @@ static PyObject *py_MAPIStoreMGMT_send_newmail(PyMAPIStoreMGMTObject *self, PyOb
 	globals = get_PyMAPIStoreGlobals();
 	ret = openchangedb_get_fid(globals->ocdb_ctx, FolderURI, &FolderID);
 	if (ret != MAPI_E_SUCCESS) {
-		ret = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, FolderURI, false,
+		retval = mapistore_indexing_record_get_fmid(self->mgmt_ctx->mstore_ctx, username, FolderURI, false,
 							 &FolderID, &softdeleted);
-		if (ret != MAPISTORE_SUCCESS || softdeleted == true) {
+		if (retval != MAPISTORE_SUCCESS || softdeleted == true) {
 			return PyBool_FromLong(false);
 		}
 	}
 
 	/* Send notification on user queue */
-	ret = mapistore_mgmt_send_newmail_notification(self->mgmt_ctx, username, FolderID, 
-						       MessageID, MessageURI);
+	retval = mapistore_mgmt_send_newmail_notification(self->mgmt_ctx, username, FolderID,
+							MessageID, MessageURI);
 
-	return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
+	return PyBool_FromLong((retval == MAPISTORE_SUCCESS) ? true : false);
 }
 
 static PyObject *obj_get_verbose(PyMAPIStoreMGMTObject *self, void *closure)

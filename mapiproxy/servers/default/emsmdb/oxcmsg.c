@@ -1898,8 +1898,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetValidAttachments(TALLOC_CTX *mem_ctx,
 	message_object = (struct emsmdbp_object *)data;
 	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		/* TODO: Figure out data type */
 		DEBUG(0, ("[ERROR][%s]: data object is %d instead of EMSMDBP_OBJECT_MESSAGE", __location__, message_object->type));
+                mapi_repl->error_code = MAPI_E_INVALID_TYPE;
 		goto end;
 	}
 

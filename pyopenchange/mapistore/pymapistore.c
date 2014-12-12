@@ -399,6 +399,7 @@ static PyMethodDef mapistore_methods[] = {
 static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
 {
 	char	*debuglevel = NULL;
+	bool    ret;
 
 	if (value == NULL) {
 		DEBUG(0, ("[ERR][%s]: Cannot delete the 'debug' attribute\n", __location__));
@@ -418,10 +419,10 @@ static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value,
 		return -1;
 	}
 
-	lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
+	ret = lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
 	talloc_free(debuglevel);
 
-	return 0;
+	return (ret == true) ? 0 : -1;
 }
 
 static PyGetSetDef mapistore_getsetters[] = {

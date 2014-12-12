@@ -1896,10 +1896,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetValidAttachments(TALLOC_CTX *mem_ctx,
 
 	retval = mapi_handles_get_private_data(rec, &data);
 	message_object = (struct emsmdbp_object *)data;
-	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
-		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		/* TODO: Figure out data type */
-		DEBUG(0, ("[ERROR][%s]: data object is %d instead of EMSMDBP_OBJECT_MESSAGE", __location__, message_object->type));
+	if (!message_object) {
+                DEBUG(0, ("[ERROR][%s]: data object is NULL", __location__));
+                mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
+                goto end;
+        }
+        if (message_object->type != EMSMDBP_OBJECT_MESSAGE) {
+                DEBUG(0, ("[ERROR][%s]: data object is %d instead of EMSMDBP_OBJECT_MESSAGE", __location__, message_object->type));
+		mapi_repl->error_code = MAPI_E_INVALID_TYPE;
 		goto end;
 	}
 
@@ -1908,7 +1912,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetValidAttachments(TALLOC_CTX *mem_ctx,
 	        contextID = emsmdbp_get_contextID(message_object);
 	        ret = mapistore_message_get_attachment_ids(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx, &attach_ids, &count);
 	        if (ret != MAPISTORE_SUCCESS) {
-			DEBUG(5, ("Error saving the attachment\n"));
+			DEBUG(0, ("Error saving the attachment\n"));
 			mapi_repl->error_code = mapistore_error_to_mapi(ret);
 			goto end;
 	        }

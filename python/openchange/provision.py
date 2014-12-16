@@ -896,7 +896,7 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
 
 
 def openchangedb_deprovision(names, lp, mapistore=None):
-    """Removed the OpenChange database.
+    """Remove the OpenChange database.
 
     :param names: Provision names object
     :param lp: Loadparm context
@@ -905,16 +905,18 @@ def openchangedb_deprovision(names, lp, mapistore=None):
 
     print "Removing openchange db"
     uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-    else:
+    elif uri.startswith('ldb:'):
         openchangedb = mailbox.OpenChangeDB(uri)
+    else:
+        raise Exception("unknown backend in openchangedb URI %s" % uri)
     openchangedb.remove()
 
 
 def openchangedb_migrate(lp):
     uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
         if openchangedb.migrate():
             print "Migration openchange db done"
@@ -928,14 +930,13 @@ def openchangedb_provision(names, lp, uri=None):
     :param names: Provision names object
     :param lp: Loadparm context
     :param uri: Openchangedb destination, by default will be a ldb file inside
-    private samba directory. You can specify a mysql connection string like
-    mysql://user:passwd@host/db_name to use openchangedb with mysql backend
+        private samba directory. You can specify a mysql connection string like
+        mysql://user:passwd@host/db_name to use openchangedb with mysql backend
     """
-
     print "Setting up openchange db"
-    if uri is None or len(uri) == 0 or uri.startswith('ldb'):  # LDB backend
+    if uri.startswith('ldb:'):  # LDB backend
         openchangedb = mailbox.OpenChangeDB(openchangedb_url(lp))
-    elif uri.startswith('mysql'):  # MySQL backend
+    elif uri.startswith('mysql:'):  # MySQL backend
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
     else:
         print "[!] error provisioning openchangedb: Unknown uri `%s`" % uri

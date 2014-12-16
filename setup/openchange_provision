@@ -46,7 +46,7 @@ parser.add_option("--standalone", action="store_true", help="Provisioning an sta
 parser.add_option("--additional", action="store_true", help="Provisioning an additional OpenChange server")
 parser.add_option("--primary-server", action="store_true", help="Set this OpenChange server as the primary server")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
-parser.add_option("--openchangedb-uri", type="string", default="",
+parser.add_option("--openchangedb-uri", type="string", default="ldb://openchange.ldb",
                   help="openchange database destination, by default a ldb file (openchange.ldb) "
                        "inside samba private directory is used but you can use mysql as backend "
                        "specifying a connection string like mysql://user:passwd@host/db_name")

@@ -51,7 +51,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 
 	if (openchangedb_backend == NULL) {
 		retval = MAPI_E_NOT_INITIALIZED;
-		DEBUG(0, ("No OpenChangeDB backend specified, please provision."));
+		DEBUG(0, ("No OpenChangeDB backend specified, please provision.\n"));
 	} else if (strncmp(openchangedb_backend, "mysql:", strlen("mysql:")) == 0) {
 		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n", openchangedb_backend));
 		retval = openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
@@ -60,6 +60,9 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 		retval = openchangedb_ldb_initialize(mem_ctx,
 						     lpcfg_private_dir(lp_ctx),
 						     oc_ctx);
+	} else {
+		DEBUG(0, ("Unknown backend in URI %s\n", openchangedb_backend));
+		retval = MAPI_E_NOT_FOUND;
 	}
 
 	if (retval != MAPI_E_SUCCESS) {

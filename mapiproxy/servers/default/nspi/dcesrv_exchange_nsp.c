@@ -34,7 +34,7 @@ static TDB_CONTEXT			*emsabp_tdb_ctx = NULL;
 
 static struct exchange_nsp_session *dcesrv_find_nsp_session(struct GUID *uuid)
 {
-	struct exchange_nsp_session	*session, *found_session = NULL;
+	struct exchange_nsp_session *session, *found_session = NULL;
 
 	for (session = nsp_session; !found_session && session; session = session->next) {
 		if (GUID_equal(uuid, &session->uuid)) {
@@ -99,82 +99,55 @@ static void dcesrv_make_ptyp_error_property_row(TALLOC_CTX* mem_ctx,
    \return MAPI_E_SUCCESS on success, otherwise a MAPI error
  */
 static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
-				       TALLOC_CTX *mem_ctx,
-				       struct NspiBind *r)
+			    TALLOC_CTX *mem_ctx, struct NspiBind *r)
 {
 	struct GUID			*guid = (struct GUID *) NULL;
 	struct emsabp_context		*emsabp_ctx;
 	struct dcesrv_handle		*handle;
 	struct policy_handle		wire_handle;
 	struct exchange_nsp_session	*session;
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_FAILONEPROVIDER, NULL);
+		retval = MAPI_E_FAILONEPROVIDER;
+		goto failure;
 	}
 
 	/* Step 1. Initialize the emsabp context */
 	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx, emsabp_tdb_ctx);
 	if (!emsabp_ctx) {
 		OC_ABORT(false, ("[exchange_nsp] Unable to initialize emsabp context"));
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_FAILONEPROVIDER, NULL);
+		retval = MAPI_E_FAILONEPROVIDER;
+		goto failure;
 	}
 
-	if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, 
-			    "exchange_nsp", "debug", false)) {
+	if (lpcfg_parm_bool(dce_call->conn->dce_ctx->lp_ctx, NULL, "exchange_nsp", "debug", false)) {
 		emsabp_enable_debug(emsabp_ctx);
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if ((emsabp_verify_user(dce_call, emsabp_ctx) == false) && (r->in.dwFlags & fAnonymousLogin)) {
-		talloc_free(emsabp_ctx);
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, emsabp_tdb_ctx);
+		retval = MAPI_E_LOGON_FAILED;
+		goto failure;
 	}
 
 	/* Step 3. Check if valid cpID has been supplied */
 	if (emsabp_verify_codepage(emsabp_ctx, r->in.pStat->CodePage) == false) {
-		talloc_free(emsabp_ctx);
-
-		wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
-		wire_handle.uuid = GUID_zero();
-		*r->out.handle = wire_handle;
-
-		r->out.mapiuid = r->in.mapiuid;
-		DCESRV_NSP_RETURN(r, MAPI_E_UNKNOWN_CPID, emsabp_tdb_ctx);
+		retval = MAPI_E_UNKNOWN_CPID;
+		goto failure;
 	}
 
 	/* Step 4. Retrieve OpenChange server GUID */
 	guid = (struct GUID *) samdb_ntds_objectGUID(emsabp_ctx->samdb_ctx);
-	if (!guid) {
-		DCESRV_NSP_RETURN(r, MAPI_E_FAILONEPROVIDER, emsabp_ctx);
-	}
+	DCESRV_NSP_RETURN_IF(!guid, r, MAPI_E_FAILONEPROVIDER, emsabp_ctx);
 
 	/* Step 5. Fill NspiBind reply */
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_NSP);
-	if (!handle) {
-		DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
-	}
+	DCESRV_NSP_RETURN_IF(!handle, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
 	handle->data = (void *) emsabp_ctx;
 	*r->out.handle = handle->wire_handle;
@@ -185,20 +158,15 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	if (session) {
 		mpm_session_increment_ref_count(session->session);
 		DEBUG(5, ("  [unexpected]: existing nsp_session: %p; session: %p (ref++)\n", session, session->session));
-	}
-	else {
+	} else {
 		DEBUG(5, ("%s: Creating new session\n", __func__));
 
 		/* Step 6. Associate this emsabp context to the session */
 		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
-		if (!session) {
-			DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
-		}
+		DCESRV_NSP_RETURN_IF(!session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
 		session->session = mpm_session_init((TALLOC_CTX *)nsp_session, dce_call);
-		if (!session->session) {
-			DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
-		}
+		DCESRV_NSP_RETURN_IF(!session->session, r, MAPI_E_NOT_ENOUGH_RESOURCES, emsabp_ctx);
 
 		session->uuid = handle->wire_handle.uuid;
 
@@ -209,6 +177,14 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	}
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+
+failure:
+	wire_handle.handle_type = EXCHANGE_HANDLE_NSP;
+	wire_handle.uuid = GUID_zero();
+	*r->out.handle = wire_handle;
+
+	r->out.mapiuid = r->in.mapiuid;
+	DCESRV_NSP_RETURN(r, retval, emsabp_ctx);
 }
 
 
@@ -221,12 +197,10 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
    \param r pointer to the NspiUnbind call structure
  */
 static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
-					 TALLOC_CTX *mem_ctx,
-					 struct NspiUnbind *r)
+			      TALLOC_CTX *mem_ctx, struct NspiUnbind *r)
 {
 	struct dcesrv_handle		*h;
 	struct exchange_nsp_session	*session;
-	bool				ret;
 
 	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
 
@@ -241,8 +215,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	if (h) {
 		session = dcesrv_find_nsp_session(&r->in.handle->uuid);
 		if (session) {
-			ret = mpm_session_release(session->session);
-			if (ret == true) {
+			if (mpm_session_release(session->session)) {
 				DLIST_REMOVE(nsp_session, session);
 				DEBUG(5, ("[%s:%d]: Session found and released\n",
 					  __FUNCTION__, __LINE__));

@@ -1190,6 +1190,30 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 
 
 ###################
+# mapipropsdump
+###################
+
+mapipropsdump:	bin/mapipropsdump
+
+mapipropsdump-install:	mapipropsdump
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/mapipropsdump $(DESTDIR)$(bindir)
+
+mapipropsdump-uninstall:
+	rm -f $(DESTDIR)$(bindir)/mapipropsdump
+
+mapipropsdump-clean::
+	rm -f bin/mapipropsdump
+	rm -f utils/mapipropsdump.o
+
+clean:: mapipropsdump-clean
+
+bin/mapipropsdump: 	utils/mapipropsdump.o				\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(SAMBA_LIBS) $(LIBS) $(DL_LIBS) -lpopt -lndr
+
+###################
 #openchangepfadmin
 ###################
 

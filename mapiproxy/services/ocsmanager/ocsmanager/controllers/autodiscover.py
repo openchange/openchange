@@ -152,7 +152,7 @@ class AutodiscoverHandler(object):
         if "samba" in config:
             record = {}
             if "displayName" in ldb_record:
-                record["DisplayName"] = ldb_record["displayName"][0]
+                record["DisplayName"] = ldb_record["displayName"][0].decode('utf8')
             if "legacyExchangeDN" in ldb_record:
                 record["LegacyDN"] = ldb_record["legacyExchangeDN"][0]
             if "mail" in ldb_record:

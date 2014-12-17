@@ -382,6 +382,7 @@ _PUBLIC_ uint32_t module_zentyal_init(struct mapitest *mt)
 	mapitest_suite_add_test(suite, "NSPI-1863", "Test PR_ENTRYID retrieval on non OpenChange user", mapitest_zentyal_1863);
 	mapitest_suite_add_test(suite, "NSPI-1645", "Test SortTypePhoneticDisplayName is not supported in UpdateStat", mapitest_zentyal_1645);
 	mapitest_suite_add_test(suite, "OXCMSG-1804", "Test multi-value properties in ModifyRecipients", mapitest_zentyal_1804);
+	mapitest_suite_add_test(suite, "OXCMSG-4872", "Test different prop count in Recipient Row and ModifyRecipients", mapitest_zentyal_4872);
 
 	mapitest_suite_register(mt, suite);
 

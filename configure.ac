@@ -635,6 +635,7 @@ if test x"$enable_libpopt" = x"yes"; then
 
 	MAPISTORE_TEST=mapistore_test
 	mapiprofile=1
+	mapipropsdump=1
 	openchangemapidump=1
 	schemaIDGUID=1
 	check_fasttransfer=1
@@ -643,6 +644,7 @@ fi
 AC_SUBST(MAPISTORE_TEST)
 OC_RULE_ADD(openchangeclient, TOOLS)
 #OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+OC_RULE_ADD(mapipropsdump, TOOLS)
 OC_RULE_ADD(exchange2ical, TOOLS)
 OC_RULE_ADD(openchangepfadmin, TOOLS)
 OC_RULE_ADD(mapitest, TOOLS)
@@ -838,6 +840,7 @@ OC_SETVAL(libocpf)
 OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
+OC_SETVAL(mapipropsdump)
 OC_SETVAL(mapiprofile)
 OC_SETVAL(openchangepfadmin)
 OC_SETVAL(exchange2mbox)
@@ -869,6 +872,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
+	     - mapipropsdump:		$enable_mapipropsdump
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical

@@ -133,11 +133,14 @@ class session {
 		{
 			if (m_message_store) {
 				delete m_message_store;
+				m_message_store = 0;
 			}
 			if (m_mapi_context) {
 				MAPIUninitialize(m_mapi_context);
+				m_mapi_context = 0;
 			}
 			talloc_free(m_memory_ctx);
+			m_memory_ctx = 0;
 		}
 };
 

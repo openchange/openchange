@@ -1,4 +1,4 @@
-deb http://archive.zentyal.org/old trusty-3.5 main
+deb http://archive.zentyal.org/old 4.0 main
 #deb http://archive.zentyal.org/zentyal 3.5 main
 #deb-src http://archive.zentyal.org/zentyal 3.5 main
 deb http://fr.archive.ubuntu.com/ubuntu/ trusty main universe multiverse restricted

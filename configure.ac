@@ -578,6 +578,29 @@ PKG_CHECK_MODULES([ICAL_0_46], [libical >= 0.46], [have_libical_0_46="1"], [have
 AC_SUBST(have_libical_0_46)
 
 dnl --------------------------------------------------------------------------
+dnl Check for pcap
+dnl --------------------------------------------------------------------------
+AC_PATH_PROG(PCAP_CONFIG, pcap-config)
+have_libpcap=""
+if test x"$PCAP_CONFIG" != x""; then
+   AC_MSG_CHECKING(pcap cflags)
+   PCAP_CFLAGS=`$PCAP_CONFIG --cflags`
+   AC_MSG_RESULT($PCAP_CFLAGS)
+   AC_SUBST(PCAP_CFLAGS)
+
+   AC_MSG_CHECKING(pcap libs)
+   PCAP_LIBS=`$PCAP_CONFIG --libs`
+   AC_MSG_RESULT($PCAP_LIBS)
+   AC_SUBST(PCAP_LIBS)
+
+   have_libpcap="yes"
+   AC_SUBST(have_libpcap)
+fi
+
+AC_SUBST(PCAP_CFLAGS)
+AC_SUBST(PCAP_LIBS)
+
+dnl --------------------------------------------------------------------------
 dnl Check for popt
 dnl --------------------------------------------------------------------------
 
@@ -605,6 +628,10 @@ if test x"$enable_libpopt" = x"yes"; then
 	    exchange2ical=1
 	fi
 
+	if test x"$have_libpcap" = x"yes"; then
+	    rpcextract=1
+	fi
+
 	MAPISTORE_TEST=mapistore_test
 	mapiprofile=1
 	mapipropsdump=1
@@ -618,6 +645,7 @@ OC_RULE_ADD(openchangeclient, TOOLS)
 #OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
 OC_RULE_ADD(mapipropsdump, TOOLS)
 OC_RULE_ADD(exchange2ical, TOOLS)
+OC_RULE_ADD(rpcextract, TOOLS)
 OC_RULE_ADD(openchangepfadmin, TOOLS)
 OC_RULE_ADD(mapitest, TOOLS)
 OC_RULE_ADD(mapiprofile, TOOLS)
@@ -626,6 +654,7 @@ OC_RULE_ADD(schemaIDGUID, TOOLS)
 
 OC_RULE_ADD(check_fasttransfer, TOOLS)
 OC_RULE_ADD(test_asyncnotif, TOOLS)
+
 
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
@@ -813,6 +842,7 @@ OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
 OC_SETVAL(mapipropsdump)
+OC_SETVAL(rpcextract)
 OC_SETVAL(mapiprofile)
 OC_SETVAL(openchangepfadmin)
 OC_SETVAL(exchange2mbox)
@@ -847,12 +877,15 @@ OpenChange Configuration (Please review)
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
-	     - mapipropsdump:		$enable_mapipropsdump
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
+
+	   * Protocol Analysis:
+	     - mapipropsdump:		$enable_mapipropsdump
+	     - rpcextract:		$enable_rpcextract
 
 	   * Unit and functional testing
 	     - mapitest:		$enable_mapitest

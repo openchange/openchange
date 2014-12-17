@@ -1470,7 +1470,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 					table_object->object.table->denominator = 0;
 					return table_object;
 				}
-				DEBUG(0, ("Initializaing openchangedb table\n"));
+				DEBUG(5, ("Initializing openchangedb table\n"));
 				openchangedb_table_init((TALLOC_CTX *)table_object, parent_object->emsmdbp_ctx->oc_ctx, parent_object->emsmdbp_ctx->username, table_type, folderID, &table_object->backend_object);
 			}
 		}

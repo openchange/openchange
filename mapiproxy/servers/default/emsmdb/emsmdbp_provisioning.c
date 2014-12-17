@@ -136,7 +136,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 
 	retval = openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &public_fb_fid);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(5, ("[%s:%d] provisioning: freebusy root folder not found in openchange.ldb\n", __FUNCTION__, __LINE__));
+		DEBUG(5, ("[%s:%d] provisioning: freebusy root folder not found in OpenChange database.\n", __FUNCTION__, __LINE__));
 		goto end;
 	}
 

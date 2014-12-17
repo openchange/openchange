@@ -226,6 +226,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 
 		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx, namespace_start, backend_uri, fid, &backend_ctx);
 		if (retval != MAPISTORE_SUCCESS) {
+			talloc_free(mem_ctx);
 			return retval;
 		}
 

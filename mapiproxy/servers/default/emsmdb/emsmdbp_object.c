@@ -1523,7 +1523,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 					table_object->object.table->denominator = 0;
 					return table_object;
 				}
-				DEBUG(0, ("Initializaing openchangedb table\n"));
+				DEBUG(5, ("Initializing openchangedb table\n"));
 				openchangedb_table_init((TALLOC_CTX *)table_object, parent_object->emsmdbp_ctx->oc_ctx, parent_object->emsmdbp_ctx->username, table_type, folderID, &table_object->backend_object);
 			}
 		}
@@ -1799,7 +1799,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
 					local_data_pointers = emsmdbp_object_get_properties(data_pointers, emsmdbp_ctx, rowobject, &props, &local_retvals);
 					data_pointers[i] = local_data_pointers[0];
-					retvals[i] = local_retvals[0];
+					retval = local_retvals[0];
 				}
 					break;
 				case PidTagSourceKey:

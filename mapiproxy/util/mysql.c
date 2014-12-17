@@ -313,8 +313,14 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 {
 	enum MYSQLRESULT ret;
 
+	if (res == NULL) {
+		DEBUG(0, ("Bad parameters when calling select_without_fetch\n"));
+		return MYSQL_ERROR;
+	}
+
 	ret = execute_query(conn, sql);
 	if (ret != MYSQL_SUCCESS) {
+		*res = NULL;
 		return ret;
 	}
 
@@ -327,6 +333,7 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 
 	if (mysql_num_rows(*res) == 0) {
 		mysql_free_result(*res);
+		*res = NULL;
 		return MYSQL_NOT_FOUND;
 	}
 

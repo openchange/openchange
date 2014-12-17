@@ -1,22 +1,24 @@
 # channels.py -- OpenChange RPC-over-HTTP implementation
+# -*- coding: utf-8 -*-
 #
-# Copyright (C) 2012  Julien Kerihuel <j.kerihuel@openchange.org>
-#                     Wolfgang Sourdeau <wsourdeau@inverse.ca>
+# Copyright (C) 2012-2014  Julien Kerihuel <j.kerihuel@openchange.org>
+#                          Wolfgang Sourdeau <wsourdeau@inverse.ca>
+#                          Enrique J. Hernández <ejhernandez@zentyal.com>
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+from operator import itemgetter
 import os
 from select import poll, POLLIN, POLLHUP
 from socket import socket, AF_INET, AF_UNIX, SOCK_STREAM, MSG_WAITALL, \
@@ -26,12 +28,17 @@ import sys
 from time import time, sleep
 from uuid import UUID
 
+
 # from rpcproxy.RPCH import RPCH, RTS_FLAG_ECHO
 from openchange.utils.fdunix import send_socket, receive_socket
-from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
-    RTS_CMD_VERSION, RTS_CMD_RECEIVE_WINDOW_SIZE, \
-    RTS_CMD_CONNECTION_TIMEOUT, RTS_FLAG_ECHO, RTS_FLAG_OTHER_CMD, \
-    RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket
+from openchange.utils.packets import (RTS_CMD_CONNECTION_TIMEOUT,
+                                      RTS_CMD_CUSTOM_OUT,
+                                      RTS_CMD_DESTINATION,
+                                      RTS_CMD_FLOW_CONTROL_ACK,
+                                      RTS_CMD_RECEIVE_WINDOW_SIZE,
+                                      RTS_CMD_VERSION,
+                                      RTS_FLAG_ECHO,
+                                      RTS_CMD_DATA_LABELS, RPCPacket, RPCRTSPacket, RPCRTSOutPacket)
 
 
 """Documentation:
@@ -63,7 +70,7 @@ from openchange.utils.packets import RTS_CMD_CONNECTION_TIMEOUT, \
  IN -> OUT: in_window_size
  IN -> OUT: in_conn_timeout
  OUT -> IN: sends connection to OpenChange
- (TODO: socket close at this point?)
+ The UNIX socket is open to transmit packets from IN to OUT channel using RTS CMD
 
  * channel recycling (unused yet, hypothethical)
  When new OUT conn arrives:
@@ -94,7 +101,7 @@ class RPCProxyChannelHandler(object):
         self.logger = logger
 
         self.unix_socket = None
-        self.client_socket = None # placeholder for wsgi.input
+        self.client_socket = None  # placeholder for wsgi.input
 
         self.bytes_read = 0
         self.bytes_written = 0
@@ -118,19 +125,23 @@ class RPCProxyChannelHandler(object):
 
     def log_connection_stats(self):
         self.logger.debug("channel kept alive during %f secs;"
-                         " %d bytes received; %d bytes sent"
-                         % ((time() - self.startup_time),
-                            self.bytes_read, self.bytes_written))
+                          " %d bytes received; %d bytes sent"
+                          % ((time() - self.startup_time),
+                             self.bytes_read, self.bytes_written))
 
 
 class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
     def __init__(self, sockets_dir, logger):
         RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
         self.oc_conn = None
-        self.window_size = 0
+        # Window_size to 256KiB (max size allowed)
+        self.window_size = 256 * 1024
         self.conn_timeout = 0
         self.client_keepalive = 0
         self.association_group_id = None
+        # Variables required to flow control
+        self.local_available_window = self.window_size
+        self.rpc_pdu_bytes_received = 0
 
     def _receive_conn_b1(self):
         # CONN/B1 RTS PDU (TODO: validation)
@@ -142,18 +153,17 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
             raise Exception("Unexpected non-rts packet received for CONN/B1")
         self.logger.debug("packet headers = " + packet.pretty_dump())
 
-        self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
-        self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
+        self.connection_cookie = str(UUID(bytes_le=packet.commands[1]["Cookie"]))
+        self.channel_cookie = str(UUID(bytes_le=packet.commands[2]["Cookie"]))
         self.client_keepalive = packet.commands[4]["ClientKeepalive"]
-        self.association_group_id = str(UUID(bytes=packet.commands[5] \
-                                                 ["AssociationGroupId"]))
+        self.association_group_id = str(UUID(bytes_le=packet.commands[5]["AssociationGroupId"]))
         self.bytes_read = self.bytes_read + packet.size
 
     def _connect_to_OUT_channel(self):
         # connect as a client to the cookie unix socket
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("connecting to OUT via unix socket '%s'"
-                         % socket_name)
+                          % socket_name)
         unix_socket = socket(AF_UNIX, SOCK_STREAM)
         connected = False
         attempt = 0
@@ -165,7 +175,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 connected = True
             except socket_error:
                 self.logger.debug("handling socket.error: %s"
-                                 % str(sys.exc_info()))
+                                  % str(sys.exc_info()))
                 self.logger.warn("reattempting to connect to OUT"
                                  " channel... (%d/10)" % attempt)
                 sleep(1)
@@ -179,18 +189,34 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
             # send window_size to 256Kib (max size allowed)
             # and conn_timeout (in milliseconds, max size allowed)
-            unix_socket.sendall(pack("<ll", (256 * 1024), 120000))
+            unix_socket.sendall(pack("<ll", self.window_size, 120000))
 
             # recv oc socket
             self.oc_conn = receive_socket(unix_socket)
 
             self.logger.debug("oc_conn received (fileno=%d)"
-                             % self.oc_conn.fileno())
+                              % self.oc_conn.fileno())
         else:
             self.logger.error("too many failed attempts to establish a"
                               " connection to OUT channel")
 
         return connected
+
+    def _send_flow_control_ack(self):
+        """Send FlowControlAckWithDestination RTS command to say the client there
+        is room for sending more information"""
+        self.logger.debug('Send to client the FlowControlAckWithDestination RTS command '
+                          'after %d of avalaible window size' % self.local_available_window)
+        rts_packet = RPCRTSOutPacket(self.logger)
+        # We always returns back the same available maximum received size
+        rts_packet.add_command(RTS_CMD_DESTINATION, 0)  # Forward this to client
+        rts_packet.add_command(RTS_CMD_FLOW_CONTROL_ACK,
+                               {'bytes_received': self.rpc_pdu_bytes_received,  # Only RPC PDUs are subject to flow control
+                                'available_window': self.window_size,
+                                'channel_cookie': self.channel_cookie})
+
+        # Send the message to the OUT channel
+        self.unix_socket.sendall(rts_packet.make())
 
     def _runloop(self):
         self.logger.debug("runloop")
@@ -213,6 +239,15 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                     self.logger.debug("sending packet to OC")
                     self.oc_conn.sendall(oc_packet.data)
                     self.bytes_written = self.bytes_written + oc_packet.size
+
+                    # Flow control (only subject to RPC PDUs)
+                    self.local_available_window -= oc_packet.size
+                    self.rpc_pdu_bytes_received += oc_packet.size
+                    # This check can be any as it is not explicitly specified
+                    if self.local_available_window < self.window_size / 2:
+                        self._send_flow_control_ack()
+                        self.local_available_window = self.window_size
+
             except IOError:
                 status = False
                 self.logger.debug("handling socket.error: %s"
@@ -250,7 +285,9 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
                 # shutting down sockets
                 self.logger.debug("notifying OUT channel of shutdown")
                 try:
-                    self.unix_socket.sendall(INBOUND_PROXY_ID + "q")
+                    packet = RPCRTSOutPacket(self.logger)
+                    packet.add_command(RTS_CMD_CUSTOM_OUT)
+                    self.unix_socket.sendall(packet.make())
                     _safe_close(self.unix_socket)
                     self.logger.debug("OUT channel successfully notified")
                 except socket_error:
@@ -262,7 +299,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
             self.log_connection_stats()
             self.logger.debug("exiting from main sequence")
-            
+
             # TODO: error handling
             start_response("200 Success",
                            [("Content-length", "0"),
@@ -284,6 +321,7 @@ class RPCProxyInboundChannelHandler(RPCProxyChannelHandler):
 
         # return [msg]
 
+
 class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def __init__(self, sockets_dir, samba_host, logger):
         RPCProxyChannelHandler.__init__(self, sockets_dir, logger)
@@ -301,8 +339,8 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             raise Exception("Unexpected non-rts packet received for CONN/A1")
         self.logger.debug("packet headers = " + packet.pretty_dump())
 
-        self.connection_cookie = str(UUID(bytes=packet.commands[1]["Cookie"]))
-        self.channel_cookie = str(UUID(bytes=packet.commands[2]["Cookie"]))
+        self.connection_cookie = str(UUID(bytes_le=packet.commands[1]["Cookie"]))
+        self.channel_cookie = str(UUID(bytes_le=packet.commands[2]["Cookie"]))
 
     def _send_conn_a3(self):
         self.logger.debug("sending CONN/A3 to client")
@@ -341,7 +379,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
                 self.logger.debug("failure to connect, retrying...")
                 sleep(1)
         self.logger.debug("connection to OC succeeeded (fileno=%d)"
-                         % oc_conn.fileno())
+                          % oc_conn.fileno())
         self.oc_conn = oc_conn
 
     def _setup_channel_socket(self):
@@ -397,7 +435,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
             self.logger.info("IN channel failed to connect in the last"
                              " 10 seconds")
             connected = False
-        
+
         return connected
 
     def _process_server_event(self, unix_fd, oc_fd, data):
@@ -428,10 +466,22 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
                 # FIXME: notify IN channel?
                 self.logger.debug("connection closed from IN channel")
                 status = False
-            self.logger.debug("ignored event '%d' on unix socket (closing)"
-                              % event_no)
-            # FIXME: we should listen to what the IN channel has to say
-            status = False
+            elif event_no & POLLIN > 0:
+                oc_packet = RPCPacket.from_file(self.unix_socket, self.logger)
+                self.logger.debug("packet headers = "
+                                  + oc_packet.pretty_dump())
+                if not isinstance(oc_packet, RPCRTSPacket):
+                    raise Exception('Unexpected non-RTS RPC packet received from IN channel')
+
+                if RTS_CMD_CUSTOM_OUT in map(itemgetter('type'), oc_packet.commands):
+                    self.logger.debug('Notified the IN channel has left out')
+                    status = False
+                else:
+                    self.logger.debug('Sending RTS RPC packet to client')
+                    self.bytes_read += oc_packet.size
+
+                    server_data = oc_packet.data
+
         else:
             raise Exception("invalid poll event: %s" % str(data))
 
@@ -470,7 +520,7 @@ class RPCProxyOutboundChannelHandler(RPCProxyChannelHandler):
     def _terminate_sockets(self):
         socket_name = os.path.join(self.sockets_dir, self.connection_cookie)
         self.logger.debug("removing and closing unix socket '%s'"
-                         % socket_name)
+                          % socket_name)
         if os.access(socket_name, os.F_OK):
             os.remove(socket_name)
         if self.unix_socket is not None:

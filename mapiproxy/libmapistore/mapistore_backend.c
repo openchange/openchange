@@ -191,7 +191,7 @@ static init_backend_fn *load_backends(TALLOC_CTX *mem_ctx, const char *path)
 		if (ISDOT(entry->d_name) || ISDOTDOT(entry->d_name)) {
 			continue;
 		}
-		
+
 		filename = talloc_asprintf(mem_ctx, "%s/%s", path, entry->d_name);
 		ret[success] = load_backend(filename);
 		if (ret[success]) {
@@ -576,6 +576,8 @@ enum mapistore_error mapistore_backend_get_path(TALLOC_CTX *mem_ctx, struct back
 	} else {
 		*path = NULL;
 	}
+
+	talloc_free(bpath);
 
 	return ret;
 }

@@ -1188,6 +1188,30 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 	@echo "Linking $@"
 	@$(CC) $(CFLAGS) -o $@ $^ $(LDFLAGS) $(LIBS) -lpopt
 
+###################
+# rpcextract
+###################
+
+rpcextract: bin/rpcextract
+
+rpcextract-install: rpcextract
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/rpcextract $(DESTDIR)$(bindir)
+
+rpcextract-uninstall:
+	rm -f $(DESTDIR)$(bindir)/rpcextract
+
+rpcextract-clean::
+	rm -f bin/rpcextract
+	rm -f utils/rpcextract.o
+
+clean:: rpcextract-clean
+
+bin/rpcextract:		utils/rpcextract.o		\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) $(PCAP_CFLAGS) -o $@ $^ $(LDFLAGS) $(PCAP_LIBS) $(LIBS) -lpopt -lndr
+
 
 ###################
 # mapipropsdump

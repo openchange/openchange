@@ -6,5 +6,5 @@ compiler:
 install:
   - sudo apt-add-repository -y ppa:jelmer/samba-backports
   - sudo apt-get update
-  - sudo apt-get install -qq autoconf automake bison doxygen flex libboost-system-dev libboost-thread-dev libical-dev libldb-dev libmagic-dev libpopt-dev libsqlite3-dev libsubunit-dev libtalloc-dev libtevent-dev pkg-config python-all-dev python-samba samba-dev zlib1g-dev python-twisted-core python-testtools python-subunit check python-mysqldb
+  - sudo apt-get install -qq autoconf automake bison doxygen flex libboost-system-dev libboost-thread-dev libical-dev libldb-dev libmagic-dev libpopt-dev libsqlite3-dev libsubunit-dev libtalloc-dev libtevent-dev pkg-config python-all-dev python-samba samba-dev zlib1g-dev python-twisted-core python-testtools python-subunit check python-mysqldb libbsd-dev librabbitmq-dev libjson-c-dev libconfig-dev
 services: mysql

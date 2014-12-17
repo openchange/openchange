@@ -78,6 +78,7 @@ NTSTATUS		emsmdb_register_notification(struct mapi_session *, struct NOTIFKEY *)
 void			free_emsmdb_property(struct SPropValue *, void *);
 const void		*pull_emsmdb_property(TALLOC_CTX *, uint32_t *, enum MAPITAGS, DATA_BLOB *);
 enum MAPISTATUS		emsmdb_get_SPropValue(TALLOC_CTX *, DATA_BLOB *, struct SPropTagArray *, struct SPropValue **, uint32_t *, uint8_t);
+enum MAPISTATUS		emsmdb_get_SPropValue_offset(TALLOC_CTX *, DATA_BLOB *, struct SPropTagArray *, struct SPropValue **, uint32_t *, uint32_t *);
 void			emsmdb_get_SRow(TALLOC_CTX *, struct SRow *, struct SPropTagArray *, uint16_t, DATA_BLOB *, uint8_t, uint8_t);
 enum MAPISTATUS		emsmdb_async_connect(struct emsmdb_context *);
 bool 			server_version_at_least(struct emsmdb_context *, uint16_t, uint16_t, uint16_t, uint16_t);

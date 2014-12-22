@@ -104,7 +104,6 @@ class ProvisionNames(object):
     def domain(self, value):
         self._domain = value
 
-
 def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     """Guess configuration settings to use from smb.conf.
 
@@ -151,17 +150,23 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
              credentials=creds, lp=lp)
     exchangedn = 'CN=Microsoft Exchange,CN=Services,%s' % configdn
     if not firstorg:
-        firstorg = db.searchone(
-            'name', exchangedn, '(objectclass=msExchOrganizationContainer)',
-            ldb.SCOPE_SUBTREE)
+        ret = db.search(
+            attrs=['name'], base=exchangedn, expression='(objectclass=msExchOrganizationContainer)',
+            scope=ldb.SCOPE_SUBTREE)
+        if len(ret) > 0:
+            assert len(ret) == 1, "More than one exchange organization container"
+            firstorg = ret[0]['name'][0]
     assert(firstorg)
     firstorgdn = "CN=%s,%s" % (firstorg, exchangedn)
 
     if not firstou:
-        firstou = db.searchone(
-            'name', firstorgdn,
-            '(&(objectclass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))',
-            ldb.SCOPE_SUBTREE)
+        ret = db.search(
+            attrs=['name'], base=firstorgdn,
+            expression='(&(objectclass=msExchAdminGroup)(msExchDefaultAdminGroup=TRUE))',
+            scope=ldb.SCOPE_SUBTREE)
+        if len(ret) > 0:
+            assert len(ret) == 1, "More than one exchange admin group"
+            firstou = ret[0]['name'][0]
     assert(firstou)
 
     names.firstorg = firstorg
@@ -408,7 +413,7 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     """
     if reporter is None:
         reporter = TextProgressReporter()
-
+    
     try:
         sam_db = get_schema_master_samdb(names, lp, creds)
         provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
@@ -668,6 +673,17 @@ def provision(setup_path, names, lp, creds, reporter=None):
 
     if reporter is None:
         reporter = TextProgressReporter()
+
+    # raise error if there is already a organization in the director
+    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=system_session(),
+             credentials=creds, lp=lp)
+    basedn = 'CN=Services,' + db.get_config_basedn().get_linearized()
+    ret = db.search(
+        attrs=['name'], base=basedn, expression='(objectclass=msExchOrganizationContainer)',
+        scope=ldb.SCOPE_SUBTREE)
+    if len(ret) > 0:
+       firstorg = ret[0]['name'][0]
+       raise Exception('There is already, at least, one provisioned organization: %(name)s' % {'name': firstorg})
 
     # Install OpenChange-specific schemas
     install_schemas(setup_path, names, lp, creds, reporter)

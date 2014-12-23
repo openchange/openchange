@@ -1781,12 +1781,14 @@ _PUBLIC_ struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *mem_ctx, 
 	if (!bin->lpb) return NULL;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
 	ndr->offset = 0;
 	ndr->data = bin->lpb;
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	AddressBookEntryId = talloc_zero(mem_ctx, struct AddressBookEntryId);
+	if (!AddressBookEntryId) return NULL;
 	ndr_err_code = ndr_pull_AddressBookEntryId(ndr, NDR_SCALARS, AddressBookEntryId);
 
 	talloc_free(ndr);

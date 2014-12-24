@@ -1,0 +1,4 @@
+dn:
+changetype: modify
+replace: schemaupdatenow
+schemaupdatenow: 1

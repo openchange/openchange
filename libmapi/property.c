@@ -1781,12 +1781,14 @@ _PUBLIC_ struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *mem_ctx, 
 	if (!bin->lpb) return NULL;
 
 	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
 	ndr->offset = 0;
 	ndr->data = bin->lpb;
 	ndr->data_size = bin->cb;
 
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
 	AddressBookEntryId = talloc_zero(mem_ctx, struct AddressBookEntryId);
+	if (!AddressBookEntryId) return NULL;
 	ndr_err_code = ndr_pull_AddressBookEntryId(ndr, NDR_SCALARS, AddressBookEntryId);
 
 	talloc_free(ndr);
@@ -1797,6 +1799,49 @@ _PUBLIC_ struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *mem_ctx, 
 	}
 
 	return AddressBookEntryId;
+}
+
+/**
+   \details Retrieve a OneOffEntryId structure from a binary blob. This structure is meant
+   to represent recipients that do not exist in the directory.
+
+   \param mem_ctx pointer to the memory context
+   \param bin pointer to the Binary_r structure with raw OneOffEntryId data
+
+   \return Allocated OneOffEntryId structure on success, otherwise NULL
+
+   \note Developers must free the allocated OneOffEntryId when finished.
+ */
+_PUBLIC_ struct OneOffEntryId *get_OneOffEntryId(TALLOC_CTX *mem_ctx, struct Binary_r *bin)
+{
+	struct OneOffEntryId	*OneOffEntryId = NULL;
+	struct ndr_pull		*ndr;
+	enum ndr_err_code	ndr_err_code;
+
+	/* Sanity checks */
+	if (!bin) return NULL;
+	if (!bin->cb) return NULL;
+	if (!bin->lpb) return NULL;
+
+	ndr = talloc_zero(mem_ctx, struct ndr_pull);
+	if (!ndr) return NULL;
+	ndr->offset = 0;
+	ndr->data = bin->lpb;
+	ndr->data_size = bin->cb;
+
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	OneOffEntryId = talloc_zero(mem_ctx, struct OneOffEntryId);
+	if (!OneOffEntryId) return NULL;
+	ndr_err_code = ndr_pull_OneOffEntryId(ndr, NDR_SCALARS, OneOffEntryId);
+
+	talloc_free(ndr);
+
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		talloc_free(OneOffEntryId);
+		return NULL;
+	}
+
+	return OneOffEntryId;
 }
 
 /**

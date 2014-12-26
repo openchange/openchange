@@ -158,7 +158,11 @@ class _RESTConn(object):
         :param msg_uri: path to the message on remote
         """
         r = self.so.get('%s%s' % (self.base_url, msg_uri))
-        return r.json()
+        msg = r.json()
+        for key, value in msg.iteritems():
+            if mapistore.isPtypBinary(key):
+                msg[key] = bytearray(base64.b64decode(str(value)))
+        return msg
 
     def get_message_count(self, uri):
         r = self.so.head('%s%smessages' % (self.base_url, uri))
@@ -519,9 +523,14 @@ class FolderObject(object):
         properties['PidTagDisplayName'] = str(self.properties['PidTagDisplayName'])
         properties['PidTagComment'] = str(self.properties['PidTagComment'])
         properties['PidTagFolderType'] = mapistore.FOLDER_GENERIC
-        properties['PidTagAccess'] = PidTagAccessFlag.Read|PidTagAccessFlag.HierarchyTable|PidTagAccessFlag.ContentsTable|PidTagAccessFlag.AssocContentsTable
+        properties['PidTagAccess'] = (PidTagAccessFlag.Modify |
+                                      PidTagAccessFlag.Read |
+                                      PidTagAccessFlag.HierarchyTable |
+                                      PidTagAccessFlag.ContentsTable |
+                                      PidTagAccessFlag.AssocContentsTable)
         properties['PidTagCreationTime'] = float((datetime.now(tz=timezone('Europe/Madrid')) - timedelta(hours=1)).strftime("%s.%f"))
         properties['PidTagLastModificationTime'] = properties['PidTagCreationTime']
+        # FIXME: Generate PidTagChangeKey based on PidTagChangeNumber
         properties["PidTagChangeKey"] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         properties['PidTagAccessLevel'] = 1
         properties['PidTagRights'] = 2043
@@ -815,10 +824,10 @@ class TableObject(object):
 
     def _encode_restrictions(self, restrictions):
         if restrictions is None:
-            return {}
+            return None
 
-        if not 'type' in restrictions:
-            return {}
+        if 'type' not in restrictions:
+            return None
 
         rst = restrictions.copy()
 
@@ -846,8 +855,8 @@ class TableObject(object):
 
         if (restriction["type"] == "and"):
             for condition in restriction["value"]:
-                if self._apply_restriction_message(condition, message) == False:
-                    return False;
+                if self._apply_restriction_message(condition, message) is False:
+                    return False
             return True
 
         if (restriction["type"] == "or"):

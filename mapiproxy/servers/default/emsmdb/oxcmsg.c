@@ -871,6 +871,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	struct mapi_handles			*rec = NULL;
 	struct emsmdbp_object			*object;
 	enum MAPISTATUS				retval;
+	enum mapistore_error			ret;
 	uint32_t				handle;
 	void					*private_data;
 	bool					mapistore = false;
@@ -931,7 +932,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 				goto end;
 			}
 		}
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
+		ret = mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
+		if (ret != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("Error modifying the recipients\n"));
+			mapi_repl->error_code = mapistore_error_to_mapi(ret);
+		}
 	}
 	else {
 		DEBUG(0, ("Not implement yet - shouldn't occur\n"));

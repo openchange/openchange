@@ -2504,11 +2504,129 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 								       uint16_t count,
 								       struct mapistore_message_recipient *recipients)
 {
+	enum mapistore_error            retval;
+	TALLOC_CTX                      *mem_ctx;
+	struct mapistore_python_object  *pyobj;
+	struct SRow                     *aRow;
+	PyObject                        *message;
+	PyObject                        *rlist;
+	PyObject                        *rdict;
+	PyObject                        *pres;
+	void                            *data;
+	uint32_t                        j;
+	uint16_t                        i;
+
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
-	return MAPISTORE_SUCCESS;
-}
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!columns, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!recipients, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+					MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+					MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* We'll use aRow for building the recipient dictionaries */
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	aRow = talloc_zero(mem_ctx, struct SRow);
+	if (aRow == NULL) {
+		retval = MAPISTORE_ERR_NO_MEMORY;
+		goto end;
+	}
+
+	/* The number of properties is known a priori */
+	aRow->cValues = columns->cValues;
+
+	aRow->lpProps = talloc_zero_array(aRow, struct SPropValue, columns->cValues);
+	if (aRow->lpProps == NULL) {
+		retval = MAPISTORE_ERR_NO_MEMORY;
+		goto end;
+	}
+
+	/* Set the tags of the recipient properties */
+	for (j = 0; j < columns->cValues; j++) {
+		aRow->lpProps[j].ulPropTag = columns->aulPropTag[j];
+	}
+
+	/* Build list of recipients */
+	rlist = PyList_New(count);
+	if (rlist == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: Unable to initialize Python List\n",
+			pyobj->name, __location__));
+			retval = MAPISTORE_ERR_NO_MEMORY;
+			goto end;
+	}
+
+	for (i = 0; i < count; i++) {
+		/* Build the dictionary of properties for each recipient */
+		for (j = 0; j < columns->cValues; j++) {
+			/* Get data from recipients */
+			data = recipients[i].data[j];
+			/* Set the property in aRow */
+			if (set_SPropValue(&aRow->lpProps[j], data) == false) {
+				DEBUG(0,("[ERR][%s]: Can't set property 0x%x\n",
+					__location__, aRow->lpProps[j].ulPropTag));
+				retval = MAPISTORE_ERR_CONTEXT_FAILED;
+				Py_DECREF(rlist);
+				goto end;
+			}
+		}
+
+		rdict = mapistore_python_dict_from_SRow(aRow);
+		if (rdict == NULL) {
+			DEBUG(0, ("[ERR][%s]: Unable to build Python dictionary\n", __location__));
+			retval = MAPISTORE_ERR_CONTEXT_FAILED;
+			Py_DECREF(rlist);
+			goto end;
+		}
+
+		/* Add the recipient type */
+		if (PyDict_SetItemString(rdict, "PidTagRecipientType", PyLong_FromLong(recipients[i].type)) == -1) {
+			DEBUG(0, ("[ERR][%s]: Unable to set recipient type property\n", __location__));
+			retval = MAPISTORE_ERR_CONTEXT_FAILED;
+			Py_DECREF(rlist);
+			Py_DECREF(rdict);
+			goto end;
+		}
+
+		if (PyList_SetItem(rlist, i, rdict) == -1) {
+			DEBUG(0, ("[ERR][%s]: Unable to append entry to Python list\n", __location__));
+			retval =  MAPISTORE_ERR_CONTEXT_FAILED;
+			Py_DECREF(rlist);
+			Py_DECREF(rdict);
+			goto end;
+		}
+	}
+
+	/* Call modify_recipients function */
+	pres = PyObject_CallMethod(message, "modify_recipients", "O", rlist);
+	Py_DECREF(rlist);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			pyobj->name, __location__));
+		PyErr_Print();
+		retval =  MAPISTORE_ERR_CONTEXT_FAILED;
+		goto end;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+end:
+	talloc_free(mem_ctx);
+	return retval;
+}
 
 /**
    \details Save message

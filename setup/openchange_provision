@@ -52,6 +52,8 @@ parser.add_option("--openchangedb-uri", type="string", default="",
                        "specifying a connection string like mysql://user:passwd@host/db_name")
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 parser.add_option("--migrate", action="store_true", help="Migrate MySQL schema of an existing OpenChange installation")
+parser.add_option("--list-migrations", action="store_true",
+                  help="List MySQL schema migrations applied in an existing OpenChange installation")
 
 opts,args = parser.parse_args()
 if len(args) != 0:
@@ -94,6 +96,8 @@ if not opts.openchangedb:
         openchange.registerasmain(setup_path, provisionnames, lp, creds)
     elif opts.migrate:
         openchange.openchangedb_migrate(lp)
+    elif opts.list_migrations:
+        openchange.openchangedb_list_migrations(lp)
     else:
         parser.print_help()
         sys.exit(1)

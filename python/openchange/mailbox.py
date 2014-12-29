@@ -323,6 +323,17 @@ class OpenChangeDBWithMysqlBackend(object):
         migration_manager = MigrationManager(self.db, self.db_name)
         return migration_manager.migrate()
 
+    def list_migrations(self):
+        """List migrations metadata
+
+        :rtype dict:
+        :returns: list migrations indexed by version with a dict as
+                  value with 'applied' and 'class' as keys
+        """
+        self.db.select_db(self.db_name)
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.list_migrations()
+
     def remove(self):
         """Remove an existing OpenChangeDB."""
         self._execute("DROP DATABASE `%s`" %

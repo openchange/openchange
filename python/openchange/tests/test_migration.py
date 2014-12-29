@@ -30,19 +30,34 @@ from openchange.migration import migration, Migration, MigrationManager
 from samba import param
 
 
+# Borrowed from testsuite/testsuite_common.h
+OC_TESTSUITE_MYSQL = {'HOST': '127.0.0.1',
+                      'USER': 'root',
+                      'PASS': "",
+                      'DB': 'openchange_test'}
+
+
 class MigrationDBTests(unittest.TestCase):
     """Tests for OpenChangeDB migration framework"""
 
-    @classmethod
-    def setUpClass(cls):
-        lp = param.LoadParm()
-        lp.load_default()
-        cls.db = MySQLdb.connect(host=lp.get('namedproperties:mysql_host'),
-                                 user=lp.get('namedproperties:mysql_user'),
-                                 passwd=lp.get('namedproperties:mysql_pass'))
-        cur = cls.db.cursor()
-        cur.execute('CREATE DATABASE IF NOT EXISTS openchange')
-        cls.db.commit()
+    def setUp(self):
+        # Load MySQL configuration from default, if it does not work, try with Samba Conf
+        try:
+            self.db = MySQLdb.connect(host=OC_TESTSUITE_MYSQL['HOST'],
+                                      user=OC_TESTSUITE_MYSQL['USER'],
+                                      passwd=OC_TESTSUITE_MYSQL['PASS'])
+            self.db_name = OC_TESTSUITE_MYSQL['DB']
+        except:
+            lp = param.LoadParm()
+            lp.load_default()
+            self.db = MySQLdb.connect(host=lp.get('namedproperties:mysql_host'),
+                                     user=lp.get('namedproperties:mysql_user'),
+                                     passwd=lp.get('namedproperties:mysql_pass'))
+            self.db_name = lp.get('namedproperties:mysql_db')
+
+        cur = self.db.cursor()
+        cur.execute('CREATE DATABASE IF NOT EXISTS {}'.format(self.db_name))
+        self.db.commit()
         cur.close()
 
     def tearDown(self):
@@ -65,7 +80,7 @@ class MigrationDBTests(unittest.TestCase):
         MigrationManager.add_migration(2, DoNothingMigration)
 
     def test_setup(self):
-        manager = MigrationManager(self.db, 'openchange', 'test_migrations')
+        manager = MigrationManager(self.db, self.db_name, 'test_migrations')
         self.assertIsNotNone(manager)
         cur = self.db.cursor()
         cur.execute('DESCRIBE test_migrations')
@@ -73,7 +88,7 @@ class MigrationDBTests(unittest.TestCase):
         self.assertIsNotNone(row)
 
     def test_version(self):
-        manager = MigrationManager(self.db, 'openchange', 'test_migrations')
+        manager = MigrationManager(self.db, self.db_name, 'test_migrations')
         self.assertIsNone(manager.version)
 
         manager.apply_version(1)
@@ -90,7 +105,7 @@ class MigrationDBTests(unittest.TestCase):
         self.assertIsNone(manager.version)
 
     def test_go_forward_and_backwards(self):
-        manager = MigrationManager(self.db, 'openchange', 'test_migrations')
+        manager = MigrationManager(self.db, self.db_name, 'test_migrations')
         for v in manager.migrations.keys():
             del manager.migrations[v]
 
@@ -126,7 +141,7 @@ class MigrationDBTests(unittest.TestCase):
         self.assertFalse(migrated)
 
     def test_list_migrations(self):
-        manager = MigrationManager(self.db, 'openchange', 'test_migrations')
+        manager = MigrationManager(self.db, self.db_name, 'test_migrations')
         for v in manager.migrations.keys():
             del manager.migrations[v]
 

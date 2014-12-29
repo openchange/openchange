@@ -26,9 +26,13 @@ import ldb
 import uuid
 import time
 import MySQLdb
+
+
 from openchange.urlutils import *
+from openchange.migration import MigrationManager
 
 __docformat__ = 'restructuredText'
+
 
 class NoSuchServer(Exception):
     """Raised when a server could not be found."""
@@ -309,29 +313,15 @@ class OpenChangeDBWithMysqlBackend(object):
                       self.db.escape_string(self.db_name))
         self.db.select_db(self.db_name)
 
-    # Workaround to handle schema and data migration, if this grows it should
-    # be moved to another place and being handled better
     def migrate(self):
-        """Migrate both mysql schema and data"""
+        """Migrate both mysql schema and data
+
+        :rtype bool:
+        :returns: True if any migration has been performed
+        """
         self.db.select_db(self.db_name)
-        try:
-            self._execute("SELECT count(*) FROM company")
-        except:
-            # Table does not exist, we don't need migration
-            return False
-        # Migrate schema
-        self._execute("ALTER TABLE organizational_units DROP FOREIGN KEY fk_organizational_units_company_id;")
-        self._execute("ALTER TABLE organizational_units DROP COLUMN company_id")
-        self._execute("ALTER TABLE servers DROP FOREIGN KEY fk_servers_company_id")
-        self._execute("ALTER TABLE servers DROP COLUMN company_id")
-        self._execute("DROP TABLE company")
-        self._execute("ALTER TABLE servers ADD COLUMN ou_id INT NOT NULL")
-        self._execute("UPDATE servers SET ou_id = (SELECT id FROM organizational_units)")
-        self._execute("ALTER TABLE servers ADD CONSTRAINT `fk_servers_ou_id` FOREIGN KEY (`ou_id`) REFERENCES `organizational_units` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION")
-        # Migrate data
-        self._execute("UPDATE messages m JOIN mailboxes mb ON mb.id = m.mailbox_id set m.ou_id = mb.ou_id WHERE m.ou_id IS NULL")
-        self._execute("UPDATE messages m JOIN folders f ON f.id = m.folder_id set m.ou_id = f.ou_id WHERE m.ou_id IS NULL")
-        return True
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.migrate()
 
     def remove(self):
         """Remove an existing OpenChangeDB."""

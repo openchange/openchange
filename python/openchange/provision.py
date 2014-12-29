@@ -890,7 +890,7 @@ def openchangedb_migrate(lp):
         if openchangedb.migrate():
             print "Migration openchange db done"
     else:
-        print "Only OpenchangeDB with MySQL as backend needs migration"
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
 
 
 def openchangedb_provision(names, lp, uri=None):

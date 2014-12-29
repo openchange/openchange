@@ -313,15 +313,17 @@ class OpenChangeDBWithMysqlBackend(object):
                       self.db.escape_string(self.db_name))
         self.db.select_db(self.db_name)
 
-    def migrate(self):
+    def migrate(self, version=None):
         """Migrate both mysql schema and data
 
+        :param int version: indicating which version to migrate. None migrates
+                            to the lastest version.
         :rtype bool:
         :returns: True if any migration has been performed
         """
         self.db.select_db(self.db_name)
         migration_manager = MigrationManager(self.db, self.db_name)
-        return migration_manager.migrate()
+        return migration_manager.migrate(version)
 
     def list_migrations(self):
         """List migrations metadata

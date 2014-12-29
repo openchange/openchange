@@ -883,11 +883,11 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     openchangedb.remove()
 
 
-def openchangedb_migrate(lp):
+def openchangedb_migrate(lp, version=None):
     uri = openchangedb_url(lp)
     if uri.startswith('mysql'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-        if openchangedb.migrate():
+        if openchangedb.migrate(version):
             print "Migration openchange db done"
     else:
         print "Only OpenchangeDB with MySQL as backend has migration capability"

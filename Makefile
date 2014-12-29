@@ -1053,6 +1053,7 @@ provision-install: python-install
 	$(INSTALL) -m 0644 setup/AD/oc_provision* $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/prefixMap.txt $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -m 0644 setup/AD/provision_schema_basedn_modify.ldif $(DESTDIR)$(samba_setupdir)/AD/
+	$(INSTALL) -m 0644 setup/AD/update_now.ldif $(DESTDIR)$(samba_setupdir)/AD/
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup
 	$(INSTALL) -d $(DESTDIR)$(datadir)/setup/openchangedb
 	$(INSTALL) -m 0644 setup/openchangedb/oc_provision* $(DESTDIR)$(datadir)/setup/openchangedb/
@@ -1067,6 +1068,7 @@ provision-uninstall: python-uninstall
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_modify.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/oc_provision_schema_ADSC.ldif
+	rm -f $(DESTDIR)$(samba_setupdir)/AD/update_now.ldif
 	rm -f $(DESTDIR)$(samba_setupdir)/AD/prefixMap.txt
 	rm -rf $(DESTDIR)$(datadir)/setup/AD
 	rm -rf $(DESTDIR)$(datadir)/setup/openchangedb

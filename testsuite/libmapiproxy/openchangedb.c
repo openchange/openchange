@@ -852,7 +852,7 @@ START_TEST (test_create_and_edit_message) {
 	ck_assert(fid == *(uint64_t *)data);
 
 	row.cValues = 2;
-	row.lpProps = talloc_zero_array(g_mem_ctx, struct SPropValue, 2);
+	row.lpProps = talloc_zero_array(g_mem_ctx, struct SPropValue, row.cValues);
 	row.lpProps[0].ulPropTag = PidTagDisplayName;
 	row.lpProps[0].value.lpszW = talloc_strdup(g_mem_ctx, "foobar");
 	row.lpProps[1].ulPropTag = PidTagNormalizedSubject;
@@ -932,6 +932,66 @@ START_TEST (test_create_and_edit_message_on_public_folder) {
 	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
 	CHECK_SUCCESS;
 	ck_assert_str_eq("foobar 'foo'", (char *)data);
+} END_TEST
+
+START_TEST (test_set_property_message_with_change_key) {
+	void *msg;
+	uint64_t mid, fid;
+	uint32_t prop;
+	void *data;
+	struct SRow row;
+
+	fid = 17438782182108692481ul;
+	mid = 11;
+	retval = openchangedb_message_create(g_mem_ctx, g_oc_ctx, USER1, mid, fid, false, &msg);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
+	CHECK_SUCCESS;
+
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, USER1, mid, fid, &msg, NULL);
+	CHECK_SUCCESS;
+
+	prop = PidTagParentFolderId;
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert(fid == *(uint64_t *)data);
+
+	row.cValues = 3;
+	row.lpProps = talloc_zero_array(g_mem_ctx, struct SPropValue, row.cValues);
+	row.lpProps[0].ulPropTag = PR_CHANGE_KEY; // it should be ignored
+	row.lpProps[1].ulPropTag = PidTagDisplayName;
+	row.lpProps[1].value.lpszW = talloc_strdup(g_mem_ctx, "foobar 2");
+	row.lpProps[2].ulPropTag = PidTagNormalizedSubject;
+	row.lpProps[2].value.lpszW = talloc_strdup(g_mem_ctx, "subject foo'foo 2");
+	retval = openchangedb_message_set_properties(g_mem_ctx, g_oc_ctx, msg, &row);
+	CHECK_SUCCESS;
+
+	prop = PidTagDisplayName;
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("foobar 2", (char *)data);
+
+	prop = PidTagNormalizedSubject;
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("subject foo'foo 2", (char *)data);
+
+	retval = openchangedb_message_save(g_oc_ctx, msg, 0);
+	CHECK_SUCCESS;
+
+	// Now reopen message and read again the property
+	retval = openchangedb_message_open(g_mem_ctx, g_oc_ctx, USER1, mid, fid, &msg, 0);
+	CHECK_SUCCESS;
+	prop = PidTagDisplayName;
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("foobar 2", (char *)data);
+
+	prop = PidTagNormalizedSubject;
+	retval = openchangedb_message_get_property(g_mem_ctx, g_oc_ctx, msg, prop, &data);
+	CHECK_SUCCESS;
+	ck_assert_str_eq("subject foo'foo 2", (char *)data);
 } END_TEST
 
 START_TEST (test_build_table_folders) {
@@ -1223,6 +1283,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 
 	tcase_add_test(tc, test_create_and_edit_message);
 	tcase_add_test(tc, test_create_and_edit_message_on_public_folder);
+	tcase_add_test(tc, test_set_property_message_with_change_key);
 
 	tcase_add_test(tc, test_build_table_folders);
 	tcase_add_test(tc, test_build_table_folders_with_restrictions);

@@ -625,8 +625,6 @@ static void ocdb_logger_setup(void)
 	enum MAPISTATUS mapi_status;
 	struct openchangedb_context *backend_ctx;
 
-	fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
-
 	mem_ctx = talloc_new(NULL);
 
 	mapi_status = mock_backend_init(mem_ctx, &backend_ctx);
@@ -646,7 +644,6 @@ static void ocdb_logger_setup(void)
 static void ocdb_logger_teardown(void)
 {
 	talloc_free(mem_ctx);
-	fprintf(stderr, "%s\n", __PRETTY_FUNCTION__);
 }
 
 

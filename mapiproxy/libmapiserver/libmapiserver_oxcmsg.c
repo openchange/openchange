@@ -346,7 +346,6 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_
 _PUBLIC_ uint16_t libmapiserver_RopGetValidAttachments_size(struct EcDoRpc_MAPI_REPL *response)
 {
 	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
-	uint8_t		i;
 
 	if (!response || response->error_code) {
 		return size;

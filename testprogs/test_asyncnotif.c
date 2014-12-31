@@ -197,6 +197,10 @@ int main(int argc, const char *argv[])
 	const char			*opt_debug = NULL;
 	int				exit_code = 0;
 	uint32_t			notificationFlag = 0;
+	uint32_t			ulConnection;
+	uint16_t			ulEventMask = fnevNewMail;
+	//uint16_t			ulEventMask = fnevNewMail|fnevObjectCreated|fnevObjectDeleted|fnevObjectModified|fnevObjectMoved|fnevObjectCopied|fnevSearchComplete;
+	bool				wholeStore = true;
 
 	enum {OPT_PROFILE_DB=1000, OPT_PROFILE, OPT_PASSWORD, OPT_DEBUG, OPT_DUMPDATA};
 
@@ -299,10 +303,6 @@ int main(int argc, const char *argv[])
 	retval = GetContentsTable(&obj_inbox, &obj_contentstable, 0, &count);
 	printf("mailbox contains %i messages\n", count);
 
-	uint32_t ulConnection;
-	uint16_t ulEventMask = fnevNewMail;
-	//uint16_t ulEventMask = fnevNewMail|fnevObjectCreated|fnevObjectDeleted|fnevObjectModified|fnevObjectMoved|fnevObjectCopied|fnevSearchComplete;
-	bool wholeStore = true;
 	retval = Subscribe(&obj_store, &ulConnection, ulEventMask, wholeStore, &callback, &obj_store);
 	if (retval != MAPI_E_SUCCESS) {
 		mapi_errstr("Subscribe", retval);

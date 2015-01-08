@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <stdlib.h>
 
 #include "../mapistore.h"
 #include "../mapistore_private.h"
@@ -475,9 +476,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 							    struct indexing_context **ictxp)
 {
 	struct indexing_context	*ictx;
-	char			*schema_file;
+	char			*migration_cmd;
 	MYSQL			*conn = NULL;
-	bool			schema_created;
+	int			schema_created_ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -495,16 +496,18 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(3, ("Creating schema for indexing on mysql %s\n", connection_string));
+		migration_cmd = talloc_asprintf(mstore_ctx, "openchange_migrate "
+						"--indexing-uri=%s indexing", connection_string);
+		MAPISTORE_RETVAL_IF(!migration_cmd, MAPISTORE_ERR_NO_MEMORY, NULL);
+		DEBUG(3, ("Creating schema for indexing on mysql %s with this command %s\n",
+			  connection_string, migration_cmd));
 
-		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);
-		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
-		schema_created = create_schema(conn, schema_file);
-		talloc_free(schema_file);
+		schema_created_ret = system(migration_cmd);
+		talloc_free(migration_cmd);
 
-		if (!schema_created) {
-			DEBUG(1, ("Failed indexing schema creation, "
-				  "last mysql error was: `%s`\n", mysql_error(conn)));
+		if (schema_created_ret) {
+			DEBUG(1, ("Failed indexing schema creation using this command: %s with %d\n",
+				  migration_cmd, schema_created_ret));
 			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 		}
 	}

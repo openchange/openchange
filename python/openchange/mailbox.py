@@ -532,3 +532,12 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """
 
     return "%d" % (ReplicaID | reverse_int64counter(GlobalCount))
+
+
+class IndexingWithMysqlBackend(MysqlBackendMixin):
+    """The MAPIStore indexing database in MySQL backend."""
+
+    def __init__(self, url):
+        self.url = url
+        self._connect_to_mysql()
+        self.migration_app = 'indexing'

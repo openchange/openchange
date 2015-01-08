@@ -23,7 +23,6 @@
 #ifndef __INDEXING_MYSQL_H__
 #define __INDEXING_MYSQL_H__
 
-#define INDEXING_SCHEMA_FILE	"indexing_schema.sql"
 #define INDEXING_TABLE		"mapistore_indexing"
 #define INDEXING_ALLOC_TABLE	"mapistore_indexes"
 

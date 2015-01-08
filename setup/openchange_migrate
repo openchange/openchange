@@ -38,6 +38,9 @@ parser.add_option("--openchangedb-uri", type="string",
                   help="openchange database destination by "
                        "specifying a connection string like mysql://user:passwd@host/db_name "
                        "It defaults to the one set in the conf file")
+parser.add_option("--indexing-uri", type="string", default=None,
+                  help="indexing database destination by specifying "
+                       "a connection string. It defaults to the one set in the conf file")
 parser.add_option("--target-version", action="store", type="int",
                   help="Indicate which MySQL schema migration to migrate")
 parser.add_option("--list", action="store_true",
@@ -76,3 +79,13 @@ if 'openchangedb' in apps:
         provision.openchangedb_fake_migration(lp, opts.openchangedb_uri, opts.target_version)
     else:
         provision.openchangedb_migrate(lp, opts.openchangedb_uri, opts.target_version)
+
+
+if 'indexing' in apps:
+    print "=== Indexing ==="
+    if opts.list:
+        provision.indexing_list_migrations(lp, opts.indexing_uri)
+    elif opts.fake:
+        provision.indexing_fake_migration(lp, opts.indexing_uri, opts.target_version)
+    else:
+        provision.indexing_migrate(lp, opts.indexing_uri, opts.target_version)

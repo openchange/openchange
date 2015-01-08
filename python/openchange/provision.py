@@ -34,9 +34,11 @@ from samba.auth import system_session
 from samba.provision import setup_modify_ldif
 from samba.net import Net
 from samba.dcerpc import nbt
-from openchange.urlutils import openchangedb_url
+from openchange.urlutils import indexing_url, openchangedb_url
+
 
 __docformat__ = 'restructuredText'
+
 
 DEFAULTSITE = "Default-First-Site-Name"
 
@@ -994,3 +996,54 @@ def check_not_provisioned(names, lp, creds):
         firstorg = ret[0]['name'][0]
         raise Exception(
             'There is already, at least, one provisioned organization: %(name)s' % {'name': firstorg})
+
+
+# Indexing related procedures
+def indexing_migrate(lp, uri=None, version=None):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        if indexing.migrate(version):
+            print "Migration MAPIStore indexing backend done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+def indexing_list_migrations(lp, uri):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        migrations = indexing.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+def indexing_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        if indexing.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+# Helper procedures
+def print_migrations(migrations):
+    """Print formatted the migrations.
+
+    :param dict migrations: indexed by version. It has a value a dict with these keys:
+                            applied, class
+    """
+    for ver, migration in migrations.iteritems():
+        print '[{applied}] {version} {name} {applied_date}'.format(
+            applied='X' if migration['applied'] is not None else ' ',
+            version=ver,
+            name=migration['class'].description,
+            applied_date="- %s" % migration['applied'] if migration['applied'] else "")

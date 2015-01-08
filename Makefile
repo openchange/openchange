@@ -870,7 +870,6 @@ libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
 		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)	\
 		setup/mapistore/mapistore_namedprops.ldif		\
 		setup/mapistore/named_properties_schema.sql		\
-		setup/mapistore/indexing_schema.sql			\
 		$(OC_MAPISTORE)						\
 		$(MAPISTORE_TEST)
 

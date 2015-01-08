@@ -20,10 +20,19 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
-
+"""
+Set of utils for provision/migration commands
+"""
 import os
 
 
 def openchangedb_url(lp):
     return (lp.get("mapiproxy:openchangedb") or
             os.path.join(lp.get("private dir"), "openchange.ldb"))
+
+
+def indexing_url(lp):
+    return (lp.get("mapistore:indexing_backend")
+            or os.path.join(lp.get("private dir"), "indexing.ldb"))
+
+

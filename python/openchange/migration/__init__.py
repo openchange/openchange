@@ -282,3 +282,6 @@ class Migration(object):
         """
         pass
 
+
+# Import to get the migrations from different applications
+from . import openchangedb

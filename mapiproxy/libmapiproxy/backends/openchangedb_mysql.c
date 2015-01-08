@@ -29,10 +29,10 @@
 #include <mysql/mysql.h>
 #include <samba_util.h>
 #include <inttypes.h>
+#include <stdlib.h>
 #include <time.h>
 #include "../../util/mysql.h"
 
-#define SCHEMA_FILE	"openchangedb_schema.sql"
 #define PUBLIC_FOLDER	"public"
 #define SYSTEM_FOLDER	"system"
 
@@ -3704,10 +3704,9 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 {
 	struct openchangedb_context 	*oc_ctx;
 	MYSQL				*conn = NULL;
-	char 				*schema_file;
 	const char			*connection_string;
-	const char			*schema_dir;
-	bool				schema_created;
+	char   		                *migration_cmd;
+	int				schema_created_ret;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
 	// Initialize context with function pointers
@@ -3780,18 +3779,16 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = conn;
 	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	if (!table_exists(oc_ctx->data, "folders")) {
-		schema_dir = lpcfg_parm_string(lp_ctx, NULL, "openchangedb", "data");
-		schema_file = talloc_asprintf(mem_ctx, "%s/"SCHEMA_FILE,
-					      schema_dir ? schema_dir :
-					      openchangedb_data_dir());
-		DEBUG(3, ("Creating schema for openchangedb on mysql %s with %s\n",
-			  connection_string, schema_file));
-		schema_created = create_schema(oc_ctx->data, schema_file);
-		talloc_free(schema_file);
-
-		if (!schema_created) {
-			DEBUG(1, ("Failed openchangedb schema creation, "
-				  "last mysql error was: `%s`\n", mysql_error(conn)));
+		migration_cmd = talloc_asprintf(mem_ctx, "openchange_migrate "
+						"--openchangedb-uri=%s openchangedb", connection_string);
+		OPENCHANGE_RETVAL_IF(!migration_cmd, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+		DEBUG(3, ("Creating schema for openchangedb on mysql %s with this command %s\n",
+			  connection_string, migration_cmd));
+		schema_created_ret = system(migration_cmd);
+		talloc_free(migration_cmd);
+		if (schema_created_ret) {
+			DEBUG(1, ("Failed openchangedb schema creation using this command: %s with %d\n",
+				  migration_cmd, schema_created_ret));
 			OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_INITIALIZED, oc_ctx);
 		}
 	}

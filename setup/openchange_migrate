@@ -41,6 +41,9 @@ parser.add_option("--openchangedb-uri", type="string",
 parser.add_option("--indexing-uri", type="string", default=None,
                   help="indexing database destination by specifying "
                        "a connection string. It defaults to the one set in the conf file")
+parser.add_option("--named-props-uri", type="string", default=None,
+                  help="named properties database destination by specifying "
+                       "a connection string. It defaults to the one set in the conf file")
 parser.add_option("--target-version", action="store", type="int",
                   help="Indicate which MySQL schema migration to migrate")
 parser.add_option("--list", action="store_true",
@@ -89,3 +92,13 @@ if 'indexing' in apps:
         provision.indexing_fake_migration(lp, opts.indexing_uri, opts.target_version)
     else:
         provision.indexing_migrate(lp, opts.indexing_uri, opts.target_version)
+
+
+if 'named_properties' in apps:
+    print "=== Named Properties ==="
+    if opts.list:
+        provision.named_props_list_migrations(lp, opts.named_props_uri)
+    elif opts.fake:
+        provision.named_props_fake_migration(lp, opts.named_props_uri, opts.target_version)
+    else:
+        provision.named_props_migrate(lp, opts.named_props_uri, opts.target_version)

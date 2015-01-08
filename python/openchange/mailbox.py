@@ -541,3 +541,12 @@ class IndexingWithMysqlBackend(MysqlBackendMixin):
         self.url = url
         self._connect_to_mysql()
         self.migration_app = 'indexing'
+
+
+class NamedPropertiesWithMysqlBackend(MysqlBackendMixin):
+    """The MAPIStore named properties database in MySQL backend."""
+
+    def __init__(self, url):
+        self.url = url
+        self._connect_to_mysql()
+        self.migration_app = 'named_properties'

@@ -284,4 +284,4 @@ class Migration(object):
 
 
 # Import to get the migrations from different applications
-from . import indexing, openchangedb
+from . import indexing, openchangedb, named_properties

@@ -36,3 +36,15 @@ def indexing_url(lp):
             or os.path.join(lp.get("private dir"), "indexing.ldb"))
 
 
+def named_properties_url(lp):
+    named_props_backend = lp.get("mapistore:namedproperties")
+    if named_props_backend == 'mysql':
+        return "mysql://{user}{passwd}@{host}/{db}".format(
+            user=lp.get("namedproperties:mysql_user"),
+            passwd=":" + lp.get("namedproperties:mysql_pass") if lp.get("namedproperties:mysql_pass") else "",
+            host=lp.get("namedproperties:mysql_host"),
+            db=lp.get("namedproperties:mysql_db"))
+    elif named_props_backend == 'ldb':
+        return lp.get("namedproperties:ldb_data")
+    else:
+        return None

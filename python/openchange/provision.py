@@ -34,7 +34,7 @@ from samba.auth import system_session
 from samba.provision import setup_modify_ldif
 from samba.net import Net
 from samba.dcerpc import nbt
-from openchange.urlutils import indexing_url, openchangedb_url
+from openchange.urlutils import indexing_url, named_properties_url, openchangedb_url
 
 
 __docformat__ = 'restructuredText'
@@ -1032,6 +1032,42 @@ def indexing_fake_migration(lp, uri, target_version):
             print "%d is now the current version" % target_version
     else:
         print "Only indexing backend with MySQL as backend has migration capability"
+
+
+# Named properties related procedures
+def named_props_migrate(lp, uri=None, version=None):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        if named_properties.migrate(version):
+            print "Migration MAPIStore named properties backend done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
+
+
+def named_props_list_migrations(lp, uri):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        migrations = named_properties.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
+
+
+def named_props_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        if named_properties.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
 
 
 # Helper procedures

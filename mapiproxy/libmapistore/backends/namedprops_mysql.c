@@ -23,6 +23,7 @@
 #include "../mapistore.h"
 #include "../mapistore_private.h"
 #include "mapiproxy/util/mysql.h"
+#include "mapiproxy/util/schema_migration.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -465,7 +466,6 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	struct ldb_message	*msg;
 	int			ret;
 	char			*filename;
-	char			*migration_cmd;
 	FILE			*f;
 	bool			inserted;
 	int			schema_created_ret;
@@ -476,13 +476,10 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	mem_ctx = talloc_named(NULL, 0, "initialize_database");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	migration_cmd = talloc_asprintf(mem_ctx, "openchange_migrate "
-					"--named-props-uri=%s named_properties", connection_string);
-	MAPISTORE_RETVAL_IF(!migration_cmd, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-	schema_created_ret = system(migration_cmd);
+	schema_created_ret = migrate_named_properties_schema(mem_ctx, connection_string);
 	if (schema_created_ret) {
-		DEBUG(1, ("Failed named properties schema creation using this command: %s with %d\n",
-			  migration_cmd, schema_created_ret));
+		DEBUG(1, ("Failed named properties schema creation using migration framework: %d\n",
+			  schema_created_ret));
 		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 	}
 

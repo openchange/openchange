@@ -29,9 +29,9 @@
 #include <mysql/mysql.h>
 #include <samba_util.h>
 #include <inttypes.h>
-#include <stdlib.h>
 #include <time.h>
 #include "../../util/mysql.h"
+#include "../../util/schema_migration.h"
 
 #define PUBLIC_FOLDER	"public"
 #define SYSTEM_FOLDER	"system"
@@ -3705,7 +3705,6 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	struct openchangedb_context 	*oc_ctx;
 	MYSQL				*conn = NULL;
 	const char			*connection_string;
-	char   		                *migration_cmd;
 	int				schema_created_ret;
 
 	oc_ctx = talloc_zero(mem_ctx, struct openchangedb_context);
@@ -3779,16 +3778,12 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = conn;
 	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	if (!table_exists(oc_ctx->data, "folders")) {
-		migration_cmd = talloc_asprintf(mem_ctx, "openchange_migrate "
-						"--openchangedb-uri=%s openchangedb", connection_string);
-		OPENCHANGE_RETVAL_IF(!migration_cmd, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-		DEBUG(3, ("Creating schema for openchangedb on mysql %s with this command %s\n",
-			  connection_string, migration_cmd));
-		schema_created_ret = system(migration_cmd);
-		talloc_free(migration_cmd);
+		DEBUG(3, ("Creating schema for openchangedb on mysql %s\n",
+			  connection_string));
+		schema_created_ret = migrate_openchangedb_schema(mem_ctx, connection_string);
 		if (schema_created_ret) {
-			DEBUG(1, ("Failed openchangedb schema creation using this command: %s with %d\n",
-				  migration_cmd, schema_created_ret));
+			DEBUG(1, ("Failed openchangedb schema creation using migration framework: %d\n",
+				  schema_created_ret));
 			OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_INITIALIZED, oc_ctx);
 		}
 	}

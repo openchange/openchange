@@ -122,7 +122,7 @@ re:: clean install
 
 .c.po:
 	@echo "Compiling $< with -fPIC"
-	@$(CC) $(CFLAGS) -fPIC -c $< -o $@
+	@$(CC) $(PYTHON_CFLAGS) $(CFLAGS) -fPIC -c $< -o $@
 
 .cpp.o:
 	@echo "Compiling $< with -fPIC"
@@ -786,10 +786,11 @@ mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION):	mapiproxy/libmapiproxy/dc
 							mapiproxy/libmapiproxy/modules.po			\
 							mapiproxy/libmapiproxy/fault_util.po			\
 							mapiproxy/util/mysql.po					\
+							mapiproxy/util/schema_migration.po			\
 							mapiproxy/util/ccan/htable/htable.po			\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
+	@$(CC) -o $@ $(DSOOPT) $(LDFLAGS) -Wl,-soname,libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION) $^ -L. $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS)
 
 libmapiproxy.$(SHLIBEXT).$(LIBMAPIPROXY_SO_VERSION): mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	ln -fs $< $@
@@ -1387,16 +1388,17 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				testsuite/libmapiproxy/openchangedb.c				\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
 				testsuite/mapiproxy/util/mysql.c					\
+				testsuite/mapiproxy/util/schema_migration.c		\
 				testsuite/libmapiproxy/openchangedb_logger.c		\
 				mapiproxy/libmapiproxy/backends/openchangedb_logger.c \
 				testsuite/libmapi/mapi_property.c					\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) $(PYTHON_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 testsuite-check:	testsuite
-	@LD_LIBRARY_PATH=. PATH=$(PATH):./setup CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite
+	@LD_LIBRARY_PATH=. PYTHONPATH=./python CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite
 
 check::	$(OC_TESTSUITE_CHECK)
 

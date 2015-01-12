@@ -142,10 +142,8 @@ class _RESTConn(object):
         self._dump_response(r)
         folders = r.json()
         newlist = []
-        for i,folder in enumerate(folders):
-            for key,value in folder.iteritems():
-                if mapistore.isPtypBinary(key):
-                    folder[key] = bytearray(base64.b64decode(str(value)))
+        for folder in folders:
+            self._decode_object_b64(folder)
             folder['PidTagInstID'] = folder['id']
             folder['PidTagInstanceNum'] = 0
             folder['PidTagRowType'] = 1
@@ -159,9 +157,7 @@ class _RESTConn(object):
         """
         r = self.so.get('%s%s' % (self.base_url, msg_uri))
         msg = r.json()
-        for key, value in msg.iteritems():
-            if mapistore.isPtypBinary(key):
-                msg[key] = bytearray(base64.b64decode(str(value)))
+        self._decode_object_b64(msg)
         return msg
 
     def get_message_count(self, uri):
@@ -176,10 +172,8 @@ class _RESTConn(object):
         self._dump_response(r)
         msgs = r.json()
         newlist = []
-        for i,msg in enumerate(msgs):
-            for key,value in msg.iteritems():
-                if mapistore.isPtypBinary(key):
-                    msg[key] = bytearray(base64.b64decode(str(value)))
+        for msg in msgs:
+            self._decode_object_b64(msg)
             msg['PidTagInstID'] = msg['id']
             msg['PidTagInstanceNum'] = 0
             msg['PidTagRowType'] = 1
@@ -193,9 +187,7 @@ class _RESTConn(object):
         """
         r = self.so.get('%s%s' % (self.base_url, att_uri))
         att = r.json()
-        for key,value in att.iteritems():
-            if mapistore.isPtypBinary(key):
-                att[key] = bytearray(base64.b64decode(str(value)))
+        self._decode_object_b64(att)
         return att
 
     def get_attachment_count(self, uri):
@@ -214,20 +206,16 @@ class _RESTConn(object):
         r = self.so.get(req_uri, params={'properties': req_props})
         atts = r.json()
         newlist = []
-        for i,att in enumerate(atts):
-            for key,value in att.iteritems():
-                if mapistore.isPtypBinary(key):
-                    att[key] = bytearray(base64.b64decode(str(value)))
+        for att in atts:
+            self._decode_object_b64(att)
             newlist.append(att)
         return newlist
 
     def create_attachment(self, parent_id, props):
-        att = props.copy();
+        att = props.copy()
         att['parent_id'] = parent_id
         # base64 PtypBinary properties
-        for key,value in att.iteritems():
-            if mapistore.isPtypBinary(key):
-                att[key] = base64.b64encode(value)
+        self._encode_object_b64(att)
         headers = {'Content-Type': 'application/json'}
         r = self.so.post('%s/attachments/' % self.base_url, data=json.dumps(att), headers=headers)
         return r.json()['id']
@@ -241,14 +229,12 @@ class _RESTConn(object):
 
     def create_message(self, collection, parent_id, props):
         msg = props.copy()
-        msg['parent_id'] = parent_id
+        msg["parent_id"] = parent_id
         # base64 PtypBinary properties
-        for key,value in msg.iteritems():
-            if mapistore.isPtypBinary(key):
-                msg[key] = base64.b64encode(value)
-        msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
+        self._encode_object_b64(msg)
         headers = {'Content-Type': 'application/json'}
-        r = self.so.post('%s/%s/' % (self.base_url, collection), data=json.dumps(msg), headers=headers)
+        r = self.so.post('%s/%s/' % (self.base_url, collection),
+                         data=json.dumps(msg), headers=headers)
         return r.json()['id']
 
     def create_folder(self, parent_id, folder):
@@ -260,10 +246,9 @@ class _RESTConn(object):
     def update_object(self, uri, props):
         obj = props.copy()
         headers = {'Content-Type': 'application/json'}
-        for key,value in obj.iteritems():
-            if mapistore.isPtypBinary(key):
-                obj[key] = base64.b64encode(value)
-        r = self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(obj), headers=headers)
+        self._encode_object_b64(obj)
+        self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(obj), headers=headers)
+        return mapistore.errors.MAPISTORE_SUCCESS
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
@@ -271,6 +256,22 @@ class _RESTConn(object):
 
     def _dump_response(self, r):
         print json.dumps(r.json(), indent=4)
+
+    def _encode_object_b64(self, obj):
+        """ Encode the values of a dictionary object in base 64
+        : param obj: Dictionary object
+        """
+        for key, value in obj.iteritems():
+            if mapistore.isPtypBinary(key):
+                obj[key] = base64.b64encode(value)
+
+    def _decode_object_b64(self, obj):
+        """ Decode the values of a dictionary object from base 64
+        : param obj: Dictionary object
+        """
+        for key, value in obj.iteritems():
+            if mapistore.isPtypBinary(key):
+                obj[key] = bytearray(base64.b64decode(str(value)))
 
 
 class _Indexing(object):

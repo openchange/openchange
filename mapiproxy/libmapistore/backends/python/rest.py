@@ -224,7 +224,7 @@ class _RESTConn(object):
         """Delete an attachment given its ID
         :param uri: path to the attachment on remote
         """
-        r = self.so.delete('%s%s' % (self.base_url, uri))
+        self.so.delete('%s%s' % (self.base_url, uri))
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def create_message(self, collection, parent_id, props):
@@ -283,7 +283,7 @@ class _Indexing(object):
     def add_uri_with_fmid(self, uri, fmid):
         mstore_uri = self.uri_rest_to_mstore(uri)
         # FIXME: check if uri already exists
-        self.ictx.add_fmid(fmid, uri)
+        self.ictx.add_fmid(fmid, mstore_uri)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def add_uri(self, uri):
@@ -583,13 +583,12 @@ class FolderObject(object):
 
     def get_child_count(self, table_type):
         logger.info('[PYTHON]: [%s] folder.fet_child_count with table_type = %d' % (BackendObject.name, table_type))
-        counter = { mapistore.FOLDER_TABLE: self._count_folders,
-                    mapistore.MESSAGE_TABLE: self._count_messages,
-                    mapistore.FAI_TABLE: self._count_zero,
-                    mapistore.RULE_TABLE: self._count_zero,
-                    mapistore.ATTACHMENT_TABLE: self._count_zero,
-                    mapistore.PERMISSIONS_TABLE: self._count_zero
-                }
+        counter = {mapistore.FOLDER_TABLE: self._count_folders,
+                   mapistore.MESSAGE_TABLE: self._count_messages,
+                   mapistore.FAI_TABLE: self._count_zero,
+                   mapistore.RULE_TABLE: self._count_zero,
+                   mapistore.ATTACHMENT_TABLE: self._count_zero,
+                   mapistore.PERMISSIONS_TABLE: self._count_zero}
         return counter[table_type]()
 
     def _count_folders(self):
@@ -646,7 +645,6 @@ class MessageObject(object):
 
     def get_message_data(self):
         logger.info('[PYTHON][%s][%s]: message.get_message_data' % (BackendObject.name, self.uri))
-        print self.properties
         return (self.recipients, self.properties)
 
     def _collection_from_messageClass(self, messageclass):

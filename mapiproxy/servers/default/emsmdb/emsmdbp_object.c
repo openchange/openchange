@@ -958,41 +958,53 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	/* Fetch data from source message */
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	contextID = emsmdbp_get_contextID(source_object);
-	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID,
+					source_object->backend_object,
+					mem_ctx, &msg_data);
 
-	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each values array */
-	if (msg_data->recipients_count > 0
-	    && (msg_data->columns->cValues < 2 || msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE || msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
-		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
+	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and
+	 * PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each
+	 * values array */
+	if (msg_data->recipients_count > 0) {
+		if ((msg_data->columns->cValues < 2 ||
+		     msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE ||
+		     msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
+			emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
 
-		new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
-		new_columns->cValues = msg_data->columns->cValues + 2;
-		new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS, new_columns->cValues);
-		memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag, sizeof(enum MAPITAGS) * msg_data->columns->cValues);
-		new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
-		new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
+			new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
+			new_columns->cValues = msg_data->columns->cValues + 2;
+			new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS,
+							new_columns->cValues);
+			memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag,
+			       sizeof(enum MAPITAGS) * msg_data->columns->cValues);
+			new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
+			new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
 
-		for (i = 0; i < msg_data->recipients_count; i++) {
-			new_data = talloc_array(mem_ctx, void *, new_columns->cValues);
-			memcpy(new_data + 2, msg_data->recipients[i].data, sizeof(void *) * msg_data->columns->cValues);
-			if (prop_index.display_name != (uint32_t) -1) {
-				new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+			for (i = 0; i < msg_data->recipients_count; i++) {
+				new_data = talloc_array(mem_ctx, void *,
+							new_columns->cValues);
+				memcpy(new_data + 2, msg_data->recipients[i].data,
+				       sizeof(void *) * msg_data->columns->cValues);
+				if (prop_index.display_name != (uint32_t) -1) {
+					new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+				}
+				else {
+					new_data[0] = NULL;
+				}
+				if (prop_index.email_address != (uint32_t) -1) {
+					new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
+				}
+				else {
+					new_data[1] = NULL;
+				}
+				msg_data->recipients[i].data = new_data;
 			}
-			else {
-				new_data[0] = NULL;
-			}
-			if (prop_index.email_address != (uint32_t) -1) {
-				new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
-			}
-			else {
-				new_data[1] = NULL;
-			}
-			msg_data->recipients[i].data = new_data;
+			msg_data->columns = new_columns;
 		}
-		msg_data->columns = new_columns;
-
 		/* Copy data into dest message */
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
+						dest_object->backend_object, msg_data->columns,
+						msg_data->recipients_count, msg_data->recipients);
 	}
 
 	talloc_free(mem_ctx);

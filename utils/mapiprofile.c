@@ -825,6 +825,11 @@ int main(int argc, const char *argv[])
 
 	if (opt_roh && opt_roh_rpc_proxy_server == NULL) {
 		opt_roh_rpc_proxy_server = talloc_strdup(mem_ctx, address);
+		if (!opt_roh_rpc_proxy_server) {
+			fprintf(stderr, "Not enough memory\n");
+			retcode = EXIT_FAILURE;
+			goto cleanup;
+		}
 	}
 
 	/* Process the code here */

@@ -129,7 +129,9 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 			       const char *domain, const char *realm,
 			       uint32_t flags, bool seal,
 			       bool opt_dumpdata, const char *opt_debuglevel,
-			       uint8_t exchange_version, const char *kerberos)
+			       uint8_t exchange_version, const char *kerberos,
+			       bool roh, bool roh_tls, uint32_t roh_rpc_proxy_port,
+			       const char *roh_rpc_proxy_server)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_session	*session = NULL;
@@ -183,6 +185,21 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	mapi_profile_add_string_attr(mapi_ctx, profname, "workstation", workstation);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "domain", domain);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
+	mapi_profile_add_string_attr(mapi_ctx, profname, "roh", (roh == true) ? "true" : "false");
+	if (roh) {
+		char *roh_rpc_proxy_port_str = NULL;
+
+		roh_rpc_proxy_port_str = talloc_asprintf(mem_ctx, "%d", roh_rpc_proxy_port);
+		if (roh_rpc_proxy_port_str == NULL) {
+			mapi_errstr("CreateProfile", retval);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_tls", (roh_tls == true) ? "true" : "false");
+		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_server", roh_rpc_proxy_server);
+		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_port", roh_rpc_proxy_port_str);
+		talloc_free(roh_rpc_proxy_port_str);
+	}
 
 	exchange_version_str = talloc_asprintf(mem_ctx, "%d", exchange_version);
 	mapi_profile_add_string_attr(mapi_ctx, profname, "exchange_version", exchange_version_str);
@@ -453,7 +470,13 @@ static void mapiprofile_dump(struct mapi_context *mapi_ctx, const char *profdb, 
 	printf("\tworkstation     == %s\n", profile->workstation);
 	printf("\tdomain          == %s\n", profile->domain);
 	printf("\tserver          == %s\n", profile->server);
-
+	printf("\n");
+	printf("\tRPC over HTTP              == %s\n", (profile->roh == true) ? "yes" : "no");
+        if (profile->roh) {
+                printf("\tRPC over HTTP use TLS      == %s\n", (profile->roh_tls == true) ? "yes" : "no");
+                printf("\tRPC over HTTP proxy server == %s\n", profile->roh_rpc_proxy_server);
+                printf("\tRPC over HTTP proxy port   == %d\n", profile->roh_rpc_proxy_port);
+        }
 end:
 	talloc_free(mem_ctx);
 }
@@ -533,6 +556,8 @@ int main(int argc, const char *argv[])
 	bool		getfqdn = false;
 	bool		opt_dumpdata = false;
 	bool		opt_seal = false;
+	bool		opt_roh = false;
+	bool		opt_roh_tls = true;
 	const char	*opt_debuglevel = NULL;
 	const char	*ldif = NULL;
 	const char	*address = NULL;
@@ -550,7 +575,10 @@ int main(int argc, const char *argv[])
 	const char	*opt_tmp = NULL;
 	const char	*opt_krb = NULL;
 	const char	*version = NULL;
+	const char	*opt_roh_rpc_proxy_server = NULL;
+	const char	*opt_roh_rpc_proxy_port = NULL;
 	uint32_t	nopass = 0;
+	uint32_t	roh_rpc_proxy_port = 443;
 	char		hostname[256];
 	int		retcode = EXIT_SUCCESS;
 
@@ -560,7 +588,9 @@ int main(int argc, const char *argv[])
 	      OPT_DUMP_ATTR, OPT_PROFILE_NEWDB, OPT_PROFILE_LDIF, OPT_LIST_LANGS,
 	      OPT_PROFILE_SET_DFLT, OPT_PROFILE_GET_DFLT, OPT_PATTERN, OPT_GETFQDN,
 	      OPT_NOPASS, OPT_RENAME_PROFILE, OPT_DUMPDATA, OPT_DEBUGLEVEL,
-	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB};
+	      OPT_ENCRYPT_CONN, OPT_EXCHANGE_VERSION, OPT_KRB,
+	      OPT_ROH, OPT_ROH_NO_TLS, OPT_ROH_RPC_PROXY_PORT,
+	      OPT_ROH_RPC_PROXY_SERVER};
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -592,6 +622,10 @@ int main(int argc, const char *argv[])
 		{"debuglevel", 'd', POPT_ARG_STRING, NULL, OPT_DEBUGLEVEL, "set the debug level", "LEVEL"},
 		{"getfqdn", 0, POPT_ARG_NONE, NULL, OPT_GETFQDN, "returns the DNS FQDN of the NSPI server matching the legacyDN", NULL},
 		{"kerberos", 'k', POPT_ARG_STRING, NULL, OPT_KRB, "specify kerberos behavior (guess by default)", "{yes|no}"},
+		{"roh", 'H', POPT_ARG_NONE, NULL, OPT_ROH, "connect to Exchange server over HTTP (RPC over HTTP)", NULL },
+		{"roh-no-tls", 0, POPT_ARG_NONE, NULL, OPT_ROH_NO_TLS, "Do not use TLS to connect to Exchange server over HTTP", NULL },
+		{"roh-rpc-proxy-port", 0, POPT_ARG_STRING, NULL, OPT_ROH_RPC_PROXY_PORT, "RPC over HTTP proxy port", "443" },
+		{"roh-rpc-proxy", 0, POPT_ARG_STRING, NULL, OPT_ROH_RPC_PROXY_SERVER, "RPC over HTTP proxy server", NULL },
 		POPT_OPENCHANGE_VERSION
 		{ NULL, 0, POPT_ARG_NONE, NULL, 0, NULL, NULL }
 	};
@@ -701,6 +735,43 @@ int main(int argc, const char *argv[])
 		case OPT_KRB:
 			opt_krb = poptGetOptArg(pc);
 			break;
+		case OPT_ROH:
+			opt_roh = true;
+			break;
+		case OPT_ROH_NO_TLS:
+			opt_roh_tls = false;
+			if (roh_rpc_proxy_port == 443) {
+				roh_rpc_proxy_port = 80;
+			}
+			break;
+		case OPT_ROH_RPC_PROXY_PORT:
+			opt_tmp = poptGetOptArg(pc);
+			opt_roh_rpc_proxy_port = talloc_strdup(mem_ctx, opt_tmp);
+			if (!opt_roh_rpc_proxy_port) {
+				talloc_free(mem_ctx);
+				printf("Not enough memory\n");
+				exit(1);
+			}
+			roh_rpc_proxy_port = strtol(opt_roh_rpc_proxy_port, NULL, 10);
+			if (!roh_rpc_proxy_port) {
+				printf("Cannot parse RPC proxy port number\n");
+				retcode = EXIT_FAILURE;
+				goto cleanup;
+			}
+			free((void *)opt_tmp);
+			opt_tmp = NULL;
+			break;
+		case OPT_ROH_RPC_PROXY_SERVER:
+			opt_tmp = poptGetOptArg(pc);
+			opt_roh_rpc_proxy_server = talloc_strdup(mem_ctx, opt_tmp);
+			if (!opt_roh_rpc_proxy_server) {
+				talloc_free(mem_ctx);
+				printf("Not enough memory\n");
+				exit(1);
+			}
+			free((void *)opt_tmp);
+			opt_tmp = NULL;
+			break;
 		}
 	}
 
@@ -752,6 +823,15 @@ int main(int argc, const char *argv[])
 		}
 	}
 
+	if (opt_roh && opt_roh_rpc_proxy_server == NULL) {
+		opt_roh_rpc_proxy_server = talloc_strdup(mem_ctx, address);
+		if (!opt_roh_rpc_proxy_server) {
+			fprintf(stderr, "Not enough memory\n");
+			retcode = EXIT_FAILURE;
+			goto cleanup;
+		}
+	}
+
 	/* Process the code here */
 
 	if (!workstation) {
@@ -795,7 +875,9 @@ int main(int argc, const char *argv[])
 					 language, workstation, domain, realm, nopass, opt_seal, 
 					 opt_dumpdata, opt_debuglevel,
 					 exchange_version[i].version,
-					 opt_krb)) {
+					 opt_krb, opt_roh, opt_roh_tls,
+					 roh_rpc_proxy_port,
+					 opt_roh_rpc_proxy_server)) {
 			retcode = EXIT_FAILURE;
 			goto cleanup;
 		}

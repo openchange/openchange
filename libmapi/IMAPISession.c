@@ -336,14 +336,11 @@ _PUBLIC_ enum MAPISTATUS OpenUserMailbox(struct mapi_session *session,
 
 retry:
 	mem_ctx = talloc_named(session, 0, "OpenMsgStore");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
 	size = 0;
 
-	if (!username) {
-		mailbox = talloc_strdup(mem_ctx, session->profile->mailbox);
-	} else {
-		mailbox = talloc_asprintf(mem_ctx, "/o=%s/ou=%s/cn=Recipients/cn=%s", session->profile->org,
-					  session->profile->ou, username);
-	}
+	mailbox = talloc_strdup(mem_ctx, session->profile->mailbox);
+	OPENCHANGE_RETVAL_IF(!mailbox, MAPI_E_NOT_ENOUGH_RESOURCES, mem_ctx);
 
 	/* Fill the Logon operation */
 	request.LogonFlags = LogonPrivate;

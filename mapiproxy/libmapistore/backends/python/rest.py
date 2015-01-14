@@ -259,7 +259,7 @@ class _RESTConn(object):
                     for rcp in rcps:
                         value = rcp[key]
                         rcp[key] = base64.b64encode(value)
-        msg["recipients"] = rcps
+            msg["recipients"] = rcps
         headers = {'Content-Type': 'application/json'}
         r = self.so.post('%s/%s/' % (self.base_url, collection),
                          data=json.dumps(msg), headers=headers)
@@ -292,7 +292,7 @@ class _RESTConn(object):
                     for rcp in rcps:
                         value = rcp[key]
                         rcp[key] = base64.b64encode(value)
-        msg["recipients"] = rcps
+            msg["recipients"] = rcps
         self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg),
                     headers=headers)
         return mapistore.errors.MAPISTORE_SUCCESS

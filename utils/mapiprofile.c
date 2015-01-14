@@ -764,6 +764,11 @@ int main(int argc, const char *argv[])
 		case OPT_ROH_RPC_PROXY_SERVER:
 			opt_tmp = poptGetOptArg(pc);
 			opt_roh_rpc_proxy_server = talloc_strdup(mem_ctx, opt_tmp);
+			if (!opt_roh_rpc_proxy_server) {
+				talloc_free(mem_ctx);
+				printf("Not enough memory\n");
+				exit(1);
+			}
 			free((void *)opt_tmp);
 			opt_tmp = NULL;
 			break;

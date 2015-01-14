@@ -482,6 +482,35 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     return True
 
 
+def deprovision_organization(setup_path, names, lp, creds, reporter=None):
+    """Remove an existing exchange organization
+
+    :param setup_path: Path to the setup directory
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: Provision Names object
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    """
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    sam_db = get_schema_master_samdb(names, lp, creds)
+    try:
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+    except LdbError, ldb_error:
+            print ("[!] error while deprovisioning the Exchange organization objects"
+                   " objects (%d): %s" % ldb_error.args)
+            return False
+
+    try:
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects", modify_mode=True)
+    except LdbError, ldb_error:
+        print ("[!] error while deprovisioning the Exchange organization"
+               " objects (%d): %s" % ldb_error.args)
+        return False
+    return True
+
+
 def get_ldb_url(lp, creds, names):
     if names.serverrole == "member server":
         net = Net(creds, lp)

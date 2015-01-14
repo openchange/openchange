@@ -100,27 +100,34 @@ static char *build_binding_string(struct mapi_context *mapi_ctx,
 		binding = talloc_asprintf(mem_ctx, "ncacn_http:%s[rpcproxy=%s:%d,",
 				rpcserver, profile->roh_rpc_proxy_server,
 				profile->roh_rpc_proxy_port);
+		if (!binding) return NULL;
 		if (profile->roh_tls == true) {
 			binding = talloc_strdup_append(binding, "tls,");
+			if (!binding) return NULL;
 		}
 	} else {
 		binding = talloc_asprintf(mem_ctx, "ncacn_ip_tcp:%s[", rpcserver);
+		if (!binding) return NULL;
 	}
 
 	/* If dump-data option is enabled */
 	if (mapi_ctx->dumpdata == true) {
 		binding = talloc_strdup_append(binding, "print,");
+		if (!binding) return NULL;
 	}
 	/* If seal option is enabled in the profile */
 	if (profile->seal == true) {
 		binding = talloc_strdup_append(binding, "seal,");
+		if (!binding) return NULL;
 	}
 	/* If localaddress parameter is available in the profile */
 	if (profile->localaddr) {
 		binding = talloc_asprintf_append(binding, "localaddress=%s,", profile->localaddr);
+		if (!binding) return NULL;
 	}
 
 	binding = talloc_strdup_append(binding, "]");
+	if (!binding) return NULL;
 
 	return binding;
 }

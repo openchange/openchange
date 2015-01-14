@@ -3627,9 +3627,8 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 		tag = value->ulPropTag;
 		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY ||
 		    tag == PR_PARENT_SOURCE_KEY || tag == PR_CHANGE_KEY) {
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n",
-				  tag));
-			break;
+			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", tag));
+			continue;
 		}
 		attr = openchangedb_property_get_attribute(tag);
 		if (!attr) {

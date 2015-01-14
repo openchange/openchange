@@ -60,8 +60,12 @@ enum MAPISTATUS emsmdb_async_waitex(struct emsmdb_context *emsmdb_ctx, uint32_t 
 	r.out.pulFlagsOut = flagsOut;
 	dcerpc_binding_handle_set_timeout(emsmdb_ctx->async_rpc_connection->binding_handle, 400);
 	status = dcerpc_EcDoAsyncWaitEx_r(emsmdb_ctx->async_rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
+
+	/* If the call failed, map NT_STATUS to MAPISTATUS. r.out.result isn't valid unless status is OK */
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_TIMEOUT, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_DISCONNECTED), MAPI_E_END_OF_SESSION, NULL);
+	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), NT_STATUS_V(status), NULL);
 	retval = r.out.result;
-	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), retval, NULL);
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 
 	return MAPI_E_SUCCESS;

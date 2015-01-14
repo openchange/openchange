@@ -366,7 +366,7 @@ interface property
 		uint16			Pad2;
 	} MessageEntryId;
 
-	/* AddressBookEntryId */
+	/* AddressBookEntryId [MS-OXCDATA] 2.2.5.2 */
 	typedef [public,flag(NDR_NOALIGN)] struct {
 		uint32			Flags;
 		GUID			ProviderUID;
@@ -374,4 +374,22 @@ interface property
 		uint32			Type;
 		astring			X500DN;
 	} AddressBookEntryId;
+
+	/* OneOffEntryId [MS-OXCDATA] 2.2.5.1 */
+        typedef [nodiscriminant, flag(NDR_NOALIGN)] union {
+                [case(0x0)] astring                     	lpszA;
+                [case(0x8000)][flag(STR_NULLTERM)] string	lpszW;
+                [default];
+        } OneOffEntryId_String;
+
+	typedef [public,flag(NDR_NOALIGN)] struct {
+		uint32								Flags;
+		GUID								ProviderUID;
+		uint16								Version;
+		uint16								OneOffEntryIdFlags;
+		[switch_is(OneOffEntryIdFlags & 0x8000)] OneOffEntryId_String	DisplayName;
+		[switch_is(OneOffEntryIdFlags & 0x8000)] OneOffEntryId_String	AddressType;
+		[switch_is(OneOffEntryIdFlags & 0x8000)] OneOffEntryId_String	EmailAddress;
+	} OneOffEntryId;
+
 }

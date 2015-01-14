@@ -41,6 +41,7 @@ parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
 parser.add_option("--firstou", type="string", metavar="FIRSTOU",
                   default="First Administrative Group",
                   help="set OpenChange Administrative Group (otherwise 'First Administrative Group')")
+parser.add_option("--deprovision", action="store_true", help="Deprovision the organization")
 
 opts, args = parser.parse_args()
 if len(args) != 0:
@@ -62,6 +63,10 @@ def setup_path(*args):
 provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
-if openchange.provision_organization(setup_path, provisionnames, lp, creds):
-    openchange.register(setup_path, provisionnames, lp, creds)
-    openchange.openchangedb_new_organization(provisionnames, lp)
+if opts.deprovision:
+    openchange.deprovision_organization(setup_path, provisionnames, lp, creds)
+    openchange.unregister(setup_path, provisionnames, lp, creds)
+else:
+    if openchange.provision_organization(setup_path, provisionnames, lp, creds):
+        openchange.register(setup_path, provisionnames, lp, creds)
+        openchange.openchangedb_new_organization(provisionnames, lp)

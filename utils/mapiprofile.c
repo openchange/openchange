@@ -747,6 +747,11 @@ int main(int argc, const char *argv[])
 		case OPT_ROH_RPC_PROXY_PORT:
 			opt_tmp = poptGetOptArg(pc);
 			opt_roh_rpc_proxy_port = talloc_strdup(mem_ctx, opt_tmp);
+			if (!opt_roh_rpc_proxy_port) {
+				talloc_free(mem_ctx);
+				printf("Not enough memory\n");
+				exit(1);
+			}
 			roh_rpc_proxy_port = strtol(opt_roh_rpc_proxy_port, NULL, 10);
 			if (!roh_rpc_proxy_port) {
 				printf("Cannot parse RPC proxy port number\n");

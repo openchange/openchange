@@ -31,27 +31,6 @@
 #define	YY_EXTRA_TYPE	struct ocpf_context *
 #define	YY_NO_UNPUT
 
-/*
- * Prototypes
- */
-
-int	yylex(YYSTYPE *, void *);
-int	yyget_lineno(void *);
-FILE	*yyget_in(void *);
-FILE	*yyget_out(void *);
-int	yyget_leng(void *);
-char	*yyget_text(void *);
-void	yyset_lineno(int, void *);
-void	yyset_extra(YY_EXTRA_TYPE, void *);
-void	yyset_in (FILE *, void *);
-void	yyset_out (FILE *, void *);
-int	yyget_debug(void *);
-void	yyset_debug(int, void *);
-int	yylex_destroy(void *);
-void	yyset_column(int, void *);
-int	yyget_column(void *);
-
-
 static void unterminated(struct ocpf_context *, const char *, unsigned int);
 
 %}
@@ -83,7 +62,7 @@ PT_DOUBLE	{ return kw_PT_DOUBLE; }
 PT_I8		{ return kw_PT_I8; }
 PT_SYSTIME	{ return kw_PT_SYSTIME; }
 PT_BOOLEAN	{ return kw_PT_BOOLEAN; }
-PT_MV_LONG	{ return kw_PT_LONG; }
+PT_MV_LONG	{ return kw_PT_MV_LONG; }
 PT_MV_STRING8	{ return kw_PT_MV_STRING8; }
 PT_MV_UNICODE	{ return kw_PT_MV_UNICODE; }
 PT_BINARY	{ return kw_PT_BINARY; }
@@ -295,7 +274,7 @@ T[0-9]{4}-[0-9]{2}-[0-9]{2}[ ][0-9]{2}\:[0-9]{2}\:[0-9]{2} {
 				return INTEGER;
 			
 			}
-S0x[0-9A-Fa-f]+|-S[0-9]+ {
+S0x[0-9A-Fa-f]+|-?S[0-9]+ {
 			   struct ocpf_context *ctx = yyextra;
 			   char *e, *y;
 			   y = (yytext[0] == 'S') ? yytext + 1 : yytext;

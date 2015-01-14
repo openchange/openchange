@@ -74,10 +74,12 @@ static enum MAPISTATUS RopLogon_Mailbox(TALLOC_CTX *mem_ctx,
 
 	/* Step 2. Init and or update the user mailbox (auto-provisioning) */
 	ret = emsmdbp_mailbox_provision(emsmdbp_ctx, username);
-	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
 	/* TODO: freebusy entry should be created only during freebusy lookups */
-	ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
-	OPENCHANGE_RETVAL_IF(ret, MAPI_E_DISK_ERROR, NULL);
+	if (strncmp(username, emsmdbp_ctx->username, strlen(username)) == 0) {
+		ret = emsmdbp_mailbox_provision_public_freebusy(emsmdbp_ctx, request->EssDN);
+		OPENCHANGE_RETVAL_IF(ret != MAPI_E_SUCCESS, MAPI_E_DISK_ERROR, NULL);
+	}
 
 	/* Step 3. Set LogonFlags */
 	response->LogonFlags = request->LogonFlags;
@@ -156,19 +158,20 @@ static enum MAPISTATUS RopLogon_PublicFolder(TALLOC_CTX *mem_ctx,
 
 	response->LogonFlags = request->LogonFlags;
 
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_ROOT, &response->LogonType.store_pf.Root);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_IPMSUBTREE, &response->LogonType.store_pf.IPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_NONIPMSUBTREE, &response->LogonType.store_pf.NonIPMSubTree);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_EFORMSREGISTRY, &response->LogonType.store_pf.EFormsRegistry);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_FREEBUSY, &response->LogonType.store_pf.FreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_OAB, &response->LogonType.store_pf.OAB);
 	response->LogonType.store_pf.LocalizedEFormsRegistry = 0;
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
-	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALFREEBUSY, &response->LogonType.store_pf.LocalFreeBusy);
+	openchangedb_get_PublicFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_PF_LOCALOAB, &response->LogonType.store_pf.LocalOAB);
 	response->LogonType.store_pf.NNTPIndex = 0;
 	memset(response->LogonType.store_pf._empty, 0, sizeof(uint64_t) * 3);
 
 	openchangedb_get_PublicFolderReplica(emsmdbp_ctx->oc_ctx,
+					     emsmdbp_ctx->username,
 					     &response->LogonType.store_pf.ReplId,
 					     &response->LogonType.store_pf.Guid);
 	memset(&response->LogonType.store_pf.PerUserGuid, 0, sizeof(struct GUID));
@@ -205,6 +208,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	struct mapi_handles		*rec = NULL;
 	struct emsmdbp_object		*object;
 	bool				mailboxstore = true;
+	const char			*essDN = NULL;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
 
@@ -216,6 +220,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
 	request = &mapi_req->u.mapi_Logon;
+
+	essDN = request->EssDN;
 
 	/* Fill EcDoRpc_MAPI_REPL reply */
 	mapi_repl->opnum = mapi_req->opnum;
@@ -231,11 +237,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = retval;
 		mailboxstore = false;
 		*size += libmapiserver_RopLogon_size(mapi_req, mapi_repl);
+
+		/*
+		 * EssDN for public logons may be empty string
+		 * In this case, fallback to emsmdbp_ctx->szUserDN
+		 */
+		if (strlen(essDN) == 0) {
+			essDN = emsmdbp_ctx->szUserDN;
+		}
 	}
 
-	if (!mapi_repl->error_code) {
+	if (mapi_repl->error_code == MAPI_E_SUCCESS) {
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &rec);
-		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, request->EssDN, mailboxstore);
+		object = emsmdbp_object_mailbox_init((TALLOC_CTX *)rec, emsmdbp_ctx, essDN, mailboxstore);
 		retval = mapi_handles_set_private_data(rec, object);
 
 		handles[mapi_repl->handle_idx] = rec->handle;
@@ -337,7 +351,7 @@ static bool MessageClassIsValid(const char *MessageClass)
 	if (MessageClass[0] && (MessageClass[0] == '.')) {
 		return false;
 	}
-	if (MessageClass[0] && (MessageClass[len] == '.')) {
+	if (MessageClass[0] && (MessageClass[len - 1] == '.')) {
 		return false;
 	}
 	
@@ -379,6 +393,10 @@ static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *) private_data;
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
 	
 	/* Step 2. Verify MessageClass string */
 	fid = mapi_req->u.mapi_SetReceiveFolder.fid;
@@ -386,7 +404,7 @@ static enum MAPISTATUS RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 	if (!MessageClass || (strcmp(MessageClass, "") == 0)) {
 		MessageClass="All";
 	}
-	if ((fid == 0x0) && (strcmp(MessageClass, "All"))) {
+	if ((fid == 0x0) && (!strcmp(MessageClass, "All"))) {
 		return MAPI_E_CALL_FAILED;
 	}
 	if (strcasecmp(MessageClass, "IPM") == 0) {
@@ -485,8 +503,13 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 	object = (struct emsmdbp_object *) private_data;
 	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+
+	/* Step 2. Do not allow over Public Folder */
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
 	
-	/* Step 2. Verify MessageClass string */
+	/* Step 3. Verify MessageClass string */
 	MessageClass = mapi_req->u.mapi_GetReceiveFolder.MessageClass;
 	if (!MessageClass || !strcmp(MessageClass, "")) {
 		MessageClass="All";
@@ -495,11 +518,18 @@ static enum MAPISTATUS RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 		return MAPI_E_INVALID_PARAMETER;
 	}
 
-	/* Step 3. Search for the specified MessageClass substring within user mailbox */
+	/* Step 4. Search for the specified MessageClass substring within user mailbox */
+	mapi_repl->u.mapi_GetReceiveFolder.MessageClass = NULL;
 	retval = openchangedb_get_ReceiveFolder(mem_ctx, emsmdbp_ctx->oc_ctx, object->object.mailbox->owner_username,
 						MessageClass, &mapi_repl->u.mapi_GetReceiveFolder.folder_id,
 						&mapi_repl->u.mapi_GetReceiveFolder.MessageClass);
 	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
+
+	if (mapi_repl->u.mapi_GetReceiveFolder.MessageClass == NULL) {
+		openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, EMSMDBP_INBOX,
+						&mapi_repl->u.mapi_GetReceiveFolder.folder_id);
+		mapi_repl->u.mapi_GetReceiveFolder.MessageClass = "";
+	}
 
 	return MAPI_E_SUCCESS;
 }
@@ -549,6 +579,101 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 
 	return retval;
 }
+
+/**
+   \details EcDoRpc GetReceiveFoldertable (0x68) Rop Internals. This
+   routine performs the GetReceiveFolderTable internals.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REQ
+   \param mapi_reqpl pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
+static enum MAPISTATUS RopGetReceiveFolderTable(TALLOC_CTX *mem_ctx,
+						struct emsmdbp_context *emsmdbp_ctx,
+						struct EcDoRpc_MAPI_REQ *mapi_req,
+						struct EcDoRpc_MAPI_REPL *mapi_repl,
+						uint32_t *handles)
+{
+	enum MAPISTATUS		retval;
+	struct mapi_handles	*rec = NULL;
+	struct emsmdbp_object	*object = NULL;
+	void			*private_data = NULL;
+	uint32_t		handle;
+
+	/* Step 1. Ensure the referring MAPI handle is mailbox one */
+	handle = handles[mapi_req->handle_idx];
+	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+
+	retval = mapi_handles_get_private_data(rec, (void **)&private_data);
+	object = (struct emsmdbp_object *) private_data;
+	OPENCHANGE_RETVAL_IF(retval, retval, NULL);
+	OPENCHANGE_RETVAL_IF(object->type != EMSMDBP_OBJECT_MAILBOX, MAPI_E_NO_SUPPORT, NULL);
+
+	/* Step 2. Do not allow over Public Folder */
+	if (object->object.mailbox->mailboxstore == false) {
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* Step 3. Retrieve reveive folder table and properties from user mailbox */
+	retval = openchangedb_get_ReceiveFolderTable(mem_ctx, emsmdbp_ctx->oc_ctx,
+						     object->object.mailbox->owner_username,
+						     &mapi_repl->u.mapi_GetReceiveFolderTable.cValues,
+						     &mapi_repl->u.mapi_GetReceiveFolderTable.entries);
+
+	OPENCHANGE_RETVAL_IF(retval, ecNoReceiveFolder, NULL);
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details EcDoRpc GetReceiveFolderTable (0x68) Rop. This operation
+   obtain a comprehensive list of all configured message classes and
+   their associated Receive folders
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the esmsmdb provider context
+   \param mapi_req pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the GetReceiveFolderTable EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+*/
+_PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolderTable(TALLOC_CTX *mem_ctx,
+							  struct emsmdbp_context *emsmdbp_ctx,
+							  struct EcDoRpc_MAPI_REQ *mapi_req,
+							  struct EcDoRpc_MAPI_REPL *mapi_repl,
+							  uint32_t *handles, uint16_t *size)
+{
+	enum MAPISTATUS		retval;
+
+	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReceiveFolderTable (0x68)\n"));
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_req, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!mapi_repl, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* Call effective code */
+	retval = RopGetReceiveFolderTable(mem_ctx, emsmdbp_ctx, mapi_req, mapi_repl, handles);
+
+	mapi_repl->opnum = mapi_req->opnum;
+	mapi_repl->handle_idx = mapi_req->handle_idx;
+	mapi_repl->error_code = retval;
+
+	*size = libmapiserver_RopGetReceiveFolderTable_size(mapi_repl);
+
+	handles[mapi_repl->handle_idx] = handles[mapi_req->handle_idx];
+
+	return retval;
+}
+
 
 /**
    \details EcDoRpc EcDoRpc_RopLongTermIdFromId (0x43) Rop.

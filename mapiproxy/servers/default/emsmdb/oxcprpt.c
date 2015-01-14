@@ -3,7 +3,7 @@
 
    EMSMDBP: EMSMDB Provider implementation
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -56,6 +56,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
+	TALLOC_CTX		*local_mem_ctx;
 	enum MAPISTATUS		retval;
 	struct GetProps_req	*request;
 	struct GetProps_repl	*response;
@@ -118,10 +119,13 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-        properties = talloc_zero(NULL, struct SPropTagArray);
+        local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+        OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+        properties = talloc_zero(local_mem_ctx, struct SPropTagArray);
         properties->cValues = request->prop_count;
         properties->aulPropTag = talloc_array(properties, enum MAPITAGS, request->prop_count);
-        untyped_status = talloc_array(NULL, bool, request->prop_count);
+        untyped_status = talloc_array(local_mem_ctx, bool, request->prop_count);
 
         for (i = 0; i < request->prop_count; i++) {
                 properties->aulPropTag[i] = request->properties[i];
@@ -148,7 +152,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
                 }
         }
 
-        data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, object, properties, &retvals);
+        data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, object, properties, &retvals);
         if (data_pointers) {
 		for (i = 0; i < request->prop_count; i++) {
 			if (retvals[i] == MAPI_E_SUCCESS) {
@@ -176,7 +180,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				}
 			}
 		}
-                mapi_repl->error_code = MAPI_E_SUCCESS;
+		mapi_repl->error_code = MAPI_E_SUCCESS;
 		emsmdbp_fill_row_blob(mem_ctx,
 				      emsmdbp_ctx,
 				      &response->layout,
@@ -185,10 +189,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 				      data_pointers,
 				      retvals,
 				      untyped_status);
-                talloc_free(data_pointers);
-        }
-        talloc_free(properties);
-        talloc_free(retvals);
+	}
+	talloc_free(local_mem_ctx);
 
  end:
 	*size += libmapiserver_RopGetPropertiesSpecific_size(mapi_req, mapi_repl);
@@ -605,6 +607,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 	*/
 
 	object = emsmdbp_object_stream_init(NULL, emsmdbp_ctx, parent_object);
+	if (!object) {
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+                goto end;
+	}
 	object->object.stream->property = request->PropertyTag;
 	object->object.stream->stream.position = 0;
 	object->object.stream->stream.buffer.length = 0;
@@ -613,8 +619,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenStream(TALLOC_CTX *mem_ctx,
 		object->object.stream->read_write = (mode == OpenStream_ReadWrite);
 		stream_data = emsmdbp_object_get_stream_data(parent_object, object->object.stream->property);
 		if (stream_data) {
-			object->object.stream->stream.buffer = stream_data->data;
-			(void) talloc_reference(object->object.stream, object->object.stream->stream.buffer.data);
+			object->object.stream->stream.buffer.length = stream_data->data.length;
+			object->object.stream->stream.buffer.data = talloc_memdup(object->object.stream, stream_data->data.data, stream_data->data.length);
 			DLIST_REMOVE(parent_object->stream_data, stream_data);
 			talloc_free(stream_data);
 		}
@@ -729,7 +735,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadStream(TALLOC_CTX *mem_ctx,
 	buffer_size = mapi_req->u.mapi_ReadStream.ByteCount;
 	/* careful here, let's switch to idiot mode */
 	if (buffer_size == 0xBABE) {
-		buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
+		/* If MaximumByteCount (uint32_t) overflows sizeof (uint16_t) */
+		if (mapi_req->u.mapi_ReadStream.MaximumByteCount.value > 0xFFF0) {
+			buffer_size = 0xFFF0;
+		} else {
+			buffer_size = mapi_req->u.mapi_ReadStream.MaximumByteCount.value;
+		}
 	}
 
         mapi_repl->u.mapi_ReadStream.data = emsmdbp_stream_read_buffer(&object->object.stream->stream, buffer_size);
@@ -1126,10 +1137,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 							    struct EcDoRpc_MAPI_REPL *mapi_repl,
 							    uint32_t *handles, uint16_t *size)
 {
-	int		i, ret;
-	struct GUID	*lpguid;
-	bool		has_transaction = false;
-	uint16_t	mapped_id;
+	enum mapistore_error	retval;
+	int			i;
+	int			ret;
+	struct GUID		*lpguid;
+	bool			has_transaction = false;
+	uint16_t		mapped_id = 0;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCPRPT] GetPropertyIdsFromNames (0x56)\n"));
 
@@ -1151,48 +1164,57 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertyIdsFromNames(TALLOC_CTX *mem_ctx,
 		ret = mapistore_namedprops_get_mapped_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, 
 							 mapi_req->u.mapi_GetIDsFromNames.nameid[i],
 							 &mapi_repl->u.mapi_GetIDsFromNames.propID[i]);
-		if (ret != MAPISTORE_SUCCESS) {
-			if (mapi_req->u.mapi_GetIDsFromNames.ulFlags == GetIDsFromNames_GetOrCreate) {
-				if (!has_transaction) {
-					has_transaction = true;
-					ldb_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-					mapped_id = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx);
-					if (mapped_id == 0) {
-						abort();
-					}
+		if (ret == MAPISTORE_SUCCESS)
+			continue;
+		// It doesn't exist, let's create it!
+		if (mapi_req->u.mapi_GetIDsFromNames.ulFlags == GetIDsFromNames_GetOrCreate) {
+			if (!has_transaction) {
+				has_transaction = true;
+				retval = mapistore_namedprops_transaction_start(emsmdbp_ctx->mstore_ctx->nprops_ctx);
+				if (retval != MAPISTORE_SUCCESS) {
+					return MAPI_E_UNABLE_TO_COMPLETE;
 				}
-				else {
-					mapped_id++;
-				}
-				mapistore_namedprops_create_id(emsmdbp_ctx->mstore_ctx->nprops_ctx,
-							       mapi_req->u.mapi_GetIDsFromNames.nameid[i],
-							       mapped_id);
-				mapi_repl->u.mapi_GetIDsFromNames.propID[i] = mapped_id;
-			}
-			else {
-				mapi_repl->u.mapi_GetIDsFromNames.propID[i] = 0x0000;
-				lpguid = &mapi_req->u.mapi_GetIDsFromNames.nameid[i].lpguid;
-				DEBUG(5, ("  no mapping for property %.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x:",
-					  lpguid->time_low, lpguid->time_mid, lpguid->time_hi_and_version,
-					  lpguid->clock_seq[0], lpguid->clock_seq[1],
-					  lpguid->node[0], lpguid->node[1],
-					  lpguid->node[2], lpguid->node[3],
-					  lpguid->node[4], lpguid->node[5]));
-				
-				if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_ID)
-					DEBUG(5, ("%.4x\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lid));
-				else if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_STRING)
-					DEBUG(5, ("%s\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lpwstr.Name));
-				else
-					DEBUG(5, ("[invalid ulKind]"));
 
-				mapi_repl->error_code = MAPI_W_ERRORS_RETURNED;
+				retval = mapistore_namedprops_next_unused_id(emsmdbp_ctx->mstore_ctx->nprops_ctx, &mapped_id);
+				if (retval != MAPISTORE_SUCCESS) {
+					DEBUG(0, ("[%s:%d] ERROR: No remaining namedprops ID available\n",
+						  __FUNCTION__, __LINE__));
+					abort();
+				}
+			} else {
+				mapped_id++;
 			}
+			mapistore_namedprops_create_id(emsmdbp_ctx->mstore_ctx->nprops_ctx,
+						       mapi_req->u.mapi_GetIDsFromNames.nameid[i],
+						       mapped_id);
+			mapi_repl->u.mapi_GetIDsFromNames.propID[i] = mapped_id;
+		} else {
+			mapi_repl->u.mapi_GetIDsFromNames.propID[i] = 0x0000;
+			lpguid = &mapi_req->u.mapi_GetIDsFromNames.nameid[i].lpguid;
+			DEBUG(5, ("  no mapping for property %.8x-%.4x-%.4x-%.2x%.2x-%.2x%.2x%.2x%.2x%.2x%.2x:",
+				  lpguid->time_low, lpguid->time_mid, lpguid->time_hi_and_version,
+				  lpguid->clock_seq[0], lpguid->clock_seq[1],
+				  lpguid->node[0], lpguid->node[1],
+				  lpguid->node[2], lpguid->node[3],
+				  lpguid->node[4], lpguid->node[5]));
+
+			if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_ID) {
+				DEBUG(5, ("%.4x\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lid));
+			} else if (mapi_req->u.mapi_GetIDsFromNames.nameid[i].ulKind == MNID_STRING) {
+				DEBUG(5, ("%s\n", mapi_req->u.mapi_GetIDsFromNames.nameid[i].kind.lpwstr.Name));
+			} else {
+				DEBUG(5, ("[invalid ulKind]"));
+			}
+
+			mapi_repl->error_code = MAPI_W_ERRORS_RETURNED;
 		}
 	}
 
 	if (has_transaction) {
-		ldb_transaction_commit(emsmdbp_ctx->mstore_ctx->nprops_ctx);
+		enum mapistore_error err = mapistore_namedprops_transaction_commit(emsmdbp_ctx->mstore_ctx->nprops_ctx);
+		if (err != MAPISTORE_SUCCESS) {
+			return MAPI_E_UNABLE_TO_COMPLETE;
+		}
 	}
 
 	*size += libmapiserver_RopGetPropertyIdsFromNames_size(mapi_repl);

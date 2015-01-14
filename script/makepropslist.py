@@ -935,10 +935,29 @@ static struct pidtags pidtags[] = {
 	f.write("""\t{ 0,                                                                   NULL         }
 };
 
+static const char *_openchangedb_property_get_string_attribute(uint32_t proptag)
+{
+	uint32_t i;
+	uint32_t tag_id = (proptag >> 16);
+
+	for (i = 0; pidtags[i].pidtag; i++) {
+		if (tag_id == (pidtags[i].proptag >> 16)) {
+			return pidtags[i].pidtag;
+		}
+	}
+
+	return NULL;
+}
+
 _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
 {
 	uint32_t i;
-	
+	uint32_t prop_type = proptag & 0x0FFF;
+
+	if (prop_type == PT_UNICODE || prop_type == PT_STRING8) {
+		return _openchangedb_property_get_string_attribute(proptag);
+	}
+
 	for (i = 0; pidtags[i].pidtag; i++) {
 		if (pidtags[i].proptag == proptag) {
 			return pidtags[i].pidtag;

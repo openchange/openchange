@@ -320,8 +320,8 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 
 
 /**
-   \details Initialize an openchange LDB context available to all
-   mapiproxy instances. This LDB context points on the OpenChange
+   \details Initialize an openchangedb context available to all
+   mapiproxy instances. This context points on the OpenChange
    dispatcher database used within emsmdb default provider.
 
    \param lp_ctx pointer to the loadparm context
@@ -329,68 +329,23 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
    \note The memory context is not free'd leading and causes a loss
    record.
 
-   \return Allocated LDB context on success, otherwise NULL
+   \return Allocated openchangedb context on success, otherwise NULL
  */
-_PUBLIC_ void *mapiproxy_server_openchange_ldb_init(struct loadparm_context *lp_ctx)
+_PUBLIC_ void *mapiproxy_server_openchangedb_init(struct loadparm_context *lp_ctx)
 {
-	char			*ldb_path;
-	TALLOC_CTX		*mem_ctx;
-	struct tevent_context	*ev;
-	int			ret;
-	struct ldb_result	*res;
-	struct ldb_dn		*tmp_dn = NULL;
-	static const char	*attrs[] = {
-		"rootDomainNamingContext",
-		"defaultNamingContext",
-		NULL
-	};
+	TALLOC_CTX	*mem_ctx;
+	enum MAPISTATUS	ret;
 
 	/* Sanity checks */
 	if (openchange_ldb_ctx) return openchange_ldb_ctx;
 
-	ev = tevent_context_init(talloc_autofree_context());
-	if (!ev) return NULL;
-
-	mem_ctx = talloc_named(NULL, 0, "openchange_ldb_init");
+	mem_ctx = talloc_named(NULL, 0, "mapiproxy_server_openchangedb_init");
 	if (!mem_ctx) return NULL;
 
-	/* Step 0. Retrieve a LDB context pointer on openchange.ldb database */
-	ldb_path = talloc_asprintf(mem_ctx, "%s/%s", lpcfg_private_dir(lp_ctx), OPENCHANGE_LDB_NAME);
-	openchange_ldb_ctx = ldb_init(mem_ctx, ev);
-	if (!openchange_ldb_ctx) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
+	ret = openchangedb_initialize(mem_ctx, lp_ctx,
+		(struct openchangedb_context **)&openchange_ldb_ctx);
 
-	/* Step 1. Connect to the database */
-	ret = ldb_connect((struct ldb_context *)openchange_ldb_ctx, ldb_path, 0, NULL);
-	talloc_free(ldb_path);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	/* Step 2. Search for the rootDSE record */
-	ret = ldb_search(openchange_ldb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, openchange_ldb_ctx, "@ROOTDSE"),
-			  LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	if (res->count != 1) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-
-	/* Step 3. Set opaque naming */
-	tmp_dn = ldb_msg_find_attr_as_dn((struct ldb_context *)openchange_ldb_ctx, openchange_ldb_ctx,
-					 res->msgs[0], "rootDomainNamingContext");
-	ldb_set_opaque((struct ldb_context *)openchange_ldb_ctx, "rootDomainNamingContext", tmp_dn);
-
-	tmp_dn = ldb_msg_find_attr_as_dn((struct ldb_context *)openchange_ldb_ctx, openchange_ldb_ctx,
-					 res->msgs[0], "defaultNamingContext");
-	ldb_set_opaque((struct ldb_context *)openchange_ldb_ctx, "defaultNamingContext", tmp_dn);
+	if (ret != MAPI_E_SUCCESS) return NULL;
 
 	return openchange_ldb_ctx;
 }

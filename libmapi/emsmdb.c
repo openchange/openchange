@@ -360,7 +360,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_null(struct emsmdb_context *emsmdb_ctx,
 	r.out.mapi_response = mapi_response;
 
 	status = dcerpc_EcDoRpc_r(emsmdb_ctx->rpc_connection->binding_handle, emsmdb_ctx->mem_ctx, &r);
-	if (!MAPI_STATUS_IS_OK(NT_STATUS_V(status))) {
+	if (!NT_STATUS_IS_OK(status)) {
 		return status;
 	}
 
@@ -1010,6 +1010,88 @@ enum MAPISTATUS emsmdb_get_SPropValue(TALLOC_CTX *mem_ctx,
 
 	(*propvals)[i_propval].ulPropTag = (enum MAPITAGS) 0x0;
 	*cn_propvals = i_propval;
+	return MAPI_E_SUCCESS;
+}
+
+
+/**
+   \details Get a SPropValue array from a DATA blob
+
+   \param mem_ctx pointer to the memory context
+   \param content pointer to the DATA blob content
+   \param tags pointer to a list of property tags to lookup
+   \param propvals pointer on pointer to the returned SPropValues
+   \param cn_propvals pointer to the number of propvals
+   \param _offset the offset to return
+
+   \return MAPI_E_SUCCESS on success
+ */
+enum MAPISTATUS emsmdb_get_SPropValue_offset(TALLOC_CTX *mem_ctx,
+					     DATA_BLOB *content,
+					     struct SPropTagArray *tags,
+					     struct SPropValue **propvals,
+					     uint32_t *cn_propvals,
+					     uint32_t *_offset)
+{
+	struct SPropValue	*lpProps;
+	uint32_t		i_propval;
+	uint32_t		i_tag;
+	int			proptag;
+	uint32_t		cn_tags;
+	uint32_t		offset = *_offset;
+	const void		*data;
+	bool			is_FlaggedPropertyRow = false;
+	bool			havePropertyValue;
+	uint8_t			flag;
+
+	i_propval = 0;
+	cn_tags = tags->cValues;
+	*cn_propvals = 0;
+
+	if (0x1 == *(content->data + offset)) {
+		is_FlaggedPropertyRow = true;
+	} else {
+		is_FlaggedPropertyRow = false;
+	}
+	++offset;
+
+	lpProps = talloc_array(mem_ctx, struct SPropValue, cn_tags);
+	for (i_tag = 0; i_tag < cn_tags; i_tag++) {
+		havePropertyValue = true;
+		lpProps[i_tag].ulPropTag = tags->aulPropTag[i_tag];
+		if (is_FlaggedPropertyRow) {
+			flag = (uint8_t)(*(content->data + offset));
+			++offset;
+			switch (flag) {
+			case 0x0:
+				break;
+			case 0x1:
+				havePropertyValue = false;
+				break;
+			case PT_ERROR:
+				proptag = (int)tags->aulPropTag[i_tag];
+				proptag &= 0xFFFF0000;
+				proptag |= PT_ERROR;
+				lpProps[i_tag].ulPropTag = (enum MAPITAGS) proptag;
+				break;
+			default:
+				break;
+			}
+		}
+
+		if (havePropertyValue) {
+			lpProps[i_tag].dwAlignPad = 0x0;
+			data = pull_emsmdb_property(mem_ctx, &offset, lpProps[i_tag].ulPropTag, content);
+			talloc_steal(lpProps, data);
+			set_SPropValue(&lpProps[i_tag], data);
+			free_emsmdb_property(&lpProps[i_tag], (void *)data);
+			i_propval++;
+		}
+	}
+
+	*propvals = lpProps;
+	*cn_propvals = i_propval;
+	*_offset = offset;
 	return MAPI_E_SUCCESS;
 }
 

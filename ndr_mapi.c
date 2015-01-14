@@ -3,7 +3,7 @@
 
    libndr mapi support
 
-   Copyright (C) Julien Kerihuel 2005-2010
+   Copyright (C) Julien Kerihuel 2005-2014
    
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -224,12 +224,23 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_request(struct ndr_pull *ndr, int nd
 
 				NDR_CHECK(ndr_pull_subcontext_start(ndr, &_ndr_buffer, 0, -1));
 				{
-					if (r->header.Flags & RHEF_Compressed) {
+					if ((r->header.Flags == (RHEF_Compressed|RHEF_XorMagic)) ||
+					    (r->header.Flags == (RHEF_Compressed|RHEF_XorMagic|RHEF_Last))) {
+						struct ndr_pull *_ndr_data_compressed = NULL;
+
+						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
+						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->header.SizeActual));
+						NDR_CHECK(ndr_pull_mapi_request(_ndr_data_compressed, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
+						_ndr_buffer->offset = _ndr_buffer->data_size;
+					} else if ((r->header.Flags  == RHEF_Compressed) ||
+						   (r->header.Flags == (RHEF_Compressed|RHEF_Last))) {
 						struct ndr_pull *_ndr_data_compressed = NULL;
 
 						NDR_CHECK(ndr_pull_lzxpress_decompress(_ndr_buffer, &_ndr_data_compressed, r->header.SizeActual));
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_data_compressed, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
-					} else if (r->header.Flags & RHEF_XorMagic) {
+						_ndr_buffer->offset = _ndr_buffer->data_size;
+					} else if ((r->header.Flags == RHEF_XorMagic) ||
+						   (r->header.Flags == (RHEF_XorMagic|RHEF_Last))) {
 						obfuscate_data(_ndr_buffer->data, _ndr_buffer->data_size, 0xA5);
 						NDR_CHECK(ndr_pull_mapi_request(_ndr_buffer, NDR_SCALARS|NDR_BUFFERS, r->mapi_request));
 					} else {
@@ -1076,7 +1087,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_charset(ndr, NDR_SCALARS, *r->out.szDNPrefix, ndr_charset_length(*r->out.szDNPrefix, CH_DOS), sizeof(uint8_t), CH_DOS));
 		}
 		if (r->out.szDisplayName == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: szDisplayName");
 		}
 		NDR_CHECK(ndr_push_unique_ptr(ndr, *r->out.szDisplayName));
 		if (*r->out.szDisplayName) {
@@ -1092,7 +1103,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->out.rgwBestVersion[cntr_rgwBestVersion_0]));
 		}
 		if (r->out.pulTimeStamp == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pulTimeStamp");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
 		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
@@ -1104,7 +1115,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		}
 
 		if (r->out.pcbAuxOut == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pcbAuxOut");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
 		NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->out.result));
@@ -1179,14 +1190,17 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 			ndr->flags = _flags_save_mapi2k7_AuxInfo;
 		}
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->in.cbAuxIn));
+		if (r->in.cbAuxIn > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "[in] cbAuxIn value out of range: 0x%x\n", r->in.cbAuxIn);
+		}
 		if (ndr->flags & LIBNDR_FLAG_REF_ALLOC) {
 			NDR_PULL_ALLOC(ndr, r->in.pcbAuxOut);
 		}
 		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->in.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->in.pcbAuxOut));
-		if (*r->in.pcbAuxOut > 0x1008) {
-			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		if (r->in.pcbAuxOut && *r->in.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "[in] pcbAuxOut value out of range: 0x%x\n", *r->in.pcbAuxOut);
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_PULL_ALLOC(ndr, r->out.handle);
@@ -1327,8 +1341,8 @@ _PUBLIC_ enum ndr_err_code ndr_pull_EcDoConnectEx(struct ndr_pull *ndr, int flag
 		_mem_save_pcbAuxOut_0 = NDR_PULL_GET_MEM_CTX(ndr);
 		NDR_PULL_SET_MEM_CTX(ndr, r->out.pcbAuxOut, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, r->out.pcbAuxOut));
-		if (*r->out.pcbAuxOut > 0x1008) {
-			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range");
+		if (r->out.pcbAuxOut && *r->out.pcbAuxOut > 0x1008) {
+			return ndr_pull_error(ndr, NDR_ERR_RANGE, "value out of range !!");
 		}
 		NDR_PULL_SET_MEM_CTX(ndr, _mem_save_pcbAuxOut_0, LIBNDR_FLAG_REF_ALLOC);
 		NDR_CHECK(ndr_pull_MAPISTATUS(ndr, NDR_SCALARS, &r->out.result));
@@ -1501,18 +1515,26 @@ _PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int 
 		ndr->depth--;
 
 		/* Put MAPI request blob into a ndr_pull structure */
-		rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
-		rgbIn.length = r->in.cbIn;
-		dump_data(0, rgbIn.data, rgbIn.length);
-		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
-		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
-		mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
-		mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
-		ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request);
-		ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
-		talloc_free(mapi_request);
-		talloc_free(ndr_pull);
-		talloc_free(rgbIn.data);
+		if (r->in.cbIn) {
+			rgbIn.data = talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+			rgbIn.length = r->in.cbIn;
+			ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
+				mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
+				if (ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request) == NDR_ERR_SUCCESS) {
+					ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_request);
+					break;
+				}
+				talloc_free(mapi_request);
+			}
+			talloc_free(ndr_pull);
+			talloc_free(rgbIn.data);
+		}
 
 		ndr_print_uint32(ndr, "cbIn", r->in.cbIn);
 		ndr_print_ptr(ndr, "pcbOut", r->in.pcbOut);
@@ -1548,8 +1570,11 @@ _PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int 
 				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
 				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
 				if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response) == NDR_ERR_SUCCESS) {
-					ndr_print_mapi2k7_response(ndr, "mapi_response", 
-								 (const struct mapi2k7_response *)mapi_response);
+					ndr_print_mapi2k7_response(ndr, "mapi_response", (const struct mapi2k7_response *)mapi_response);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_response);
+					break;
 				}
 				talloc_free(mapi_response);
 			}
@@ -1609,18 +1634,26 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth--;
 
 		/* Put MAPI request blob into a ndr_pull structure */
-		rgbIn.data = (uint8_t *)talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
-		rgbIn.length = r->in.cbIn;
-		dump_data(0, rgbIn.data, rgbIn.length);
-		ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
-		ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
-		mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
-		mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
-		ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request);
-		ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
-		talloc_free(mapi_request);
-		talloc_free(ndr_pull);
-		talloc_free(rgbIn.data);
+		if (r->in.cbIn) {
+			rgbIn.data = (uint8_t *)talloc_memdup(mem_ctx, r->in.rgbIn, r->in.cbIn);
+			rgbIn.length = r->in.cbIn;
+			ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
+			while (ndr_pull->offset < ndr_pull->data_size) {
+				mapi_request = talloc_zero(mem_ctx, struct mapi2k7_request);
+				mapi_request->mapi_request = talloc_zero(mapi_request, struct mapi_request);
+				if (ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_request) == NDR_ERR_SUCCESS) {
+					ndr_print_mapi2k7_request(ndr, "mapi_request", (const struct mapi2k7_request *)mapi_request);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_request);
+					return;
+				}
+				talloc_free(mapi_request);
+			}
+			talloc_free(ndr_pull);
+			talloc_free(rgbIn.data);
+		}
 
 		ndr_print_uint32(ndr, "cbIn", r->in.cbIn);
 		ndr_print_ptr(ndr, "pcbOut", r->in.pcbOut);
@@ -1652,8 +1685,8 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		ndr->depth--;
 
 		/* Put MAPI response blob into a ndr_pull structure */
-		if (*r->out.pcbOut) {
-		  rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
+		if (r->out.pcbOut && *r->out.pcbOut) {
+			rgbOut.data = (uint8_t *)talloc_memdup(mem_ctx, r->out.rgbOut, *r->out.pcbOut);
 			rgbOut.length = *r->out.pcbOut;
 			ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
 			ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN);
@@ -1661,19 +1694,23 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 				mapi_response = talloc_zero(NULL, struct mapi2k7_response);
 				mapi_response->mapi_response = talloc_zero(mapi_response, struct mapi_response);
 				if (ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, mapi_response) == NDR_ERR_SUCCESS) {
-					ndr_print_mapi2k7_response(ndr, "mapi_response", 
-								 (const struct mapi2k7_response *)mapi_response);
+					ndr_print_mapi2k7_response(ndr, "mapi_response", (const struct mapi2k7_response *)mapi_response);
+				} else {
+					dump_data(0, ndr_pull->data + ndr_pull->offset, ndr_pull->data_size - ndr_pull->offset);
+					talloc_free(mapi_response);
+					break;
 				}
 				talloc_free(mapi_response);
 			}
 			talloc_free(ndr_pull);
 			talloc_free(rgbOut.data);
 		}
-		/* ndr_print_array_uint8(ndr, "rgbOut", r->out.rgbOut, *r->out.pcbOut); */
 		ndr_print_ptr(ndr, "pcbOut", r->out.pcbOut);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
-		ndr->depth--;
+		if (r->out.pcbOut) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pcbOut", *r->out.pcbOut);
+			ndr->depth--;
+		}
 		if (r->out.rgbAuxOut && r->out.pcbAuxOut) {
 			ndr->print(ndr, "%s: ARRAY(%d)", "rgbAuxOut", (int)*r->out.pcbAuxOut);
 			ndr->depth++;
@@ -1689,13 +1726,17 @@ _PUBLIC_ void ndr_print_EcDoRpcExt2(struct ndr_print *ndr, const char *name, int
 		}
 		ndr->depth--;
 		ndr_print_ptr(ndr, "pcbAuxOut", r->out.pcbAuxOut);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
-		ndr->depth--;
+		if (r->out.pcbAuxOut) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pcbAuxOut", *r->out.pcbAuxOut);
+			ndr->depth--;
+		}
 		ndr_print_ptr(ndr, "pulTransTime", r->out.pulTransTime);
-		ndr->depth++;
-		ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
-		ndr->depth--;
+		if (r->out.pulTransTime) {
+			ndr->depth++;
+			ndr_print_uint32(ndr, "pulTransTime", *r->out.pulTransTime);
+			ndr->depth--;
+		}
 		ndr_print_MAPISTATUS(ndr, "result", r->out.result);
 		ndr->depth--;
 	}

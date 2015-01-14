@@ -27,19 +27,19 @@ class AuthenticateController(BaseController):
         for the user.
         """
         # Ensure Content-type is text/xml
-        if request.headers.get("Content-Type", "").startswith("text/xml") is False: 
+        if request.headers.get("Content-Type", "").startswith("text/xml") is False:
             return self._auth_abort(417, 'Invalid Parameter')
 
         # Retrieve request XML body
         payload = request.body
-        if payload is None: 
+        if payload is None:
             log.error('Empty payload in auth:token()')
             return self._auth_abort(417, 'Invalid Parameter')
 
         # Retrieve the salt from the model
         authModel = AuthenticateModel.AuthenticateModel()
         login = authModel.getTokenLogin(payload)
-        if login is None: 
+        if login is None:
             return self._auth_abort(417, 'Invalid Parameter')
 
         salt = authModel.getTokenLoginSalt(login)

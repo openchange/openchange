@@ -469,7 +469,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_message(struct mapistore
 								const char *username, const char *folder, 
 								const char *rootURI, const char *message)
 {
-	struct indexing_context_list	*ictxp;
+	struct indexing_context		*ictxp;
 	char				*uri;
 	int				ret;
 	uint64_t			mid;
@@ -524,7 +524,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_register_message(struct mapistore_m
 							      const char *messageID,
 							      char **registered_uri)
 {
-	struct indexing_context_list	*ictxp;
+	struct indexing_context		*ictxp;
 	int				ret;
 	char				*uri;
 
@@ -536,7 +536,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_register_message(struct mapistore_m
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
 
-	ret = mapistore_indexing_record_add(mgmt_ctx, ictxp, mid, uri);
+	ret = ictxp->add_fmid(ictxp, sysuser, mid, uri);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
 
 	*registered_uri = uri;
@@ -562,7 +562,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 	struct mapistore_mgmt_notif	*el;
 	bool				found = false;
 
-	printf("Looking for 0x%x\n", NotificationFlags);
+	DEBUG(5, ("Looking for notification flags 0x%x\n", NotificationFlags));
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);

@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -37,6 +37,7 @@
    \details Initialize the mapistore context
 
    \param mem_ctx pointer to the memory context
+   \param lp_ctx loadparm_context to get smb.conf options
    \param path the path to the location to load the backend providers from (NULL for default)
 
    \return allocate mapistore context on success, otherwise NULL
@@ -47,6 +48,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	struct mapistore_context	*mstore_ctx;
 	const char			*private_dir;
 	char				*mapping_path;
+	const char			*indexing_url;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -65,11 +67,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		return NULL;
 	}
 
-	mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
-	mkdir(mapping_path, 0700);
+	if (mapistore_get_mapping_path() == NULL) {
+		mapping_path = talloc_asprintf(NULL, "%s/mapistore", private_dir);
+		mkdir(mapping_path, 0700);
 
-	mapistore_set_mapping_path(mapping_path);
-	talloc_free(mapping_path);
+		mapistore_set_mapping_path(mapping_path);
+		talloc_free(mapping_path);
+	}
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -92,10 +96,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
 
+	indexing_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_backend");
+	mapistore_set_default_indexing_url(indexing_url);
+
 	mstore_ctx->nprops_ctx = NULL;
-	retval = mapistore_namedprops_init(mstore_ctx, &(mstore_ctx->nprops_ctx));
+	retval = mapistore_namedprops_init(mstore_ctx, lp_ctx, &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -134,6 +141,7 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
 	talloc_free(mstore_ctx->nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);
 	talloc_free(mstore_ctx->context_list);
+	talloc_free(mstore_ctx->indexing_list);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -148,7 +156,7 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_set_connection_info(struct mapistore_context *mstore_ctx, 
-							    struct ldb_context *sam_ctx, struct ldb_context *oc_ctx, const char *username)
+							    struct ldb_context *sam_ctx, struct openchangedb_context *oc_ctx, const char *username)
 {
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -186,8 +194,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	char					*namespace;
 	char					*namespace_start;
 	char					*backend_uri;
-	char					*mapistore_dir;
-	struct indexing_context_list		*ictx;
+	struct indexing_context			*ictx;
 
 	/* Step 1. Perform Sanity Checks on URI */
 	if (!uri || strlen(uri) < 4) {
@@ -207,17 +214,14 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	if (namespace[1] && namespace[1] == '/' &&
 	    namespace[2] && namespace[2] == '/' &&
 	    namespace[3]) {
-		/* ensure the user mapistore directory exists before any mapistore operation occurs */
-		mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
-		mkdir(mapistore_dir, 0700);
-
 		mapistore_indexing_add(mstore_ctx, owner, &ictx);
-		/* mapistore_indexing_add_ref_count(ictx); */
 
 		backend_uri = talloc_strdup(mem_ctx, &namespace[3]);
 		namespace[3] = '\0';
-		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx->index_ctx, namespace_start, backend_uri, fid, &backend_ctx);
+
+		retval = mapistore_backend_create_context(mstore_ctx, mstore_ctx->conn_info, ictx, namespace_start, backend_uri, fid, &backend_ctx);
 		if (retval != MAPISTORE_SUCCESS) {
+			talloc_free(mem_ctx);
 			return retval;
 		}
 
@@ -336,7 +340,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	if (context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(0, ("mapistore_del_context: context_id to del is %d\n", context_id));
+	DEBUG(5, ("mapistore_del_context: context_id to del is %d\n", context_id));
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -426,6 +430,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Failed creating the context";
 	case MAPISTORE_ERR_INVALID_NAMESPACE:
 		return "Invalid Namespace";
+	case MAPISTORE_ERR_INVALID_URI:
+		return "Invalid URI";
 	case MAPISTORE_ERR_NOT_FOUND:
 		return "Not Found";
 	case MAPISTORE_ERR_REF_COUNT:
@@ -449,17 +455,11 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 
 _PUBLIC_ enum mapistore_error mapistore_list_contexts_for_user(struct mapistore_context *mstore_ctx, const char *owner, TALLOC_CTX *mem_ctx, struct mapistore_contexts_list **contexts_listp)
 {
-	char					*mapistore_dir;
-	struct indexing_context_list		*ictx;
-
-	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s", mapistore_get_mapping_path(), owner);
-	mkdir(mapistore_dir, 0700);
+	struct indexing_context		*ictx;
 
 	mapistore_indexing_add(mstore_ctx, owner, &ictx);
-	/* mapistore_indexing_add_ref_count(ictx); */
- 
-	return mapistore_backend_list_contexts(owner, ictx->index_ctx, mem_ctx, contexts_listp);
+	/* TODO change backend definition to accept indexing_context instead of tdb_wrap */
+	return mapistore_backend_list_contexts(owner, ictx, mem_ctx, contexts_listp);
 }
 
 _PUBLIC_ enum mapistore_error mapistore_create_root_folder(const char *username, enum mapistore_context_role ctx_role, uint64_t fid, const char *name, TALLOC_CTX *mem_ctx, char **mapistore_urip)

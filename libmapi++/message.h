@@ -23,8 +23,8 @@
 #define LIBMAPIPP__MESSAGE_H__
 
 #include <iostream> //for debugging
+#include <memory>
 #include <vector>
-#include <boost/shared_ptr.hpp>
 
 #include <libmapi++/mapi_exception.h>
 #include <libmapi++/session.h>
@@ -44,7 +44,7 @@ class attachment;
  */
 class message : public object {
 	public:
-		typedef boost::shared_ptr<attachment>		attachment_shared_ptr;
+		typedef std::shared_ptr<attachment>		attachment_shared_ptr;
 		typedef std::vector<attachment_shared_ptr>	attachment_container_type;
 
 		/**

@@ -47,6 +47,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 	char				*owner;
 	struct emsmdbp_object		*folder_object;
 	struct emsmdbp_object		*message_object;
+	enum MAPISTATUS			retval;
 
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
@@ -98,7 +99,7 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			}
 
 			folderID = folderSvrID->FolderId;
-			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &messageID);
+			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
 
 			/* DEBUG(5, (__location__": dest folder id: %.16"PRIx64"\n", folderID)); */
 			break;
@@ -107,8 +108,10 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			continue;
 		}
 
-		if (emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object) != MAPISTORE_SUCCESS) {
-			DEBUG(5, (__location__": unable to open folder\n"));
+		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, old_message_object, folderID, &folder_object);
+		if (retval != MAPI_E_SUCCESS) {
+			DEBUG(5, (__location__": Failed to open parent folder with FID=[0x%016"PRIx64"]: %s\n",
+				  folderID, mapi_get_errstr(retval)));
 			continue;
 		}
 
@@ -188,7 +191,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	}
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;
@@ -230,34 +233,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	*size += libmapiserver_RopSubmitMessage_size(mapi_repl);
 
 	return MAPI_E_SUCCESS;
-}
-
-/* Get the organisation name (like "First Organization") as a DN. */
-static bool mapiserver_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
-					    struct ldb_dn **basedn)
-{
-	int			ret;
-	struct ldb_result	*res = NULL;
-
-	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res,
-			 ldb_get_config_basedn(emsmdbp_ctx->samdb_ctx),
-                         LDB_SCOPE_SUBTREE, NULL,
-			 "(|(objectClass=msExchOrganizationContainer))");
-
-	/* If the search failed */
-        if (ret != LDB_SUCCESS) {
-	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn ldb_search failure.\n"));
-		return false;
-        }
-        /* If we didn't get the expected entry */
-	if (res->count != 1) {
-	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] mapiserver_get_org_dn unexpected entry count: %i (expected 1).\n", res->count));
-		return false;
-	}
-	
-	*basedn = ldb_dn_new(emsmdbp_ctx, emsmdbp_ctx->samdb_ctx,
-			     ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	return true;
 }
 
 
@@ -335,12 +310,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapiserver_get_org_dn(emsmdbp_ctx, &basedn);
+	retval = emsmdbp_get_org_dn(emsmdbp_ctx, &basedn);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, NULL);
+
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESSING");
 	ldb_dn_add_child_fmt(basedn, "CN=ADDRESS-TEMPLATES");
 
 	ret = ldb_search(emsmdbp_ctx->samdb_ctx, emsmdbp_ctx, &res, basedn,
                          LDB_SCOPE_SUBTREE, attrs, "CN=%x", emsmdbp_ctx->userLanguage);
+	talloc_free(basedn);
         /* If the search failed */
         if (ret != LDB_SUCCESS) {
 	  	DEBUG(1, ("exchange_emsmdb: [OXOMSG] AddressTypes ldb_search failure.\n"));
@@ -439,7 +417,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	response = &mapi_repl->u.mapi_TransportSend;
 
 	mapistore = emsmdbp_is_mapistore(object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
 		break;

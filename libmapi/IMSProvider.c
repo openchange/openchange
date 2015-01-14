@@ -179,7 +179,7 @@ _PUBLIC_ enum MAPISTATUS RfrGetNewDSA(struct mapi_context *mapi_ctx,
 
 	if (!NT_STATUS_IS_OK(status)) {
 		talloc_free(mem_ctx);
-		return MAPI_E_NETWORK_ERROR;
+		return ecRpcFailed;
 	}
 
 
@@ -236,11 +236,11 @@ _PUBLIC_ enum MAPISTATUS RfrGetFQDNFromLegacyDN(struct mapi_context *mapi_ctx, s
 	status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_ds_rfr, mapi_ctx->lp_ctx);
 	talloc_free(binding);
 
-	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), ecRpcFailed, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), ecRpcFailed, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), ecRpcFailed, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), ecRpcFailed, NULL);
+	OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), ecRpcFailed, NULL);
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, NULL);
 
 	r.in.ulFlags = 0x0;
@@ -291,11 +291,11 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		}
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_emsmdb, mapi_ctx->lp_ctx);
 		talloc_free(binding);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), ecRpcFailed, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		switch (profile->exchange_version) {
 		case 0x0:
@@ -316,30 +316,39 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 		if (server_version_at_least((struct emsmdb_context *)provider->ctx, 8, 0, 835, 0)){
 		  struct emsmdb_context *prov_ctx = (struct emsmdb_context *)provider->ctx;
 			status = dcerpc_secondary_context(pipe, &(prov_ctx->async_rpc_connection), &ndr_table_exchange_async_emsmdb);
-			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), ecRpcFailed, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), ecRpcFailed, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), ecRpcFailed, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), ecRpcFailed, NULL);
+			OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), ecRpcFailed, NULL);
 			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 			mapistatus = emsmdb_async_connect(prov_ctx);
 			OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
+
+			session->notify_ctx = talloc_zero(prov_ctx->mem_ctx, struct mapi_notify_ctx);
+
+			session->notify_ctx->notifications = talloc_zero((TALLOC_CTX *)session->notify_ctx, struct notifications);
+			session->notify_ctx->notifications->prev = NULL;
+			session->notify_ctx->notifications->next = NULL;
 		}
 
 		break;
 	case PROVIDER_ID_NSPI:
 		/* Call RfrGetNewDSA prior any NSPI call */
 		mapistatus = RfrGetNewDSA(mapi_ctx, session, profile->server, profile->mailbox, &server);
-		OPENCHANGE_RETVAL_IF(mapistatus != MAPI_E_SUCCESS, mapistatus, NULL);
-		binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
-		talloc_free(server);
+		if (mapistatus != MAPI_E_SUCCESS) {
+			binding = build_binding_string(mapi_ctx, mem_ctx, profile->server, profile);
+		} else {
+			binding = build_binding_string(mapi_ctx, mem_ctx, server, profile);
+			talloc_free(server);
+		}
 		status = provider_rpc_connection(mem_ctx, &pipe, binding, profile->credentials, &ndr_table_exchange_nsp, mapi_ctx->lp_ctx);
 		talloc_free(binding);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), MAPI_E_NETWORK_ERROR, NULL);
-		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), MAPI_E_NETWORK_ERROR, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_CONNECTION_REFUSED), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_HOST_UNREACHABLE), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_PORT_UNREACHABLE), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_IO_TIMEOUT), ecRpcFailed, NULL);
+		OPENCHANGE_RETVAL_IF(NT_STATUS_EQUAL(status, NT_STATUS_OBJECT_NAME_NOT_FOUND), ecRpcFailed, NULL);
 		OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 		provider->ctx = (void *)nspi_bind(provider, pipe, profile->credentials,
 						  profile->codepage, profile->language, profile->method);
@@ -521,12 +530,6 @@ _PUBLIC_ enum MAPISTATUS RegisterAsyncNotification(struct mapi_session *session,
 	OPENCHANGE_RETVAL_IF(!session->emsmdb, MAPI_E_SESSION_LIMIT, NULL);
 
 	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
-
-	session->notify_ctx = talloc_zero(emsmdb->mem_ctx, struct mapi_notify_ctx);
-
-	session->notify_ctx->notifications = talloc_zero((TALLOC_CTX *)session->notify_ctx, struct notifications);
-	session->notify_ctx->notifications->prev = NULL;
-	session->notify_ctx->notifications->next = NULL;
 
 	mapistatus = emsmdb_async_waitex(emsmdb, 0, resultFlag);
 	OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);

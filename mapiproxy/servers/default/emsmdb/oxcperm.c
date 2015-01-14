@@ -140,6 +140,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 						      uint32_t *handles, uint16_t *size)
 {
 	enum MAPISTATUS			retval;
+	enum mapistore_error		mretval;
 	struct mapi_handles		*folder;
 	struct emsmdbp_object		*folder_object;
 	void				*data = NULL;
@@ -186,7 +187,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	request = &mapi_req->u.mapi_ModifyPermissions;
 
 	if (emsmdbp_is_mapistore(folder_object)) {
-		retval = mapistore_folder_modify_permissions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object), folder_object->backend_object, request->rowList.ModifyFlags, request->rowList.ModifyCount, request->rowList.PermissionsData);
+		mretval = mapistore_folder_modify_permissions(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(folder_object),
+							      folder_object->backend_object, request->rowList.ModifyFlags,
+							      request->rowList.ModifyCount, request->rowList.PermissionsData);
+		if (mretval != MAPISTORE_SUCCESS) {
+			DEBUG(5, ("[%s:%d] mapistore_folder_modify_permissions: %s\n", __FUNCTION__, __LINE__,
+				  mapistore_errstr(mretval)));
+			mapi_repl->error_code = mapistore_error_to_mapi(mretval);
+		}
 	}
 	else {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;

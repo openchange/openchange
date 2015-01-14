@@ -113,7 +113,6 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 	PyObject	*retlist;
 	uint64_t	mid;
 	int		ret;
-	PyMAPIStoreGlobals *globals;
 
 	if (!PyArg_ParseTuple(args, "ssss", &backend, &user, &uri, &messageID)) {
 		return NULL;
@@ -122,8 +121,7 @@ static PyObject *py_MAPIStoreMGMT_register_message(PyMAPIStoreMGMTObject *self, 
 	retlist = PyList_New(0);
 
 	/* Gets a new message ID */
-	globals = get_PyMAPIStoreGlobals();
-	ret = openchangedb_get_new_folderID(globals->ocdb_ctx, &mid);
+	ret = mapistore_indexing_get_new_folderID(self->mgmt_ctx->mstore_ctx, &mid);
 	if (ret) return (PyObject *)retlist;
 
 	/* Register the message within specified user indexing database */

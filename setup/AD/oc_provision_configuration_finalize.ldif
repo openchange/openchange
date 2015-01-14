@@ -1,33 +1,12 @@
-
-
-#
-# Finalize First Administrative Group
-#
-dn: CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-changetype: modify
-add: siteFolderServer
-siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-
 #
 #  Finalize root Exchange service
 #
-
 dn: CN=Microsoft Exchange,CN=Services,${CONFIGDN}
 changetype: modify
 add: addressBookRoots
 addressBookRoots: CN=All Address Lists,CN=Address Lists Container,${FIRSTORGDN}
 add: globalAddressList
-globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,CN=Address Lists Container,${FIRSTORGDN}
+globalAddressList: CN=Default Global Address List,CN=All Global Address Lists,
+ CN=Address Lists Container,${FIRSTORGDN}
 add: templateRoots
 templateRoots: CN=Addressing,${FIRSTORGDN}
-
-#
-# Finalize Mailbox Store (${NETBIOSNAME})
-#
-dn: CN=Mailbox Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-changetype: modify
-# (disabled, see previous ldif) msExchUseOAB: CN=Default Offline Address List,CN=Offline Address Lists,CN=Address Lists Container,${FIRSTORGDN}
-add: msExchOwningServer
-msExchOwningServer: CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}
-add: msExchHomePublicMDB
-msExchHomePublicMDB: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=First Administrative Group,CN=Administrative Groups,${FIRSTORGDN}

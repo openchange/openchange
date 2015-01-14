@@ -968,11 +968,7 @@ static void IDSET_ranges_remove_globcnt(struct idset *idset, uint64_t eid) {
 			new_range->low = exchange_globcnt(work_eid + 1);
 			new_range->high = range->high;
 			range->high = exchange_globcnt(work_eid - 1);
-			new_range->next = range->next;
-			range->next = new_range;
-			if (new_range->next == NULL) {
-				idset->ranges->prev = new_range;
-			}
+			DLIST_ADD_AFTER(idset->ranges, new_range, range);
 			idset->range_count++;
 			done = true;
 		}
@@ -1169,8 +1165,9 @@ _PUBLIC_ void RAWIDSET_push_eid(struct rawidset *rawidset, uint64_t eid)
 
 _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GUID *guid, uint64_t globcnt)
 {
-	struct rawidset *glob_idset, *last_glob_idset;
-	static struct GUID *zero_guid = NULL;
+	struct rawidset		*glob_idset;
+	struct rawidset		*last_glob_idset = NULL;
+	static struct GUID	*zero_guid = NULL;
 
 	if (!rawidset) return;
 
@@ -1195,7 +1192,9 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 		glob_idset = RAWIDSET_find_by_GUID(rawidset, zero_guid, NULL);
 		if (!glob_idset) {
 			glob_idset = RAWIDSET_make(rawidset->mem_ctx, false, rawidset->single);
-			last_glob_idset->next = glob_idset;
+			if (last_glob_idset) {
+				last_glob_idset->next = glob_idset;
+			}
 		}
 		glob_idset->repl.guid = *guid;
 	}

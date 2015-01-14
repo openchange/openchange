@@ -846,7 +846,9 @@ System Attendant Private Interface
 			RolePublishAuthor	= 0x0000049B,
 			RolePublishEditor	= 0x000004FB,
 			RightsAll		= 0x000005FB,
-			RoleOwner		= 0x000007FB
+			RoleOwner		= 0x000007FB,
+			RightsFreeBusySimple    = 0x00000800,
+			RightsFreeBusyDetailed  = 0x00001000
 	       	} ACLRIGHTS;
 
 	typedef [public, enum8bit, flag(NDR_PAHEX)] enum
@@ -1986,12 +1988,6 @@ System Attendant Private Interface
 
 	/**************************/
 	/* EcDoRpc Function 0x1f  */
-	typedef [flag(NDR_NOALIGN)] struct {
-		hyper		msgid;
-	} GetMessageStatus_req;
-
-	/**************************/
-	/* EcDoRpc Function 0x20  */
 	typedef [bitmap32bit] bitmap {
 		MSGSTATUS_HIGHLIGHTED		= 0x1,
 		MSGSTATUS_TAGGED		= 0x2,
@@ -2001,7 +1997,16 @@ System Attendant Private Interface
 		MSGSTATUS_REMOTE_DELETE		= 0x2000
 	} ulMessageStatus;
 
+	typedef [flag(NDR_NOALIGN)] struct {
+		hyper		msgid;
+	} GetMessageStatus_req;
 
+	typedef [flag(NDR_NOALIGN)] struct {
+		ulMessageStatus	MessageStatusFlags;
+	} GetMessageStatus_repl;
+
+	/**************************/
+	/* EcDoRpc Function 0x20  */
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper		msgid;
 		uint32		ulNewStatus;
@@ -2228,7 +2233,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2238,7 +2244,8 @@ System Attendant Private Interface
 	typedef [flag(NDR_NOALIGN)] struct {
 		hyper				FID;
 		hyper				InsertAfterFID;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} HierarchyRowModifiedNotification;
 
 	typedef [nodiscriminant] union {
@@ -2323,7 +2330,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnSize;
+		[subcontext(0),subcontext_size(ColumnSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Columns;
 	} ContentsRowAddedNotification;
 
 	typedef [flag(NDR_NOALIGN)] struct {
@@ -2339,7 +2347,8 @@ System Attendant Private Interface
 		hyper				InsertAfterFID;
 		hyper				InsertAfterMID;
 		uint32				InsertAfterInstance;
-		[subcontext(2)] DATA_BLOB	Columns;
+		uint16				ColumnsSize;
+		[subcontext(0),subcontext_size(ColumnsSize),flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB Columns;
 	} ContentsRowModifiedNotification;
 
 	typedef [nodiscriminant] union {
@@ -3284,7 +3293,7 @@ System Attendant Private Interface
 	/*************************/
 	/* EcDoRpc Function 0x68 */
 	typedef [flag(NDR_NOALIGN)] struct {
-		uint8		unknown;
+		uint8		flag;
 		hyper		fid;
 		astring		lpszMessageClass;
 		FILETIME	modiftime;
@@ -3732,7 +3741,7 @@ System Attendant Private Interface
 		LogonPrivate	= 0x1,
 		UnderCover	= 0x2,
 		Ghosted		= 0x4,
-		SpIProcess	= 0x8
+		SpIProcess      = 0x8
 	} LogonFlags;
 
 	typedef [public,bitmap32bit] bitmap {
@@ -3818,11 +3827,16 @@ System Attendant Private Interface
 	} store_mailbox;
 
 	typedef [nodiscriminant] union {
- 		[case(0x0)]		store_pf	store_pf;
-		[case(0x3)]		store_mailbox	store_mailbox;
-		[case(0x9)]		store_mailbox	store_mailbox;
-		[case(0x19)]		store_mailbox	store_mailbox;
-		[case(LogonPrivate)]	store_mailbox	store_mailbox;
+		[case(0x0)]					store_pf	store_pf;
+		[case(LogonPrivate)]				store_mailbox	store_mailbox;
+		[case(UnderCover)]				store_pf	store_pf;
+		[case(Ghosted)]					store_pf	store_pf;
+		[case(SpIProcess)]				store_pf	store_pf;
+		[case(LogonPrivate|UnderCover)]			store_mailbox	store_mailbox;
+		[case(LogonPrivate|Ghosted)]			store_mailbox	store_mailbox;
+		[case(LogonPrivate|UnderCover|SpIProcess)]	store_mailbox	store_mailbox;
+		[case(LogonPrivate|Ghosted|SpIProcess)]		store_mailbox	store_mailbox;
+		[case(LogonPrivate|SpIProcess)]			store_mailbox	store_mailbox;
 	} LogonType;
 
 	typedef [nopush,flag(NDR_NOALIGN)] struct {
@@ -4028,6 +4042,7 @@ System Attendant Private Interface
 		[case(op_MAPI_CreateFolder)] CreateFolder_repl mapi_CreateFolder;
 		[case(op_MAPI_DeleteFolder)] DeleteFolder_repl mapi_DeleteFolder;
 		[case(op_MAPI_DeleteMessages)] DeleteMessages_repl mapi_DeleteMessages;
+		[case(op_MAPI_GetMessageStatus)] GetMessageStatus_repl mapi_GetMessageStatus;
 		[case(op_MAPI_SetMessageStatus)] SetMessageStatus_repl mapi_SetMessageStatus;
 		[case(op_MAPI_GetAttachmentTable)] GetAttachmentTable_repl mapi_GetAttachmentTable;
 		[case(op_MAPI_OpenAttach)] OpenAttach_repl mapi_OpenAttach;
@@ -4225,7 +4240,7 @@ System Attendant Private Interface
 
 	/*****************/
 	/* Function 0x06 */
-	void EcDummyRpc();
+	MAPISTATUS EcDummyRpc();
 
 	/*****************/
 	/* Function 0x07 */
@@ -4622,7 +4637,7 @@ System Attendant Private Interface
 		[out]				uint16					rgwBestVersion[3],
 		[in,out]			uint32					*pulTimeStamp,
 		[in,subcontext(4),flag(NDR_REMAINING|NDR_NOALIGN)] mapi2k7_AuxInfo	*rgbAuxIn,
-		[in]				uint32					cbAuxIn,
+		[in][range(0,0x1008)]		uint32					cbAuxIn,
 		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] mapi2k7_AuxInfo	*rgbAuxOut,
 		[in,out][range(0,0x1008)]	uint32					*pcbAuxOut
 		);

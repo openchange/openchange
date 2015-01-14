@@ -142,7 +142,7 @@ enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct E
 void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcGetMoreRpc *);
 enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRRegisterPushNotification *);
 enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRUnregisterPushNotification *);
-void dcesrv_EcDummyRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDummyRpc *);
+enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDummyRpc *);
 void dcesrv_EcRGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRGetDCName *);
 void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *, TALLOC_CTX *,struct EcRNetGetDCName *);
 enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *, TALLOC_CTX *,struct EcDoRpcExt *);

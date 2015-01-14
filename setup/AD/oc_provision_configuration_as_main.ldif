@@ -1,0 +1,19 @@
+# There are more commented out entries in the
+# oc_provision_configuration_as_main-disabled.ldif file.
+#
+# Finalize First Administrative Group
+#
+dn: CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+changetype: modify
+replace: siteFolderServer
+siteFolderServer: CN=Public Folder Store (${NETBIOSNAME}),CN=First Storage Group,CN=InformationStore,CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+
+#
+#  Finalize Recipient Update Service (${DOMAIN})
+#
+dn: CN=Recipient Update Service (${DOMAIN}),CN=Recipient Update Services,CN=Address Lists Container,${FIRSTORGDN}
+changetype: modify
+replace: msExchAddressListServiceLink
+msExchAddressListServiceLink: CN=${NETBIOSNAME},CN=Servers,CN=${FIRSTOU},CN=Administrative Groups,${FIRSTORGDN}
+replace: msExchServer1HighestUSNVector
+msExchServer1HighestUSNVector: ${NETBIOSNAME}:53500

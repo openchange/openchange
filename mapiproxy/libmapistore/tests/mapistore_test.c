@@ -83,7 +83,6 @@ int main(int argc, const char *argv[])
 
 	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!mstore_ctx) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
 		exit (1);
 	}
 

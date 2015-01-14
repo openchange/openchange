@@ -36,35 +36,44 @@ parser.add_option_group(sambaopts)
 
 credopts = options.CredentialsOptions(parser)
 parser.add_option_group(credopts)
+parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
+                  help="select the OpenChange Organization Name")
+parser.add_option("--firstou", type="string", metavar="FIRSTOU",
+                  help="select the OpenChange Administration Group")
 parser.add_option("--enable", action="store_true", metavar="ENABLE",
-		  help="Enable access to OpenChange server")
+                  help="Enable access to OpenChange server")
 parser.add_option("--disable", action="store_true", metavar="DISABLE",
-		  help="Disable access to OpenChange server")
+                  help="Disable access to OpenChange server")
 parser.add_option("--create", action="store_true", metavar="CREATE",
-		  help="Create the OpenChange user account")
+                  help="Create the OpenChange user account")
 parser.add_option("--mailbox", action="store_true", metavar="MAILBOX",
-		  help="Create the OpenChange user mailbox")
+                  help="Create the OpenChange user mailbox")
+parser.add_option("--mail", type="string", metavar="MAIL",
+                  help="User email address. If not specified, the email "
+                       "will be samaccountname@realm")
 opts, args = parser.parse_args()
 
 if len(args) == 0:
-	parser.print_usage()
-	sys.exit(1)
+    parser.print_usage()
+    sys.exit(1)
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
+provisionnames = openchange.guess_names_from_smbconf(
+    lp, creds, opts.firstorg, opts.firstou)
 
 def setup_path(*args):
-	return os.path.join(os.path.dirname(__file__), *args)
+    return os.path.join(os.path.dirname(__file__), *args)
 
-if opts.enable == True:
-	openchange.accountcontrol(lp, creds, username=args[0], value=0)
-
-if opts.disable == True:
-	openchange.accountcontrol(lp, creds, username=args[0], value=2)
 
 if opts.create == True:
-	openchange.newuser(lp, creds, username=args[0])
+    openchange.newuser(provisionnames, lp, creds, username=args[0], mail=opts.mail)
 
 if opts.mailbox == True:
-        print "Mailbox provisioning is now performed automatically at user logon"
+    print "Mailbox provisioning is now performed automatically at user logon"
 
+if opts.enable == True:
+    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=0)
+
+if opts.disable == True:
+    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=2)

@@ -27,13 +27,15 @@
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
+#include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 #include <tevent.h>
 
 typedef struct {
 	PyObject		*datetime_module;
 	PyObject		*datetime_datetime_class;
 	struct ldb_context	*samdb_ctx;
-	struct ldb_context	*ocdb_ctx;
+	struct openchangedb_context *ocdb_ctx;
 } PyMAPIStoreGlobals;
 
 typedef struct {

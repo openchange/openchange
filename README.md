@@ -1,6 +1,7 @@
-This is the README file for OpenChange
+About OpenChange
+----------------
 
-ABOUT OPENCHANGE
+![travis build](https://travis-ci.org/openchange/openchange.svg)
 
 The OpenChange Project aims to provide a portable Open Source
 implementation of Microsoft Exchange Server and Exchange
@@ -23,7 +24,8 @@ a documented and unencumbered standard, with all the benefits that
 standards bring. 
 
 
-DOCUMENTATION
+Documentation
+-------------
 
 There are two sources of documentation - text files in the doc/
 directory, and API documentation generated from the source files using
@@ -44,7 +46,9 @@ documentation generation process.
 doc/examples/ provides programming examples for libmapi.
 
 
-STRUCTURE
+Structure
+---------
+
 - bin/	This directory is created during the build process. It
 contains the binaries (executable programs) that are compiled during
 the "make" step. The source for most of these is in the utils/

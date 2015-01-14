@@ -6,17 +6,16 @@
 # it under the terms of the GNU General Public License as published by
 # the Free Software Foundation; either version 3 of the License, or
 # (at your option) any later version.
-#   
+#
 # This program is distributed in the hope that it will be useful,
 # but WITHOUT ANY WARRANTY; without even the implied warranty of
 # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 # GNU General Public License for more details.
-#   
+#
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 #
 
-import logging
 from socket import _socketobject, MSG_WAITALL
 from struct import pack, unpack_from
 from uuid import UUID
@@ -32,12 +31,12 @@ PFC_DID_NOT_EXECUTE = 32
 PFC_MAYBE = 64
 PFC_OBJECT_UUID = 128
 PFC_FLAG_LABELS = ("PFC_FIRST_FRAG",
-                   "PFC_LAST_FRAG", 
-                   "PFC_(PENDING_CANCEL|SUPPORT_HEADER_SIGN)", 
-                   "PFC_RESERVED_1", 
-                   "PFC_CONC_MPX", 
+                   "PFC_LAST_FRAG",
+                   "PFC_(PENDING_CANCEL|SUPPORT_HEADER_SIGN)",
+                   "PFC_RESERVED_1",
+                   "PFC_CONC_MPX",
                    "PFC_DID_NOT_EXECUTE",
-                   "PFC_MAYBE", 
+                   "PFC_MAYBE",
                    "PFC_OBJECT_UUID")
 
 
@@ -116,8 +115,9 @@ RTS_CMD_CLIENT_ADDRESS = 11
 RTS_CMD_ASSOCIATION_GROUP_ID = 12
 RTS_CMD_DESTINATION = 13
 RTS_CMD_PING_TRAFFIC_SENT_NOTIFY = 14
+RTS_CMD_CUSTOM_OUT = 15  # Custom RTS command to notifying a channel OUT shutdown
 
-RTS_CMD_SIZES = (8, 28, 8, 20, 8, 8, 8, 4, 8, 4, 4, 8, 20, 8, 8)
+RTS_CMD_SIZES = (8, 28, 8, 20, 8, 8, 8, 4, 8, 4, 4, 8, 20, 8, 8, 4)
 RTS_CMD_DATA_LABELS = ("ReceiveWindowSize",
                        "FlowControlAck",
                        "ConnectionTimeout",
@@ -132,7 +132,8 @@ RTS_CMD_DATA_LABELS = ("ReceiveWindowSize",
                        "ClientAddress",
                        "AssociationGroupId",
                        "Destination",
-                       "PingTrafficSentNotify")
+                       "PingTrafficSentNotify",
+                       "CustomNotifyOUTChannel")
 
 RPC_C_AUTHN_NONE = 0x0
 RPC_C_AUTHN_GSS_NEGOTIATE = 0x9 # SPNEGO
@@ -178,7 +179,7 @@ class RPCPacket(object):
     def from_file(input_file, logger=None):
         """This static method acts as a constructor and returns an input
         packet with the proper class, based on the packet headers.
-        The "input_file" parameter must either be a file or a sockect object.
+        The "input_file" parameter must either be a file or a socket object.
 
         """
 
@@ -240,7 +241,7 @@ class RPCPacket(object):
 
     def make_dump_output(self):
         values = []
-        
+
         ptype = self.header["ptype"]
         values.append(DCERPC_PKG_LABELS[ptype])
 
@@ -263,7 +264,6 @@ class RPCPacket(object):
         return (fields, values)
 
 
-
 # fault PDU (stub)
 class RPCFaultPacket(RPCPacket):
     def __init__(self, data, logger=None):
@@ -275,7 +275,7 @@ class RPCBindACKPacket(RPCPacket):
     def __init__(self, data, logger=None):
         RPCPacket.__init__(self, data, logger)
         self.ntlm_payload = None
-        
+
     def parse(self):
         auth_offset = self.header["frag_length"] - self.header["auth_length"]
         self.ntlm_payload = self.data[auth_offset:]
@@ -344,7 +344,7 @@ class RPCRTSPacket(RPCPacket):
         self.offset = self.offset + data_size
         # dumb method
         return data_blob
-    
+
     def _parse_command_cookie(self, data_size):
         data_blob = self.data[self.offset:self.offset+data_size]
         self.offset = self.offset + data_size
@@ -359,16 +359,15 @@ class RPCRTSPacket(RPCPacket):
 
         data_blob = self.data[self.offset:self.offset+count]
         self.offset = self.offset + count
+        return data_blob
 
-        return data_value
-
-    def _parse_command_client_address(self, data_blob):
+    def _parse_command_client_address(self, data_size):
         (address_type,) = unpack_from("<l", self.data, self.offset)
         self.offset = self.offset + 4
 
-        if address_type == 0: # ipv4
+        if address_type == 0:  # ipv4
             address_size = 4
-        elif address_type == 1: # ipv6
+        elif address_type == 1:  # ipv6
             address_size = 16
         else:
             raise RTSParsingException("unknown client address type: %d"
@@ -379,7 +378,7 @@ class RPCRTSPacket(RPCPacket):
         # compute offset with padding, which is ignored
         self.offset = self.offset + address_size + 12
 
-        return data_value
+        return data_blob
 
     def make_dump_output(self):
         (fields, values) = RPCPacket.make_dump_output(self)
@@ -410,9 +409,8 @@ RPCRTSPacket.parsers = {RTS_CMD_FLOW_CONTROL_ACK: RPCRTSPacket._parse_command_fl
                         RTS_CMD_PADDING: RPCRTSPacket._parse_command_padding_data,
                         RTS_CMD_CLIENT_ADDRESS: RPCRTSPacket._parse_command_client_address}
 
-
-
 ### OUT packets
+
 
 # bind PDU (strict minimum required for NTLMSSP auth)
 class RPCBindOutPacket(object):
@@ -442,7 +440,6 @@ class RPCBindOutPacket(object):
         else:
             padding = ""
         len_padding = len(padding)
-
 
         # rfr: 1544f5e0-613c-11d1-93df-00c04fd7bd09, v1
         # mgmt: afa8bd80-7d8a-11c9-bef4-08002b102989, v1
@@ -609,7 +606,7 @@ class RPCRTSOutPacket(object):
         data = "".join(self.command_data)
         data_size = len(data)
 
-        if (data_size != self.size):
+        if data_size != self.size:
             raise RTSParsingException("sizes do not match: declared = %d,"
                                       " actual = %d" % (self.size, data_size))
         self.command_data = None
@@ -621,14 +618,14 @@ class RPCRTSOutPacket(object):
 
     def _make_header(self):
         header_data = pack("<bbbbbbbbhhlhh",
-                           5, 0, # rpc_vers, rpc_vers_minor
-                           DCERPC_PKT_RTS, # ptype
-                           PFC_FIRST_FRAG | PFC_LAST_FRAG, # pfc_flags
+                           5, 0,  # rpc_vers, rpc_vers_minor
+                           DCERPC_PKT_RTS,  # ptype
+                           PFC_FIRST_FRAG | PFC_LAST_FRAG,  # pfc_flags
                            # drep: RPC spec chap14.htm (Data Representation Format Label)
                            (1 << 4) | 0, 0, 0, 0,
-                           (20 + self.size), # frag_length
-                           0, # auth_length
-                           0, # call_id
+                           (20 + self.size),  # frag_length
+                           0,  # auth_length
+                           0,  # call_id
                            self.flags,
                            len(self.command_data))
         self.command_data.insert(0, header_data)
@@ -664,17 +661,26 @@ class RPCRTSOutPacket(object):
             values.append(data)
 
         self.command_data.append("".join(values))
-        
-    def _make_command_flow_control_ack(self, data_blob):
-        # dumb method
+
+    def _make_command_flow_control_ack(self, data_dict):
+        # Follow [MS-RPCH] Section 2.2.4.50
+        self.flags = RTS_FLAG_OTHER_CMD
+
+        if 'bytes_received' not in data_dict:
+            raise RTSParsingException('Expected bytes_received, available_window'
+                                      + ' and channel_cookie keys to make FlowControlAck packet')
+
+        data_blob = pack("<ll", data_dict['bytes_received'], data_dict['available_window'])
+        data_blob += UUID(data_dict['channel_cookie']).bytes_le
+
         len_data = len(data_blob)
         if len_data != 24:
-            raise RTSParsingException("expected a length of %d bytes,"
-                                      " received %d" % (24, len_data))
+            raise RTSParsingException('Expected %d bytes for FlowControlAck RTS command' % 24)
+
         self.size = self.size + len_data
 
         return data_blob
-    
+
     def _make_command_cookie(self, data_blob):
         # dumb method
         len_data = len(data_blob)

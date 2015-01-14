@@ -21,10 +21,6 @@
 #ifndef __LIBMAPI_H__
 #define __LIBMAPI_H__
 
-#ifndef _GNU_SOURCE
-#define _GNU_SOURCE 1
-#endif
-
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <sys/ioctl.h>
@@ -289,6 +285,7 @@ struct GlobalObjectId	*get_GlobalObjectId(TALLOC_CTX *, struct Binary_r *);
 struct MessageEntryId	*get_MessageEntryId(TALLOC_CTX *, struct Binary_r *);
 struct FolderEntryId	*get_FolderEntryId(TALLOC_CTX *, struct Binary_r *);
 struct AddressBookEntryId *get_AddressBookEntryId(TALLOC_CTX *, struct Binary_r *);
+struct OneOffEntryId	*get_OneOffEntryId(TALLOC_CTX *, struct Binary_r *);
 const char		*get_TypedString(struct TypedString *);
 bool			set_mapi_SPropValue(TALLOC_CTX *, struct mapi_SPropValue *, const void *);
 bool			set_mapi_SPropValue_proptag(TALLOC_CTX *, struct mapi_SPropValue *, uint32_t, const void *);

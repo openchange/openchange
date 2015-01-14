@@ -2,7 +2,7 @@
 # Written by Jelmer Vernooij <jelmer@openchange.org>
 
 AC_PREREQ(2.57)
-AC_INIT(openchange, 2.0, [openchange@openchange.org])
+AC_INIT(openchange, 2.2, [openchange@openchange.org])
 AC_CONFIG_HEADER([config.h])
 AM_INIT_AUTOMAKE
 AC_DEFINE(_GNU_SOURCE, 1, [Use GNU extensions])
@@ -15,6 +15,26 @@ then
 fi
 
 CFLAGS="-I. $CFLAGS"
+
+dnl #################################################################
+dnl MySQL
+dnl #################################################################
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+	AC_MSG_WARN([No version of mysql_config was found!])
+	AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
 
 dnl #################################################################
 dnl Check for OS dependent options
@@ -122,6 +142,14 @@ if test "x${$1}set" != "xset"; then
 		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
    		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
 	;;
+	TESTSUITE)
+		OC_$2="$OC_$2 $1"
+		OC_$2_INSTALL="$OC_$2_INSTALL $1-install"
+   		OC_$2_UNINSTALL="$OC_$2_UNINSTALL $1-uninstall"
+		OC_$2_CHECK="$OC_$2_CHECK $1-check"
+
+		AC_SUBST(OC_$2_CHECK)
+	;;
 	SERVER|MAPISTORE)
 		OC_$2="$OC_$2 $1"
 		OC_$2_CLEAN="$OC_$2_CLEAN $1-clean"
@@ -223,6 +251,14 @@ fi
 AC_SUBST(COVERAGE_INIT)
 
 dnl ---------------------------------------------------------------------------
+dnl Check for check (unittest library)
+dnl ---------------------------------------------------------------------------
+PKG_CHECK_MODULES(CHECK, check, [testsuite=1], [AC_MSG_WARN(Conditions unmet for unit testing support)])
+AC_SUBST(CHECK_CFLAGS)
+AC_SUBST(CHECK_LIBS)
+OC_RULE_ADD(testsuite, TESTSUITE)
+
+dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
 dnl ---------------------------------------------------------------------------
 AC_LANG_COMPILER_SUNCC 
@@ -237,7 +273,7 @@ dnl Sun Studio Compiler
 elif test x"$ac_cv_c_compiler_icc" = x"yes"; then
 dnl Intel Compiler
     COMPILER_OPTIONS_SHARED="-Wall -fstrict-aliasing -Wmissing-prototypes -Wstrict-prototypes -wd2259,188,593,869,981,181,1419,2218"
-    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wpointer-sign"
     COMPILER_OPTIONS_CXX="$COMPILER_OPTIONS_SHARED"
 else
 dnl GNU Compiler
@@ -247,7 +283,7 @@ dnl GNU Compiler
     else
         COMPILER_OPTIONS_SHARED="$COMPILER_OPTIONS_SHARED"
     fi
-    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes"
+    COMPILER_OPTIONS_C="$COMPILER_OPTIONS_SHARED -Wmissing-prototypes -Wstrict-prototypes -Wpointer-sign"
     if test "x$use_cov" = "xyes"; then
         COMPILER_OPTIONS_C="$COMPILER_OPTIONS_C -fprofile-arcs -ftest-coverage"
         LDFLAGS="$LDFLAGS -lgcov --coverage"
@@ -333,24 +369,35 @@ AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
 
 dnl ----------------------------------------------------------------------------
+dnl Check for MYSQL client libraries
+dnl ----------------------------------------------------------------------------
+AC_PATH_PROG(MYSQL_CONFIG, mysql_config)
+if test x"$MYSQL_CONFIG" = x""; then
+   AC_MSG_WARN([No version of mysql_config was found!])
+   AC_MSG_ERROR([Please install libmysqlclient-dev])
+fi
+AC_SUBST(MYSQL_CONFIG)
+
+AC_MSG_CHECKING(mysql cflags)
+MYSQL_CFLAGS=`$MYSQL_CONFIG --cflags`
+AC_MSG_RESULT($MYSQL_CFLAGS)
+AC_SUBST(MYSQL_CFLAGS)
+
+AC_MSG_CHECKING(mysql libs)
+MYSQL_LIBS=`$MYSQL_CONFIG --libs`
+AC_MSG_RESULT($MYSQL_LIBS)
+AC_SUBST(MYSQL_LIBS)
+
+dnl ----------------------------------------------------------------------------
 dnl Check for Flex
-dnl Flex version < 2.5.35 is fine but 2.5.4 beta is not. This is the
-dnl default version provided under FreeBSD or RHL5
 dnl ----------------------------------------------------------------------------
 if test x"$OPENCHANGE_VERSION_IS_GIT_SNAPSHOT" = x"yes"; then
    AC_ARG_VAR([FLEX], [Location of the flex program.])
    AC_CHECK_PROG([FLEX], [flex], [flex])
 
    if test x"$FLEX" = x""; then
-      	AC_MSG_WARN([No version of flex was found!])
-	AC_MSG_ERROR([Please install flex])
-   else
-	V=`$FLEX --version | awk '{print $NF}'`
-   	W=`echo $V | awk -F. '{if (((($1*100 + $2)*100 + $3) > 20535) || $3 == 4) print "no"}'`
-   	if test "x$W" != x ; then
-	   AC_MSG_WARN([Adjust your FLEX environment variable])
-      	   AC_MSG_ERROR([Flex version 2.5.35 or below is needed. You have $V])
-      	fi
+      AC_MSG_WARN([No version of flex was found!])
+      AC_MSG_ERROR([Please install flex])
    fi
 
    AC_SUBST(FLEX)
@@ -469,32 +516,10 @@ AC_CACHE_CHECK([C++ compiler availability], [ac_cv_libmapixx_gxx_works],
 		AC_LANG_POP([C++])
 		])
 
-dnl ---------------------------------------------------------------------------
-dnl Check for boost-thread
-dnl ---------------------------------------------------------------------------
-
-AC_ARG_VAR([BOOST_LIB_SUFFIX], [Boost library name suffix])
-
-AC_CACHE_CHECK([for boost_thread$BOOST_LIB_SUFFIX library], [ov_cv_boost_thread],
-	       [
-	        ov_cv_boost_thread=no
-		ov_save_LIBS=$LIBS
-		LIBS="-lboost_thread$BOOST_LIB_SUFFIX -lboost_system$BOOST_LIB_SUFFIX $LIBS"
-		AC_LANG_PUSH([C++])
-		AC_LINK_IFELSE([AC_LANG_PROGRAM([[#include <boost/thread.hpp>]],
-						[[boost::thread t]])],
-				[ov_cv_boost_thread=yes])
-		AC_LANG_POP([C++])
-		LIBS=$ov_save_LIBS
-	       ])
-
-
 if test x"$ac_cv_libmapixx_gxx_works" = "xyes"; then
-   if test x"$ov_cv_boost_thread" = "xyes"; then
-      AC_PROG_CXX 
-      libmapixx=1
-      OC_RULE_ADD(libmapixx, LIBS)
-   fi
+   AC_PROG_CXX 
+   libmapixx=1
+   OC_RULE_ADD(libmapixx, LIBS)
 fi
 
 
@@ -553,6 +578,29 @@ PKG_CHECK_MODULES([ICAL_0_46], [libical >= 0.46], [have_libical_0_46="1"], [have
 AC_SUBST(have_libical_0_46)
 
 dnl --------------------------------------------------------------------------
+dnl Check for pcap
+dnl --------------------------------------------------------------------------
+AC_PATH_PROG(PCAP_CONFIG, pcap-config)
+have_libpcap=""
+if test x"$PCAP_CONFIG" != x""; then
+   AC_MSG_CHECKING(pcap cflags)
+   PCAP_CFLAGS=`$PCAP_CONFIG --cflags`
+   AC_MSG_RESULT($PCAP_CFLAGS)
+   AC_SUBST(PCAP_CFLAGS)
+
+   AC_MSG_CHECKING(pcap libs)
+   PCAP_LIBS=`$PCAP_CONFIG --libs`
+   AC_MSG_RESULT($PCAP_LIBS)
+   AC_SUBST(PCAP_LIBS)
+
+   have_libpcap="yes"
+   AC_SUBST(have_libpcap)
+fi
+
+AC_SUBST(PCAP_CFLAGS)
+AC_SUBST(PCAP_LIBS)
+
+dnl --------------------------------------------------------------------------
 dnl Check for popt
 dnl --------------------------------------------------------------------------
 
@@ -580,8 +628,13 @@ if test x"$enable_libpopt" = x"yes"; then
 	    exchange2ical=1
 	fi
 
+	if test x"$have_libpcap" = x"yes"; then
+	    rpcextract=1
+	fi
+
 	MAPISTORE_TEST=mapistore_test
 	mapiprofile=1
+	mapipropsdump=1
 	openchangemapidump=1
 	schemaIDGUID=1
 	check_fasttransfer=1
@@ -590,7 +643,9 @@ fi
 AC_SUBST(MAPISTORE_TEST)
 OC_RULE_ADD(openchangeclient, TOOLS)
 #OC_RULE_ADD(mapistore_fsocpf, MAPISTORE)
+OC_RULE_ADD(mapipropsdump, TOOLS)
 OC_RULE_ADD(exchange2ical, TOOLS)
+OC_RULE_ADD(rpcextract, TOOLS)
 OC_RULE_ADD(openchangepfadmin, TOOLS)
 OC_RULE_ADD(mapitest, TOOLS)
 OC_RULE_ADD(mapiprofile, TOOLS)
@@ -599,6 +654,7 @@ OC_RULE_ADD(schemaIDGUID, TOOLS)
 
 OC_RULE_ADD(check_fasttransfer, TOOLS)
 OC_RULE_ADD(test_asyncnotif, TOOLS)
+
 
 dnl --------------------------------------------------------------------------
 dnl Check for libmagic
@@ -657,6 +713,15 @@ AC_SUBST(OC_MAPISTORE_CLEAN)
 AC_SUBST(OC_MAPISTORE_INSTALL)
 AC_SUBST(OC_MAPISTORE_UNINSTALL)
 
+OC_SERVER=
+OC_SERVER_CLEAN=
+OC_SERVER_INSTALL=
+OC_SERVER_UNINSTALL=
+AC_SUBST(OC_SERVER)
+AC_SUBST(OC_SERVER_CLEAN)
+AC_SUBST(OC_SERVER_INSTALL)
+AC_SUBST(OC_SERVER_UNINSTALL)
+
 dnl ##########################################################################
 dnl mapiproxy server
 dnl ##########################################################################
@@ -677,21 +742,27 @@ AC_SUBST(modulesdir)
 dnl ##########################################################################
 dnl Python bindings dependencies
 dnl ##########################################################################
-AC_ARG_ENABLE(pymapi, AC_HELP_STRING([--enable-pymapi],
+AC_ARG_ENABLE(pyopenchange, AC_HELP_STRING([--enable-pyopenchange],
 			   [build Python bindings for libmapi]),
-			   enable_pymapi="$enableval",
-			   enable_pymapi=no)
+			   enable_pyopenchange="$enableval",
+			   enable_pyopenchange=no)
 PYCDIR=`$PYTHON -c "import distutils.sysconfig; print distutils.sysconfig.get_python_lib(1, prefix='\\$(prefix)')"`
 AC_SUBST(PYCDIR)
 
-dnl Enable pyopenchange by default
-PYMAPIALL="$PYMAPIALL pyopenchange"
-PYMAPIINSTALL="$PYMAPIALLINSTALL pyopenchange-install"
-PYMAPIUNINSTALL="$PYMAPIUNINSTALL pyopenchange-uninstall"
+PYOPENCHANGEALL=
+PYOPENCHANGEINSTALL=
+PYOPENCHANGEUNINSTALL=
 
-AC_SUBST(PYMAPIALL)
-AC_SUBST(PYMAPIINSTALL)
-AC_SUBST(PYMAPIUNINSTALL)
+if test x$enable_pyopenchange = xyes ; then
+	dnl Enable pyopenchange by default
+	PYOPENCHANGEALL="$PYOPENCHANGEALL pyopenchange"
+	PYOPENCHANGEINSTALL="$PYOPENCHANGEALLINSTALL pyopenchange-install"
+	PYOPENCHANGEUNINSTALL="$PYOPENCHANGEUNINSTALL pyopenchange-uninstall"
+fi
+
+AC_SUBST(PYOPENCHANGEALL)
+AC_SUBST(PYOPENCHANGEINSTALL)
+AC_SUBST(PYOPENCHANGEUNINSTALL)
 
 
 dnl ##########################################################################
@@ -770,6 +841,8 @@ OC_SETVAL(libocpf)
 OC_SETVAL(libmapixx)
 
 OC_SETVAL(openchangeclient)
+OC_SETVAL(mapipropsdump)
+OC_SETVAL(rpcextract)
 OC_SETVAL(mapiprofile)
 OC_SETVAL(openchangepfadmin)
 OC_SETVAL(exchange2mbox)
@@ -778,6 +851,8 @@ OC_SETVAL(mapitest)
 OC_SETVAL(openchangemapidump)
 OC_SETVAL(schemaIDGUID)
 OC_SETVAL(mapiproxy)
+
+OC_SETVAL(testsuite)
 
 OC_SETVAL(doxygen)
 
@@ -805,15 +880,20 @@ OpenChange Configuration (Please review)
 	     - openchangepfadmin:	$enable_openchangepfadmin
 	     - exchange2mbox:		$enable_exchange2mbox
 	     - exchange2ical:		$enable_exchange2ical
-	     - mapitest:		$enable_mapitest
 	     - openchangemapidump:	$enable_openchangemapidump
 	     - schemaIDGUID:		$enable_schemaIDGUID
 
-	   * subunit format (mapitest):	$have_subunit
+	   * Protocol Analysis:
+	     - mapipropsdump:		$enable_mapipropsdump
+	     - rpcextract:		$enable_rpcextract
+
+	   * Unit and functional testing
+	     - mapitest:		$enable_mapitest
+	     - mapitest (subunit):      $have_subunit
+	     - openchange-testsuite:    $enable_testsuite
+	     - coverage tests:		$use_cov
 
 	   * OpenChange Documentation:	$enable_doxygen
-
-	   * Coverage Tests:		$use_cov
 
 	   * OpenChange Bindings:
 	     - Qt4:			$enable_openchange_qt4

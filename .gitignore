@@ -38,8 +38,11 @@ mapiproxy/libmapistore.pc
 mapiproxy/libmapistore/Doxyfile
 mapiproxy/libmapistore/mapistore_nameid.h
 mapiproxy/libmapistore/mgmt/gen_ndr/
+mapiproxy/services/ocsmanager/build/
+mapiproxy/services/ocsmanager/ocsmanager.egg-info/
+mapiproxy/services/web/rpcproxy/build/
 pyopenchange/mapistore/errors.c
-setup/mapistore/
+setup/mapistore/mapistore_namedprops.ldif
 stamp-h1
 utils/mapitest/Doxyfile
 utils/mapitest/mapitest_proto.h
@@ -50,3 +53,6 @@ _trial_temp
 *.pyc
 samba4
 samba-*.tar.gz
+test_results.xml
+*.gcda
+*.gcno

@@ -228,7 +228,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	MAPI_RETVAL_IF(!remote_ldb_url, MAPI_E_CORRUPT_DATA, mem_ctx);
 	remote_ldb = ldb_wrap_connect(mem_ctx, ev, mapi_ctx->lp_ctx, remote_ldb_url, 
 				      NULL, mapiadmin_ctx->session->profile->credentials, 0);
-	MAPI_RETVAL_IF(!remote_ldb, MAPI_E_NETWORK_ERROR, mem_ctx);
+	MAPI_RETVAL_IF(!remote_ldb, ecRpcFailed, mem_ctx);
 
 	/* Search the user_dn */
 	account_dn = samdb_search_dn(remote_ldb, mem_ctx, NULL, 

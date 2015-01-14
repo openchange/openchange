@@ -22,11 +22,6 @@
 #ifndef	__FAULT_UTIL_H__
 #define	__FAULT_UTIL_H__
 
-#ifndef	_GNU_SOURCE
-#define	_GNU_SOURCE 1
-#endif
-
-
 #define OC_ABORT( is_fatal, body ) \
 	DEBUGSEP(0); \
 	DEBUG(0,("OPENCHANGE INTERNAL ERROR: pid %d (%s)", (int)getpid(), OPENCHANGE_VERSION_STRING)); \

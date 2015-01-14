@@ -189,7 +189,7 @@ _PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
 
 	status = dcerpc_NspiUnbind_r(nspi_ctx->rpc_connection->binding_handle, nspi_ctx->mem_ctx, &r);
 	retval = r.out.result;
-	OPENCHANGE_RETVAL_IF((retval != 1) && !MAPI_STATUS_IS_OK(NT_STATUS_V(status)), retval, NULL);
+	OPENCHANGE_RETVAL_IF((retval != 1) && !NT_STATUS_IS_OK(status), retval, NULL);
 
 	return MAPI_E_SUCCESS;
 }
@@ -1110,8 +1110,11 @@ _PUBLIC_ enum MAPISTATUS nspi_ResolveNames(struct nspi_context *nspi_ctx,
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!nspi_ctx, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx->rpc_connection, MAPI_E_NOT_INITIALIZED, NULL);
+	OPENCHANGE_RETVAL_IF(!nspi_ctx->rpc_connection->binding_handle, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!usernames, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!pPropTags, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppRows, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!pppMIds, MAPI_E_INVALID_PARAMETER, NULL);
 

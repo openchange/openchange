@@ -19,6 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+/* config.h defines the _GNU_SOURCE marco needed for the tm_gmtoff and
+   tm_zone members of struct tm. */
+#include "config.h"
+#include <time.h>
 #include <Python.h>
 #include "pyopenchange/mapistore/pymapistore.h"
 #include "gen_ndr/exchange.h"
@@ -37,7 +41,7 @@ static PyObject *py_MAPIStoreFolder_create_folder(PyMAPIStoreFolderObject *self,
 {
 	int			ret;
 	/* PyMAPIStoreFolderObject	*folder; */
-	char			*kwnames[] = { "name", "description", "foldertype", "flags" };
+	char			*kwnames[] = { "name", "description", "foldertype", "flags", NULL };
 	const char		*name;
 	const char		*desc = NULL;
 	uint16_t		foldertype = FOLDER_GENERIC;
@@ -74,7 +78,7 @@ static PyObject *py_MAPIStoreFolder_get_child_count(PyMAPIStoreFolderObject *sel
 {
 	uint32_t			RowCount;
 	enum mapistore_table_type	table_type;
-	char				*kwnames[] = { "table_type" };
+	char				*kwnames[] = { "table_type", NULL };
 	int				retval;
 
 	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "i", kwnames, &table_type)) {
@@ -108,7 +112,6 @@ static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, stru
 	value = PyObject_GetAttrString(datetime, "second");
 	tm->tm_sec = PyInt_AS_LONG(value);
 
-#ifdef	__USE_BSD
 	value = PyObject_CallMethod(datetime, "utcoffset", NULL);
 	if (value && value != Py_None) {
 		tm->tm_gmtoff = PyInt_AS_LONG(value);
@@ -123,22 +126,6 @@ static void convert_datetime_to_tm(TALLOC_CTX *mem_ctx, PyObject *datetime, stru
 	else {
 		tm->tm_zone = NULL;
 	}
-#else
-	value = PyObject_CallMethod(datetime, "utcoffset", NULL);
-	if (value && value != Py_None) {
-		tm->__tm_gmtoff = PyInt_AS_LONG(value);
-	}
-	else {
-		tm->__tm_gmtoff = 0;
-	}
-	value = PyObject_CallMethod(datetime, "tzname", NULL);
-	if (value && value != Py_None) {
-		tm->__tm_zone = talloc_strdup(mem_ctx, PyString_AsString(value));
-	}
-	else {
-		tm->__tm_zone = NULL;
-	}
-#endif
 }
 
 static PyObject *py_MAPIStoreFolder_fetch_freebusy_properties(PyMAPIStoreFolderObject *self, PyObject *args, PyObject *kwargs)

@@ -1,6 +1,26 @@
+# as.py -- GetUserAvailability Exchange Web Service
+# -*- coding: utf-8 -*-
+#
+# Copyright (C) 2012-2014  Julien Kerihuel <jkerihuel@openchange.org>
+#                          Enrique J. Hernández <ejhernandez@zentyal.com>
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
 import logging
 
 import datetime
+from datetime import timedelta
 from time import time
 
 from pylons import request, response, session, tmpl_context as c, url
@@ -24,6 +44,7 @@ from openchange import mapistore
 from ocsmanager.lib.base import BaseController, render
 
 from ews_types import *
+
 
 log = logging.getLogger(__name__)
 
@@ -283,36 +304,26 @@ class ExchangeService(ServiceBase):
     @staticmethod
     def _open_user_calendar_folder(email):
         # lookup usercn from email
-
         ldbdb = config["samba"]["samdb_ldb"]
         base_dn = "CN=Users,%s" % config["samba"]["domaindn"]
         ldb_filter = "(&(objectClass=user)(mail=%s))" % email
         res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
-                           expression=ldb_filter, attrs=["cn"])
-        if len(res) == 1:
-            ldb_record = res[0]
-            usercn = ldb_record["cn"][0]
-        else:
-            usercn = None
-        
-        cal_folder = None
+                           expression=ldb_filter, attrs=["cn", "sAMAccountName"])
+        if len(res) != 1:
+            return (None, "ErrorMailRecipientNotFound")
 
-        # lookup mapistore url for cal folder
-        cal_folder = None
-        if usercn is not None:
-            ldbdb = config["oc_ldb"]
-            base_dn = "CN=%s,%s" % (usercn, config["samba"]["oc_user_basedn"])
-            ldb_filter = "(&(objectClass=systemfolder)(PidTagContainerClass=IPF.Appointment)(MAPIStoreURI=*))"
-            res = ldbdb.search(base=base_dn, scope=ldb.SCOPE_SUBTREE,
-                               expression=ldb_filter, attrs=["MAPIStoreURI"])
-            for x in xrange(len(res)):
-                ldb_record = res[x]
-                uri = ldb_record["MAPIStoreURI"][0]
-                if str(uri).find("/personal") > -1:  # FIXME: this is evil
-                    context = config["mapistore"].add_context(uri, usercn)
-                    cal_folder = context.open()
-
-        return cal_folder
+        user_cn = res[0]["cn"][0]
+        username = res[0]["sAMAccountName"][0]
+        ocdb = config["ocdb"]
+        error_code = None
+        for uri in ocdb.get_calendar_uri(user_cn, email):
+            if uri.find("/personal") > -1:  # FIXME: this is evil
+                context = config["mapistore"].add_context(uri, username)
+                folder = context.open()
+                if folder is None:
+                    error_code = "ErrorNoFreeBusyAccess"
+                return (folder, error_code)
+        return (None, "ErrorNoFreeBusyAccess")
 
     @staticmethod
     def _timezone_datetime(year, tz_time):
@@ -341,8 +352,12 @@ class ExchangeService(ServiceBase):
 
     @staticmethod
     def _freebusy_response(cal_folder, timezone, freebusy_view_options):
-        start = freebusy_view_options.TimeWindow.StartTime
-        end = freebusy_view_options.TimeWindow.EndTime
+        if freebusy_view_options is None:
+            start = datetime.datetime.now()
+            end = start + timedelta(days=42)  # Maximum time up to Exchange 2010 is 42 days, 62 days above
+        else:
+            start = freebusy_view_options.TimeWindow.StartTime
+            end = freebusy_view_options.TimeWindow.EndTime
 
         # a = time()
         # print "fetching freebusy"
@@ -384,13 +399,13 @@ class ExchangeService(ServiceBase):
         return fb_response
 
     @staticmethod
-    def _freebusy_lookup_error_response():
+    def _freebusy_lookup_error_response(error_code):
         fb_response = FreeBusyResponse()
         fb_response.ResponseMessage = ResponseMessageType()
         fb_response.ResponseMessage.ResponseClass = "Error"
         fb_response.ResponseMessage.MessageText \
             = "Unable to open the requested user's calendar"
-        fb_response.ResponseMessage.ResponseCode = "ErrorMailRecipientNotFound"
+        fb_response.ResponseMessage.ResponseCode = error_code
         fb_response.FreeBusyView = FreeBusyView()
         fb_response.FreeBusyView.FreeBusyViewType = "None"
 
@@ -454,27 +469,28 @@ class ExchangeService(ServiceBase):
                                            MajorBuildNumber=685,
                                            MinorBuildNumber=24)
 
+
         fb_requests = []
         for x in xrange(len(mailbox_data_array)):
             user_email = mailbox_data_array[x].Email.Address
-            calendar_folder = ExchangeService._open_user_calendar_folder(user_email)
-            fb_requests.append({"folder": calendar_folder, "email": user_email})
+            (calendar_folder, error_code) = ExchangeService._open_user_calendar_folder(user_email)
+            fb_requests.append({"folder": calendar_folder, "email": user_email, "error_code": error_code})
 
-        if freebusy_view_options is not None:
-            freebusy = []
-            for fb_request in fb_requests:
-                calendar_folder = fb_request["folder"]
-                if calendar_folder is None:
-                    log.warn("no calendar folder found for '%s'" % user_email)
-                    fb_response \
-                        = ExchangeService._freebusy_lookup_error_response()
-                else:
-                    fb_response \
-                        = ExchangeService._freebusy_response(calendar_folder,
-                                                             timezone,
-                                                             freebusy_view_options)
-                freebusy.append(fb_response)
-        else:
+        freebusy = []
+        for fb_request in fb_requests:
+            calendar_folder = fb_request["folder"]
+            if calendar_folder is None:
+                log.warn("no calendar folder found for '%s'" % fb_request["email"])
+                fb_response \
+                    = ExchangeService._freebusy_lookup_error_response(fb_request["error_code"])
+            else:
+                fb_response \
+                    = ExchangeService._freebusy_response(calendar_folder,
+                                                         timezone,
+                                                         freebusy_view_options)
+            freebusy.append(fb_response)
+
+        if not freebusy:
             freebusy = None
 
         if suggestions_view_options is not None:

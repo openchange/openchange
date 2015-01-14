@@ -286,7 +286,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
-	if (retval) {
+	if (retval != MAPI_E_SUCCESS) {
 		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
@@ -294,7 +294,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	/* GetContentsTable can only be called for folder objects */
 	retval = mapi_handles_get_private_data(parent, &data);
-	if (retval) {
+	if (retval != MAPI_E_SUCCESS) {
 		mapi_repl->error_code = retval;
 		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
 		goto end;
@@ -324,10 +324,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 
 	/* Initialize Table object */
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = retval;
+		goto end;
+	}
 	handles[mapi_repl->handle_idx] = rec->handle;
 
 	object = emsmdbp_folder_open_table(rec, parent_object, table_type, rec->handle);
 	if (!object) {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
@@ -417,6 +422,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->u.mapi_CreateFolder.handle_idx;
 
+	if (!mapi_req->u.mapi_CreateFolder.ulFolderType ||
+	    mapi_req->u.mapi_CreateFolder.ulFolderType > 0x2) {
+		mapi_repl->error_code = MAPI_E_INVALID_PARAMETER;
+		goto end;
+	}
+
 	/* Step 1. Retrieve parent handle in the hierarchy */
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
@@ -427,6 +438,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 	parent_object = (struct emsmdbp_object *)data;
 	if (!parent_object) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder null object\n"));
+		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+		goto end;
+	}
+
+	if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -475,25 +491,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 			}
 			goto end;
 		}
-	}
-	else {
+	} else {
 		/* Step 3. Turn CreateFolder parameters into MAPI property array */
-		retval = openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &fid);
+		parent_fid = parent_object->object.folder->folderID;
+		if (openchangedb_is_public_folder_id(emsmdbp_ctx->oc_ctx, parent_fid)) {
+			retval = openchangedb_get_new_public_folderID(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &fid);
+		} else {
+			retval = mapistore_error_to_mapi(mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &fid));
+		}
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder id\n"));
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
 
-		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, &cn);
+		retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &cn);
 		if (retval != MAPI_E_SUCCESS) {
 			DEBUG(4, ("exchange_emsmdb: [OXCFOLD] Could not obtain a new folder cn\n"));
 			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 			goto end;
 		}
 
-		parent_fid = parent_object->object.folder->folderID;
-		
 		aRow = libmapiserver_ROP_request_to_properties(mem_ctx, (void *)&mapi_req->u.mapi_CreateFolder, op_MAPI_CreateFolder);
 		aRow->lpProps = add_SPropValue(mem_ctx, aRow->lpProps, &(aRow->cValues), PR_PARENT_FID, (void *)(&parent_fid));
 		cnValue.ulPropTag = PidTagChangeNumber;
@@ -905,7 +923,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopEmptyFolder(TALLOC_CTX *mem_ctx,
         folder_object = private_data;
 
 	mapistore = emsmdbp_is_mapistore(folder_object);
-	switch (mapistore) {
+	switch ((int)mapistore) {
 	case false:
 		/* system/special folder */
 		DEBUG(0, ("TODO Empty system/special folder\n"));
@@ -1011,7 +1029,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopMoveCopyMessages(TALLOC_CTX *mem_ctx,
 		/* We prepare a set of new MIDs for the backend */
 		targetMIDs = talloc_array(NULL, uint64_t, mapi_req->u.mapi_MoveCopyMessages.count);
 		for (i = 0; i < mapi_req->u.mapi_MoveCopyMessages.count; i++) {
-			openchangedb_get_new_folderID(emsmdbp_ctx->oc_ctx, &targetMIDs[i]);
+			mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &targetMIDs[i]);
 		}
 
 		/* We invoke the backend method */
@@ -1061,7 +1079,7 @@ enum MAPISTATUS EcDoRpc_RopMoveFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct emsmdbp_object	*move_folder;
 	struct emsmdbp_object	*target_folder;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] MoveFolder (0x35)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] MoveFolder (0x35)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1157,7 +1175,7 @@ enum MAPISTATUS EcDoRpc_RopCopyFolder(TALLOC_CTX *mem_ctx, struct emsmdbp_contex
 	struct emsmdbp_object	*target_folder;
 	uint32_t		contextID;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] CopyFolder (0x36)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CopyFolder (0x36)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

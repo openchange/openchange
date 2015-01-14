@@ -664,7 +664,7 @@ class NTLMAuthHandler(object):
     def _in_progress_response(start_response, ntlm_data=None,
                               client_id=None, cookie_name=None):
         status = "401 %s" % httplib.responses[401]
-        content = "More data needed..."
+        content = "More data needed...\r\n"
         headers = [("Content-Type", "text/plain"),
                    ("Content-Length", "%d" % len(content))]
         if ntlm_data is None:

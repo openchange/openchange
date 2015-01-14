@@ -7,12 +7,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -67,7 +67,7 @@ _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
    \param OLEGUID the property set this entry belongs to
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -78,7 +78,7 @@ _PUBLIC_ struct mapi_nameid *mapi_nameid_new(TALLOC_CTX *mem_ctx)
    \sa mapi_nameid_new
  */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
-					     const char *OOM, 
+					     const char *OOM,
 					     const char *OLEGUID)
 {
 	uint32_t		i;
@@ -91,9 +91,9 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if (mapi_nameid_tags[i].OOM &&
-		    !strcmp(OOM, mapi_nameid_tags[i].OOM) && 
+		    !strcmp(OOM, mapi_nameid_tags[i].OOM) &&
 		    !strcmp(OLEGUID, mapi_nameid_tags[i].OLEGUID)) {
-			mapi_nameid->nameid = talloc_realloc(mapi_nameid, 
+			mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 							     mapi_nameid->nameid, struct MAPINAMEID,
 							     mapi_nameid->count + 1);
 			mapi_nameid->entries = talloc_realloc(mapi_nameid,
@@ -134,7 +134,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_add(struct mapi_nameid *mapi_nameid,
    \param OLEGUID the property set this entry belongs to
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -158,7 +158,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
 		if ((lid == mapi_nameid_tags[i].lid) &&
 		    !strcmp(OLEGUID, mapi_nameid_tags[i].OLEGUID)) {
-			mapi_nameid->nameid = talloc_realloc(mapi_nameid, 
+			mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 							     mapi_nameid->nameid, struct MAPINAMEID,
 							     mapi_nameid->count + 1);
 			mapi_nameid->entries = talloc_realloc(mapi_nameid,
@@ -185,7 +185,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
 		}
 	}
 
-	return MAPI_E_NOT_FOUND;	
+	return MAPI_E_NOT_FOUND;
 }
 
 
@@ -199,7 +199,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_add(struct mapi_nameid *mapi_nameid,
    \param OLEGUID the property set this entry belongs to
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -222,10 +222,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
-		if (mapi_nameid_tags[i].Name && 
+		if (mapi_nameid_tags[i].Name &&
 		    !strcmp(Name, mapi_nameid_tags[i].Name) &&
 		    !strcmp(OLEGUID, mapi_nameid_tags[i].OLEGUID)) {
-			mapi_nameid->nameid = talloc_realloc(mapi_nameid, 
+			mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 							     mapi_nameid->nameid, struct MAPINAMEID,
 							     mapi_nameid->count + 1);
 			mapi_nameid->entries = talloc_realloc(mapi_nameid,
@@ -258,15 +258,15 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 /**
   \details Register and add a custom MNID_ID named property given its
   lid, proptype and OLEGUID.
- 
-  \param mapi_nameid the structure where results are stored 
+
+  \param mapi_nameid the structure where results are stored
   \param lid the light ID of the name property (used by MNID_ID named
   props only)
   \param propType the named property type
   \param OLEGUID the property set this entry belongs to
- 
+
   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
- 
+
   \note Developers may also call GetLastError() to retrieve the last
   MAPI error code. Possible MAPI error codes are:
   - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -274,8 +274,8 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_add(struct mapi_nameid *mapi_nameid,
 
   \sa mapi_nameid_new, mapi_nameid_lid_add
  */
-_PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nameid, 
-						    uint16_t lid, uint16_t propType, 
+_PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nameid,
+						    uint16_t lid, uint16_t propType,
 						    const char *OLEGUID)
 {
 	uint16_t	count;
@@ -289,7 +289,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
 	mapi_nameid->nameid = talloc_realloc(mapi_nameid,
 					     mapi_nameid->nameid, struct MAPINAMEID,
 					     mapi_nameid->count + 1);
-	mapi_nameid->entries = talloc_realloc(mapi_nameid, 
+	mapi_nameid->entries = talloc_realloc(mapi_nameid,
 					      mapi_nameid->entries, struct mapi_nameid_tags,
 					      mapi_nameid->count + 1);
 
@@ -311,7 +311,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_custom_lid_add(struct mapi_nameid *mapi_nam
 /**
    \details Register and add a custom MNID_STRING named property given
    its string, proptype and OLEGUID.
- 
+
    \param mapi_nameid the structure where results are stored
    \param Name the property name (used by MNID_STRING named props only)
    \param propType the named property type
@@ -467,7 +467,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_OOM_lookup(const char *OOM, const char *OLE
 	OPENCHANGE_RETVAL_IF(!OLEGUID, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; mapi_nameid_tags[i].OLEGUID; i++) {
-		if (mapi_nameid_tags[i].OOM && 
+		if (mapi_nameid_tags[i].OOM &&
 		    !strcmp(mapi_nameid_tags[i].OOM, OOM) &&
 		    !strcmp(mapi_nameid_tags[i].OLEGUID, OLEGUID)) {
 			*propType = mapi_nameid_tags[i].propType;
@@ -567,7 +567,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lid_lookup_canonical(uint16_t lid, const ch
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
  */
-_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name, 
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
 						   const char *OLEGUID,
 						   uint16_t *propType)
 {
@@ -605,7 +605,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup(const char *Name,
    - MAPI_E_INVALID_PARAMETER: one of the parameter was not set properly.
    - MAPI_E_NOT_FOUND: no named property found
  */
-_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name, 
+_PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name,
 							     const char *OLEGUID,
 							     uint32_t *propTag)
 {
@@ -631,14 +631,15 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_string_lookup_canonical(const char *Name,
 
 /**
    \details set SPropTagArray ulPropTag property types from
-   mapi_nameid returned by GetIDsFromNames()
+   mapi_nameid returned by GetIDsFromNames(). If a SPropTagArray property tag
+   has the type PT_ERROR set, it's kept untouched to propagate the error.
 
    \param mapi_nameid the structure where results are stored
    \param SPropTagArray the array of property tags returned by
    previous call to GetIDsFromNames()
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -656,12 +657,15 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
 
 	for (i = 0; i < mapi_nameid->count; i++) {
-		if (mapi_nameid->entries[i].propType) {
-		  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-								 mapi_nameid->entries[i].propType);
+		if (((int)SPropTagArray->aulPropTag[i] & 0x0000FFFF) != PT_ERROR) {
+			if (mapi_nameid->entries[i].propType) {
+				SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(
+					((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) |
+					mapi_nameid->entries[i].propType);
+			}
 		}
 	}
-	
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -677,7 +681,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_SPropTagArray(struct mapi_nameid *mapi_name
    with GetIDsFromNames
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -720,7 +724,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropTagArray(struct mapi_nameid *mapi_
    property tags
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -736,7 +740,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropTagArray(struct mapi_nameid *map
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!SPropTagArray, MAPI_E_INVALID_PARAMETER, NULL);
-	
+
 	for (i = 0; i < mapi_nameid->count; i++) {
 		if (mapi_nameid->entries[i].position <= SPropTagArray->cValues) {
 		  SPropTagArray->aulPropTag[mapi_nameid->entries[i].position] = (enum MAPITAGS) mapi_nameid->entries[i].proptag;
@@ -759,7 +763,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropTagArray(struct mapi_nameid *map
    with GetIDsFromNames
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -805,7 +809,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_map_SPropValue(struct mapi_nameid *mapi_nam
    \param PropCount count of lpProps elements
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -843,7 +847,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_unmap_SPropValue(struct mapi_nameid *mapi_n
    canonical named property tags.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -887,7 +891,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropTagArray(struct mapi_nameid *na
    \param PropCount count of lpProps elemense
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -933,7 +937,7 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
    property tags with their real property type.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_INVALID_PARAMETER: one of the parameters was not set
@@ -942,11 +946,10 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_lookup_SPropValue(struct mapi_nameid *mapi_
    \sa GetIDsFromNames, mapi_nameid_SPropTagArray
 */
 _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_nameid,
-						     mapi_object_t *obj, 
+						     mapi_object_t *obj,
 						     struct SPropTagArray *SPropTagArray)
 {
 	enum MAPISTATUS		retval;
-	uint32_t		i;
 
 	/* sanity check */
 	OPENCHANGE_RETVAL_IF(!mapi_nameid, MAPI_E_INVALID_PARAMETER, NULL);
@@ -954,14 +957,13 @@ _PUBLIC_ enum MAPISTATUS mapi_nameid_GetIDsFromNames(struct mapi_nameid *mapi_na
 
 	retval = GetIDsFromNames(obj, mapi_nameid->count, mapi_nameid->nameid, 0,
 				 &SPropTagArray);
-	OPENCHANGE_RETVAL_IF(retval, GetLastError(), NULL);
+	OPENCHANGE_RETVAL_IF(((retval != MAPI_E_SUCCESS) && (retval != MAPI_W_ERRORS_RETURNED)), retval, NULL);
 
-	for (i = 0; i < SPropTagArray->cValues; i++) {
-	  SPropTagArray->aulPropTag[i] = (enum MAPITAGS)(((int)SPropTagArray->aulPropTag[i] & 0xFFFF0000) | 
-							 mapi_nameid->entries[i].propType);
-	}
+	retval = mapi_nameid_SPropTagArray(mapi_nameid, SPropTagArray);
+	OPENCHANGE_RETVAL_IF((retval != MAPI_E_SUCCESS), retval, NULL);
 
-	return MAPI_E_SUCCESS;
+
+	return retval;
 }
 
 _PUBLIC_ const char *get_namedid_name(uint32_t proptag)
@@ -969,7 +971,7 @@ _PUBLIC_ const char *get_namedid_name(uint32_t proptag)
 	uint32_t idx;
 
 	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
-		if (mapi_nameid_names[idx].proptag == proptag) { 
+		if (mapi_nameid_names[idx].proptag == proptag) {
 			return mapi_nameid_names[idx].propname;
 		}
 	}
@@ -978,7 +980,7 @@ _PUBLIC_ const char *get_namedid_name(uint32_t proptag)
 		proptag += 1; /* try as _UNICODE variant */
 	}
 	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
-		if (mapi_nameid_names[idx].proptag == proptag) { 
+		if (mapi_nameid_names[idx].proptag == proptag) {
 			return mapi_nameid_names[idx].propname;
 		}
 	}
@@ -990,7 +992,7 @@ _PUBLIC_ uint32_t get_namedid_value(const char *propname)
 	uint32_t idx;
 
 	for (idx = 0; mapi_nameid_names[idx].proptag; idx++) {
-		if (!strcmp(mapi_nameid_names[idx].propname, propname)) { 
+		if (!strcmp(mapi_nameid_names[idx].propname, propname)) {
 			return mapi_nameid_names[idx].proptag;
 		}
 	}

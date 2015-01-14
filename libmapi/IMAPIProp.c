@@ -8,12 +8,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -32,7 +32,7 @@
 
 /**
    \details Returns values of one or more properties for an object
- 
+
    The function takes a pointer on the object obj, a MAPITAGS array
    specified in mapitags, and the count of properties.  The function
    returns associated values within the SPropValue values pointer.
@@ -62,7 +62,7 @@
 _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 				  uint32_t flags,
 				  struct SPropTagArray *SPropTagArray,
-				  struct SPropValue **lpProps, 
+				  struct SPropValue **lpProps,
 				  uint32_t *PropCount)
 {
 	struct mapi_context	*mapi_ctx;
@@ -105,7 +105,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 			named = true;
 			SPropTagArray2 = talloc_zero(mem_ctx, struct SPropTagArray);
 			retval = GetIDsFromNames(obj, nameid->count, nameid->nameid, 0, &SPropTagArray2);
-			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);		
+			OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 			mapi_nameid_map_SPropTagArray(nameid, SPropTagArray, SPropTagArray2);
 			MAPIFreeBuffer(SPropTagArray2);
 		}
@@ -136,7 +136,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	mapi_req->handle_idx = 0;
 	mapi_req->u.mapi_GetProps = request;
 	size += 5;
-       
+
 	/* Fill the mapi_request structure */
 	mapi_request = talloc_zero(mem_ctx, struct mapi_request);
 	mapi_request->mapi_len = size + sizeof (uint32_t);
@@ -152,7 +152,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF((retval && retval != MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
 
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
-	
+
 	/* Read the SPropValue array from data blob.
 	   fixme: replace the memory context by the object one.
 	*/
@@ -163,13 +163,13 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 
 	mapistatus = emsmdb_get_SPropValue((TALLOC_CTX *)session,
 					   &mapi_response->mapi_repl->u.mapi_GetProps.prop_data,
-					   &properties, lpProps, PropCount, 
+					   &properties, lpProps, PropCount,
 					   mapi_response->mapi_repl->u.mapi_GetProps.layout);
 	OPENCHANGE_RETVAL_IF(!mapistatus && (retval == MAPI_W_ERRORS_RETURNED), retval, mem_ctx);
-	
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
-	
+
 	return MAPI_E_SUCCESS;
 }
 
@@ -196,7 +196,7 @@ _PUBLIC_ enum MAPISTATUS GetProps(mapi_object_t *obj,
 */
 _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
 				  uint32_t flags,
-				  struct SPropValue *lpProps, 
+				  struct SPropValue *lpProps,
 				  unsigned long PropCount)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -298,7 +298,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
 
    \param obj_parent the parent of the object to save changes for
    \param obj_child the object to save changes for
-   \param flags the access flags to set on the saved object 
+   \param flags the access flags to set on the saved object
 
    Possible flags:
    - KeepOpenReadOnly
@@ -315,7 +315,7 @@ _PUBLIC_ enum MAPISTATUS SetProps(mapi_object_t *obj,
 
    \sa SetProps, ModifyRecipients, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent, 
+_PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 					       mapi_object_t *obj_child,
 					       enum SaveFlags flags)
 {
@@ -333,7 +333,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 	/* Sanity Checks */
 	OPENCHANGE_RETVAL_IF(!obj_parent, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!obj_child, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC), 
+	OPENCHANGE_RETVAL_IF((flags != 0x9) && (flags != 0xA) && (flags != 0xC),
 		       MAPI_E_INVALID_PARAMETER, NULL);
 
 	session[0] = mapi_object_get_session(obj_parent);
@@ -395,7 +395,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note Developers may also call GetLastError() to retrieve the last
-   MAPI error code. Possible MAPI error codes are:   
+   MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
@@ -405,7 +405,7 @@ _PUBLIC_ enum MAPISTATUS SaveChangesAttachment(mapi_object_t *obj_parent,
 
    \sa GetProps, GetPropsAll, GetLastError
  */
-_PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj, 
+_PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 				     struct SPropTagArray *proptags)
 {
 	struct mapi_request	*mapi_request;
@@ -420,7 +420,7 @@ _PUBLIC_ enum MAPISTATUS GetPropList(mapi_object_t *obj,
 
 	/* sanity checks */
 	OPENCHANGE_RETVAL_IF(!obj, MAPI_E_INVALID_PARAMETER, NULL);
-	
+
 	session = mapi_object_get_session(obj);
 	OPENCHANGE_RETVAL_IF(!session, MAPI_E_INVALID_PARAMETER, NULL);
 
@@ -567,7 +567,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 
    \param obj the object to remove properties from
    \param proptags the properties to remove from the given object
-       
+
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
    \note Developers may also call GetLastError() to retrieve the last
@@ -578,7 +578,7 @@ _PUBLIC_ enum MAPISTATUS GetPropsAll(mapi_object_t *obj,
 
    \sa SetProps, GetLastError
 */
-_PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj, 
+_PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 				     struct SPropTagArray *proptags)
 {
 	TALLOC_CTX		*mem_ctx;
@@ -642,7 +642,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 }
 
 /**
-   \details Set one or more properties on a given object without 
+   \details Set one or more properties on a given object without
     invoking replication.
 
    This function sets one or more properties on a specified object. It
@@ -667,7 +667,7 @@ _PUBLIC_ enum MAPISTATUS DeleteProps(mapi_object_t *obj,
 */
 _PUBLIC_ enum MAPISTATUS SetPropertiesNoReplicate(mapi_object_t *obj,
 						  uint32_t flags,
-						  struct SPropValue *lpProps, 
+						  struct SPropValue *lpProps,
 						  unsigned long PropCount)
 {
 	TALLOC_CTX				*mem_ctx;
@@ -838,14 +838,14 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;	
+	return MAPI_E_SUCCESS;
 }
 
 
 /**
    \details Provides the property names that correspond to one
    or more property identifiers.
-   
+
    \param obj the object we are retrieving the names from
    \param ulPropTag the mapped property tag
    \param count count of property names pointed to by the nameid
@@ -854,9 +854,9 @@ _PUBLIC_ enum MAPISTATUS DeletePropertiesNoReplicate(mapi_object_t *obj,
    the server
 
    ulPropTag must be a property with type set to PT_NULL
- 
+
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-  
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
@@ -943,7 +943,7 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
 /**
    \details Provides the property identifiers that correspond to one
    or more property names.
-   
+
    \param obj the object we are retrieving the identifiers from
    \param count count of property names pointed to by the nameid
    parameter.
@@ -963,12 +963,14 @@ _PUBLIC_ enum MAPISTATUS GetNamesFromIDs(mapi_object_t *obj,
    using the mapi_nameid API.
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
-   
+
    \note Developers may also call GetLastError() to retrieve the last
    MAPI error code. Possible MAPI error codes are:
    - MAPI_E_NOT_INITIALIZED: MAPI subsystem has not been initialized
    - MAPI_E_CALL_FAILED: A network problem was encountered during the
      transaction
+   - MAPI_W_ERRORS_RETURNED: Some property names where not valid and should be
+     ignored. It's more a warning than an error.
 
    \sa GetNamesFromIds, QueryNamesFromIDs, mapi_nameid_new
 */
@@ -1006,7 +1008,7 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	/* Initialization */
 	mem_ctx = talloc_named(session, 0, "GetIDsFromNames");
 	size = 0;
-	
+
 	/* Fill the GetIDsFromNames operation */
 	request.ulFlags = ulFlags;
 	request.count = count;
@@ -1048,21 +1050,24 @@ _PUBLIC_ enum MAPISTATUS GetIDsFromNames(mapi_object_t *obj,
 	OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_CALL_FAILED, mem_ctx);
 	OPENCHANGE_RETVAL_IF(!mapi_response->mapi_repl, MAPI_E_CALL_FAILED, mem_ctx);
 	retval = mapi_response->mapi_repl->error_code;
-	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
-
+	OPENCHANGE_RETVAL_IF((retval != MAPI_W_ERRORS_RETURNED) && (retval != MAPI_E_SUCCESS), retval, mem_ctx);
 	OPENCHANGE_CHECK_NOTIFICATION(session, mapi_response);
 
 	/* Fill the SPropTagArray */
 	proptags[0]->cValues = mapi_response->mapi_repl->u.mapi_GetIDsFromNames.count;
 	proptags[0]->aulPropTag = (enum MAPITAGS *) talloc_array((TALLOC_CTX *)proptags[0], uint32_t, proptags[0]->cValues);
 	for (i = 0; i < proptags[0]->cValues; i++) {
-	  proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
+		if (mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i]) {
+			proptags[0]->aulPropTag[i] = (enum MAPITAGS)(((int)mapi_response->mapi_repl->u.mapi_GetIDsFromNames.propID[i] << 16) | PT_UNSPECIFIED);
+		} else {
+			proptags[0]->aulPropTag[i] = PT_ERROR;
+		}
 	}
-	
+
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
 
-	return MAPI_E_SUCCESS;
+	return retval;
 }
 
 
@@ -1167,7 +1172,7 @@ _PUBLIC_ enum MAPISTATUS QueryNamedProperties(mapi_object_t *obj,
 
 	talloc_free(mapi_response);
 	talloc_free(mem_ctx);
-	
+
 	return MAPI_E_SUCCESS;
 }
 

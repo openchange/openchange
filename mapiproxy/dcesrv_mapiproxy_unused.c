@@ -19,8 +19,6 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#define	_GNU_SOURCE 1
-
 #include "config.h"
 
 #include <sys/types.h>
@@ -718,10 +716,10 @@ enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_state *d
 /* 
   EcDummyRpc 
 */
-void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
-		       struct EcDummyRpc *r)
+enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+		                  struct EcDummyRpc *r)
 {
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
 

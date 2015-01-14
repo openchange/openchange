@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2011
+   Copyright (C) Julien Kerihuel 2009-2014
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -28,11 +28,12 @@
 #include <sys/time.h>
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
 struct exchange_emsmdb_session		*emsmdb_session = NULL;
-void					*openchange_ldb_ctx = NULL;
+void					*openchange_db_ctx = NULL;
 
 static struct exchange_emsmdb_session *dcesrv_find_emsmdb_session(struct GUID *uuid)
 {
@@ -96,7 +97,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
 		wire_handle.uuid = GUID_zero();
 		*r->out.handle = wire_handle;
-		
+
 		r->out.pcmsPollsMax = talloc_zero(mem_ctx, uint32_t);
 		r->out.pcRetry = talloc_zero(mem_ctx, uint32_t);
 		r->out.pcmsRetryDelay = talloc_zero(mem_ctx, uint32_t);
@@ -123,10 +124,10 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx, 
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
-		smb_panic("unable to initialize emsmdbp context");
-		return MAPI_E_FAILONEPROVIDER;
+		OC_ABORT(false, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context"));
+		goto failure;
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
@@ -842,7 +843,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 							   &(mapi_response->mapi_repl[idx]),
 							   mapi_response->handles, &size);
 			break;
-		/* op_MAPI_GetMessageStatus: 0x1f */
+		case op_MAPI_GetMessageStatus: /* 0x1f */
+			retval = EcDoRpc_RopGetMessageStatus(mem_ctx, emsmdbp_ctx,
+							     &(mapi_request->mapi_req[i]),
+							     &(mapi_response->mapi_repl[idx]),
+							     mapi_response->handles, &size);
+			break;
 		/* op_MAPI_SetMessageStatus: 0x20 */
 		case op_MAPI_GetAttachmentTable: /* 0x21 */
 			retval = EcDoRpc_RopGetAttachmentTable(mem_ctx, emsmdbp_ctx,
@@ -1108,7 +1114,13 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		/* op_MAPI_ReadPerUserInformation: 0x63 */
 		/* op_MAPI_SetReadFlags: 0x66 */
 		/* op_MAPI_CopyProperties: 0x67 */
-		/* op_MAPI_GetReceiveFolderTable: 0x68 */
+		case op_MAPI_GetReceiveFolderTable: /* 0x68 */
+			retval = EcDoRpc_RopGetReceiveFolderTable(mem_ctx, emsmdbp_ctx,
+								  &(mapi_request->mapi_req[i]),
+								  &(mapi_response->mapi_repl[idx]),
+								  mapi_response->handles, &size);
+			break;
+
 		/* op_MAPI_GetCollapseState: 0x6b */
 		/* op_MAPI_SetCollapseState: 0x6c */
 		case op_MAPI_GetTransportFolder: /* 0x6d */
@@ -1236,9 +1248,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		default:
 			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
 				  mapi_request->mapi_req[i].opnum));
-			retval = MAPI_E_NOT_IMPLEMENTED;
 		}
-		if (retval != MAPI_E_SUCCESS) return NULL;
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			idx++;
@@ -1269,29 +1279,33 @@ notif:
 	}
 	
 #if 0
-	DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
-	/* Process notifications available on subscriptions queues */
-	for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
-		DEBUG(0, ("subscription = %p\n", sel->subscription));
-		if (sel->subscription) {
-			DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
-			DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
-			DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
-			DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
-		}
-		retval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
-		if (retval == MAPI_E_SUCCESS) {
-			for (el = nlist; el->notification; el = el->next) {
-				if (needs_realloc) {
-					mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
-										  struct EcDoRpc_MAPI_REPL, idx + 2);
-				}
-				needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
-									  &(mapi_response->mapi_repl[idx]),
-									  sel->subscription, el->notification, &size);
-				idx++;
+	{
+		enum mapistore_error	mretval;
+
+		DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
+		/* Process notifications available on subscriptions queues */
+		for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
+			DEBUG(0, ("subscription = %p\n", sel->subscription));
+			if (sel->subscription) {
+				DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
+				DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
+				DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
+				DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
 			}
-			talloc_free(nlist);
+			mretval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
+			if (mretval == MAPISTORE_SUCCESS) {
+				for (el = nlist; el->notification; el = el->next) {
+					if (needs_realloc) {
+						mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl, 
+											  struct EcDoRpc_MAPI_REPL, idx + 2);
+					}
+					needs_realloc = emsmdbp_fill_notification(mapi_response->mapi_repl, emsmdbp_ctx, 
+										  &(mapi_response->mapi_repl[idx]),
+										  sel->subscription, el->notification, &size);
+					idx++;
+				}
+				talloc_free(nlist);
+			}
 		}
 	}
 #endif
@@ -1467,12 +1481,12 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
-			      TALLOC_CTX *mem_ctx,
-			      struct EcDummyRpc *r)
+static enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
+					 TALLOC_CTX *mem_ctx,
+					 struct EcDummyRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6) not implemented\n"));
-	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
+	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6)\n"));
+	return MAPI_E_SUCCESS;
 }
 
 
@@ -1561,6 +1575,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	const char			*mailNickname;
 	const char			*userDN;
 	char				*dnprefix;
+	char				*tmp = "";
 
 	DEBUG(3, ("exchange_emsmdb: EcDoConnectEx (0xA)\n"));
 
@@ -1568,15 +1583,20 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 	failure:
-		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
+		wire_handle.handle_type = 0;
 		wire_handle.uuid = GUID_zero();
 		*r->out.handle = wire_handle;
 		*r->out.pcmsPollsMax = 0;
 		*r->out.pcRetry = 0;
 		*r->out.pcmsRetryDelay = 0;
 		*r->out.picxr = 0;
-		r->out.szDNPrefix = NULL;
-		r->out.szDisplayName = NULL;
+
+		r->out.szDNPrefix = (const char **)talloc_array(mem_ctx, char *, 2);
+		r->out.szDNPrefix[0] = talloc_strdup(mem_ctx, tmp);
+
+		r->out.szDisplayName = (const char **)talloc_array(mem_ctx, char *, 2);
+		r->out.szDisplayName[0] = talloc_strdup(mem_ctx, tmp);
+
 		r->out.rgwServerVersion[0] = 0;
 		r->out.rgwServerVersion[1] = 0;
 		r->out.rgwServerVersion[2] = 0;
@@ -1586,28 +1606,42 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		*r->out.pulTimeStamp = 0;
 		r->out.rgbAuxOut = NULL;
 		*r->out.pcbAuxOut = 0;
-		r->out.result = MAPI_E_LOGON_FAILED;
-		return MAPI_E_LOGON_FAILED;
+		return r->out.result;
+	}
+
+	if (r->in.cbAuxIn < 0x8) {
+	  DEBUG(5, ("[ERR][%s:%d]: r->in.cbAuxIn is > 0x0 and < 0x8\n", __FILE__, __LINE__));
+		r->out.result = ecRpcFailed;
+		goto failure;
+	}
+
+	if (!r->in.szUserDN || strlen(r->in.szUserDN) == 0) {
+	  DEBUG(5, ("[ERR][%s:%d]: r->in.szUserDN is NULL or empty\n", __FILE__, __LINE__));
+		r->out.result = MAPI_E_NO_ACCESS;
+		goto failure;
 	}
 
 	/* Step 1. Initialize the emsmdbp context */
 	emsmdbp_ctx = emsmdbp_init(dce_call->conn->dce_ctx->lp_ctx,
 				   dcesrv_call_account_name(dce_call),
-				   openchange_ldb_ctx);
+				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
 		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
+		r->out.result = MAPI_E_LOGON_FAILED;
 		goto failure;
 	}
 
 	/* Step 2. Check if incoming user belongs to the Exchange organization */
 	if (emsmdbp_verify_user(dce_call, emsmdbp_ctx) == false) {
 		talloc_free(emsmdbp_ctx);
+		r->out.result = ecUnknownUser;
 		goto failure;
 	}
 
 	/* Step 3. Check if input user DN belongs to the Exchange organization */
 	if (emsmdbp_verify_userdn(dce_call, emsmdbp_ctx, r->in.szUserDN, &msg) == false) {
 		talloc_free(emsmdbp_ctx);
+		r->out.result = ecUnknownUser;
 		goto failure;
 	}
 
@@ -1624,11 +1658,15 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	dnprefix = strstr(userDN, mailNickname);
 	if (!dnprefix) {
 		talloc_free(emsmdbp_ctx);
+		r->out.result = MAPI_E_LOGON_FAILED;
 		goto failure;
 	}
 
 	*dnprefix = '\0';
+	emsmdbp_ctx->szDNPrefix = talloc_strdup(emsmdbp_ctx, userDN);
+	OPENCHANGE_RETVAL_IF(emsmdbp_ctx->szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 	*r->out.szDNPrefix = strupper_talloc(mem_ctx, userDN);
+	OPENCHANGE_RETVAL_IF(*r->out.szDNPrefix == NULL, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
 	/* Step 6. Fill EcDoConnectEx reply */
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_EMSMDB);
@@ -1659,7 +1697,9 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		r->out.rgwBestVersion[0] = 0x000B;
 		r->out.rgwBestVersion[1] = 0x8000;
 		r->out.rgwBestVersion[2] = 0x0000;
-		
+		wire_handle.handle_type = 0;
+		wire_handle.uuid = GUID_zero();
+		*r->out.handle = wire_handle;
 		r->out.result = MAPI_E_VERSION;
 	} else {
 		r->out.rgwBestVersion[0] = r->in.rgwClientVersion[0];
@@ -1711,6 +1751,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 					  TALLOC_CTX *mem_ctx,
 					  struct EcDoRpcExt2 *r)
 {
+	enum ndr_err_code		ndr_err;
 	struct exchange_emsmdb_session	*session;
 	struct emsmdbp_context		*emsmdbp_ctx = NULL;
 	struct mapi2k7_request		mapi2k7_request;
@@ -1750,13 +1791,31 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	}
 	emsmdbp_ctx = (struct emsmdbp_context *)session->session->private_data;
 
+	/* Sanity checks on pcbOut input parameter */
+	if (*r->in.pcbOut < 0x00000008) {
+		r->out.result = ecRpcFailed;
+		return ecRpcFailed;
+	}
+
 	/* Extract mapi_request from rgbIn */
 	rgbIn.data = r->in.rgbIn;
 	rgbIn.length = r->in.cbIn;
+
 	ndr_pull = ndr_pull_init_blob(&rgbIn, mem_ctx);
+	if (ndr_pull->data_size > *r->in.pcbOut) {
+		r->out.result = ecBufferTooSmall;
+		talloc_free(ndr_pull);
+		return ecBufferTooSmall;
+	}
+
 	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-	ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
+	ndr_err = ndr_pull_mapi2k7_request(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
+
+	if (ndr_err != NDR_ERR_SUCCESS) {
+		r->out.result = ecRpcFormat;
+		return ecRpcFormat;
+	}
 
 	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
 	talloc_free(mapi2k7_request.mapi_request);
@@ -1951,9 +2010,10 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	emsmdb_session->session = NULL;
 
 	/* Open read/write context on OpenChange dispatcher database */
-	openchange_ldb_ctx = emsmdbp_openchange_ldb_init(dce_ctx->lp_ctx);
-	if (!openchange_ldb_ctx) {
-		smb_panic("unable to initialize 'openchange.ldb' context");
+	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
+	if (!openchange_db_ctx) {
+		OC_ABORT(false, ("[exchange_emsmdb] Unable to initialize openchangedb"));
+		return NT_STATUS_INTERNAL_ERROR;
 	}
 
 	return NT_STATUS_OK;

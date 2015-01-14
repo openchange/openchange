@@ -1,0 +1,72 @@
+#!/usr/bin/python
+# encoding: utf8
+# OpenChange organization provision script
+#
+# Copyright (C) Carlos Pérez-Aradros Herce <cperez@zentyal.com> 2014
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+#
+import optparse
+import os
+import sys
+
+# To allow running from the source directory
+sys.path.append("python")
+
+import samba
+import samba.getopt as options
+import openchange.provision as openchange
+
+parser = optparse.OptionParser("openchange_neworganization [options]")
+
+sambaopts = options.SambaOptions(parser)
+parser.add_option_group(sambaopts)
+
+credopts = options.CredentialsOptions(parser)
+parser.add_option_group(credopts)
+parser.add_option("--firstorg", type="string", metavar="FIRSTORG",
+                  default="First Organization",
+                  help="set OpenChange Organization Name (otherwise 'First Organization')")
+parser.add_option("--firstou", type="string", metavar="FIRSTOU",
+                  default="First Administrative Group",
+                  help="set OpenChange Administrative Group (otherwise 'First Administrative Group')")
+parser.add_option("--deprovision", action="store_true", help="Deprovision the organization")
+
+opts, args = parser.parse_args()
+if len(args) != 0:
+    parser.print_help()
+    sys.exit(1)
+
+lp = sambaopts.get_loadparm()
+creds = credopts.get_credentials(lp)
+
+_setupdir = os.path.dirname(__file__)
+if not os.path.exists(os.path.join(_setupdir, "AD")):
+    _setupdir = samba.param.setup_dir()
+
+
+def setup_path(*args):
+    global _setupdir
+    return os.path.join(_setupdir, *args)
+
+provisionnames = openchange.guess_names_from_smbconf(
+    lp, creds, opts.firstorg, opts.firstou)
+
+if opts.deprovision:
+    openchange.deprovision_organization(setup_path, provisionnames, lp, creds)
+    openchange.unregister(setup_path, provisionnames, lp, creds)
+else:
+    if openchange.provision_organization(setup_path, provisionnames, lp, creds):
+        openchange.register(setup_path, provisionnames, lp, creds)
+        openchange.openchangedb_new_organization(provisionnames, lp)

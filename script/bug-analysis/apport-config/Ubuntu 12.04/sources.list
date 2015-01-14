@@ -1,0 +1,10 @@
+#deb http://archive.zentyal.org/zentyal 3.2 main extra
+#deb http://ppa.launchpad.net/zentyal/3.2/ubuntu precise main
+#deb-src http://ppa.launchpad.net/zentyal/3.2/ubuntu precise main
+#deb http://archive.zentyal.org/zentyal cloud main
+deb http://archive.zentyal.org/old precise main
+
+deb http://gb.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ precise main universe multiverse restricted
+deb http://gb.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted
+deb-src http://gb.archive.ubuntu.com/ubuntu/ precise-updates main universe multiverse restricted

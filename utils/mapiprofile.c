@@ -187,8 +187,14 @@ static bool mapiprofile_create(struct mapi_context *mapi_ctx,
 	mapi_profile_add_string_attr(mapi_ctx, profname, "seal", (seal == true) ? "true" : "false");
 	mapi_profile_add_string_attr(mapi_ctx, profname, "roh", (roh == true) ? "true" : "false");
 	if (roh) {
-		char *roh_rpc_proxy_port_str;
+		char *roh_rpc_proxy_port_str = NULL;
+
 		roh_rpc_proxy_port_str = talloc_asprintf(mem_ctx, "%d", roh_rpc_proxy_port);
+		if (roh_rpc_proxy_port_str == NULL) {
+			mapi_errstr("CreateProfile", retval);
+			talloc_free(mem_ctx);
+			return NULL;
+		}
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_tls", (roh_tls == true) ? "true" : "false");
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_server", roh_rpc_proxy_server);
 		mapi_profile_add_string_attr(mapi_ctx, profname, "roh_rpc_proxy_port", roh_rpc_proxy_port_str);

@@ -707,8 +707,7 @@ class MessageObject(object):
         self.cached_attachments = []
         self.attachment_ids = att_ids
         self.next_aid = 0  # Provisional AID
-        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name,
-                    self.properties))
+        logger.info('[PYTHON]:[%s] message.__init__' % BackendObject.name)
 
     def get_properties(self, properties):
         logger.info('[PYTHON]:[%s][%s] message.get_properties()' % (BackendObject.name, self.uri))
@@ -838,7 +837,7 @@ class MessageObject(object):
 
 class AttachmentObject(object):
     def __init__(self, message, att=None, aid=None):
-        logger.info('[PYTHON]:[%s] attachment.__init__(%s)' % (BackendObject.name, att))
+        logger.info('[PYTHON]:[%s] attachment.__init__' % BackendObject.name)
         self.message = message
         self.properties = att
         self.att_id = aid

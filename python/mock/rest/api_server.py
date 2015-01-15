@@ -378,6 +378,20 @@ def module_messages_get_attachments(msg_id):
 # Mail service
 ###############################################################################
 
+@app.route('/mails/submit/', methods=['POST'])
+def module_mail_submit():
+    """ Send mail to its recipients.
+        param data['msg']: the message properties
+        param data['serv_spool']: flag that indicates if the message needs
+            processing and by whom """
+    data = request.get_json()
+    # Read message data
+    msg = data['msg']
+    # Read processing flag (No processing required/by server/by client spooler
+    serv_spool = data['serv_spool']
+    return "", 202
+
+
 @app.route('/mails/', methods=['POST'])
 def module_mail_create():
     data = request.get_json()

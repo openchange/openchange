@@ -66,7 +66,7 @@ static enum mapistore_error mysql_search_existing_fmid(struct indexing_context *
 	mem_ctx = talloc_new(NULL);
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT soft_deleted FROM %s "
-		"WHERE username = '%s' AND fmid = %"PRIu64,
+		"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 	ret = select_first_uint(MYSQL(ictx), sql, &soft_deleted);
 	MAPI_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_EXIST, mem_ctx);
@@ -114,7 +114,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 	sql = talloc_asprintf(mem_ctx,
 		"INSERT INTO %s "
 		"(username, fmid, url, soft_deleted) "
-		"VALUES ('%s', %"PRIu64", '%s', '%d')",
+		"VALUES ('%s', '%"PRIu64"', '%s', '%d')",
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid,
 		_sql(mem_ctx, mapistore_URI), 0);
 
@@ -158,7 +158,7 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	sql = talloc_asprintf(mem_ctx,
 		"UPDATE %s "
 		"SET url = '%s' "
-		"WHERE username = '%s' AND fmid = %"PRIu64,
+		"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 		INDEXING_TABLE, _sql(mem_ctx, mapistore_URI), _sql(mem_ctx, username), fmid);
 
 	ret = execute_query(MYSQL(ictx), sql);
@@ -219,13 +219,13 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 		sql = talloc_asprintf(mem_ctx,
 			"UPDATE %s "
 			"SET soft_deleted=1 "
-			"WHERE username = '%s' AND fmid = %"PRIu64,
+			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 		break;
 	case MAPISTORE_PERMANENT_DELETE:
 		sql = talloc_asprintf(mem_ctx,
 			"DELETE FROM %s "
-			"WHERE username = '%s' AND fmid = %"PRIu64,
+			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 		break;
 	default:
@@ -276,7 +276,7 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT url, soft_deleted FROM %s "
-		"WHERE username = '%s' AND fmid = %"PRIu64,
+		"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 		INDEXING_TABLE, _sql(mem_ctx, username), fmid);
 	MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, NULL);
 

@@ -256,6 +256,35 @@ isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
+#
+# ms-Exch-Address-List-Service-Link	 
+# A link from the address list service to the Exchange server it
+# should be running on.
+#
+dn: CN=ms-Exch-Address-List-Service-Link,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Address-List-Service-Link
+distinguishedName: CN=ms-Exch-Address-List-Service-Link,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.75
+attributeSyntax: 2.5.5.1
+isSingleValued: TRUE
+linkID: 1016
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Address-List-Service-Link
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Address-List-Service-Link
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: msExchAddressListServiceLink
+name: ms-Exch-Address-List-Service-Link
+schemaIDGUID: 9b6e9584-b093-11d2-aa06-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
+
+
 
 #
 # ms-Exch-Address-List-Service-BL   
@@ -281,35 +310,6 @@ lDAPDisplayName: msExchAddressListServiceBL
 name: ms-Exch-Address-List-Service-BL
 schemaIDGUID: 8a407b6e-b09e-11d2-aa06-00c04f8eedd8
 systemFlags: 1
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
-
-
-
-
-#
-# ms-Exch-Address-List-Service-Link	 
-# A link from the address list service to the Exchange server it
-# should be running on.
-#
-dn: CN=ms-Exch-Address-List-Service-Link,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Address-List-Service-Link
-distinguishedName: CN=ms-Exch-Address-List-Service-Link,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.75
-attributeSyntax: 2.5.5.1
-isSingleValued: TRUE
-linkID: 1016
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Address-List-Service-Link
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Address-List-Service-Link
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: msExchAddressListServiceLink
-name: ms-Exch-Address-List-Service-Link
-schemaIDGUID: 9b6e9584-b093-11d2-aa06-00c04f8eedd8
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
@@ -1002,6 +1002,32 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 #
+# ms-Exch-Responsible-Local-DXA	
+#
+dn: CN=ms-Exch-Responsible-Local-DXA,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Responsible-Local-DXA
+distinguishedName: CN=ms-Exch-Responsible-Local-DXA,${SCHEMADN}
+attributeID: 1.2.840.113556.1.2.298
+attributeSyntax: 2.5.5.1
+isSingleValued: TRUE
+mAPIID: 33059
+linkID: 122
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Responsible-Local-DXA
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Responsible-Local-DXA
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: responsibleLocalDXA
+name: ms-Exch-Responsible-Local-DXA
+schemaIDGUID: a8df7462-c5ea-11d1-bbcb-0080c76670c0
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
+#
 # ms-Exch-Assoc-Remote-DXA
 #
 dn: CN=ms-Exch-Assoc-Remote-DXA,${SCHEMADN}
@@ -1541,6 +1567,33 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
+#
+# ms-Exch-Source-Bridgehead-Servers-DN		  
+# Pointers to SMTP virtual servers of servers in bridgehead on the
+# local side of Exchange Connector.
+#
+dn: CN=ms-Exch-Source-Bridgehead-Servers-DN,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Source-Bridgehead-Servers-DN
+distinguishedName: CN=ms-Exch-Source-Bridgehead-Servers-DN,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.12511
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+linkID: 1002
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Source-Bridgehead-Servers-DN
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Source-Bridgehead-Servers-DN
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: msExchSourceBridgeheadServersDN
+name: ms-Exch-Source-Bridgehead-Servers-DN
+schemaIDGUID: 206f4094-b099-11d2-aa06-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
 
 #
 # ms-Exch-Bridgeheaded-Local-Connectors-DN-BL	
@@ -1569,6 +1622,34 @@ systemFlags: 1
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+
+
+
+#
+# ms-Exch-Target-Bridgehead-Servers-DN	
+# Pointers to bridgehead SMTP virtual servers in the connector target
+# routing group (RG).
+#
+dn: CN=ms-Exch-Target-Bridgehead-Servers-DN,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Target-Bridgehead-Servers-DN
+distinguishedName: CN=ms-Exch-Target-Bridgehead-Servers-DN,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.12514
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+linkID: 1004
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Target-Bridgehead-Servers-DN
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Target-Bridgehead-Servers-DN
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: msExchTargetBridgeheadServersDN
+name: ms-Exch-Target-Bridgehead-Servers-DN
+schemaIDGUID: 20da8a66-b099-11d2-aa06-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -3330,6 +3411,33 @@ schemaIDGUID: 9af29b3c-b093-11d2-aa06-00c04f8eedd8
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
+
+
+#
+# ms-Exch-Home-Sync-Service  
+# Link to the Active Directory Connector (ADC) for this connection
+# agreement.
+#
+dn: CN=ms-Exch-Home-Sync-Service,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Home-Sync-Service
+distinguishedName: CN=ms-Exch-Home-Sync-Service,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.36
+attributeSyntax: 2.5.5.1
+isSingleValued: TRUE
+linkID: 146
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Home-Sync-Service
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Home-Sync-Service
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: msExchHomeSyncService
+name: ms-Exch-Home-Sync-Service
+schemaIDGUID: a2a3f1a0-b093-11d2-aa06-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -8143,6 +8251,32 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
+
+#
+# ms-Exch-Export-Containers-Linked 
+#
+dn: CN=ms-Exch-Export-Containers-Linked,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Export-Containers-Linked
+distinguishedName: CN=ms-Exch-Export-Containers-Linked,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.1026
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+linkID: 1028
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Export-Containers-Linked
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Export-Containers-Linked
+oMSyntax: 127
+searchFlags: 0
+lDAPDisplayName: msExchExportContainersLinked
+name: ms-Exch-Export-Containers-Linked
+schemaIDGUID: 3b7ea364-1d4d-11d3-aa5e-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
 #
 # ms-Exch-Export-Containers-BL	  
 #
@@ -8168,32 +8302,6 @@ systemFlags: 1
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
-
-
-
-#
-# ms-Exch-Export-Containers-Linked 
-#
-dn: CN=ms-Exch-Export-Containers-Linked,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Export-Containers-Linked
-distinguishedName: CN=ms-Exch-Export-Containers-Linked,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.1026
-attributeSyntax: 2.5.5.1
-isSingleValued: FALSE
-linkID: 1028
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Export-Containers-Linked
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Export-Containers-Linked
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: msExchExportContainersLinked
-name: ms-Exch-Export-Containers-Linked
-schemaIDGUID: 3b7ea364-1d4d-11d3-aa5e-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -9475,6 +9583,32 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
+#
+# ms-Exch-Routing-Group-Members-DN 
+# Pointers to virtual servers of servers in a Exchange Routing Group.
+#
+dn: CN=ms-Exch-Routing-Group-Members-DN,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Routing-Group-Members-DN
+distinguishedName: CN=ms-Exch-Routing-Group-Members-DN,${SCHEMADN}
+attributeID: 1.2.840.113556.1.4.7000.102.12506
+attributeSyntax: 2.5.5.1
+isSingleValued: FALSE
+linkID: 1000
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Routing-Group-Members-DN
+oMObjectClass:: KwwCh3McAIVK
+adminDescription: ms-Exch-Routing-Group-Members-DN
+oMSyntax: 127
+searchFlags: 1
+lDAPDisplayName: msExchRoutingGroupMembersDN
+name: ms-Exch-Routing-Group-Members-DN
+schemaIDGUID: 1ff9ed9a-b098-11d2-aa06-00c04f8eedd8
+isMemberOfPartialAttributeSet: FALSE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
 
 #
 # ms-Exch-Home-Routing-Group-DN-BL	 
@@ -9528,33 +9662,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 isMemberOfPartialAttributeSet: TRUE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
-
-
-#
-# ms-Exch-Home-Sync-Service  
-# Link to the Active Directory Connector (ADC) for this connection
-# agreement.
-#
-dn: CN=ms-Exch-Home-Sync-Service,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Home-Sync-Service
-distinguishedName: CN=ms-Exch-Home-Sync-Service,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.36
-attributeSyntax: 2.5.5.1
-isSingleValued: TRUE
-linkID: 146
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Home-Sync-Service
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Home-Sync-Service
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: msExchHomeSyncService
-name: ms-Exch-Home-Sync-Service
-schemaIDGUID: a2a3f1a0-b093-11d2-aa06-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -17309,33 +17416,6 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 #
-# ms-Exch-Responsible-Local-DXA	
-#
-dn: CN=ms-Exch-Responsible-Local-DXA,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Responsible-Local-DXA
-distinguishedName: CN=ms-Exch-Responsible-Local-DXA,${SCHEMADN}
-attributeID: 1.2.840.113556.1.2.298
-attributeSyntax: 2.5.5.1
-isSingleValued: TRUE
-mAPIID: 33059
-linkID: 122
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Responsible-Local-DXA
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Responsible-Local-DXA
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: responsibleLocalDXA
-name: ms-Exch-Responsible-Local-DXA
-schemaIDGUID: a8df7462-c5ea-11d1-bbcb-0080c76670c0
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
-
-
-
-#
 # ms-Exch-Responsible-MTA-Server    
 #
 dn: CN=ms-Exch-Responsible-MTA-Server,${SCHEMADN}
@@ -17723,32 +17803,6 @@ systemFlags: 1
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
-
-
-#
-# ms-Exch-Routing-Group-Members-DN 
-# Pointers to virtual servers of servers in a Exchange Routing Group.
-#
-dn: CN=ms-Exch-Routing-Group-Members-DN,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Routing-Group-Members-DN
-distinguishedName: CN=ms-Exch-Routing-Group-Members-DN,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.12506
-attributeSyntax: 2.5.5.1
-isSingleValued: FALSE
-linkID: 1000
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Routing-Group-Members-DN
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Routing-Group-Members-DN
-oMSyntax: 127
-searchFlags: 1
-lDAPDisplayName: msExchRoutingGroupMembersDN
-name: ms-Exch-Routing-Group-Members-DN
-schemaIDGUID: 1ff9ed9a-b098-11d2-aa06-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -21808,33 +21862,6 @@ objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
-#
-# ms-Exch-Source-Bridgehead-Servers-DN		  
-# Pointers to SMTP virtual servers of servers in bridgehead on the
-# local side of Exchange Connector.
-#
-dn: CN=ms-Exch-Source-Bridgehead-Servers-DN,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Source-Bridgehead-Servers-DN
-distinguishedName: CN=ms-Exch-Source-Bridgehead-Servers-DN,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.12511
-attributeSyntax: 2.5.5.1
-isSingleValued: FALSE
-linkID: 1002
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Source-Bridgehead-Servers-DN
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Source-Bridgehead-Servers-DN
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: msExchSourceBridgeheadServersDN
-name: ms-Exch-Source-Bridgehead-Servers-DN
-schemaIDGUID: 206f4094-b099-11d2-aa06-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
-
-
 
 #
 # ms-Exch-Space-Last-Computed	    
@@ -22135,34 +22162,6 @@ attributeSecurityGUID: e48d0154-bcf8-11d1-8702-00c04fb96050
 isMemberOfPartialAttributeSet: TRUE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
-
-
-
-#
-# ms-Exch-Target-Bridgehead-Servers-DN	
-# Pointers to bridgehead SMTP virtual servers in the connector target
-# routing group (RG).
-#
-dn: CN=ms-Exch-Target-Bridgehead-Servers-DN,${SCHEMADN}
-objectClass: top
-objectClass: attributeSchema
-cn: ms-Exch-Target-Bridgehead-Servers-DN
-distinguishedName: CN=ms-Exch-Target-Bridgehead-Servers-DN,${SCHEMADN}
-attributeID: 1.2.840.113556.1.4.7000.102.12514
-attributeSyntax: 2.5.5.1
-isSingleValued: FALSE
-linkID: 1004
-showInAdvancedViewOnly: TRUE
-adminDisplayName: ms-Exch-Target-Bridgehead-Servers-DN
-oMObjectClass:: KwwCh3McAIVK
-adminDescription: ms-Exch-Target-Bridgehead-Servers-DN
-oMSyntax: 127
-searchFlags: 0
-lDAPDisplayName: msExchTargetBridgeheadServersDN
-name: ms-Exch-Target-Bridgehead-Servers-DN
-schemaIDGUID: 20da8a66-b099-11d2-aa06-00c04f8eedd8
-isMemberOfPartialAttributeSet: FALSE
-objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
 
@@ -23798,3 +23797,21 @@ name: ms-Exch-XMIT-Timeout-Urgent
 schemaIDGUID: 1482fed4-b098-11d2-aa06-00c04f8eedd8
 isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+
+#
+# Legacy-Exchange-DN
+# 
+cn: Legacy-Exchange-DN
+ldapDisplayName: legacyExchangeDN
+attributeId: 1.2.840.113556.1.4.655
+attributeSyntax: 2.5.5.4
+omSyntax: 20
+isSingleValued: TRUE
+schemaIdGuid: 28630ebc-41d5-11d1-a9c1-0000f80367c1
+systemOnly: FALSE
+searchFlags:fPRESERVEONDELETE| fANR | fATTINDEX
+attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
+isMemberOfPartialAttributeSet: TRUE
+systemFlags: FLAG_SCHEMA_BASE_OBJECT
+schemaFlagsEx: FLAG_ATTR_IS_CRITICAL

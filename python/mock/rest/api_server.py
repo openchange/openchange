@@ -249,7 +249,7 @@ def module_folders_get_messages(folder_id):
 
 
 ###############################################################################
-# common message implementation
+# Common message implementation
 ###############################################################################
 
 def _message_create(handler, collection, data):
@@ -267,21 +267,6 @@ def _message_create(handler, collection, data):
     except KeyError, ke:
         abort(404, ke.message)
     return msg
-
-
-###############################################################################
-# Mail service
-###############################################################################
-
-@app.route('/mails/', methods=['POST'])
-def module_mail_create():
-    data = request.get_json()
-    handler = ApiHandler(user_id='any')
-    try:
-        msg = _message_create(handler, 'mails', data)
-    finally:
-        handler.close_context()
-    return jsonify(id=msg['id'])
 
 
 @app.route('/mails/<int:msg_id>/', methods=['GET'])
@@ -336,6 +321,7 @@ def module_mail_delete(msg_id):
         handler.close_context()
     return "", 204
 
+
 @app.route('/mails/<int:msg_id>/attachments', methods=['HEAD'])
 @app.route('/calendars/<int:msg_id>/attachments', methods=['HEAD'])
 @app.route('/tasks/<int:msg_id>/attachments', methods=['HEAD'])
@@ -358,6 +344,7 @@ def module_messages_head_attachments(msg_id):
         return response
 
     return jsonify()
+
 
 @app.route('/mails/<int:msg_id>/attachments', methods=['GET'])
 @app.route('/calendars/<int:msg_id>/attachments', methods=['GET'])
@@ -388,7 +375,36 @@ def module_messages_get_attachments(msg_id):
 
 
 ###############################################################################
-# Calendar
+# Mail service
+###############################################################################
+
+@app.route('/mails/submit/', methods=['POST'])
+def module_mail_submit():
+    """ Send mail to its recipients.
+        param data['msg']: the message properties
+        param data['serv_spool']: flag that indicates if the message needs
+            processing and by whom """
+    data = request.get_json()
+    # Read message data
+    msg = data['msg']
+    # Read processing flag (No processing required/by server/by client spooler
+    serv_spool = data['serv_spool']
+    return "", 202
+
+
+@app.route('/mails/', methods=['POST'])
+def module_mail_create():
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        msg = _message_create(handler, 'mails', data)
+    finally:
+        handler.close_context()
+    return jsonify(id=msg['id'])
+
+
+###############################################################################
+# Calendar service
 ###############################################################################
 
 @app.route('/calendars/', methods=['POST'])
@@ -421,8 +437,6 @@ def module_tasks_create():
 # Contacts service
 ###############################################################################
 
-import pprint
-
 @app.route('/contacts/', methods=['POST'])
 def module_contacts_create():
     data = request.get_json()
@@ -452,6 +466,7 @@ def module_notes_create():
 ###############################################################################
 # Attachment
 ###############################################################################
+
 @app.route('/attachments/', methods=['POST'])
 def module_attachments_create():
     data = request.get_json()
@@ -470,6 +485,7 @@ def module_attachments_create():
         handler.close_context()
     return jsonify(id=att['id'])
 
+
 @app.route('/attachments/<int:att_id>/', methods=['GET'])
 def module_attachments_get(att_id):
     """Fetch single attachment by its ID"""
@@ -483,6 +499,7 @@ def module_attachments_get(att_id):
         handler.close_context()
     return jsonify(ret_val)
 
+
 @app.route('/attachments/<int:att_id>/', methods=['PUT'])
 def module_attachments_put(att_id):
     data = request.get_json()
@@ -494,6 +511,7 @@ def module_attachments_put(att_id):
     finally:
         handler.close_context()
     return "", 201
+
 
 @app.route('/attachments/<int:att_id>/', methods=['HEAD'])
 def module_attachments_head(att_id):

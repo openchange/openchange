@@ -906,7 +906,10 @@ class TableObject(object):
         return rst
 
     def _apply_restriction_message(self, restriction, message):
-        if restriction is None:
+        if restriction is None or restriction is {}:
+            return True
+
+        if not 'type' in restriction:
             return True
 
         if (restriction["type"] == "and"):

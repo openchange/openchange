@@ -259,7 +259,7 @@ class _RESTConn(object):
                     for rcp in rcps:
                         value = rcp[key]
                         rcp[key] = base64.b64encode(value)
-        msg["recipients"] = rcps
+            msg["recipients"] = rcps
         headers = {'Content-Type': 'application/json'}
         r = self.so.post('%s/%s/' % (self.base_url, collection),
                          data=json.dumps(msg), headers=headers)
@@ -292,9 +292,34 @@ class _RESTConn(object):
                     for rcp in rcps:
                         value = rcp[key]
                         rcp[key] = base64.b64encode(value)
-        msg["recipients"] = rcps
+            msg["recipients"] = rcps
         self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg),
                     headers=headers)
+        return mapistore.errors.MAPISTORE_SUCCESS
+
+    def submit_message(self, props, recipients, serv_spool):
+        msg = props.copy()
+        rcps = [rcp.copy() for rcp in recipients]
+        # base64 PtypBinary properties
+        self._encode_object_b64(msg)
+        msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
+        # Add recipients
+        rcps = [rcp.copy() for rcp in recipients]
+        if len(rcps) > 0:
+            # We assume all the recipients have the same properties
+            rcp_keys = rcps[0].keys()
+            for key in rcp_keys:
+                if mapistore.isPtypBinary(key):
+                    for rcp in rcps:
+                        value = rcp[key]
+                        rcp[key] = base64.b64encode(value)
+        else:
+            return mapistore.errors.MAPISTORE_ERR_INVALID_DATA
+        msg['recipients'] = rcps
+        headers = {'Content-Type': 'application/json'}
+        submit_data = {'msg': msg, 'serv_spool': serv_spool}
+        self.so.post('%s/mails/submit/' % self.base_url,
+                     data=json.dumps(submit_data), headers=headers)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def _dump_request(self, payload):
@@ -308,7 +333,7 @@ class _RESTConn(object):
         : param obj: Dictionary object
         """
         for key, value in obj.iteritems():
-            if mapistore.isPtypBinary(key):
+            if mapistore.isPtypBinary(key) or mapistore.isPtypServerId(key):
                 obj[key] = base64.b64encode(value)
 
     def _decode_object_b64(self, obj):
@@ -682,8 +707,7 @@ class MessageObject(object):
         self.cached_attachments = []
         self.attachment_ids = att_ids
         self.next_aid = 0  # Provisional AID
-        logger.info('[PYTHON]:[%s] message.__init__(%s)' % (BackendObject.name,
-                    self.properties))
+        logger.info('[PYTHON]:[%s] message.__init__' % BackendObject.name)
 
     def get_properties(self, properties):
         logger.info('[PYTHON]:[%s][%s] message.get_properties()' % (BackendObject.name, self.uri))
@@ -755,6 +779,22 @@ class MessageObject(object):
         self.cached_attachments = []
         return mapistore.errors.MAPISTORE_SUCCESS
 
+    def submit(self, serv_spool):
+        logger.info('[PYTHON][%s][%s]: message.submit' % (BackendObject.name,
+                    self.uri))
+        # Only E-mails can be submitted
+        collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
+        if collection != "mails":
+            return mapistore.errors.MAPISTORE_ERR_INVALID_DATA
+        # FIXME: REST API shouldn't care about these properties
+        curr_time = float((datetime.now(tz=timezone('Europe/Madrid'))
+                           - timedelta(hours=1)).strftime("%s.%f"))
+        self.properties['PidTagClientSubmitTime'] = curr_time
+        # Submit the message to the server
+        conn = _RESTConn.get_instance()
+        return conn.submit_message(self.properties, self.recipients,
+                                   serv_spool)
+
     def create_attachment(self):
         logger.info('[PYTHON]: message.create_attachment()')
         attach_id = self.next_aid  # Provisional AID
@@ -797,7 +837,7 @@ class MessageObject(object):
 
 class AttachmentObject(object):
     def __init__(self, message, att=None, aid=None):
-        logger.info('[PYTHON]:[%s] attachment.__init__(%s)' % (BackendObject.name, att))
+        logger.info('[PYTHON]:[%s] attachment.__init__' % BackendObject.name)
         self.message = message
         self.properties = att
         self.att_id = aid

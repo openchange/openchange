@@ -19,6 +19,7 @@
 from base64 import b64encode
 import os
 import re
+import sys
 from openchange import mailbox
 from samba import Ldb, dsdb
 from samba.samdb import SamDB
@@ -175,23 +176,17 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     return names
 
 
-def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
+def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False):
     """Provision/modify schema using LDIF specified file
+    :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
-    :param lp: Loadparm context
-    :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
     :param modify_mode: whether entries are added or modified
     """
-
-    session_info = system_session()
-    db = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
-               credentials=creds, lp=lp)
-
-    db.transaction_start()
+    sam_db.transaction_start()
 
     try:
         reporter.reportNextStep(msg)
@@ -236,7 +231,7 @@ def provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_m
             else:
                 raise Exception('No elements to add found in ' + full_path)
     except:
-        db.transaction_cancel()
+        sam_db.transaction_cancel()
         raise
 
     sam_db.transaction_commit()
@@ -254,18 +249,17 @@ def force_schemas_update(sam_db, setup_path):
     sam_db.transaction_commit()
 
 
-def modify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
+def modify_schema(sam_db, setup_path, names, reporter, ldif, msg):
     """Modify schema using LDIF specified file
+    :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
     :param names: provision names object.
-    :param lp: Loadparm context
-    :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
     """
 
-    return provision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
+    return provision_schema(sam_db, setup_path, names, reporter, ldif, msg, True)
 
 
 def deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, modify_mode=False):
@@ -378,13 +372,11 @@ def install_schemas(setup_path, names, lp, creds, reporter):
     :param creds: Credentials Context
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     """
-    session_info = system_session()
-
     lp.set("dsdb:schema update allowed", "yes")
 
+    sam_db = get_schema_master_samdb(names, lp, creds)
+
     # Step 1. Extending the prefixmap attribute of the schema DN record
-    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
-                  credentials=creds, lp=lp)
 
     reporter.reportNextStep("Register Exchange OIDs")
 
@@ -396,7 +388,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
         schema_ldif = ""
         prefixmap_data = ""
         for ent in current:
-            schema_ldif += samdb.write_ldif(ent, ldb.CHANGETYPE_NONE)
+            schema_ldif += sam_db.write_ldif(ent, ldb.CHANGETYPE_NONE)
 
             prefixmap_data = open(setup_path("AD/prefixMap.txt"), 'r').read()
             prefixmap_data = b64encode(prefixmap_data)
@@ -404,7 +396,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
             # We don't actually add this ldif, just parse it
             prefixmap_ldif = "dn: %s\nprefixMap:: %s\n\n" % (schemadn, prefixmap_data)
             prefixmap_ldif += "dn:\nchangetype: modify\nreplace: schemaupdatenow\nschemaupdatenow: 1\n\n"
-            dsdb._dsdb_set_schema_from_ldif(samdb, prefixmap_ldif, schema_ldif, schemadn)
+            dsdb._dsdb_set_schema_from_ldif(sam_db, prefixmap_ldif, schema_ldif, schemadn)
     except RuntimeError as err:
         print ("[!] error while provisioning the prefixMap: %s"
                % str(err))
@@ -454,7 +446,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
             raise
 
     try:
-        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
+        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
@@ -672,7 +664,6 @@ def accountcontrol(names, lp, creds, username=None, value=0):
     :param username: Name of user to disable
     :param value: the control value
     """
-
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
@@ -768,7 +759,6 @@ def provision(setup_path, names, lp, creds, reporter=None):
 
     If a progress reporter is not provided, a text output reporter is provided
     """
-
     print "NOTE: This operation can take several minutes"
 
     if reporter is None:
@@ -798,17 +788,10 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
 
     It is assumed that checkusage has been used before to assure that the server is ready for deprovision
     """
-
     if reporter is None:
         reporter = TextProgressReporter()
 
-    session_info = system_session()
-
     lp.set("dsdb:schema update allowed", "yes")
-
-    samdb = SamDB(url=get_ldb_url(lp, creds, names), session_info=session_info,
-                  credentials=creds, lp=lp)
-
     try:
         # This is the unique server, remove full schema
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration.ldif", "Remove Exchange configuration objects")
@@ -822,6 +805,7 @@ def deprovision(setup_path, names, lp, creds, reporter=None):
         print ("[!] error while deprovisioning the Exchange configuration"
                " objects: %s" % err)
         raise err
+
 
 def register(setup_path, names, lp, creds, reporter=None):
     """Register an OpenChange server as a valid Exchange server.
@@ -839,7 +823,8 @@ def register(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     try:
-        provision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_new_server.ldif", "Exchange Samba registration")
+        sam_db = get_schema_master_samdb(names, lp, creds)
+        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_new_server.ldif", "Exchange Samba registration")
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while registering Openchange Samba configuration"
@@ -902,7 +887,8 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
         reporter = TextProgressReporter()
 
     try:
-        modify_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_as_main.ldif", "Register Exchange Samba as the main server")
+        sam_db = get_schema_master_samdb(names, lp, creds)
+        modify_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration_as_main.ldif", "Register Exchange Samba as the main server")
         print "[SUCCESS] Done!"
     except LdbError, ldb_error:
         print ("[!] error while registering Openchange Samba configuration"

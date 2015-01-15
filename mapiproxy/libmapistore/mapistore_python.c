@@ -2617,6 +2617,70 @@ static enum mapistore_error mapistore_python_message_save(TALLOC_CTX *mem_ctx,
 	return retval;
 }
 
+/**
+   \details Submit message
+
+   \param mem_ctx pointer to the memory context
+   \param message_object pointer to the message object to submit
+   \param flags set of flags that determine the behaviour of the operation
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_python_message_submit(void *message_object,
+							  enum SubmitFlags flags)
+{
+	enum mapistore_error		    retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject                        *message;
+	PyObject			            *pres;
+    PyObject                        *serv_spool;
+
+    DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the message object */
+	pyobj = (struct mapistore_python_object *) message_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_MESSAGE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	message = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!message, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+    /* Read SubmitFlags */
+	switch (flags) {
+		case None:
+            /* The message needs no preprocessing */
+            serv_spool = Py_None;
+            break;
+		case PreProcess:
+            /* The message needs to be processed by the server */
+            serv_spool = Py_False;
+            break;
+		case NeedsSpooler:
+            /* The message needs to be processed by a client spooler */
+            serv_spool = Py_True;
+            break;
+	}
+
+	/* Call submit function */
+	pres = PyObject_CallMethod(message, "submit", "O", serv_spool);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
+	return retval;
+}
 
 /**
    \details Set the read status of a message and upate the
@@ -4063,7 +4127,7 @@ static enum mapistore_error mapistore_python_load_backend(const char *module_nam
 	backend.message.modify_recipients = mapistore_python_message_modify_recipients;
 	backend.message.set_read_flag = mapistore_python_message_set_read_flag;
 	backend.message.save = mapistore_python_message_save;
-	/* backend.message.submit = mapistore_python_message_submit; */
+	backend.message.submit = mapistore_python_message_submit;
 	backend.message.open_attachment = mapistore_python_message_open_attachment;
 	backend.message.create_attachment = mapistore_python_message_create_attachment;
 	backend.message.delete_attachment = mapistore_python_message_delete_attachment;

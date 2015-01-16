@@ -424,16 +424,21 @@ def module_messages_get_attachments(msg_id):
 
 @app.route('/mails/submit/', methods=['POST'])
 def module_mail_submit():
-    """ Send mail to its recipients.
-        param data['msg']: the message properties
-        param data['serv_spool']: flag that indicates if the message needs
-            processing and by whom """
+    """ Send E-mail to its recipients. The json data contains the message
+    properties, including the recipients data, in the 'msg' field, and the
+    processing flag in the 'serv_spool' field. """
     data = request.get_json()
+    if data is None:
+        abort(422, "You must supply msg at least")
     # Read message data
-    msg = data['msg']
+    msg = data.get('msg', None)
+    if msg is None:
+        abort(422, "msg is a required parameter")
+    if 'recipients' not in msg:
+        abort(422, "recipients is a required field in msg")
     # Read processing flag (No processing required/by server/by client spooler
     serv_spool = data['serv_spool']
-    return "", 202
+    return "", 200
 
 
 @app.route('/mails/', methods=['POST'])

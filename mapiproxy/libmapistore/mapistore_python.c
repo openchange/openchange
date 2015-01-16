@@ -2629,15 +2629,15 @@ static enum mapistore_error mapistore_python_message_save(TALLOC_CTX *mem_ctx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 static enum mapistore_error mapistore_python_message_submit(void *message_object,
-							  enum SubmitFlags flags)
+							    enum SubmitFlags flags)
 {
-	enum mapistore_error		    retval;
+	enum mapistore_error		retval;
 	struct mapistore_python_object	*pyobj;
-	PyObject                        *message;
-	PyObject			            *pres;
-    PyObject                        *serv_spool;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject                        *serv_spool;
 
-    DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -2653,22 +2653,21 @@ static enum mapistore_error mapistore_python_message_submit(void *message_object
 	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-    /* Read SubmitFlags */
+	/* Read SubmitFlags */
 	switch (flags) {
 		case None:
-            /* The message needs no preprocessing */
-            serv_spool = Py_None;
-            break;
+			/* The message needs no preprocessing */
+			serv_spool = Py_None;
+			break;
 		case PreProcess:
-            /* The message needs to be processed by the server */
-            serv_spool = Py_False;
-            break;
+			/* The message needs to be processed by the server */
+			serv_spool = Py_False;
+			break;
 		case NeedsSpooler:
-            /* The message needs to be processed by a client spooler */
-            serv_spool = Py_True;
-            break;
+			/* The message needs to be processed by a client spooler */
+			serv_spool = Py_True;
+			break;
 	}
-
 	/* Call submit function */
 	pres = PyObject_CallMethod(message, "submit", "O", serv_spool);
 	if (pres == NULL) {

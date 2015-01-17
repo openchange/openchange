@@ -924,14 +924,14 @@ def openchangedb_migrate(lp):
         print "Only OpenchangeDB with MySQL as backend needs migration"
 
 
-def openchangedb_provision(names, lp, uri=None):
+def openchangedb_provision(names, lp, uri):
     """Create the OpenChange database.
 
     :param names: Provision names object
     :param lp: Loadparm context
-    :param uri: Openchangedb destination, by default will be a ldb file inside
-        private samba directory. You can specify a mysql connection string like
-        mysql://user:passwd@host/db_name to use openchangedb with mysql backend
+    :param uri: Openchangedb destination. You can specify a mysql connection
+        string like mysql://user:passwd@host/db_name to use openchangedb with
+        mysql backend or ldb: for LDB.
     """
     print "Setting up openchange db"
     if uri.startswith('ldb:'):  # LDB backend

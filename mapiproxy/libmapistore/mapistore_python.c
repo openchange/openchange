@@ -2419,7 +2419,9 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		}
 	}
 
-	Py_DECREF(klist);
+	if (msgdata->recipients_count) {
+		Py_DECREF(klist);
+	}
 	Py_DECREF(pres);
 
 	*message_data = msgdata;

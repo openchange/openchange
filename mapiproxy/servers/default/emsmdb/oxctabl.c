@@ -455,7 +455,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			count++;
 		}
 		else {
-			count = 0;
 			goto finish;
 		}
 	}

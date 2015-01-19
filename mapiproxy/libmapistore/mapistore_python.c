@@ -309,7 +309,7 @@ static PyObject *mapistore_pyobject_from_data(struct SPropValue *lpProps)
 		val = PyFloat_FromDouble(*((double *)data));
 		break;
 	case PT_BOOLEAN:
-		val = PyBool_FromLong(*((uint32_t *)data));
+		val = PyBool_FromLong(*(const uint8_t *)data);
 		break;
 	case PT_I8:
 		val = PyLong_FromUnsignedLongLong(*((uint64_t *)data));

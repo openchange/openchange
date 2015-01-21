@@ -2762,7 +2762,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_seen;
 		synccontext->cnset_seen = parsed_idset;
@@ -2774,7 +2774,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_fai");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = parsed_idset;
@@ -2786,7 +2786,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_read");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_read;
 		synccontext->cnset_read = parsed_idset;

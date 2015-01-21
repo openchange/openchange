@@ -2741,6 +2741,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	synccontext = synccontext_object->object.synccontext;
 	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
+	retval = IDSET_check_ranges(parsed_idset);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = retval;
+		goto reset;
+	}
+
 	switch (synccontext->state_property) {
 	case MetaTagIdsetGiven:
 		if (parsed_idset && parsed_idset->range_count == 0) {
@@ -2790,6 +2796,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		talloc_free(old_idset);
 	}
 
+reset:
 	/* reset synccontext state */
 	if (synccontext->state_stream.buffer.length > 0) {
 		talloc_free(synccontext->state_stream.buffer.data);

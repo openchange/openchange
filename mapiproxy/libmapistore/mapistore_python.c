@@ -2352,7 +2352,7 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
-		if (PyDict_Contains(dict, key) == -1) {
+		if (PyDict_Contains(dict, key) == 0) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing PidTagRecipientType property for recipient %d\n",
 				pyobj->name, __location__, i));
 			Py_DECREF(klist);

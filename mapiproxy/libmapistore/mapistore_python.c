@@ -415,6 +415,10 @@ static PyObject *mapistore_python_pyobject_from_proptag(uint32_t proptag)
 	const char	*sproptag = NULL;
 	PyObject	*item = NULL;
 
+	if ((proptag  & 0xFFFF) == PT_ERROR) {
+		return NULL;
+	}
+
 	if (((proptag >> 16) & 0xFFFF) > 0x8000) {
 		sproptag = openchangedb_named_properties_get_attribute(proptag);
 	} else {
@@ -474,18 +478,20 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	}
 
 	for (count = 0; count < aRow->cValues; count++) {
-
 		/* Set the key of the dictionary entry */
 		key = mapistore_python_pyobject_from_proptag(aRow->lpProps[count].ulPropTag);
-
-		/* Retrieve SPropValue data */
-		val = mapistore_pyobject_from_data(&(aRow->lpProps[count]));
-		if (val) {
-			if (PyDict_SetItem(pydict, key, val) == -1) {
-				DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
-					  __location__));
-				return NULL;
+		if (key) {
+			/* Retrieve SPropValue data */
+			val = mapistore_pyobject_from_data(&(aRow->lpProps[count]));
+			if (val) {
+				if (PyDict_SetItem(pydict, key, val) == -1) {
+					DEBUG(0, ("[ERR][%s]: Unable to add entry to Python dictionary\n",
+						  __location__));
+					return NULL;
+				}
+				Py_DECREF(val);
 			}
+			Py_DECREF(key);
 		}
 	}
 
@@ -2433,7 +2439,6 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 	PyObject                        *rlist;
 	PyObject                        *rdict;
 	PyObject                        *pres;
-	void                            *data;
 	uint32_t                        j;
 	uint16_t                        i;
 
@@ -2476,11 +2481,6 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 		goto end;
 	}
 
-	/* Set the tags of the recipient properties */
-	for (j = 0; j < columns->cValues; j++) {
-		aRow->lpProps[j].ulPropTag = columns->aulPropTag[j];
-	}
-
 	/* Build list of recipients */
 	rlist = PyList_New(count);
 	if (rlist == NULL) {
@@ -2493,16 +2493,9 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 	for (i = 0; i < count; i++) {
 		/* Build the dictionary of properties for each recipient */
 		for (j = 0; j < columns->cValues; j++) {
-			/* Get data from recipients */
-			data = recipients[i].data[j];
-			/* Set the property in aRow */
-			if (set_SPropValue(&aRow->lpProps[j], data) == false) {
-				DEBUG(0,("[ERR][%s]: Can't set property 0x%x\n",
-					__location__, aRow->lpProps[j].ulPropTag));
-				retval = MAPISTORE_ERR_CONTEXT_FAILED;
-				Py_DECREF(rlist);
-				goto end;
-			}
+			set_SPropValue_proptag(&aRow->lpProps[j],
+						columns->aulPropTag[j],
+						recipients[i].data[j]);
 		}
 
 		rdict = mapistore_python_dict_from_SRow(aRow);

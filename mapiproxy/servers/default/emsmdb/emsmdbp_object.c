@@ -152,7 +152,8 @@ _PUBLIC_ uint32_t emsmdbp_get_contextID(struct emsmdbp_object *object)
 	case EMSMDBP_OBJECT_MAILBOX:
 		return -1;
 	case EMSMDBP_OBJECT_FOLDER:
-		if (object->object.folder->mapistore_root) {
+		/* FIXME: REST hack */
+		if (object->object.folder->mapistore_root || (object->object.folder->contextID > 0)) {
 			return object->object.folder->contextID;
 		} else if (object->parent_object) {
 			return emsmdbp_get_contextID(object->parent_object);
@@ -404,7 +405,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	char					*path;
 	char					*owner;
 	uint32_t				contextID;
-	uint64_t				parent_fid, oc_parent_fid;
+	uint64_t				parent_fid = 0;
+	uint64_t				oc_parent_fid;
 	void					*local_ctx;
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);
@@ -508,12 +510,27 @@ _PUBLIC_ int emsmdbp_get_fid_from_uri(struct emsmdbp_context *emsmdbp_ctx, const
 	return ret;
 }
 
+/**
+   \details Deduce the parent_uri from uri by removing everything
+   after the trailing '/'
+
+   \note This is SOGo specific and does not match REST backend or any
+   other backend where URI are unique.
+
+   \param mem_ctx pointer to the memory context
+   \param uri The URI to deduce the parent from
+
+   \return the parent URI string on success otherwise NULL
+ */
 static char *emsmdbp_compute_parent_uri(TALLOC_CTX *mem_ctx, char *uri)
 {
 	char *parent_uri, *slash, *lastchar;
 	int len;
 
 	if (!uri) return NULL;
+
+	/* hack of the hack ... */
+	if ((strlen(uri) > strlen("rest://")) && (!strncmp(uri, "rest://", strlen("rest://")))) return uri;
 
 	parent_uri = talloc_strdup(mem_ctx, uri);
 	len = strlen(parent_uri);
@@ -548,23 +565,33 @@ static enum MAPISTATUS emsmdbp_get_parent_fid(struct emsmdbp_context *emsmdbp_ct
 	mailbox = mailbox_object->object.mailbox;
 
 	mem_ctx = talloc_zero(NULL, void);
+
+	/* Step 1. If parent_fid of fid is a mailbox */
 	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, true);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
+
+	/* Step 2. If parent_fid of fid is folder */
 	retval = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox->owner_username, fid, parent_fidp, false);
 	if (retval == MAPI_E_SUCCESS) {
 		goto end;
 	}
 
+	/* Step 3. Retrieve URI for fid and try to guess parent_fid from it */
 	ret = mapistore_indexing_record_get_uri(emsmdbp_ctx->mstore_ctx, mailbox->owner_username, mem_ctx, fid, &uri, &soft_deleted);
 	if (ret == MAPISTORE_SUCCESS) {
-		parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
-		if (parent_uri) {
-			ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
-		}
-		else {
-			ret = MAPISTORE_ERR_NOT_FOUND;
+		/* This is SOGo specific */
+		if (uri && (strlen(uri) >= strlen("sogo://")) && (!strncmp(uri, "sogo://", strlen("sogo://")))) {
+			parent_uri = emsmdbp_compute_parent_uri(mem_ctx, uri);
+			if (parent_uri) {
+				ret = emsmdbp_get_fid_from_uri(emsmdbp_ctx, parent_uri, parent_fidp);
+			} else {
+				ret = MAPISTORE_ERR_NOT_FOUND;
+			}
+		} else {
+			ret = MAPISTORE_SUCCESS;
+			*parent_fidp = 0;
 		}
 	}
 	retval = mapistore_error_to_mapi(ret);
@@ -595,7 +622,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 {
 	uint64_t		parent_fid;
 	enum mapistore_error	ret;
-	enum MAPISTATUS		retval;
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
 	struct emsmdbp_object   *mailbox_object;
 
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
@@ -629,8 +656,34 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_open_folder_by_fid(TALLOC_CTX *mem_ctx,
 			return mapistore_error_to_mapi(ret);
 		}
 		else {
-			*folder_object_p = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, NULL);
-			return MAPI_E_SUCCESS;
+			uint32_t		contextID;
+			struct emsmdbp_object	*folder_object;
+			char			*owner;
+			char			*path;
+			void			*child_folder;
+
+			DEBUG(0, ("emsmdbp_object_open_folder_by_fid :: emsmdbp_object_folder_init\n"));
+
+			/* Step 1. Reuse an existing context to get access to REST layer */
+
+			/* Step 1.1. Initialize a fake object */
+			folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, mailbox_object);
+
+			/* Step 1.2. Search context with rest:// and leverage strcmp vs strncmp to return first occurrence */
+			ret = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, "rest://", &contextID,
+							      &folder_object->backend_object);
+			mapistore_add_context_ref_count(emsmdbp_ctx->mstore_ctx, contextID);
+
+			folder_object->object.folder->mapistore_root = false;
+			folder_object->object.folder->contextID = contextID;
+
+			/* Step 2. Open the folder */
+			owner = emsmdbp_get_owner(folder_object);
+			retval = openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, owner, fid, &path, true);
+			retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, contextID, folder_object->backend_object,
+							      mem_ctx, fid, &child_folder);
+			folder_object->backend_object = child_folder;
+			*folder_object_p = folder_object;
 		}
 	}
 
@@ -896,6 +949,7 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	struct emsmdbp_prop_index	prop_index;
 	struct SPropTagArray		*new_columns;
 	void				**new_data;
+	enum MAPISTATUS 		retval;
 
 	if (!emsmdbp_is_mapistore(source_object) || !emsmdbp_is_mapistore(dest_object)) {
 		/* we silently fail for non-mapistore messages */
@@ -905,41 +959,58 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	/* Fetch data from source message */
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	contextID = emsmdbp_get_contextID(source_object);
-	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	retval = mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID,
+							source_object->backend_object,
+							mem_ctx, &msg_data);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
-	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each values array */
-	if (msg_data->recipients_count > 0
-	    && (msg_data->columns->cValues < 2 || msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE || msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
-		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
+	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and
+	 * PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each
+	 * values array */
+	if (msg_data->recipients_count > 0) {
+		if ((msg_data->columns->cValues < 2 ||
+		     msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE ||
+		     msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
+			emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
 
-		new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
-		new_columns->cValues = msg_data->columns->cValues + 2;
-		new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS, new_columns->cValues);
-		memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag, sizeof(enum MAPITAGS) * msg_data->columns->cValues);
-		new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
-		new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
+			new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
+			new_columns->cValues = msg_data->columns->cValues + 2;
+			new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS,
+							new_columns->cValues);
+			memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag,
+			       sizeof(enum MAPITAGS) * msg_data->columns->cValues);
+			new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
+			new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
 
-		for (i = 0; i < msg_data->recipients_count; i++) {
-			new_data = talloc_array(mem_ctx, void *, new_columns->cValues);
-			memcpy(new_data + 2, msg_data->recipients[i].data, sizeof(void *) * msg_data->columns->cValues);
-			if (prop_index.display_name != (uint32_t) -1) {
-				new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+			for (i = 0; i < msg_data->recipients_count; i++) {
+				new_data = talloc_array(mem_ctx, void *,
+							new_columns->cValues);
+				memcpy(new_data + 2, msg_data->recipients[i].data,
+				       sizeof(void *) * msg_data->columns->cValues);
+				if (prop_index.display_name != (uint32_t) -1) {
+					new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+				}
+				else {
+					new_data[0] = NULL;
+				}
+				if (prop_index.email_address != (uint32_t) -1) {
+					new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
+				}
+				else {
+					new_data[1] = NULL;
+				}
+				msg_data->recipients[i].data = new_data;
 			}
-			else {
-				new_data[0] = NULL;
-			}
-			if (prop_index.email_address != (uint32_t) -1) {
-				new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
-			}
-			else {
-				new_data[1] = NULL;
-			}
-			msg_data->recipients[i].data = new_data;
+			msg_data->columns = new_columns;
 		}
-		msg_data->columns = new_columns;
-
 		/* Copy data into dest message */
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		retval = mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx,
+								contextID,
+								dest_object->backend_object,
+								msg_data->columns,
+								msg_data->recipients_count,
+								msg_data->recipients);
+                MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 	}
 
 	talloc_free(mem_ctx);
@@ -2662,10 +2733,13 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 
 		retval = emsmdbp_object_get_properties_mapistore_root(mem_ctx, emsmdbp_ctx, object, properties, data_pointers, retvals);
 	} else {
+		int contextID = -1;
+
 		mapistore = emsmdbp_is_mapistore(object);
+
 		/* Nasty hack */
-		if (!object) {
-			DEBUG(5, ("[%s] what's that hack!??\n", __location__));
+		contextID = emsmdbp_get_contextID(object);
+		if (contextID != -1) {
 			mapistore = true;
 		}
 

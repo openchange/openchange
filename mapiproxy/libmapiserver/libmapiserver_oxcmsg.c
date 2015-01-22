@@ -276,6 +276,18 @@ _PUBLIC_ uint16_t libmapiserver_RopCreateAttach_size(struct EcDoRpc_MAPI_REPL *r
 }
 
 /**
+   \details Calculate DeleteAttach (0x24) Rop size
+
+   \param response pointer to the DeleteAttach EcDoRpc_MAPI_REPL
+
+   \return Size of DeleteAttach response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopDeleteAttach_size(struct EcDoRpc_MAPI_REPL *response)
+{
+        return SIZE_DFLT_MAPI_RESPONSE;
+}
+
+/**
    \details Calculate SaveChangesAttachment (0x25) Rop size
 
    \param response pointer to the SaveChangesAttachment EcDoRpc_MAPI_REPL
@@ -322,4 +334,27 @@ _PUBLIC_ uint16_t libmapiserver_RopOpenEmbeddedMessage_size(struct EcDoRpc_MAPI_
 	}
         
         return size;
+}
+
+/**
+   \details Calculate GetValidAttachments (0x52) Rop size
+
+   \param response pointer to the GetValidAttachments EcDoRpc_MAPI_REPL
+
+   \return Size of GetValidAttachments response
+ */
+_PUBLIC_ uint16_t libmapiserver_RopGetValidAttachments_size(struct EcDoRpc_MAPI_REPL *response)
+{
+	uint16_t	size = SIZE_DFLT_MAPI_RESPONSE;
+
+	if (!response || response->error_code) {
+		return size;
+	}
+
+	size += SIZE_DFLT_ROPGETVALIDATTACHMENTS;
+
+	/* AttachmentIdArray */
+	size += response->u.mapi_GetValidAttachments.AttachmentIdCount * sizeof (uint32_t);
+
+	return size;
 }

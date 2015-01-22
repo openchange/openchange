@@ -106,7 +106,8 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_add(struct mapistore_context *m
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 1. Search if the context already exists */
 	*ictxp = mapistore_indexing_search(mstore_ctx, username);
@@ -175,14 +176,16 @@ enum mapistore_error mapistore_indexing_record_add_fmid(struct mapistore_context
 
 	/* Check if the fid/mid doesn't already exist within the database */
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	mem_ctx = talloc_new(NULL);
 	MAPISTORE_RETVAL_IF(!mem_ctx , MAPISTORE_ERR_NO_MEMORY, NULL);
 	/* Retrieve the mapistore URI given context_id and fmid */
-	ret = mapistore_backend_get_path(backend_ctx, mem_ctx, fmid, &mapistore_URI);
-	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, MAPISTORE_ERROR, mem_ctx);
+	mapistore_backend_get_path(NULL, backend_ctx, fmid, &mapistore_URI);
+	/* DEBUG(0, ("mapistore_URI = %s\n", mapistore_URI)); */
+	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERROR, NULL);
+
 
 	/* Add the record given its fid and mapistore_uri */
 	ret = ictx->add_fmid(ictx, username, fmid, mapistore_URI);
@@ -213,18 +216,18 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 	struct indexing_context		*ictx;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERROR, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!context_id, MAPISTORE_ERR_INVALID_CONTEXT, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
-	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_BACKEND, NULL);
 	MAPISTORE_RETVAL_IF(!backend_ctx->indexing, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fid/mid still exists within the database */
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	switch(type) {
@@ -259,13 +262,13 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_uri(struct mapistore
 	
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!urip, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Check if the fmid exists within the database */
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	return ictx->get_uri(ictx, username, mem_ctx, fmid, urip, soft_deletedp);
@@ -278,13 +281,13 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
 
 	/* SANITY checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 
 	ret = mapistore_indexing_add(mstore_ctx, username, &ictx);
-	MAPISTORE_RETVAL_IF(ret, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERROR, NULL);
 
 	return ictx->get_fmid(ictx, username, uri, partial, fmidp, soft_deletedp);
@@ -306,6 +309,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_get_fmid(struct mapistor
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_fid(struct mapistore_context *mstore_ctx,
 								uint32_t context_id, const char *username, uint64_t fid)
 {
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, fid, MAPISTORE_FOLDER);
 }
 
@@ -326,6 +333,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore
 								uint32_t context_id, const char *username, uint64_t fid, 
 								uint8_t flags)
 {
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, fid, flags, MAPISTORE_FOLDER);
 }
 
@@ -346,6 +357,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_fid(struct mapistore
 _PUBLIC_ enum mapistore_error mapistore_indexing_record_add_mid(struct mapistore_context *mstore_ctx,
 								uint32_t context_id, const char *username, uint64_t mid)
 {
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	return mapistore_indexing_record_add_fmid(mstore_ctx, context_id, username, mid, MAPISTORE_MESSAGE);
 }
 
@@ -366,6 +381,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_record_del_mid(struct mapistore
 								uint32_t context_id, const char *username, uint64_t mid,
 								uint8_t flags)
 {
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	return mapistore_indexing_record_del_fmid(mstore_ctx, context_id, username, mid, flags, MAPISTORE_MESSAGE);
 }
 
@@ -376,7 +395,9 @@ static enum mapistore_error mapistore_indexing_allocate_fid(struct mapistore_con
 	enum mapistore_error ret;
 	struct indexing_context	*ictx;
 
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ictx = mapistore_indexing_search(mstore_ctx, username);
@@ -402,6 +423,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct
 {
 	enum mapistore_error ret;
 
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	ret = mapistore_indexing_allocate_fid(mstore_ctx, username, 1, fid);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
 
@@ -421,6 +447,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID_as_user(struct
 _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderID(struct mapistore_context *mstore_ctx,
 								  uint64_t *fid)
 {
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
 	return mapistore_indexing_get_new_folderID_as_user(mstore_ctx, mstore_ctx->conn_info->username, fid);
 }
 
@@ -443,6 +474,11 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_get_new_folderIDs(struct mapist
 	uint64_t count;
 	enum mapistore_error ret;
 	struct UI8Array_r *fids;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!fids_p, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	ret = mapistore_indexing_allocate_fid(mstore_ctx, mstore_ctx->conn_info->username, max, &fid);
 	MAPISTORE_RETVAL_IF(ret != MAPISTORE_SUCCESS, ret, NULL);
@@ -479,7 +515,9 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_reserve_fmid_range(struct mapis
 	struct indexing_context	*ictx;
 	const char *username;
 
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->conn_info, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!first_fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	username = mstore_ctx->conn_info->username;

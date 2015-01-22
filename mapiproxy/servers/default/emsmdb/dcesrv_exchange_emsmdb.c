@@ -298,11 +298,12 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 	struct mapi_handles     *handle_object_handle;
 	enum MAPISTATUS         retval;
         void                    **data_pointers;
-        DATA_BLOB               *table_row;
+        DATA_BLOB               *table_row = NULL;
         enum MAPISTATUS		*retvals;
-        uint32_t                contextID, saved_prop_count, prev_instance;
+        uint32_t                contextID, saved_prop_count, prev_instance = 0;
         enum MAPITAGS           *saved_properties, *previous_row_properties;
-        uint64_t                prev_fid, prev_mid;
+        int64_t			prev_fid = 0;
+	int64_t			prev_mid = 0;
 
         mapi_repl->opnum = op_MAPI_Notify;
         reply = &mapi_repl->u.mapi_Notify;
@@ -380,7 +381,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                                 talloc_free(data_pointers);
                                         }
                                         else {
-                                                prev_fid = -1;
+                                                prev_fid = 0;
                                         }
 
                                         table->prop_count = saved_prop_count;
@@ -455,9 +456,9 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                                                 talloc_free(data_pointers);
                                         }
                                         else {
-                                                prev_fid = -1;
-                                                prev_mid = -1;
-                                                prev_instance = -1;
+                                                prev_fid = 0;
+                                                prev_mid = 0;
+                                                prev_instance = 0;
                                         }
 
                                         table->prop_count = saved_prop_count;
@@ -868,7 +869,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
                                                          &(mapi_response->mapi_repl[idx]),
                                                          mapi_response->handles, &size);
 			break;
-		/* op_MAPI_DeleteAttach: 0x24 */
+                case op_MAPI_DeleteAttach: /* 0x24 */
+			retval = EcDoRpc_RopDeleteAttach(mem_ctx, emsmdbp_ctx,
+                                                         &(mapi_request->mapi_req[i]),
+                                                         &(mapi_response->mapi_repl[idx]),
+                                                         mapi_response->handles, &size);
+			break;
 		case op_MAPI_SaveChangesAttachment: /* 0x25 */
 			retval = EcDoRpc_RopSaveChangesAttachment(mem_ctx, emsmdbp_ctx,
                                                                   &(mapi_request->mapi_req[i]),
@@ -1056,7 +1062,12 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 			break;
 		/* op_MAPI_Progress: 0x50 */
 		/* op_MAPI_TransportNewMail: 0x51 */
-		/* op_MAPI_GetValidAttachments: 0x52 */
+		case op_MAPI_GetValidAttachments: /* 0x52 */
+			retval = EcDoRpc_RopGetValidAttachments(mem_ctx, emsmdbp_ctx,
+								&(mapi_request->mapi_req[i]),
+								&(mapi_response->mapi_repl[idx]),
+								mapi_response->handles, &size);
+			break;
 		case op_MAPI_GetNamesFromIDs: /* 0x55 */
 			retval = EcDoRpc_RopGetNamesFromIDs(mem_ctx, emsmdbp_ctx,
 							    &(mapi_request->mapi_req[i]),

@@ -32,16 +32,18 @@
 #include <tevent.h>
 
 typedef struct {
-	PyObject		*datetime_module;
-	PyObject		*datetime_datetime_class;
-	struct ldb_context	*samdb_ctx;
-	struct openchangedb_context *ocdb_ctx;
+	PyObject			*datetime_module;
+	PyObject			*datetime_datetime_class;
+	struct ldb_context		*samdb_ctx;
+	struct openchangedb_context 	*ocdb_ctx;
 } PyMAPIStoreGlobals;
 
 typedef struct {
 	PyObject_HEAD
 	TALLOC_CTX			*mem_ctx;
+	struct loadparm_context		*lp_ctx;
 	struct mapistore_context	*mstore_ctx;
+	char				*username;
 } PyMAPIStoreObject;
 
 typedef struct {
@@ -70,6 +72,49 @@ typedef struct {
 } PyMAPIStoreFolderObject;
 
 typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFolderObject		*folder;
+	size_t				curr_index;
+	size_t				count;
+	uint64_t			*fids;
+} PyMAPIStoreFoldersObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreContextObject	*context;
+	void				*message_object;
+	uint64_t			mid;
+} PyMAPIStoreMessageObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreFolderObject		*folder;
+	size_t				curr_index;
+	size_t				count;
+	uint64_t			*mids;
+} PyMAPIStoreMessagesObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreContextObject	*context;
+	PyMAPIStoreFolderObject		*attachment_object;
+	uint32_t			aid;
+} PyMAPIStoreAttachmentObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreMessageObject	*message;
+	size_t				curr_index;
+	size_t				count;
+	uint32_t			*aids;
+} PyMAPIStoreAttachmentsObject;
+
+typedef struct {
 	PyObject_HEAD	
 
 	PyObject *timestamp;
@@ -87,13 +132,40 @@ typedef struct {
 
 typedef struct {
 	PyObject_HEAD	
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreContextObject	*context;
+	struct SPropTagArray		*columns;
+	void				*table_object;
 } PyMAPIStoreTableObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	PyMAPIStoreTableObject		*table;
+	size_t				curr_index;
+	size_t				count;
+} PyMAPIStoreRowsObject;
+
+typedef struct {
+	PyObject_HEAD
+	TALLOC_CTX			*mem_ctx;
+	const char			*username;
+	struct loadparm_context		*lp_ctx;
+	struct indexing_context		*ictx;
+} PyMAPIStoreIndexingObject;
 
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolders;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessage;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreMessages;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreAttachment;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreAttachments;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreRows;
+PyAPI_DATA(PyTypeObject)	PyMAPIStoreIndexing;
 
 #ifndef __BEGIN_DECLS
 #ifdef __cplusplus
@@ -108,16 +180,27 @@ PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
 __BEGIN_DECLS
 
 void PyErr_SetMAPIStoreError(uint32_t);
+void PyErr_SetMAPISTATUSError(enum MAPISTATUS retval);
+enum mapistore_error pymapistore_get_uri(struct mapistore_context *mstore_ctx, const char *username, uint64_t fmid, PyObject **ppy_uri);
+enum mapistore_error pymapistore_get_properties(PyObject *list, struct mapistore_context *mstore_ctx, uint32_t context_id, void *object, PyObject **ppy_dict);
+enum mapistore_error pymapistore_set_properties(PyObject *dict, struct mapistore_context *mstore_ctx, uint32_t context_id, void *object);
+PyObject *pymapistore_python_dict_from_properties(enum MAPITAGS *aulPropTag, struct mapistore_property_data *prop_data, uint32_t count);
+enum mapistore_error pymapistore_data_from_pyobject(TALLOC_CTX *mem_ctx, uint32_t proptag, PyObject *value, void **data);
+
+
 
 /* internal calls */
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
 
 void initmapistore_context(PyObject *);
 void initmapistore_folder(PyObject *);
+void initmapistore_message(PyObject *);
+void initmapistore_attachment(PyObject *);
 void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_table(PyObject *);
 void initmapistore_errors(PyObject *);
+void initmapistore_indexing(PyObject *);
 
 PyMAPIStoreFreeBusyPropertiesObject* instantiate_freebusy_properties(struct mapistore_freebusy_properties *);
 

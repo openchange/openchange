@@ -442,10 +442,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateFolder(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-	if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) {
-		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		goto end;
-	}
+	/* if (parent_object->type == EMSMDBP_OBJECT_MAILBOX) { */
+	/* 	mapi_repl->error_code = MAPI_E_NO_SUPPORT; */
+	/* 	goto end; */
+	/* } */
 
 	if (parent_object->type != EMSMDBP_OBJECT_FOLDER && parent_object->type != EMSMDBP_OBJECT_MAILBOX) {
 		DEBUG(4, ("exchange_emsmdb: [OXCFOLD] CreateFolder wrong object type: 0x%x\n", parent_object->type));

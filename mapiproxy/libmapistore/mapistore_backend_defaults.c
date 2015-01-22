@@ -30,14 +30,15 @@
  */
 
 
-static enum mapistore_error mapistore_op_defaults_init(void)
+static enum mapistore_error mapistore_op_defaults_init(const char *module_name)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));	
+	DEBUG(3, ("[%s:%d][%s] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n",
+		  __FUNCTION__, __LINE__, module_name));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owner, struct indexing_context *indexing,
-								TALLOC_CTX *mem_ctx, 
+static enum mapistore_error mapistore_op_defaults_list_contexts(TALLOC_CTX *mem_ctx, const char *backend_name,
+								const char *owner, struct indexing_context *indexing,
 								struct mapistore_contexts_list **contexts_listp)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
@@ -45,11 +46,13 @@ static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owne
 }
 
 static enum mapistore_error mapistore_op_defaults_create_context(TALLOC_CTX *mem_ctx, 
+								 const char *module_name,
 								 struct mapistore_connection_info *conn_info,
 								 struct indexing_context *indexing_ctx,
 								 const char *uri, void **ctx)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	DEBUG(3, ("[%s:%d][%s] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n",
+		  __FUNCTION__, __LINE__, module_name));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -64,15 +67,15 @@ static enum mapistore_error mapistore_op_defaults_create_root_folder(const char 
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC_CTX *mem_ctx,
+static enum mapistore_error mapistore_op_defaults_get_path(TALLOC_CTX *mem_ctx, void *ctx_obj,
 							   uint64_t fmid, char **path)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
-static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_object,
-								  TALLOC_CTX *mem_ctx,
+static enum mapistore_error mapistore_op_defaults_get_root_folder(TALLOC_CTX *mem_ctx,
+								  void *backend_object,
 								  uint64_t fid,
 								  void **root_folder_object)
 {
@@ -238,10 +241,33 @@ static enum mapistore_error mapistore_op_defaults_create_attachment(void *messag
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
+static enum mapistore_error mapistore_op_defaults_delete_attachment(void *message_object,
+								    uint32_t aid)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_save_attachment(TALLOC_CTX *mem_ctx,
+								  void *attachment_object)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
 static enum mapistore_error mapistore_op_defaults_get_attachment_table(void *message_object,
 								       TALLOC_CTX *mem_ctx,
 								       void **table_object,
 								       uint32_t *row_count)
+{
+	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	return MAPISTORE_ERR_NOT_IMPLEMENTED;
+}
+
+static enum mapistore_error mapistore_op_defaults_get_attachment_ids(void *message_object,
+								     TALLOC_CTX *mem_ctx,
+								     uint32_t **attach_ids,
+								     uint16_t *count)
 {
 	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
@@ -381,7 +407,10 @@ extern enum mapistore_error mapistore_backend_init_defaults(struct mapistore_bac
 	backend->message.submit = mapistore_op_defaults_submit;
 	backend->message.open_attachment = mapistore_op_defaults_open_attachment;
 	backend->message.create_attachment = mapistore_op_defaults_create_attachment;
+	backend->message.delete_attachment = mapistore_op_defaults_delete_attachment;
+	backend->message.save_attachment = mapistore_op_defaults_save_attachment;
 	backend->message.get_attachment_table = mapistore_op_defaults_get_attachment_table;
+	backend->message.get_attachment_ids = mapistore_op_defaults_get_attachment_ids;
 	backend->message.open_embedded_message = mapistore_op_defaults_open_embedded_message;
 
 	/* oxctabl operations */

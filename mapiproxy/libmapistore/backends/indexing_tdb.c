@@ -472,42 +472,46 @@ static enum mapistore_error tdb_record_allocate_fmid(struct indexing_context *ic
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 
-_PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_context *mstore_ctx,
+_PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(TALLOC_CTX *mem_ctx,
 							  const char *username,
 							  struct indexing_context **ictxp)
 {
-	TALLOC_CTX			*mem_ctx;
+	TALLOC_CTX			*local_ctx;
 	char				*dbpath = NULL;
 	char				*mapistore_dir = NULL;
 	struct indexing_context		*ictx;
 
 	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERROR, NULL);
 
-	mem_ctx = talloc_named(NULL, 0, "mapistore_indexing_init");
-	ictx = talloc_zero(mstore_ctx, struct indexing_context);
+	/* Allocate contexts - local_ctx is child for ictx for easy cleanup */
+	ictx = talloc_zero(mem_ctx, struct indexing_context);
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, NULL);
+	local_ctx = talloc_named(ictx, 0, "mapistore_indexing_init");
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NO_MEMORY, ictx);
 
 	/* ensure the user mapistore directory exists before any mapistore operation occurs */
-	mapistore_dir = talloc_asprintf(mem_ctx, "%s/%s",
+	mapistore_dir = talloc_asprintf(local_ctx, "%s/%s",
 					mapistore_get_mapping_path(), username);
+	MAPISTORE_RETVAL_IF(!mapistore_dir, MAPISTORE_ERR_NO_MEMORY, ictx);
+
 	mkdir(mapistore_dir, 0700);
 
 	/* Step 1. Open/Create the indexing database */
-	dbpath = talloc_asprintf(mem_ctx, "%s/%s/indexing.tdb",
+	dbpath = talloc_asprintf(local_ctx, "%s/%s/indexing.tdb",
 				 mapistore_get_mapping_path(), username);
 
 	ictx->data = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
-	talloc_free(dbpath);
 	if (!TDB_WRAP(ictx)) {
 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
 		talloc_free(ictx);
-		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
 	}
 
 	/* TODO: extract url from backend mapping, by the moment we use the username */
 	ictx->url = talloc_strdup(ictx, username);
+	MAPISTORE_RETVAL_IF(!ictx->url, MAPISTORE_ERR_NO_MEMORY, ictx);
 
 	/* Fill function pointers */
 	ictx->add_fmid = tdb_record_add;
@@ -520,7 +524,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 
 	*ictxp = ictx;
 
-	talloc_free(mem_ctx);
+	talloc_free(local_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

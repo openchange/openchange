@@ -26,32 +26,20 @@
 #include <param.h>
 #include <samba/session.h>
 
-/* static PyTypeObject *SPropValue_Type; */
-
 extern struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, int);
 
 void initmapistore(void);
 
 static PyMAPIStoreGlobals globals;
 
-void PyErr_SetMAPIStoreError(uint32_t retval)
-{
-	PyErr_SetObject(PyExc_RuntimeError,
-			Py_BuildValue("(i, s)", retval, mapistore_errstr(retval)));
-}
-
 PyMAPIStoreGlobals *get_PyMAPIStoreGlobals()
 {
 	return &globals;
 }
 
-static void sam_ldb_init(const char *syspath)
+static enum mapistore_error sam_ldb_init(TALLOC_CTX *mem_ctx, struct loadparm_context *lp_ctx)
 {
-	TALLOC_CTX		*mem_ctx;
-	/* char			*ldb_path; */
-	struct loadparm_context *lp_ctx;
 	struct tevent_context	*ev;
-	int			ret;
 	struct ldb_result	*res;
 	struct ldb_dn		*tmp_dn = NULL;
 	static const char	*attrs[] = {
@@ -59,30 +47,27 @@ static void sam_ldb_init(const char *syspath)
 		"defaultNamingContext",
 		NULL
 	};
+	int			retval;
 
 	/* Sanity checks */
-	if (globals.samdb_ctx) return;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	if (globals.samdb_ctx) {
+		return MAPISTORE_SUCCESS;
+	}
 
 	ev = tevent_context_init(talloc_autofree_context());
-	if (!ev) goto end;
+	MAPISTORE_RETVAL_IF(!ev, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	/* /\* Step 1. Retrieve a LDB context pointer on sam.ldb database *\/ */
-	/* ldb_path = talloc_asprintf(mem_ctx, "%s/sam.ldb", syspath); */
-
-	/* Step 2. Connect to the database */
-	lp_ctx = loadparm_init_global(true);
+	/* Step 1. Connect to the database */
 	globals.samdb_ctx = samdb_connect(NULL, NULL, lp_ctx, system_session(lp_ctx), 0);
-	if (!globals.samdb_ctx) goto end;
+	MAPISTORE_RETVAL_IF(!globals.samdb_ctx, MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	/* Step 3. Search for rootDSE record */
-	ret = ldb_search(globals.samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, globals.samdb_ctx, "@ROOTDSE"),
+	/* Step 2. Search for rootDSE record */
+	retval = ldb_search(globals.samdb_ctx, mem_ctx, &res, ldb_dn_new(mem_ctx, globals.samdb_ctx, "@ROOTDSE"),
 			 LDB_SCOPE_BASE, attrs, NULL);
-	if (ret != LDB_SUCCESS) goto end;
-	if (res->count != 1) goto end;
+	MAPISTORE_RETVAL_IF((retval != LDB_SUCCESS), MAPISTORE_ERR_DATABASE_INIT, NULL);
+	MAPISTORE_RETVAL_IF((res->count != 1), MAPISTORE_ERR_DATABASE_INIT, NULL);
 
-	/* Step 4. Set opaque naming */
+	/* Step 3. Set opaque naming */
 	tmp_dn = ldb_msg_find_attr_as_dn(globals.samdb_ctx, globals.samdb_ctx,
 					 res->msgs[0], "rootDomainNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "rootDomainNamingContext", tmp_dn);
@@ -91,56 +76,19 @@ static void sam_ldb_init(const char *syspath)
 					 res->msgs[0], "defaultNamingContext");
 	ldb_set_opaque(globals.samdb_ctx, "defaultNamingContext", tmp_dn);
 
-end:
-	talloc_free(mem_ctx);
-}
-
-static void openchange_ldb_init(const char *syspath)
-{
-	TALLOC_CTX 		*mem_ctx;
-	struct loadparm_context *lp_ctx;
-	const char		*openchangedb_backend;
-
-	if (globals.ocdb_ctx) return;
-
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	lp_ctx = loadparm_init_global(true);
-	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
-
-	if (openchangedb_backend) {
-		openchangedb_mysql_initialize(mem_ctx, lp_ctx, &globals.ocdb_ctx);
-	} else {
-		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
-	}
-
-	if (!globals.ocdb_ctx) {
-		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");
-		goto end;
-	}
-	(void) talloc_reference(NULL, globals.ocdb_ctx);
-end:
-	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
 }
 
 static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *kwargs)
 {
 	TALLOC_CTX			*mem_ctx;
-	struct loadparm_context		*lp_ctx;
-	struct mapistore_context	*mstore_ctx;
+	char				*kwnames[] = { "syspath", NULL };
 	PyMAPIStoreObject		*msobj;
-	char				*kwnames[] = { "syspath", "path", NULL };
-	const char			*path = NULL;
+	struct loadparm_context		*lp_ctx;
 	const char			*syspath = NULL;
+	bool				ret;
 
-	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "s|s", kwnames, &syspath, &path)) {
-		return NULL;
-	}
-
-	/* Initialize ldb context on sam.ldb */
-	sam_ldb_init(syspath);
-	if (globals.samdb_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in sam_ldb_init");
+	if (!PyArg_ParseTupleAndKeywords(args, kwargs, "|s", kwnames, &syspath)) {
 		return NULL;
 	}
 
@@ -150,37 +98,43 @@ static PyObject *py_MAPIStore_new(PyTypeObject *type, PyObject *args, PyObject *
 		return NULL;
 	}
 
-	/* Initialize ldb context on openchange.ldb */
-	openchange_ldb_init(syspath);
-	if (globals.ocdb_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in openchange_ldb_init");
+	/* Initialize configuration */
+	lp_ctx = loadparm_init(mem_ctx);
+	if (lp_ctx == NULL) {
+		DEBUG(0, ("[ERR][%s]: Error initialising loadparm context\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
 		talloc_free(mem_ctx);
 		return NULL;
 	}
 
-	/* Initialize configuration */
-	lp_ctx = loadparm_init(mem_ctx);
-	lpcfg_load_default(lp_ctx);
+	if ((syspath != NULL) && (file_exist(syspath) == true)) {
+		ret = lpcfg_load(lp_ctx, syspath);
+	} else {
+		ret = lpcfg_load_default(lp_ctx);
+	}
 
-	/* Initialize mapistore */
-	mstore_ctx = mapistore_init(mem_ctx, lp_ctx, path);
-	if (mstore_ctx == NULL) {
-		PyErr_SetString(PyExc_SystemError,
-				"error in mapistore_init");
-		talloc_free(mem_ctx);
-		return NULL;
+	if (ret == false) {
+		PySys_WriteStderr("Unable to load content from path\n");
 	}
 
 	msobj = PyObject_New(PyMAPIStoreObject, &PyMAPIStore);
+	if (msobj == NULL) {
+		PyErr_NoMemory();
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
 	msobj->mem_ctx = mem_ctx;
-	msobj->mstore_ctx = mstore_ctx;
+	msobj->lp_ctx = lp_ctx;
+	msobj->mstore_ctx = NULL;
+	msobj->username = NULL;
 
 	return (PyObject *) msobj;
 }
 
 static void py_MAPIStore_dealloc(PyObject *_self)
 {
+
 	PyMAPIStoreObject *self = (PyMAPIStoreObject *)_self;
 
 	mapistore_release(self->mstore_ctx);
@@ -188,11 +142,192 @@ static void py_MAPIStore_dealloc(PyObject *_self)
 	PyObject_Del(_self);
 }
 
+static PyObject *py_MAPIStore_initialize(PyMAPIStoreObject *self, PyObject *args)
+{
+	struct openchangedb_context 	*ocdb_ctx;
+	struct mapistore_context	*mstore_ctx;
+	const char			*path = NULL;
+	const char			*username = NULL;
+	enum MAPISTATUS			ret;
+	enum mapistore_error		retval;
+
+	if (!PyArg_ParseTuple(args, "s|s", &username, &path)) {
+		return NULL;
+	}
+
+	/* Initialise ldb context on sam.ldb */
+	retval = sam_ldb_init(self->mem_ctx, self->lp_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	/* Initialise ldb context on openchange.ldb */
+	ret = openchangedb_initialize(self->mem_ctx, self->lp_ctx, &ocdb_ctx);
+	if (ret != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret);
+		return NULL;
+	}
+	globals.ocdb_ctx = ocdb_ctx;
+
+	/* Initialize mapistore */
+	mstore_ctx = mapistore_init(self->mem_ctx, self->lp_ctx, path);
+	if (mstore_ctx == NULL) {
+		DEBUG(0, ("[ERR][%s]: MAPIStore initialization failed\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
+		return NULL;
+	}
+
+	/* set connection info */
+	retval = mapistore_set_connection_info(mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		return NULL;
+	}
+
+	self->mstore_ctx = mstore_ctx;
+	self->username = talloc_strdup(self->mem_ctx, username);
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_set_parm(PyMAPIStoreObject *self, PyObject *args)
+{
+	const char			*option = NULL;
+	const char			*value = NULL;
+	bool				set_success;
+
+	if (!PyArg_ParseTuple(args, "ss", &option, &value)) {
+		return NULL;
+	}
+
+	/* Set the value in the specified parameter */
+	set_success = lpcfg_set_cmdline(self->lp_ctx, option, value);
+	if (set_success == false) {
+		DEBUG(0, ("[ERR][%s]: Error setting the parameter\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
+		return NULL;
+	}
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_dump(PyMAPIStoreObject *self)
+{
+	bool 				show_defaults = false;
+
+	if (self->lp_ctx == NULL) {
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
+		return NULL;
+	}
+
+	lpcfg_dump(self->lp_ctx, stdout, show_defaults, lpcfg_numservices(self->lp_ctx));
+
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_MAPIStore_list_backends_for_user(PyMAPIStoreObject *self)
+{
+	TALLOC_CTX 			*mem_ctx;
+	PyObject			*py_ret = NULL;
+	const char			**backend_names;
+	enum mapistore_error		retval;
+	int 				i, list_size, ret;
+
+	DEBUG(0, ("List backends for user: %s\n", self->username));
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* list backends */
+	retval = mapistore_list_backends_for_user(mem_ctx, &list_size, &backend_names);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		goto end;
+	}
+
+	/* Build the list */
+	py_ret = PyList_New(list_size);
+	if (py_ret == NULL) {
+		PyErr_NoMemory();
+		goto end;
+	}
+
+	for (i = 0; i < list_size; i++) {
+		ret = PyList_SetItem(py_ret, i, Py_BuildValue("s", backend_names[i]));
+		if (ret != 0) {
+			DEBUG(0,("[ERR][%s]: Unable to set item list\n", __location__));
+			PyErr_SetMAPIStoreError(MAPISTORE_ERROR);
+			Py_DECREF(py_ret);
+			goto end;
+		}
+	}
+
+	talloc_free(mem_ctx);
+	return py_ret;
+end:
+	talloc_free(mem_ctx);
+	return NULL;
+}
+
+static PyObject *py_MAPIStore_list_contexts_for_user(PyMAPIStoreObject *self)
+{
+	TALLOC_CTX 			*mem_ctx;
+	PyObject			*py_ret = NULL, *py_dict;
+	struct mapistore_contexts_list 	*contexts_list;
+	enum mapistore_error		retval;
+
+	if ((self->mstore_ctx == NULL) || (self->username == NULL)) {
+		DEBUG(0,("[ERR][%s]: Can't list capabilities before initialising MAPIStore\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
+		return NULL;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	if (mem_ctx == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
+	/* list contexts */
+	retval = mapistore_list_contexts_for_user(self->mstore_ctx, self->username, mem_ctx, &contexts_list);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	py_ret = Py_BuildValue("[]");
+
+	while (contexts_list) {
+		py_dict = Py_BuildValue("{s:s, s:s, s:i, s:i}",
+				"name", contexts_list->name,
+				"url", contexts_list->url,
+				"role", contexts_list->role,
+				"main_folder", contexts_list->main_folder);
+		if (py_dict) {
+			PyList_Append(py_ret, py_dict);
+		}
+		contexts_list = contexts_list->next;
+	}
+
+	talloc_free(mem_ctx);
+	return (PyObject *) py_ret;
+}
+
 static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 {
 	PyMAPIStoreMGMTObject	*obj;
 
 	obj = PyObject_New(PyMAPIStoreMGMTObject, &PyMAPIStoreMGMT);
+	if (obj == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	obj->mgmt_ctx = mapistore_mgmt_init(self->mstore_ctx);
 	if (obj->mgmt_ctx == NULL) {
 		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NOT_INITIALIZED);
@@ -207,41 +342,37 @@ static PyObject *py_MAPIStore_new_mgmt(PyMAPIStoreObject *self, PyObject *args)
 
 static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *args)
 {
-	int				ret;
 	PyMAPIStoreContextObject	*context;
-	uint32_t			context_id = 0;
-	const char			*uri;
-	const char			*username;
 	void				*folder_object;
+	const char			*uri;
+	enum mapistore_error		retval;
+	enum MAPISTATUS			ret;
         uint64_t			fid = 0;
+	uint32_t			context_id = 0;
 
-	if (!PyArg_ParseTuple(args, "ss", &uri, &username)) {
-		return NULL;
-	}
-
-	/* printf("Add context: %s\n", uri); */
-
-	/* Initialize connection info */
-	ret = mapistore_set_connection_info(self->mstore_ctx, globals.samdb_ctx, globals.ocdb_ctx, username);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	if (!PyArg_ParseTuple(args, "s", &uri)) {
 		return NULL;
 	}
 
 	/* Get FID given mapistore_uri and username */
 	ret = openchangedb_get_fid(globals.ocdb_ctx, uri, &fid);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	if (ret != MAPI_E_SUCCESS) {
+		PyErr_SetMAPISTATUSError(ret);
 		return NULL;
 	}
 
-	ret = mapistore_add_context(self->mstore_ctx, username, uri, fid, &context_id, &folder_object);
-	if (ret != MAPISTORE_SUCCESS) {
-		PyErr_SetMAPIStoreError(ret);
+	retval = mapistore_add_context(self->mstore_ctx, self->username, uri, fid, &context_id, &folder_object);
+	if (retval != MAPISTORE_SUCCESS) {
+		PyErr_SetMAPIStoreError(retval);
 		return NULL;
 	}
 
 	context = PyObject_New(PyMAPIStoreContextObject, &PyMAPIStoreContext);
+	if (context == NULL) {
+		PyErr_NoMemory();
+		return NULL;
+	}
+
 	context->mem_ctx = self->mem_ctx;
 	context->mstore_ctx = self->mstore_ctx;
 	context->fid = fid;
@@ -254,176 +385,49 @@ static PyObject *py_MAPIStore_add_context(PyMAPIStoreObject *self, PyObject *arg
 	return (PyObject *) context;
 }
 
-/* static PyObject *py_MAPIStore_delete_context(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	PyMAPIStoreContextObject	*context; */
-/* 	int				ret = MAPISTORE_SUCCESS; */
-
-/* 	if (!PyArg_ParseTuple(args, "O", &context)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	/\* mapistore_del_context(context->mstore_ctx, context->context_id); *\/ */
-/* 	/\* Py_XDECREF(context); *\/ */
-
-/* 	return PyInt_FromLong(ret); */
-/* } */
-
-/* static PyObject *py_MAPIStore_search_context_by_uri(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	int		ret; */
-/* 	uint32_t	context_id = 0; */
-/* 	const char	*uri; */
-/* 	void		*backend_object; */
-
-/* 	if (!PyArg_ParseTuple(args, "s", &uri)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	ret = mapistore_search_context_by_uri(self->mstore_ctx, uri, &context_id, &backend_object); */
-/* 	if (ret != MAPISTORE_SUCCESS) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(context_id); */
-/* } */
-
-/* static PyObject *py_MAPIStore_add_context_ref_count(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t	context_id = 0; */
-
-/* 	if (!PyArg_ParseTuple(args, "k", &context_id)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(mapistore_add_context_ref_count(self->mstore_ctx, context_id)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_create_folder(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		parent_fid; */
-/* 	uint64_t		fid; */
-/* 	PyObject		*mod_mapi; */
-/* 	PyObject		*pySPropValue; */
-/* 	PySPropValueObject	*SPropValue; */
-/* 	struct SRow		aRow; */
-
-/* 	mod_mapi = PyImport_ImportModule("openchange.mapi"); */
-/* 	if (mod_mapi == NULL) { */
-/* 		printf("Can't load module\n"); */
-/* 		return NULL; */
-/* 	} */
-/* 	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue"); */
-/* 	if (SPropValue_Type == NULL) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyArg_ParseTuple(args, "kKKO", &context_id, &parent_fid, &fid, &pySPropValue)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) { */
-/* 		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object"); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	SPropValue = (PySPropValueObject *)pySPropValue; */
-/* 	aRow.cValues = SPropValue->cValues; */
-/* 	aRow.lpProps = SPropValue->SPropValue; */
-
-/* 	return PyInt_FromLong(mapistore_folder_create_folder(self->mstore_ctx, context_id, parent_fid, fid, &aRow)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_delete_folder(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t	context_id; */
-/* 	uint64_t	parent_fid; */
-/* 	uint64_t	fid; */
-/* 	uint8_t		flags; */
-
-/* 	if (!PyArg_ParseTuple(args, "kKKH", &context_id, &parent_fid, &fid, &flags)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	return PyInt_FromLong(mapistore_folder_delete_folder(self->mstore_ctx, context_id, parent_fid, fid, flags)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_setprops(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		fid; */
-/* 	uint8_t			object_type; */
-/* 	PyObject		*mod_mapi; */
-/* 	PyObject		*pySPropValue; */
-/* 	PySPropValueObject	*SPropValue; */
-/* 	struct SRow		aRow; */
-
-/* 	mod_mapi = PyImport_ImportModule("openchange.mapi"); */
-/* 	if (mod_mapi == NULL) { */
-/* 		printf("Can't load module\n"); */
-/* 		return NULL; */
-/* 	} */
-/* 	SPropValue_Type = (PyTypeObject *)PyObject_GetAttrString(mod_mapi, "SPropValue"); */
-/* 	if (SPropValue_Type == NULL) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyArg_ParseTuple(args, "kKbO", &context_id, &fid, &object_type, &pySPropValue)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	if (!PyObject_TypeCheck(pySPropValue, SPropValue_Type)) { */
-/* 		PyErr_SetString(PyExc_TypeError, "Function require SPropValue object"); */
-/* 		return NULL; */
-/* 	} */
-
-/* 	SPropValue = (PySPropValueObject *)pySPropValue; */
-/* 	aRow.cValues = SPropValue->cValues; */
-/* 	aRow.lpProps = SPropValue->SPropValue; */
-
-/* 	return PyInt_FromLong(mapistore_setprops(self->mstore_ctx, context_id, fid, object_type, &aRow)); */
-/* } */
-
-/* static PyObject *py_MAPIStore_get_folder_count(PyMAPIStoreObject *self, PyObject *args) */
-/* { */
-/* 	uint32_t		context_id; */
-/* 	uint64_t		fid; */
-/* 	uint8_t			object_type; */
-/* 	uint32_t		RowCount = 0; */
-
-/* 	if (!PyArg_ParseTuple(args, "kKb", &context_id, &fid, &object_type)) { */
-/* 		return NULL; */
-/* 	} */
-
-/* 	switch (object_type) { */
-/* 	case MAPISTORE_FOLDER: */
-/* 		mapistore_folder_get_folder_count(self->mstore_ctx, context_id,  */
-/* 						  fid, &RowCount); */
-/* 		break; */
-/* 	case MAPISTORE_MESSAGE: */
-/* 		mapistore_folder_get_message_count(self->mstore_ctx, context_id,  */
-/* 						   fid, MAPISTORE_MESSAGE_TABLE, &RowCount); */
-/* 		break; */
-/* 	default: */
-/* 		RowCount = 0; */
-/* 		break; */
-/* 	} */
-
-/* 	return PyInt_FromLong(RowCount); */
-/* } */
-
 static PyMethodDef mapistore_methods[] = {
+	{ "initialize", (PyCFunction)py_MAPIStore_initialize, METH_VARARGS },
+	{ "set_parm", (PyCFunction)py_MAPIStore_set_parm, METH_VARARGS },
+	{ "dump", (PyCFunction)py_MAPIStore_dump, METH_NOARGS },
+	{ "list_backends", (PyCFunction)py_MAPIStore_list_backends_for_user, METH_NOARGS },
+	{ "capabilities", (PyCFunction)py_MAPIStore_list_contexts_for_user, METH_NOARGS },
 	{ "management", (PyCFunction)py_MAPIStore_new_mgmt, METH_VARARGS },
 	{ "add_context", (PyCFunction)py_MAPIStore_add_context, METH_VARARGS },
-	/* { "delete_context", (PyCFunction)py_MAPIStore_delete_context, METH_VARARGS }, */
-	/* { "search_context_by_uri", (PyCFunction)py_MAPIStore_search_context_by_uri, METH_VARARGS }, */
-	/* { "add_context_ref_count", (PyCFunction)py_MAPIStore_add_context_ref_count, METH_VARARGS }, */
-	/* { "create_folder", (PyCFunction)py_MAPIStore_create_folder, METH_VARARGS }, */
-	/* { "delete_folder", (PyCFunction)py_MAPIStore_delete_folder, METH_VARARGS }, */
-	/* { "setprops", (PyCFunction)py_MAPIStore_setprops, METH_VARARGS }, */
-	/* { "get_folder_count", (PyCFunction)py_MAPIStore_get_folder_count, METH_VARARGS }, */
 	{ NULL },
+};
+
+static int py_mapistore_set_debuglevel(PyMAPIStoreObject *self, PyObject *value, void *closure)
+{
+	char	*debuglevel = NULL;
+	bool    ret;
+
+	if (value == NULL) {
+		DEBUG(0, ("[ERR][%s]: Cannot delete the 'debug' attribute\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+		return -1;
+	}
+
+	if (!PyInt_Check(value)) {
+		DEBUG(0, ("[ERR][%s]: The debuglevel attribute value must be an integer\n", __location__));
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_INVALID_PARAMETER);
+		return -1;
+	}
+
+	debuglevel = talloc_asprintf(self->mem_ctx, "%ld", PyInt_AsLong(value));
+	if (!debuglevel) {
+		PyErr_SetMAPIStoreError(MAPISTORE_ERR_NO_MEMORY);
+		return -1;
+	}
+
+	ret = lpcfg_set_cmdline(self->lp_ctx, "log level", debuglevel);
+	talloc_free(debuglevel);
+
+	return (ret == true) ? 0 : -1;
+}
+
+static PyGetSetDef mapistore_getsetters[] = {
+	{ "debuglevel", NULL, (setter)py_mapistore_set_debuglevel, "The level of debug."},
+	{ NULL }
 };
 
 PyTypeObject PyMAPIStore = {
@@ -432,7 +436,7 @@ PyTypeObject PyMAPIStore = {
 	.tp_basicsize = sizeof (PyMAPIStoreObject),
 	.tp_doc = "mapistore object",
 	.tp_methods = mapistore_methods,
-	/* .tp_getset = mapistore_getsetters, */
+	.tp_getset = mapistore_getsetters,
 	.tp_new = py_MAPIStore_new,
 	.tp_dealloc = (destructor)py_MAPIStore_dealloc,
 	.tp_flags = Py_TPFLAGS_DEFAULT,
@@ -452,17 +456,151 @@ static PyObject *py_mapistore_set_mapping_path(PyObject *mod, PyObject *args)
 static PyObject *py_mapistore_errstr(PyObject *mod, PyObject *args)
 {
 	int		ret;
+	const char	*errstr;
 
 	if (!PyArg_ParseTuple(args, "k", &ret)) {
 		return NULL;
 	}
 
-	return PyString_FromString(mapistore_errstr(ret));
+	errstr = mapistore_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
+}
+
+static PyObject *py_mapistatus_errstr(PyObject *mod, PyObject *args)
+{
+	int		ret;
+	const char	*errstr;
+
+	if (!PyArg_ParseTuple(args, "k", &ret)) {
+		return NULL;
+	}
+
+	errstr = mapi_get_errstr(ret);
+	if (errstr != NULL) {
+		return PyString_FromString(errstr);
+	}
+	Py_RETURN_NONE;
+}
+
+
+static PyObject *py_mapistore_isPtypServerId(PyMAPIStoreObject *self, PyObject *args)
+{
+	char		*sproptag = NULL;
+	uint32_t	proptag = 0;
+	bool		retval = false;
+
+	if (!PyArg_ParseTuple(args, "s", &sproptag)) {
+		return NULL;
+	}
+
+	if (strcasestr(sproptag, "0x")) {
+		proptag = strtoul(sproptag, NULL, 16);
+	} else {
+		proptag = openchangedb_property_get_tag(sproptag);
+		if (proptag == 0xFFFFFFFF) {
+			proptag = openchangedb_named_properties_get_tag(sproptag);
+			if (proptag == 0xFFFFFFFF) {
+				proptag = strtoul(sproptag, NULL, 16);
+			}
+		}
+	}
+
+
+	if ((proptag & 0xFFFF) == PT_SVREID) {
+		retval = true;
+	}
+
+	return PyBool_FromLong((uint32_t)retval);
+}
+
+
+
+static PyObject *py_mapistore_isPtypBinary(PyMAPIStoreObject *self, PyObject *args)
+{
+	char		*sproptag = NULL;
+	uint32_t	proptag = 0;
+	bool		retval = false;
+
+	if (!PyArg_ParseTuple(args, "s", &sproptag)) {
+		return NULL;
+	}
+
+	if (strcasestr(sproptag, "0x")) {
+		proptag = strtoul(sproptag, NULL, 16);
+	} else {
+		proptag = openchangedb_property_get_tag(sproptag);
+		if (proptag == 0xFFFFFFFF) {
+			proptag = openchangedb_named_properties_get_tag(sproptag);
+			if (proptag == 0xFFFFFFFF) {
+				proptag = strtoul(sproptag, NULL, 16);
+			}
+		}
+	}
+
+
+	if ((proptag & 0xFFFF) == PT_BINARY) {
+		retval = true;
+	}
+
+	return PyBool_FromLong((uint32_t)retval);
+}
+
+
+static PyObject *py_mapistore_isPtypMVBinary(PyMAPIStoreObject *self, PyObject *args)
+{
+	char		*sproptag = NULL;
+	uint32_t	proptag = 0;
+	bool		retval = false;
+
+	if (!PyArg_ParseTuple(args, "s", &sproptag)) {
+		return NULL;
+	}
+
+	if (strcasestr(sproptag, "0x")) {
+		proptag = strtoul(sproptag, NULL, 16);
+	} else {
+		proptag = openchangedb_property_get_tag(sproptag);
+		if (proptag == 0xFFFFFFFF) {
+			proptag = openchangedb_named_properties_get_tag(sproptag);
+			if (proptag == 0xFFFFFFFF) {
+				proptag = strtoul(sproptag, NULL, 16);
+			}
+		}
+	}
+
+
+	if ((proptag & 0xFFFF) == PT_MV_BINARY) {
+		retval = true;
+	}
+
+	return PyBool_FromLong((uint32_t)retval);
 }
 
 static PyMethodDef py_mapistore_global_methods[] = {
 	{ "set_mapping_path", (PyCFunction)py_mapistore_set_mapping_path, METH_VARARGS },
-	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS },
+	{ "errstr", (PyCFunction)py_mapistore_errstr, METH_VARARGS,
+		"Returns mapistore_error string presentation\n\n"
+		":param status: mapistore_error code\n"
+		":return string: String" },
+	{ "mapistatus_errstr", (PyCFunction)py_mapistatus_errstr, METH_VARARGS,
+		"Returns MAPISTATUS string presentation\n\n"
+		":param status: MAPISTATUS code\n"
+		":return string: String or None if MAPISTATUS is unknown" },
+	{ "isPtypServerId", (PyCFunction)py_mapistore_isPtypServerId, METH_VARARGS,
+		"Check if the property is of type PT_SRVEID\n\n"
+		":param paroperty: Property tag to lookup\n"
+		":return boolean: Boolean" },
+	{ "isPtypBinary", (PyCFunction)py_mapistore_isPtypBinary, METH_VARARGS,
+		"Check if the property is of type PT_BINARY\n\n"
+		":param paroperty: Property tag to lookup\n"
+		":return boolean: Boolean" },
+	{ "isPtypMVBinary", (PyCFunction)py_mapistore_isPtypMVBinary, METH_VARARGS,
+		"Check if the property is of type PT_BINARY\n\n"
+		":param paroperty: Property tag to lookup\n"
+		":return boolean: Boolean" },
 	{ NULL },
 };
 
@@ -507,10 +645,26 @@ void initmapistore(void)
 	Py_INCREF(&PyMAPIStore);
 	PyModule_AddObject(m, "MAPIStore", (PyObject *)&PyMAPIStore);
 
+	PyModule_AddObject(m, "ROLE_MAIL", PyInt_FromLong(MAPISTORE_MAIL_ROLE));
+	PyModule_AddObject(m, "ROLE_DRAFTS", PyInt_FromLong(MAPISTORE_DRAFTS_ROLE));
+	PyModule_AddObject(m, "ROLE_SENTITEMS", PyInt_FromLong(MAPISTORE_SENTITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_OUTBOX", PyInt_FromLong(MAPISTORE_OUTBOX_ROLE));
+	PyModule_AddObject(m, "ROLE_DELETEDITEMS", PyInt_FromLong(MAPISTORE_DELETEDITEMS_ROLE));
+	PyModule_AddObject(m, "ROLE_CALENDAR", PyInt_FromLong(MAPISTORE_CALENDAR_ROLE));
+	PyModule_AddObject(m, "ROLE_CONTACTS", PyInt_FromLong(MAPISTORE_CONTACTS_ROLE));
+	PyModule_AddObject(m, "ROLE_TASKS", PyInt_FromLong(MAPISTORE_TASKS_ROLE));
+	PyModule_AddObject(m, "ROLE_NOTES", PyInt_FromLong(MAPISTORE_NOTES_ROLE));
+	PyModule_AddObject(m, "ROLE_JOURNAL", PyInt_FromLong(MAPISTORE_JOURNAL_ROLE));
+	PyModule_AddObject(m, "ROLE_FALLBACK", PyInt_FromLong(MAPISTORE_FALLBACK_ROLE));
+	PyModule_AddObject(m, "ROLE_MAX_ROLES", PyInt_FromLong(MAPISTORE_MAX_ROLES));
+
 	initmapistore_mgmt(m);
 	initmapistore_context(m);
 	initmapistore_folder(m);
+	initmapistore_attachment(m);
+	initmapistore_message(m);
 	initmapistore_freebusy_properties(m);
 	initmapistore_errors(m);
 	initmapistore_table(m);
+	initmapistore_indexing(m);
 }

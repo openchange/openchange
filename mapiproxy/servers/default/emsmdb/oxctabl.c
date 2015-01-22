@@ -436,7 +436,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	/* Ensure we are in a case which we can handle, until the featureset is complete. */
 	if (!request->ForwardRead) {
 		DEBUG(0, ("  !ForwardRead is not supported yet\n"));
-		abort();
+		goto finish;
 	}
 
         /* Lookup the properties */
@@ -455,7 +455,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			count++;
 		}
 		else {
-			count = 0;
 			goto finish;
 		}
 	}
@@ -656,11 +655,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSeekRow(TALLOC_CTX *mem_ctx,
                 if (next_position < 0) {
                         next_position = 0;
                         mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
-                }
-                else if (next_position >= table->denominator) {
-                        next_position = table->denominator - 1;
+                } else if (next_position > table->denominator) {
+			next_position = table->denominator - 1;
                         mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
-                }
+		} else if (next_position == table->denominator) {
+			next_position = table->denominator;
+                        mapi_repl->u.mapi_SeekRow.HasSoughtLess = 1;
+		}
+
                 if (mapi_req->u.mapi_SeekRow.WantRowMovedCount) {
                         mapi_repl->u.mapi_SeekRow.RowsSought = (next_position - table->numerator);
                 }

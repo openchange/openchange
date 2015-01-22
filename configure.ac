@@ -363,10 +363,37 @@ PYTHON_LIBS=`$PYTHON_CONFIG --libs`
 AC_MSG_RESULT($PYTHON_LIBS)
 AC_SUBST(PYTHON_LIBS)
 
+AC_MSG_CHECKING(python configdir)
+PYTHON_CONFIGDIR=`$PYTHON_CONFIG --configdir`
+AC_MSG_RESULT($PYTHON_CONFIGDIR)
+AC_SUBST(PYTHON_CONFIGDIR)
+
+AC_MSG_CHECKING(python version)
+PYTHON_VERSION=`$PYTHON -c "import sys, string; major,minor,rev = string.split(sys.version)[[0]].split('.');print major + '.' + minor;"`
+AC_MSG_RESULT($PYTHON_VERSION)
+AC_SUBST(PYTHON_VERSION)
+
+
+AC_MSG_CHECKING(python extension-suffix)
+PYTHON_EXT_SUFFIX=`$PYTHON_CONFIG --extension-suffix`
+AC_MSG_RESULT($PYTHON_EXT_SUFFIX)
+AC_SUBST(PYTHON_EXT_SUFFIX)
+
 AC_MSG_CHECKING(python library directory)
 pythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0, '\\${prefix}')"`
 AC_MSG_RESULT($pythondir)
 AC_SUBST(pythondir)
+
+AC_MSG_CHECKING(Standard python library detector)
+stdpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 1)"`
+AC_MSG_RESULT($stdpythondir)
+AC_SUBST(stdpythondir)
+
+AC_MSG_CHECKING(3rd Party python library detector)
+otherpythondir=`$PYTHON -c "from distutils import sysconfig; print sysconfig.get_python_lib(1, 0)"`
+AC_MSG_RESULT($otherpythondir)
+AC_SUBST(otherpythondir)
+
 
 dnl ----------------------------------------------------------------------------
 dnl Check for MYSQL client libraries
@@ -411,6 +438,7 @@ PKG_CHECK_MODULES(SAMBA, dcerpc ndr samba-hostconfig samba-util tevent samba-cre
 PKG_CHECK_MODULES(SAMBASERVER, dcerpc_server samdb, [], [AC_MSG_WARN(No mapiproxy support)])
 PKG_CHECK_MODULES(TDB, tdb)
 PKG_CHECK_MODULES(LDB, ldb)
+PKG_CHECK_MODULES(SAMDB, samdb)
 
 dnl ---------------------------------------------------------------------------
 dnl Check a particular Samba4 git revision
@@ -871,9 +899,6 @@ OpenChange Configuration (Please review)
 	   * OpenChange Server:
 	     - mapiproxy:		$enable_mapiproxy
 
-	   * OpenChange mapistore backends:
-	     - backends dependencies goes here
-
 	   * OpenChange Tools:
 	     - openchangeclient:	$enable_openchangeclient
 	     - mapiprofile:		$enable_mapiprofile
@@ -896,6 +921,7 @@ OpenChange Configuration (Please review)
 	   * OpenChange Documentation:	$enable_doxygen
 
 	   * OpenChange Bindings:
+	     - Python:			$enable_pyopenchange
 	     - Qt4:			$enable_openchange_qt4
 
 	   * Installation prefix:	$prefix

@@ -158,14 +158,9 @@ class _RESTConn(object):
         r = self.so.get('%s%s' % (self.base_url, msg_uri))
         msg = r.json()
         self._decode_object_b64(msg)
-        if "recipients" in msg and len(msg["recipients"]) > 0:
-            # We assume all the recipients have the same properties
-            rcp_keys = msg["recipients"][0].keys()
-            for key in rcp_keys:
-                if mapistore.isPtypBinary(key):
-                    for recipient in msg["recipients"]:
-                        value = recipient[key]
-                        recipient[key] = bytearray(base64.b64decode(str(value)))
+        if "recipients" in msg:
+            for recipient in msg["recipients"]:
+                self._decode_object_b64(recipient)
         return msg
 
     def get_message_count(self, uri):
@@ -186,14 +181,9 @@ class _RESTConn(object):
             msg['PidTagInstanceNum'] = 0
             msg['PidTagRowType'] = 1
             msg['PidTagDepth'] = 0
-            if "recipients" in msg and len(msg["recipients"]) > 0:
-                # We assume all the recipients have the same properties
-                rcp_keys = msg["recipients"][0].keys()
-                for key in rcp_keys:
-                    if mapistore.isPtypBinary(key):
-                        for recipient in msg["recipients"]:
-                            value = recipient[key]
-                            recipient[key] = bytearray(base64.b64decode(str(value)))
+            if "recipients" in msg:
+                for recipient in msg["recipients"]:
+                    self._decode_object_b64(recipient)
             newlist.append(msg)
         return newlist
 
@@ -250,15 +240,10 @@ class _RESTConn(object):
         self._encode_object_b64(msg)
         msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
         # Add recipients
-        rcps = [rcp.copy() for rcp in recipients]
-        if len(rcps) > 0:
-            # We assume all the recipients have the same properties
-            rcp_keys = rcps[0].keys()
-            for key in rcp_keys:
-                if mapistore.isPtypBinary(key):
-                    for rcp in rcps:
-                        value = rcp[key]
-                        rcp[key] = base64.b64encode(value)
+        if len(recipients) > 0:
+            rcps = [rcp.copy() for rcp in recipients]
+            for rcp in rcps:
+                self._encode_object_b64(rcp)
             msg["recipients"] = rcps
         headers = {'Content-Type': 'application/json'}
         r = self.so.post('%s/%s/' % (self.base_url, collection),
@@ -282,16 +267,11 @@ class _RESTConn(object):
         msg = props.copy()
         headers = {'Content-Type': 'application/json'}
         self._encode_object_b64(msg)
-        rcps = [rcp.copy() for rcp in recipients]
         # Add recipients
-        if len(rcps) > 0:
-            # We assume all the recipients have the same properties
-            rcp_keys = rcps[0].keys()
-            for key in rcp_keys:
-                if mapistore.isPtypBinary(key):
-                    for rcp in rcps:
-                        value = rcp[key]
-                        rcp[key] = base64.b64encode(value)
+        if len(recipients) > 0:
+            rcps = [rcp.copy() for rcp in recipients]
+            for rcp in rcps:
+                self._encode_object_b64(rcp)
             msg["recipients"] = rcps
         self.so.put('%s%s' % (self.base_url, uri), data=json.dumps(msg),
                     headers=headers)
@@ -304,18 +284,12 @@ class _RESTConn(object):
         self._encode_object_b64(msg)
         msg["PidTagSubject"] = msg["PidTagNormalizedSubject"]
         # Add recipients
-        rcps = [rcp.copy() for rcp in recipients]
-        if len(rcps) > 0:
-            # We assume all the recipients have the same properties
-            rcp_keys = rcps[0].keys()
-            for key in rcp_keys:
-                if mapistore.isPtypBinary(key):
-                    for rcp in rcps:
-                        value = rcp[key]
-                        rcp[key] = base64.b64encode(value)
-        else:
+        if len(recipients) == 0:
             return mapistore.errors.MAPISTORE_ERR_INVALID_DATA
-        msg['recipients'] = rcps
+        rcps = [rcp.copy() for rcp in recipients]
+        for rcp in rcps:
+            self._encode_object_b64(rcp)
+        msg["recipients"] = rcps
         headers = {'Content-Type': 'application/json'}
         submit_data = {'msg': msg, 'serv_spool': serv_spool}
         self.so.post('%s/mails/submit/' % self.base_url,
@@ -720,7 +694,11 @@ class MessageObject(object):
 
     def get_message_data(self):
         logger.info('[PYTHON][%s][%s]: message.get_message_data' % (BackendObject.name, self.uri))
-        return (self.recipients, self.properties)
+        # Create a set with the union of the recipients' keys
+        keys = set().union(*self.recipients)
+        # Transform the set into a list
+        keys = list(keys)
+        return (self.recipients, keys, self.properties)
 
     def modify_recipients(self, recipients):
         logger.info('[PYTHON][%s][%s]: message.modify_recipients()' % (BackendObject.name, self.uri))
@@ -1010,7 +988,7 @@ class TableObject(object):
         assert row_no < len(tmp_msg), "Index out of bounds of filtered data for message row=%s" % row_no
         message = tmp_msg[row_no]
 
-        (recipients, properties) = message.get_message_data()
+        (recipients, keys, properties) = message.get_message_data()
         return (self.columns, properties)
 
     def _get_row_attachments(self, row_no):

@@ -813,6 +813,10 @@ class MessageObject(BackendObject):
 
     def get_message_data(self):
         print '[PYTHON]: %s message.get_message_data()' % (self.name)
+        # Create a set with the union of the recipients' keys
+        keys = set().union(*self.basedict["recipients"])
+        # Transform the set into a list
+        keys = list(keys)
 
         return (self.basedict["recipients"], self.basedict["properties"])
 

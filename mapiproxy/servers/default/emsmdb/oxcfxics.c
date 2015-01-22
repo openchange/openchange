@@ -2741,6 +2741,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 	synccontext = synccontext_object->object.synccontext;
 	parsed_idset = IDSET_parse(synccontext, synccontext->state_stream.buffer, false);
 
+	retval = IDSET_check_ranges(parsed_idset);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = retval;
+		goto reset;
+	}
+
 	switch (synccontext->state_property) {
 	case MetaTagIdsetGiven:
 		if (parsed_idset && parsed_idset->range_count == 0) {
@@ -2756,7 +2762,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_seen;
 		synccontext->cnset_seen = parsed_idset;
@@ -2768,7 +2774,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_fai");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_seen_fai;
 		synccontext->cnset_seen_fai = parsed_idset;
@@ -2780,7 +2786,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		retval = oxcfxics_check_cnset(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parsed_idset, "cnset_seen_read");
 		if (retval != MAPI_E_SUCCESS) {
 			mapi_repl->error_code = retval;
-			goto end;
+			goto reset;
 		}
 		old_idset = synccontext->cnset_read;
 		synccontext->cnset_read = parsed_idset;
@@ -2790,6 +2796,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncUploadStateStreamEnd(TALLOC_CTX *mem_ctx
 		talloc_free(old_idset);
 	}
 
+reset:
 	/* reset synccontext state */
 	if (synccontext->state_stream.buffer.length > 0) {
 		talloc_free(synccontext->state_stream.buffer.data);

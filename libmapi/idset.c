@@ -1022,6 +1022,9 @@ _PUBLIC_ void IDSET_remove_rawidset(struct idset *idset, const struct rawidset *
 
 /**
   \details dump an idset structure
+
+  \param idset pointer to the idset structure to dump
+  \param label string to define the dump in log
 */
 _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 {
@@ -1043,7 +1046,7 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 		range = idset->ranges;
 		for (i = 0; i < idset->range_count; i++) {
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
-				abort();
+				DEBUG(0, ("ERROR: Incorrect GLOBCNT range as high value is larger than low value\n"));
 			}
 			DEBUG(0, ("  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]\n", range->low, range->high));
 			range = range->next;
@@ -1052,6 +1055,35 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 		idset = idset->next;
 	}
 }
+
+/**
+  \details check GLOBCNT ranges from an idset structure. [MS-OXCFXICS] Section 3.1.5.4.3.2.4
+
+  \param idset pointer to the idset structure to check
+
+  \return MAPI_E_SUCCESS on success, ecRpcFormat if any range is incorrect (low > high)
+          or any range is NULL.
+*/
+_PUBLIC_ enum MAPISTATUS IDSET_check_ranges(const struct idset *idset)
+{
+	struct globset_range *range;
+	uint32_t	     i;
+
+	while (idset) {
+		range = idset->ranges;
+		for (i = 0; i < idset->range_count; i++) {
+			OPENCHANGE_RETVAL_IF(!range, ecRpcFormat, NULL);
+			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
+				return ecRpcFormat;
+			}
+			range = range->next;
+		}
+		idset = idset->next;
+	}
+
+	return MAPI_E_SUCCESS;
+}
+
 
 /**
   \details push an idset on an ndr stream

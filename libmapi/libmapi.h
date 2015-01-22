@@ -548,6 +548,7 @@ bool			IDSET_includes_guid_glob(const struct idset *, struct GUID *, uint64_t);
 bool			IDSET_includes_eid(const struct idset *, uint64_t);
 void			IDSET_remove_rawidset(struct idset *, const struct rawidset *);
 void			IDSET_dump(const struct idset *, const char *);
+enum MAPISTATUS	IDSET_check_ranges(const struct idset *);
 void			ndr_push_idset(struct ndr_push *, struct idset *);
 
 struct globset_range *	GLOBSET_parse(TALLOC_CTX *, DATA_BLOB, uint32_t *, uint32_t *);

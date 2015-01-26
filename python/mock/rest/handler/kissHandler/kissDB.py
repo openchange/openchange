@@ -154,6 +154,41 @@ class kissDB(object):
         del attachments[att_id]
         self._set_data('attachments', attachments, True)
 
+    def get_fai(self):
+        """@:return dict: Dictionary {message_id -> data}"""
+        return self._get_data('fai')
+
+    def create_fai(self, msg_props):
+        """Create new FAI and return the record
+        :param msg_props: Dictionary with the object data
+        """
+        msg = msg_props.copy()
+        next_id = self._get_data('next_id')
+        msg['id'] = next_id
+        fai = self._get_data('fai')
+        fai[next_id] = msg
+        self._set_data('next_id', next_id + 1)
+        self._set_data('fai', fai, True)
+        return msg
+
+    def update_fai(self, msg_id, msg_props):
+        """Update FAI properties
+        :param msg_props: Dictionary with the object data
+        :param msg_id: Target object ID
+        """
+        fai = self._get_data('fai')
+        msg = fai[msg_id]
+        msg.update(msg_props)
+        self._set_data('fai', fai, True)
+
+    def delete_fai(self, msg_id):
+        """Delete a FAI record
+        :param msg_id: Target object ID
+        """
+        fai = self._get_data('fai')
+        del fai[msg_id]
+        self._set_data('fai', fai, True)
+
     def _get_data(self, top_key):
         if self._db is None:
             # load DB
@@ -256,6 +291,9 @@ class kissDB(object):
                 17: kissDB._folder_rec(17, 'Finder', 'Finder', mapistore.ROLE_FALLBACK, 0, 6, True),
                 18: kissDB._folder_rec(18, 'View', 'Views', mapistore.ROLE_FALLBACK, 0, 7, True),
                 19: kissDB._folder_rec(19, 'Shortcuts', 'Shortcuts', mapistore.ROLE_FALLBACK, 0, 8, True)
+            },
+            'fai': {
+
             },
             'messages': {
                 51: appt1

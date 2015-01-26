@@ -248,6 +248,48 @@ def module_folders_get_messages(folder_id):
     return Response(json.dumps(messages),  mimetype='application/json')
 
 
+@app.route('/folders/<int:folder_id>/fai', methods=['HEAD'])
+def module_folders_head_fai(folder_id):
+    """Get number of FAI (folder Associated Information) messages in a folder"""
+    handler = ApiHandler(user_id='any')
+    fai = ''
+    try:
+       fai = handler.folders_get_fai(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+
+    @after_this_request
+    def add_header_X_mapistore_rowcount(response):
+        response.headers['X-mapistore-rowcount'] = len(fai)
+        return response
+
+    return jsonify()
+
+@app.route('/folders/<int:folder_id>/fai', methods=['GET'])
+def module_folders_get_fai(folder_id):
+    """List of FAI within specified folder"""
+    properties = request.args.get('properties')
+    if properties is None:
+        properties = None
+    else:
+        properties = set(properties.split(','))
+    handler = ApiHandler(user_id='any')
+    fai = ''
+    try:
+        fai = handler.folders_get_fai(folder_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    # filter only requested properties
+    fai = [{k: v
+            for (k, v) in msg.items()
+                 if properties is None or k in properties}
+                for msg in fai]
+    return Response(json.dumps(fai),  mimetype='application/json')
+
 ###############################################################################
 # Common message implementation
 ###############################################################################
@@ -327,6 +369,7 @@ def module_mail_delete(msg_id):
 @app.route('/tasks/<int:msg_id>/attachments', methods=['HEAD'])
 @app.route('/contacts/<int:msg_id>/attachments', methods=['HEAD'])
 @app.route('/notes/<int:msg_id>/attachments', methods=['HEAD'])
+@app.route('/fai/<int:msg_id>/attachments', methods=['HEAD'])
 def module_messages_head_attachments(msg_id):
     """Get number of attachments in a message"""
     handler = ApiHandler(user_id='any')
@@ -351,6 +394,7 @@ def module_messages_head_attachments(msg_id):
 @app.route('/tasks/<int:msg_id>/attachments', methods=['GET'])
 @app.route('/contacts/<int:msg_id>/attachments', methods=['GET'])
 @app.route('/notes/<int:msg_id>/attachments', methods=['GET'])
+@app.route('/fai/<int:msg_id>/attachments', methods=['GET'])
 def module_messages_get_attachments(msg_id):
     """List of attachments within specified message"""
     properties = request.args.get('properties')
@@ -530,6 +574,76 @@ def module_attachment_delete(att_id):
     handler = ApiHandler(user_id='any')
     try:
         handler.attachments_delete(att_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 204
+
+
+###############################################################################
+# FAI (Folder Associated Information)
+###############################################################################
+@app.route('/fai/', methods=['POST'])
+def module_fai_create():
+    data = request.get_json()
+    if data is None:
+        abort(422, "You must supply parent_id at least")
+    parent_id = data.get('parent_id', None)
+    if parent_id is None:
+        abort(422, "parent_id is a required parameter")
+    handler = ApiHandler(user_id='any')
+    att = {}
+    try:
+        att = handler.fai_create('fai', data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(id=att['id'])
+
+@app.route('/fai/<int:msg_id>/', methods=['GET'])
+def module_fai_get(msg_id):
+    """Retrieve all the properties of the FAI entry identified by id"""
+    handler = ApiHandler(user_id='any')
+    ret_val = ''
+    try:
+        ret_val = handler.fai_get(msg_id)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return jsonify(ret_val)
+
+@app.route('/fai/<int:msg_id>/', methods=['PUT'])
+def module_fai_put(msg_id):
+    data = request.get_json()
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.fai_update(msg_id, data)
+    except KeyError, ke:
+        abort(404, ke.message)
+    finally:
+        handler.close_context()
+    return "", 201
+
+@app.route('/fai/<int:msg_id>/', methods=['HEAD'])
+def module_fai_head(msg_id):
+    """Check if FAI exists or not"""
+    handler = ApiHandler(user_id='any')
+    ret_val = handler.fai_id_exists(msg_id)
+    handler.close_context()
+    if not ret_val:
+        abort(404)
+    return jsonify()
+
+
+@app.route('/fai/<int:msg_id>/', methods=['DELETE'])
+def module_fai_delete(msg_id):
+    """Delete FAI with msg_id"""
+    handler = ApiHandler(user_id='any')
+    try:
+        handler.fai_delete(msg_id)
     except KeyError, ke:
         abort(404, ke.message)
     finally:

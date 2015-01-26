@@ -113,6 +113,10 @@ class ApiHandler(object):
             raise KeyError('No folder with id = %d' % folder_id)
         self._db.delete_folder(folder_id)
 
+    def folders_get_fai(self, folder_id):
+        msg_dict = self._db.get_fai()
+        return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
+
     def folders_get_messages(self, folder_id):
         msg_dict = self._db.get_messages()
         return [msg for msg in msg_dict.values() if folder_id == msg['parent_id']]
@@ -158,6 +162,48 @@ class ApiHandler(object):
         if msg_id not in messages:
             raise KeyError('No message with id = %d' % msg_id)
         self._db.delete_message(msg_id)
+
+
+    def fai_id_exists(self, msg_id):
+        msg_dict = self._db.get_fai()
+        return msg_id in msg_dict
+
+    def fai_create(self, collection, props):
+        # we rely on API server to check preconditions
+        # but anyway, assert here too
+        assert 'parent_id' in props, 'parent_id is required'
+        # override folder type
+        props['collection'] = collection
+        # check parent ID
+        parent_id = props['parent_id']
+        if not self.folders_id_exists(parent_id):
+            raise KeyError('No folder with id = %d' % parent_id)
+        # create new message
+        return self._db.create_fai(props)
+
+    def fai_get(self, msg_id):
+        msg_dict = self._db.get_fai()
+        if msg_id not in msg_dict:
+            raise KeyError('No item with id = %d' % msg_id)
+        msg_obj = msg_dict[msg_id]
+        return self._folder_rec(msg_obj, msg_dict)
+
+    def fai_update(self, msg_id, props):
+        # load what we have
+        fai = self._db.get_fai()
+        # check msg id
+        if not self.fai_id_exists(msg_id):
+            raise KeyError('No FAI with id = %d' % msg_id)
+        # update properties
+        self._db.update_fai(msg_id, props)
+
+    def fai_delete(self, msg_id):
+        # load what we have
+        fai = self._db.get_fai()
+        # check parent ID
+        if msg_id not in fai:
+            raise KeyError('No FAI with id = %d' % msg_id)
+        self._db.delete_fai(msg_id)
 
     def messages_get_attachments(self, msg_id):
         att_dict = self._db.get_attachments()

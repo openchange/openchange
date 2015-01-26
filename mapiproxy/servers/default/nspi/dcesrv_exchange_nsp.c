@@ -120,7 +120,7 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	/* Step 1. Initialize the emsabp context */
 	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx, emsabp_tdb_ctx);
 	if (!emsabp_ctx) {
-		OC_ABORT(false, ("[exchange_nsp] Unable to initialize emsabp context\n"));
+		OC_PANIC(false, ("[exchange_nsp] Unable to initialize emsabp context\n"));
 		retval = MAPI_E_FAILONEPROVIDER;
 		goto failure;
 	}
@@ -1441,7 +1441,7 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 	/* Open a read-write pointer on the EMSABP TDB database */
 	emsabp_tdb_ctx = emsabp_tdb_init((TALLOC_CTX *)dce_ctx, dce_ctx->lp_ctx);
 	if (!emsabp_tdb_ctx) {
-		OC_ABORT(false, ("[exchange_nsp] Unable to initialize emsabp_tdb context\n"));
+		OC_PANIC(false, ("[exchange_nsp] Unable to initialize emsabp_tdb context\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

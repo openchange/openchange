@@ -126,7 +126,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
-		OC_ABORT(false, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context\n"));
+		OC_PANIC(false, ("[exchange_emsmdb] EcDoConnect failed: unable to initialize emsmdbp context\n"));
 		goto failure;
 	}
 
@@ -2012,7 +2012,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_init(struct dcesrv_context *dce_ctx)
 	/* Open read/write context on OpenChange dispatcher database */
 	openchange_db_ctx = emsmdbp_openchangedb_init(dce_ctx->lp_ctx);
 	if (!openchange_db_ctx) {
-		OC_ABORT(false, ("[exchange_emsmdb] Unable to initialize openchangedb\n"));
+		OC_PANIC(false, ("[exchange_emsmdb] Unable to initialize openchangedb\n"));
 		return NT_STATUS_INTERNAL_ERROR;
 	}
 

@@ -22,7 +22,7 @@
 #ifndef	__FAULT_UTIL_H__
 #define	__FAULT_UTIL_H__
 
-#define OC_ABORT( is_fatal, body ) \
+#define OC_PANIC( is_fatal, body ) \
 	DEBUGSEP(0); \
 	DEBUG(0,("OPENCHANGE INTERNAL ERROR: pid %d\n", (int)getpid())); \
 	DEBUG(0, body); \

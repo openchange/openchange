@@ -18,13 +18,11 @@
 #
 
 from samba import param
-from samba.credentials import Credentials
 from samba.tests import TestCaseInTempDir
-from samba.tests.samdb import SamDBTestCase
-from openchange.provision import (install_schemas, openchangedb_provision,
-    guess_names_from_smbconf, find_setup_dir)
+from openchange.provision import (
+    openchangedb_provision,
+    guess_names_from_smbconf)
 import os
-import shutil
 
 """
     FIXME: Not working, the issue is at SamDBTestCase code
@@ -50,6 +48,6 @@ class OpenChangeDBProvisionTestCase(TestCaseInTempDir):
         lp.load_default()
         lp.set("private dir", self.tempdir)
         names = guess_names_from_smbconf(lp, firstorg="bar", firstou="foo")
-        openchangedb_provision(names, lp)
+        openchangedb_provision(names, lp, "ldb://openchange.ldb")
         os.unlink(os.path.join(self.tempdir, "openchange.ldb"))
         os.unlink(os.path.join(self.tempdir, "sam.ldb"))

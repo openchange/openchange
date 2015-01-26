@@ -48,14 +48,21 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	const char *openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
 							     "openchangedb");
-	if (openchangedb_backend) {
+
+	if (openchangedb_backend == NULL) {
+		retval = MAPI_E_NOT_INITIALIZED;
+		DEBUG(0, ("No OpenChangeDB backend specified, please provision.\n"));
+	} else if (strncmp(openchangedb_backend, "mysql:", strlen("mysql:")) == 0) {
 		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n", openchangedb_backend));
 		retval = openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
-	} else {
+	} else if (strncmp(openchangedb_backend, "ldb:", strlen("ldb:")) == 0) {
 		DEBUG(0, ("Using default backend for openchangedb\n"));
 		retval = openchangedb_ldb_initialize(mem_ctx,
 						     lpcfg_private_dir(lp_ctx),
 						     oc_ctx);
+	} else {
+		DEBUG(0, ("Unknown backend in URI %s\n", openchangedb_backend));
+		retval = MAPI_E_NOT_FOUND;
 	}
 
 	if (retval != MAPI_E_SUCCESS) {
@@ -112,7 +119,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_SystemFolderID(struct openchangedb_con
 	OPENCHANGE_RETVAL_IF(!oc_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(!recipient, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!FolderId, MAPI_E_INVALID_PARAMETER, NULL);
-	
+
 	return oc_ctx->get_SystemFolderID(oc_ctx, recipient, SystemIdx, FolderId);
 }
 

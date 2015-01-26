@@ -71,13 +71,14 @@ _PUBLIC_ void openchange_abort(bool is_fatal)
 {
 	/* print Samba and OpenChange versions */
 	const char *samba_version = SAMBA_VERSION_STRING;
-	DEBUG(0, ("Version Samba: %s", samba_version));
 	const char *openchange_version = OPENCHANGE_VERSION_STRING;
-	DEBUG(0, ("Version OpenChange: %s", openchange_version));
-	DEBUGSEP(0);
 
-	/* print stacktrace */
+	DEBUGSEP(0);
+	DEBUG(0, ("Version Samba: %s\n", samba_version));
+	DEBUG(0, ("Version OpenChange: %s\n", openchange_version));
+	DEBUGSEP(0);
 	debug_print_backtrace(0);
+	DEBUGSEP(0);
 
 	/* TODO: decide to abort or not */
 	if (is_fatal) {

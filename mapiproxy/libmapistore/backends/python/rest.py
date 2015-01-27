@@ -936,14 +936,21 @@ class TableObject(object):
 
     def get_row_count(self, query_type):
         logger.info('[PYTHON]:[%s] table.get_row_count()' % (BackendObject.name))
-        if self.table_type == mapistore.MESSAGE_TABLE:
-            count = 0
-            for message in self.parent.messages:
-                if self._apply_restriction_message(self.restrictions, message) is True:
-                    count = count + 1
-            return count
 
-        return self.parent.get_child_count(self.table_type)
+        if self.table_type != mapistore.FAI_TABLE and self.table_type != mapistore.MESSAGE_TABLE:
+            return self.parent.get_child_count(self.table_type)
+
+        count = 0
+        messages = []
+        if self.table_type == mapistore_FAI_TABLE:
+            messages = self.parent.fai
+        elif self.table_type == mapistore.MESSAGE_TABLE:
+            messages = self.parent.messages
+
+        for message in messages:
+            if self._apply_restriction_message(self.restrictions, message) is True:
+                count = count + 1
+        return count
 
     def get_row(self, row_no, query_type):
         logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))

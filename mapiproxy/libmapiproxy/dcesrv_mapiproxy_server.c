@@ -179,7 +179,7 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 								   NDR_EXCHANGE_DS_RFR_NAME, NULL };
 
 	/* Check server mode */
-	server_mode = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", false);
+	server_mode = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", true);
 	DEBUG(0, ("MAPIPROXY server mode %s\n", (server_mode == false) ? "disabled" : "enabled"));
 
 	if (server_mode == true) {

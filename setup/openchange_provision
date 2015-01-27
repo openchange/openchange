@@ -46,12 +46,13 @@ parser.add_option("--standalone", action="store_true", help="Provisioning an sta
 parser.add_option("--additional", action="store_true", help="Provisioning an additional OpenChange server")
 parser.add_option("--primary-server", action="store_true", help="Set this OpenChange server as the primary server")
 parser.add_option("--openchangedb", action="store_true", help="Initialize OpenChange dispatcher database")
-parser.add_option("--openchangedb-uri", type="string", default="",
+parser.add_option("--openchangedb-uri", type="string", default="ldb://openchange.ldb",
                   help="openchange database destination, by default a ldb file (openchange.ldb) "
                        "inside samba private directory is used but you can use mysql as backend "
                        "specifying a connection string like mysql://user:passwd@host/db_name")
 parser.add_option("--deprovision", action="store_true", help="Uninstall the Exchange schema and objects from AD")
 parser.add_option("--migrate", action="store_true", help="Migrate MySQL schema of an existing OpenChange installation")
+parser.add_option("--check", action="store_true", help="Check whether the server can be provisioned")
 
 opts,args = parser.parse_args()
 if len(args) != 0:
@@ -72,7 +73,7 @@ def setup_path(*args):
 provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
-if not opts.openchangedb:
+if not opts.openchangedb and not opts.check:
     if opts.deprovision:
         try:
             openchange.unregister(setup_path, provisionnames, lp, creds)
@@ -97,5 +98,7 @@ if not opts.openchangedb:
     else:
         parser.print_help()
         sys.exit(1)
+elif opts.check:
+    openchange.check_not_provisioned(provisionnames, lp, creds)
 else:
     openchange.openchangedb_provision(provisionnames, lp, opts.openchangedb_uri)

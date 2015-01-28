@@ -786,6 +786,12 @@ class MessageObject(object):
             msgid = self.uri
             msgid = int(msgid.replace('/%s/' % collection, '').rstrip('/'))
         else:
+            if collection == 'calendars':
+                if not 'PidTagMessageStatus' in self.properties:
+                    self.properties['PidTagMessageStatus'] = 0
+                if not 'PidLidSideEffects' in self.properties:
+                    self.properties['PidLidSideEffects'] = 0
+
             # Create the message
             folder_id = self.folder.uri
             folder_id = int(folder_id.replace('/folders/', '').rstrip('/'))

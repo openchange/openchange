@@ -942,7 +942,7 @@ class TableObject(object):
 
         count = 0
         messages = []
-        if self.table_type == mapistore_FAI_TABLE:
+        if self.table_type == mapistore.FAI_TABLE:
             messages = self.parent.fai
         elif self.table_type == mapistore.MESSAGE_TABLE:
             messages = self.parent.messages

@@ -210,10 +210,8 @@ class _RESTConn(object):
         self._dump_response(r)
         msgs = r.json()
         newlist = []
-        for i,msg in enumerate(msgs):
-            for key,value in msg.iteritems():
-                if mapistore.isPtypBinary(key):
-                    msg[key] = bytearray(base64.b64decode(str(value)))
+        for msg in msgs:
+            self._decode_object_b64(msg)
             msg['PidTagInstID'] = msg['id']
             msg['PidTagInstanceNum'] = 0
             msg['PidTagRowType'] = 1

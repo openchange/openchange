@@ -3397,6 +3397,19 @@ static PyObject *mapistore_python_add_restriction(struct mapi_SRestriction *res)
 	case RES_COMPAREPROPS:
 		break;
 	case RES_BITMASK:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("bitmask"));
+		switch (res->res.resBitmask.relMBR) {
+		case BMR_EQZ:
+			PyDict_SetItemString(pyobj, "relMBR", PyString_FromString("BMR_EQZ"));
+			break;
+		case BMR_NEZ:
+			PyDict_SetItemString(pyobj, "relMBR", PyString_FromString("BMR_NEZ"));
+			break;
+		}
+		item = mapistore_python_pyobject_from_proptag(res->res.resBitmask.ulPropTag);
+		PyDict_SetItemString(pyobj, "property", item);
+
+		PyDict_SetItemString(pyobj, "ulMask", PyLong_FromLong(res->res.resBitmask.ulMask));
 		break;
 	case RES_SIZE:
 		break;

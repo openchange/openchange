@@ -1066,6 +1066,17 @@ class TableObject(object):
                     return True
                 return False
 
+        if (restriction["type"] == "bitmask"):
+            if not restriction["property"] in message.properties:
+                return False
+            if restriction["relMBR"] == "BMR_EQZ":
+                if message.properties[restriction["property"]] & restriction["ulMask"]:
+                    return True
+                return False
+            if restriction["relMBR"] == "BMR_NEZ":
+                if message.properties[restriction["property"]] & restriction["ulMask"]:
+                    return False
+                return True
 
         return False
 

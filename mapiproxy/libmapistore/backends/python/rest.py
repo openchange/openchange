@@ -1061,6 +1061,11 @@ class TableObject(object):
                 if message.properties[restriction["property"]] == restriction["value"]:
                     return True
                 return False
+            if restriction["operator"] == 5: # RELOP_NE !=
+                if message.properties[restriction["property"]] != restriction["value"]:
+                    return True
+                return False
+
 
         return False
 

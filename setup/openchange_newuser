@@ -53,18 +53,16 @@ parser.add_option("--mail", type="string", metavar="MAIL",
                        "will be samaccountname@realm")
 opts, args = parser.parse_args()
 
-if len(args) == 0:
+if len(args) != 1:
     parser.print_usage()
     sys.exit(1)
+if opts.enable and opts.disable:
+    parser.error("The options --enable and --disable are mutually exclusive")
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
 provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
-
-def setup_path(*args):
-    return os.path.join(os.path.dirname(__file__), *args)
-
 
 if opts.create == True:
     openchange.newuser(provisionnames, lp, creds, username=args[0], mail=opts.mail)

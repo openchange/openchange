@@ -1057,6 +1057,10 @@ class TableObject(object):
                 if message.properties[restriction["property"]].startswith(restriction["value"]):
                     return True
                 return False
+            if restriction["operator"] == 3: # RELOP_GE >=
+                if message.properties[restriction["property"]].startswith(restriction["value"]):
+                    return True
+                return False
             if restriction["operator"] == 4: # RELOP_EQ ==
                 if message.properties[restriction["property"]] == restriction["value"]:
                     return True

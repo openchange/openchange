@@ -41,6 +41,9 @@
 #endif
 #endif
 
+/* The IS_WINUNICODE_CODEPAGE  macro checks that the code page in the in.pStat value is CP_WINUNICODE (equivalent to the CP_UNICODE macro).*/
+#define IS_WINUNICODE_CODEPAGE(r) (r->in.pStat->CodePage == CP_UNICODE)
+
 struct emsabp_context {
 	const char		*account_name;
 	const char		*organization_name;

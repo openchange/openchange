@@ -33,8 +33,9 @@ static int migrate_schema(const char *connection_string, const char *schema_back
         PyObject *mailbox_mod;
         PyObject *py_ret_value = NULL;
         PyObject *mailbox_obj = NULL;
-        int      retval = 0;
+        int      another_init, retval = 0;
 
+        another_init = Py_IsInitialized();
         Py_Initialize();
 
         mailbox_mod = PyImport_ImportModule("openchange.mailbox");
@@ -68,7 +69,9 @@ static int migrate_schema(const char *connection_string, const char *schema_back
 end:
         Py_XDECREF(mailbox_obj);
         Py_DECREF(mailbox_mod);
-        Py_Finalize();
+        if (!another_init) {
+                Py_Finalize();
+        }
         return retval;
 }
 

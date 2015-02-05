@@ -917,6 +917,7 @@ class TableObject(object):
         self.parent = parent
         self.table_type = table_type
         self.restrictions = None
+        self.sortorders = None
         self.columns = None
 
     def set_columns(self, columns):
@@ -932,6 +933,16 @@ class TableObject(object):
             self.restrictions = self._encode_restrictions(restrictions)
 
         print json.dumps(self.restrictions, indent=4)
+        return mapistore.errors.MAPISTORE_SUCCESS
+
+    def set_sort_order(self, sortorders):
+        logger.info('[PYTHON]:[%s] table.set_sort_order(%s)', BackendObject.name, sortorders)
+        if sortorders is None:
+            self.sortorders = {}
+        else:
+            self.sortorders = sortorders
+
+        print json.dumps(self.sortorders, indent=4)
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_row_count(self, query_type):
@@ -1103,12 +1114,35 @@ class TableObject(object):
 
         return False
 
+    def _apply_sort_order(self, messages):
+        if self.sortorders is None or self.sortorders is {} or not "sortorder" in self.sortorders:
+            return messages
+
+        proptag = self.sortorders['sortorder'][0]['property']
+        order = self.sortorders['sortorder'][0]['order']
+
+        print "sort order: ulPropTag(%s)" % proptag
+        print "sort order: order(%s)" % order
+
+        if not all(proptag in d.properties for d in messages):
+            print 'sort_order: proptag %s not found in list' % proptag
+            return messages
+
+        if order == "TABLE_ASCEND":
+            return sorted(messages, key=lambda k: k.properties[proptag])
+        elif order == "TABLE_DESCEND":
+            return sorted(messages, key=lambda k: k.properties[proptag], reverse=True)
+        else:
+            return messages
+
     def _get_row_messages(self, row_no):
-        assert row_no < len(self.parent.messages), "Index out of bounds for messages row=%s" % row_no
+        messages = self._apply_sort_order(self.parent.messages)
+
+        assert row_no < len(messages), "Index out of bounds for messages row=%s" % row_no
 
         # Filter messages
         tmp_msg = []
-        for message in self.parent.messages:
+        for message in messages:
             if self._apply_restriction_message(self.restrictions, message) is True:
                 tmp_msg.append(message)
 
@@ -1119,11 +1153,13 @@ class TableObject(object):
         return (self.columns, properties)
 
     def _get_row_fai(self, row_no):
-        assert row_no < len(self.parent.fai), "Index out of bounds for messages row=%s with len(self.parent.fai) = %d" % (row_no, len(self.parent.fai))
+        messages = self._apply_sort_order(self.parent.fai)
+
+        assert row_no < len(messages), "Index out of bounds for messages row=%s with len(self.parent.fai) = %d" % (row_no, len(messages))
 
         # Filter messages
         tmp_msg = []
-        for message in self.parent.fai:
+        for message in messages:
             if self._apply_restriction_message(self.restrictions, message) is True:
                 tmp_msg.append(message)
 

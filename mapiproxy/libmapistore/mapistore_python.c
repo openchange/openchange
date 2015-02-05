@@ -3491,6 +3491,31 @@ static enum mapistore_error mapistore_python_table_set_restrictions(void *table_
 	return retval;
 }
 
+static PyObject *mapistore_python_add_sort_order(struct SSortOrder aSort)
+{
+	PyObject	*item;
+	PyObject	*proptag;
+
+	item = PyDict_New();
+	if (!item) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python dictionary\n",
+			  __location__));
+		return NULL;
+	}
+	proptag = mapistore_python_pyobject_from_proptag(aSort.ulPropTag);
+	PyDict_SetItemString(item, "property", proptag);
+
+	switch(aSort.ulOrder) {
+	case TABLE_SORT_ASCEND:
+		PyDict_SetItemString(item, "order", PyString_FromString("TABLE_ASCEND"));
+		break;
+	case TABLE_SORT_DESCEND:
+		PyDict_SetItemString(item, "order", PyString_FromString("TABLE_DESCEND"));
+		break;
+	}
+
+	return item;
+}
 
 /**
    \details Set sort order for rows in a table
@@ -3503,10 +3528,75 @@ static enum mapistore_error mapistore_python_table_set_sort_order(void *table_ob
 								  struct SSortOrderSet *sort_order,
 								  uint8_t *table_status)
 {
+	enum MAPISTATUS			retval;
+	struct mapistore_python_object	*pyobj;
+	PyObject			*table;
+	PyObject			*pysort;
+	PyObject			*pres;
+	PyObject			*val = NULL;
+	PyObject			*item;
+	uint16_t			i;
+
 	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
+	/* Sanity Checks */
+	MAPISTORE_RETVAL_IF(!table_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!sort_order, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!table_status, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Retrieve the table object */
+	pyobj = (struct mapistore_python_object *) table_object;
+	MAPISTORE_RETVAL_IF(!pyobj->module, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF((pyobj->obj_type != MAPISTORE_PYTHON_OBJECT_TABLE),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	table = (PyObject *)pyobj->private_object;
+	MAPISTORE_RETVAL_IF(!table, MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+	MAPISTORE_RETVAL_IF(strcmp("TableObject", table->ob_type->tp_name),
+			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
+
+	/* Create sort order */
+	pysort = PyDict_New();
+	if (pysort == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialize Python dictionary\n", __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	val = PyList_New(sort_order->cSorts);
+	if (val == NULL) {
+		DEBUG(0, ("[ERR][%s]: Unable to initialized Python list for sort order\n",
+			  __location__));
+		return MAPISTORE_ERR_NO_MEMORY;
+	}
+
+	for (i = 0; i < sort_order->cSorts; i++) {
+		item = mapistore_python_add_sort_order(sort_order->aSort[i]);
+		if (PyList_SetItem(val, i, item) == -1) {
+			DEBUG(0, ("[ERR][%s]: Unable to insert entry to Python list\n",
+				  __location__));
+			return MAPISTORE_ERR_NO_MEMORY;
+		}
+
+	}
+	PyDict_SetItemString(pysort, "sortorder", val);
+
+	/* TODO: Handle Categories */
+	PyDict_SetItemString(pysort, "categories", PyList_New(0));
+
+	/* Call set_sort_order function */
+	pres = PyObject_CallMethod(table, "set_sort_order", "O", pysort);
+	Py_DECREF(pysort);
+	if (pres == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyObject_CallMethod failed: ", pyobj->name, __location__));
+		PyErr_Print();
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	retval = PyLong_AsLong(pres);
+	Py_DECREF(pres);
+
 	*table_status = 0x0;
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 

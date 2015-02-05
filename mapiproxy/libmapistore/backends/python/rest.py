@@ -1053,6 +1053,13 @@ class TableObject(object):
             print message
             if not restriction["property"] in message.properties:
                 return False
+
+            # WARNING: Only handle int case for RELOP_LT
+            if restriction["operator"] == 1: # RELOP_LT <
+                if message.properties[restriction["property"]] < restriction["value"]:
+                    return True
+                return False
+
             if restriction["operator"] == 2: # RELOP_GT >
                 if message.properties[restriction["property"]].startswith(restriction["value"]):
                     return True

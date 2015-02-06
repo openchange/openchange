@@ -1118,14 +1118,15 @@ class TableObject(object):
         if self.sortorders is None or self.sortorders is {} or not "sortorder" in self.sortorders:
             return messages
 
-        for sortorder in self.sortorders['sortorder']:
+        for sortorder in reversed(self.sortorders['sortorder']):
             proptag = sortorder['property']
             order = sortorder['order']
             if all(proptag in d.properties for d in messages):
                 if order == "TABLE_ASCEND":
-                    return sorted(messages, key=lambda k: k.properties[proptag])
+                    messages = sorted(messages, key=lambda k: k.properties[proptag])
                 elif order == "TABLE_DESCEND":
-                    return sorted(messages, key=lambda k: k.properties[proptag], reverse=True)
+                    messages = sorted(messages, key=lambda k: k.properties[proptag], reverse=True)
+
         return messages
 
     def _get_row_messages(self, row_no):

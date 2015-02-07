@@ -488,6 +488,35 @@ def provision_organization(setup_path, names, lp, creds, reporter=None):
     return True
 
 
+def deprovision_organization(setup_path, names, lp, creds, reporter=None):
+    """Remove an existing exchange organization
+
+    :param setup_path: Path to the setup directory
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: Provision Names object
+    :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
+    """
+    if reporter is None:
+        reporter = TextProgressReporter()
+
+    sam_db = get_schema_master_samdb(names, lp, creds)
+    try:
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
+    except LdbError, ldb_error:
+            print ("[!] error while deprovisioning the Exchange organization objects"
+                   " objects (%d): %s" % ldb_error.args)
+            return False
+
+    try:
+        deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_finalize.ldif", "Update generic Exchange configuration objects", modify_mode=True)
+    except LdbError, ldb_error:
+        print ("[!] error while deprovisioning the Exchange organization"
+               " objects (%d): %s" % ldb_error.args)
+        return False
+    return True
+
+
 def get_ldb_url(lp, creds, names):
     if names.serverrole == "member server":
         net = Net(creds, lp)
@@ -873,7 +902,7 @@ def registerasmain(setup_path, names, lp, creds, reporter=None):
 
 
 def openchangedb_deprovision(names, lp, mapistore=None):
-    """Removed the OpenChange database.
+    """Remove the OpenChange database.
 
     :param names: Provision names object
     :param lp: Loadparm context
@@ -882,17 +911,19 @@ def openchangedb_deprovision(names, lp, mapistore=None):
 
     print "Removing openchange db"
     uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-    else:
+    elif uri.startswith('ldb:'):
         openchangedb = mailbox.OpenChangeDB(uri)
+    else:
+        raise Exception("unknown backend in openchangedb URI %s" % uri)
     openchangedb.remove()
 
 
 def openchangedb_migrate(lp, uri=None, version=None):
     if uri is None:
         uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
         if openchangedb.migrate(version):
             print "Migration openchange db done"
@@ -905,7 +936,7 @@ def openchangedb_migrate(lp, uri=None, version=None):
 def openchangedb_list_migrations(lp, uri):
     if uri is None:
         uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
         migrations = openchangedb.list_migrations()
         print_migrations(migrations)
@@ -916,7 +947,7 @@ def openchangedb_list_migrations(lp, uri):
 def openchangedb_fake_migration(lp, uri, target_version):
     if uri is None:
         uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
         if openchangedb.fake_migration(target_version):
             print "%d is now the current version" % target_version
@@ -924,20 +955,19 @@ def openchangedb_fake_migration(lp, uri, target_version):
         print "Only OpenchangeDB with MySQL as backend has migration capability"
 
 
-def openchangedb_provision(names, lp, uri=None):
+def openchangedb_provision(names, lp, uri):
     """Create the OpenChange database.
 
     :param names: Provision names object
     :param lp: Loadparm context
-    :param uri: Openchangedb destination, by default will be a ldb file inside
-    private samba directory. You can specify a mysql connection string like
-    mysql://user:passwd@host/db_name to use openchangedb with mysql backend
+    :param uri: Openchangedb destination. You can specify a mysql connection
+        string like mysql://user:passwd@host/db_name to use openchangedb with
+        mysql backend or ldb: for LDB.
     """
-
     print "Setting up openchange db"
-    if uri is None or len(uri) == 0 or uri.startswith('ldb'):  # LDB backend
+    if uri.startswith('ldb:'):  # LDB backend
         openchangedb = mailbox.OpenChangeDB(openchangedb_url(lp))
-    elif uri.startswith('mysql'):  # MySQL backend
+    elif uri.startswith('mysql:'):  # MySQL backend
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
     else:
         print "[!] error provisioning openchangedb: Unknown uri `%s`" % uri
@@ -954,7 +984,7 @@ def openchangedb_new_organization(names, lp):
     :param lp: Loadparm context
     """
     uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
     else:
         openchangedb = mailbox.OpenChangeDB(uri)
@@ -1002,7 +1032,7 @@ def check_not_provisioned(names, lp, creds):
 def indexing_migrate(lp, uri=None, version=None):
     if uri is None:
         uri = indexing_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         indexing = mailbox.IndexingWithMysqlBackend(uri)
         if indexing.migrate(version):
             print "Migration MAPIStore indexing backend done"
@@ -1015,7 +1045,7 @@ def indexing_migrate(lp, uri=None, version=None):
 def indexing_list_migrations(lp, uri):
     if uri is None:
         uri = indexing_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         indexing = mailbox.IndexingWithMysqlBackend(uri)
         migrations = indexing.list_migrations()
         print_migrations(migrations)
@@ -1026,7 +1056,7 @@ def indexing_list_migrations(lp, uri):
 def indexing_fake_migration(lp, uri, target_version):
     if uri is None:
         uri = indexing_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         indexing = mailbox.IndexingWithMysqlBackend(uri)
         if indexing.fake_migration(target_version):
             print "%d is now the current version" % target_version
@@ -1038,7 +1068,7 @@ def indexing_fake_migration(lp, uri, target_version):
 def named_props_migrate(lp, uri=None, version=None):
     if uri is None:
         uri = named_properties_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
         if named_properties.migrate(version):
             print "Migration MAPIStore named properties backend done"
@@ -1051,7 +1081,7 @@ def named_props_migrate(lp, uri=None, version=None):
 def named_props_list_migrations(lp, uri):
     if uri is None:
         uri = named_properties_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
         migrations = named_properties.list_migrations()
         print_migrations(migrations)
@@ -1062,7 +1092,7 @@ def named_props_list_migrations(lp, uri):
 def named_props_fake_migration(lp, uri, target_version):
     if uri is None:
         uri = named_properties_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
         if named_properties.fake_migration(target_version):
             print "%d is now the current version" % target_version

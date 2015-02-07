@@ -723,7 +723,7 @@ _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *sour
 		default:
 			// check if missed to handle a multi-value property
 			if (prop_type & MV_FLAG) {
-				// TODO: Replace this with OC_ABORT() macro when it gets visible in libmapi too
+				// TODO: Replace this with OC_PANIC() macro when it gets visible in libmapi too
 				DEBUG(0, ("%s: Unexpected multi-value property type: %s.\n",
 						__location__, get_proptag_name(source_value->ulPropTag)));
 				smb_panic("Unexpected multi-value property type while copying 'struct SPropValue'");

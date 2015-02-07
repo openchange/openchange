@@ -107,14 +107,17 @@ static void openchange_ldb_init(const char *syspath)
 	lp_ctx = loadparm_init_global(true);
 	openchangedb_backend = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
 
-	if (openchangedb_backend) {
+	if (openchangedb_backend == NULL) {
+		PyErr_SetString(PyExc_SystemError, "No openchangedb backend configured.");
+		goto end;
+	} else if (strncmp(openchangedb_backend, "mysql:", strlen("mysql:")) == 0) {
 		openchangedb_mysql_initialize(mem_ctx, lp_ctx, &globals.ocdb_ctx);
-	} else {
+	} else if (strncmp(openchangedb_backend, "ldb:", strlen("ldb:")) == 0) {
 		openchangedb_ldb_initialize(mem_ctx, syspath, &globals.ocdb_ctx);
 	}
 
 	if (!globals.ocdb_ctx) {
-		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb ldb");
+		PyErr_SetString(PyExc_SystemError, "Cannot initialize openchangedb backend");
 		goto end;
 	}
 	(void) talloc_reference(NULL, globals.ocdb_ctx);

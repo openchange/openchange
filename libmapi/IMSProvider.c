@@ -304,6 +304,12 @@ enum MAPISTATUS Logon(struct mapi_session *session,
 			OPENCHANGE_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_LOGON_FAILED, NULL);
 			mapistatus = emsmdb_async_connect(prov_ctx);
 			OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
+
+			session->notify_ctx = talloc_zero(prov_ctx->mem_ctx, struct mapi_notify_ctx);
+
+			session->notify_ctx->notifications = talloc_zero((TALLOC_CTX *)session->notify_ctx, struct notifications);
+			session->notify_ctx->notifications->prev = NULL;
+			session->notify_ctx->notifications->next = NULL;
 		}
 
 		break;
@@ -505,12 +511,6 @@ _PUBLIC_ enum MAPISTATUS RegisterAsyncNotification(struct mapi_session *session,
 
 	emsmdb = (struct emsmdb_context *)session->emsmdb->ctx;
 	
-	session->notify_ctx = talloc_zero(emsmdb->mem_ctx, struct mapi_notify_ctx);
-
-	session->notify_ctx->notifications = talloc_zero((TALLOC_CTX *)session->notify_ctx, struct notifications);
-	session->notify_ctx->notifications->prev = NULL;
-	session->notify_ctx->notifications->next = NULL;
-
 	mapistatus = emsmdb_async_waitex(emsmdb, 0, resultFlag);
 	OPENCHANGE_RETVAL_IF(mapistatus, mapistatus, NULL);
 

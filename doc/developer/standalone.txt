@@ -1,0 +1,110 @@
+Reducing OpenChange dependency on Samba
+=======================================
+
+Introduction
+------------
+
+OpenChange originally started out as a friendly fork as Samba. Later - to reduce
+maintenance overhead tracking Samba as well as packaging - it moved to
+just link against Samba and be a plugin for Samba.
+
+The main reason for relying so heavily on Samba originally was that it
+was an existing MS RPC implementation and communicating with an Exchange server
+at the time was only possible by speaking MS RPC.
+
+Dependencies on Samba
+---------------------
+
+OpenChange currently depends on Samba for:
+
+ * DCE/RPC client/server interaction
+ * ROP marshalling
+ * Various utility functions
+ * Logging
+ * Configuration handling (from smb.conf)
+
+Running OpenChange without DCE/RPC
+----------------------------------
+
+With changes in recent years, in particular with the introduction of EWS and
+MAPIHTTP, it is now mostly technically possible to build an Exchange server
+without DCE/RPC, and it is likely that we'll see more "naked" ROP over HTTP in
+the future.
+
+Disadvantages of dependency on Samba
+------------------------------------
+
+The dependency on Samba has been problematic for OpenChange in a number of ways:
+
+ * more effort for users installing OpenChange, having to fetch, build
+   and install extra software (during first install, and
+   when dependencies change)
+ * complicates and increases set up time for development environment
+ * more complex to understand setup, especially for developers
+   not involved in the DCE/RPC side of things
+ * API changes in Samba that cause breakage in OpenChange are frequent cause of
+   frustration for users and developers
+
+It would be nice if it was possible to (for most developers) just develop
+OpenChange without having Samba installed, and with a less crazy
+protocol stack (i.e. just ROPs over HTTP). This would make things
+both easier to understand and easier to debug.
+
+Components from Samba that can be dropped
+-----------------------------------------
+
+There are a number of Samba components that OpenChange currently uses that can
+easily or with relatively limited effort be dropped. Various small
+utility libraries can be reimplemented for OpenChange, or be pulled in
+from more common libraries like glib.
+
+OpenChange should have its own infrastructure for logging and
+configuration. As configuration and logging are vital parts of the code,
+it would be impossible to make OpenChange independent of Samba while it is
+still using Samba's DEBUG() and loadparm_context interfaces. Having our
+own infrastructure also allows us to simplify both the APIs and user-facing
+elements of these libraries. There are several lessons to be learned
+from the way Samba implemented these that we should take advantage of.
+
+The other Samba libraries that OpenChange currently relies on are talloc,
+tevent and ldb. These are both small, buildable outside of Samba and have a stable
+API. These are also more generic parts of infrastrucutre, and it would
+make less sense and take more time to rewrite them.
+
+Optional support for DCE/RPC
+----------------------------
+
+DCE/RPC is the main transport for MAPI today, and will remain relevant for a
+long time to come. We should keep supporting it, but ideally as an optional feature
+that those that want it can build.
+
+In order to make DCE/RPC support (and Samba integration) optional, OpenChange
+needs to be a standalone binary - as we can't rely on Samba to provide that
+functionality for us when it is not installed.
+
+When running as a standalone binary, OpenChange will have to start its own DCE/RPC
+server instance. This can be done using the Samba DCE/RPC server library code. It'll
+have to listen on a new TCP/IP port and register its endpoints with the main
+endpoint server on the machine, which will usually be Samba. How well the Samba
+endpoint mapper server currently handles new registrations is unknown, and it
+might need to be patched to handle external registrations.
+
+It doesn't make sense for OpenChange to have its own DCE/RPC library, especially
+since the current integration with Samba works well enough.
+
+Specific action items
+---------------------
+
+Independence (mostly) of Samba's APIs:
+
+ * Add custom OpenChange configuration file, with transition from smb.conf
+ * Add custom OpenChange logging infrastructure (with named log levels rather than numbers!)
+ * independence of pidl for MAPI ROP serialization?
+ * Replace the utility functions in samba-util that openchange uses by local implementations
+   or possibly another library (glib?)
+ * Make the OpenChange server a standalone binary that:
+  - registers itself with Samba using the endpoint mapper
+
+Ability to compile without Samba installed:
+ * Make DCE/RPC support in the client optional at compile time
+ * Make DCE/RPC support in the server binary optional at compile time

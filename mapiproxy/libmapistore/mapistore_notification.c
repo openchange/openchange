@@ -20,7 +20,7 @@
  */
 
 #include <talloc.h>
-#include <dlinklist.h>
+#include "utils/dlinklist.h"
 
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_private.h"

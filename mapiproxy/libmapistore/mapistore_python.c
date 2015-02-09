@@ -474,10 +474,8 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 	}
 
 	for (count = 0; count < aRow->cValues; count++) {
-
 		/* Set the key of the dictionary entry */
 		key = mapistore_python_pyobject_from_proptag(aRow->lpProps[count].ulPropTag);
-
 		/* Retrieve SPropValue data */
 		val = mapistore_pyobject_from_data(&(aRow->lpProps[count]));
 		if (val) {
@@ -486,7 +484,9 @@ static PyObject	*mapistore_python_dict_from_SRow(struct SRow *aRow)
 					  __location__));
 				return NULL;
 			}
+			Py_DECREF(val);
 		}
+		Py_DECREF(key);
 	}
 
 	return pydict;
@@ -2125,7 +2125,7 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 	PyObject			*pres;
 	PyObject			*rlist;
 	PyObject			*rdict;
-	PyObject			*klist;
+	PyObject			*rkeys;
 	PyObject			*dict;
 	PyObject			*ret;
 	PyObject			*key;
@@ -2161,18 +2161,18 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Ensure a tuple was returned */
-	if (PyTuple_Check(pres) == false) {
-		DEBUG(0, ("[ERR][%s][%s]: Tuple expected to be returned in get_message_data\n",
+	/* Ensure a dictionary was returned */
+	if (PyDict_Check(pres) == false) {
+		DEBUG(0, ("[ERR][%s][%s]: Dictionary expected to be returned in get_message_data\n",
 			pyobj->name, __location__));
 		Py_DECREF(pres);
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Retrieve list of recipients (item 0 of the tuple) */
-	rlist = PyTuple_GetItem(pres, 0);
+	/* Retrieve list of recipients */
+	rlist = PyDict_GetItem(pres, PyString_FromString("recipients"));
 	if (rlist == NULL) {
-		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
+		DEBUG(0, ("[ERR][%s][%s]: PyDict_GetItem failed ",
 			pyobj->name, __location__));
 		PyErr_Print();
 		Py_DECREF(pres);
@@ -2186,8 +2186,25 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		return MAPISTORE_ERR_CONTEXT_FAILED;
 	}
 
-	/* Retrieve message properties (item 1 of the tuple) */
-	rdict = PyTuple_GetItem(pres, 1);
+	/* Retrieve recipient key lists union */
+	rkeys = PyDict_GetItem(pres, PyString_FromString("recip_keys"));
+	if (rkeys == NULL) {
+		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
+			  pyobj->name, __location__));
+		PyErr_Print();
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	if (PyList_Check(rkeys) != true) {
+		DEBUG(0, ("[ERR][%s][%s]: list expected to be returned but got '%s'\n",
+			  pyobj->name, __location__, rkeys->ob_type->tp_name));
+		Py_DECREF(pres);
+		return MAPISTORE_ERR_CONTEXT_FAILED;
+	}
+
+	/* Retrieve message properties */
+	rdict = PyDict_GetItem(pres, PyString_FromString("properties"));
 	if (rdict == NULL) {
 		DEBUG(0, ("[ERR][%s][%s]: PyTuple_GetItem failed ",
 			pyobj->name, __location__));
@@ -2263,60 +2280,28 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			goto end;
 		}
 
-		/* Extract the property tags from the first recipient */
-		/* TODO: This model assumes all the recipients have the same set of properties.
-		 * If this can't be ensured, compute the properties of every recipient and use
-		 * the union of all the sets. */
-		dict = PyList_GetItem(rlist, 0);
-		if (dict == NULL) {
-			DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed ",
-				pyobj->name, __location__));
-			PyErr_Print();
-			retval = MAPISTORE_ERR_CONTEXT_FAILED;
-			goto end;
-		}
-
-		if (PyDict_Check(dict) != true) {
-			DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
-				pyobj->name, __location__, dict->ob_type->tp_name));
-			retval = MAPISTORE_ERR_CONTEXT_FAILED;
-			goto end;
-		}
-
-		klist = PyDict_Keys(dict);
-		if (klist == NULL) {
-			DEBUG(0, ("[ERR][%s][%s]: PyDict_Keys failed ",
-				pyobj->name, __location__));
-			PyErr_Print();
-			retval = MAPISTORE_ERR_CONTEXT_FAILED;
-			goto end;
-		}
-
-		/* Transform the keys into tags */
-		prop_count = (uint32_t) PyList_Size(klist);
+		/* Transform the recipient keys into tags */
+		prop_count = (uint32_t) PyList_Size(rkeys);
 		msgdata->columns->cValues = prop_count;
 		msgdata->columns->aulPropTag = talloc_array(msgdata, enum MAPITAGS,
-							 prop_count);
+							    prop_count);
 		if (msgdata->columns->aulPropTag == NULL) {
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_NO_MEMORY;
 			goto end;
 		}
 		for (j = 0; j < prop_count; j++) {
-			key = PyList_GetItem(klist, j);
+			key = PyList_GetItem(rkeys, j);
 			if (key == NULL) {
 				DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed",
-					pyobj->name, __location__));
+					  pyobj->name, __location__));
 				PyErr_Print();
-				Py_DECREF(klist);
 				retval = MAPISTORE_ERR_CONTEXT_FAILED;
 				goto end;
 			}
 			retval = mapistore_python_proptag_from_pyobject(key, &proptag);
 			if (retval != MAPISTORE_SUCCESS) {
 				DEBUG(0, ("[ERR][%s][%s]: Non-string elements in property dictionary\n",
-					pyobj->name, __location__));
-				Py_DECREF(klist);
+					  pyobj->name, __location__));
 				goto end;
 			}
 			msgdata->columns->aulPropTag[j] = proptag;
@@ -2331,7 +2316,6 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed ",
 				pyobj->name, __location__));
 			PyErr_Print();
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
@@ -2339,7 +2323,6 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		if (PyDict_Check(dict) != true) {
 			DEBUG(0, ("[ERR][%s][%s]: dict expected to be returned but got '%s'\n",
 				pyobj->name, __location__, dict->ob_type->tp_name));
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
@@ -2348,14 +2331,12 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		key = PyString_FromString("PidTagRecipientType");
 		if (key == NULL) {
 			PyErr_Print();
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
-		if (PyDict_Contains(dict, key) == -1) {
+		if (PyDict_Contains(dict, key) == 0) {
 			DEBUG(0, ("[ERR][%s][%s]: Missing PidTagRecipientType property for recipient %d\n",
 				pyobj->name, __location__, i));
-			Py_DECREF(klist);
 			Py_DECREF(key);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
@@ -2365,7 +2346,6 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		if (item == NULL) {
 			DEBUG(0, ("[ERR][%s][%s]: PyDict_GetItem failed\n", pyobj->name,
 				__location__));
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
@@ -2374,7 +2354,6 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		    (msgdata->recipients[i].type > MAPI_BCC)) {
 			DEBUG(0, ("[ERR][%s][%s]: Overflow error: %d\n",
 				pyobj->name, __location__, msgdata->recipients[i].type));
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_CONTEXT_FAILED;
 			goto end;
 		}
@@ -2382,7 +2361,6 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		/* Recipient properties */
 		msgdata->recipients[i].data = talloc_zero_array(msgdata, void *, msgdata->columns->cValues);
 		if (msgdata->recipients[i].data == NULL) {
-			Py_DECREF(klist);
 			retval = MAPISTORE_ERR_NO_MEMORY;
 			goto end;
 		}
@@ -2390,20 +2368,22 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 		for (j = 0; j < prop_count; j++) {
 			/* Go through the key list and retrieve the properties
 			 * of each recipient */
-			key = PyList_GetItem(klist, j);
+			key = PyList_GetItem(rkeys, j);
 			if (key == NULL) {
 				DEBUG(0, ("[ERR][%s][%s]: PyList_GetItem failed",
 					pyobj->name, __location__));
 				PyErr_Print();
-				Py_DECREF(klist);
 				retval = MAPISTORE_ERR_CONTEXT_FAILED;
 				goto end;
+			}
+			if (PyDict_Contains(dict, key) == 0) {
+				/* Silently allow empty properties */
+				continue;
 			}
 			item = PyDict_GetItem(dict, key);
 			if (item == NULL) {
 				DEBUG(0, ("[ERR][%s][%s]: PyDict_GetItem failed\n", pyobj->name,
 					__location__));
-				Py_DECREF(klist);
 				retval = MAPISTORE_ERR_CONTEXT_FAILED;
 				goto end;
 			}
@@ -2413,15 +2393,11 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			if (retval != MAPISTORE_SUCCESS) {
 				DEBUG(0, ("[ERR][%s][%s]: Failed to retrieve property 0x%x\n",
 					pyobj->name, __location__, msgdata->columns->aulPropTag[j]));
-				Py_DECREF(klist);
 				goto end;
 			}
 		}
 	}
 
-	if (msgdata->recipients_count) {
-		Py_DECREF(klist);
-	}
 	Py_DECREF(pres);
 
 	*message_data = msgdata;
@@ -2456,7 +2432,6 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 	PyObject                        *rlist;
 	PyObject                        *rdict;
 	PyObject                        *pres;
-	void                            *data;
 	uint32_t                        j;
 	uint16_t                        i;
 
@@ -2499,11 +2474,6 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 		goto end;
 	}
 
-	/* Set the tags of the recipient properties */
-	for (j = 0; j < columns->cValues; j++) {
-		aRow->lpProps[j].ulPropTag = columns->aulPropTag[j];
-	}
-
 	/* Build list of recipients */
 	rlist = PyList_New(count);
 	if (rlist == NULL) {
@@ -2516,16 +2486,9 @@ static enum mapistore_error mapistore_python_message_modify_recipients(void *mes
 	for (i = 0; i < count; i++) {
 		/* Build the dictionary of properties for each recipient */
 		for (j = 0; j < columns->cValues; j++) {
-			/* Get data from recipients */
-			data = recipients[i].data[j];
-			/* Set the property in aRow */
-			if (set_SPropValue(&aRow->lpProps[j], data) == false) {
-				DEBUG(0,("[ERR][%s]: Can't set property 0x%x\n",
-					__location__, aRow->lpProps[j].ulPropTag));
-				retval = MAPISTORE_ERR_CONTEXT_FAILED;
-				Py_DECREF(rlist);
-				goto end;
-			}
+			set_SPropValue_proptag(&aRow->lpProps[j],
+					       columns->aulPropTag[j],
+					       recipients[i].data[j]);
 		}
 
 		rdict = mapistore_python_dict_from_SRow(aRow);
@@ -2629,15 +2592,15 @@ static enum mapistore_error mapistore_python_message_save(TALLOC_CTX *mem_ctx,
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 static enum mapistore_error mapistore_python_message_submit(void *message_object,
-							  enum SubmitFlags flags)
+							    enum SubmitFlags flags)
 {
-	enum mapistore_error		    retval;
+	enum mapistore_error		retval;
 	struct mapistore_python_object	*pyobj;
-	PyObject                        *message;
-	PyObject			            *pres;
-    PyObject                        *serv_spool;
+	PyObject			*message;
+	PyObject			*pres;
+	PyObject                        *serv_spool;
 
-    DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
+	DEBUG(5, ("[INFO] %s\n", __FUNCTION__));
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!message_object, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -2653,22 +2616,21 @@ static enum mapistore_error mapistore_python_message_submit(void *message_object
 	MAPISTORE_RETVAL_IF(strcmp("MessageObject", message->ob_type->tp_name),
 			    MAPISTORE_ERR_CONTEXT_FAILED, NULL);
 
-    /* Read SubmitFlags */
+	/* Read SubmitFlags */
 	switch (flags) {
 		case None:
-            /* The message needs no preprocessing */
-            serv_spool = Py_None;
-            break;
+			/* The message needs no preprocessing */
+			serv_spool = Py_None;
+			break;
 		case PreProcess:
-            /* The message needs to be processed by the server */
-            serv_spool = Py_False;
-            break;
+			/* The message needs to be processed by the server */
+			serv_spool = Py_False;
+			break;
 		case NeedsSpooler:
-            /* The message needs to be processed by a client spooler */
-            serv_spool = Py_True;
-            break;
+			/* The message needs to be processed by a client spooler */
+			serv_spool = Py_True;
+			break;
 	}
-
 	/* Call submit function */
 	pres = PyObject_CallMethod(message, "submit", "O", serv_spool);
 	if (pres == NULL) {

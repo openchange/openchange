@@ -949,6 +949,7 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	struct emsmdbp_prop_index	prop_index;
 	struct SPropTagArray		*new_columns;
 	void				**new_data;
+	enum MAPISTATUS 		retval;
 
 	if (!emsmdbp_is_mapistore(source_object) || !emsmdbp_is_mapistore(dest_object)) {
 		/* we silently fail for non-mapistore messages */
@@ -958,9 +959,10 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	/* Fetch data from source message */
 	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 	contextID = emsmdbp_get_contextID(source_object);
-	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID,
-					source_object->backend_object,
-					mem_ctx, &msg_data);
+	retval = mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID,
+						    source_object->backend_object,
+						    mem_ctx, &msg_data);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 
 	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and
 	 * PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each
@@ -1002,9 +1004,12 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 			msg_data->columns = new_columns;
 		}
 		/* Copy data into dest message */
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
-						dest_object->backend_object, msg_data->columns,
-						msg_data->recipients_count, msg_data->recipients);
+		retval = mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID,
+							     dest_object->backend_object,
+							     msg_data->columns,
+							     msg_data->recipients_count,
+							     msg_data->recipients);
+                MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
 	}
 
 	talloc_free(mem_ctx);

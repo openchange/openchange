@@ -955,7 +955,7 @@ class TableObject(object):
     def get_row(self, row_no, query_type):
         logger.info('[PYTHON]:[%s] table.get_row(%s)' % (BackendObject.name, row_no))
         if self.get_row_count(self.table_type) == 0:
-            return (self.columns, {})
+            return (self.columns, None)
 
         getter = {mapistore.FOLDER_TABLE: self._get_row_folders,
                   mapistore.MESSAGE_TABLE: self._get_row_messages,

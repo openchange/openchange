@@ -1096,6 +1096,11 @@ class TableObject(object):
                     return False
                 return True
 
+        if restriction["type"] == "exist":
+            if restriction["property"] in message.properties:
+                return True
+            return False
+
         return False
 
     def _get_row_messages(self, row_no):

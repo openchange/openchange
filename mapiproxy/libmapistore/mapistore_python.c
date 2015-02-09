@@ -3414,6 +3414,9 @@ static PyObject *mapistore_python_add_restriction(struct mapi_SRestriction *res)
 	case RES_SIZE:
 		break;
 	case RES_EXIST:
+		PyDict_SetItemString(pyobj, "type", PyString_FromString("exist"));
+		item = mapistore_python_pyobject_from_proptag(res->res.resExist.ulPropTag);
+		PyDict_SetItemString(pyobj, "property", item);
 		break;
 	case RES_SUBRESTRICTION:
 		break;

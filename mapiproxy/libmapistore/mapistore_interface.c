@@ -1813,3 +1813,60 @@ _PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_
 
 	return mapi_err;
 }
+
+/**
+   \details Map a MAPI error code to MAPISTORE error code. We cannot
+   map 1 to 1 for the reduced MAPISTORE scope, then we mostly likely
+   return general MAPISTORE error code.
+
+   \param mapi_err the mapi status error code
+
+   \return the mapped MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapi_error_to_mapistore(enum MAPISTATUS mapi_err)
+{
+        enum mapistore_error mapistore_err;
+
+        /* We cannot map 1 to 1 so we do the general error mapping */
+
+        switch(mapi_err) {
+        case MAPI_E_SUCCESS:
+                mapistore_err = MAPISTORE_SUCCESS;
+                break;
+        case MAPI_E_NO_SUPPORT:
+                mapistore_err = MAPISTORE_ERROR;
+                break;
+        case MAPI_E_NOT_ENOUGH_MEMORY:
+                mapistore_err = MAPISTORE_ERR_NO_MEMORY;
+                break;
+        case MAPI_E_NOT_INITIALIZED:
+                mapistore_err = MAPISTORE_ERR_NOT_INITIALIZED;
+                break;
+        case MAPI_E_CORRUPT_STORE:
+                mapistore_err = MAPISTORE_ERR_CORRUPTED;
+                break;
+        case MAPI_E_DISK_ERROR:
+                mapistore_err = MAPISTORE_ERR_INVALID_DATA;
+                break;
+        case MAPI_E_NOT_FOUND:
+                mapistore_err = MAPISTORE_ERR_NOT_FOUND;
+                break;
+        case MAPI_E_COLLISION:
+                mapistore_err = MAPISTORE_ERR_EXIST;
+                break;
+        case MAPI_E_NO_ACCESS:
+                mapistore_err = MAPISTORE_ERR_DENIED;
+                break;
+        case MAPI_E_NOT_IMPLEMENTED:
+                mapistore_err = MAPISTORE_ERR_NOT_IMPLEMENTED;
+                break;
+        case MAPI_E_INVALID_PARAMETER:
+                mapistore_err = MAPISTORE_ERR_INVALID_PARAMETER;
+                break;
+        default:
+                DEBUG(4, ("Using default mapistore error for %s\n", mapi_get_errstr(mapi_err)));
+                mapistore_err = MAPISTORE_ERROR;
+        }
+
+        return mapistore_err;
+}

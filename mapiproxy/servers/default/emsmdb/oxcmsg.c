@@ -387,14 +387,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	folderID = mapi_req->u.mapi_CreateMessage.FolderId;
 
 	/* Step 1. Retrieve parent handle in the hierarchy */
-	ret = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID, &folder_object);
-	if (ret != MAPISTORE_SUCCESS) {
-		if (ret == MAPISTORE_ERR_DENIED) {
-			mapi_repl->error_code = MAPI_E_NO_ACCESS;
-		}
-		else {
-			mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-		}
+	retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, folderID, &folder_object);
+	if (retval != MAPI_E_SUCCESS) {
+		mapi_repl->error_code = retval;
 		goto end;
 	}
 

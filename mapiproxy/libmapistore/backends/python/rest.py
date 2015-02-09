@@ -1014,13 +1014,13 @@ class TableObject(object):
         if not 'type' in restriction:
             return True
 
-        if (restriction["type"] == "and"):
+        if restriction["type"] == "and":
             for condition in restriction["value"]:
                 if self._apply_restriction_message(condition, message) is False:
                     return False
             return True
 
-        if (restriction["type"] == "or"):
+        if restriction["type"] == "or":
             conditions = []
             for condition in restriction["value"]:
                 conditions.append(self._apply_restriction_message(condition, message))
@@ -1028,7 +1028,7 @@ class TableObject(object):
                 return True
             return False
 
-        if (restriction["type"] == "content"):
+        if restriction["type"] == "content":
             if not restriction["property"] in message.properties:
                 return False
 
@@ -1049,7 +1049,7 @@ class TableObject(object):
                 return val1.startswith(val2)
             return False
 
-        if (restriction["type"] == "property"):
+        if restriction["type"] == "property":
             print message
             if not restriction["property"] in message.properties:
                 return False
@@ -1084,7 +1084,7 @@ class TableObject(object):
                     return True
                 return False
 
-        if (restriction["type"] == "bitmask"):
+        if restriction["type"] == "bitmask":
             if not restriction["property"] in message.properties:
                 return False
             if restriction["relMBR"] == "BMR_EQZ":

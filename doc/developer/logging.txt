@@ -1,0 +1,126 @@
+Logging infrastructure in OpenChange
+====================================
+
+Introduction
+------------
+
+OpenChange currently relies on the logging infrastructure from Samba. In particular,
+it uses the DEBUG() macro from Samba to write log files. At what log level
+messages are logged, and where logs go is configured in the Samba configuration
+file, smb.conf.
+
+Using the Samba logging infrastructure has the advantage that all debug information
+related to OpenChange is in a single location, since both OpenChange itself and
+any Samba functions (DCE/RPC in particular) use the same infrastructure.
+Any replacement for logging in OpenChange should ideally preserve this property.
+
+The debug API in Samba does not appear to be set in stone however -
+see https://lists.samba.org/archive/samba-technical/2015-January/104847.html -
+and it might not necessarily be usable if Samba is installed.
+
+Using the Samba API means that OpenChange has a hard dependency on
+Samba, since making it possible to disable logging is not really an option.
+This means that using the DEBUG() API goes against our wish to be able to use
+OpenChange standalone.
+
+This API also has various historical artifacts that would be nice to get rid of;
+there are only conventions around what each log level means, but nothing is set
+in stone and there are lots of exceptions in practice.
+
+Requirements
+------------
+
+Three lessons to be learned from the Samba API that would be nice to avoid are:
+
+ * make it easy to map messages to syslog() for folks that would like to use syslog
+ * have specific meanings for log levels, and ideally also constants for those
+   log levels so their meaning is obvious to people that use them
+ * have a distinction between user-level logging and logging for system-wide
+   servers
+
+To prevent clashes with defines, symbols and just general confusion for
+developers, the OpenChange logging function should have a different name than
+DEBUG().
+
+The logging library should support logging source file names and line numbers,
+for debugging purposes.
+
+Proposed API
+------------
+
+For consistency with the existing OC_* macros like OC_PANIC(), I would suggest::
+
+enum oc_log_level {
+	OC_LOG_FATAL=4,
+	OC_LOG_ERROR=3,
+	OC_LOG_WARNING=2,
+	OC_LOG_INFO=1,
+	OC_LOG_DEBUG=0,
+	/* Anything with a log level of zero or lower is considered a debug message,
+	   in other words: not meant to be understood by end users.
+	*/
+};
+
+/* Logs source file and line, at log level -priority and with the specified message.
+ * This macro is a simple wrapper around oc_log() that adds the
+ * source file name and line number to the message. */
+#define OC_DEBUG(int priority, const char *fmt_string, ...);
+
+/* Write a log message.
+ * Like in syslog, a trailing newline is *not* required. The library will add it
+ * if needed. */
+void oc_log(enum oc_log_level level, const char *fmt_string, ...);
+void oc_logv(enum oc_log_level leve, const char *fmt_string, va_list ap);
+
+This API is easily mappable to the Samba DEBUG() API (which will be useful
+while we transition) or to the syslog() API, if that needs to be supported in
+the future.
+
+Setup functions::
+
+/* Initialize logging subsystem to write to stdout. */
+void oc_log_init_stdout();
+
+/* Initialize logging subsystem to write to users' local log file, e.g. ~/.openchange.log */
+void oc_log_init_user(struct loadparm_context *lp_ctx);
+
+/* Initialize logging subsystem to write to config file specified in smb.conf,
+   defaulting to /var/log/openchange.log */
+void oc_log_init_server(struct loadparm_context *lp_ctx);
+
+Implementation
+--------------
+
+Stage 0
+~~~~~~~
+
+As a first step, just call out to the Samba DEBUG() function. This should keep
+the same behaviour as exists present day.
+
+Stage 1
+~~~~~~~
+
+Update all relevant Samba logging calls to go via oc_log, e.g. by passing
+custom logging functions to libraries like libndr and DCE/RPC server.
+
+Stage 2
+~~~~~~~
+
+Rather than calling out to DEBUG(), update the implementation to write to a single
+log file instead, as specified in smb.conf or the default at /var/log/openchange.log.
+
+Possible stage 3
+~~~~~~~~~~~~~~~~
+
+Support writing log messages to syslog.
+
+Changes to Samba
+----------------
+
+Various DCE/RPC and marshalling functions from Samba that OpenChange uses
+currently call out directly to DEBUG(). These functions need to be updated
+to support calling out to another function to write debug output.
+
+The NDR library already allows setting a custom logging function.
+The main subset of Samba functionality that OpenChange uses that doesn't allow
+for a custom logging function yet is the DCE/RPC server code.

@@ -1972,8 +1972,8 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	/* open Inbox */
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &inboxFID);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
-	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox);
-	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	/* retrieve Calendar entry id */
 	props = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -1994,8 +1994,8 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	calendarFID |= 1;
 
 	/* open user calendar */
-	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar);
-	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	if (!emsmdbp_is_mapistore(calendar)) {
 		DEBUG(5, ("[emsmdbp_object][%s:%d]: non-mapistore calendars are not supported for freebusy\n",
@@ -2080,8 +2080,9 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	if (!parent_object) return MAPISTORE_ERROR;
 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	ret = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
-	if (ret != MAPISTORE_SUCCESS)  {
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
+	if (retval != MAPI_E_SUCCESS)  {
+		ret = mapi_error_to_mapistore(retval);
 		goto end;
 	}
 

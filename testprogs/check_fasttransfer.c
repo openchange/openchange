@@ -22,6 +22,7 @@
 #include "libmapi/libmapi.h"
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "utils/dlinklist.h"
 
 #include <popt.h>
 #include <ldb.h>

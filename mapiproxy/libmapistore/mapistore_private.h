@@ -24,6 +24,7 @@
 
 #include <talloc.h>
 #include "backends/namedprops_backend.h"
+#include "utils/dlinklist.h"
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \

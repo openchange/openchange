@@ -25,7 +25,7 @@
 
 #include "mapistore.h"
 #include "mapistore_private.h"
-#include <dlinklist.h>
+#include "utils/dlinklist.h"
 
 static struct tdb_wrap *tdb_list;
 
@@ -35,7 +35,7 @@ static int mapistore_tdb_wrap_destructor(struct tdb_wrap *w)
 	tdb_close(w->tdb);
 	DLIST_REMOVE(tdb_list, w);
 	return 0;
-}				 
+}
 
 /*
  Log tdb messages via DEBUG().

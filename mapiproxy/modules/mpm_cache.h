@@ -24,7 +24,6 @@
 
 #include <stdio.h>
 
-#include <dlinklist.h>
 #include <ldb_errors.h>
 #include <ldb.h>
 

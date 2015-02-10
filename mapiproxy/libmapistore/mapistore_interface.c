@@ -28,7 +28,7 @@
 #include "mapistore_private.h"
 #include "mapistore_nameid.h"
 
-#include <dlinklist.h>
+#include "utils/dlinklist.h"
 #include "libmapi/libmapi_private.h"
 
 #include <string.h>

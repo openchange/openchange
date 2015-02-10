@@ -21,6 +21,7 @@
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
+#include "utils/dlinklist.h"
 #include <util/debug.h>
 
 /**

@@ -60,3 +60,23 @@ class InitialIndexingMigration(Migration):
         for query in ("DROP TABLE mapistore_indexes",
                       "DROP TABLE mapistore_indexing"):
             cur.execute(query)
+
+
+@migration('indexing', 2)
+class IndexesMigration(Migration):
+
+    description = 'Indexes on indexing tables'
+
+    @classmethod
+    def apply(cls, cur):
+        cur.execute("CREATE INDEX `mapistore_indexing_username_idx` ON `mapistore_indexing` (`username`(255) ASC)")
+        cur.execute("CREATE INDEX `mapistore_indexing_username_url_idx` ON `mapistore_indexing` (`username`(255) ASC, `url`(255) ASC)")
+        cur.execute("CREATE INDEX `mapistore_indexing_username_fmid_idx` ON `mapistore_indexing` (`username`(255) ASC, `fmid` ASC)")
+        cur.execute("CREATE INDEX `mapistore_indexes_username_idx` ON `mapistore_indexes` (`username`(255) ASC)")
+
+    @classmethod
+    def unapply(cls, cur):
+        cur.execute("DROP INDEX `mapistore_indexing_username_idx` ON `mapistore_indexing`")
+        cur.execute("DROP INDEX `mapistore_indexing_username_url_idx` ON `mapistore_indexing`")
+        cur.execute("DROP INDEX `mapistore_indexing_username_fmid_idx` ON `mapistore_indexing`")
+        cur.execute("DROP INDEX `mapistore_indexes_username_idx` ON `mapistore_indexes`")

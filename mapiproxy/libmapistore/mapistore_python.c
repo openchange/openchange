@@ -2327,6 +2327,27 @@ static enum mapistore_error mapistore_python_message_get_message_data(TALLOC_CTX
 			goto end;
 		}
 
+		/* Retrieve PidTagDisplayName */
+		key = PyString_FromString("PidTagDisplayName");
+		if (key == NULL) {
+			PyErr_Print();
+			retval = MAPISTORE_ERR_CONTEXT_FAILED;
+			goto end;
+		}
+		if (PyDict_Contains(dict, key) == 0) {
+			DEBUG(0, ("Missing PidTagDisplayName for recipient %d\n", i));
+		} else {
+			item = PyDict_GetItem(dict, key);
+			Py_DECREF(key);
+			if (item == NULL) {
+				DEBUG(0, ("[ERR][%s][%s]: PyDict_GetItem failed\n", pyobj->name,
+					  __location__));
+				retval = MAPISTORE_ERR_CONTEXT_FAILED;
+				goto end;
+			}
+			msgdata->recipients[i].username = PyString_AsString(item);
+		}
+
 		/* Retrieve ulRecipClass - PidTagRecipientType */
 		key = PyString_FromString("PidTagRecipientType");
 		if (key == NULL) {

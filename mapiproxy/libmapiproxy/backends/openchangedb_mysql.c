@@ -27,7 +27,6 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include <mysql/mysql.h>
-#include <samba_util.h>
 #include <inttypes.h>
 #include <time.h>
 #include "../../util/mysql.h"

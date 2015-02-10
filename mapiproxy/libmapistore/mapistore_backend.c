@@ -33,7 +33,6 @@
 #include "mapistore_private.h"
 #include "utils/dlinklist.h"
 
-#include <samba_util.h>
 #include <util/debug.h>
 
 /**

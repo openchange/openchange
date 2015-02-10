@@ -32,7 +32,6 @@
 #include "../../util/schema_migration.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
-#include <samba_util.h>
 #include <talloc.h>
 
 

@@ -65,6 +65,3 @@ mapiproxy openchangedb backend
   database URL to be used for openchangedb backend. If not present LDB
   backend will be use. The URL must have a format like:
   mysql://user:pass@hostname/database
-
-- __openchangedb:data = STRING__ This option specifies the path where
-  provisioning content is located.

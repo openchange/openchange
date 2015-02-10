@@ -27,7 +27,6 @@
 #include "mysql/mysql.h"
 
 #define	NAMEDPROPS_BACKEND_MYSQL	"mysql"
-#define	NAMEDPROPS_MYSQL_SCHEMA		"named_properties_schema.sql"
 #define	NAMEDPROPS_MYSQL_TABLE		"named_properties"
 
 struct namedprops_mysql_params {

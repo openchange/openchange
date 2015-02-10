@@ -150,33 +150,34 @@ static void checked_mysql_teardown(void)
 	drop_mysql_database(conn, OC_TESTSUITE_MYSQL_DB);
 }
 
-START_TEST (test_is_schema_created) {
-	bool schema_created;
+START_TEST (test_initialize_database) {
+	TALLOC_CTX		*mem_ctx = NULL;
+	enum mapistore_error	retval;
+	char			*connection_string;
+
+	mem_ctx = talloc_named(NULL, 0, "test_initialize_database");
+	ck_assert(mem_ctx != NULL);
+
+	connection_string = talloc_asprintf(mem_ctx, "mysql://%s:%s@%s/%s",
+					    OC_TESTSUITE_MYSQL_USER,
+					    OC_TESTSUITE_MYSQL_PASS,
+					    OC_TESTSUITE_MYSQL_HOST,
+					    OC_TESTSUITE_MYSQL_DB);
+	ck_assert(connection_string != NULL);
+
+	/* test sanity checks */
+	retval = initialize_database(NULL, NULL, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
 
 	ck_assert(is_schema_created(conn) == false);
 	ck_assert(is_database_empty(conn) == true);
 
-	schema_created = create_schema(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH"/"NAMEDPROPS_MYSQL_SCHEMA);
-	ck_assert(schema_created);
-
-	ck_assert(is_schema_created(conn) == true);
-	ck_assert(is_database_empty(conn) == true);
-
-} END_TEST
-
-START_TEST (test_initialize_database) {
-	enum mapistore_error	retval;
-
-	/* test sanity checks */
-	retval = initialize_database(NULL, NULL);
-	ck_assert_int_eq(retval, MAPISTORE_ERR_DATABASE_INIT);
-
-	ck_assert(is_database_empty(conn) == true);
-
-	retval = initialize_database(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH);
+	retval = initialize_database(conn, NAMEDPROPS_MYSQL_SCHEMA_PATH, connection_string);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 
+	ck_assert(is_schema_created(conn) == true);
 	ck_assert(is_database_empty(conn) == false);
+	talloc_free(mem_ctx);
 
 } END_TEST
 
@@ -425,7 +426,6 @@ Suite *mapistore_namedprops_mysql_suite(void)
 	/* database provisioning takes longer than default timeout */
 	tcase_set_timeout(tc_mysql, 60);
 	tcase_add_checked_fixture(tc_mysql, checked_mysql_setup, checked_mysql_teardown);
-	tcase_add_test(tc_mysql, test_is_schema_created);
 	tcase_add_test(tc_mysql, test_initialize_database);
 	suite_add_tcase(s, tc_mysql);
 

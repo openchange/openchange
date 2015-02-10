@@ -23,6 +23,7 @@
 #include "../mapistore.h"
 #include "../mapistore_private.h"
 #include "mapiproxy/util/mysql.h"
+#include "mapiproxy/util/schema_migration.h"
 #include <string.h>
 #include <stdlib.h>
 #include <ctype.h>
@@ -456,7 +457,7 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 
   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
-static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_path)
+static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_path, const char *connection_string)
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval = MAPISTORE_SUCCESS;
@@ -467,7 +468,7 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	char			*filename;
 	FILE			*f;
 	bool			inserted;
-	bool			schema_created;
+	int			schema_created_ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_DATABASE_INIT, NULL);
@@ -475,13 +476,10 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 	mem_ctx = talloc_named(NULL, 0, "initialize_database");
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
-	filename = talloc_asprintf(mem_ctx, "%s/" NAMEDPROPS_MYSQL_SCHEMA,
-				   schema_path ? schema_path : mapistore_namedprops_get_ldif_path());
-	MAPISTORE_RETVAL_IF(!filename, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
-	schema_created = create_schema(conn, filename);
-	if (!schema_created) {
-		DEBUG(1, ("Failed named properties schema creation, "
-			  "last mysql error was: `%s`\n", mysql_error(conn)));
+	schema_created_ret = migrate_named_properties_schema(mem_ctx, connection_string);
+	if (schema_created_ret) {
+		DEBUG(1, ("Failed named properties schema creation using migration framework: %d\n",
+			  schema_created_ret));
 		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 	}
 
@@ -557,6 +555,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	struct namedprops_context	*nprops = NULL;
 	struct namedprops_mysql_params	parms;
 	MYSQL				*conn = NULL;
+	char				*connection_string = NULL;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!lp_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -572,19 +571,20 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	}
 
 	/* Establish MySQL connection */
+	connection_string = connection_string_from_parameters(mem_ctx, &parms);
+	MAPISTORE_RETVAL_IF(!connection_string, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	if (parms.sock) {
 		// FIXME
 		DEBUG(0, ("Not implemented connect through unix socket to mysql"));
+		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, NULL);
 	} else {
-		char *connection_string = connection_string_from_parameters(mem_ctx, &parms);
-		MAPISTORE_RETVAL_IF(!connection_string, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 		create_connection(connection_string, &conn);
 	}
 	MAPISTORE_RETVAL_IF(!conn, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
 	/* Initialize the database */
 	if (!is_schema_created(conn) || is_database_empty(conn)) {
-		retval = initialize_database(conn, parms.data);
+		retval = initialize_database(conn, parms.data, connection_string);
 		MAPISTORE_RETVAL_IF(retval != MAPISTORE_SUCCESS, retval, NULL);
 	}
 

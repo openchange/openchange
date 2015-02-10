@@ -27,8 +27,6 @@
 static TALLOC_CTX 	*mem_ctx;
 static MYSQL		*conn;
 
-#define MYSQL_REAL_SCHEMA_1	"setup/mapistore/named_properties_schema.sql"
-#define MYSQL_REAL_SCHEMA_2	"setup/openchangedb/openchangedb_schema.sql"
 #define MYSQL_TMP_SCHEMA	"/tmp/fake_schema.sql"
 
 // v Unit test ----------------------------------------------------------------
@@ -184,13 +182,23 @@ START_TEST (test_parse_connection_string_success) {
 START_TEST (test_create_schema) {
 	bool		schema_created;
 	int		ret;
-	const char	*tmp_schema, *real_schema_simple, *real_schema_advanced;
+	const char	*tmp_schema;
 	char		str[] = "invalid schema file";
+        char            simple_schema[] = "CREATE TABLE IF NOT EXISTS `named_properties` ("
+                         "`id` int(10) unsigned NOT NULL AUTO_INCREMENT,"
+                         "`type` TINYINT(1) NOT NULL,"
+                         "`propType` INT(10) unsigned NOT NULL,"
+                         "`oleguid` VARCHAR(255) NOT NULL,"
+                         "`mappedId` INT(10) unsigned NOT NULL,"
+                         "`propId` INT(10) unsigned DEFAULT NULL,"
+                         "`propName` VARCHAR(255) DEFAULT NULL,"
+                         "`oom` VARCHAR(255) DEFAULT NULL,"
+                         "`canonical` VARCHAR(255) DEFAULT NULL,"
+                         "PRIMARY KEY(`id`)"
+                      ") ENGINE=InnoDB CHARSET=utf8;";
 	FILE		*fp;
 
 	tmp_schema = MYSQL_TMP_SCHEMA;
-	real_schema_simple = MYSQL_REAL_SCHEMA_1;
-	real_schema_advanced = MYSQL_REAL_SCHEMA_2;
 
 	/* check sanity checks */
 	schema_created = create_schema(NULL, NULL);
@@ -222,15 +230,18 @@ START_TEST (test_create_schema) {
 	schema_created = create_schema(conn, tmp_schema);
 	ck_assert(!schema_created);
 
+	/* test simplified real schema file */
+	fp = fopen(tmp_schema, "w");
+	ck_assert(fp != NULL);
+	fwrite(simple_schema, 1, sizeof(simple_schema), fp);
+	fclose(fp);
+
+	schema_created = create_schema(conn, tmp_schema);
+	ck_assert(schema_created);
+
 	ret = unlink(tmp_schema);
 	ck_assert_int_eq(ret, 0);
 
-	/* test real schema file */
-	schema_created = create_schema(conn, real_schema_simple);
-	ck_assert(schema_created);
-
-	schema_created = create_schema(conn, real_schema_advanced);
-	ck_assert(schema_created);
 } END_TEST
 
 // ^ unit tests ---------------------------------------------------------------

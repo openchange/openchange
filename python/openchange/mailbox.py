@@ -1,8 +1,10 @@
 #!/usr/bin/python
+# -*- coding: utf-8 -*-
 
 # OpenChange provisioning
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2009
+# Copyright (C) Enrique J. Hernández <ejhernandez@zentyal.com> 2015
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -23,12 +25,17 @@ import os.path
 import samba
 from samba import Ldb, unix2nttime
 import ldb
+from urlparse import urlparse
 import uuid
 import time
 import MySQLdb
-from openchange.urlutils import *
+
+
+from openchange.migration import MigrationManager
+
 
 __docformat__ = 'restructuredText'
+
 
 class NoSuchServer(Exception):
     """Raised when a server could not be found."""
@@ -151,7 +158,7 @@ dn: CASE_INSENSITIVE
         if parent_fid == 0:
             self.add_root_public_folder(dn, fid, change_num, SystemIndex, childcount)
         else:
-            self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount);
+            self.add_sub_public_folder(dn, parent_fid, fid, change_num, name, SystemIndex, childcount)
 
         GlobalCount += 1
         self.set_message_GlobalCount(names.netbiosname, GlobalCount=GlobalCount)
@@ -281,24 +288,97 @@ ChangeNumber: %d
             self.ldb.transaction_commit()
 
 
-class OpenChangeDBWithMysqlBackend(object):
-    """The OpenChange database."""
+class MysqlBackendMixin(object):
+    """Mixin for common methods for MySQL backends.
 
-    OPENCHANGEDB_SCHEMA = 'openchangedb/openchangedb_schema.sql'
+    It expects the following attributes when calling its methods:
+
+    * url string for MySQL connection string.
+    * migration_app string for migration-related methods."""
+
+    def _connect_to_mysql(self):
+        host, user, passwd, self.db_name, port = self._parse_mysql_url()
+        self.db = MySQLdb.connect(host=host, user=user, passwd=passwd, port=port)
+
+    def _parse_mysql_url(self):
+        # self.url should be mysql://user[:passwd]@some_host[:port]/some_db_name
+
+        conn_url = urlparse(self.url)
+
+        exc_str = "Bad connection string for mysql: "
+        if conn_url.scheme != 'mysql':
+            exc_str += "invalid schema"
+            raise ValueError(exc_str)
+
+        if (conn_url.hostname is None or conn_url.username is None
+           or conn_url.path is None):
+            missing_str = None
+            if '@' not in self.url:
+                missing_str = '@'
+            elif '/' not in self.url:
+                missing_str = '/'
+            exc_str += "expected format mysql://user[:passwd]@host/db_name"
+            if missing_str:
+                exc_str += ". Missing: " + missing_str
+            raise ValueError(exc_str)
+
+        passwd = conn_url.password
+        if passwd is None:
+            passwd = ""
+        port = conn_url.port
+        if port is None:
+            port = 0
+
+        return (conn_url.hostname, conn_url.username, passwd, conn_url.path.strip('/'), port)
+
+    def migrate(self, version=None):
+        """Migrate both mysql schema and data
+
+        :param int version: indicating which version to migrate. None migrates
+                            to the lastest version.
+        :rtype bool:
+        :returns: True if any migration has been performed
+        """
+        self.db.select_db(self.db_name)
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.migrate(self.migration_app, version)
+
+    def list_migrations(self):
+        """List migrations metadata
+
+        :rtype dict:
+        :returns: list migrations indexed by version with a dict as
+                  value with 'applied' and 'class' as keys
+        """
+        self.db.select_db(self.db_name)
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.list_migrations(self.migration_app)
+
+    def fake_migration(self, target_version):
+        """Fake a migration to a target version by simulating
+           the apply/unapply migrations.
+
+        :param int target_version: the version to simulate the migration
+        :rtype: bool
+        :returns: True if the migration was successfully faked
+        """
+        self.db.select_db(self.db_name)
+        migration_manager = MigrationManager(self.db, self.db_name)
+        return migration_manager.fake_migration(self.migration_app, target_version)
+
+
+class OpenChangeDBWithMysqlBackend(MysqlBackendMixin):
+    """The OpenChange database."""
 
     def __init__(self, url, setup_dir=""):
         self.url = url
-        self.schema = os.path.join(setup_dir, self.OPENCHANGEDB_SCHEMA)
         self._connect_to_mysql()
         self.nttime = samba.unix2nttime(int(time.time()))
         self.ou_id = None  # initialized on add_server() method
         self.replica_id = 1
         self.global_count = 1  # folder_id for public folders
         self._change_number = None
-
-    def _connect_to_mysql(self):
-        host, user, passwd, self.db_name = self._parse_mysql_url()
-        self.db = MySQLdb.connect(host=host, user=user, passwd=passwd)
+        self.migration_app = 'openchangedb'
 
     def _create_database(self):
         if '`' in self.db_name:
@@ -309,67 +389,15 @@ class OpenChangeDBWithMysqlBackend(object):
                       self.db.escape_string(self.db_name))
         self.db.select_db(self.db_name)
 
-    # Workaround to handle schema and data migration, if this grows it should
-    # be moved to another place and being handled better
-    def migrate(self):
-        """Migrate both mysql schema and data"""
-        self.db.select_db(self.db_name)
-        try:
-            self._execute("SELECT count(*) FROM company")
-        except:
-            # Table does not exist, we don't need migration
-            return False
-        # Migrate schema
-        self._execute("ALTER TABLE organizational_units DROP FOREIGN KEY fk_organizational_units_company_id;")
-        self._execute("ALTER TABLE organizational_units DROP COLUMN company_id")
-        self._execute("ALTER TABLE servers DROP FOREIGN KEY fk_servers_company_id")
-        self._execute("ALTER TABLE servers DROP COLUMN company_id")
-        self._execute("DROP TABLE company")
-        self._execute("ALTER TABLE servers ADD COLUMN ou_id INT NOT NULL")
-        self._execute("UPDATE servers SET ou_id = (SELECT id FROM organizational_units)")
-        self._execute("ALTER TABLE servers ADD CONSTRAINT `fk_servers_ou_id` FOREIGN KEY (`ou_id`) REFERENCES `organizational_units` (`id`) ON DELETE NO ACTION ON UPDATE NO ACTION")
-        # Migrate data
-        self._execute("UPDATE messages m JOIN mailboxes mb ON mb.id = m.mailbox_id set m.ou_id = mb.ou_id WHERE m.ou_id IS NULL")
-        self._execute("UPDATE messages m JOIN folders f ON f.id = m.folder_id set m.ou_id = f.ou_id WHERE m.ou_id IS NULL")
-        return True
-
     def remove(self):
         """Remove an existing OpenChangeDB."""
         self._execute("DROP DATABASE `%s`" %
                       self.db.escape_string(self.db_name))
 
-    def _parse_mysql_url(self):
-        # self.url should be mysql://user[:passwd]@some_host/some_db_name
-        if not self.url.startswith('mysql://'):
-            raise ValueError("Bad connection string for mysql: invalid schema")
-
-        if '@' not in self.url:
-            raise ValueError("Bad connection string for mysql: expected format "
-                             "mysql://user[:passwd]@host/db_name")
-        user_passwd, host_db = self.url.split('@')
-
-        user_passwd = user_passwd[len('mysql://'):]
-        if ':' in user_passwd:
-            user, passwd = user_passwd.split(':')
-        else:
-            user, passwd = user_passwd, ''
-
-        if '/' not in host_db:
-            raise ValueError("Bad connection string for mysql: expected format "
-                             "mysql://user[:passwd]@host/db_name")
-        host, db = host_db.split('/')
-
-        return (host, user, passwd, db)
-
     def setup(self, names=None):
-        if not os.path.exists(self.schema):
-            raise Exception("File %s does not exist" % self.schema)
-        with open(self.schema) as f:
-            schema = f.read()
         self._create_database()
-        for sql in schema.split(';'):
-            if len(sql) > 1:
-                self._execute(sql.replace('%s', '%%s'))
+        # Migrate to latest version
+        return self.migrate()
 
     def _execute(self, sql, params=()):
         cur = self.db.cursor()
@@ -442,7 +470,7 @@ class OpenChangeDBWithMysqlBackend(object):
             self._add_root_public_folder(fid, change_num, system_index, childcount)
         else:
             self._add_sub_public_folder(parent_fid, fid, change_num, name,
-                                        system_index, childcount);
+                                        system_index, childcount)
 
         self.global_count += 1
         self.change_number += 1
@@ -504,3 +532,21 @@ def gen_mailbox_folder_fid(GlobalCount, ReplicaID):
     """
 
     return "%d" % (ReplicaID | reverse_int64counter(GlobalCount))
+
+
+class IndexingWithMysqlBackend(MysqlBackendMixin):
+    """The MAPIStore indexing database in MySQL backend."""
+
+    def __init__(self, url):
+        self.url = url
+        self._connect_to_mysql()
+        self.migration_app = 'indexing'
+
+
+class NamedPropertiesWithMysqlBackend(MysqlBackendMixin):
+    """The MAPIStore named properties database in MySQL backend."""
+
+    def __init__(self, url):
+        self.url = url
+        self._connect_to_mysql()
+        self.migration_app = 'named_properties'

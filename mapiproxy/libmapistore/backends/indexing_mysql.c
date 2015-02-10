@@ -29,6 +29,7 @@
 #include "libmapi/libmapi_private.h"
 #include <mysql/mysql.h>
 #include "../../util/mysql.h"
+#include "../../util/schema_migration.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
 #include <samba_util.h>
@@ -475,9 +476,8 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 							    struct indexing_context **ictxp)
 {
 	struct indexing_context	*ictx;
-	char			*schema_file;
 	MYSQL			*conn = NULL;
-	bool			schema_created;
+	int			schema_created_ret;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -495,16 +495,13 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(3, ("Creating schema for indexing on mysql %s\n", connection_string));
+		DEBUG(3, ("Creating schema for indexing on mysql %s\n",
+			  connection_string));
 
-		schema_file = talloc_asprintf(ictx, "%s/%s", MAPISTORE_LDIF, INDEXING_SCHEMA_FILE);
-		MAPISTORE_RETVAL_IF(!schema_file, MAPISTORE_ERR_NO_MEMORY, NULL);
-		schema_created = create_schema(conn, schema_file);
-		talloc_free(schema_file);
-
-		if (!schema_created) {
-			DEBUG(1, ("Failed indexing schema creation, "
-				  "last mysql error was: `%s`\n", mysql_error(conn)));
+		schema_created_ret = migrate_indexing_schema(mstore_ctx, connection_string);
+		if (schema_created_ret) {
+			DEBUG(1, ("Failed indexing schema creation using migration framework: %d\n",
+                                  schema_created_ret));
 			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 		}
 	}

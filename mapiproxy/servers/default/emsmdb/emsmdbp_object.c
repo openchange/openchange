@@ -1234,6 +1234,73 @@ enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_
 	return retval;
 }
 
+static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, struct emsmdbp_object *parent_folder, const char *new_name)
+{
+	uint64_t		parent_fid, fid, test_folder_id, change_number;
+	enum MAPISTATUS		retval;
+	char			*mapistore_uri;
+	TALLOC_CTX		*mem_ctx;
+
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!parent_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!new_name, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	if (parent_folder->type == EMSMDBP_OBJECT_MAILBOX) {
+		parent_fid = parent_folder->object.mailbox->folderID;
+	} else { /* EMSMDBP_OBJECT_FOLDER */
+		parent_fid = parent_folder->object.folder->folderID;
+	}
+
+	if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parent_fid,
+					 new_name, &test_folder_id) == MAPI_E_SUCCESS) {
+		DEBUG(4, ("emsmdbp_object: move_folder_to_mapistore_root duplicate folder error\n"));
+		retval = MAPI_E_COLLISION;
+		goto end;
+	}
+
+	fid = folder->object.folder->folderID;
+
+	retval = emsmdbp_get_uri_from_fid(mem_ctx, emsmdbp_ctx, fid, &mapistore_uri);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("Cannot locate folder id: %"PRIu64" on indexing database\n", fid));
+		goto end;
+	}
+
+	retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &change_number);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("Cannot get a new change number: %s\n", mapi_get_errstr(retval)));
+		goto end;
+	}
+
+	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+					    parent_fid, fid, change_number,
+					    mapistore_uri, -1);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("OpenChangeDB folder creation failed: 0x%.8x\n", retval));
+		goto end;
+	}
+
+	/* Set folder properties is done in the upper layer by
+	   oxcfxics in cached mode. This is a temporary hack until we
+	   implement copy properties from MAPIStore to OpenChange
+	   DB. */
+
+	folder->object.folder->mapistore_root = true;
+
+	DEBUG(5, ("New MAPIStore root folder moved at URI: %s\n", mapistore_uri));
+	retval = MAPI_E_SUCCESS;
+
+end:
+	talloc_free(mem_ctx);
+	return retval;
+}
+
 _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, TALLOC_CTX *mem_ctx, const char *new_name)
 {
 	enum mapistore_error	ret;
@@ -1248,9 +1315,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	}
 
 	if (!emsmdbp_is_mapistore(target_folder)) {
-		/* TODO: converting a non-mapistore root object to one is not trivial but should be implemented one day. */
-		return MAPISTORE_ERR_DENIED;
-
 		/* target is the "Top of Information Store" ? */
 		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, target_folder->object.folder->folderID, &system_idx);
 		if (retval != MAPI_E_SUCCESS) {
@@ -1278,17 +1342,28 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	}
 
 	contextID = emsmdbp_get_contextID(move_folder);
-	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
-	if (move_folder->object.folder->mapistore_root) {
-		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
-		if (retval) {
-			DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
-		}
-	}
-
 	if (is_top_of_IS) {
-		/* pass */
-	}
+		/* We move it in MAPIStore backend and then we create
+		   the required properties for a MAPIStore root
+		   folder. This is required as indexing database is
+		   updated in mapistore layer */
+		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, NULL, mem_ctx, new_name);
+		if (ret == MAPISTORE_SUCCESS) {
+			retval = emsmdbp_object_move_folder_to_mapistore_root(emsmdbp_ctx, move_folder, target_folder, new_name);
+			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(5, ("Move folder to MAPIStore root failed: %s\n", mapi_get_errstr(retval)));
+				return MAPISTORE_ERROR;
+			}
+		}
+	} else {
+		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
+		if (move_folder->object.folder->mapistore_root) {
+                        retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
+                        if (retval != MAPI_E_SUCCESS) {
+                                DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d\n", retval));
+                        }
+                }
+        }
 
 	return ret;
 }

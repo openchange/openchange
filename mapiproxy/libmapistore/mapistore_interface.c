@@ -741,7 +741,17 @@ _PUBLIC_ enum mapistore_error mapistore_folder_move_copy_messages(struct mapisto
 }
 
 /**
+   \details Move a mapistore folder to target folder
 
+   \param mstore_ctx pointer to the mapistore context
+   \param context_id the context identifier referencing the backend
+   \param move_folder the folder backend object to move
+   \param target_folder the folder backend object which becomes the parent folder of move_folder.
+   If it is NULL, then the move_folder will become to a root folder
+   \param mem_ctx the TALLOC_CTX memory context
+   \param new_folder_name the new folder name after performing the move operation
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE errors
  */
 _PUBLIC_ enum mapistore_error mapistore_folder_move_folder(struct mapistore_context *mstore_ctx, uint32_t context_id,
 							   void *move_folder, void *target_folder, TALLOC_CTX *mem_ctx, const char *new_folder_name)

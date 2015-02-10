@@ -1783,7 +1783,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 				     const char *username,
 				     uint64_t pfid, uint64_t fid,
-				     uint64_t changeNumber,
+				     uint64_t change_number,
 				     const char *MAPIStoreURI, int systemIdx)
 {
 	TALLOC_CTX	*mem_ctx;
@@ -1791,7 +1791,6 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 	enum MAPISTATUS	retval;
 	char		*sql, *values_sql, *value;
 	const char	**l;
-	uint64_t	change_number = 0;
 	time_t		unix_time;
 	NTTIME		now;
 
@@ -1806,9 +1805,6 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	unix_to_nt_time(&now, unix_time);
-
-	retval = get_new_changeNumber(self, username, &change_number);
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 
 	if (is_public_folder(fid)) {
 		// Insert row in folders

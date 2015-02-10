@@ -18,7 +18,7 @@
 #
 
 import optparse
-import os,sys
+import os, sys
 
 # To allow running from the source directory
 sys.path.append("python")
@@ -28,6 +28,24 @@ import openchange
 import samba
 import samba.getopt as options
 import openchange.provision as openchange
+
+def check_incompatible_options(parser, opts):
+    incompatible_options = ['deprovision', 'standalone', 'additional', 'primary_server', 'openchangedb', 'migrate', 'check']
+    active_option = None
+    for option_name in incompatible_options:
+        if getattr(opts, option_name, None):
+            if active_option:
+                if active_option == 'additional' and option_name == 'primary_server':
+                    # this combination is compatible
+                    continue
+                else:
+                    # for the error msg put the options in their command line shape
+                    active_option = '--' + active_option.replace('_', '-')                    
+                    option_name   = '--' + option_name.replace('_', '-')
+                    parser.error("The options " + active_option + " and " + option_name + " are mutually exclusive")
+            else:
+                active_option = option_name
+
 
 parser = optparse.OptionParser("openchange_provision [options]")
 
@@ -54,10 +72,11 @@ parser.add_option("--deprovision", action="store_true", help="Uninstall the Exch
 parser.add_option("--migrate", action="store_true", help="Migrate MySQL schema of an existing OpenChange installation")
 parser.add_option("--check", action="store_true", help="Check whether the server can be provisioned")
 
-opts,args = parser.parse_args()
+opts, args = parser.parse_args()
 if len(args) != 0:
     parser.print_help()
     sys.exit(1)
+check_incompatible_options(parser, opts)
 
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
@@ -73,32 +92,32 @@ def setup_path(*args):
 provisionnames = openchange.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
-if not opts.openchangedb and not opts.check:
-    if opts.deprovision:
-        try:
-            openchange.unregister(setup_path, provisionnames, lp, creds)
-            openchange.deprovision(setup_path, provisionnames, lp, creds)
-            openchange.openchangedb_deprovision(provisionnames, lp)
-        except openchange.ServerInUseError, e:
-            print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
-            sys.exit(1)
-    elif opts.additional and opts.primary_server:
-        openchange.register(setup_path, provisionnames, lp, creds)
-        openchange.registerasmain(setup_path, provisionnames, lp, creds)
-    elif opts.additional:
-        openchange.register(setup_path, provisionnames, lp, creds)
-    elif opts.standalone:
-        openchange.provision(setup_path, provisionnames, lp, creds)
-        openchange.register(setup_path, provisionnames, lp, creds)
-        openchange.registerasmain(setup_path, provisionnames, lp, creds)
-    elif opts.primary_server:
-        openchange.registerasmain(setup_path, provisionnames, lp, creds)
-    elif opts.migrate:
-        openchange.openchangedb_migrate(lp)
-    else:
-        parser.print_help()
+if opts.deprovision:
+    try:
+        openchange.unregister(setup_path, provisionnames, lp, creds)
+        openchange.deprovision(setup_path, provisionnames, lp, creds)
+        openchange.openchangedb_deprovision(provisionnames, lp)
+    except openchange.ServerInUseError, e:
+        print >> sys.stderr, "[!] Unable to unregister this server, it's being used for: %s" % str(e)
         sys.exit(1)
+elif opts.additional and opts.primary_server:
+    openchange.register(setup_path, provisionnames, lp, creds)
+    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+elif opts.additional:
+    openchange.register(setup_path, provisionnames, lp, creds)
+elif opts.standalone:
+    openchange.provision(setup_path, provisionnames, lp, creds)
+    openchange.register(setup_path, provisionnames, lp, creds)
+    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+elif opts.primary_server:
+    openchange.registerasmain(setup_path, provisionnames, lp, creds)
+elif opts.migrate:
+    openchange.openchangedb_migrate(lp)
 elif opts.check:
     openchange.check_not_provisioned(provisionnames, lp, creds)
-else:
+elif opts.openchangedb:
     openchange.openchangedb_provision(provisionnames, lp, opts.openchangedb_uri)
+else:
+    parser.print_help()
+    sys.exit(1)
+

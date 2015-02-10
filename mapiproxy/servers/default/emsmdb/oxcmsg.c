@@ -39,6 +39,9 @@ struct oxcmsg_prop_index {
 
 static inline void oxcmsg_fill_prop_index(struct oxcmsg_prop_index *prop_index, struct SPropTagArray *properties)
 {
+	/* Sanity checks */
+	if (properties == NULL) return;
+
 	if (SPropTagArray_find(*properties, PR_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
 	    && SPropTagArray_find(*properties, PR_7BIT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
 	    && SPropTagArray_find(*properties, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND) {
@@ -124,6 +127,13 @@ static void oxcmsg_fill_RecipientRow_data(TALLOC_CTX *mem_ctx, struct emsmdbp_co
 	void		*data;
 	enum MAPITAGS	property;
 
+	/* Sanity checks */
+	if (!properties) {
+		row->prop_count = 0;
+		row->prop_values.length = 0;
+		row->layout = 0;
+		return;
+	}
 	row->prop_count = properties->cValues;
 	row->prop_values.length = 0;
 	row->layout = 0;
@@ -1036,6 +1046,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 		else {
 			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_EMPTY;
 		}
+
+		/* WARNING: Beginning of the hack */
+		/* When ReloadCachedInformation returns with columns
+		 * and blob data in RecipientRow, it fails. It works
+		 * without these info. */
+		if (msg->columns) {
+			talloc_free(msg->columns);
+			msg->columns = NULL;
+		}
+		/* WARNING: End of the hack */
+
 		if (msg->columns) {
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.cValues = msg->columns->cValues;
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.aulPropTag = msg->columns->aulPropTag;

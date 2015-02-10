@@ -22,7 +22,6 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include <talloc.h>
-#include <core/ntstatus.h>
 #include <popt.h>
 #include <param.h>
 #include <util/debug.h>

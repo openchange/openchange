@@ -109,7 +109,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_mailbox_provision_public_freebusy(struct emsmdb
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!EssDN, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	dn_root = talloc_asprintf(mem_ctx, "EX:%s", EssDN);
@@ -310,7 +310,8 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 	void					*backend_object, *backend_table, *backend_message;
 	char	 				*organization_name, *group_name;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* Retrieve list of folders from backends */
 	retval = mapistore_list_contexts_for_user(emsmdbp_ctx->mstore_ctx, username, mem_ctx, &contexts_list);

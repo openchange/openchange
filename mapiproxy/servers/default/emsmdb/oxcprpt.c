@@ -119,7 +119,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPropertiesSpecific(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
-        local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+        local_mem_ctx = talloc_new(NULL);
         OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
         properties = talloc_zero(local_mem_ctx, struct SPropTagArray);

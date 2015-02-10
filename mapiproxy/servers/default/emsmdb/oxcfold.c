@@ -832,7 +832,8 @@ static enum MAPISTATUS RopEmptyFolder_GenericFolder(TALLOC_CTX *mem_ctx,
 	}
 	context_id = emsmdbp_get_contextID(folder_object);
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	retval = mapistore_folder_get_child_fmids(emsmdbp_ctx->mstore_ctx, context_id, folder_object->backend_object, MAPISTORE_FOLDER_TABLE, local_mem_ctx,
 						  &childFolders, &childFolderCount);

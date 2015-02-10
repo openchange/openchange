@@ -297,7 +297,6 @@ static void oxcfxics_ndr_push_properties(struct ndr_push *ndr, struct ndr_push *
 			}
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, 0);
 			ndr_push_uint32(cutmarks_ndr, NDR_SCALARS, ndr->offset);
-
 			if ((prop_type & MV_FLAG)) {
 				prop_type &= 0x0fff;
 
@@ -553,7 +552,7 @@ static void oxcfxics_push_messageChange_recipients(struct emsmdbp_context *emsmd
 	min_string_value_buffer = oxcfxics_compute_cutmark_min_value_buffer(PT_UNICODE);
 
 	if (msg) {
-		local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		local_mem_ctx = talloc_new(NULL);
 
 		if (SPropTagArray_find(*msg->columns, PidTagDisplayName, &cn_idx) == MAPI_E_NOT_FOUND
 		    && SPropTagArray_find(*msg->columns, PidTagAddressBookDisplayNamePrintable, &cn_idx) == MAPI_E_NOT_FOUND
@@ -632,7 +631,7 @@ static void oxcfxics_push_messageChange_attachment_embedded_message(struct emsmd
 	enum MAPISTATUS			*retvals;
 	uint32_t			i;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
 
 	ret = mapistore_message_attachment_open_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment, mem_ctx, &embedded_message, &messageID, &msg);
 	if (ret == MAPISTORE_SUCCESS) {
@@ -878,7 +877,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 	/* open each message and fetch properties */
 	for (; sync_data->ndr->offset < max_message_sync_size && message_sync_data->count < message_sync_data->max; message_sync_data->count++) {
-		msg_ctx = talloc_zero(NULL, TALLOC_CTX);
+		msg_ctx = talloc_new(NULL);
 
 		if (folder_is_mapistore && (message_sync_data->count % message_preload_interval) == 0) {
 			preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;

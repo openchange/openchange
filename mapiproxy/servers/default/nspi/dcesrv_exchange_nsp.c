@@ -110,11 +110,15 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 
 	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
 
-	/* Step 0. Ensure incoming user is authenticated */
+	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
 	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		retval = MAPI_E_FAILONEPROVIDER;
 		goto failure;
+	}
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 
 	/* Step 1. Initialize the emsabp context */
@@ -236,6 +240,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN(r, 1, NULL);
 }
 
+static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r, struct emsabp_context *emsabp_ctx);
 
 /**
    \details exchange_nsp NspiUpdateStat (0x2) function
@@ -246,21 +251,23 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
    \return MAPI_E_SUCCESS on success
 */
+/* TODO:
+ - Use SortType. sortLocale and ContainerId
+- Check CodePage first
+ */
 static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r)
 {
-	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
-        enum MAPISTATUS                 ret;
 	struct emsabp_context		*emsabp_ctx = NULL;
-	uint32_t			row, row_max;
-	TALLOC_CTX			*local_mem_ctx;
-	struct PropertyTagArray_r	*mids;
 
 	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
-
-	/* Step 0. Ensure incoming user is authenticated */
+	/* Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -268,49 +275,62 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
 	}
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-
-	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
+	/* Check container exists */
 	if (r->in.pStat->ContainerID && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
-		retval = MAPI_E_INVALID_BOOKMARK;
-		goto end;
+		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
+
+	/* After the checks do the update stat */
+	dcesrv_do_NspiUpdateStat(mem_ctx, r, emsabp_ctx);
+}
+
+/**
+This method does the work of NspiUpdateStat, it is separated from dcesrv_NspiUpdateStat to be 
+able to be called from NspiQueryRows without doing again the same sanity checks and reusing the emsabp_ctx
+*/
+static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r, struct emsabp_context *emsabp_ctx)
+{
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	enum MAPISTATUS                 ret;
+	uint32_t			row, row_max;
+	TALLOC_CTX			*local_mem_ctx;
+	struct PropertyTagArray_r	*mids;
+
+	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
         if (!mids) {
                 DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
         }
 
-        ret = emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
+	ret = emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
 	if (ret != MAPI_E_SUCCESS) {
 		row_max = 0;
-                if (ret == MAPI_E_CALL_FAILED) {
-                        retval = ret;
-                        goto end;
-                }
-	}
-	else {
-		row_max = mids->cValues;
+		if (ret == MAPI_E_CALL_FAILED) {
+			retval = ret;
+			goto end;
+		}
+	} else {
+		row_max = mids->cValues - 1;
 	}
 
 	if (r->in.pStat->CurrentRec == MID_CURRENT) {
-		/* Fractional positioning (3.1.1.4.2) */
+		/* Fractional positioning (3.1.4.5.2) */
 		row = r->in.pStat->NumPos * row_max / r->in.pStat->TotalRecs;
 		if (row > row_max) {
 			row = row_max;
 		}
-	}
-	else {
+	} else {
+		/* Absolute positioning (3.1.4.5.1) */
 		if (r->in.pStat->CurrentRec == MID_BEGINNING_OF_TABLE) {
 			row = 0;
 		}
 		else if (r->in.pStat->CurrentRec == MID_END_OF_TABLE) {
 			row = row_max;
-		}
-		else {
+		} else {
 			retval = MAPI_E_NOT_FOUND;
 			row = 0;
-			while (row < row_max) {
+			while (row <= row_max) {
 				if ((uint32_t) mids->aulPropTag[row] == (uint32_t) r->in.pStat->CurrentRec) {
 					retval = MAPI_E_SUCCESS;
 					break;
@@ -325,26 +345,39 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		}
 	}
 
-	if (-r->in.pStat->Delta > row) {
-		row = 0;
-		r->in.pStat->CurrentRec = mids->aulPropTag[row];
+	if (r->in.pStat->Delta != 0) {
+		/* Adjust row  by Delta */
+		if (r->in.pStat->Delta > 0) {
+			row += r->in.pStat->Delta;
+			if (row > row_max) {
+				row = row_max;
+			}
+		} else {
+			if (abs(r->in.pStat->Delta) >= row) {
+				row = 0;
+			} else {
+				row -= abs(r->in.pStat->Delta);
+			}
+		}
 	}
-	else if (r->in.pStat->Delta + row >= row_max) {
-		row = row_max;
-		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
-	}
-	else {
-		row += r->in.pStat->Delta;
-		r->in.pStat->CurrentRec = mids->aulPropTag[row];
+	
+	if (row == 0) {
+		r->out.pStat->CurrentRec = MID_BEGINNING_OF_TABLE;
+	} else if (row == row_max) {
+		r->out.pStat->CurrentRec = MID_END_OF_TABLE;
+	} else {
+		r->out.pStat->CurrentRec = mids->aulPropTag[row];
 	}
 
-	r->in.pStat->Delta = 0;
-	r->in.pStat->NumPos = row;
-	r->in.pStat->TotalRecs = row_max;
+	r->out.pStat->Delta = 0;
+	r->out.pStat->NumPos = row;
+	r->out.pStat->TotalRecs = row_max + 1;
+	r->out.plDelta = r->in.plDelta;
+	if (r->in.plDelta != NULL) {
+		*(r->out.plDelta) = r->out.pStat->NumPos - r->in.pStat->NumPos;
+	}
 
 end:
-	r->out.pStat = r->in.pStat;
-
 	DCESRV_NSP_RETURN(r, retval, local_mem_ctx);
 }
 
@@ -367,13 +400,19 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct PropertyRowSet_r		*pRows;
 	uint32_t			count = 0;
 	uint32_t			i, j;
+	struct				NspiUpdateStat r_UpdateStat;
+	
 
 	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
 
-	/* Step 0. Ensure incoming user is authenticated */
+	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -384,6 +423,11 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID && r->in.lpETable == NULL && (emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID) == false)) {
 		retval = MAPI_E_INVALID_BOOKMARK;
+		goto failure;
+	}
+
+	if (r->in.Count == 0) {
+		retval = MAPI_E_INVALID_PARAMETER;
 		goto failure;
 	}
 
@@ -407,6 +451,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	if (r->in.lpETable == NULL) {
 		/* Step 2.1 Fill ppRows for supplied Container ID */
 		struct ldb_result	*ldb_res;
+		uint32_t		start_pos;
 
 		retval = emsabp_ab_container_enum(mem_ctx, emsabp_ctx,
 						  r->in.pStat->ContainerID, &ldb_res);
@@ -414,34 +459,57 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		if (ldb_res->count < r->in.pStat->NumPos) {
-			/* Bad position */
-			retval = MAPI_E_INVALID_PARAMETER;
-			goto failure;
+		if (r->in.pStat->Delta >= 0) {
+			start_pos = r->in.pStat->NumPos + r->in.pStat->Delta;
+			if (start_pos >= ldb_res->count) {
+				/* inexistent position */
+				retval = MAPI_E_INVALID_PARAMETER;
+				goto failure;
+			}
+		} else {
+			if (abs(r->in.pStat->Delta) > r->in.pStat->NumPos) {
+				retval = MAPI_E_INVALID_PARAMETER;
+				goto failure;
+			} else {
+				start_pos = r->in.pStat->NumPos - abs(r->in.pStat->Delta);
+			}
 		}
-
-		count = ldb_res->count - r->in.pStat->NumPos;
-
+		
+		count = ldb_res->count - start_pos;
 		if (r->in.Count < count) {
 			count = r->in.Count;
 		}
+		
 		if (count) {
 			pRows->cRows = count;
 			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, count);
 		}
 
 		/* fetch required attributes for every entry found */
-		for (i = 0; i < count; i++) {
+		for (i=0; i < count; i++) {
 			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
-							     ldb_res->msgs[i+r->in.pStat->NumPos], 0, r->in.dwFlags, pPropTags);
+							     ldb_res->msgs[start_pos+i ], 0, r->in.dwFlags, pPropTags);
 			if (retval != MAPI_E_SUCCESS) {
 				goto failure;
 			}
 		}
-		r->in.pStat->NumPos = r->in.pStat->Delta + pRows->cRows;
-		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
-		r->in.pStat->TotalRecs = pRows->cRows;
-		r->in.pStat->Delta = 0;
+
+		/* Prepare call to  NspiUpdateStat */
+		r_UpdateStat.in.handle   = r->in.handle;
+		r_UpdateStat.in.Reserved = 0;
+		r_UpdateStat.in.pStat    = r->in.pStat;
+		r_UpdateStat.in.pStat->Delta += pRows->cRows;
+		r_UpdateStat.in.plDelta  = NULL;
+		r_UpdateStat.in.pStat->TotalRecs  = ldb_res->count;
+		r_UpdateStat.out.pStat   = r->out.pStat;
+		/* dce_call is only used to check the auth so we can reuse it */
+		dcesrv_do_NspiUpdateStat(mem_ctx, &r_UpdateStat, emsabp_ctx);
+		if (r_UpdateStat.out.result != MAPI_E_SUCCESS) {
+			/* Not clear in the spec what to do if updateStat fails, ignoring it and logging error for the moment */
+			DEBUG(1, ("NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result));
+			r->out.result = MAPI_E_SUCCESS;
+		}
+
 	} else {
 		/* Step 2.2 Fill ppRows for supplied table of MIds */
 		j = 0;
@@ -456,15 +524,13 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 				j++;
 			}
 		}
-		r->in.pStat->CurrentRec = MID_END_OF_TABLE;
-		r->in.pStat->TotalRecs = j;
-		r->in.pStat->Delta = 0;
+		r->out.pStat->CurrentRec = MID_END_OF_TABLE;
+		r->out.pStat->TotalRecs = j;
+		r->out.pStat->Delta = 0;
 	}
 
 	/* Step 3. Fill output params */
 	*r->out.ppRows = pRows;
-
-	memcpy(r->out.pStat, r->in.pStat, sizeof (struct STAT));
 
 	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
 
@@ -495,6 +561,10 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	struct Restriction_r		*seek_restriction;
 
 	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
+	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -565,7 +635,6 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	}
 
 end:
-
 	DCESRV_NSP_RETURN(r, retval, NULL);
 }
 
@@ -587,7 +656,6 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	struct emsabp_context		*emsabp_ctx = NULL;
 	struct PropertyTagArray_r	*ppOutMIds = NULL;
 	uint32_t			i;
-	
 
 	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
 
@@ -595,6 +663,10 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -611,7 +683,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	if (retval != MAPI_E_SUCCESS) {
 	failure:
 		r->out.pStat = r->in.pStat;
-		*r->out.ppOutMIds = ppOutMIds;	
+		*r->out.ppOutMIds = ppOutMIds;
 		r->out.ppRows = talloc(mem_ctx, struct PropertyRowSet_r *);
 		r->out.ppRows[0] = NULL;
 		DCESRV_NSP_RETURN(r, retval, NULL);
@@ -890,6 +962,13 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
+	/* Check in 3.1.4.1.3 Server Processing rules step 1 */
+	if ((!(r->in.dwFlags & NspiAddressCreationTemplates)) &&
+	    (!(r->in.dwFlags & NspiUnicodeStrings)) &&
+	    IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
+	}
+
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
 		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
@@ -1066,6 +1145,10 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	if (!dcesrv_call_authenticated(dce_call)) {
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
+
+	if (IS_WINUNICODE_CODEPAGE(r)) {
+		DCESRV_NSP_RETURN(r, MAPI_E_NO_SUPPORT, NULL);
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
@@ -1344,7 +1427,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
-	DEBUG (5, ("dcesrv_exchange_nsp_dispatch\n"));
+	DEBUG (5, ("dcesrv_exchange_nsp_dispatch opnum: %u\n",  dce_call->pkt.u.request.opnum));
 
 	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;

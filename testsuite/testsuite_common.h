@@ -21,6 +21,7 @@
 
 #include "mapiproxy/libmapiproxy/backends/openchangedb_backends.h"
 #include "mapiproxy/util/mysql.h"
+#include "mapiproxy/util/schema_migration.h"
 
 /* MySQL constants to establish a connection */
 #define	OC_TESTSUITE_MYSQL_HOST		"127.0.0.1"

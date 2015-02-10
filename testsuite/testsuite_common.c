@@ -54,7 +54,6 @@ void initialize_mysql_with_file(TALLOC_CTX *mem_ctx, const char *sql_file_path,
 	ck_assert(lp_ctx != NULL);
 
 	ck_assert((lpcfg_set_cmdline(lp_ctx, "mapiproxy:openchangedb", database) == true));
-	ck_assert((lpcfg_set_cmdline(lp_ctx, "openchangedb:data", OPENCHANGEDB_MYSQL_SCHEMA_PATH) == true));
 	retval = openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
 
 	if (retval != MAPI_E_SUCCESS) {

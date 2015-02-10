@@ -1,6 +1,10 @@
+#!/usr/bin/python
+# -*- coding: utf-8 -*-
+
 # OpenChange provisioning
 # Copyright (C) Jelmer Vernooij <jelmer@openchange.org> 2008-2009
 # Copyright (C) Julien Kerihuel <j.kerihuel@openchange.org> 2009
+# Copyright (C) Enrique J. Hernández <ejhernandez@zentyal.com> 2015
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -30,9 +34,11 @@ from samba.auth import system_session
 from samba.provision import setup_modify_ldif
 from samba.net import Net
 from samba.dcerpc import nbt
-from openchange.urlutils import openchangedb_url
+from openchange.urlutils import indexing_url, named_properties_url, openchangedb_url
+
 
 __docformat__ = 'restructuredText'
+
 
 DEFAULTSITE = "Default-First-Site-Name"
 
@@ -733,7 +739,7 @@ def checkusage(names, lp, creds):
         mailboxes_handled = 0
         for user_mailbox in mailboxes:
             if (user_mailbox['homeMDB'][0] == our_mailbox_store and
-                  user_mailbox['msExchUserAccountControl'][0] != '2'):
+               user_mailbox['msExchUserAccountControl'][0] != '2'):
                 mailboxes_handled += 1
 
         if mailboxes_handled > 0:
@@ -914,14 +920,39 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     openchangedb.remove()
 
 
-def openchangedb_migrate(lp):
-    uri = openchangedb_url(lp)
+def openchangedb_migrate(lp, uri=None, version=None):
+    if uri is None:
+        uri = openchangedb_url(lp)
     if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
-        if openchangedb.migrate():
+        if openchangedb.migrate(version):
             print "Migration openchange db done"
+        else:
+            print "Nothing to migrate"
     else:
-        print "Only OpenchangeDB with MySQL as backend needs migration"
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
+
+
+def openchangedb_list_migrations(lp, uri):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
+        migrations = openchangedb.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
+
+
+def openchangedb_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri)
+        if openchangedb.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
 
 
 def openchangedb_provision(names, lp, uri):
@@ -953,7 +984,7 @@ def openchangedb_new_organization(names, lp):
     :param lp: Loadparm context
     """
     uri = openchangedb_url(lp)
-    if uri.startswith('mysql'):
+    if uri.startswith('mysql:'):
         openchangedb = mailbox.OpenChangeDBWithMysqlBackend(uri, find_setup_dir())
     else:
         openchangedb = mailbox.OpenChangeDB(uri)
@@ -995,3 +1026,90 @@ def check_not_provisioned(names, lp, creds):
         firstorg = ret[0]['name'][0]
         raise Exception(
             'There is already, at least, one provisioned organization: %(name)s' % {'name': firstorg})
+
+
+# Indexing related procedures
+def indexing_migrate(lp, uri=None, version=None):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql:'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        if indexing.migrate(version):
+            print "Migration MAPIStore indexing backend done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+def indexing_list_migrations(lp, uri):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql:'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        migrations = indexing.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+def indexing_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = indexing_url(lp)
+    if uri.startswith('mysql:'):
+        indexing = mailbox.IndexingWithMysqlBackend(uri)
+        if indexing.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only indexing backend with MySQL as backend has migration capability"
+
+
+# Named properties related procedures
+def named_props_migrate(lp, uri=None, version=None):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql:'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        if named_properties.migrate(version):
+            print "Migration MAPIStore named properties backend done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
+
+
+def named_props_list_migrations(lp, uri):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql:'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        migrations = named_properties.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
+
+
+def named_props_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = named_properties_url(lp)
+    if uri.startswith('mysql:'):
+        named_properties = mailbox.NamedPropertiesWithMysqlBackend(uri)
+        if named_properties.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only named properties backend with MySQL as backend has migration capability"
+
+
+# Helper procedures
+def print_migrations(migrations):
+    """Print formatted the migrations.
+
+    :param dict migrations: indexed by version. It has a value a dict with these keys:
+                            applied, class
+    """
+    for ver, migration in migrations.iteritems():
+        print '[{applied}] {version} {name} {applied_date}'.format(
+            applied='X' if migration['applied'] is not None else ' ',
+            version=ver,
+            name=migration['class'].description,
+            applied_date="- %s" % migration['applied'] if migration['applied'] else "")

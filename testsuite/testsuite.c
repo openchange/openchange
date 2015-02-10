@@ -114,6 +114,7 @@ int main(int argc, const char *argv[])
 	srunner_add_suite(sr, mapistore_indexing_tdb_suite());
 	/* mapiproxy */
 	srunner_add_suite(sr, mapiproxy_util_mysql_suite());
+	srunner_add_suite(sr, mapiproxy_util_schema_migration_suite());
 
 	srunner_run_all(sr, CK_NORMAL);
 	nf = srunner_ntests_failed(sr);

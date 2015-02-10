@@ -95,7 +95,7 @@ START_TEST(test_backend_init_parameters) {
 	retval = mapistore_indexing_mysql_init(mstore_ctx, NULL, conn_string, &ictx);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
-	/* check with NULL pointer to inexing context */
+	/* check with NULL pointer to indexing context */
 	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string, NULL);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
 
@@ -118,7 +118,7 @@ START_TEST(test_backend_init_parameters) {
 	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string_wrong_pass, &ictx);
 	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
 
-	/* check successfull connection */
+	/* check successful connection */
 	retval = mapistore_indexing_mysql_init(mstore_ctx, g_test_username, conn_string, &ictx);
 	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
 	ck_assert(ictx != NULL);

@@ -250,7 +250,8 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		return ret;
 	}
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CONTAINER_CLASS_UNICODE);
 	if (!value) {
@@ -805,7 +806,9 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	struct SPropValue	newValue;
 	uint32_t		i;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
 		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
 		talloc_free(mem_ctx);
@@ -903,7 +906,9 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	}
 
 	/* Fetch data from source message */
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 	contextID = emsmdbp_get_contextID(source_object);
 	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
 
@@ -963,7 +968,8 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 		return MAPI_E_SUCCESS;
 	}
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* we fetch the attachment nums */
 	table_object = emsmdbp_object_message_open_attachment_table(mem_ctx, emsmdbp_ctx, source_object);
@@ -1378,7 +1384,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 	void			*subfolder;
 	char			*mapistoreURL;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	mailboxstore = emsmdbp_is_mailboxstore(parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {	/* fid is not a mapistore root */
@@ -2025,7 +2032,7 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fb_props_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	retval = mapiserver_get_administrative_group_legacyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
@@ -2111,7 +2118,7 @@ static enum MAPISTATUS emsmdbp_object_message_fill_freebusy_properties(struct em
 	enum MAPISTATUS				*retvals = NULL;
 	enum MAPISTATUS				retval;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* 1. retrieve subject and deduce username */
@@ -2154,7 +2161,9 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	if (!messageP) return MAPISTORE_ERROR;
 	if (!parent_object) return MAPISTORE_ERROR;
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
 	if (retval != MAPI_E_SUCCESS)  {
 		ret = mapi_error_to_mapistore(retval);
@@ -2832,7 +2841,9 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	 * dispatcher db, not mapistore */
 	if (object->type == EMSMDBP_OBJECT_FOLDER
 	    && object->object.folder->mapistore_root == true) {
-		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		mem_ctx = talloc_new(NULL);
+		OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 		mapistore_uri = NULL;
 		openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, &mapistore_uri, true);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, rowp);

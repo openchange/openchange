@@ -272,6 +272,13 @@ class _RESTConn(object):
                          data=json.dumps(msg), headers=headers)
         return r.json()['id']
 
+    def delete_message(self, msg_uri):
+        """Delete message
+        :param msg_uri: path to the message on remote service
+        """
+        self.so.delete('%s%s' % (self.base_url, msg_uri))
+        return mapistore.errors.MAPISTORE_SUCCESS
+
     def create_folder(self, parent_id, folder):
         folder['parent_id'] = parent_id
         headers = {'Content-Type': 'application/json'}
@@ -717,6 +724,23 @@ class FolderObject(object):
         msg = {}
         msg['PidTagChangeKey'] = bytearray(uuid.uuid1().bytes + '\x00\x00\x00\x00\x00\x01')
         return MessageObject(self, msg, mid, fai)
+
+    def delete_message(self, mid):
+        logger.info('[PYTHON]: folder.delete_message(mid=%s)' % (mid))
+        # Retrieve the message object from remote
+        conn = _RESTConn.get_instance()
+        msg_uri = self.ctx.indexing.uri_by_id(mid)
+
+        # Check if the message has attachments
+        attachment_count = conn.get_attachment_count(msg_uri)
+        # Remove the attachments
+        if attachment_count > 0:
+            attachment_list = conn.get_attachments(msg_uri, ['id'])
+            for att_id in attachment_list:
+                conn.delete_attachment('/attachments/%d/' % att_id)
+        # Remove the message
+        conn.delete_message(msg_uri)
+        return mapistore.errors.MAPISTORE_SUCCESS
 
 
 class MessageObject(object):

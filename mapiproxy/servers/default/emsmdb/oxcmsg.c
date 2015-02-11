@@ -826,7 +826,6 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 	for (i = 0; i < prop_count; i++) {
 
 		if (recipient_row->RecipientRow.layout) {
-			data_pos++;
 			if (recipient_row->RecipientRow.prop_values.data[data_pos] != 0) {
 				recipient->data[i+2] = NULL;
 				if (recipient_row->RecipientRow.prop_values.data[data_pos] == 0xa) {
@@ -834,6 +833,7 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 				}
 				continue;
 			}
+			data_pos++;
 		}
 
 		prop_value = pull_emsmdb_property(recipient->data, &data_pos, properties[i],

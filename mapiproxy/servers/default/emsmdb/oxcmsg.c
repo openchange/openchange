@@ -1047,17 +1047,17 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 			mapi_repl->u.mapi_ReloadCachedInformation.NormalizedSubject.StringType = StringType_EMPTY;
 		}
 
-		/* WARNING: Beginning of the hack */
+		/* WARNING: Beginning of the hack - Part 1 */
 		/* When ReloadCachedInformation returns with columns
 		 * and blob data in RecipientRow, it fails. It works
 		 * without these info. */
+		oxcmsg_fill_prop_index(&prop_index, msg->columns);
 		if (msg->columns) {
-			talloc_free(msg->columns);
-			msg->columns = NULL;
+			msg->columns->cValues = 0;
 		}
-		/* WARNING: End of the hack */
+		/* WARNING: end of the hack */
 
-		if (msg->columns) {
+		if (msg->columns && msg->columns->cValues) {
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.cValues = msg->columns->cValues;
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientColumns.aulPropTag = msg->columns->aulPropTag;
 		}
@@ -1070,11 +1070,18 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows = talloc_array(mem_ctx, 
 											       struct OpenRecipientRow, 
 											       msg->recipients_count + 1);
-			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx,
+							     &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), 
+							     msg->columns, msg->recipients + i, &prop_index);
 			}
 		}
+		/* WARNING: hack - Part 2 */
+		if (msg->columns) {
+			talloc_free(msg->columns);
+			msg->columns = NULL;
+		}
+		/* WARNING: end of hack */
 		break;
 	}
 

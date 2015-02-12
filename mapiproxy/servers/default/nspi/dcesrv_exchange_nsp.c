@@ -117,6 +117,8 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 		goto failure;
 	}
 
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
+
 	/* Step 1. Initialize the emsabp context */
 	emsabp_ctx = emsabp_init(dce_call->conn->dce_ctx->lp_ctx, emsabp_tdb_ctx);
 	if (!emsabp_ctx) {
@@ -557,6 +559,8 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 
 	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
 
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
+
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
 		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
@@ -663,6 +667,8 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
+
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -952,6 +958,8 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 {
 	struct emsabp_context		*emsabp_ctx = NULL;
 	bool				nspi_address_creation_templates;
+	bool				nspi_unicode_strings;
+	bool				unsupported_codepage;
 
 	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
 
@@ -962,7 +970,10 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	}
 
 	nspi_address_creation_templates = r->in.dwFlags & NspiAddressCreationTemplates;
+	nspi_unicode_strings = r->in.dwFlags & NspiUnicodeStrings;
 	/* Check in 3.1.4.1.3 Server Processing rules step 1 */
+	unsupported_codepage = !nspi_address_creation_templates && !nspi_unicode_strings && r->in.pStat->CodePage == CP_UNICODE;
+	DCESRV_NSP_RETURN_IF(unsupported_codepage, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {
@@ -1141,6 +1152,8 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
+
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	if (!emsabp_ctx) {

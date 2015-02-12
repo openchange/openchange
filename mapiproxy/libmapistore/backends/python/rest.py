@@ -737,7 +737,7 @@ class FolderObject(object):
         if attachment_count > 0:
             attachment_list = conn.get_attachments(msg_uri, ['id'])
             for att_id in attachment_list:
-                conn.delete_attachment('/attachments/%d/' % att_id)
+                conn.delete_attachment('/attachments/%d/' % att_id['id'])
         # Remove the message
         conn.delete_message(msg_uri)
         return mapistore.errors.MAPISTORE_SUCCESS

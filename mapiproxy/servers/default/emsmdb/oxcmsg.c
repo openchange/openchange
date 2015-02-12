@@ -1191,7 +1191,12 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!handles, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!size, MAPI_E_INVALID_PARAMETER, NULL);
 
-	mapi_repl->opnum = mapi_req->opnum;
+	/* IMPORTANT: This is not a bug, Exchange actually replies to
+	   Outlook GetMessageStatus request with a SetMessageStatus
+	   reply. If the opnum is set to op_MAPI_GetMessageStatus,
+	   Outlook does not call SaveChangesMessage when updating a
+	   message */
+	mapi_repl->opnum = op_MAPI_SetMessageStatus;
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	mapi_repl->handle_idx = mapi_req->handle_idx;
 

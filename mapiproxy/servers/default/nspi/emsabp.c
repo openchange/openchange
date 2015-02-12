@@ -863,7 +863,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				lpProps.value.l = 0x0;
 				break;
 			case PidTagDisplayName:
-				lpProps.value.lpszW = NULL;
+				/* This value is temporal to workaround PropertyRow_addprop internals */
+				/* It will be set to NULL aftr the call to PropertyRow_addprop */
+				lpProps.value.lpszW = "t";
 				break;
 			case PR_EMS_AB_IS_MASTER:
 				lpProps.value.b = false;
@@ -889,23 +891,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				emsabp_PermanentEntryID_to_Binary_r(mem_ctx, permEntryID, &(lpProps.value.bin));
 				break;
 			case PR_CONTAINER_FLAGS:
-			  switch ((int)child) {
-				case true:
-					lpProps.value.l = AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-					break;
-				case false:
+				if (child) {
 					lpProps.value.l = AB_RECIPIENTS | AB_UNMODIFIABLE;
+				} else {
+					lpProps.value.l = AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
 				}
 				break;
 			case PR_DEPTH:
-			  switch ((int)child) {
-				case true:
-					lpProps.value.l = 0x1;
-					break;
-				case false:
-					lpProps.value.l = 0x0;
-					break;
-				}
+				lpProps.value.l = child ? 0x1 : 0x0;
 				break;
 			case PR_EMS_AB_CONTAINERID:
 				dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);

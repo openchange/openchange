@@ -250,7 +250,8 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		return ret;
 	}
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_CONTAINER_CLASS_UNICODE);
 	if (!value) {
@@ -805,7 +806,9 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	struct SPropValue	newValue;
 	uint32_t		i;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
 		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
 		talloc_free(mem_ctx);
@@ -903,7 +906,9 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	}
 
 	/* Fetch data from source message */
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 	contextID = emsmdbp_get_contextID(source_object);
 	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
 
@@ -963,7 +968,8 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 		return MAPI_E_SUCCESS;
 	}
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* we fetch the attachment nums */
 	table_object = emsmdbp_object_message_open_attachment_table(mem_ctx, emsmdbp_ctx, source_object);
@@ -1234,6 +1240,73 @@ enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_
 	return retval;
 }
 
+static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, struct emsmdbp_object *parent_folder, const char *new_name)
+{
+	uint64_t		parent_fid, fid, test_folder_id, change_number;
+	enum MAPISTATUS		retval;
+	char			*mapistore_uri;
+	TALLOC_CTX		*mem_ctx;
+
+
+	/* Sanity checks */
+	MAPI_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!parent_folder, MAPI_E_INVALID_PARAMETER, NULL);
+	MAPI_RETVAL_IF(!new_name, MAPI_E_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPI_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	if (parent_folder->type == EMSMDBP_OBJECT_MAILBOX) {
+		parent_fid = parent_folder->object.mailbox->folderID;
+	} else { /* EMSMDBP_OBJECT_FOLDER */
+		parent_fid = parent_folder->object.folder->folderID;
+	}
+
+	if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parent_fid,
+					 new_name, &test_folder_id) == MAPI_E_SUCCESS) {
+		DEBUG(4, ("emsmdbp_object: move_folder_to_mapistore_root duplicate folder error\n"));
+		retval = MAPI_E_COLLISION;
+		goto end;
+	}
+
+	fid = folder->object.folder->folderID;
+
+	retval = emsmdbp_get_uri_from_fid(mem_ctx, emsmdbp_ctx, fid, &mapistore_uri);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("Cannot locate folder id: %"PRIu64" on indexing database\n", fid));
+		goto end;
+	}
+
+	retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &change_number);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("Cannot get a new change number: %s\n", mapi_get_errstr(retval)));
+		goto end;
+	}
+
+	retval = openchangedb_create_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username,
+					    parent_fid, fid, change_number,
+					    mapistore_uri, -1);
+	if (retval != MAPI_E_SUCCESS) {
+		DEBUG(0, ("OpenChangeDB folder creation failed: 0x%.8x\n", retval));
+		goto end;
+	}
+
+	/* Set folder properties is done in the upper layer by
+	   oxcfxics in cached mode. This is a temporary hack until we
+	   implement copy properties from MAPIStore to OpenChange
+	   DB. */
+
+	folder->object.folder->mapistore_root = true;
+
+	DEBUG(5, ("New MAPIStore root folder moved at URI: %s\n", mapistore_uri));
+	retval = MAPI_E_SUCCESS;
+
+end:
+	talloc_free(mem_ctx);
+	return retval;
+}
+
 _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *move_folder, struct emsmdbp_object *target_folder, TALLOC_CTX *mem_ctx, const char *new_name)
 {
 	enum mapistore_error	ret;
@@ -1248,9 +1321,6 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	}
 
 	if (!emsmdbp_is_mapistore(target_folder)) {
-		/* TODO: converting a non-mapistore root object to one is not trivial but should be implemented one day. */
-		return MAPISTORE_ERR_DENIED;
-
 		/* target is the "Top of Information Store" ? */
 		retval = openchangedb_get_system_idx(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, target_folder->object.folder->folderID, &system_idx);
 		if (retval != MAPI_E_SUCCESS) {
@@ -1278,17 +1348,28 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 	}
 
 	contextID = emsmdbp_get_contextID(move_folder);
-	ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
-	if (move_folder->object.folder->mapistore_root) {
-		retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
-		if (retval) {
-			DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d", retval));
-		}
-	}
-
 	if (is_top_of_IS) {
-		/* pass */
-	}
+		/* We move it in MAPIStore backend and then we create
+		   the required properties for a MAPIStore root
+		   folder. This is required as indexing database is
+		   updated in mapistore layer */
+		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, NULL, mem_ctx, new_name);
+		if (ret == MAPISTORE_SUCCESS) {
+			retval = emsmdbp_object_move_folder_to_mapistore_root(emsmdbp_ctx, move_folder, target_folder, new_name);
+			if (retval != MAPI_E_SUCCESS) {
+				DEBUG(5, ("Move folder to MAPIStore root failed: %s\n", mapi_get_errstr(retval)));
+				return MAPISTORE_ERROR;
+			}
+		}
+	} else {
+		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
+		if (move_folder->object.folder->mapistore_root) {
+                        retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
+                        if (retval != MAPI_E_SUCCESS) {
+                                DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d\n", retval));
+                        }
+                }
+        }
 
 	return ret;
 }
@@ -1303,7 +1384,8 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 	void			*subfolder;
 	char			*mapistoreURL;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	mailboxstore = emsmdbp_is_mailboxstore(parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {	/* fid is not a mapistore root */
@@ -1950,7 +2032,7 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(!username, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!fb_props_p, MAPI_E_INVALID_PARAMETER, NULL);
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	local_mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	retval = mapiserver_get_administrative_group_legacyexchangedn(local_mem_ctx, emsmdbp_ctx, &administrativegroup);
@@ -1972,8 +2054,8 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	/* open Inbox */
 	retval = openchangedb_get_SystemFolderID(emsmdbp_ctx->oc_ctx, username, EMSMDBP_INBOX, &inboxFID);
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
-	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox);
-	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, inboxFID, &inbox);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	/* retrieve Calendar entry id */
 	props = talloc_zero(mem_ctx, struct SPropTagArray);
@@ -1994,8 +2076,8 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	calendarFID |= 1;
 
 	/* open user calendar */
-	retval_mapistore = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar);
-	OPENCHANGE_RETVAL_IF(retval_mapistore != MAPISTORE_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, mailbox, calendarFID, &calendar);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	if (!emsmdbp_is_mapistore(calendar)) {
 		DEBUG(5, ("[emsmdbp_object][%s:%d]: non-mapistore calendars are not supported for freebusy\n",
@@ -2036,7 +2118,7 @@ static enum MAPISTATUS emsmdbp_object_message_fill_freebusy_properties(struct em
 	enum MAPISTATUS				*retvals = NULL;
 	enum MAPISTATUS				retval;
 
-	mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+	mem_ctx = talloc_new(NULL);
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	/* 1. retrieve subject and deduce username */
@@ -2079,9 +2161,12 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	if (!messageP) return MAPISTORE_ERROR;
 	if (!parent_object) return MAPISTORE_ERROR;
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-	ret = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
-	if (ret != MAPISTORE_SUCCESS)  {
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
+	if (retval != MAPI_E_SUCCESS)  {
+		ret = mapi_error_to_mapistore(retval);
 		goto end;
 	}
 
@@ -2756,7 +2841,9 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	 * dispatcher db, not mapistore */
 	if (object->type == EMSMDBP_OBJECT_FOLDER
 	    && object->object.folder->mapistore_root == true) {
-		mem_ctx = talloc_zero(NULL, TALLOC_CTX);
+		mem_ctx = talloc_new(NULL);
+		OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
 		mapistore_uri = NULL;
 		openchangedb_get_mapistoreURI(mem_ctx, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, &mapistore_uri, true);
 		openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, object->object.folder->folderID, rowp);

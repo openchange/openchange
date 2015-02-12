@@ -45,7 +45,6 @@
 #include <dcerpc.h>
 #include <util/debug.h>
 #include <param.h>
-#include <dlinklist.h>
 
 /* OpenChange includes */
 #include <gen_ndr/exchange.h>

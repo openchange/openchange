@@ -36,7 +36,6 @@
 #include "gen_ndr/exchange.h"
 
 #include <dcerpc_server.h>
-#include <samba_util.h>
 #include <param.h>
 
 #include "gen_ndr/ndr_exchange.h"

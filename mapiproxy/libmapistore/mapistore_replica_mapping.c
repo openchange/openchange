@@ -24,7 +24,7 @@
 #include "mapistore.h"
 #include "mapistore_errors.h"
 #include "mapistore_private.h"
-#include <dlinklist.h>
+#include "utils/dlinklist.h"
 #include "libmapi/libmapi_private.h"
 
 #include <tdb.h>

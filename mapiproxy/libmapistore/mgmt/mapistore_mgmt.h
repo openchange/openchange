@@ -30,7 +30,7 @@
 #include <signal.h>
 #include <stdbool.h>
 
-#include <dlinklist.h>
+#include "utils/dlinklist.h"
 
 #include "gen_ndr/mapistore_mgmt.h"
 

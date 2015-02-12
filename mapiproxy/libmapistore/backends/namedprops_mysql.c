@@ -30,7 +30,6 @@
 #include <mysql/mysql.h>
 #include <mysql/mysqld_error.h>
 #include <ldb.h>
-#include <samba_util.h>
 
 
 static enum mapistore_error get_mapped_id(struct namedprops_context *self,

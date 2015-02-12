@@ -755,6 +755,26 @@ START_TEST (test_create_folder_and_display_name) {
 	ck_assert_int_eq(fid2, fid);
 } END_TEST
 
+START_TEST (test_create_folder_change_number) {
+	uint64_t pfid, fid, changenumber;
+	uint32_t proptag;
+	uint64_t *cn;
+
+	pfid = 18231415716525899777ul;
+	fid = 10741085111278632961ul;
+	changenumber = 1;
+	retval = openchangedb_create_folder(g_oc_ctx, USER1, pfid, fid, changenumber,
+					    "sogo://paco@mail/folderFoo", -1);
+	CHECK_SUCCESS;
+
+	proptag = PidTagChangeNumber;
+	cn = talloc_zero(g_mem_ctx, uint64_t);
+	retval = openchangedb_get_folder_property(g_mem_ctx, g_oc_ctx, USER1,
+						  proptag, fid, (void **)&cn);
+	CHECK_SUCCESS;
+	ck_assert_int_eq(*cn, changenumber);
+} END_TEST
+
 START_TEST (test_create_public_folder) {
 	uint64_t pfid, fid, changenumber;
 	uint32_t count, count_after;
@@ -1275,6 +1295,7 @@ static Suite *openchangedb_create_suite(const char *backend_name,
 	tcase_add_test(tc, test_create_folder);
 	tcase_add_test(tc, test_create_folder_without_mapistore_uri);
 	tcase_add_test(tc, test_create_folder_and_display_name);
+	tcase_add_test(tc, test_create_folder_change_number);
 	tcase_add_test(tc, test_create_public_folder);
 	tcase_add_test(tc, test_get_message_count);
 	tcase_add_test(tc, test_get_message_count_from_public_folder);

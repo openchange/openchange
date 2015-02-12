@@ -22,7 +22,6 @@
 #include "libmapi/libmapi_private.h"
 #include "gen_ndr/ndr_exchange.h"
 #include "gen_ndr/ndr_exchange_c.h"
-#include <core/error.h>
 #include <param.h>
 
 #define TEVENT_DEPRECATED 1

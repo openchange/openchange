@@ -362,7 +362,7 @@ enum mapistore_error mapistore_properties_get_properties(struct mapistore_contex
 enum mapistore_error mapistore_properties_set_properties(struct mapistore_context *, uint32_t, void *, struct SRow *);
 
 enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error);
-
+enum mapistore_error mapi_error_to_mapistore(enum MAPISTATUS);
 
 /* definitions from mapistore_processing.c */
 enum mapistore_error mapistore_set_mapping_path(const char *);

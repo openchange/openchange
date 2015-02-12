@@ -27,6 +27,7 @@
 
 #include "libocpf/ocpf.h"
 #include "libocpf/ocpf_api.h"
+#include "libocpf/ocpf_private.h"
 
 int ocpf_yylex_init(void *);
 int ocpf_yylex_init_extra(struct ocpf_context *, void *);

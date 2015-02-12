@@ -1029,7 +1029,7 @@ _PUBLIC_ bool mapitest_oxcfold_MoveCopyMessages(struct mapitest *mt)
 		goto release;
 	}
 
-	retval = QueryRows(&(dst_contents), 20, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&(dst_contents), 20, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
 	if ( (retval == MAPI_E_SUCCESS) && (SRowSet.cRows > 0) ) {
 		for (i = 0; i < SRowSet.cRows; ++i) {
@@ -1375,7 +1375,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	mapitest_print_retval(mt, "SetColumns");
 	MAPIFreeBuffer(SPropTagArray);
 
-	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
 	if (retval == MAPI_E_SUCCESS) {
 		for (i = 0; i < SRowSet.cRows; ++i) {
@@ -1393,7 +1393,7 @@ _PUBLIC_ bool mapitest_oxcfold_HardDeleteMessages(struct mapitest *mt)
 	}
 
 	/* Step 7. Check the restriction again */
-	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&(contents), 50, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
 	if ( retval != MAPI_E_SUCCESS ) {
 		ret = false;

@@ -72,7 +72,7 @@ void ical_property_ATTACH(struct exchange2ical *exchange2ical)
 		SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x1, PR_ATTACH_NUM);
 		retval = SetColumns(&obj_tb_attach, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
-		retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+		retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &rowset_attach);
 		
 		for (i = 0; i < rowset_attach.cRows; i++) {
 			attach_num = (const uint32_t *)find_SPropValue_data(&(rowset_attach.aRow[i]), PR_ATTACH_NUM);

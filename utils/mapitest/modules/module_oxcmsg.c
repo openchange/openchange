@@ -881,7 +881,7 @@ _PUBLIC_ bool mapitest_oxcmsg_GetMessageStatus(struct mapitest *mt)
 	}
 
 	/* Step 6. Get Message Status */
-	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) &&
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND) &&
 	       SRowSet.cRows) {
 		count -= SRowSet.cRows;
 		for (i = 0; i < SRowSet.cRows; i++) {
@@ -1021,7 +1021,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetMessageStatus(struct mapitest *mt)
 	}
 
 	/* Fetch the first email */
-	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&obj_ctable, 1, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval_clean(mt, "QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS || SRowSet.cRows == 0) {
 		ret = false;
@@ -1121,7 +1121,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval_clean(mt, "QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1148,7 +1148,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval_clean(mt, "QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;
@@ -1171,7 +1171,7 @@ _PUBLIC_ bool mapitest_oxcmsg_SetReadFlags(struct mapitest *mt)
 
 	SetReadFlags(&(context->obj_test_folder), CLEAR_READ_FLAG, 5, messageIds);
 
-	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, &SRowSet);
+	retval = QueryRows(&obj_test_folder, 10, TBL_NOADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval_clean(mt, "QueryRows", retval);
 	if (retval != MAPI_E_SUCCESS) {
 		ret = false;

@@ -131,7 +131,7 @@ static enum MAPISTATUS mapidump_walk_attachment(TALLOC_CTX *mem_ctx,
 	/* Walk through the table */
 	retval = QueryPosition(&obj_atable, &Numerator, &Denominator);
 
-	while ((retval = QueryRows(&obj_atable, Denominator, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_atable, Denominator, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			attach_num = (const uint32_t *)find_SPropValue_data(&(rowset.aRow[i]), PR_ATTACH_NUM);
 			/* Open attachment */
@@ -198,7 +198,7 @@ static enum MAPISTATUS mapidump_walk_content(TALLOC_CTX *mem_ctx,
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
-	while ((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
 			fid = (const uint64_t *) get_SPropValue_SRow_data(&rowset.aRow[i], PR_FID);
@@ -306,7 +306,7 @@ static enum MAPISTATUS mapidump_walk_container(TALLOC_CTX *mem_ctx,
 		MAPIFreeBuffer(SPropTagArray);
 		MAPI_RETVAL_IF(retval, GetLastError(), NULL);
 
-		while ((retval = QueryRows(&obj_htable, rcount, TBL_ADVANCE, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+		while ((retval = QueryRows(&obj_htable, rcount, TBL_ADVANCE, TBL_FORWARD_READ, &rowset) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 			for (i = 0; i < rowset.cRows; i++) {
 				fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[i], PR_FID);
 				retval = mapidump_walk_container(mem_ctx, ocb_ctx, &obj_folder, *fid, containerdn, count + 1);

@@ -292,7 +292,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 
 	/* Step 3. QueryRows */
 	do {
-		retval = QueryRows(&obj_htable, 0x2, TBL_ADVANCE, &SRowSet);
+		retval = QueryRows(&obj_htable, 0x2, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 		if (SRowSet.cRows > 0) {
 			idx += SRowSet.cRows;
 			if (retval == MAPI_E_SUCCESS) {
@@ -332,7 +332,7 @@ _PUBLIC_ bool mapitest_oxctable_QueryRows(struct mapitest *mt)
 	/* Step 6. QueryRows on test folder contents */
 	idx = 0;
 	do {
-		retval = QueryRows(&(obj_test_folder), 0x2, TBL_ADVANCE, &SRowSet);
+		retval = QueryRows(&(obj_test_folder), 0x2, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 		if (SRowSet.cRows > 0) {
 			idx += SRowSet.cRows;
 			if (retval == MAPI_E_SUCCESS) {
@@ -559,7 +559,7 @@ _PUBLIC_ bool mapitest_oxctable_CreateBookmark(struct mapitest *mt)
 
 	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
-	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	for (i = 0; i < SRowSet.cRows; i++) {
 		bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
 		retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
@@ -632,7 +632,7 @@ _PUBLIC_ bool mapitest_oxctable_SeekRowBookmark(struct mapitest *mt)
 
 	/* Step 3. Create Bookmarks */
 	bkPosition = talloc_array(mt->mem_ctx, uint32_t, 1);
-	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_htable, 100, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	for (i = 0; i < SRowSet.cRows; i++) {
 		bkPosition = talloc_realloc(mt->mem_ctx, bkPosition, uint32_t, i + 2);
 		retval = CreateBookmark(&obj_htable, &(bkPosition[i]));
@@ -763,7 +763,7 @@ _PUBLIC_ bool mapitest_oxctable_Category(struct mapitest *mt)
 	}
 
 	rowcount =  2 * origcount;
-	QueryRows(&(obj_test_folder), rowcount, TBL_ADVANCE, &SRowSet);
+	QueryRows(&(obj_test_folder), rowcount, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	mapitest_print_retval(mt, "QueryRows");
 	if (GetLastError() != MAPI_E_SUCCESS) {
 		ret = false;

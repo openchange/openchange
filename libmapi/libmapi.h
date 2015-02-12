@@ -383,7 +383,7 @@ enum MAPISTATUS		MonitorNotification(struct mapi_session *, void *, struct mapi_
 /* The following public definitions come from libmapi/IMAPITable.c */
 enum MAPISTATUS		SetColumns(mapi_object_t *, struct SPropTagArray *);
 enum MAPISTATUS		QueryPosition(mapi_object_t *, uint32_t *, uint32_t *);
-enum MAPISTATUS		QueryRows(mapi_object_t *, uint16_t, enum QueryRowsFlags, struct SRowSet *);
+enum MAPISTATUS		QueryRows(mapi_object_t *, uint16_t, enum QueryRowsFlags, enum ForwardRead, struct SRowSet *);
 enum MAPISTATUS		QueryColumns(mapi_object_t *, struct SPropTagArray *);
 enum MAPISTATUS		SeekRow(mapi_object_t *, enum BOOKMARK, int32_t, uint32_t *);
 enum MAPISTATUS		SeekRowBookmark(mapi_object_t *, uint32_t, uint32_t, uint32_t *);

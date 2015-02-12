@@ -621,7 +621,7 @@ _PUBLIC_ enum MAPISTATUS ModifyUserPermission(mapi_object_t *obj_folder,
 	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
+	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, TBL_FORWARD_READ, &rowset);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {
@@ -731,7 +731,7 @@ _PUBLIC_ enum MAPISTATUS RemoveUserPermission(mapi_object_t *obj_folder,
 	retval = QueryPosition(&obj_table, &Numerator, &Denominator);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
-	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, &rowset);
+	retval = QueryRows(&obj_table, Denominator, TBL_ADVANCE, TBL_FORWARD_READ, &rowset);
 	OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 
 	for (i = 0; i < rowset.cRows; i++) {

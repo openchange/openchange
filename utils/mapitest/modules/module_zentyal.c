@@ -156,7 +156,7 @@ _PUBLIC_ bool mapitest_zentyal_1645(struct mapitest *mt)
 {
 	TALLOC_CTX			*mem_ctx;
 	struct nspi_context		*nspi_ctx;
-	uint32_t        		plDelta = 1;
+	int32_t				plDelta = 1;
 	enum MAPISTATUS	retval;
 
 	/* Sanity checks */

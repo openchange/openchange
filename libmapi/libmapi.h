@@ -90,7 +90,7 @@ __BEGIN_DECLS
 /* The following public definitions come from libmapi/nspi.c */
 struct nspi_context	*nspi_bind(TALLOC_CTX *, struct dcerpc_pipe *, struct cli_credentials *, uint32_t, uint32_t, uint32_t);
 enum MAPISTATUS		nspi_unbind(struct nspi_context *);
-enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, uint32_t *);
+enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, int32_t *);
 enum MAPISTATUS		nspi_QueryRows(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MIds, uint32_t, struct PropertyRowSet_r **);
 enum MAPISTATUS		nspi_SeekEntries(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct PropertyValue_r *, struct SPropTagArray *, struct PropertyTagArray_r *pMIds, struct PropertyRowSet_r **);
 enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, uint32_t ulRequested, struct PropertyRowSet_r **, struct PropertyTagArray_r **ppOutMIds);

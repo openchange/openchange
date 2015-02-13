@@ -521,14 +521,6 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
-	case PR_OBJECT_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = MAPI_MAILUSER;
-		return data;
-	case PR_DISPLAY_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = DT_MAILUSER;
-		return data;
 	case PR_SEND_RICH_INFO:
 		data = talloc_zero(mem_ctx, uint8_t);
 		*((uint8_t *)data) = false;
@@ -632,6 +624,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 			mvszA->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
 		}
 		data = (void *) mvszA;
+		break;
+	case PT_LONG:
+		ldb_val = ldb_msg_find_ldb_val(msg2, attribute);
+		if (!ldb_val) return NULL;
+		/*  There is duplication of code between ldb_msg_find_ldb_val and ldb_msg_find_attr_as_uint but we cannot afford to not discriminate between null value and default 0 value */
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = ldb_msg_find_attr_as_uint(msg2, attribute, 0);
 		break;
 	default:
 		OC_DEBUG(3, "Unsupported property type: 0x%x", (ulPropTag & 0xFFFF));
@@ -863,8 +862,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				lpProps.value.l = 0x0;
 				break;
 			case PidTagDisplayName:
-				/* This value is temporal to workaround PropertyRow_addprop internals */
-				/* It will be set to NULL aftr the call to PropertyRow_addprop */
+				/* FIXME: This value is temporal to workaround PropertyRow_addprop internals */
+				/* It will be set to NULL after the call to PropertyRow_addprop */
 				lpProps.value.lpszW = "t";
 				break;
 			case PR_EMS_AB_IS_MASTER:
@@ -874,7 +873,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				break;
 			}
 			PropertyRow_addprop(aRow, lpProps);
-			/* PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
+			/* FIXME: PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
 			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME ||
 			    SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME_UNICODE) {
 				aRow->lpProps[aRow->cValues - 1].value.lpszA = NULL;

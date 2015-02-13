@@ -2989,6 +2989,10 @@ _PUBLIC_ void emsmdbp_stream_write_buffer(TALLOC_CTX *mem_ctx, struct emsmdbp_st
 	uint32_t old_length;
 	uint8_t *old_data;
 
+        if (stream->position == 0) {
+                stream->buffer.length = 0;
+        }
+
 	new_position = stream->position + new_buffer.length;
 	if (new_position >= stream->buffer.length) {
 		old_length = stream->buffer.length;

@@ -95,6 +95,7 @@ struct EphemeralEntryID {
 
 #define	EMSABP_DN	"/guid=%08X%04X%04X%02X%02X%02X%02X%02X%02X%02X%02X"
 #define	EMSABP_ADDRTYPE	"EX"
+//#define	EMSABP_ADDRTYPE	"SMTP"
 
 /**
    NSPI PR_CONTAINER_FLAGS values

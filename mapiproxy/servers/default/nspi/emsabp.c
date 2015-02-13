@@ -522,14 +522,6 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
-	case PR_OBJECT_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = MAPI_MAILUSER;
-		return data;
-	case PR_DISPLAY_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = DT_MAILUSER;
-		return data;
 	case PR_SEND_RICH_INFO:
 		data = talloc_zero(mem_ctx, uint8_t);
 		*((uint8_t *)data) = false;
@@ -633,6 +625,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 			mvszA->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
 		}
 		data = (void *) mvszA;
+		break;
+	case PT_LONG:
+		ldb_val = ldb_msg_find_ldb_val(msg2, attribute);
+		if (!ldb_val) return NULL;
+		/*  There is duplication of code between ldb_msg_find_ldb_val and ldb_msg_find_attr_as_uint but we cannot afford to not discriminate between null value and default 0 value */
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = ldb_msg_find_attr_as_uint(msg2, attribute, 0);
 		break;
 	default:
 		DEBUG(3, ("[%s:%d]: Unsupported property type: 0x%x\n", __FUNCTION__, __LINE__,
@@ -1195,7 +1194,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}
 	} else {
-		fmt_str = talloc_strdup(mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		ret = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, pStat->ContainerID, &fmt_str);
 		attr = NULL;
 	}
 

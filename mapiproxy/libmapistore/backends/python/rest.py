@@ -224,14 +224,17 @@ class _RESTConn(object):
             return int(r.headers['x-mapistore-rowcount'])
         return 0
 
-    def get_attachments(self, uri, properties):
+    def get_attachments(self, uri, properties=None):
         """Get all attachments from one message.
         :param uri: path to the message on remote
         :param properties: list with the requested properties
         """
         req_uri = '%s%sattachments' % (self.base_url, uri)
-        req_props = ','.join(properties)
-        r = self.so.get(req_uri, params={'properties': req_props})
+        if properties is not None:
+            req_props = ','.join(properties)
+            r = self.so.get(req_uri, params={'properties': req_props})
+        else:
+            r = self.so.get(req_uri)
         atts = r.json()
         newlist = []
         for att in atts:
@@ -268,6 +271,7 @@ class _RESTConn(object):
                 self._encode_object_b64(rcp)
             msg["recipients"] = rcps
         headers = {'Content-Type': 'application/json'}
+        print msg
         r = self.so.post('%s/%s/' % (self.base_url, collection),
                          data=json.dumps(msg), headers=headers)
         return r.json()['id']
@@ -757,6 +761,9 @@ class MessageObject(object):
         self.attachment_ids = att_ids
         self.next_aid = 0  # Provisional AID
         logger.info('[PYTHON]:[%s] message.__init__' % BackendObject.name)
+        print "================================="
+        print self.cached_attachments
+        print "================================="
 
     def get_properties(self, properties):
         logger.info('[PYTHON]:[%s][%s] message.get_properties()' % (BackendObject.name, self.uri))
@@ -778,6 +785,7 @@ class MessageObject(object):
 
     def modify_recipients(self, recipients):
         logger.info('[PYTHON][%s][%s]: message.modify_recipients()' % (BackendObject.name, self.uri))
+        print recipients
         self.recipients = recipients
         return mapistore.errors.MAPISTORE_SUCCESS
 
@@ -804,6 +812,13 @@ class MessageObject(object):
         conn = _RESTConn.get_instance()
         collection = self._collection_from_messageClass(self.properties['PidTagMessageClass'])
         # Check if the message already exists
+        if len(self.cached_attachments):
+            self.properties['PidTagMessageFlags'] = self.properties['PidTagMessageFlags'] | 0x10
+            self.properties['PidTagHasAttachments'] = True
+
+        if not 'PidTagMessageSize' in self.properties:
+            self.properties['PidTagMessageSize'] = 0
+
         if self.uri is not None:
             # Update the message
             conn.update_message(self.uri, self.properties, self.recipients)
@@ -831,12 +846,15 @@ class MessageObject(object):
         for att in self.cached_attachments:
             # Check if the attachment already exists
             if att.att_id in self.attachment_ids:
+                print "############################"
+                print "############################"
+                print "############################"
+                print "############################"
                 att_uri = '/attachments/%d/' % att.att_id
                 conn.update_object(att_uri, att.properties)
             else:
                 # Create the attachment
-                parent_id = msgid
-                att.att_id = conn.create_attachment(parent_id, att.properties)
+                att.att_id = conn.create_attachment(msgid, att.properties)
                 self.attachment_ids.append(att.att_id)
         self.cached_attachments = []
         return mapistore.errors.MAPISTORE_SUCCESS
@@ -868,6 +886,11 @@ class MessageObject(object):
     def open_attachment(self, att_id):
         logger.info('[PYTHON][%s][%s]: message.open_attachment(aid=%d)' % (BackendObject.name, self.uri, att_id))
         if att_id not in self.attachment_ids:
+            print self.attachment_ids
+            # try to get the info from the cache: attachment not pushed, hence PR_ATTACH_NUM not id
+            if att_id <= len(self.cached_attachments):
+                return self.cached_attachments[att_id]
+            # otherwise just exit
             return mapistore.errors.MAPISTORE_ERR_NOT_FOUND
         conn = _RESTConn.get_instance()
         att_dict = conn.get_attachment('/attachments/%d/' % att_id)
@@ -886,7 +909,23 @@ class MessageObject(object):
         logger.info('[PYTHON][%s][%s]: message.get_child_count' % (BackendObject.name, self.uri))
         if table_type != mapistore.ATTACHMENT_TABLE:
             return 0
-        return len(self.attachment_ids)
+        print "[?] => get_child_count: %d" % len(self.cached_attachments)
+        print "[?] => get_child_count: %d" % len(self.attachment_ids)
+        if len(self.attachment_ids) > len(self.cached_attachments):
+            # CopyTo case
+            if self.uri is None:
+                return len(self.cached_attachments)
+            conn = _RESTConn.get_instance()
+            cached_attachments = conn.get_attachments(self.uri)
+            for properties in cached_attachments:
+                attachment = AttachmentObject(self, properties, properties['id'])
+                self.cached_attachments.append(attachment)
+
+            print "=========================="
+            print len(self.cached_attachments)
+            print self.cached_attachments
+            print "=========================="
+        return len(self.cached_attachments)
 
     def get_attachment_ids(self):
         logger.info('[PYTHON][%s][%s]: message.get_attachment_ids' % (BackendObject.name, self.uri))
@@ -895,6 +934,10 @@ class MessageObject(object):
     def get_attachment_table(self):
         table_type = mapistore.ATTACHMENT_TABLE
         table = TableObject(self, table_type)
+        self.next_aid = 0
+        print self.cached_attachments
+        if len(self.cached_attachments):
+            table.cached = True
         return (table, self.get_child_count(table_type))
 
 class AttachmentObject(object):
@@ -905,8 +948,23 @@ class AttachmentObject(object):
         self.att_id = aid
 
     def save(self):
-        if self.properties not in self.message.cached_attachments:
+        logger.info('[PYTHON]:[%s] attachment.save' % BackendObject.name)
+        print "================="
+        print self.message.cached_attachments
+        print "================="
+        if self.att_id is None or any(d.att_id == self.att_id for d in self.message.cached_attachments) is False:
+            logger.info('[PYTHON]: appending message to cached_attachments')
+            print self.properties
             self.message.cached_attachments.append(self)
+        else:
+            logger.info('[PYTHON]: message NOT added to cached_attachments')
+            print "self.att_id = %d was found in self.message.cached_attachments" % self.att_id
+            for d in self.message.cached_attachments:
+                print d.att_id
+
+        print "================="
+        print self.message.cached_attachments
+        print "================="
         return mapistore.errors.MAPISTORE_SUCCESS
 
     def get_properties(self, properties):
@@ -914,7 +972,7 @@ class AttachmentObject(object):
         return self.properties
 
     def set_properties(self, properties):
-        logger.info('[PYTHON]:[%s] message.set_properties()' % BackendObject.name)
+        logger.info('[PYTHON]:[%s] attachment.set_properties()' % BackendObject.name)
         self.properties.update(properties)
         return mapistore.errors.MAPISTORE_SUCCESS
 
@@ -926,6 +984,7 @@ class TableObject(object):
         self.restrictions = None
         self.sortorders = None
         self.columns = None
+        self.cached = False
 
     def set_columns(self, columns):
         logger.info('[PYTHON]:[%s] table.set_columns(%s)' % (BackendObject.name, columns))
@@ -1172,12 +1231,30 @@ class TableObject(object):
 
     def _get_row_attachments(self, row_no):
         logger.info('[PYTHON]:[%s] table.get_attachment_row(%d)' % (BackendObject.name, row_no))
-        assert row_no < len(self.parent.attachment_ids), "Index out of bounds row=%s" % row_no
-        # Fetch the entire attachment record
-        conn = _RESTConn.get_instance()
-        att_uri = '/attachments/%d/' % self.parent.attachment_ids[row_no]
-        att = conn.get_attachment(att_uri)
-        att['PidTagAttachNumber'] = att['id']
+        assert row_no < len(self.parent.cached_attachments), "Index out of bounds row=%s" % row_no
+
+        
+        if self.cached == True:
+            attachment = self.parent.cached_attachments[row_no]
+            att = attachment.properties
+            aid = attachment.att_id
+            if aid is None:
+                aid = self.parent.next_aid
+                self.parent.cached_attachments[row_no].att_id = aid
+                self.parent.next_aid = aid + 1
+        else:
+            # Fetch the entire attachment record
+            conn = _RESTConn.get_instance()
+            att_uri = '/attachments/%d/' % self.parent.attachment_ids[row_no]
+            att = conn.get_attachment(att_uri)
+            print att
+            print '===================='
+            aid = att['id']
+#            self.parent.cached_attachments.append(AttachmentObject(self, att, aid))
+
+        print aid
+        print att
+        att['PidTagAttachNumber'] = aid
         att['PidTagMid'] = self.parent.mid
         # Filter the requested properties
         att_row = {}

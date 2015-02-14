@@ -1,7 +1,7 @@
 #!/usr/bin/python
 # OpenChange python REST backend
 #
-# Copyright (C) Julien Kerihuel  <j.kerihuel@openchange.org> 2014
+# Copyright (C) Julien Kerihuel  <j.kerihuel@openchange.org> 2014-2015
 # Copyright (C) Kamen Mazdrashki <kamenim@openchange.org> 2014
 #
 # This program is free software; you can redistribute it and/or modify

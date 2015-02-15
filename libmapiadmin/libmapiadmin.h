@@ -38,6 +38,10 @@ struct mapiadmin_ctx;
 #include <talloc.h>
 #include <ldb.h>
 #include <tevent.h>
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
+#include <util/debug.h>
 
 /* OpenChange includes */
 #include "libmapi/libmapi.h"

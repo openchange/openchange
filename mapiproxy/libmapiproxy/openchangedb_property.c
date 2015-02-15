@@ -4,6 +4,7 @@
 #include "libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 
 struct pidtags {
 	uint32_t	proptag;

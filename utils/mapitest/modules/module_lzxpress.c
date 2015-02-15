@@ -23,6 +23,7 @@
 #include "utils/mapitest/proto.h"
 #include "gen_ndr/ndr_exchange.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 
 /**
    \file module_lzxpress.c

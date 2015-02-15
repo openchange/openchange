@@ -22,6 +22,8 @@
 #include "libmapi/libmapi.h"
 #include "rpcextract.h"
 
+#include <util/debug.h>
+
 #include <popt.h>
 #include <pcap.h>
 

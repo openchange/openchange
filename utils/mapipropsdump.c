@@ -21,6 +21,7 @@
 
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 #include "gen_ndr/ndr_exchange.h"
 #include <popt.h>
 #include <dlfcn.h>

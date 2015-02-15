@@ -24,6 +24,8 @@
 #include <popt.h>
 #include <talloc.h>
 
+#include <util/debug.h>
+
 static void popt_openchange_version_callback(poptContext con,
                                              enum poptCallbackReason reason,
                                              const struct poptOption *opt,

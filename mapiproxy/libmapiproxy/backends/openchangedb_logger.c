@@ -24,6 +24,7 @@
 #include "../libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 
 
 struct ocdb_logger_data {

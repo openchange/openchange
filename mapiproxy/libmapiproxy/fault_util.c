@@ -32,6 +32,7 @@
 #include "libmapi/libmapi_private.h"
 
 #include <samba/version.h>
+#include <util/debug.h>
 
 #include <execinfo.h>
 

@@ -679,6 +679,7 @@ def make_mapi_properties_file():
 	f.write("#include \"libmapi/libmapi.h\"\n")
 	f.write("#include \"libmapi/libmapi_private.h\"\n")
 	f.write("#include \"gen_ndr/ndr_exchange.h\"\n")
+	f.write("#include <util/debug.h>\n")
 	f.write("#include \"libmapi/property_tags.h\"\n\n")
 	f.write("struct mapi_proptags\n")
 	f.write("{\n")

@@ -21,6 +21,7 @@
 
 #include "openchangebackup.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 
 /**
  * Initialize OCB (OpenChange Backup) subsystem

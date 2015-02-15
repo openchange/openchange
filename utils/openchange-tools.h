@@ -23,6 +23,8 @@
 #define	__OPENCHANGETOOLS_H__
 
 #include <popt.h>
+#include <util/debug.h>
+
 
 #define	DEFAULT_PROFDB	"%s/.openchange/profiles.ldb"
 #define	DEFAULT_TDB	"%s/.openchange/index.tdb"

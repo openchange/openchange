@@ -30,6 +30,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/modules/mpm_cache.h"
+#include <util/debug.h>
 
 #include <sys/types.h>
 #include <sys/stat.h>

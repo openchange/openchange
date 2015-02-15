@@ -20,6 +20,7 @@
 */
 
 #include "libmapi/libmapi.h"
+#include <util/debug.h>
 
 void oc_log(enum oc_log_level level, const char *fmt_string, ...)
 {

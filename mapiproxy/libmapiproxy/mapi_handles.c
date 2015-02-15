@@ -29,7 +29,7 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include "libmapiproxy.h"
-
+#include <util/debug.h>
 
 /**
    \details Initialize MAPI handles context

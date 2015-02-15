@@ -24,8 +24,6 @@
 #include <popt.h>
 #include <talloc.h>
 
-#include <util/debug.h>
-
 static void popt_openchange_version_callback(poptContext con,
                                              enum poptCallbackReason reason,
                                              const struct poptOption *opt,
@@ -57,122 +55,119 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 	switch(NotificationType) {
 	case fnevNewMail:
 	case fnevNewMail|fnevMbit:
-		DEBUG(0, ("[+] New mail Received\n"));
+		OC_DEBUG(0, "[+] New mail Received");
 		break;
 	case fnevObjectCreated:
-		DEBUG(0, ("[+] Folder Created\n"));
+		OC_DEBUG(0, "[+] Folder Created");
 		break;
 	case fnevObjectDeleted:
-		DEBUG(0, ("[+] Folder Deleted\n"));
+		OC_DEBUG(0, "[+] Folder Deleted");
 		break;
 	case fnevObjectModified:
 	case fnevTbit|fnevObjectModified:
 	case fnevUbit|fnevObjectModified:
 	case fnevTbit|fnevUbit|fnevObjectModified:
-		DEBUG(0, ("[+] Folder Modified\n"));
+		OC_DEBUG(0, "[+] Folder Modified");
 		break;
 	case fnevObjectMoved:
-		DEBUG(0, ("[+] Folder Moved\n"));
+		OC_DEBUG(0, "[+] Folder Moved");
 		break;
 	case fnevObjectCopied:
-		DEBUG(0, ("[+] Folder Copied\n"));
+		OC_DEBUG(0, "[+] Folder Copied");
 		break;
 	case fnevSearchComplete:
-		DEBUG(0, ("[+] Search complete in search folder\n"));
+		OC_DEBUG(0, "[+] Search complete in search folder");
 		break;
 	case fnevTableModified:
 		htable = (struct HierarchyTableChange *) NotificationData;
-		DEBUG(0, ("[+] Hierarchy Table: "));
 		switch (htable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: ");
 			break;
 		}
 		break;
 	case fnevStatusObjectModified:
-		DEBUG(0, ("[+] ICS Notification\n"));
+		OC_DEBUG(0, "[+] ICS Notification");
 		break;
 	case fnevMbit|fnevObjectCreated:
-		DEBUG(0, ("[+] Message created\n"));
+		OC_DEBUG(0, "[+] Message created");
 		break;
 	case fnevMbit|fnevObjectDeleted:
-		DEBUG(0, ("[+] Message deleted\n"));
+		OC_DEBUG(0, "[+] Message deleted");
 	case fnevMbit|fnevObjectModified:
-		DEBUG(0, ("[+] Message modified\n"));
+		OC_DEBUG(0, "[+] Message modified");
 	case fnevMbit|fnevObjectMoved:
-		DEBUG(0, ("[+] Message moved\n"));
+		OC_DEBUG(0, "[+] Message moved");
 	case fnevMbit|fnevObjectCopied:
-		DEBUG(0, ("[+] Message copied\n"));
+		OC_DEBUG(0, "[+] Message copied");
 	case fnevMbit|fnevTableModified:
 		ctable = (struct ContentsTableChange *) NotificationData;
-		DEBUG(0, ("[+] Contents Table: "));
 		switch (ctable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Contents Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Contents Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Contents Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Contents Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Contents Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Contents Table: ");
 			break;
 		}
 		break;
 	case fnevMbit|fnevSbit|fnevObjectDeleted:
-		DEBUG(0, ("[+] A message is no longer part of a search folder\n"));
+		OC_DEBUG(0, "[+] A message is no longer part of a search folder");
 		break;
 	case fnevMbit|fnevSbit|fnevObjectModified:
-		DEBUG(0, ("[+] A property on a message in a search folder has changed\n"));
+		OC_DEBUG(0, "[+] A property on a message in a search folder has changed");
 	case fnevMbit|fnevSbit|fnevTableModified:
 		stable = (struct ContentsTableChange *) NotificationData;
-		DEBUG(0, ("[+] Search Table: "));
 		switch (stable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Search Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Search Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Search Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Search Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Search Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Search Table: ");
 			break;
 		}
 		break;
 	default:
-		printf("[+] Unsupported notification (0x%x)\n", NotificationType);
+		OC_DEBUG(0, "[+] Unsupported notification (0x%x)", NotificationType);
 		break;
 	}
 

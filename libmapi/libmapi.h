@@ -51,6 +51,7 @@
 #include <gen_ndr/property.h>
 
 #include "libmapi/version.h"
+#include "libmapi/oc_log.h"
 #include "libmapi/nspi.h"
 #include "libmapi/emsmdb.h"
 #include "libmapi/mapi_context.h"

@@ -19,14 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#include <stdbool.h>
-#include <stdint.h>
-#include <talloc.h>
-#include <stdio.h>
-#define _PUBLIC_
-#include <util/debug.h>
-
-#include "utils/oc_log.h"
+#include "libmapi/libmapi.h"
 
 void oc_log(enum oc_log_level level, const char *fmt_string, ...)
 {

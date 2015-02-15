@@ -22,8 +22,6 @@
 #include "libmapi/libmapi.h"
 #include "rpcextract.h"
 
-#include <util/debug.h>
-
 #include <popt.h>
 #include <pcap.h>
 
@@ -215,7 +213,7 @@ static void rip_file(int packet_num, char packet_type, char *proto, u_char *tcp)
 		opstr = GetMapiOpStr(*opnum);
 	asprintf(&filename, "%d_%s_%s_%s", packet_num, (packet_type == RPC_REQ)?"in":"out", proto, opstr);
 	if (verbose)
-		DEBUG(0, ("[INFO] Extracting data into file %s (size = %d bytes)\n", filename, *alloch));
+		OC_DEBUG(0, "[INFO] Extracting data into file %s (size = %d bytes)", filename, *alloch);
 	if (destdir) {
 		if (chdir(destdir) < 0)
 			perror("chdir");
@@ -234,7 +232,7 @@ static void rip_file(int packet_num, char packet_type, char *proto, u_char *tcp)
 	}
 
 	if (verbose) {
-		DEBUG(0, ("[INFO] Extraction accomplished\n"));
+		OC_DEBUG(0, "[INFO] Extraction accomplished");
 	}
 	last_opnum = *opnum;
 }
@@ -277,7 +275,7 @@ static void extr_cb(u_char *param, const struct pcap_pkthdr *header, const u_cha
 	packet_ether = (struct ether_header *)(data);
 	if (packet_ether->ether_type != ETHERTYPE_IPINV) {
 		if (verbose) {
-			DEBUG(0, ("[ERR] %d - Non IP Packet ... skipped\n", (i - 1)));
+			OC_DEBUG(0, "[ERR] %d - Non IP Packet ... skipped", (i - 1));
 		}
 		return;
 	}
@@ -285,13 +283,13 @@ static void extr_cb(u_char *param, const struct pcap_pkthdr *header, const u_cha
 	size = (header->caplen - sizeof(struct ether_header));
 	if (size < sizeof(struct ip))
 	{
-		DEBUG(0, ("[ERR] Packet %d : Uncomplete IP Header..\n", i - 1));
+		OC_DEBUG(0, "[ERR] Packet %d : Uncomplete IP Header..", i - 1);
 		return ;
 	}
 	packet_ip = (struct ip *)(data + sizeof(struct ether_header));
 	if ((packet_ip->ip_hl * 4) < sizeof (struct ip))
 	{
-		DEBUG(0, ("[ERR] Packet %d : IP Header error..\n", i - 1));
+		OC_DEBUG(0, "[ERR] Packet %d : IP Header error..", i - 1);
 		return ;
 	}
 	size = (header->caplen - sizeof(struct ether_header) - (packet_ip->ip_hl * 4));
@@ -343,16 +341,16 @@ static void extr_cb(u_char *param, const struct pcap_pkthdr *header, const u_cha
 			if (*packet_type == RPC_REQ)
 			{
 				if (verbose)
-					DEBUG(0, ("[INFO] Got endpoint mapper request on packet %d\n", i - 1));
+					OC_DEBUG(0, "[INFO] Got endpoint mapper request on packet %d", i - 1);
 
 				proto = rip_proto((u_char *)(const u_char *)data);
 				if (strcmp(proto, UNKNOWN_PROTO) == 0)
 					return ;
 				if (verbose)
-					DEBUG(0, ("[INFO] Query protocol %s\n", proto));
+					OC_DEBUG(0, "[INFO] Query protocol %s", proto);
 			} else {
 				if (verbose) {
-					DEBUG(0, ("[INFO] packet.type is not RPC_REQ but 0x%x\n", *packet_type));
+					OC_DEBUG(0, "[INFO] packet.type is not RPC_REQ but 0x%x", *packet_type);
 				}
 			}
 		}
@@ -360,14 +358,14 @@ static void extr_cb(u_char *param, const struct pcap_pkthdr *header, const u_cha
 			packet_type = (char *)((char *)packet_tcp + sizeof(struct tcphdr) + 2);
 			if (*packet_type == RPC_RESP) {
 				if (verbose)
-					DEBUG(0, ("[INFO] Got endpoint mapper response on packet %d\n", i - 1));
+					OC_DEBUG(0, "[INFO] Got endpoint mapper response on packet %d", i - 1);
 
 				binded = rip_port((u_char *)(const u_char *)data);
 				if (binded == 0) return;
 				endp_bind = 0;
 
 				if (verbose)
-					DEBUG(0, ("[INFO] Endpoint mapper response : %d\n", binded));
+					OC_DEBUG(0, "[INFO] Endpoint mapper response : %d", binded);
 
 				if (strcmp(proto, UNKNOWN_PROTO) == 0) return;
 				add_binded_port(proto, binded);
@@ -379,7 +377,7 @@ static void extr_cb(u_char *param, const struct pcap_pkthdr *header, const u_cha
 			return ;
 		if (init && (!no_hands) && FLWD_TSTRM && FLWD_DPORT && ACK_ONLY) {
 			if (verbose)
-				DEBUG(0, ("[INFO] Got end of handshake on packet %d\n", i - 1));
+				OC_DEBUG(0, "[INFO] Got end of handshake on packet %d", i - 1);
 
 			endp_bind = 1;
 			endp_deco = 0;
@@ -432,12 +430,12 @@ int main(int argc, const char *argv[])
 	}
 
 	if (!opt_pcap && !opt_int) {
-		DEBUG(0, ("[ERR] No device or file selected\n"));
+		OC_DEBUG(0, "[ERR] No device or file selected");
 		exit (1);
 	}
 
 	if (opt_pcap && opt_int) {
-		DEBUG(0, ("[ERR] Select either pcap file or device\n"));
+		OC_DEBUG(0, "[ERR] Select either pcap file or device");
 		exit (1);
 	}
 
@@ -447,16 +445,16 @@ int main(int argc, const char *argv[])
 	if (opt_pcap) {
 		desc_pkt = pcap_open_offline(opt_pcap, err_buff);
 		if (desc_pkt == NULL) {
-			DEBUG(0, ("[ERR] Error opening pcap file: %s\n", err_buff));
+			OC_DEBUG(0, "[ERR] Error opening pcap file: %s", err_buff);
 			exit (1);
 		}
 	} else {
 		desc_pkt = pcap_open_live(opt_int, SNAPLEN, IFF_PROMISC, TIMEOUT, err_buff);
 		if (desc_pkt == NULL) {
-			DEBUG(0, ("[ERR] Error opening interface: %s\n", err_buff));
+			OC_DEBUG(0, "[ERR] Error opening interface: %s", err_buff);
 			exit (1);
 		}
-		DEBUG(0, ("[INFO] Listening on device %s\n", opt_int));
+		OC_DEBUG(0, "[INFO] Listening on device %s", opt_int);
 	}
 
 	if (destdir) {
@@ -468,7 +466,7 @@ int main(int argc, const char *argv[])
 
 	if (pcap_loop(desc_pkt, -1, extr_cb, NULL) < 0)
 	{
-		DEBUG(0, ("[ERR] Capture Loop: %s\n", pcap_geterr(desc_pkt)));
+		OC_DEBUG(0, "[ERR] Capture Loop: %s", pcap_geterr(desc_pkt));
 		exit (1);
 	}
 	pcap_close(desc_pkt);

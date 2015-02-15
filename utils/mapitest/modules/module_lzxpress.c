@@ -93,7 +93,7 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	talloc_free(ndr_pull);
 	status = ndr_map_error2ntstatus(ndr_err);
 	if (NT_STATUS_IS_OK(status)) {
-		DEBUG(0, ("Success\n"));
+		OC_DEBUG(0, "Success");
 	}
 
 	/* Step 5. Recompress data */
@@ -117,19 +117,19 @@ _PUBLIC_ bool mapitest_lzxpress_validate_test_001(struct mapitest *mt)
 	talloc_free(ndr_comp);
 
 	/* Compare Outlook and openchange rgbIn compressed blob */
-	DEBUG(0, ("Outlook    compressed blob size = 0x%x\n", r.in.cbIn));
-	DEBUG(0, ("OpenChange compressed blob size = 0x%x\n", ndr_rgbIn->offset));
+	OC_DEBUG(0, "Outlook    compressed blob size = 0x%x", r.in.cbIn);
+	OC_DEBUG(0, "OpenChange compressed blob size = 0x%x", ndr_rgbIn->offset);
 	ret = true;
 	{
 		int i;
 		int min;
 
 		min = (ndr_rgbIn->offset >= r.in.cbIn) ? r.in.cbIn : ndr_rgbIn->offset;
-		DEBUG(0, ("Comparing Outlook and OpenChange blobs on 0x%x bytes\n", min));
+		OC_DEBUG(0, "Comparing Outlook and OpenChange blobs on 0x%x bytes", min);
 		for (i = 0; i < min; i++) {
 			if (r.in.rgbIn[i] != ndr_rgbIn->data[i]) {
-				DEBUG(0, ("Bytes differs at offset 0x%x: Outlook (0x%.2x) OpenChange (0x%.2x)\n", 
-					  i, r.in.rgbIn[i], ndr_rgbIn->data[i]));
+				OC_DEBUG(0, "Bytes differs at offset 0x%x: Outlook (0x%.2x) OpenChange (0x%.2x)",
+					  i, r.in.rgbIn[i], ndr_rgbIn->data[i]);
 				ret = false;
 			}
 		}

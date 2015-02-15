@@ -110,7 +110,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	emsabp_ctx->samdb_ctx = samdb_init(lp_ctx);
 	if (!emsabp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
-		DEBUG(0, ("[nspi] Connection to \"sam.ldb\" failed\n"));
+		OC_DEBUG(0, "[nspi] Connection to \"sam.ldb\" failed");
 		return NULL;
 	}
 
@@ -122,7 +122,7 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	emsabp_ctx->ttdb_ctx = emsabp_tdb_init_tmp(emsabp_ctx->mem_ctx);
 	if (!emsabp_ctx->ttdb_ctx) {
 		talloc_free(mem_ctx);
-		OC_PANIC(false , ("[nspi] Unable to create on-memory TDB database\n"));
+		OC_PANIC(false, ("[nspi] Unable to create on-memory TDB database\n"));
 		return NULL;
 	}
 
@@ -231,16 +231,15 @@ _PUBLIC_ bool emsabp_verify_user(struct dcesrv_call_state *dce_call,
 	// cache both account_name and organization upon success
 	exdn = ldb_msg_find_attr_as_string(ldb_msg, "legacyExchangeDN", NULL);
 	if (exdn == NULL) {
-		DEBUG(0, ("[%s:%d]: User %s doesn't have legacyExchangeDN attribute\n",
-			  __FUNCTION__, __LINE__, username));
+		OC_DEBUG(0, "User %s doesn't have legacyExchangeDN attribute", username);
 		retval = MAPI_E_NOT_FOUND;
 		goto end;
 	}
 	exdn0 = strstr(exdn, "/o=");
 	exdn1 = strstr(exdn, "/ou=");
 	if (!exdn0 || !exdn1) {
-		DEBUG(0, ("[%s:%d]: User %s has bad formed legacyExchangeDN attribute: %s\n",
-			  __FUNCTION__, __LINE__, username, exdn));
+		OC_DEBUG(0, "User %s has bad formed legacyExchangeDN attribute: %s\n",
+			  username, exdn);
 		retval = MAPI_E_NOT_FOUND;
 		goto end;
 	}
@@ -635,8 +634,7 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 		data = (void *) mvszA;
 		break;
 	default:
-		DEBUG(3, ("[%s:%d]: Unsupported property type: 0x%x\n", __FUNCTION__, __LINE__,
-			  (ulPropTag & 0xFFFF)));
+		OC_DEBUG(3, "Unsupported property type: 0x%x", (ulPropTag & 0xFFFF));
 		break;
 	}
 

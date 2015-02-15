@@ -315,11 +315,11 @@ _PUBLIC_ enum MAPISTATUS ocpf_set_SPropValue(TALLOC_CTX *mem_ctx,
 					   (SPropTagArray->aulPropTag[i] & 0xFFFF) == PT_ERROR) {
 					/* It's an unsupported property, log it */
 					if (nel->OOM) {
-						DEBUG(0, ("Ignoring unsupported property %s:%s\n", nel->oleguid, nel->OOM));
+						oc_log(OC_LOG_WARNING, "Ignoring unsupported property %s:%s", nel->oleguid, nel->OOM);
 					} else if (nel->mnid_id) {
-						DEBUG(0, ("Ignoring unsupported property %s:0x%04X\n", nel->oleguid, nel->mnid_id));
+						oc_log(OC_LOG_WARNING, "Ignoring unsupported property %s:0x%04X", nel->oleguid, nel->mnid_id);
 					} else if (nel->mnid_string) {
-						DEBUG(0, ("Ignoring unsupported property %s:%s\n", nel->oleguid, nel->mnid_string));
+						oc_log(OC_LOG_WARNING, "Ignoring unsupported property %s:%s", nel->oleguid, nel->mnid_string);
 					}
 				} else {
 					ctx->lpProps = add_SPropValue(mem_ctx, ctx->lpProps, &ctx->cValues,

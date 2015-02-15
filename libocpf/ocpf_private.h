@@ -27,7 +27,6 @@
 #ifndef _PUBLIC_ /* For util/debug.h */
 #define _PUBLIC_
 #endif
-#include <util/debug.h>
 #include "utils/dlinklist.h"
 
 #ifndef HAVE_COMPARISON_FN_T

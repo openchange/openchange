@@ -19,7 +19,7 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef _OC_LOG_H
+#ifndef _OC_LOG_H_
 #define _OC_LOG_H_
 
 #include <stdarg.h>

@@ -51,17 +51,17 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 
 	if (openchangedb_backend == NULL) {
 		retval = MAPI_E_NOT_INITIALIZED;
-		DEBUG(0, ("No OpenChangeDB backend specified, please provision.\n"));
+		oc_log(OC_LOG_ERROR, "No OpenChangeDB backend specified, please provision.");
 	} else if (strncmp(openchangedb_backend, "mysql:", strlen("mysql:")) == 0) {
-		DEBUG(0, ("Using MySQL backend for openchangedb: %s\n", openchangedb_backend));
+		oc_log(OC_LOG_ERROR, "Using MySQL backend for openchangedb: %s", openchangedb_backend);
 		retval = openchangedb_mysql_initialize(mem_ctx, lp_ctx, oc_ctx);
 	} else if (strncmp(openchangedb_backend, "ldb:", strlen("ldb:")) == 0) {
-		DEBUG(0, ("Using default backend for openchangedb\n"));
+		oc_log(OC_LOG_INFO, "Using ldb backend for openchangedb");
 		retval = openchangedb_ldb_initialize(mem_ctx,
 						     lpcfg_private_dir(lp_ctx),
 						     oc_ctx);
 	} else {
-		DEBUG(0, ("Unknown backend in URI %s\n", openchangedb_backend));
+		oc_log(OC_LOG_ERROR, "Unknown backend in URI %s", openchangedb_backend);
 		retval = MAPI_E_NOT_FOUND;
 	}
 
@@ -72,7 +72,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_initialize(TALLOC_CTX *mem_ctx,
 	if (lpcfg_parm_bool(lp_ctx, NULL, "mapiproxy", "openchangedb_logger", false)) {
 		const char *prefix = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy",
 						       "openchangedb_logger_prefix");
-		DEBUG(0, ("Loading OpenchangeDB logger module\n"));
+		OC_DEBUG(0, "Loading OpenchangeDB logger module\n");
 		retval = openchangedb_logger_initialize(mem_ctx, 0, prefix, *oc_ctx, oc_ctx);
 	}
 
@@ -537,8 +537,7 @@ _PUBLIC_ char *openchangedb_set_folder_property_data(TALLOC_CTX *mem_ctx,
 		*(data + data_len) = 0;
 		break;
 	default:
-		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n",
-		          __FUNCTION__, __LINE__, (value->ulPropTag & 0xFFFF)));
+		OC_DEBUG(0, "Property Type 0x%.4x not supported", (value->ulPropTag & 0xFFFF));
 		data = NULL;
 	}
 
@@ -989,7 +988,7 @@ _PUBLIC_ bool openchangedb_is_public_folder_id(struct openchangedb_context *oc_c
 					       uint64_t fid)
 {
 	if (!oc_ctx) {
-		DEBUG(0, ("Bad parameters when calling openchangedb_is_public_folder_id\n"));
+		OC_DEBUG(0, "Bad parameters when calling openchangedb_is_public_folder_id");
 		return false;
 	}
 	return oc_ctx->is_public_folder_id(oc_ctx, fid);
@@ -1022,8 +1021,7 @@ _PUBLIC_ enum MAPISTATUS openchangedb_get_indexing_url(struct openchangedb_conte
 	if (*indexing_url == NULL) {
 		return MAPI_E_NOT_FOUND;
 	} else if (!*indexing_url[0]) {
-		DEBUG(3, ("[%s:%d]: Invalid empty indexing url for user %s\n",
-			  __FUNCTION__, __LINE__, username));
+		OC_DEBUG(3, "Invalid empty indexing url for user %s", username);
 		return MAPI_E_NOT_FOUND;
 	}
 
@@ -1043,7 +1041,7 @@ _PUBLIC_ bool openchangedb_set_locale(struct openchangedb_context *oc_ctx,
 				      const char *username, uint32_t lcid)
 {
 	if (!oc_ctx || !username) {
-		DEBUG(0, ("Bad parameters when calling openchangedb_set_locale\n"));
+		OC_DEBUG(0, "Bad parameters when calling openchangedb_set_locale");
 		return false;
 	}
 	return oc_ctx->set_locale(oc_ctx, username, lcid);
@@ -1067,11 +1065,11 @@ _PUBLIC_ const char **openchangedb_get_folders_names(TALLOC_CTX *mem_ctx,
 						     const char *type)
 {
 	if (!oc_ctx || !locale || !type) {
-		DEBUG(0, ("Bad parameters when calling openchangedb_get_folders_names\n"));
+		OC_DEBUG(0, "Bad parameters when calling openchangedb_get_folders_names");
 		return NULL;
 	}
 	if (strcmp("special_folders", type) != 0 && strcmp("folders", type) != 0) {
-		DEBUG(0, ("Bad type parameter (%s) for openchangedb_get_folders_names\n", type));
+		OC_DEBUG(0, "Bad type parameter (%s) for openchangedb_get_folders_names", type);
 		return NULL;
 	}
 	return oc_ctx->get_folders_names(mem_ctx, oc_ctx, locale, type);

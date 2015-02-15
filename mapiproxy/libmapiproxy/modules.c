@@ -17,9 +17,9 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
-#include <util/debug.h>
 #include <dlfcn.h>
 #include <sys/types.h>
 #include <dirent.h>
@@ -39,16 +39,15 @@ static openchange_plugin_init_fn load_plugin(const char *path)
 	error = dlerror();
 
 	if (handle == NULL) {
-		DEBUG(0, ("Error loading plugin '%s': %s\n", path, error ? error : ""));
+		oc_log(OC_LOG_ERROR, "Error loading plugin '%s': %s", path, error ? error : "");
 		return NULL;
 	}
 
 	init_fn = (openchange_plugin_init_fn)dlsym(handle, SAMBA_INIT_MODULE);
 
 	if (init_fn == NULL) {
-		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  SAMBA_INIT_MODULE, path, dlerror()));
-		DEBUG(1, ("Loading plugin '%s' failed\n", path));
+		oc_log(OC_LOG_ERROR, "Unable to find %s() in %s: %s",
+			  SAMBA_INIT_MODULE, path, dlerror());
 		dlclose(handle);
 		return NULL;
 	}

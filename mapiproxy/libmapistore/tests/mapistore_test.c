@@ -24,7 +24,6 @@
 #include <talloc.h>
 #include <popt.h>
 #include <param.h>
-#include <util/debug.h>
 
 /**
    \file mapistore_test.c

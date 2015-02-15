@@ -487,9 +487,9 @@ _PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_con
 	for (el = mstore_ctx->subscriptions; el; el = el->next) {
 		if ((el->subscription->handle == identifier) &&
 		    (el->subscription->notification_types == NotificationFlags)) {
-			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
-			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
-			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			OC_DEBUG(0, "*** DELETING SUBSCRIPTION ***");
+			OC_DEBUG(0, "subscription: handle = 0x%x", el->subscription->handle);
+			OC_DEBUG(0, "subscription: types = 0x%x", el->subscription->notification_types);
 #if 0
 			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
 			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));

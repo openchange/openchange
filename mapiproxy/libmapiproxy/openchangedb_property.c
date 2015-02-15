@@ -4,7 +4,6 @@
 #include "libmapiproxy.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include <util/debug.h>
 
 struct pidtags {
 	uint32_t	proptag;
@@ -609,7 +608,7 @@ _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
 			return pidtags[i].pidtag;
 		}
 	}
-	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\n", __FUNCTION__, __LINE__, proptag));
+	OC_DEBUG(0, "Unsupported property tag '0x%.8x'", proptag);
 
 	return NULL;
 }

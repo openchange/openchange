@@ -33,6 +33,7 @@
 #include <dcerpc.h>
 #include <param.h>
 
+#include "libmapi/oc_log.h"
 #include "gen_ndr/exchange.h"
 
 #ifndef	__BEGIN_DECLS

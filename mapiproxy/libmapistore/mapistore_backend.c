@@ -33,7 +33,6 @@
 #include "mapistore_private.h"
 #include "utils/dlinklist.h"
 
-#include <util/debug.h>
 
 /**
    \file mapistore_backend.c
@@ -68,7 +67,7 @@ _PUBLIC_ enum mapistore_error mapistore_backend_register(const void *_backend)
 		if (backends[i].backend && backend && 
 		    backend->backend.name && backends[i].backend->backend.name &&
 		    !strcmp(backends[i].backend->backend.name, backend->backend.name)) {
-			DEBUG(3, ("MAPISTORE backend '%s' already registered\n", backend->backend.name));
+			OC_DEBUG(3, "MAPISTORE backend '%s' already registered", backend->backend.name);
 			return MAPISTORE_SUCCESS;
 		}
 	}
@@ -83,7 +82,7 @@ _PUBLIC_ enum mapistore_error mapistore_backend_register(const void *_backend)
 
 	num_backends++;
 
-	DEBUG(3, ("MAPISTORE backend '%s' registered\n", backend->backend.name));
+	OC_DEBUG(3, "MAPISTORE backend '%s' registered", backend->backend.name);
 
 	return MAPISTORE_SUCCESS;
 }
@@ -142,16 +141,16 @@ static init_backend_fn load_backend(const char *path)
 
 	handle = dlopen(path, RTLD_NOW);
 	if (handle == NULL) {
-		DEBUG(0, ("Unable to open %s: %s\n", path, dlerror()));
+		OC_DEBUG(0, "Unable to open %s: %s", path, dlerror());
 		return NULL;
 	}
 
 	init_fn = dlsym(handle, MAPISTORE_INIT_MODULE);
 
 	if (init_fn == NULL) {
-		DEBUG(0, ("Unable to find %s() in %s: %s\n",
-			  MAPISTORE_INIT_MODULE, path, dlerror()));
-		DEBUG(1, ("Loading mapistore backend '%s' failed\n", path));
+		OC_DEBUG(0, "Unable to find %s() in %s: %s",
+			  MAPISTORE_INIT_MODULE, path, dlerror());
+		OC_DEBUG(1, "Loading mapistore backend '%s' failed", path);
 		dlclose(handle);
 		return NULL;
 	}
@@ -274,7 +273,7 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 	talloc_free(ret);
 
 	if (num_backends == 0) {
-		DEBUG(0, ("No mapistore backends available (using backend path '%s').\n", path));
+		OC_DEBUG(0, "No mapistore backends available (using backend path '%s').", path);
 		return MAPISTORE_ERR_BACKEND_INIT;
 	}
 
@@ -282,9 +281,9 @@ enum mapistore_error mapistore_backend_init(TALLOC_CTX *mem_ctx, const char *pat
 		if (backends[i].backend) {
 			retval = backends[i].backend->backend.init();
 			if (retval != MAPISTORE_SUCCESS) {
-				DEBUG(1, ("[!] MAPISTORE backend '%s' initialization failed\n", backends[i].backend->backend.name));
+				OC_DEBUG(1, "[!] MAPISTORE backend '%s' initialization failed", backends[i].backend->backend.name);
 			} else {
-				DEBUG(3, ("MAPISTORE backend '%s' loaded\n", backends[i].backend->backend.name));
+				OC_DEBUG(3, "MAPISTORE backend '%s' loaded", backends[i].backend->backend.name);
 			}
 		}
 	}
@@ -342,7 +341,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 	void				*backend_object = NULL;
 	int				i;
 
-	DEBUG(5, ("namespace is %s and backend_uri is '%s'\n", namespace, uri));
+	OC_DEBUG(5, "namespace is %s and backend_uri is '%s'", namespace, uri);
 
 	context = talloc_zero(NULL, struct backend_context);
 
@@ -360,7 +359,7 @@ enum mapistore_error mapistore_backend_create_context(TALLOC_CTX *mem_ctx, struc
 	}
 
 	if (found == false) {
-		DEBUG(0, ("MAPISTORE: no backend with namespace '%s' is available\n", namespace));
+		OC_DEBUG(0, "MAPISTORE: no backend with namespace '%s' is available", namespace);
 		retval = MAPISTORE_ERR_NOT_FOUND; 
 		goto end;
 	}
@@ -529,7 +528,7 @@ enum mapistore_error mapistore_backend_get_path(struct backend_context *bctx, TA
 
 	if (ret == MAPISTORE_SUCCESS) {
 		if (!bpath) {
-			DEBUG(3, ("%s: Mapistore backend return SUCCESS, but path url is NULL\n", __location__));
+			OC_DEBUG(3, "Mapistore backend return SUCCESS, but path url is NULL");
 			return MAPISTORE_ERR_INVALID_DATA;
 		}
 		*path = talloc_asprintf(mem_ctx, "%s%s", bctx->backend->backend.namespace, bpath);

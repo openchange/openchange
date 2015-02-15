@@ -22,7 +22,6 @@
 #include "mysql.h"
 
 #include <time.h>
-#include <util/debug.h>
 #include "ccan/htable/htable.h"
 #include "ccan/hash/hash.h"
 #include "libmapi/mapicode.h"
@@ -69,7 +68,7 @@ void close_all_connections(void)
 
 	entry = htable_first(&ht, &i);
 	while (entry) {
-		DEBUG(3, ("Closing %s\n", entry->connection_string));
+		OC_DEBUG(3, "Closing %s", entry->connection_string);
 		mysql_close(entry->conn);
 		entry = htable_next(&ht, &i);
 	}
@@ -213,7 +212,7 @@ MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 
 	retval = htable_get(&ht, hash_string(connection_string), _ht_cmp, connection_string);
 	if (retval) {
-		DEBUG(5, ("[MYSQL] Found connection, reusing it %"PRIu32"\n", hash_string(connection_string)));
+		OC_DEBUG(5, "[MYSQL] Found connection, reusing it %"PRIu32, hash_string(connection_string));
 		*conn = retval->conn;
 		return *conn;
 	}
@@ -224,7 +223,7 @@ MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 	parsed = parse_connection_string(mem_ctx, connection_string,
 					 &host, &port, &user, &passwd, &db);
 	if (!parsed) {
-		DEBUG(1, ("[MYSQL] Wrong connection string %s\n", connection_string));
+		OC_DEBUG(1, "[MYSQL] Wrong connection string %s", connection_string);
 		*conn = NULL;
 		goto end;
 	}
@@ -233,30 +232,30 @@ MYSQL *create_connection(const char *connection_string, MYSQL **conn)
 
 	reconnect = true;
 	if (mysql_options(*conn, MYSQL_OPT_RECONNECT, &reconnect)) {
-		DEBUG(1, ("[MYSQL] Can't set MYSQL_OPT_RECONNECT option"));
+		OC_DEBUG(1, "[MYSQL] Can't set MYSQL_OPT_RECONNECT option");
 	}
 
 	// First try to connect to the database, if it fails try to create it
 	if (mysql_real_connect(*conn, host, user, passwd, db, port, NULL, 0)) {
-		DEBUG(5, ("[MYSQL] Connection done\n"));
+		OC_DEBUG(5, "[MYSQL] Connection done");
 		goto connected;
 	}
 
 	// Try to create database
 	if (!mysql_real_connect(*conn, host, user, passwd, NULL, port, NULL, 0)) {
 		// Nop
-		DEBUG(1, ("[MYSQL] Can't connect to server using %s, error: %s\n",
-			  connection_string, mysql_error(*conn)));
+		OC_DEBUG(1, "[MYSQL] Can't connect to server using %s, error: %s",
+			  connection_string, mysql_error(*conn));
 		mysql_close(*conn);
 		*conn = NULL;
 		goto end;
 	} else {
-		DEBUG(5, ("[MYSQL] Connection done, let's create the database\n"));
+		OC_DEBUG(5, "[MYSQL] Connection done, let's create the database");
 		// Connect it!, let's try to create database
 		sql = talloc_asprintf(mem_ctx, "CREATE DATABASE %s", db);
 		if (mysql_query(*conn, sql) != 0 || mysql_select_db(*conn, db) != 0) {
-			DEBUG(1, ("[MYSQL] Can't connect to server using %s, error: %s\n",
-				  connection_string, mysql_error(*conn)));
+			OC_DEBUG(1, "[MYSQL] Can't connect to server using %s, error: %s",
+				  connection_string, mysql_error(*conn));
 			mysql_close(*conn);
 			*conn = NULL;
 			goto end;
@@ -270,9 +269,9 @@ connected:
 	entry->conn = *conn;
 	// Store the new connection in our table
 	if (!htable_add(&ht, hash_string(connection_string), entry)) {
-		DEBUG(1, ("[MYSQL] ERROR adding new connection to internal pool of connections\n"));
+		OC_DEBUG(1, "[MYSQL] ERROR adding new connection to internal pool of connections");
 	} else {
-		DEBUG(5, ("[MYSQL] Stored new connection %"PRIu32"\n", hash_string(connection_string)));
+		OC_DEBUG(5, "[MYSQL] Stored new connection %"PRIu32, hash_string(connection_string));
 	}
 
 end:
@@ -292,7 +291,7 @@ enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 
 	clock_gettime(CLOCK_MONOTONIC, &start);
 	if (mysql_query(conn, sql) != 0) {
-		DEBUG(3, ("Error on query `%s`: %s\n", sql, mysql_error(conn)));
+		OC_DEBUG(3, "Error on query `%s`: %s", sql, mysql_error(conn));
 		return MYSQL_ERROR;
 	}
 	clock_gettime(CLOCK_MONOTONIC, &end);
@@ -301,8 +300,8 @@ enum MYSQLRESULT execute_query(MYSQL *conn, const char *sql)
 	if (seconds_spent > THRESHOLD_SLOW_QUERIES) {
 		printf("MySQL slow query!\n"
 		       "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
-		DEBUG(5, ("MySQL slow query!\n"
-			  "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent));
+		OC_DEBUG(5, "MySQL slow query!"
+			  "\tQuery: `%s`\n\tTime: %.3f\n", sql, seconds_spent);
 	}
 	return MYSQL_SUCCESS;
 }
@@ -314,7 +313,7 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 	enum MYSQLRESULT ret;
 
 	if (res == NULL) {
-		DEBUG(0, ("Bad parameters when calling select_without_fetch\n"));
+		OC_DEBUG(0, "Bad parameters when calling select_without_fetch");
 		return MYSQL_ERROR;
 	}
 
@@ -326,8 +325,8 @@ enum MYSQLRESULT select_without_fetch(MYSQL *conn, const char *sql,
 
 	*res = mysql_store_result(conn);
 	if (*res == NULL) {
-		DEBUG(0, ("Error getting results of `%s`: %s\n", sql,
-			  mysql_error(conn)));
+		OC_DEBUG(0, "Error getting results of `%s`: %s", sql,
+			  mysql_error(conn));
 		return MYSQL_ERROR;
 	}
 
@@ -379,8 +378,8 @@ enum MYSQLRESULT select_all_strings(TALLOC_CTX *mem_ctx, MYSQL *conn,
 		for (i = 0; i < results->cValues; i++) {
 			MYSQL_ROW row = mysql_fetch_row(res);
 			if (row == NULL) {
-				DEBUG(0, ("Error getting row %d of `%s`: %s\n", i, sql,
-					  mysql_error(conn)));
+				OC_DEBUG(0, "Error getting row %d of `%s`: %s", i, sql,
+					  mysql_error(conn));
 				mysql_free_result(res);
 				return MYSQL_ERROR;
 			}
@@ -410,8 +409,8 @@ enum MYSQLRESULT select_first_string(TALLOC_CTX *mem_ctx, MYSQL *conn,
 
 	MYSQL_ROW row = mysql_fetch_row(res);
 	if (row == NULL) {
-		DEBUG(0, ("Error getting row of `%s`: %s\n", sql,
-			  mysql_error(conn)));
+		OC_DEBUG(0, "Error getting row of `%s`: %s", sql,
+			  mysql_error(conn));
 		return MYSQL_ERROR;
 	}
 
@@ -549,7 +548,7 @@ bool convert_string_to_ull(const char *str, uint64_t *ret)
 		if (aux != NULL && *aux == '\0') {
 			retval = true;
 		} else {
-			DEBUG(1, ("ERROR converting %s into ull\n", str));
+			OC_DEBUG(1, "ERROR converting %s into ull", str);
 		}
 	}
 

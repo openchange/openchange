@@ -29,7 +29,6 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
 #include "libmapiproxy.h"
-#include <util/debug.h>
 
 /**
    \details Initialize MAPI handles context
@@ -171,8 +170,8 @@ static enum MAPISTATUS mapi_handles_tdb_free(struct mapi_handles_context *handle
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_MODIFY);
 	talloc_free(mem_ctx);
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to create 0x%x record: %s\n", __FUNCTION__, __LINE__,
-			  handle, tdb_errorstr(handles_ctx->tdb_ctx)));
+		OC_DEBUG(3, "Unable to create 0x%x record: %s\n",
+			  handle, tdb_errorstr(handles_ctx->tdb_ctx));
 		return MAPI_E_CORRUPT_STORE;
 	}
 
@@ -214,10 +213,10 @@ static enum MAPISTATUS mapi_handles_tdb_update(struct mapi_handles_context *hand
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_MODIFY);
 	talloc_free(mem_ctx);
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to update 0x%x record: %s\n", __FUNCTION__, __LINE__,
-			  handle, tdb_errorstr(handles_ctx->tdb_ctx)));
+		OC_DEBUG(3, "Unable to update 0x%x record: %s\n",
+			  handle, tdb_errorstr(handles_ctx->tdb_ctx));
 
-		return MAPI_E_CORRUPT_STORE;	
+		return MAPI_E_CORRUPT_STORE;
 	}
 
 	return MAPI_E_SUCCESS;
@@ -289,7 +288,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	/* Step 1. Seek the TDB database for the first free record */
 	ret = tdb_traverse(handles_ctx->tdb_ctx, mapi_handles_traverse_null, (void *)&handle);
 	if (ret > -1 && handle > 0) {
-		DEBUG(5, ("We have found free record 0x%x\n", handle));
+		OC_DEBUG(5, "We have found free record 0x%x", handle);
 		retval = mapi_handles_tdb_update(handles_ctx, handle, container_handle);
 		OPENCHANGE_RETVAL_IF(retval, retval, mem_ctx);
 		
@@ -325,8 +324,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 
 	ret = tdb_store(handles_ctx->tdb_ctx, key, dbuf, TDB_INSERT);
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to create 0x%x record: %s\n", __FUNCTION__, __LINE__,
-			  handles_ctx->last_handle, tdb_errorstr(handles_ctx->tdb_ctx)));
+		OC_DEBUG(3, "Unable to create 0x%x record: %s",
+			  handles_ctx->last_handle, tdb_errorstr(handles_ctx->tdb_ctx));
 		talloc_free(mem_ctx);
 
 		return MAPI_E_CORRUPT_STORE;
@@ -345,7 +344,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_add(struct mapi_handles_context *handles_c
 	*rec = el;
 	DLIST_ADD_END(handles_ctx->handles, el, struct mapi_handles *);
 
-	DEBUG(5, ("handle 0x%.2x is a father of 0x%.2x\n", container_handle, el->handle));
+	OC_DEBUG(5, "handle 0x%.2x is a father of 0x%.2x", container_handle, el->handle);
 	handles_ctx->last_handle += 1;
 	talloc_free(mem_ctx);
 
@@ -427,7 +426,7 @@ static int mapi_handles_traverse_delete(TDB_CONTEXT *tdb_ctx,
 
 	if (dbuf.dptr && strlen(container_handle_str) == dbuf.dsize && strncmp((const char *)dbuf.dptr, container_handle_str, dbuf.dsize) == 0) {
 		handle_str = talloc_strndup(mem_ctx, (char *)key.dptr, key.dsize);
-		DEBUG(5, ("handles being released must NOT have child handles attached to them (%s is a child of %s)\n", handle_str, container_handle_str));
+		OC_DEBUG(5, "handles being released must NOT have child handles attached to them (%s is a child of %s)", handle_str, container_handle_str);
 		handle = strtol((const char *) handle_str, NULL, 16);
 		/* abort(); */
 		/* DEBUG(5, ("deleting child handle: %d, %s\n", handle, handle_str)); */
@@ -467,8 +466,8 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *handle
 	OPENCHANGE_RETVAL_IF(!handles_ctx->tdb_ctx, MAPI_E_NOT_INITIALIZED, NULL);
 	OPENCHANGE_RETVAL_IF(handle == MAPI_HANDLES_RESERVED, MAPI_E_INVALID_PARAMETER, NULL);
 
-	DEBUG(4, ("[%s:%d]: Deleting MAPI handle 0x%x (handles_ctx: %p, tdb_ctx: %p)\n", __FUNCTION__, __LINE__,
-		  handle, handles_ctx, handles_ctx->tdb_ctx));
+	OC_DEBUG(4, "Deleting MAPI handle 0x%x (handles_ctx: %p, tdb_ctx: %p)",
+		  handle, handles_ctx, handles_ctx->tdb_ctx);
 
 	mem_ctx = talloc_named(NULL, 0, "mapi_handles_delete");
 
@@ -505,7 +504,7 @@ _PUBLIC_ enum MAPISTATUS mapi_handles_delete(struct mapi_handles_context *handle
 
 	talloc_free(mem_ctx);
 
-	DEBUG(4, ("[%s:%d]: Deleting MAPI handle 0x%x COMPLETE\n", __FUNCTION__, __LINE__, handle));
+	OC_DEBUG(4, "Deleting MAPI handle 0x%x COMPLETE", handle);
 
 	return MAPI_E_SUCCESS;
 }

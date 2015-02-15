@@ -25,10 +25,10 @@
    \brief Downgrade EMSMDB protocol version EcDoConnect/EcDoRpc
  */
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/dcesrv_mapiproxy_proto.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
-#include <util/debug.h>
 
 
 /**
@@ -140,7 +140,7 @@ NTSTATUS samba_init_module(void)
 	/* Register ourselves with the MAPIPROXY subsystem */
 	ret = mapiproxy_module_register(&module);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Failed to register the 'downgrade' mapiproxy module!\n"));
+		OC_DEBUG(0, "Failed to register the 'downgrade' mapiproxy module!");
 		return ret;
 	}
 	

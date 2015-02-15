@@ -196,10 +196,10 @@ static void parse_header(uint8_t *header_data, lzfuheader *header)
 	LE32_CPU(header->dwCRC);
 
 	/*
-	DEBUG(2, ("COMPSIZE = 0x%x\n", header->cbSize));
-	DEBUG(2, ("RAWSIZE = 0x%x\n", header->cbRawSize));
-	DEBUG(2, ("COMPTYPE = 0x%08x\n", header->dwMagic)); // TODO: make this look like MS-OXRTFCP examples
-	DEBUG(2, ("CRC = 0x%08x\n", header->dwCRC));
+	OC_DEBUG(2, ("COMPSIZE = 0x%x", header->cbSize);
+	OC_DEBUG(2, ("RAWSIZE = 0x%x", header->cbRawSize);
+	OC_DEBUG(2, ("COMPTYPE = 0x%08x", header->dwMagic); // TODO: make this look like MS-OXRTFCP examples
+	OC_DEBUG(2, ("CRC = 0x%08x", header->dwCRC);
 	*/
 }
 
@@ -208,12 +208,12 @@ static enum MAPISTATUS verify_header(uint8_t *header_data, uint32_t in_size, lzf
 	parse_header(header_data, header);
 
 	if (header->cbSize != in_size - 4) {
-		DEBUG(0, ("in_size mismatch:%u\n", in_size));
+		OC_DEBUG(0, "in_size mismatch:%u", in_size);
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, NULL);
 	}
 
 	if ((header->dwMagic != LZFU_COMPRESSED) && (header->dwMagic != LZFU_UNCOMPRESSED)) {
-		DEBUG(0, ("bad magic: 0x%x\n", header->dwMagic));
+		OC_DEBUG(0, "bad magic: 0x%x", header->dwMagic);
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CORRUPT_DATA, NULL);
 	}
 	
@@ -233,7 +233,7 @@ static uint8_t get_next_byte(decompression_state *state)
 static uint8_t get_next_control(decompression_state *state)
 {
 	uint8_t c = get_next_byte(state);
-	/* DEBUG(3, ("control: 0x%02x\n", c)); */
+	/* OC_DEBUG(3, "control: 0x%02x", c); */
 	return c;
 }
 
@@ -241,9 +241,9 @@ static uint8_t get_next_literal(decompression_state *state)
 {
 	uint8_t c = get_next_byte(state);
 	/* if (isprint(c)) {
-		DEBUG(3, ("literal %c\n", c));
+		OC_DEBUG(3, "literal %c", c));
 	} else {
-		DEBUG(3, ("literal 0x%02x\n", c));
+		OC_DEBUG(3, "literal 0x%02x", c));
 		} */
 	return c;
 }
@@ -290,9 +290,9 @@ static char get_dictionary_entry(decompression_state *state, uint32_t index)
 {
 	char c = state->dict[index % LZFU_DICTLENGTH];
 	/* if (isprint(c)) {
-		DEBUG(3, ("dict entry %i: %c\n", index, c));
+		OC_DEBUG(3, "dict entry %i: %c", index, c);
 	} else {
-		DEBUG(3, ("dict entry 0x%04x: 0x%02x\n", index, c));
+		OC_DEBUG(3, "dict entry 0x%04x: 0x%02x", index, c);
 		} */
 	return c;
 }
@@ -301,8 +301,8 @@ static bool output_would_overflow(output_state *output)
 {
 	bool would_overflow = (output->out_pos > output->out_size);
 	if (would_overflow) {
-		DEBUG(0, (" overrun on out_pos: %u > %u\n", output->out_pos, output->out_size));
-		DEBUG(0, (" overrun data: %s\n", output->output_blob->data));
+		OC_DEBUG(0, " overrun on out_pos: %u > %u", output->out_pos, output->out_size);
+		OC_DEBUG(0, " overrun data: %s", output->output_blob->data);
 	}
 	return would_overflow;
 }
@@ -311,7 +311,7 @@ static bool input_would_overflow(decompression_state *state)
 {
 	bool would_overflow = (state->in_pos > state->in_size);
 	if (would_overflow) {
-		DEBUG(0, ("input overrun at in_pos: %i (of %i)\n", state->in_pos, state->in_size));
+		OC_DEBUG(0, "input overrun at in_pos: %i (of %i)", state->in_pos, state->in_size);
 	}
 	return would_overflow;
 }
@@ -353,11 +353,11 @@ _PUBLIC_ enum MAPISTATUS uncompress_rtf(TALLOC_CTX *mem_ctx,
 				int i;
 				dictref = get_next_dictionary_reference(&state);
 				if (dictref.offset == state.dict_writeoffset) {
-					DEBUG(4, ("matching offset - done\n"));
-                                        /* Do not add \0 twice */
-                                        if (get_latest_literal_in_output(output)) {
-                                                append_to_output(&output, '\0');
-                                        }
+					OC_DEBUG(4, "matching offset - done");
+					/* Do not add \0 twice */
+					if (get_latest_literal_in_output(output)) {
+						append_to_output(&output, '\0');
+					}
 					cleanup_decompression_state(&state);
 					return MAPI_E_SUCCESS;
 				}
@@ -460,14 +460,14 @@ uint32_t calculateCRC(uint8_t *input, uint32_t offset, uint32_t length)
 	uint32_t crc = 0;
 	uint32_t i;
 	for (i = offset; i < offset+length; ++i) {
-		DEBUG(5, ("input at %i: 0x%02x\n", i, input[i]));
+		OC_DEBUG(5, "input at %i: 0x%02x", i, input[i]);
 		uint8_t table_position = (crc ^ input[i]) & 0xFF;
-		DEBUG(5, ("table_position: 0x%02x\n", table_position));
+		OC_DEBUG(5, "table_position: 0x%02x", table_position);
 		uint32_t intermediateValue = crc >> 8;
-		DEBUG(5, ("intermediateValue: 0x%08x\n", intermediateValue));
+		OC_DEBUG(5, "intermediateValue: 0x%08x", intermediateValue);
 		crc = CRCTable[table_position] ^ intermediateValue;
-		DEBUG(5, ("tableValue: 0x%08x\n", CRCTable[table_position]));
-		DEBUG(5, ("crc: 0x%08x\n", crc));
+		OC_DEBUG(5, "tableValue: 0x%08x", CRCTable[table_position]);
+		OC_DEBUG(5, "crc: 0x%08x", crc);
 	}
 	return crc;
 }
@@ -521,7 +521,7 @@ _PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, cons
 	while (input_idx < rtf_size) {
 		size_t dict_match_length = 0;
 		size_t dict_match_offset = 0;
-		DEBUG(4, ("compressing byte %zi of %zi\n", input_idx, rtf_size));
+		OC_DEBUG(4, "compressing byte %zi of %zi", input_idx, rtf_size);
 		if (longest_match(rtf, rtf_size, input_idx, dict, &dict_write_idx, &dict_match_offset, &dict_match_length) > 1) {
 			uint16_t dict_ref = dict_match_offset << 4;
 			dict_ref += (dict_match_length - 2);
@@ -541,7 +541,7 @@ _PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, cons
 			/* append to output, and increment the output position */
 			(*rtfcomp)[output_idx] = rtf[input_idx];
 			output_idx += 1;
-			DEBUG(5, ("new output_idx = 0x%08zx (for char value 0x%02x)\n", output_idx, rtf[input_idx]));
+			OC_DEBUG(5, "new output_idx = 0x%08zx (for char value 0x%02x)", output_idx, rtf[input_idx]);
 			/* increment the input position */
 			input_idx += 1;
 		}
@@ -550,7 +550,7 @@ _PUBLIC_ enum MAPISTATUS compress_rtf(TALLOC_CTX *mem_ctx, const char *rtf, cons
 			control_byte_idx = output_idx;
 			(*rtfcomp)[control_byte_idx] = 0x00;
 			output_idx = control_byte_idx + 1;
-			DEBUG(5, ("new output_idx cb = 0x%08zx\n", output_idx));
+			OC_DEBUG(5, "new output_idx cb = 0x%08zx", output_idx);
 		} else {
 			control_bit = control_bit << 1;
 		}

@@ -539,7 +539,7 @@ _PUBLIC_ bool set_mapi_SPropValue_proptag(TALLOC_CTX *mem_ctx, struct mapi_SProp
 _PUBLIC_ struct mapi_SPropValue *add_mapi_SPropValue(TALLOC_CTX *mem_ctx, struct mapi_SPropValue *lpProps, uint16_t *cValues, uint32_t aulPropTag, const void *data)
 {
 	lpProps = talloc_realloc(mem_ctx, lpProps, struct mapi_SPropValue, *cValues + 2);
-	DEBUG(0, ("%d: setting value for 0x%.8x\n", *cValues, aulPropTag));
+	OC_DEBUG(0, "%d: setting value for 0x%.8x", *cValues, aulPropTag);
 	set_mapi_SPropValue_proptag(mem_ctx, &lpProps[*cValues], aulPropTag, data);
 	*cValues = *cValues + 1;
 
@@ -724,8 +724,8 @@ _PUBLIC_ void mapi_copy_spropvalues(TALLOC_CTX *mem_ctx, struct SPropValue *sour
 			// check if missed to handle a multi-value property
 			if (prop_type & MV_FLAG) {
 				// TODO: Replace this with OC_PANIC() macro when it gets visible in libmapi too
-				DEBUG(0, ("%s: Unexpected multi-value property type: %s.\n",
-						__location__, get_proptag_name(source_value->ulPropTag)));
+				OC_DEBUG(0, "Unexpected multi-value property type: %s.",
+						get_proptag_name(source_value->ulPropTag));
 				smb_panic("Unexpected multi-value property type while copying 'struct SPropValue'");
 			}
 		}
@@ -1291,7 +1291,7 @@ _PUBLIC_ size_t set_RecurrencePattern_size(const struct RecurrencePattern *rp)
         case PatternType_Day:
                 break;
         default:
-                DEBUG(0, ("%s: unrecognized pattern type: %d", __PRETTY_FUNCTION__, rp->PatternType));
+                OC_DEBUG(0, "unrecognized pattern type: %d", rp->PatternType);
         }
 
         size += rp->DeletedInstanceCount * sizeof(uint32_t);

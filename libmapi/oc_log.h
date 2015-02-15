@@ -41,14 +41,14 @@ enum oc_log_level {
 /* Logs source file and line, at log level -priority and with the specified message.
  * This macro is a simple wrapper around oc_log() that adds the
  * source file name and line number to the message. */
-#define OC_DEBUG(priority, fmt_string, ...) \
-	oc_log(OC_LOG_DEBUG - (priority), __location__ ## (fmt_string), __VA_ARGS__)
+#define OC_DEBUG(priority, format, ...) \
+	oc_log (OC_LOG_DEBUG-(priority), __location__ "(%s): " format, __PRETTY_FUNCTION__, ## __VA_ARGS__)
 
 /* Write a log message.
  * Like in syslog, a trailing newline is *not* required. The library will add it
  * if needed. */
 void oc_log(enum oc_log_level level, const char *fmt_string, ...);
-void oc_logv(enum oc_log_level leve, const char *fmt_string, va_list ap);
+void oc_logv(enum oc_log_level level, const char *fmt_string, va_list ap);
 
 /* Setup functions:: */
 

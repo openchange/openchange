@@ -1470,7 +1470,7 @@ _PUBLIC_ enum MAPISTATUS GetProfileAttr(struct mapi_profile *profile,
 	msg = res->msgs[0];
 	ldb_element = ldb_msg_find_element(msg, attribute);
 	if (!ldb_element) {
-		DEBUG(3, ("ldb_msg_find_element: NULL\n"));
+		OC_DEBUG(3, "ldb_msg_find_element: NULL");
 		return MAPI_E_NOT_FOUND;
 	}
 
@@ -1559,14 +1559,14 @@ static bool set_profile_attribute(struct mapi_context *mapi_ctx,
 	lpProp = get_PropertyValue_PropertyRow(&(rowset.aRow[index]), property);
 
 	if (!lpProp) {
-		DEBUG(3, ("MAPI Property %s not set\n", attr));
+		OC_DEBUG(3, "MAPI Property %s not set", attr);
 		return true;
 	}
 
 	ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.lpszA);
 
 	if (ret != MAPI_E_SUCCESS) {
-		DEBUG(3, ("Problem adding attribute %s in profile %s\n", attr, profname));
+		OC_DEBUG(3, "Problem adding attribute %s in profile %s", attr, profname);
 		return false;
 	}
 	return true;
@@ -1586,14 +1586,14 @@ static bool set_profile_mvstr_attribute(struct mapi_context *mapi_ctx,
 	lpProp = get_PropertyValue_PropertyRow(&(rowset.aRow[index]), property);
 
 	if (!lpProp) {
-		DEBUG(3, ("MAPI Property %s not set\n", attr));
+		OC_DEBUG(3, "MAPI Property %s not set", attr);
 		return true;
 	}
 
 	for (i = 0; i < lpProp->value.MVszA.cValues; i++) {
 		ret = mapi_profile_add_string_attr(mapi_ctx, profname, attr, lpProp->value.MVszA.lppszA[i]);
 		if (ret != MAPI_E_SUCCESS) {
-			DEBUG(3, ("Problem adding attribute %s in profile %s\n", attr, profname));
+			OC_DEBUG(3, "Problem adding attribute %s in profile %s", attr, profname);
 			return false;
 		}
 	}

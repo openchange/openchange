@@ -1237,7 +1237,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 		}
 	}
 
-	DEBUG(5, ("%s: type for property '%x' could not be deduced\n", __FUNCTION__, untypedtag));
+	OC_DEBUG(5, "type for property '%x' could not be deduced", untypedtag);
 	return 0;
 }
 

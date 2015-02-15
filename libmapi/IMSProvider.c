@@ -49,7 +49,7 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 	struct tevent_context	*ev;
 
 	if (!binding) {
-		DEBUG(3, ("You must specify a ncacn binding string\n"));
+		OC_DEBUG(3, "You must specify a ncacn binding string");
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 
@@ -61,8 +61,8 @@ static NTSTATUS provider_rpc_connection(TALLOC_CTX *parent_ctx,
 				     credentials, ev, lp_ctx); 
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("Failed to connect to remote server: %s %s\n", 
-			  binding, nt_errstr(status)));
+		OC_DEBUG(3, "Failed to connect to remote server: %s %s",
+			  binding, nt_errstr(status));
 	}
 
 	/* dcerpc_pipe_connect set errno, we have to unset it */

@@ -47,7 +47,12 @@ void oc_logv(enum oc_log_level level, const char *fmt_string, va_list ap)
 		samba_level = 0;
 	}
 
-	DEBUG(samba_level, ("%s\n", line));
+	/* Add a trailing newline if one is not already present */
+	if (line[strlen(line)-1] == '\n') {
+		DEBUG(samba_level, ("%s", line));
+	} else {
+		DEBUG(samba_level, ("%s\n", line));
+	}
 }
 
 void oc_log_init_stdout()

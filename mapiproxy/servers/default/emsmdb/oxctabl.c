@@ -377,9 +377,9 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	void				*data;
 	enum MAPISTATUS			*retvals;
 	void				**data_pointers;
-	uint32_t			count, max;
+	uint32_t			count;
 	uint32_t			handle;
-	uint32_t			i = 0;
+	int64_t			        i = 0, end;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCTABL] QueryRows (0x15)\n"));
 
@@ -433,18 +433,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 		goto finish;
 	}
 
-	/* Ensure we are in a case which we can handle, until the featureset is complete. */
-	if (!request->ForwardRead) {
-		DEBUG(0, ("  !ForwardRead is not supported yet\n"));
-		abort();
+	/* Lookup the properties */
+	if (request->ForwardRead) {
+		end = table->numerator + request->RowCount;
+		if (end > table->denominator) {
+			end = table->denominator;
+		}
+	} else {
+		if (table->numerator < request->RowCount) {
+			end = -1;
+		} else {
+			end = table->numerator - request->RowCount;
+		}
 	}
-
-        /* Lookup the properties */
-	max = table->numerator + request->RowCount;
-	if (max > table->denominator) {
-		max = table->denominator;
-	}
-        for (i = table->numerator; i < max; i++) {
+	i = table->numerator;
+	while (i != end) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
@@ -458,19 +461,24 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			count = 0;
 			goto finish;
 		}
+		i = (request->ForwardRead) ? i + 1 : i - 1;
 	}
 
 finish:
 	if ((request->QueryRowsFlags & TBL_NOADVANCE) != TBL_NOADVANCE) {
-		table->numerator = i;
+		table->numerator = (i < 0) ? 0 : i;
 	}
 
 	/* QueryRows reply parameters */
 	mapi_repl->error_code = MAPI_E_SUCCESS;
 	response->RowCount = count;
 	if (count) {
-		if ((count < request->RowCount) || (table->numerator > (table->denominator - 2))) {
+		if (count < request->RowCount) {
+			response->Origin = (request->ForwardRead) ? BOOKMARK_END : BOOKMARK_BEGINNING;
+		} else if (table->numerator > (table->denominator - 2)) {
 			response->Origin = BOOKMARK_END;
+		} else if (i < 0) {
+			response->Origin = BOOKMARK_BEGINNING;
 		} else {
 			response->Origin = BOOKMARK_CURRENT;
 		}
@@ -478,10 +486,10 @@ finish:
 	} else {
 		/* useless code for the moment */
 		if (table->restricted) {
-			response->Origin = BOOKMARK_BEGINNING;	
+			response->Origin = BOOKMARK_BEGINNING;
 		}
 		else {
-			response->Origin = BOOKMARK_END;
+			response->Origin = (request->ForwardRead) ? BOOKMARK_END : BOOKMARK_BEGINNING;
 		}
 		response->RowData.length = 0;
 		response->RowData.data = NULL;

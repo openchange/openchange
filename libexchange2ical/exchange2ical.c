@@ -409,7 +409,7 @@ static uint8_t exchange2ical_exception_from_EmbeddedObj(struct exchange2ical *ex
 		SPropTagArray = set_SPropTagArray(exchange2ical->mem_ctx, 0x1, PR_ATTACH_NUM);
 		retval = SetColumns(&obj_tb_attach, SPropTagArray);
 		MAPIFreeBuffer(SPropTagArray);
-		retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+		retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &rowset_attach);
 
 		for (i = 0; i < rowset_attach.cRows; i++) {
 			
@@ -635,7 +635,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 		return NULL;
 	}
 	
-	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
 		count -= SRowSet.cRows;
 		for (i = (SRowSet.cRows-1); i >= 0; i--) {
 			mapi_object_init(&exchange2ical.obj_message);

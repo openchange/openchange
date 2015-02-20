@@ -122,7 +122,7 @@ _PUBLIC_ bool mapitest_common_message_delete_by_subject(struct mapitest *mt,
 		return false;
 	}
 
-	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && !retval && SRowSet.cRows) {
+	while (((retval = QueryRows(&obj_ctable, count, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND) && !retval && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
 			if (retval == MAPI_E_SUCCESS) {
 				msgids[0] = SRowSet.aRow[i].lpProps[0].value.d;
@@ -177,7 +177,7 @@ _PUBLIC_ bool mapitest_common_find_folder(struct mapitest *mt,
 		return false;
 	}
 
-	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, count, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			newname = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME);

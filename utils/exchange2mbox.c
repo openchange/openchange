@@ -153,7 +153,7 @@ static bool delete_messages(
 	if (retval != MAPI_E_SUCCESS)
 		return false;
 
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) == MAPI_E_SUCCESS) {
 		if (!SRowSet.cRows)
 			break;
 
@@ -835,7 +835,7 @@ old_code:
 			MAPIFreeBuffer(SPropTagArray);
 			MAPI_RETVAL_IF(retval, retval, NULL);
 			
-			retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+			retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &rowset_attach);
 			MAPI_RETVAL_IF(retval, retval, NULL);
 			
 			for (i = 0; i < rowset_attach.cRows; i++) {
@@ -1178,7 +1178,7 @@ int main(int argc, const char *argv[])
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
 			retval = OpenMessage(&obj_store, 

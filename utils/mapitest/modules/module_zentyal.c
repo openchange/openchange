@@ -485,3 +485,105 @@ _PUBLIC_ bool mapitest_zentyal_4872(struct mapitest *mt)
 
 	return true;
 }
+
+/**
+    \details Test #6723 QueryRows with reverse read.
+
+    It is identified as CR-103 (https://projects.zentyal.com/issues/1543)
+
+    \param mt pointer to the top level mapitest structure
+
+    \return true on success, otherwise false
+*/
+_PUBLIC_ bool mapitest_zentyal_6723(struct mapitest *mt)
+{
+	enum MAPISTATUS		retval;
+	mapi_id_t		id_folder;
+	mapi_object_t		obj_store;
+	mapi_object_t		obj_folder;
+	mapi_object_t		obj_htable;
+	struct SPropTagArray	*SPropTagArray;
+	struct SRowSet		SRowSet;
+	uint32_t		count, seek_count;
+	int32_t			idx;
+	bool			test_result;
+
+	/* Step 1. Logon */
+	mapi_object_init(&obj_store);
+	retval = OpenMsgStore(mt->session, &obj_store);
+	mapitest_print_retval(mt, "OpenMsgStore");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 2. Open Inbox folder */
+	retval = GetDefaultFolder(&obj_store, &id_folder, olFolderTopInformationStore);
+	mapitest_print_retval(mt, "GetDefaultFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	mapi_object_init(&obj_folder);
+	retval = OpenFolder(&obj_store, id_folder, &obj_folder);
+	mapitest_print_retval(mt, "OpenFolder");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 3. Get the Top Information Store folder */
+	mapi_object_init(&obj_htable);
+	GetHierarchyTable(&obj_folder, &obj_htable, 0, &count);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "GetContentsTable");
+		return false;
+	}
+	if (count == 0) {
+		mapitest_print(mt, "* %-35s: unexpected count (%i)\n", "GetContentsTable", count);
+	}
+
+	/* Step 4. Move to the end */
+	SeekRow(&obj_htable, BOOKMARK_END, 0, &seek_count);
+	mapitest_print_retval_fmt(mt, "SeekRow", "(BOOKMARK_END)");
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		return false;
+	}
+
+	/* Step 5. Set Table Columns on the TIS folder */
+	SPropTagArray = set_SPropTagArray(mt->mem_ctx, 0x1, PR_DISPLAY_NAME);
+	retval = SetColumns(&obj_htable, SPropTagArray);
+	MAPIFreeBuffer(SPropTagArray);
+	if (GetLastError() != MAPI_E_SUCCESS) {
+		mapitest_print_retval(mt, "SetColumns");
+		return false;
+	}
+
+	/* Step 6. QueryRows backwards on TIS folder hierarchy */
+	idx = count - 1;
+	test_result = true;
+	seek_count = 0;
+	do {
+		retval = QueryRows(&obj_htable, 0x1, TBL_ADVANCE, TBL_BACKWARD_READ, &SRowSet);
+		if (retval == MAPI_E_SUCCESS) {
+			mapitest_print(mt, "* %-35s: %.2d/%.2d %d rows [PASSED]\n",
+				       "QueryRows", idx, count - 1, SRowSet.cRows);
+			if (SRowSet.cRows > 0) {
+				idx -= SRowSet.cRows;
+				seek_count += SRowSet.cRows;
+			}
+		} else {
+			mapitest_print(mt, "* %-35s: %.2d/%.2d [%s]\n",
+				       "QueryRows", idx, count, mapi_get_errstr(retval));
+			test_result = false;
+		}
+		/* TODO: Proper implementation should check Origin response field to
+		   know nothing else to read */
+	} while (retval == MAPI_E_SUCCESS && idx >= 0);
+	mapitest_print(mt, "* %-35s: Rows Read (%.2d)\n", "QueryRows", seek_count);
+
+	/* Release */
+	mapi_object_release(&obj_htable);
+	mapi_object_release(&obj_folder);
+	mapi_object_release(&obj_store);
+
+	return test_result;
+}

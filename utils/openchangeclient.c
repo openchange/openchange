@@ -132,7 +132,7 @@ static enum MAPISTATUS openchangeclient_getdir(TALLOC_CTX *mem_ctx,
 		MAPIFreeBuffer(SPropTagArray);
 		MAPI_RETVAL_IF(retval, retval, folder);
 
-		while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
+		while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 			for (index = 0; (index < SRowSet.cRows) && (found == false); index++) {
 				fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[index], PR_FID);
 				name = (const char *)find_SPropValue_data(&SRowSet.aRow[index], PR_DISPLAY_NAME_UNICODE);
@@ -442,7 +442,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
+	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND && rowset.cRows) {
 		count -= rowset.cRows;
 		for (i = 0; i < rowset.cRows; i++) {
 			mapi_object_init(&obj_message);
@@ -481,7 +481,7 @@ static enum MAPISTATUS openchangeclient_fetchmail(mapi_object_t *obj_store,
 							if (retval != MAPI_E_SUCCESS) return retval;
 							MAPIFreeBuffer(SPropTagArray);
 							
-							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, &rowset_attach);
+							retval = QueryRows(&obj_tb_attach, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &rowset_attach);
 							if (retval != MAPI_E_SUCCESS) return retval;
 							
 							for (j = 0; j < rowset_attach.cRows; j++) {
@@ -1006,7 +1006,7 @@ static bool openchangeclient_deletemail(TALLOC_CTX *mem_ctx,
 	retval = SetColumns(&obj_table, SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while ((retval = QueryRows(&obj_table, 0x10, TBL_ADVANCE, &SRowSet)) == MAPI_E_SUCCESS) {
+	while ((retval = QueryRows(&obj_table, 0x10, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) == MAPI_E_SUCCESS) {
 		count_rows = SRowSet.cRows;
 		if (!count_rows) break;
 		id_messages = talloc_array(mem_ctx, uint64_t, count_rows);
@@ -1615,7 +1615,7 @@ static bool get_child_folders(TALLOC_CTX *mem_ctx, mapi_object_t *parent, mapi_i
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
@@ -1673,7 +1673,7 @@ static bool get_child_folders_pf(TALLOC_CTX *mem_ctx, mapi_object_t *parent, map
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 	
-	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &rowset)) != MAPI_E_NOT_FOUND) && rowset.cRows) {
 		for (index = 0; index < rowset.cRows; index++) {
 			fid = (const uint64_t *)find_SPropValue_data(&rowset.aRow[index], PR_FID);
 			name = (const char *)find_SPropValue_data(&rowset.aRow[index], PR_DISPLAY_NAME_UNICODE);
@@ -1816,7 +1816,7 @@ static bool openchangeclient_fetchitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return false;
 
-	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+	while ((retval = QueryRows(&obj_table, count, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
 		count -= SRowSet.cRows;
 		for (i = 0; i < SRowSet.cRows; i++) {
 			mapi_object_init(&obj_message);
@@ -1903,7 +1903,7 @@ static enum MAPISTATUS folder_lookup(TALLOC_CTX *mem_ctx,
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows)) {
 		for (i = 0; i < SRowSet.cRows; i++) {
 			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
 			if (fid && *fid == sfid) {
@@ -1951,7 +1951,7 @@ static enum MAPISTATUS message_lookup(TALLOC_CTX *mem_ctx,
 	MAPIFreeBuffer(SPropTagArray);
 	if (retval != MAPI_E_SUCCESS) return retval;
 
-	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
+	while (((retval = QueryRows(&obj_htable, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND) && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
 			fid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_FID);
 			mid = (const uint64_t *)find_SPropValue_data(&SRowSet.aRow[i], PR_MID);
@@ -2147,7 +2147,7 @@ static enum MAPISTATUS openchangeclient_findmail(mapi_object_t *obj_store,
 	MAPIFreeBuffer(SPropTagArray);
 	MAPI_RETVAL_IF(retval, GetLastError(), mem_ctx);
 
-	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
+	while ((retval = QueryRows(&obj_table, 0xa, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet)) != MAPI_E_NOT_FOUND && SRowSet.cRows) {
 		for (i = 0; i < SRowSet.cRows; i++) {
 			lpProp = get_SPropValue_SRowSet(&SRowSet, PR_MID);
 			if (lpProp != NULL) {

@@ -2501,31 +2501,43 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AppointmentRecurrencePattern(struct ndr_pull
 				NDR_CHECK(ndr_pull_ExceptionInfo(ndr, NDR_SCALARS, &r->ExceptionInfo[cntr_ExceptionInfo_0]));
 			}
 			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExceptionInfo_0, 0);
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1Size));
-			NDR_PULL_ALLOC_N(ndr, r->ReservedBlock1, r->ReservedBlock1Size);
-			_mem_save_ReservedBlock1_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock1, 0);
-			for (cntr_ReservedBlock1_0 = 0; cntr_ReservedBlock1_0 < r->ReservedBlock1Size; cntr_ReservedBlock1_0++) {
-				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1[cntr_ReservedBlock1_0]));
+
+			/* It seems that some clients don't send the reserved fields */
+			if (ndr->offset < ndr->data_size) {
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1Size));
+				NDR_PULL_ALLOC_N(ndr, r->ReservedBlock1, r->ReservedBlock1Size);
+				_mem_save_ReservedBlock1_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock1, 0);
+				for (cntr_ReservedBlock1_0 = 0; cntr_ReservedBlock1_0 < r->ReservedBlock1Size; cntr_ReservedBlock1_0++) {
+					NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock1[cntr_ReservedBlock1_0]));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock1_0, 0);
+				NDR_PULL_ALLOC_N(ndr, r->ExtendedException, r->ExceptionCount);
+				_mem_save_ExtendedException_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->ExtendedException, 0);
+				for (cntr_ExtendedException_0 = 0; cntr_ExtendedException_0 < r->ExceptionCount; cntr_ExtendedException_0++) {
+					NDR_CHECK(ndr_pull_ExtendedException(ndr, NDR_SCALARS, r->WriterVersion2, r->ExceptionInfo + cntr_ExtendedException_0, &r->ExtendedException[cntr_ExtendedException_0]));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExtendedException_0, 0);
+				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2Size));
+				NDR_PULL_ALLOC_N(ndr, r->ReservedBlock2, r->ReservedBlock2Size);
+				_mem_save_ReservedBlock2_0 = NDR_PULL_GET_MEM_CTX(ndr);
+				NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock2, 0);
+				for (cntr_ReservedBlock2_0 = 0; cntr_ReservedBlock2_0 < r->ReservedBlock2Size; cntr_ReservedBlock2_0++) {
+					NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2[cntr_ReservedBlock2_0]));
+				}
+				NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock2_0, 0);
 			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock1_0, 0);
-			NDR_PULL_ALLOC_N(ndr, r->ExtendedException, r->ExceptionCount);
-			_mem_save_ExtendedException_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ExtendedException, 0);
-			for (cntr_ExtendedException_0 = 0; cntr_ExtendedException_0 < r->ExceptionCount; cntr_ExtendedException_0++) {
-				NDR_CHECK(ndr_pull_ExtendedException(ndr, NDR_SCALARS, r->WriterVersion2, r->ExceptionInfo + cntr_ExtendedException_0, &r->ExtendedException[cntr_ExtendedException_0]));
-			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ExtendedException_0, 0);
-			NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2Size));
-			NDR_PULL_ALLOC_N(ndr, r->ReservedBlock2, r->ReservedBlock2Size);
-			_mem_save_ReservedBlock2_0 = NDR_PULL_GET_MEM_CTX(ndr);
-			NDR_PULL_SET_MEM_CTX(ndr, r->ReservedBlock2, 0);
-			for (cntr_ReservedBlock2_0 = 0; cntr_ReservedBlock2_0 < r->ReservedBlock2Size; cntr_ReservedBlock2_0++) {
-				NDR_CHECK(ndr_pull_uint32(ndr, NDR_SCALARS, &r->ReservedBlock2[cntr_ReservedBlock2_0]));
-			}
-			NDR_PULL_SET_MEM_CTX(ndr, _mem_save_ReservedBlock2_0, 0);
+
 			NDR_CHECK(ndr_pull_trailer_align(ndr, 4));
+		} else {
+			/* If there are extended exceptions we have missing data */
+			if (r->ExceptionCount > 0) {
+				/* FIXME: I think that NDR_ERR_INCOMPLETE_BUFFER is more appropiate but is not in our samba target version */
+				return NDR_ERR_BUFSIZE;
+			}
 		}
+                
 		if (ndr_flags & NDR_BUFFERS) {
 			NDR_CHECK(ndr_pull_RecurrencePattern(ndr, NDR_BUFFERS, &r->RecurrencePattern));
 			_mem_save_ExceptionInfo_0 = NDR_PULL_GET_MEM_CTX(ndr);

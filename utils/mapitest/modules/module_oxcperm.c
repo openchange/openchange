@@ -115,7 +115,7 @@ _PUBLIC_ bool mapitest_oxcperm_GetPermissionsTable(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "QueryRows");
 		ret = false;
@@ -211,7 +211,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "QueryRows");
 		ret = false;
@@ -245,7 +245,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "QueryRows");
 		ret = false;
@@ -279,7 +279,7 @@ _PUBLIC_ bool mapitest_oxcperm_ModifyPermissions(struct mapitest *mt)
 		goto cleanup;
 	}
 
-	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, &SRowSet);
+	retval = QueryRows(&obj_permtable, 0x20, TBL_ADVANCE, TBL_FORWARD_READ, &SRowSet);
 	if (retval != MAPI_E_SUCCESS) {
 		mapitest_print_retval(mt, "QueryRows");
 		ret = false;

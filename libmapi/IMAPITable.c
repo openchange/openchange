@@ -218,12 +218,17 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
    \param obj_table the table we are requesting properties from
    \param row_count the maximum number of rows to retrieve
    \param flags flags to use for the query
+   \param forward_read the direction to read
    \param rowSet the results
 
    flags possible values:
    - TBL_ADVANCE: index automatically increased from last rowcount
    - TBL_NOADVANCE: should be used for a single QueryRows call
    - TBL_ENABLEPACKEDBUFFERS: (not yet implemented)
+
+   forward_read possible values:
+   - TBL_FORWARD_READ: to read forwards
+   - TBL_BACKWARD_READ: to read backwards
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error.
 
@@ -238,7 +243,8 @@ _PUBLIC_ enum MAPISTATUS QueryPosition(mapi_object_t *obj_table,
  */
 _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table, 
 				   uint16_t row_count,
-				   enum QueryRowsFlags flags, 
+				   enum QueryRowsFlags flags,
+				   enum ForwardRead forward_read,
 				   struct SRowSet *rowSet)
 {
 	struct mapi_context	*mapi_ctx;
@@ -272,8 +278,7 @@ _PUBLIC_ enum MAPISTATUS QueryRows(mapi_object_t *obj_table,
 
 	/* Fill the QueryRows operation */
 	request.QueryRowsFlags = flags;
-	/* TODO: search backwards for negative row_count */
-	request.ForwardRead = 1;
+	request.ForwardRead = forward_read;
 	request.RowCount = row_count;
 	size += 4;
 

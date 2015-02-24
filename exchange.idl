@@ -1824,9 +1824,14 @@ System Attendant Private Interface
 		TBL_ENABLEPACKEDBUFFERS = 0x2
 	} QueryRowsFlags;
 
+	typedef [enum8bit] enum {
+		TBL_BACKWARD_READ	= 0x0,
+		TBL_FORWARD_READ	= 0x1
+	} ForwardRead;
+
 	typedef [flag(NDR_NOALIGN)] struct {
 		QueryRowsFlags	QueryRowsFlags;
-		uint8		ForwardRead;
+		ForwardRead	ForwardRead;
 		uint16		RowCount;
 	} QueryRows_req;
 

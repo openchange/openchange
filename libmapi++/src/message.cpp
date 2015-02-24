@@ -45,7 +45,7 @@ message::attachment_container_type message::fetch_attachments()
 	SRowSet  row_set;
 	attachment_container_type attachment_container;
 
-	while( (QueryRows(&attachment_table, 0x32, TBL_ADVANCE, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
+	while( (QueryRows(&attachment_table, 0x32, TBL_ADVANCE, TBL_FORWARD_READ, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
 		for (unsigned int i = 0; i < row_set.cRows; ++i) {
 			try {
 				attachment_container.push_back(attachment_shared_ptr(new attachment(*this, row_set.aRow[i].lpProps[0].value.l)));

@@ -50,7 +50,7 @@ folder::message_container_type folder::fetch_messages() throw(mapi_exception)
 	message_container_type message_container;
 	message_container.reserve(contents_table_row_count);
 
-	while( (QueryRows(&contents_table, rows_to_read, TBL_ADVANCE, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
+	while( (QueryRows(&contents_table, rows_to_read, TBL_ADVANCE, TBL_FORWARD_READ, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
 		rows_to_read -= row_set.cRows;
 		for (unsigned int i = 0; i < row_set.cRows; ++i) {
 			try {
@@ -96,7 +96,7 @@ folder::hierarchy_container_type folder::fetch_hierarchy() throw(mapi_exception)
 	hierarchy_container_type hierarchy_container;
 	hierarchy_container.reserve(hierarchy_table_row_count);
 
-	while( (QueryRows(&hierarchy_table, rows_to_read, TBL_ADVANCE, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
+	while( (QueryRows(&hierarchy_table, rows_to_read, TBL_ADVANCE, TBL_FORWARD_READ, &row_set) == MAPI_E_SUCCESS) && row_set.cRows) {
 		rows_to_read -= row_set.cRows;
 		for (unsigned int i = 0; i < row_set.cRows; ++i) {
 			try {

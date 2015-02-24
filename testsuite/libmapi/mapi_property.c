@@ -150,6 +150,42 @@ START_TEST (test_mapi_copy_spropvalues) {
 
 } END_TEST
 
+START_TEST (test_mapi_get_AppointmentRecurrencePattern) {
+	int i;
+	int nCases = 5;
+	struct Binary_r cases[nCases];
+	
+	/* case 0 comes from a crash report. It is cut just when ReservedBlock1Size should begin. */
+	uint8_t case0_lpb[]=  {4, 48, 4, 48, 13, 32, 3, 0, 0, 0, 128, 168, 4, 0, 12, 0, 0, 0, 0, 0, 0, 0, 2, 0, 0, 0, 1, 0, 0, 0, 35, 32, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 32, 12, 199, 12, 223, 128, 233, 90, 6, 48, 0, 0, 7, 48, 0, 0, 0, 0, 0, 0, 160, 5, 0, 0, 0, 0};
+	cases[0].cb = 76;
+	cases[0].lpb = &case0_lpb[0];
+	
+	/* case 1 comes from a event created with outlook, yearly recurrence */
+	uint8_t case1_lpb[]=  {4, 48, 4, 48, 13, 32, 3, 0, 0, 0, 96, 174, 0, 0, 12, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 3, 0, 0, 0, 35, 32, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 128, 149, 251, 12, 223, 128, 233, 90, 6, 48, 0, 0, 9, 48, 0, 0, 162, 3, 0, 0, 192, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	cases[1].cb = 84;
+	cases[1].lpb = &case1_lpb[0];
+
+	/* case 2 comes from a event created with outlook, weekly recurrence */
+	uint8_t case2_lpb[]=  {4, 48, 4, 48, 11, 32, 1, 0, 0, 0, 96, 39, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 52, 0, 0, 0, 35, 32, 0, 0, 10, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 224, 188, 251, 12, 223, 128, 233, 90, 6, 48, 0, 0, 9, 48, 0, 0, 102, 3, 0, 0, 132, 3, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	cases[2].cb = 80;
+	cases[2].lpb = &case2_lpb[0];
+
+	/* case 3, same than case 2 but with canceled instances and exceptions */
+	uint8_t case3_lpb[]=  {4, 48, 4, 48, 11, 32, 1, 0, 0, 0, 96, 39, 0, 0, 2, 0, 0, 0, 0, 0, 0, 0, 52, 0, 0, 0, 35, 32, 0, 0, 10, 0, 0, 0, 1, 0, 0, 0, 2, 0, 0, 0, 224, 188, 251, 12, 192, 84, 252, 12, 1, 0, 0, 0, 192, 84, 252, 12, 224, 188, 251, 12, 223, 128, 233, 90, 6, 48, 0, 0, 9, 48, 0, 0, 102, 3, 0, 0, 132, 3, 0, 0, 1, 0, 38, 88, 252, 12, 68, 88, 252, 12, 38, 88, 252, 12, 0, 2, 0, 0, 0, 0, 4, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
+	cases[3].cb = 118;
+	cases[3].lpb = &case3_lpb[0];
+
+        /* case 4. Another crash. As case 0 is cut at the beginning of ReservedBlock1Size */
+	uint8_t case4_lpb[]=  {4, 48, 4, 48, 11, 32, 1, 0, 0, 0, 192, 33, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 32, 0, 0, 0, 33, 32, 0, 0, 10, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 96, 94, 188, 12, 32, 173, 188, 12, 6, 48, 0, 0, 6, 48, 0, 0, 56, 4, 0, 0, 146, 4, 0, 0, 0, 0};
+	cases[4].cb = 72;
+	cases[4].lpb = &case4_lpb[0];
+
+	for(i=0; i < nCases; i++) {
+		struct AppointmentRecurrencePattern *res;
+		res = get_AppointmentRecurrencePattern(mem_ctx, &cases[i]);
+		ck_assert(res != NULL);
+	}
+} END_TEST
 
 // ^ unit tests ---------------------------------------------------------------
 
@@ -198,15 +234,29 @@ static void tc_mapi_copy_spropvalues_teardown(void)
 	talloc_free(mem_ctx);
 }
 
+static void tc_mapi_get_AppointmentRecurrencePattern_setup(void)
+{
+	mem_ctx = talloc_named(NULL, 0, "libmapi_property_get_AppointmentRecurrencePattern");
+}
+
+static void tc_mapi_get_AppointmentRecurrencePattern_teardown(void)
+{
+	talloc_free(mem_ctx);
+}
+
 Suite *libmapi_property_suite(void)
 {
 	Suite *s = suite_create("libmapi property");
+	TCase *tc;
 
-	TCase *tc = tcase_create("mapi_copy_spropvalues");
+	tc = tcase_create("mapi_copy_spropvalues");
 	tcase_add_checked_fixture(tc, tc_mapi_copy_spropvalues_setup, tc_mapi_copy_spropvalues_teardown);
-
 	tcase_add_test(tc, test_mapi_copy_spropvalues);
+	suite_add_tcase(s, tc);
 
+	tc = tcase_create("mapi_get_AppointmentRecurrencePattern");
+	tcase_add_checked_fixture(tc, tc_mapi_get_AppointmentRecurrencePattern_setup, tc_mapi_get_AppointmentRecurrencePattern_teardown);
+	tcase_add_test(tc, test_mapi_get_AppointmentRecurrencePattern);
 	suite_add_tcase(s, tc);
 
 	return s;

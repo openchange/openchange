@@ -74,6 +74,8 @@ static char *rip_proto(u_char *data)
 	int	i;
 	int	j;
 
+	if (tower_ptr[0] == '\0') return UNKNOWN_PROTO;
+
 	uuid = malloc(sizeof(char) * (UUID_LEN + 1));
 	uuid[UUID_LEN] = 0;
 	for (i = 0; i < (*nb_floors); i++)
@@ -85,12 +87,15 @@ static char *rip_proto(u_char *data)
 		{
 			strncpy((char *)uuid, (char *)fst_floor + sizeof(short) + sizeof(u_char), UUID_LEN);
 			for (j = 0; protos[j].name; j++) {
-				if (strncmp((char *)protos[j].uuid, (char *)uuid, UUID_LEN) == 0)
+				if (strncmp((char *)protos[j].uuid, (char *)uuid, UUID_LEN) == 0) {
+					free(uuid);
 					return (strdup(protos[j].name));
+				}
 			}
 		}
 		fst_floor += (*lhs) + (*rhs) + (2 * sizeof(short));
 	}
+	free (uuid);
 	return (UNKNOWN_PROTO);
 }
 

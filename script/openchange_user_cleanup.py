@@ -6,7 +6,6 @@ import MySQLdb
 import ldb
 import os
 import re
-import shutil
 import subprocess
 import sys
 from samba.param import LoadParm
@@ -19,7 +18,9 @@ class SambaOCHelper(object):
         self.samba_lp = LoadParm()
         self.samba_lp.set('debug level', '0')
         self.samba_lp.load_default()
-        self.samdb = SamDB(url=self.samba_lp.private_path("sam.ldb"),
+        url = self.samba_lp.get('dcerpc_mapiproxy:samdb_url') or \
+            self.samba_lp.private_path("sam.ldb")
+        self.samdb = SamDB(url=url,
                            lp=self.samba_lp,
                            session_info=system_session())
         self.conn = self._open_mysql_connection()
@@ -63,20 +64,60 @@ class SambaOCHelper(object):
 
 
 class ImapCleaner(object):
-    def __init__(self, imap_host="127.0.0.1", imap_port=143, dry_run=False,
-                 samba_helper=SambaOCHelper()):
-        self.imap_host = imap_host
-        self.imap_port = imap_port
+    def __init__(self, dry_run=False, samba_helper=SambaOCHelper()):
         self.dry_run = dry_run
         self.samba_helper = samba_helper
+        self.system_defaults_file = "/etc/sogo/sogo.conf"
+        self.user_defaults_file = \
+            os.path.expanduser("~sogo/GNUstep/Defaults/.GNUstepDefaults")
+
+    def _get_connection_url(self):
+        connection_url = None
+        # read defaults from defaults files
+        # order is important, user defaults must have precedence
+        for f in [self.system_defaults_file, self.user_defaults_file]:
+            if os.path.exists(f):
+                p1 = subprocess.Popen(["sogo-tool", "dump-defaults", "-f", f],
+                                      stdout=subprocess.PIPE)
+                p2 = subprocess.Popen(["awk", "-F\"",
+                                       "/ SOGoIMAPServer =/ {print $2}"],
+                                      stdin=p1.stdout, stdout=subprocess.PIPE)
+                p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+                tmp = p2.communicate()[0]
+                if tmp:
+                    connection_url = tmp
+
+        return connection_url
 
     def cleanup(self, username, password=""):
         print "===== IMAP cleanup ====="
-        client = imaplib.IMAP4(self.imap_host, self.imap_port)
+
+        connection_url = self._get_connection_url()
+
+        # imap[s]://127.0.0.1:143
+        m = re.search('(?P<scheme>.+)://(?P<host>.+):(?P<port>\d+)',
+                      connection_url)
+        if not m:
+            raise Exception("ERROR Unable to parse SOGoIMAPServer: %s" %
+                            connection_url)
+        group_dict = m.groupdict()
+        if group_dict['scheme'] not in ('imaps', 'imap'):
+            raise Exception("SOGoIMAPServer should start with imap[s]:// "
+                            "(we got %s)", group_dict['scheme'])
+
+        if group_dict['scheme'] == 'imap':
+            client = imaplib.IMAP4(group_dict['host'], group_dict['port'])
+        else:
+            client = imaplib.IMAP4_SSL(group_dict['host'], group_dict['port'])
+
         if not password:
             master_file = self.samba_helper.samba_lp.private_path('mapistore/master.password')
-            with open(master_file) as f:
-                password = f.read()
+            if os.path.exists(master_file):
+                with open(master_file) as f:
+                    password = f.read()
+            else:
+                password = 'unknown'
+
         try:
             email = self.samba_helper.find_email_of(username)
             code, data = client.login(email, password)
@@ -218,7 +259,7 @@ class SOGoCleaner(object):
         if group_dict['scheme'] != 'mysql':
             raise Exception("OCSFolderInfoURL should start with mysql:// "
                             "(we got %s)", group_dict['scheme'])
-            
+
         self.sogo_mysql_cleanup(group_dict['host'], group_dict['port'],
                                 group_dict['user'], group_dict['pass'],
                                 group_dict['db'], username)

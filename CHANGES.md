@@ -6,6 +6,9 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 ## [Unreleased]
 
+### Added
+* Calendar sharing invitation among different Outlook versions
+
 ### Fixes
 * Fixed `Too many connections to ldap` when openchange runs on samba as member of a domain.
 

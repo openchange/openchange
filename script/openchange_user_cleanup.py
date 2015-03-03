@@ -68,24 +68,21 @@ class ImapCleaner(object):
         self.dry_run = dry_run
         self.samba_helper = samba_helper
         self.system_defaults_file = "/etc/sogo/sogo.conf"
-        self.user_defaults_file = \
-            os.path.expanduser("~sogo/GNUstep/Defaults/.GNUstepDefaults")
 
     def _get_connection_url(self):
         connection_url = None
         # read defaults from defaults files
-        # order is important, user defaults must have precedence
-        for f in [self.system_defaults_file, self.user_defaults_file]:
-            if os.path.exists(f):
-                p1 = subprocess.Popen(["sogo-tool", "dump-defaults", "-f", f],
-                                      stdout=subprocess.PIPE)
-                p2 = subprocess.Popen(["awk", "-F\"",
-                                       "/ SOGoIMAPServer =/ {print $2}"],
-                                      stdin=p1.stdout, stdout=subprocess.PIPE)
-                p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
-                tmp = p2.communicate()[0]
-                if tmp:
-                    connection_url = tmp
+        if os.path.exists(self.system_defaults_file):
+            p1 = subprocess.Popen(["sogo-tool", "dump-defaults", "-f",
+                                   self.system_defaults_file],
+                                  stdout=subprocess.PIPE)
+            p2 = subprocess.Popen(["awk", "-F\"",
+                                   "/ SOGoIMAPServer =/ {print $2}"],
+                                  stdin=p1.stdout, stdout=subprocess.PIPE)
+            p1.stdout.close()  # Allow p1 to receive a SIGPIPE if p2 exits.
+            tmp = p2.communicate()[0]
+            if tmp:
+                connection_url = tmp
 
         return connection_url
 

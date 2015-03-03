@@ -38,6 +38,9 @@ struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
 				  struct auth_session_info *,
 				  unsigned int);
 
+/* Single connection to samdb */
+static struct ldb_context *samdb_ctx = NULL;
+
 /**
    \details Initialize the EMSABP context and open connections to
    Samba databases.
@@ -78,17 +81,19 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;
 
+	if (!samdb_ctx) {
+		/* Retrieve samdb url (local or external) */
+		samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
 
-	/* Retrieve samdb url (local or external) */
-	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-
-	/* return an opaque context pointer on samDB database */
-	if (!samdb_url) {
-		emsabp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
-	} else {
-		emsabp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
+		/* return an opaque context pointer on samDB database */
+		if (!samdb_url) {
+			samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+		} else {
+			samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), LDB_FLG_RECONNECT, samdb_url);
+		}
 	}
 
+	emsabp_ctx->samdb_ctx = samdb_ctx;
 	if (!emsabp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));

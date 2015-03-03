@@ -4674,7 +4674,7 @@ System Attendant Private Interface
 		[in,out][range(0x0,0x40000)]			uint32		*pcbOut,
 		[in, size_is(cbAuxIn)]				uint8		rgbAuxIn[],
 		[in]						uint32		cbAuxIn,
-		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint32	rgbAuxOut[],
+		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint8		rgbAuxOut[],
 		[in,out][range(0x0,0x1008)]			uint32		*pcbAuxOut,
 		[out]						uint32		*pulTransTime
 		);

@@ -64,9 +64,13 @@ class SambaOCHelper(object):
 
 
 class ImapCleaner(object):
-    def __init__(self, dry_run=False, samba_helper=SambaOCHelper()):
+    def __init__(self, dry_run=False, samba_helper=SambaOCHelper(),
+                 imap_host=None, imap_port=None, imap_ssl=False):
         self.dry_run = dry_run
         self.samba_helper = samba_helper
+        self.imap_host = imap_host
+        self.imap_port = imap_port
+        self.imap_ssl = imap_ssl
         self.system_defaults_file = "/etc/sogo/sogo.conf"
 
     def _get_connection_url(self):
@@ -86,26 +90,34 @@ class ImapCleaner(object):
 
         return connection_url
 
-    def cleanup(self, username, password=""):
-        print "===== IMAP cleanup ====="
-
+    def _get_imap_from_sogo(self):
         connection_url = self._get_connection_url()
 
         # imap[s]://127.0.0.1:143
         m = re.search('(?P<scheme>.+)://(?P<host>.+):(?P<port>\d+)',
                       connection_url)
         if not m:
-            raise Exception("ERROR Unable to parse SOGoIMAPServer: %s" %
+            raise Exception("ERROR Unable to parse IMAPServer: %s" %
                             connection_url)
         group_dict = m.groupdict()
         if group_dict['scheme'] not in ('imaps', 'imap'):
-            raise Exception("SOGoIMAPServer should start with imap[s]:// "
+            raise Exception("IMAPServer should start with imap[s]:// "
                             "(we got %s)", group_dict['scheme'])
 
-        if group_dict['scheme'] == 'imap':
-            client = imaplib.IMAP4(group_dict['host'], group_dict['port'])
+        self.imap_host = group_dict['host']
+        self.imap_port = group_dict['port']
+        self.imap_ssl = group_dict['scheme'] == 'imaps'
+
+    def cleanup(self, username, password=""):
+        print "===== IMAP cleanup ====="
+
+        if not self.imap_host:
+            self._get_imap_from_sogo()
+
+        if self.imap_ssl:
+            client = imaplib.IMAP4_SSL(self.imap_host, self.imap_port)
         else:
-            client = imaplib.IMAP4_SSL(group_dict['host'], group_dict['port'])
+            client = imaplib.IMAP4(self.imap_host, self.imap_port)
 
         if not password:
             master_file = self.samba_helper.samba_lp.private_path('mapistore/master.password')

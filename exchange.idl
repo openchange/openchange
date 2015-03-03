@@ -4606,7 +4606,7 @@ System Attendant Private Interface
 		[default][flag(NDR_REMAINING|NDR_NOALIGN)] DATA_BLOB	Payload;
 	} AUX_HEADER_TYPE_UNION_2;
 
-	typedef [public,nopull,noprint,flag(NDR_NOALIGN)] struct {
+	typedef [public,nopull,nopush,noprint,flag(NDR_NOALIGN)] struct {
 		uint16							Size;
 		AUX_VERSION						Version;
 		uint8							Type;
@@ -4614,7 +4614,7 @@ System Attendant Private Interface
 		[switch_is(Type)] AUX_HEADER_TYPE_UNION_2		Payload_2;
 	} AUX_HEADER;
 
-	typedef [public,nopull,noprint] struct {
+	typedef [public,nopull,nopush,noprint] struct {
 		RPC_HEADER_EXT								RPC_HEADER_EXT;
 		[subcontext(0), subcontext_size(RPC_HEADER_EXT.Size)] AUX_HEADER	*AUX_HEADER;
 	} mapi2k7_AuxInfo;

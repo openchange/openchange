@@ -2631,7 +2631,14 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
 		}
                 else {
-			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, properties->aulPropTag[i], folder->folderID, data_pointers + i);
+                        /* We are not using emsmdbp_ctx->username because we want to impersonate to get the properties
+                           on shared folders */
+			owner = emsmdbp_get_owner(object);
+			if (!owner) {
+				/* Public folder? Then, use logged user */
+				owner = emsmdbp_ctx->username;
+			}
+			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, owner, properties->aulPropTag[i], folder->folderID, data_pointers + i);
                 }
 		retvals[i] = retval;
         }

@@ -835,6 +835,8 @@ _PUBLIC_ enum mapistore_error mapistore_folder_get_child_count(struct mapistore_
 
 	/* Sanity checks */
 	MAPISTORE_SANITY_CHECKS(mstore_ctx, NULL);
+	MAPISTORE_RETVAL_IF(!folder, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!RowCount, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	/* Step 0. Ensure the context exists */
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);

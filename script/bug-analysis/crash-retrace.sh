@@ -1,7 +1,7 @@
 #!/bin/bash
 
 OPTIND=1
-while getopts "vsgf" OPTION ; do # set $o to the next passed option
+while getopts "vsgfb" OPTION ; do # set $o to the next passed option
   case $OPTION in
     v)
        verbose=-v
@@ -14,6 +14,9 @@ while getopts "vsgf" OPTION ; do # set $o to the next passed option
        ;;
     f)
        out=--stacktrace-file
+       ;;
+    b)
+       config_dir=apport-config.backup
        ;;
     ?) echo "Invalid option $OPTION"
        exit 1;
@@ -33,8 +36,12 @@ if [ -z "$crashes" ]; then
     exit 1
 fi
 
+if [ -z "$config_dir" ]; then
+    config_dir=apport-config
+fi
+
 if [ -z "$out" ]; then
     out=--stdout
 fi
 
-APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c apport-config -C apport-sandbox-cache -S "$crashes" --oc-cd-conf=crash-digger.conf $verbose $out
+APPORT_CRASHDB_CONF=crashdb.conf ./oc-crash-digger -c $config_dir -C apport-sandbox-cache -S "$crashes" --oc-cd-conf=crash-digger.conf $verbose $out

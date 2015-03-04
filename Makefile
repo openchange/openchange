@@ -942,10 +942,11 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION): 	mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/backends/indexing_mysql.po		\
 							mapiproxy/util/mysql.po						\
 							mapiproxy/util/ccan/htable/htable.po				\
+							mapiproxy/util/ccan/hash/hash.po				\
 							mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)		\
 							libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(DSOOPT) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) -o $@ $^ $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS)
+	@$(CC) $(DSOOPT) $(MEMCACHED_CFLAGS) $(CFLAGS) $(LDFLAGS) -Wl,-soname,libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION) -o $@ $^ $(LIBS) $(TDB_LIBS) $(DL_LIBS) $(MYSQL_LIBS) $(MEMCACHED_LIBS)
 
 mapiproxy/libmapistore/mapistore_interface.po: mapiproxy/libmapistore/mapistore_nameid.h
 
@@ -1397,7 +1398,7 @@ bin/openchange-testsuite: 	testsuite/testsuite.o					\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) $(PYTHON_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) $(CFLAGS) $(CHECK_CFLAGS) $(TDB_CFLAGS) $(PYTHON_CFLAGS) -I. -Itestsuite/ -Imapiproxy -o $@ $^ $(LDFLAGS) $(LIBS) $(TDB_LIBS) $(CHECK_LIBS) $(MYSQL_LIBS) $(PYTHON_LIBS) -lpopt libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) $(MEMCACHED_LIBS)
 
 testsuite-check:	testsuite
 	@LD_LIBRARY_PATH=. PYTHONPATH=./python CK_XML_LOG_FILE_NAME=test_results.xml ./bin/openchange-testsuite
@@ -1579,7 +1580,7 @@ bin/check_fasttransfer:	testprogs/check_fasttransfer.o				\
 			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
-	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt
+	@$(CC) -o $@ $^ $(LIBS) $(LDFLAGS) -lpopt $(MEMCACHED_LIBS)
 
 ###################
 # test_asyncnotif test app.

@@ -9,7 +9,8 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ### Fixes
 * Fixed `Too many connections to ldap` when openchange runs on samba as member of a domain.
 
-
+### Performances
+* Fixed performance issue affecting initial synchronization of business size mailbox contents
 
 
 [//]: # (unreleased compare link should be changed to the latest release)

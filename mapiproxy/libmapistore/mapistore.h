@@ -163,6 +163,9 @@ struct indexing_context {
 
 	/* Custom backend data */
 	void *data;
+
+	/* Custom backend cache */
+	void *cache;
 };
 
 struct mapistore_backend {
@@ -270,6 +273,7 @@ struct mapistore_context {
 	struct mapistore_notification_list	*notifications;
 	struct namedprops_context		*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
+	const char				*cache;
 #if 0
 	mqd_t					mq_ipc;
 #endif
@@ -309,6 +313,8 @@ int mapistore_setprops(struct mapistore_context *, uint32_t, uint64_t, uint8_t, 
 
 struct mapistore_context *mapistore_init(TALLOC_CTX *, struct loadparm_context *, const char *);
 void mapistore_set_default_indexing_url(const char *);
+void mapistore_set_default_cache_url(const char *);
+char *mapistore_get_default_cache_url(void);
 enum mapistore_error mapistore_release(struct mapistore_context *);
 enum mapistore_error mapistore_set_connection_info(struct mapistore_context *, struct ldb_context *, struct openchangedb_context *, const char *);
 enum mapistore_error mapistore_add_context(struct mapistore_context *, const char *, const char *, uint64_t, uint32_t *, void **);

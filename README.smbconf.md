@@ -53,10 +53,14 @@ mapistore named properties backend
 mapistore indexing backend
 --------------------------
 
-- __mapistore:indexing_backend = STRING__ This option specified the
+- __mapistore:indexing_backend = STRING__ This option specifies the
   database URL to be used for indexing backend. If not present LDB
   backend will be use. The URL must have a format like:
   mysql://user:pass@hostname/database
+
+- __mapistore:indexing_cache = STRING__ This option specifies the
+  connection string to use to connect to the memcached server used
+  for fmid caching.
 
 mapiproxy openchangedb backend
 ------------------------------

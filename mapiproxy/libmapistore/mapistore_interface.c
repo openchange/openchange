@@ -49,6 +49,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	const char			*private_dir;
 	char				*mapping_path;
 	const char			*indexing_url;
+	const char			*cache_url;
 
 	if (!lp_ctx) {
 		return NULL;
@@ -106,6 +107,9 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
+
+	cache_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_cache");
+	mapistore_set_default_cache_url(cache_url);
 
 #if 0
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);

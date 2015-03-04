@@ -18,16 +18,13 @@
 #
 
 import optparse
-import os,sys
+import sys
 
 # To allow running from the source directory
 sys.path.append("python")
 
-import openchange
-
-import samba
 import samba.getopt as options
-import openchange.provision as openchange
+import openchange.provision as provision
 
 parser = optparse.OptionParser("openchange_newuser [options] <username>")
 
@@ -56,22 +53,25 @@ opts, args = parser.parse_args()
 if len(args) != 1:
     parser.print_usage()
     sys.exit(1)
-if opts.enable and opts.disable:
-    parser.error("The options --enable and --disable are mutually exclusive")
+elif not opts.create and not opts.enable and not opts.disable:
+    parser.error("missing action option: --create, --enable or --disable")
+elif opts.enable and opts.disable:
+    parser.error("--enable and --disable options are incompatible")
 
+
+username = args[0]
 lp = sambaopts.get_loadparm()
 creds = credopts.get_credentials(lp)
-provisionnames = openchange.guess_names_from_smbconf(
+provisionnames = provision.guess_names_from_smbconf(
     lp, creds, opts.firstorg, opts.firstou)
 
-if opts.create == True:
-    openchange.newuser(provisionnames, lp, creds, username=args[0], mail=opts.mail)
+if opts.create:
+    provision.newuser(provisionnames, lp, creds, username=username, mail=opts.mail)
 
-if opts.mailbox == True:
+if opts.mailbox:
     print "Mailbox provisioning is now performed automatically at user logon"
 
-if opts.enable == True:
-    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=0)
-
-if opts.disable == True:
-    openchange.accountcontrol(provisionnames, lp, creds, username=args[0], value=2)
+if opts.enable:
+    provision.accountcontrol(provisionnames, lp, creds, username=username, value=0)
+elif opts.disable:
+    provision.accountcontrol(provisionnames, lp, creds, username=username, value=2)

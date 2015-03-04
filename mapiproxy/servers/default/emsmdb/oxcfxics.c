@@ -811,7 +811,8 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	struct UI8Array_r		*deleted_eids;
 	struct SPropTagArray		*properties;
 	struct oxcfxics_message_sync_data	*message_sync_data;
-
+	struct SSortOrderSet		lpSortCriteria;
+	uint8_t				status;
 
 	mem_ctx = talloc_zero(NULL, void);
 
@@ -856,6 +857,19 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			DEBUG(5, ("push_messageChange: %d objects in table\n", table_object->object.table->denominator));
 			/* fetch maching mids */
 			message_sync_data->mids = talloc_array(message_sync_data, uint64_t, table_object->object.table->denominator);
+
+			/* sort messages: most recent delivery time first when available */
+			lpSortCriteria.cSorts = 1;
+			lpSortCriteria.cCategories = 0;
+			lpSortCriteria.cExpanded = 0;
+			lpSortCriteria.aSort = talloc_array(mem_ctx, struct SSortOrder, 1);
+			lpSortCriteria.aSort[0].ulPropTag = PidTagMessageDeliveryTime;
+			lpSortCriteria.aSort[0].ulOrder = TABLE_SORT_DESCEND;
+			mapistore_table_set_sort_order(emsmdbp_ctx->mstore_ctx, contextID,
+						       table_object->backend_object,
+						       &lpSortCriteria, &status);
+			talloc_free(lpSortCriteria.aSort);
+
 			for (i = 0; i < table_object->object.table->denominator; i++) {
 				data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table_object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 				if (data_pointers) {

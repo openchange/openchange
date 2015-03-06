@@ -137,9 +137,9 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 		/* return an opaque context pointer on samDB database */
 		if (!samdb_url) {
-			samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+			samdb_ctx = samdb_connect(talloc_autofree_context(), ev, lp_ctx, system_session(lp_ctx), 0);
 		} else {
-			samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), LDB_FLG_RECONNECT, samdb_url);
+			samdb_ctx = samdb_connect_url(talloc_autofree_context(), ev, lp_ctx, system_session(lp_ctx), LDB_FLG_RECONNECT, samdb_url);
 		}
 	}
 

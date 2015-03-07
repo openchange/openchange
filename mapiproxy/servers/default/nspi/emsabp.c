@@ -71,17 +71,17 @@ _PUBLIC_ struct emsabp_context *emsabp_init(struct loadparm_context *lp_ctx,
 
 	emsabp_ctx->mem_ctx = mem_ctx;
 
-	ev = tevent_context_init(mem_ctx);
-	if (!ev) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-	tevent_loop_allow_nesting(ev);
-
 	/* Save a pointer to the loadparm context */
 	emsabp_ctx->lp_ctx = lp_ctx;
 
 	if (!samdb_ctx) {
+		ev = tevent_context_init(talloc_autofree_context());
+		if (!ev) {
+			talloc_free(mem_ctx);
+			return NULL;
+		}
+		tevent_loop_allow_nesting(ev);
+
 		/* Retrieve samdb url (local or external) */
 		samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
 

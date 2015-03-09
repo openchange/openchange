@@ -50,7 +50,7 @@
  */
 static char *_memcached_gen_key(TALLOC_CTX *mem_ctx, const char *uri)
 {
-	return talloc_asprintf(mem_ctx, "%"PRIx64, hash64_any((void *)uri, strlen(uri), 0));
+	return talloc_asprintf(mem_ctx, "%"PRIx64, hash64((void *)uri, strlen(uri), 0));
 }
 
 

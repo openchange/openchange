@@ -175,9 +175,11 @@ static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
 	memcached_st		*memc;
 	memcached_return_t	error;
 	uint32_t		flags;
+	uint64_t		_fmid = 0;
 	char			*key;
 	char			*value;
 	size_t			value_len;
+	bool			bret = false;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
@@ -195,7 +197,10 @@ static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
 	value = memcached_get(memc, key, strlen(key), &value_len, &flags, &error);
 	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERROR, mem_ctx);
 
-	*fmid = strtoull(value, NULL, 0);
+	bret = convert_string_to_ull(value, &_fmid);
+	MAPISTORE_RETVAL_IF(!bret, MAPISTORE_ERROR, mem_ctx);
+	*fmid = _fmid;
+
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;
 }

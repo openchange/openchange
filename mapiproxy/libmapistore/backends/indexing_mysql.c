@@ -230,10 +230,10 @@ static enum mapistore_error _memcached_add_record(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	key = _memcached_gen_key(mem_ctx, uri);
-	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	value = _memcached_gen_value(mem_ctx, fmid);
-	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	memc = (memcached_st *)ictx->cache;
 	rc = memcached_add(memc, key, strlen(key), value, strlen(value), 0, 0);
@@ -273,10 +273,10 @@ static enum mapistore_error _memcached_update_record(struct indexing_context *ic
 	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	key = _memcached_gen_key(mem_ctx, uri);
-	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	value = _memcached_gen_value(mem_ctx, fmid);
-	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	memc = (memcached_st *)ictx->cache;
 	rc = memcached_set(memc, key, strlen(key), value, strlen(value), 0, 0);

@@ -5,6 +5,7 @@
 
    Copyright (C) Carlos Pérez-Aradros Herce 2014
    Copyright (C) Jesús García Sáez 2014
+   Copyright (C) Julien Kerihuel 2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -29,14 +30,305 @@
 #include "libmapi/libmapi_private.h"
 #include <mysql/mysql.h>
 #include "../../util/mysql.h"
+#include "../../util/ccan/hash/hash.h"
 #include "../../util/schema_migration.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
 
 #include <talloc.h>
-
+#include <libmemcached/memcached.h>
 
 #define MYSQL(context)	((MYSQL *)context->data)
 
+
+/**
+   \details Generate key for FMID cache
+
+   \param mem_ctx pointer to the memory context
+   \param uri pointer to the uri to use for hashing
+
+   \return String allocated with TALLOC on success, otherwise NULL
+ */
+static char *_memcached_gen_key(TALLOC_CTX *mem_ctx, const char *uri)
+{
+	return talloc_asprintf(mem_ctx, "%"PRIx64, hash64((void *)uri, strlen(uri), 0));
+}
+
+
+/**
+   \details Generate value for FMID cache
+
+   \param mem_ctx pointer to the memory context
+   \param fmid the fmid to convert
+
+   \return String allocated with TALLOC on success, otherwise NULL
+ */
+static char *_memcached_gen_value(TALLOC_CTX *mem_ctx, uint64_t fmid)
+{
+	return talloc_asprintf(mem_ctx, "%"PRIu64, fmid);
+}
+
+
+/**
+   \details Prepare FMID cache for specified user
+
+   \param ictx valid pointer to the indexing context
+   \param conn_str connection string to memcached server
+   \param username name of the user for to create the FMID cache for
+
+   \note Fallback to 127.0.0.1:11211 if server_string is missing
+
+   \return valid memcached_st pointer on success, otherwise NULL
+ */
+static memcached_st *_memcached_setup(struct indexing_context *ictx,
+				      const char *conn_str,
+				      const char *username)
+{
+	TALLOC_CTX		*mem_ctx;
+	char			*sql;
+	int			mret;
+	MYSQL_RES		*res;
+	uint32_t		num_rows = 0;
+	memcached_server_st	*servers = NULL;
+	memcached_st		*memc = NULL;
+	memcached_return	rc;
+	uint32_t		i;
+
+	DEBUG(5, ("[INFO] _memcached_setup for '%s'\n", username));
+
+	/* Sanity checks */
+	if (!ictx) return NULL;
+	if (!username) return NULL;
+
+	if (ictx->cache != NULL) {
+		return ictx->cache;
+	}
+
+	/* Initialize memcached connection */
+	if (conn_str) {
+		memc = memcached(conn_str, strlen(conn_str));
+		if (!memc) return NULL;
+	} else {
+		memc = (memcached_st *) memcached_create(NULL);
+		if (!memc) return NULL;
+
+		servers = memcached_server_list_append(servers, "127.0.0.1", 11211, &rc);
+		rc = memcached_server_push(memc, servers);
+		if (rc != MEMCACHED_SUCCESS) {
+			DEBUG(0, ("[ERR]: Unable to add server to memcached list\n"));
+			return NULL;
+		}
+	}
+	/* Retrieve indexing records for user */
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) return NULL;
+
+	sql = talloc_asprintf(mem_ctx, "SELECT fmid,url FROM "INDEXING_TABLE" "
+			      "WHERE username = '%s'", _sql(mem_ctx, username));
+
+	mret = select_without_fetch(MYSQL(ictx), sql, &res);
+	if (mret != MYSQL_SUCCESS) {
+		talloc_free(mem_ctx);
+		return NULL;
+	}
+
+	num_rows = mysql_num_rows(res);
+	DEBUG(5, ("[INFO] _memcached_setup: %d values to index\n", num_rows));
+
+	/* store records into memcached */
+	for (i = 0; i < num_rows; i++) {
+		MYSQL_ROW row = mysql_fetch_row(res);
+
+		if (row) {
+			char *hashstr = NULL;
+
+			hashstr = _memcached_gen_key(mem_ctx, row[1]);
+			if (hashstr) {
+				rc = memcached_add(memc, hashstr, strlen(hashstr),
+						   row[0], strlen(row[0]), 0, 0);
+				talloc_free(hashstr);
+				if (rc != MEMCACHED_SUCCESS) {
+					DEBUG(8, ("[ERR] Key %s not stored\n", row[1]));
+				}
+			}
+		}
+	}
+
+	mysql_free_result(res);
+	talloc_free(mem_ctx);
+	return memc;
+}
+
+
+/**
+   \details Retrieve FMID value from cache database given its uri
+
+   \param ictx valid pointer to the indexing context
+   \param uri pointer to the uri used to hash the key
+   \param pointer to the fmid to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error _memcached_get_record(struct indexing_context *ictx,
+						  const char *uri, uint64_t *fmid)
+{
+	TALLOC_CTX		*mem_ctx;
+	memcached_st		*memc;
+	memcached_return_t	error;
+	uint32_t		flags;
+	uint64_t		_fmid = 0;
+	char			*key;
+	char			*value;
+	size_t			value_len;
+	bool			bret = false;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!ictx->cache, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	key = _memcached_gen_key(mem_ctx, uri);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	memc = ictx->cache;
+	value = memcached_get(memc, key, strlen(key), &value_len, &flags, &error);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERROR, mem_ctx);
+
+	bret = convert_string_to_ull(value, &_fmid);
+	MAPISTORE_RETVAL_IF(!bret, MAPISTORE_ERROR, mem_ctx);
+	*fmid = _fmid;
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Add record to the cache database
+
+   \param ictx valid pointer to the indexing context
+   \param uri pointer to the uri used to hash the key
+   \param fmid the value of the key/value pair
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error _memcached_add_record(struct indexing_context *ictx,
+						  const char *uri, uint64_t fmid)
+{
+	TALLOC_CTX		*mem_ctx;
+	memcached_st		*memc;
+	memcached_return_t	rc;
+	char			*key;
+	char			*value;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Return MAPISTORE_SUCCESS if cache is not configured */
+	MAPISTORE_RETVAL_IF(!ictx->cache, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	key = _memcached_gen_key(mem_ctx, uri);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	value = _memcached_gen_value(mem_ctx, fmid);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	memc = (memcached_st *)ictx->cache;
+	rc = memcached_add(memc, key, strlen(key), value, strlen(value), 0, 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, MAPISTORE_ERROR, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Update record in the cache database
+
+   \param ictx valid pointer to the indexing context
+   \param uri pointer to the uri used to hash the key
+   \param fmid the value of the key/value pair
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error _memcached_update_record(struct indexing_context *ictx,
+						     const char *uri, uint64_t fmid)
+{
+	TALLOC_CTX		*mem_ctx;
+	memcached_st		*memc;
+	memcached_return_t	rc;
+	char			*key;
+	char			*value;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Return MAPISTORE_SUCCESS if cache is not configured */
+	MAPISTORE_RETVAL_IF(!ictx->cache, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	key = _memcached_gen_key(mem_ctx, uri);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	value = _memcached_gen_value(mem_ctx, fmid);
+	MAPISTORE_RETVAL_IF(!value, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	memc = (memcached_st *)ictx->cache;
+	rc = memcached_set(memc, key, strlen(key), value, strlen(value), 0, 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, MAPISTORE_ERROR, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Delte record from the cache database
+
+   \param ictx valid pointer to the indexing context
+   \param uri pointer to the uri used to hash the key
+   \param fmid the value of the key/value pair
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+static enum mapistore_error _memcached_delete_record(struct indexing_context *ictx,
+						     const char *uri)
+{
+	TALLOC_CTX		*mem_ctx;
+	memcached_st		*memc;
+	memcached_return_t	rc;
+	char			*key;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!uri, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Return MAPISTORE_SUCCESS if cache is not configured */
+	MAPISTORE_RETVAL_IF(!ictx->cache, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	key = _memcached_gen_key(mem_ctx, uri);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	memc = (memcached_st *)ictx->cache;
+	rc = memcached_delete(memc, key, strlen(key), 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, MAPISTORE_ERROR, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
 
 /**
   \details Search for existing FMID in indexing database
@@ -95,10 +387,11 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 					   uint64_t fmid,
 					   const char *mapistore_URI)
 {
-	int		ret;
-	bool		IsSoftDeleted = false;
-	char		*sql;
-	TALLOC_CTX	*mem_ctx;
+	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	bool			IsSoftDeleted = false;
+	char			*sql;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -121,8 +414,10 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
+	retval = _memcached_add_record(ictx, mapistore_URI, fmid);
+
 	talloc_free(mem_ctx);
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
 
 /**
@@ -144,9 +439,10 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 						uint64_t fmid,
 						const char *mapistore_URI)
 {
-	int		ret;
-	char		*sql;
-	TALLOC_CTX	*mem_ctx;
+	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	int			ret;
+	char			*sql;
+	TALLOC_CTX		*mem_ctx;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -155,90 +451,33 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!mapistore_URI, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	sql = talloc_asprintf(mem_ctx,
 		"UPDATE %s "
 		"SET url = '%s' "
 		"WHERE username = '%s' AND fmid = '%"PRIu64"'",
 		INDEXING_TABLE, _sql(mem_ctx, mapistore_URI), _sql(mem_ctx, username), fmid);
+	MAPISTORE_RETVAL_IF(!sql, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
-	talloc_free(mem_ctx);
 
 	/* did we updated anything? */
 	/* TODO: Move mysql_affected_rows() in execute_query() */
 	if (mysql_affected_rows(MYSQL(ictx)) == 0) {
-		return MAPISTORE_ERR_NOT_FOUND;
+		retval = MAPISTORE_ERR_NOT_FOUND;
+		goto end;
 	}
 
-	return MAPISTORE_SUCCESS;
-}
+	retval = _memcached_update_record(ictx, mapistore_URI, fmid);
 
-/**
-  \details Delete FMID mapping from database.
-	   Note that function will succeed when there is no such FMID
-
-  \param ictx valid pointer to indexing context
-  \param username samAccountName for current user
-  \param fmid FMID to delete
-  \param flags MAPISTORE_SOFT_DELETE - soft delete the entry,
-	       MAPISTORE_PERMANENT_DELETE - permanently delete
-
-  \return MAPISTORE_SUCCESS on success
-	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
-	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
-	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
- */
-static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
-					     const char *username,
-					     uint64_t fmid,
-					     uint8_t flags)
-{
-	int		ret;
-	bool		IsSoftDeleted = false;
-	char		*sql;
-	TALLOC_CTX	*mem_ctx;
-
-
-	/* Sanity checks */
-	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
-	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
-
-	/* Check if the fid/mid still exists within the database */
-	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
-	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_SUCCESS, NULL);
-
-	mem_ctx = talloc_new(NULL);
-
-	switch (flags) {
-	case MAPISTORE_SOFT_DELETE:
-		/* nothing to do if the record is already soft deleted */
-		MAPISTORE_RETVAL_IF(IsSoftDeleted == true, MAPISTORE_SUCCESS, NULL);
-		sql = talloc_asprintf(mem_ctx,
-			"UPDATE %s "
-			"SET soft_deleted=1 "
-			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
-			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
-		break;
-	case MAPISTORE_PERMANENT_DELETE:
-		sql = talloc_asprintf(mem_ctx,
-			"DELETE FROM %s "
-			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
-			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
-		break;
-	default:
-		talloc_free(mem_ctx);
-		return MAPISTORE_ERR_INVALID_PARAMETER;
-	}
-
-	execute_query(MYSQL(ictx), sql);
-	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
-
+end:
 	talloc_free(mem_ctx);
-	return MAPISTORE_SUCCESS;
+	return retval;
 }
+
 
 /**
   \details Get mapistore URI by FMID.
@@ -295,6 +534,79 @@ static enum mapistore_error mysql_record_get_uri(struct indexing_context *ictx,
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+  \details Delete FMID mapping from database.
+	   Note that function will succeed when there is no such FMID
+
+  \param ictx valid pointer to indexing context
+  \param username samAccountName for current user
+  \param fmid FMID to delete
+  \param flags MAPISTORE_SOFT_DELETE - soft delete the entry,
+	       MAPISTORE_PERMANENT_DELETE - permanently delete
+
+  \return MAPISTORE_SUCCESS on success
+	  MAPISTORE_ERR_NOT_INITIALIZED if ictx pointer is invalid (NULL)
+	  MAPISTORE_ERR_INVALID_PARAMETER in case other parameters are not valid
+	  MAPISTORE_ERR_DATABASE_OPS in case of MySQL error
+ */
+static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
+					     const char *username,
+					     uint64_t fmid,
+					     uint8_t flags)
+{
+	enum mapistore_error	retval;
+	TALLOC_CTX		*mem_ctx;
+	int			ret;
+	bool			IsSoftDeleted = false;
+	char			*sql;
+	char			*uri = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!username, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!fmid, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	/* Check if the fid/mid still exists within the database */
+	ret = mysql_search_existing_fmid(ictx, username, fmid, &IsSoftDeleted);
+	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_SUCCESS, NULL);
+
+	mem_ctx = talloc_new(NULL);
+
+	switch (flags) {
+	case MAPISTORE_SOFT_DELETE:
+		/* nothing to do if the record is already soft deleted */
+		MAPISTORE_RETVAL_IF(IsSoftDeleted == true, MAPISTORE_SUCCESS, NULL);
+		sql = talloc_asprintf(mem_ctx,
+			"UPDATE %s "
+			"SET soft_deleted=1 "
+			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
+			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
+		break;
+	case MAPISTORE_PERMANENT_DELETE:
+		sql = talloc_asprintf(mem_ctx,
+			"DELETE FROM %s "
+			"WHERE username = '%s' AND fmid = '%"PRIu64"'",
+			INDEXING_TABLE, _sql(mem_ctx, username), fmid);
+		break;
+	default:
+		talloc_free(mem_ctx);
+		return MAPISTORE_ERR_INVALID_PARAMETER;
+	}
+
+	retval = mysql_record_get_uri(ictx, username, mem_ctx, fmid, &uri, &IsSoftDeleted);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	execute_query(MYSQL(ictx), sql);
+	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
+
+	retval = _memcached_delete_record(ictx, uri);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
 /**
   \details Get FMID by mapistore URI.
 
@@ -318,11 +630,13 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 						  uint64_t *fmidp,
 						  bool *soft_deletedp)
 {
+	enum mapistore_error	retval;
 	enum MYSQLRESULT	ret;
 	char			*sql, *uri_like;
 	MYSQL_RES		*res;
 	MYSQL_ROW		row;
 	TALLOC_CTX		*mem_ctx;
+	uint64_t		fmid = 0;
 
 	// Sanity checks
 	MAPISTORE_RETVAL_IF(!ictx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -331,11 +645,19 @@ static enum mapistore_error mysql_record_get_fmid(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(!fmidp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!soft_deletedp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
+	retval = _memcached_get_record(ictx, uri, &fmid);
+	if (retval == MAPISTORE_SUCCESS) {
+		*fmidp = fmid;
+		*soft_deletedp = 0;
+		return retval;
+	}
+
 	mem_ctx = talloc_named(NULL, 0, "mysql_record_get_fmid");
 
 	sql = talloc_asprintf(mem_ctx,
 		"SELECT fmid, soft_deleted FROM "INDEXING_TABLE" "
 		"WHERE username = '%s'", _sql(mem_ctx, username));
+
 	if (partial) {
 		uri_like = talloc_strdup(mem_ctx, uri);
 		string_replace(uri_like, '*', '%');
@@ -443,6 +765,9 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 {
 	if (ictx && ictx->data) {
 		MYSQL *conn = ictx->data;
+		if (ictx->cache) {
+			memcached_free((memcached_st *)ictx->cache);
+		}
 		if (ictx->url) {
 			DEBUG(5, ("[%s:%d] Destroying indexing context `%s`\n",
 				  __FUNCTION__, __LINE__, ictx->url));
@@ -457,6 +782,7 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 	}
 	return 0;
 }
+
 
 /**
    \details Open connection to indexing database for a given user
@@ -477,6 +803,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	struct indexing_context	*ictx;
 	MYSQL			*conn = NULL;
 	int			schema_created_ret;
+	char			*cache_url = NULL;
 
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
@@ -517,6 +844,10 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	ictx->get_fmid = mysql_record_get_fmid;
 	ictx->allocate_fmid = mysql_record_allocate_fmid;
 	ictx->allocate_fmids = mysql_record_allocate_fmids;
+
+	/* Data pointers */
+	cache_url = mapistore_get_default_cache_url();
+	ictx->cache = _memcached_setup(ictx, cache_url, username);
 
 	*ictxp = ictx;
 

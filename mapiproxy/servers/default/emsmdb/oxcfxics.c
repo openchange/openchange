@@ -3304,6 +3304,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			if (ret == MAPISTORE_SUCCESS) {
 				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 				talloc_free(message_object);
+			} else {
+				DEBUG(5, ("[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret)));
 			}
 		}
 	}

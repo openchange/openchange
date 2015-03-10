@@ -2162,7 +2162,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 	if (!parent_object) return MAPISTORE_ERROR;
 
 	local_mem_ctx = talloc_new(NULL);
-	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
 
 	retval = emsmdbp_object_open_folder_by_fid(local_mem_ctx, emsmdbp_ctx, parent_object, folderID, &folder_object);
 	if (retval != MAPI_E_SUCCESS)  {

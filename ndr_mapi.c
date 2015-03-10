@@ -1172,28 +1172,39 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pulTimeStamp");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
-		
+
 		{
 			uint32_t 	size_rgbAuxOut_0 = 0;			
-			uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
-			struct ndr_push	*_ndr_rgbAuxOut;
-
-			ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
-			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_rgbAuxOut, 4, -1));
 			
+			/* Does rgbAuxOut exist (it is optional) */
 			if (r->out.rgbAuxOut == NULL) {
-				return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
+				/* No, push empty conformant-varying array */
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));		
 			}
-			NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxOut, NDR_SCALARS|NDR_BUFFERS, r->out.rgbAuxOut));
-			
-			size_rgbAuxOut_0 = _ndr_rgbAuxOut->offset;
+			else {
+				/* Yes, encode contents to temporary buffer to determine size */
+				uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
+				struct ndr_push	*_ndr_rgbAuxOut;
 
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, size_rgbAuxOut_0));
-			NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_rgbAuxOut, 4, -1));
+				
+				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxOut, NDR_SCALARS|NDR_BUFFERS, r->out.rgbAuxOut));
+
+				/* Extract encoded size */
+				size_rgbAuxOut_0 = _ndr_rgbAuxOut->offset;
+				
+				/* Push conformant-varying array of encoded size bytes */
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, size_rgbAuxOut_0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxOut, 4, -1));
 			
-			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxOut, 4, -1));
-			ndr->flags = _flags_save_mapi2k7_AuxInfo;
+				ndr->flags = _flags_save_mapi2k7_AuxInfo;
+			}
 			
+			/* Value in pcbAuxOut is not used, size was calculated when rgbAuxOut was pushed above */ 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 		}
 		

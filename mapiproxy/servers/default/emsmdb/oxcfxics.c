@@ -1298,6 +1298,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 	int32_t			unix_time, contextID;
 	uint32_t		i, j;
 	enum MAPISTATUS		*retvals, *header_retvals;
+	enum mapistore_error	retval;
 	void			**data_pointers, **header_data_pointers;
 	struct SPropTagArray	query_props;
 	struct GUID		replica_guid;
@@ -1468,15 +1469,14 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			talloc_free(data_pointers);
 			talloc_free(retvals);
 			
-			/* TODO: check return code */
-			emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
-			oxcfxics_push_folderChange(emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
-			talloc_free(subfolder_object);
+			retval = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
+			if (retval == MAPISTORE_SUCCESS) {
+				oxcfxics_push_folderChange(emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
+				talloc_free(subfolder_object);
+			} else {
+				DEBUG(5, ("[oxcfxics] Fail open folder %"PRIu64" from parent folder %"PRIu64" (retval %d)", eid, folder_object->object.folder->folderID, retval));
+			}
 		}
-		/* else { */
-		/* 	DEBUG(5, ("no data returned for folder row %d\n", i)); */
-		/* 	abort(); */
-		/* } */
 	}
 
 	talloc_free(mem_ctx);

@@ -500,7 +500,6 @@ def deprovision_organization(setup_path, names, lp, creds, reporter=None):
     if reporter is None:
         reporter = TextProgressReporter()
 
-    sam_db = get_schema_master_samdb(names, lp, creds)
     try:
         deprovision_schema(setup_path, names, lp, creds, reporter, "AD/oc_provision_configuration_org.ldif", "Exchange Organization objects")
     except LdbError, ldb_error:
@@ -529,16 +528,28 @@ def get_ldb_url(lp, creds, names):
 
 
 def get_user_dn(ldb, basedn, username):
+    ldb_filter = "(&(objectClass=user)(sAMAccountName=%s))" % username
+    return _get_element_dn(ldb, basedn, ldb_filter)
+
+
+def get_group_dn(ldb, basedn, groupname):
+    ldb_filter = "(&(objectClass=group)(sAMAccountName=%s))" % groupname
+    return _get_element_dn(ldb, basedn, ldb_filter)
+
+
+def _get_element_dn(ldb, basedn, ldb_filter):
     if not isinstance(ldb, Ldb):
         raise TypeError("'ldb' argument must be an Ldb intance")
 
-    ldb_filter = "(&(objectClass=user)(sAMAccountName=%s))" % username
+    dn = None
     res = ldb.search(base=basedn, scope=SCOPE_SUBTREE, expression=ldb_filter, attrs=["*"])
-    user_dn = None
-    if len(res) == 1:
-        user_dn = res[0].dn.get_linearized()
+    n_res = len(res)
+    if n_res == 1:
+        dn = res[0].dn.get_linearized()
+    elif n_res > 1:
+        raise "More than one result for search %s with base %s" % (ldb_filter, basedn)
 
-    return user_dn
+    return dn
 
 
 def get_schema_master(db):
@@ -599,16 +610,7 @@ def newuser(names, lp, creds, username=None, mail=None):
     db = get_local_samdb(names, lp, creds)
     user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
     if user_dn:
-        if mail:
-            smtp_user = mail
-        else:
-            smtp_user = username
-        if '@' not in smtp_user:
-            smtp_user += '@%s' % names.dnsdomain
-            mail_domain = names.dnsdomain
-        else:
-            mail_domain = smtp_user.split('@')[1]
-
+        smtp_user, mail_domain = _smtp_user_and_domain_by_dn(user_dn, username, mail, names)
         extended_user = """
 dn: %(user_dn)s
 changetype: modify
@@ -621,12 +623,16 @@ homeMTA: CN=Mailbox Store (%(netbiosname)s),CN=First Storage Group,CN=Informatio
 add: legacyExchangeDN
 legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
 add: proxyAddresses
-proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
-proxyAddresses: smtp:postmaster@%(mail_domain)s
-proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
 proxyAddresses: SMTP:%(smtp_user)s
+proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(username)s
+proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(username)s
+proxyAddresses: SMTP:postmaster@%(mail_domain)s
 replace: msExchUserAccountControl
 msExchUserAccountControl: 0
+add: msExchRecipientTypeDetails
+msExchRecipientTypeDetails: 6
+add: msExchRecipientDisplayType
+msExchRecipientDisplayType: 0
 """
         ldif_value = extended_user % {"user_dn": user_dn,
                                       "username": username,
@@ -661,7 +667,7 @@ msExchUserAccountControl: 0
         print "[!] User '%s' not found" % username
 
 
-def accountcontrol(names, lp, creds, username=None, value=0):
+def accountcontrol(names, lp, creds, username, value=0):
     """enable/disable an OpenChange user account.
 
     :param lp: Loadparm context
@@ -672,18 +678,173 @@ def accountcontrol(names, lp, creds, username=None, value=0):
     """
     db = Ldb(url=get_ldb_url(lp, creds, names), session_info=system_session(),
              credentials=creds, lp=lp)
-    user_dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
-    extended_user = """
+    dn = get_user_dn(db, "CN=Users,%s" % names.domaindn, username)
+    ldif = """
 dn: %s
 changetype: modify
 replace: msExchUserAccountControl
 msExchUserAccountControl: %d
-""" % (user_dn, value)
-    db.modify_ldif(extended_user)
+""" % (dn, value)
+    db.modify_ldif(ldif)
     if value == 2:
         print "[+] Account %s disabled" % username
     else:
         print "[+] Account %s enabled" % username
+
+
+def newgroup(names, lp, creds, groupname, mail=None,):
+    """extend user record with OpenChange settings.
+
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: provision names object.
+    :param username: Name of user to extend
+    :param mail: The user email address. If not specified, it will be set
+                 to <samAccountName>@<dnsdomain>
+    """
+    db = get_local_samdb(names, lp, creds)
+    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+
+    if group_dn:
+        smtp_user, mail_domain = _smtp_user_and_domain_by_dn(group_dn, groupname, mail, names)
+        (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
+        extended_group = """
+dn: %(group_dn)s
+changetype: modify
+add: mailNickName
+mailNickname: %(groupname)s
+add: legacyExchangeDN
+legacyExchangeDN: /o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
+add: proxyAddresses
+proxyAddresses: SMTP:%(smtp_user)s
+proxyAddresses: =EX:/o=%(firstorg)s/ou=%(firstou)s/cn=Recipients/cn=%(groupname)s
+proxyAddresses: SMTP:postmaster@%(mail_domain)s
+proxyAddresses: X400:c=US;a= ;p=%(firstorg_x400)s;o=%(firstou_x400)s;s=%(groupname)s
+add: msExchRecipientTypeDetails
+msExchRecipientTypeDetails: %(recipient_type_details)s
+add: msExchRecipientDisplayType
+msExchRecipientDisplayType: %(recipient_display_type)s
+"""
+        ldif_value = extended_group % {"group_dn": group_dn,
+                                       "groupname": groupname,
+                                       "firstorg": names.firstorg,
+                                       "firstorg_x400": names.firstorg[:16],
+                                       "firstou": names.firstou,
+                                       "firstou_x400": names.firstou[:64],
+                                       "smtp_user": smtp_user,
+                                       "mail_domain": mail_domain,
+                                       "recipient_type_details": recipient_type_details,
+                                       "recipient_display_type": recipient_display_type}
+        db.modify_ldif(ldif_value)
+
+        res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=["*"])
+        if len(res) == 1:
+            record = res[0]
+        else:
+            raise Exception("this should never happen as we just modified the record...")
+        record_keys = map(lambda x: x.lower(), record.keys())
+
+        if "displayname" not in record_keys:
+            extended_group = "dn: %s\nadd: displayName\ndisplayName: %s\n" % (group_dn, groupname)
+            db.modify_ldif(extended_group)
+
+        if "mail" not in record_keys:
+            extended_group = "dn: %s\nadd: mail\nmail: %s\n" % (group_dn, smtp_user)
+            db.modify_ldif(extended_group)
+
+        print "[+] Group %s extended and enabled" % groupname
+    else:
+        print "[!] Group '%s' not found" % groupname
+
+
+def delete_group(names, lp, creds, groupname):
+    """
+    Remove openchange provision attributes from group
+    """
+    db = get_local_samdb(names, lp, creds)
+    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+    if not group_dn:
+        raise Exception("Group not found " + group_dn)    
+    ldif = """
+dn: %(group_dn)s
+changetype: modify
+delete: mailNickName
+delete: legacyExchangeDN
+delete: proxyAddresses
+delete: msExchRecipientTypeDetails
+delete: msExchRecipientDisplayType
+"""
+    ldif = ldif % {"group_dn": group_dn}
+    db.modify_ldif(ldif)
+
+
+def update_group(names, lp, creds, groupname):
+    """
+    Update the attributes for the group, should be called when a group is switched from security to distribution.
+    :param lp: Loadparm context
+    :param creds: Credentials context
+    :param names: provision names object.
+    :param username: Name of user to extend
+    """
+    db = get_local_samdb(names, lp, creds)
+    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+
+    res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['legacyExchangeDN'])
+    if len(res)==0:
+       raise Exception("Group " + groupname + " is not provisioned for OpenChange") 
+
+    (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
+    ldif = """
+dn: %(group_dn)s
+changetype: modify
+replace: msExchRecipientTypeDetails
+msExchRecipientTypeDetails: %(recipient_type_details)s
+replace: msExchRecipientDisplayType
+msExchRecipientDisplayType: %(recipient_display_type)s
+"""
+    ldif = ldif % {"group_dn": group_dn,
+                   "recipient_type_details": recipient_type_details,
+                   "recipient_display_type": recipient_display_type}
+    db.modify_ldif(ldif)
+
+
+def _group_recipient_type_details(db, group_dn):
+    """
+    Returned tuple (recipient_type_details, recipient_display_type)
+    Values from http://blogs.technet.com/b/benw/archive/2007/04/05/exchange-2007-and-recipient-type-details.aspx
+    Display type for Universal Security Group does not work in outlook2010 so I am using the 
+    one for distribution group
+    """
+    res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['groupType'])
+    if len(res) == 1:
+        groupType = int(res[0]['groupType'][0])
+        universal = groupType & 0x8
+        security = groupType & 0x80000000
+    else:
+        raise Exception("Group not found " + group_dn)
+
+    if security and universal:
+        return (1024, 1)
+    elif security and not universal:
+        # no value for this combination, using the previous one
+        return (1024, 1)
+    elif not security and universal:
+        return (256, 1)
+    elif not security and not universal:
+        return (512, 1)
+
+
+def _smtp_user_and_domain_by_dn(dn, name, mail, names):
+    if mail:
+        smtp_user = mail
+    else:
+        smtp_user = name
+    if '@' not in smtp_user:
+        smtp_user += '@%s' % names.dnsdomain
+        mail_domain = names.dnsdomain
+    else:
+        mail_domain = smtp_user.split('@')[1]
+    return smtp_user, mail_domain
 
 
 def checkusage(names, lp, creds):

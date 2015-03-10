@@ -2631,7 +2631,14 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			}
 		}
                 else {
-			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, properties->aulPropTag[i], folder->folderID, data_pointers + i);
+                        /* We are not using emsmdbp_ctx->username because we want to impersonate to get the properties
+                           on shared folders */
+			owner = emsmdbp_get_owner(object);
+			if (!owner) {
+				/* Public folder? Then, use logged user */
+				owner = emsmdbp_ctx->username;
+			}
+			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, owner, properties->aulPropTag[i], folder->folderID, data_pointers + i);
                 }
 		retvals[i] = retval;
         }
@@ -3128,4 +3135,233 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_ftcontext_init(TALLOC_CTX *mem_ct
 	object->type = EMSMDBP_OBJECT_FTCONTEXT;
 
 	return object;
+}
+
+/**
+   \details Create the XML file from the sharing message object and store it as
+            binary property in attach_bin out parameter.
+
+   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
+   \param sharing_object the sharing message object to get the XML data from
+   \param [out] attach_bin pointer to Binary_r property value pointer where the XML data is stored
+   \param mem_ctx pointer to memory context where the attach_bin is created
+
+   \note On success attach_bin is allocated in mem_ctx. It is up to the developer
+   to free that memory context when it is not needed anymore.
+
+   \return MAPI_E_SUCCESS on success, a mapi error code otherwise
+ */
+static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *sharing_object, struct Binary_r **attach_bin, TALLOC_CTX *mem_ctx)
+{
+	struct Binary_r		       *bin;
+	char			       *xml;
+	struct emsmdbp_prop_index      prop_index;
+	int			       i;
+	enum MAPISTATUS		       *retvals = NULL;
+	struct mapistore_message       *msg_data = NULL;
+	const enum MAPITAGS	       sharing_prop_tags[] = {PidLidSharingLocalType, PidLidSharingInitiatorName, PidLidSharingInitiatorSmtp, PidLidSharingInitiatorEntryId, PidLidSharingRemoteName, PidLidSharingRemoteUid, PidLidSharingRemoteStoreUid}; /* Only managing invitations by now */
+	struct SBinary_short	       *entryId;
+	struct SPropTagArray	       *sharing_properties;
+	struct SPropValue	       *attach_bin_property;
+	TALLOC_CTX		       *local_mem_ctx;
+	const uint32_t		       SHARING_PROPS_COUNT = sizeof(sharing_prop_tags) / sizeof(enum MAPITAGS);
+	uint32_t		       contextID;
+	void			       **data_pointers;
+
+	attach_bin_property = talloc_zero(mem_ctx, struct SPropValue);
+	OPENCHANGE_RETVAL_IF(!attach_bin_property, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	local_mem_ctx = talloc_named(NULL, 0, "sharing_metadata_property");
+	OPENCHANGE_RETVAL_IF(!local_mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* We get the required properties from the mapistore */
+	sharing_properties = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!sharing_properties, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	sharing_properties->cValues = SHARING_PROPS_COUNT;
+	sharing_properties->aulPropTag = talloc_array(local_mem_ctx, enum MAPITAGS, SHARING_PROPS_COUNT);
+	memcpy(sharing_properties->aulPropTag, sharing_prop_tags, sizeof(sharing_prop_tags));
+
+	data_pointers = emsmdbp_object_get_properties(local_mem_ctx, emsmdbp_ctx, sharing_object,
+						      sharing_properties, &retvals);
+	OPENCHANGE_RETVAL_IF(!data_pointers || retvals[0] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	/* TODO: We do only support calendar invitation by now. Checks on PidLidSharingLocalType */
+	if (strncmp((char *)data_pointers[0], "IPF.Appointment", strlen("IPF.Appointment")) != 0) {
+		talloc_free(local_mem_ctx);
+		return MAPI_E_NO_SUPPORT;
+	}
+
+	/* Check every retval is SUCCESS to build up the XML */
+	for (i = 1; i < SHARING_PROPS_COUNT; i++) {
+		OPENCHANGE_RETVAL_IF(retvals[i] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	}
+
+	xml = talloc_asprintf(local_mem_ctx,
+			      "<?xml version=\"1.0\"?> "
+			      "<SharingMessage xmlns=\"http://schemas.microsoft.com/sharing/2008\">"
+			      "<DataType>calendar</DataType>"
+			      "<Initiator>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/*** Initiator ***/
+	xml = talloc_asprintf_append(xml, "<Name>%s</Name>", (char *)data_pointers[1]);	 /* PidLidSharingInitiatorName */
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	xml = talloc_asprintf_append(xml, "<SmtpAddress>%s</SmtpAddress>", (char *)data_pointers[2]); /*PidLidSharingInitiatorSmtp */
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/* Take the binary EntryId and transform to Hex encoded field */
+	xml = talloc_asprintf_append(xml, "<EntryId>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	entryId = data_pointers[3]; /* PidLidSharingInitiatorEntryId */
+	for (i = 0; i < entryId->cb; i++) {
+		xml = talloc_asprintf_append(xml, "%.2X", *(entryId->lpb + i));
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	}
+	xml = talloc_asprintf_append(xml, "</EntryId>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	xml = talloc_asprintf_append(xml, "</Initiator>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/*** Invitation ***/
+	xml = talloc_asprintf_append(xml, "<Invitation>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/* This seems to be included when the calendar is not a default one */
+	xml = talloc_asprintf_append(xml, "<Title>%s</Title>", (char *)data_pointers[4]); /* PidLidSharingRemoteName */
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/*** Provider ***/
+	xml = talloc_asprintf_append(xml, "<Providers><Provider Type=\"ms-exchange-internal\" ");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	/* Get recipients */
+	contextID = emsmdbp_get_contextID(sharing_object);
+	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, sharing_object->backend_object, local_mem_ctx, &msg_data);
+	if (msg_data && msg_data->recipients_count > 0) {
+		xml = talloc_asprintf_append(xml, "TargetRecipients=\"");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
+		for (i = 0; i < msg_data->recipients_count; i++) {
+			if (prop_index.email_address != (uint32_t) -1) {
+				xml = talloc_asprintf_append(xml, "%s", (char *)msg_data->recipients[i].data[prop_index.email_address]);
+				OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+				if (i + 1 < msg_data->recipients_count) {
+					/* ; separated */
+					xml = talloc_asprintf_append(xml, ";");
+					OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+				}
+			}
+		}
+		xml = talloc_asprintf_append(xml, "\"");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	}
+	xml = talloc_asprintf_append(xml, ">");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	xml = talloc_asprintf_append(xml,
+				     "<FolderId xmlns=\"http://schemas.microsoft.com/exchange/sharing/2008\">%s</FolderId>",
+				     (char *)data_pointers[5]);	 /* PidLidSharingRemoteUid */
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	xml = talloc_asprintf_append(xml,
+				     "<MailboxId xmlns=\"http://schemas.microsoft.com/exchange/sharing/2008\">%s</MailboxId>",
+				     (char *)data_pointers[6]);	 /* PidLidSharingRemoteStoreUid */
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	xml = talloc_asprintf_append(xml, "</Provider></Providers></Invitation></SharingMessage>");
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+	bin = talloc_zero(mem_ctx, struct Binary_r);
+	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	bin->lpb = (uint8_t *) talloc_strdup(mem_ctx, xml);
+	bin->cb = strlen(xml);
+
+	*attach_bin = bin;
+
+	talloc_free(local_mem_ctx);
+
+	return MAPI_E_SUCCESS;
+}
+
+/**
+   \details Create a sharing metadata XML file for folder sharing invitation, request and response
+            and store it as attachment in the sharing object.
+            See [MS-OXSHARE] for this kind of messages and [MS-OXSHRMSG] for the XML format.
+
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param sharing_object the original sharing message object to dump the XML data from
+
+   \return MAPI_E_SUCCESS on success, a MAPI error code otherwise
+ */
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_attach_sharing_metadata_XML_file(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *sharing_object)
+{
+	struct Binary_r		*attach_bin;
+	struct emsmdbp_object	*attach;
+	enum MAPISTATUS		*retvals = NULL;
+	enum MAPISTATUS		retval;
+	enum mapistore_error	ret;
+	struct SPropTagArray	*props;
+	struct SRow		aRow;
+	TALLOC_CTX		*mem_ctx;
+	uint32_t		contextID, aid;
+	void			**data_pointers;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!sharing_object, MAPI_E_INVALID_PARAMETER, NULL);
+
+	OPENCHANGE_RETVAL_IF(!emsmdbp_is_mapistore(sharing_object), MAPI_E_NO_SUPPORT, NULL);
+
+	mem_ctx = talloc_named(NULL, 0, "attach_sharing_metadata");
+	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* 1. Check if the message is a IPM.Sharing message */
+	props = talloc_zero(mem_ctx, struct SPropTagArray);
+	OPENCHANGE_RETVAL_IF(!props, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	props->cValues = 1;
+	props->aulPropTag = talloc_zero(props, enum MAPITAGS);
+	OPENCHANGE_RETVAL_IF(!props->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+	props->aulPropTag[0] = PidTagMessageClass;
+
+	data_pointers = emsmdbp_object_get_properties(mem_ctx, emsmdbp_ctx, sharing_object, props, &retvals);
+	OPENCHANGE_RETVAL_IF(!data_pointers || retvals[0] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, mem_ctx);
+
+	if (strncmp((char *)data_pointers[0], "IPM.Sharing", strlen("IPM.Sharing")) != 0) {
+		talloc_free(mem_ctx);
+		/* No sharing object, then no problems */
+		return MAPI_E_SUCCESS;
+	}
+
+	/* 2. Create the attachment */
+	attach = emsmdbp_object_attachment_init(mem_ctx, emsmdbp_ctx, sharing_object->object.message->messageID, sharing_object);
+	OPENCHANGE_RETVAL_IF(!attach, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
+
+	contextID = emsmdbp_get_contextID(sharing_object);
+
+	ret = mapistore_message_create_attachment(emsmdbp_ctx->mstore_ctx, contextID, sharing_object->backend_object, attach, &attach->backend_object, &aid);
+	OPENCHANGE_RETVAL_IF((ret != MAPISTORE_SUCCESS), mapistore_error_to_mapi(ret), mem_ctx);
+
+	/* 3. Set properties to the attachment */
+	retval = emsmdbp_object_sharing_metadata_property(emsmdbp_ctx, sharing_object, &attach_bin, mem_ctx);
+	OPENCHANGE_RETVAL_IF((retval != MAPI_E_SUCCESS), retval, mem_ctx);
+
+	aRow.cValues = 3;
+	aRow.lpProps = talloc_array(mem_ctx, struct SPropValue, 3);
+	set_SPropValue_proptag(aRow.lpProps, PidTagAttachLongFilename, "sharing_metadata.xml");
+	set_SPropValue_proptag(aRow.lpProps + 1, PidTagAttachDataBinary, attach_bin);
+	set_SPropValue_proptag(aRow.lpProps + 2, PidTagAttachMimeTag, "application/x-sharing-metadata-xml");
+
+	ret = emsmdbp_object_set_properties(emsmdbp_ctx, attach, &aRow);
+	OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), mem_ctx);
+
+	/* 4. Save the attachment */
+	/* TODO: Include this code once all available backends implement for attachment save */
+	/* ret = mapistore_attachment_save(emsmdbp_ctx->mstore_ctx, contextID, attach->backend_object, mem_ctx); */
+
+	talloc_free(mem_ctx);
+
+	return MAPI_E_SUCCESS;
 }

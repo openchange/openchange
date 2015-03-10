@@ -362,6 +362,8 @@ DATA_BLOB emsmdbp_stream_read_buffer(struct emsmdbp_stream *, uint32_t);
 void emsmdbp_stream_write_buffer(TALLOC_CTX *, struct emsmdbp_stream *, DATA_BLOB);
 void emsmdbp_fill_table_row_blob(TALLOC_CTX *, struct emsmdbp_context *, DATA_BLOB *, uint16_t, enum MAPITAGS *, void **, enum MAPISTATUS *);
 void emsmdbp_fill_row_blob(TALLOC_CTX *, struct emsmdbp_context *, uint8_t *, DATA_BLOB *,struct SPropTagArray *, void **, enum MAPISTATUS *, bool *);
+enum MAPISTATUS emsmdbp_object_attach_sharing_metadata_XML_file(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *sharing_object);
+
 
 /* definitions from oxcfold.c */
 enum MAPISTATUS EcDoRpc_RopOpenFolder(TALLOC_CTX *, struct emsmdbp_context *, struct EcDoRpc_MAPI_REQ *, struct EcDoRpc_MAPI_REPL *, uint32_t *, uint16_t *);

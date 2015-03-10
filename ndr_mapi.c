@@ -1200,10 +1200,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxOut, 4, -1));
-	
+
 				ndr->flags = _flags_save_mapi2k7_AuxInfo;
 			}
-	
+
 			/* Value in pcbAuxOut is not used, size was calculated when rgbAuxOut was pushed above */
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 		}

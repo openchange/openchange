@@ -533,7 +533,22 @@ def get_user_dn(ldb, basedn, username):
     return _get_element_dn(ldb, basedn, ldb_filter)
 
 
-def get_group_dn(ldb, basedn, groupname):
+def get_group_dn(ldb, domain_dn, org_name, groupname):
+    if org_name:
+        basedn = "CN=Groups,CN=%s,CN=Users,%s" % (org_name, domain_dn)
+        ldb_filter = "(&(objectClass=group)(sAMAccountName=%s@%s))" % (groupname, org_name)
+        try:
+            group_dn = _get_element_dn(ldb, basedn, ldb_filter)
+            if group_dn:
+                return group_dn
+        except LdbError, ldb_error:
+            code, msg =ldb_error.args
+            # error 32. "no such base dn", is ignored to be able to fallback to zserver DN style
+            if code != 32:
+                raise ldb_error
+
+    # fallback to Zentyal-server DN style
+    basedn = "CN=Groups,%s" % (domain_dn)
     ldb_filter = "(&(objectClass=group)(sAMAccountName=%s))" % groupname
     return _get_element_dn(ldb, basedn, ldb_filter)
 
@@ -705,7 +720,7 @@ def newgroup(names, lp, creds, groupname, mail=None,):
                  be set to <samAccountName>@<dnsdomain>
     """
     db = get_local_samdb(names, lp, creds)
-    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+    group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
 
     if group_dn:
         smtp_user, mail_domain = _smtp_user_and_domain_by_dn(group_dn, groupname, mail, names)
@@ -764,7 +779,7 @@ def delete_group(names, lp, creds, groupname):
     Remove openchange provision attributes from group
     """
     db = get_local_samdb(names, lp, creds)
-    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+    group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
     if not group_dn:
         raise Exception("Group not found " + group_dn)    
     ldif = """
@@ -789,7 +804,7 @@ def update_group(names, lp, creds, groupname):
     :param groupname: Name of group to extend
     """
     db = get_local_samdb(names, lp, creds)
-    group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
+    group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
 
     res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['legacyExchangeDN'])
     if len(res)==0:

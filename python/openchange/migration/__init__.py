@@ -118,7 +118,7 @@ class MigrationManager(object):
         self.db.commit()
         self._version[app] = None  # To reload the value
 
-    def migrate(self, app, target_version=None):
+    def migrate(self, app, target_version=None, **kwargs):
         """
         Apply/unapply missing migrations and update version information.
 
@@ -126,6 +126,7 @@ class MigrationManager(object):
 
         :param str app: the "application" to migrate to the target version
         :param int target_version: the target version to apply/unapply migrations.
+        :param dict kwargs: keyword parameters needed for migration if any
         :rtype bool:
         :returns: True if any migration was applied/unapplied
         """
@@ -148,9 +149,9 @@ class MigrationManager(object):
             # Migrate inside a transaction
             cursor = self.db.cursor()
             if go_forward:
-                migration.apply(cursor)
+                migration.apply(cursor, **kwargs)
             else:
-                migration.unapply(cursor)
+                migration.unapply(cursor, **kwargs)
             self.db.commit()
             cursor.close()
             if go_forward:
@@ -267,7 +268,7 @@ class Migration(object):
     description = 'migration'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, **kwargs):
         """Apply this migration
 
         :param cur: the DB cursor
@@ -284,4 +285,4 @@ class Migration(object):
 
 
 # Import to get the migrations from different applications
-from . import indexing, openchangedb, named_properties
+from . import directory, indexing, openchangedb, named_properties

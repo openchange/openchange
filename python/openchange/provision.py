@@ -156,10 +156,14 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     db = get_local_samdb(names, lp, creds)
     exchangedn = 'CN=Microsoft Exchange,CN=Services,%s' % configdn
     if not firstorg:
-        firstorg = db.searchone(
-            'name', exchangedn, '(objectclass=msExchOrganizationContainer)',
-            ldb.SCOPE_SUBTREE)
-    assert(firstorg)
+        ret = db.search(base=exchangedn,
+                        scope=ldb.SCOPE_SUBTREE,
+                        expression='(objectclass=msExchOrganizationContainer)',
+                        attrs=['name'])
+        if len(ret):
+            firstorg = ret[0]['name'][0]
+        if not firstorg:
+            raise Exception("Cannot find first exchange organization in %s", exchangedn)
     firstorgdn = "CN=%s,%s" % (firstorg, exchangedn)
 
     if not firstou:
@@ -191,7 +195,6 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
     :param reporter: A progress reporter instance (subclass of AbstractProgressReporter)
     :param ldif: path to the LDIF file
     :param msg: reporter message
-    :param modify_mode: whether entries are added or modified
     """
     sam_db.transaction_start()
 
@@ -214,7 +217,8 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
         else:
             full_path = setup_path(ldif)
             ldif_data = read_and_sub_file(full_path, ldif_params)
-            # schemaIDGUID can raise error if not match what is expected by schema master, if not present it will be automatically filled by the schema master
+            # schemaIDGUID can raise error if not match what is expected by schema master,
+            #  if not present it will be automatically filled by the schema master
             ldif_data = re.sub("^schemaIDGUID:", '#schemaIDGUID:', ldif_data, flags=re.M)
 
             # we add elements one by one only to control better the exact position of the error
@@ -228,15 +232,15 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
                 if match:
                     elements_to_add.append(element)
 
-            if elements_to_add:
-                for el in elements_to_add:
-                    try:
-                        sam_db.add_ldif(el, ['relax:0'])
-                    except Exception as ex:
-                        print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
-                        raise
-            else:
+            if not elements_to_add:
                 raise Exception('No elements to add found in ' + full_path)
+
+            for el in elements_to_add:
+                try:
+                    sam_db.add_ldif(el, ['relax:0'])
+                except Exception as ex:
+                    print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
+                    raise
     except:
         sam_db.transaction_cancel()
         raise
@@ -443,6 +447,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
                {'path': 'AD/oc_provision_schema_modify.ldif',
                 'description': 'Extend existing Samba classes and attributes',
                 'modify_mode': True}]
+
     for schema in schemas:
         try:
             provision_schema(sam_db, setup_path, names, reporter, schema['path'], schema['description'], schema['modify_mode'])
@@ -781,7 +786,7 @@ def delete_group(names, lp, creds, groupname):
     db = get_local_samdb(names, lp, creds)
     group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
     if not group_dn:
-        raise Exception("Group not found " + group_dn)    
+        raise Exception("Group not found " + group_dn)
     ldif = """
 dn: %(group_dn)s
 changetype: modify
@@ -807,8 +812,8 @@ def update_group(names, lp, creds, groupname):
     group_dn = get_group_dn(db, names.domaindn, names.firstorg, groupname)
 
     res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['legacyExchangeDN'])
-    if len(res)==0:
-       raise Exception("Group " + groupname + " is not provisioned for OpenChange") 
+    if len(res) == 0:
+        raise Exception("Group " + groupname + " is not provisioned for OpenChange")
 
     (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
     ldif = """
@@ -829,7 +834,7 @@ def _group_recipient_type_details(db, group_dn):
     """
     Returned tuple (recipient_type_details, recipient_display_type)
     Values from http://blogs.technet.com/b/benw/archive/2007/04/05/exchange-2007-and-recipient-type-details.aspx
-    Display type for Universal Security Group does not work in outlook2010 so I am using the 
+    Display type for Universal Security Group does not work in outlook2010 so I am using the
     one for distribution group
     """
     res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['groupType'])
@@ -1100,6 +1105,51 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     else:
         raise Exception("unknown backend in openchangedb URI %s" % uri)
     openchangedb.remove()
+
+
+# migration methods for openchange directory
+def directory_migrate(uri=None, version=None, **kwargs):
+    provisioned = False
+    lp = kwargs['lp']
+    try:
+        check_not_provisioned(kwargs['names'], lp, kwargs['creds'])
+    except:
+        provisioned = True
+    if not provisioned:
+        raise Exception("OpenChange is not provisioned, provision it instead of upgrading it")
+
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        directory = mailbox.Directory(uri)
+        if directory.migrate(version, **kwargs):
+            print "Migration of openchange directory done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "We need MySQL to manage directory migrations"
+
+
+def directory_list_migrations(lp, uri):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchange_directory = mailbox.Directory(uri)
+        migrations = openchange_directory.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only Openchange_Directory with MySQL as backend has migration capability"
+
+
+def directory_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchange_directory = mailbox.Directory(uri)
+        if openchange_directory.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
 
 
 def openchangedb_migrate(lp, uri=None, version=None):

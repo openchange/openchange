@@ -11,4 +11,4 @@ Version: @PACKAGE_VERSION@
 Libs: -L${libdir} -lmapistore
 Libs.private: @LIBS@
 Cflags: -I${includedir}
-Requires: talloc tdb libmapi
+Requires: talloc tdb libmapi libmemcached

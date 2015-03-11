@@ -38,6 +38,7 @@
 
 
 char *default_indexing_url = NULL;
+char *default_cache_url = NULL;
 
 /**
    \details Set the default backend url. If none is set, a tdb file per user
@@ -57,6 +58,31 @@ _PUBLIC_ void mapistore_set_default_indexing_url(const char *url)
 		mem_ctx = talloc_autofree_context();
 		default_indexing_url = talloc_strdup(mem_ctx, url);
 	}
+}
+
+/**
+   \details Set the default cache url. If none is set, 127.0.0.1:11211
+   will be used.
+
+   \param url default backend url to be used
+ */
+_PUBLIC_ void mapistore_set_default_cache_url(const char *url)
+{
+	TALLOC_CTX *mem_ctx;
+
+	if (default_cache_url) talloc_free(default_cache_url);
+
+	if (url == NULL) {
+		default_cache_url = NULL;
+	} else {
+		mem_ctx = talloc_autofree_context();
+		default_cache_url = talloc_strdup(mem_ctx, url);
+	}
+}
+
+_PUBLIC_ char *mapistore_get_default_cache_url(void)
+{
+	return default_cache_url;
 }
 
 /**

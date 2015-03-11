@@ -20,6 +20,9 @@ MYSQL_CONFIG=@MYSQL_CONFIG@
 MYSQL_CFLAGS=@MYSQL_CFLAGS@
 MYSQL_LIBS=@MYSQL_LIBS@
 
+MEMCACHED_CFLAGS=@MEMCACHED_CFLAGS@
+MEMCACHED_LIBS=@MEMCACHED_LIBS@
+
 prefix=@prefix@
 exec_prefix=@exec_prefix@
 bindir=@bindir@
@@ -36,7 +39,7 @@ pythondir=@pythondir@
 sambaprefix=@sambaprefix@
 
 DSOOPT=-shared -fPIC
-CFLAGS=@CFLAGS@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
+CFLAGS=@CFLAGS@ @ENDIAN@ @COMPILER_OPTIONS_C@ @ASSERT_DEFINITION@ @SUBUNIT_CFLAGS@ \
        -DDEFAULT_LDIF=\"$(datadir)/setup/profiles\"						\
        -DMAPISTORE_LDIF=\"$(datadir)/setup/mapistore\"						\
        -DOPENCHANGEDB_DATA_DIR=\"$(datadir)/setup/openchangedb\"				\

@@ -16,6 +16,37 @@ fi
 
 CFLAGS="-I. $CFLAGS"
 
+AC_MSG_CHECKING([build system endianness])
+AC_PREPROC_IFELSE(
+  [AC_LANG_PROGRAM([[#include <endian.h>]],
+			         [[#if __BYTE_ORDER != __LITTLE_ENDIAN]]
+				          [[#error]]
+						   [[#endif]])],
+  endian=little
+  little_endian=1
+  big_endian=0)
+
+AC_PREPROC_IFELSE(
+  [AC_LANG_PROGRAM([[#include <endian.h>]],
+			         [[#if __BYTE_ORDER != __BIG_ENDIAN]]
+				          [[#error]]
+						   [[#endif]])],
+  endian=big
+  little_endian=0
+  big_endian=1)
+
+
+if test x"$endian" != "xbig" -a x"$endian" != "xlittle"; then
+  AC_MSG_ERROR([Can't determine endianness; is endian.h present?])
+fi
+
+if test "$little_endian" == 1; then
+   ENDIAN="-DHAVE_LITTLE_ENDIAN"
+else
+   ENDIAN="-DHAVE_BIG_ENDIAN"
+fi
+AC_SUBST(ENDIAN)
+
 dnl #################################################################
 dnl MySQL
 dnl #################################################################
@@ -387,6 +418,11 @@ AC_MSG_CHECKING(mysql libs)
 MYSQL_LIBS=`$MYSQL_CONFIG --libs`
 AC_MSG_RESULT($MYSQL_LIBS)
 AC_SUBST(MYSQL_LIBS)
+
+dnl ----------------------------------------------------------------------------
+dnl Check for memcached
+dnl ----------------------------------------------------------------------------
+PKG_CHECK_MODULES([MEMCACHED], [libmemcached >= 1.0.8], [], [AC_MSG_ERROR(memcached >= 1.0.8 required to build mapistore library)])
 
 dnl ----------------------------------------------------------------------------
 dnl Check for Flex

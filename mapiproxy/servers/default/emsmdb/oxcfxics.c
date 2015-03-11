@@ -790,15 +790,15 @@ static void oxcfxics_table_set_cn_restriction(struct emsmdbp_context *emsmdbp_ct
 static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object_synccontext *synccontext, const char *owner, struct oxcfxics_sync_data *sync_data, struct emsmdbp_object *folder_object)
 {
 	TALLOC_CTX			*mem_ctx, *msg_ctx;
-	bool				folder_is_mapistore, end_of_table;
+	bool				folder_is_mapistore, end_of_table, changed_prop_index = false;
 	struct emsmdbp_object		*table_object, *message_object;
 	uint32_t			i;
 	static enum MAPITAGS		mid_property = PidTagMid;
-	enum MAPISTATUS			*retvals, *header_retvals;
+	enum MAPISTATUS			*retvals, *header_retvals, retval_msg_class = MAPI_E_NOT_FOUND;
 	void				**data_pointers, **header_data_pointers;
 	struct FILETIME			*lm_time;
 	NTTIME				nt_time;
-	uint32_t			unix_time, contextID;
+	uint32_t			unix_time, contextID, message_class_prop_index;
 	struct UI8Array_r		preload_mids;
 	enum mapistore_table_type	mstore_type;
 	struct SPropTagArray		query_props;
@@ -809,10 +809,11 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 	struct GUID			replica_guid;
 	struct idset			*original_cnset_seen;
 	struct UI8Array_r		*deleted_eids;
-	struct SPropTagArray		*properties;
+	struct SPropTagArray		*msg_properties, *properties, *sharing_properties;
 	struct oxcfxics_message_sync_data	*message_sync_data;
 	struct SSortOrderSet		lpSortCriteria;
 	uint8_t				status;
+	struct oxcfxics_prop_index	msg_prop_index;
 
 	mem_ctx = talloc_zero(NULL, void);
 
@@ -826,6 +827,8 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		properties = &synccontext->properties;
 		mstore_type = MAPISTORE_MESSAGE_TABLE;
 	}
+
+	msg_prop_index = sync_data->prop_index;
 
 	if (sync_data->message_sync_data) {
 		message_sync_data = sync_data->message_sync_data;
@@ -889,9 +892,15 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		contextID = emsmdbp_get_contextID(folder_object);
 	}
 
+	/* find where PidTagMessageClass is located */
+	if (mstore_type == MAPISTORE_MESSAGE_TABLE) {
+		retval_msg_class = SPropTagArray_find(*properties, PidTagMessageClass, &message_class_prop_index);
+	}
+
 	/* open each message and fetch properties */
 	for (; sync_data->ndr->offset < max_message_sync_size && message_sync_data->count < message_sync_data->max; message_sync_data->count++) {
 		msg_ctx = talloc_new(NULL);
+		msg_properties = properties;
 
 		if (folder_is_mapistore && (message_sync_data->count % message_preload_interval) == 0) {
 			preload_mids.lpui8 = message_sync_data->mids + message_sync_data->count;
@@ -915,11 +924,39 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			goto end_row;
 		}
 
-		data_pointers = emsmdbp_object_get_properties(msg_ctx, emsmdbp_ctx, message_object, properties, &retvals);
+		data_pointers = emsmdbp_object_get_properties(msg_ctx, emsmdbp_ctx, message_object, msg_properties, &retvals);
 		if (!data_pointers) {
 			DEBUG(5, ("message '%.16"PRIx64"' returned no value, skipped\n", eid));
 			goto end_row;
 		}
+                /* Check if the message is a sharing object message to
+                   retrieve additional sharing properties for this
+                   message. This could be extensible and more
+                   generic in the future. */
+		if (retval_msg_class == MAPI_E_SUCCESS && retvals[message_class_prop_index] == MAPI_E_SUCCESS
+		    && strncmp((char *)data_pointers[message_class_prop_index], "IPM.Sharing", strlen("IPM.Sharing")) == 0) {
+			/* Get available properties from this specific message */
+			if (emsmdbp_object_get_available_properties(msg_ctx, emsmdbp_ctx, message_object,
+								    &sharing_properties) == MAPISTORE_SUCCESS) {
+				msg_properties = sharing_properties;
+				data_pointers = emsmdbp_object_get_properties(msg_ctx, emsmdbp_ctx,
+									      message_object, msg_properties, &retvals);
+				if (!data_pointers) {
+					DEBUG(5, ("message '%.16"PRIx64"' returned no value, skipped\n", eid));
+					goto end_row;
+				}
+				/* Update prop index for fixed header props */
+				changed_prop_index = true;
+				SPropTagArray_find(*msg_properties, PidTagMid, &msg_prop_index.eid);
+				SPropTagArray_find(*msg_properties, PidTagChangeNumber, &msg_prop_index.change_number);
+				SPropTagArray_find(*msg_properties, PidTagChangeKey, &msg_prop_index.change_key);
+				SPropTagArray_find(*msg_properties, PidTagPredecessorChangeList, &msg_prop_index.predecessor_change_list);
+				SPropTagArray_find(*msg_properties, PidTagLastModificationTime, &msg_prop_index.last_modification_time);
+				SPropTagArray_find(*msg_properties, PidTagAssociated, &msg_prop_index.associated);
+				SPropTagArray_find(*msg_properties, PidTagMessageSize, &msg_prop_index.message_size);
+			}
+		}
+
 
 		oxcfxics_ndr_check(sync_data->ndr, "sync_data->ndr");
 		oxcfxics_ndr_check(sync_data->cutmarks_ndr, "sync_data->cutmarks_ndr");
@@ -943,7 +980,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		i++;
 
 		/* last modification time */
-		if (retvals[sync_data->prop_index.last_modification_time]) {
+		if (retvals[msg_prop_index.last_modification_time]) {
 			unix_time = oc_version_time;
 			unix_to_nt_time(&nt_time, unix_time);
 			lm_time = talloc_zero(header_data_pointers, struct FILETIME);
@@ -951,7 +988,7 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			lm_time->dwHighDateTime = nt_time >> 32;
 		}
 		else {
-			lm_time = (struct FILETIME *) data_pointers[sync_data->prop_index.last_modification_time];
+			lm_time = (struct FILETIME *) data_pointers[msg_prop_index.last_modification_time];
 			nt_time = ((uint64_t) lm_time->dwHighDateTime << 32) | lm_time->dwLowDateTime;
 			unix_time = nt_time_to_unix(nt_time);
 		}
@@ -959,11 +996,11 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		header_data_pointers[i] = lm_time;
 		i++;
 
-		if (retvals[sync_data->prop_index.change_number]) {
+		if (retvals[msg_prop_index.change_number]) {
 			DEBUG(5, (__location__": mandatory property PidTagChangeNumber not returned for message\n"));
 			abort();
 		}
-		cn = ((*(uint64_t *) data_pointers[sync_data->prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
+		cn = ((*(uint64_t *) data_pointers[msg_prop_index.change_number]) >> 16) & 0x0000ffffffffffff;
 		if (IDSET_includes_guid_glob(original_cnset_seen, &sync_data->replica_guid, cn)) {
 			synccontext->skipped_objects++;
 			DEBUG(5, (__location__": message changes: cn %.16"PRIx64" already present\n", cn));
@@ -974,18 +1011,18 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 
 		/* change key */
 		/* bin_data = oxcfxics_make_gid(header_data_pointers, &sync_data->replica_guid, cn); */
-		if (retvals[sync_data->prop_index.change_key]) {
+		if (retvals[msg_prop_index.change_key]) {
 			DEBUG(5, (__location__": mandatory property PidTagChangeKey not returned for message\n"));
 			abort();
 		}
 		query_props.aulPropTag[i] = PidTagChangeKey;
-		bin_data = data_pointers[sync_data->prop_index.change_key];
+		bin_data = data_pointers[msg_prop_index.change_key];
 		header_data_pointers[i] = bin_data;
 		i++;
 
 		/* predecessor change list */
 		query_props.aulPropTag[i] = PidTagPredecessorChangeList;
-		if (retvals[sync_data->prop_index.predecessor_change_list]) {
+		if (retvals[msg_prop_index.predecessor_change_list]) {
 			DEBUG(5, (__location__": mandatory property PidTagPredecessorChangeList not returned for message\n"));
 			/* abort(); */
 
@@ -996,18 +1033,18 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 			header_data_pointers[i] = &predecessors_data;
 		}
 		else {
-			bin_data = data_pointers[sync_data->prop_index.predecessor_change_list];
+			bin_data = data_pointers[msg_prop_index.predecessor_change_list];
 			header_data_pointers[i] = bin_data;
 		}
 		i++;
 
 		/* associated (could be based on table type ) */
 		query_props.aulPropTag[i] = PidTagAssociated;
-		if (retvals[sync_data->prop_index.associated]) {
+		if (retvals[msg_prop_index.associated]) {
 			header_data_pointers[i] = talloc_zero(header_data_pointers, uint8_t);
 		}
 		else {
-			header_data_pointers[i] = data_pointers[sync_data->prop_index.associated];
+			header_data_pointers[i] = data_pointers[msg_prop_index.associated];
 		}
 		i++;
 
@@ -1021,12 +1058,12 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		/* message size (conditional) */
 		if (synccontext->request.request_message_size) {
 			query_props.aulPropTag[i] = PidTagMessageSize;
-			header_data_pointers[i] = data_pointers[sync_data->prop_index.message_size];
-			if (retvals[sync_data->prop_index.parent_fid]) {
+			header_data_pointers[i] = data_pointers[msg_prop_index.message_size];
+			if (retvals[msg_prop_index.parent_fid]) {
 				header_data_pointers[i] = talloc_zero(header_data_pointers, uint32_t);
 			}
 			else {
-				header_data_pointers[i] = data_pointers[sync_data->prop_index.message_size];
+				header_data_pointers[i] = data_pointers[msg_prop_index.message_size];
 			}
 			i++;
 		}
@@ -1052,9 +1089,9 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		ndr_push_uint32(sync_data->cutmarks_ndr, NDR_SCALARS, sync_data->ndr->offset);
 
 		/* we shift the number of remaining properties to the amount of properties explicitly requested in RopSyncConfigure that were used above */
-		if (properties->cValues > message_properties_shift) {
-			query_props.cValues = properties->cValues - message_properties_shift;
-			query_props.aulPropTag = properties->aulPropTag + message_properties_shift;
+		if (msg_properties->cValues > message_properties_shift) {
+			query_props.cValues = msg_properties->cValues - message_properties_shift;
+			query_props.aulPropTag = msg_properties->aulPropTag + message_properties_shift;
 			oxcfxics_ndr_push_properties(sync_data->ndr, sync_data->cutmarks_ndr, emsmdbp_ctx->mstore_ctx->nprops_ctx, &query_props, data_pointers + message_properties_shift, (enum MAPISTATUS *) retvals + message_properties_shift);
 		}
 
@@ -1067,6 +1104,10 @@ static bool oxcfxics_push_messageChange(struct emsmdbp_context *emsmdbp_ctx, str
 		oxcfxics_push_messageChange_attachments(emsmdbp_ctx, synccontext, sync_data, message_object);
 
 		synccontext->sent_objects++;
+		if (changed_prop_index) {
+			msg_prop_index = sync_data->prop_index;
+			changed_prop_index = false;
+		}
 	end_row:
 		talloc_free(msg_ctx);
 	}
@@ -1298,6 +1339,7 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 	int32_t			unix_time, contextID;
 	uint32_t		i, j;
 	enum MAPISTATUS		*retvals, *header_retvals;
+	enum mapistore_error	retval;
 	void			**data_pointers, **header_data_pointers;
 	struct SPropTagArray	query_props;
 	struct GUID		replica_guid;
@@ -1468,15 +1510,14 @@ static void oxcfxics_push_folderChange(struct emsmdbp_context *emsmdbp_ctx, stru
 			talloc_free(data_pointers);
 			talloc_free(retvals);
 			
-			/* TODO: check return code */
-			emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
-			oxcfxics_push_folderChange(emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
-			talloc_free(subfolder_object);
+			retval = emsmdbp_object_open_folder(NULL, emsmdbp_ctx, folder_object, eid, &subfolder_object);
+			if (retval == MAPISTORE_SUCCESS) {
+				oxcfxics_push_folderChange(emsmdbp_ctx, synccontext, owner, topmost_folder_object, sync_data, subfolder_object);
+				talloc_free(subfolder_object);
+			} else {
+				DEBUG(5, ("[oxcfxics] Fail open folder %"PRIu64" from parent folder %"PRIu64" (retval %d)", eid, folder_object->object.folder->folderID, retval));
+			}
 		}
-		/* else { */
-		/* 	DEBUG(5, ("no data returned for folder row %d\n", i)); */
-		/* 	abort(); */
-		/* } */
 	}
 
 	talloc_free(mem_ctx);
@@ -3263,6 +3304,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportReadStateChanges(TALLOC_CTX *mem_c
 			if (ret == MAPISTORE_SUCCESS) {
 				mapistore_message_set_read_flag(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, flag);
 				talloc_free(message_object);
+			} else {
+				DEBUG(5, ("[oxcfxics]: Failed to open message 0x%"PRIx64": %s\n", mid, mapistore_errstr(ret)));
 			}
 		}
 	}

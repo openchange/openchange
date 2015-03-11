@@ -29,6 +29,7 @@
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "dcesrv_exchange_emsmdb.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
+#include "mapiproxy/libmapiproxy/fault_util.h"
 
 #include <ldap_ndr.h>
 
@@ -38,6 +39,9 @@ struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *,
 				  struct auth_session_info *,
 				  unsigned int);
 
+/* Single connection to samdb */
+static struct ldb_context *samdb_ctx = NULL;
+
 static struct GUID MagicGUID = {
 	.time_low = 0xbeefface,
 	.time_mid = 0xcafe,
@@ -46,6 +50,41 @@ static struct GUID MagicGUID = {
 	.node = { 0xde, 0xad, 0xfa, 0xce, 0xca, 0xfe }
 };
 const struct GUID *const MagicGUIDp = &MagicGUID;
+
+/**
+   \details Initialize ldb_context to samdb, creates one for all emsmdbp
+   contexts
+
+   \param lp_ctx pointer to the loadparm context
+ */
+static struct ldb_context *samdb_init(struct loadparm_context *lp_ctx)
+{
+	TALLOC_CTX		*mem_ctx;
+	struct tevent_context	*ev;
+	const char		*samdb_url;
+
+	if (samdb_ctx) return samdb_ctx;
+
+	mem_ctx = talloc_autofree_context();
+	ev = tevent_context_init(mem_ctx);
+	if (!ev) {
+		OC_PANIC(false, ("Fail to initialize tevent_context\n"));
+		return NULL;
+	}
+	tevent_loop_allow_nesting(ev);
+
+	/* Retrieve samdb url (local or external) */
+	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
+
+	if (!samdb_url) {
+		samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
+	} else {
+		samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx),
+					      LDB_FLG_RECONNECT, samdb_url);
+	}
+
+	return samdb_ctx;
+}
 
 /**
    \details Release the MAPISTORE context used by EMSMDB provider
@@ -91,7 +130,7 @@ static int emsmdbp_mapi_handles_destructor(void *data)
    \param lp_ctx pointer to the loadparm_context
    \param username account name for current session
    \param ldb_ctx pointer to the openchange dispatcher ldb database
-   
+
    \return Allocated emsmdbp_context pointer on success, otherwise
    NULL
  */
@@ -101,9 +140,7 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 {
 	TALLOC_CTX		*mem_ctx;
 	struct emsmdbp_context	*emsmdbp_ctx;
-	struct tevent_context	*ev;
 	enum mapistore_error	ret;
-	const char		*samdb_url;
 
 	/* Sanity Checks */
 	if (!lp_ctx) return NULL;
@@ -118,26 +155,10 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 
 	emsmdbp_ctx->mem_ctx = mem_ctx;
 
-	ev = tevent_context_init(mem_ctx);
-	if (!ev) {
-		talloc_free(mem_ctx);
-		return NULL;
-	}
-	tevent_loop_allow_nesting(ev); 
-
 	/* Save a pointer to the loadparm context */
 	emsmdbp_ctx->lp_ctx = lp_ctx;
 
-	/* Retrieve samdb url (local or external) */
-	samdb_url = lpcfg_parm_string(lp_ctx, NULL, "dcerpc_mapiproxy", "samdb_url");
-
-	/* return an opaque context pointer on samDB database */
-	if (!samdb_url) {
-		emsmdbp_ctx->samdb_ctx = samdb_connect(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0);
-	} else {
-		emsmdbp_ctx->samdb_ctx = samdb_connect_url(mem_ctx, ev, lp_ctx, system_session(lp_ctx), 0, samdb_url);
-	}
-
+	emsmdbp_ctx->samdb_ctx = samdb_init(lp_ctx);
 	if (!emsmdbp_ctx->samdb_ctx) {
 		talloc_free(mem_ctx);
 		DEBUG(0, ("[%s:%d]: Connection to \"sam.ldb\" failed\n", __FUNCTION__, __LINE__));
@@ -151,7 +172,6 @@ _PUBLIC_ struct emsmdbp_context *emsmdbp_init(struct loadparm_context *lp_ctx,
 	emsmdbp_ctx->mstore_ctx = mapistore_init(mem_ctx, lp_ctx, NULL);
 	if (!emsmdbp_ctx->mstore_ctx) {
 		DEBUG(0, ("[%s:%d]: MAPISTORE initialization failed\n", __FUNCTION__, __LINE__));
-
 		talloc_free(mem_ctx);
 		return NULL;
 	}

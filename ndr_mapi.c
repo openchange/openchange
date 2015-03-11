@@ -358,6 +358,34 @@ _PUBLIC_ enum ndr_err_code ndr_pull_AUX_HEADER(struct ndr_pull *ndr, int ndr_fla
 }
 
 
+_PUBLIC_ enum ndr_err_code ndr_push_AUX_HEADER(struct ndr_push *ndr, int ndr_flags, const struct AUX_HEADER *r)
+{
+	uint32_t _flags_save_STRUCT = ndr->flags;
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN);
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 4));
+		NDR_CHECK(ndr_push_uint16(ndr, NDR_SCALARS, r->Size));
+		NDR_CHECK(ndr_push_AUX_VERSION(ndr, NDR_SCALARS, r->Version));
+		NDR_CHECK(ndr_push_uint8(ndr, NDR_SCALARS, r->Type));
+		switch (r->Version) {
+		case AUX_VERSION_1:
+			ndr_push_set_switch_value(ndr, &r->Payload_1, r->Type);
+			NDR_CHECK(ndr_push_AUX_HEADER_TYPE_UNION_1(ndr, NDR_SCALARS, &r->Payload_1));
+			break;
+		case AUX_VERSION_2:
+			ndr_push_set_switch_value(ndr, &r->Payload_2, r->Type);
+			NDR_CHECK(ndr_push_AUX_HEADER_TYPE_UNION_2(ndr, NDR_SCALARS, &r->Payload_2));
+			break;
+		}
+		NDR_CHECK(ndr_push_trailer_align(ndr, 4));
+	}
+	ndr->flags = _flags_save_STRUCT;
+
+	return NDR_ERR_SUCCESS;
+}
+
+
 _PUBLIC_ void ndr_print_mapi2k7_AuxInfo(struct ndr_print *ndr, const char *name, const struct mapi2k7_AuxInfo *r)
 {
 	uint32_t	i;
@@ -444,6 +472,40 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 		}
 	}
 	if (ndr_flags & NDR_BUFFERS) {
+	}
+	return NDR_ERR_SUCCESS;
+}
+
+
+_PUBLIC_ enum ndr_err_code ndr_push_mapi2k7_AuxInfo(struct ndr_push *ndr, int ndr_flags, const struct mapi2k7_AuxInfo *r)
+{
+	uint32_t	i;
+
+	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
+	if (ndr_flags & NDR_SCALARS) {
+		NDR_CHECK(ndr_push_align(ndr, 5));
+
+		if ((r->RPC_HEADER_EXT.Flags & RHEF_Last) == 0) {
+			return ndr_push_error(ndr, NDR_ERR_VALIDATE, "RPC_HEADER_EXT.Flags indicates this isn't the last header block.");
+		}
+
+		/* Make a local copy so the flags can be reset, compression and obfuscation are not currently supported. */
+		struct RPC_HEADER_EXT tempRPC_HEADER_EXT;
+		tempRPC_HEADER_EXT = r->RPC_HEADER_EXT;
+		tempRPC_HEADER_EXT.Size = tempRPC_HEADER_EXT.SizeActual;  /* Original size is not valid, use actual size */
+		tempRPC_HEADER_EXT.Flags = RHEF_Last;
+
+		NDR_CHECK(ndr_push_RPC_HEADER_EXT(ndr, NDR_SCALARS, &tempRPC_HEADER_EXT));
+
+		if (r->AUX_HEADER) {
+			struct ndr_push *_ndr_AUX_HEADER;
+			NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_AUX_HEADER, 0, tempRPC_HEADER_EXT.Size));
+			for (i = 0; r->AUX_HEADER[i].Size; i++) {
+				NDR_CHECK(ndr_push_AUX_HEADER(_ndr_AUX_HEADER, NDR_SCALARS,  &r->AUX_HEADER[i]));
+			}
+
+			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_AUX_HEADER, 0, tempRPC_HEADER_EXT.Size));
+		}
 	}
 	return NDR_ERR_SUCCESS;
 }
@@ -1033,6 +1095,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.pulTimeStamp));
 		{
+			uint32_t 	size_rgbAuxIn_0 = 0;
 			uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
 			struct ndr_push	*_ndr_rgbAuxIn;
 
@@ -1045,10 +1108,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 				}
 				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxIn, NDR_SCALARS|NDR_BUFFERS, r->in.rgbAuxIn));
 			}
+
+			size_rgbAuxIn_0 = _ndr_rgbAuxIn->offset;
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxIn, 4, -1));
 			ndr->flags = _flags_save_mapi2k7_AuxInfo;
+
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxIn_0));
 		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, r->in.cbAuxIn));
 		if (r->in.pcbAuxOut == NULL) {
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer");
 		}
@@ -1106,18 +1172,42 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pulTimeStamp");
 		}
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-		NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, *r->out.pcbAuxOut));				
-		/* Only try to fetch rgbAuxOut if pcbAuxOut is > 0 */
-		if (r->out.pcbAuxOut && *r->out.pcbAuxOut) {
-			NDR_CHECK(ndr_push_mapi2k7_AuxInfo(ndr, NDR_SCALARS, r->out.rgbAuxOut));
+
+		{
+			uint32_t 	size_rgbAuxOut_0 = 0;
+
+			/* Does rgbAuxOut exist (it is optional) */
+			if (r->out.rgbAuxOut == NULL) {
+				/* No, push empty conformant-varying array */
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+			}
+			else {
+				/* Yes, encode contents to temporary buffer to determine size */
+				uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
+				struct ndr_push	*_ndr_rgbAuxOut;
+
+				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
+				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_rgbAuxOut, 4, -1));
+
+				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxOut, NDR_SCALARS|NDR_BUFFERS, r->out.rgbAuxOut));
+
+				/* Extract encoded size */
+				size_rgbAuxOut_0 = _ndr_rgbAuxOut->offset;
+
+				/* Push conformant-varying array of encoded size bytes */
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, size_rgbAuxOut_0));
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
+				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxOut, 4, -1));
+
+				ndr->flags = _flags_save_mapi2k7_AuxInfo;
+			}
+
+			/* Value in pcbAuxOut is not used, size was calculated when rgbAuxOut was pushed above */
+			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 		}
 
-		if (r->out.pcbAuxOut == NULL) {
-			return ndr_push_error(ndr, NDR_ERR_INVALID_POINTER, "NULL [ref] pointer: pcbAuxOut");
-		}
-		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pcbAuxOut));
 		NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;
@@ -1494,7 +1584,7 @@ _PUBLIC_ void ndr_print_EcDoRpcExt(struct ndr_print *ndr, const char *name, int 
 	struct mapi2k7_response	*mapi_response;
 	TALLOC_CTX		*mem_ctx;
 
-	mem_ctx = talloc_named(NULL, 0, "ndr_print_EcDoRpcExt2");
+	mem_ctx = talloc_named(NULL, 0, "ndr_print_EcDoRpcExt");
 
 	ndr_print_struct(ndr, name, "EcDoRpcExt");
 	if (r == NULL) { ndr_print_null(ndr); return; }

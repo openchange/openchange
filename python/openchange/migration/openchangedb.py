@@ -30,7 +30,7 @@ class InitialOCDBMigration(Migration):
     description = 'initial'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, extra=None):
         try:
             cur.execute('SELECT COUNT(*) FROM `organizational_units`')
             return False
@@ -226,7 +226,7 @@ class InitialOCDBMigration(Migration):
         cur.execute("""INSERT INTO `provisioning_special_folders` SET locale = 'en'""")
 
     @classmethod
-    def unapply(cls, cur):
+    def unapply(cls, cur, extra=None):
         for query in ("DROP TABLE provisioning_special_folders",
                       "DROP TABLE provisioning_folders",
                       "DROP TABLE servers",

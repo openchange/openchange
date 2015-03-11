@@ -182,7 +182,7 @@ def guess_names_from_smbconf(lp, creds=None, firstorg=None, firstou=None):
     return names
 
 
-def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False):
+def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode=False, skip_existent=False):
     """Provision/modify schema using LDIF specified file
     :param sam_db: sam db where to provision the schema
     :param setup_path: Path to the setup directory.
@@ -191,6 +191,8 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
     :param ldif: path to the LDIF file
     :param msg: reporter message
     :param modify_mode: whether entries are added or modified
+    :param skip_existent: skip already existent elements when adding and ignore
+                          already existent attributes errors when modifying
     """
     sam_db.transaction_start()
 
@@ -209,14 +211,25 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
             "HOSTNAME": names.hostname
         }
         if modify_mode:
-            setup_modify_ldif(sam_db, setup_path(ldif), ldif_params)
+            try:
+                setup_modify_ldif(sam_db, setup_path(ldif), ldif_params)
+            except LdbError, ldb_error:
+                # error 20 means trying to add an existent atribute
+                error_code, msg = ldb_error.args
+                if skip_existent and error_code == 20:
+                    sam_db.transaction_cancel()
+                    return
+                else:
+                    raise
         else:
             full_path = setup_path(ldif)
             ldif_data = read_and_sub_file(full_path, ldif_params)
-            # schemaIDGUID can raise error if not match what is expected by schema master, if not present it will be automatically filled by the schema master
+            # schemaIDGUID can raise error if not match what is expected by schema master,
+            #  if not present it will be automatically filled by the schema master
             ldif_data = re.sub("^schemaIDGUID:", '#schemaIDGUID:', ldif_data, flags=re.M)
 
             # we add elements one by one only to control better the exact position of the error
+            # and to skip existent elements if that option is set
             ldif_elements = re.split("\n\n+", ldif_data)
             elements_to_add = []
             for element in ldif_elements:
@@ -225,17 +238,29 @@ def provision_schema(sam_db, setup_path, names, reporter, ldif, msg, modify_mode
                 # this match is to assure we have a legit element
                 match = re.search('^\s*dn:\s+(.*)$', element, flags=re.M)
                 if match:
+                    if skip_existent:
+                        # we will skip this element if already exists
+                        dn = match.group(1)
+                        try:
+                            res = sam_db.search(base=dn, scope=ldb.SCOPE_BASE, attrs=['dn'])
+                            if len(res):
+                                continue
+                        except LdbError, ldb_error:
+                            # error 32 means that it does not exists so we cna add it
+                            error_code, msg = ldb_error.args
+                            if error_code != 32:
+                                raise
                     elements_to_add.append(element)
 
-            if elements_to_add:
-                for el in elements_to_add:
-                    try:
-                        sam_db.add_ldif(el, ['relax:0'])
-                    except Exception as ex:
-                        print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
-                        raise
-            else:
+            if not elements_to_add and not skip_existent:
                 raise Exception('No elements to add found in ' + full_path)
+
+            for el in elements_to_add:
+                try:
+                    sam_db.add_ldif(el, ['relax:0'])
+                except Exception as ex:
+                    print 'Error: "' + str(ex) + '" when adding element:\n' + el + '\n'
+                    raise
     except:
         sam_db.transaction_cancel()
         raise
@@ -369,7 +394,7 @@ def unmodify_schema(setup_path, names, lp, creds, reporter, ldif, msg):
     return deprovision_schema(setup_path, names, lp, creds, reporter, ldif, msg, True)
 
 
-def install_schemas(setup_path, names, lp, creds, reporter):
+def install_schemas(setup_path, names, lp, creds, reporter, skip_existent=False):
     """Install the OpenChange-specific schemas in the SAM LDAP database.
 
     :param setup_path: Path to the setup directory.
@@ -442,9 +467,10 @@ def install_schemas(setup_path, names, lp, creds, reporter):
                {'path': 'AD/oc_provision_schema_modify.ldif',
                 'description': 'Extend existing Samba classes and attributes',
                 'modify_mode': True}]
+
     for schema in schemas:
         try:
-            provision_schema(sam_db, setup_path, names, reporter, schema['path'], schema['description'], schema['modify_mode'])
+            provision_schema(sam_db, setup_path, names, reporter, schema['path'], schema['description'], schema['modify_mode'], skip_existent=skip_existent)
         except LdbError, ldb_error:
             print ("[!] error while provisioning the Exchange"
                    " schema classes (%d): %s"
@@ -452,7 +478,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
             raise
 
     try:
-        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
+        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects", skip_existent=skip_existent)
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)
@@ -764,7 +790,7 @@ def delete_group(names, lp, creds, groupname):
     db = get_local_samdb(names, lp, creds)
     group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
     if not group_dn:
-        raise Exception("Group not found " + group_dn)    
+        raise Exception("Group not found " + group_dn)
     ldif = """
 dn: %(group_dn)s
 changetype: modify
@@ -790,8 +816,8 @@ def update_group(names, lp, creds, groupname):
     group_dn = get_group_dn(db, "CN=Groups,%s" % names.domaindn, groupname)
 
     res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['legacyExchangeDN'])
-    if len(res)==0:
-       raise Exception("Group " + groupname + " is not provisioned for OpenChange") 
+    if len(res) == 0:
+        raise Exception("Group " + groupname + " is not provisioned for OpenChange")
 
     (recipient_type_details, recipient_display_type) = _group_recipient_type_details(db, group_dn)
     ldif = """
@@ -812,7 +838,7 @@ def _group_recipient_type_details(db, group_dn):
     """
     Returned tuple (recipient_type_details, recipient_display_type)
     Values from http://blogs.technet.com/b/benw/archive/2007/04/05/exchange-2007-and-recipient-type-details.aspx
-    Display type for Universal Security Group does not work in outlook2010 so I am using the 
+    Display type for Universal Security Group does not work in outlook2010 so I am using the
     one for distribution group
     """
     res = db.search(base=group_dn, scope=SCOPE_BASE, attrs=['groupType'])
@@ -1079,6 +1105,50 @@ def openchangedb_deprovision(names, lp, mapistore=None):
     else:
         raise Exception("unknown backend in openchangedb URI %s" % uri)
     openchangedb.remove()
+
+
+# migration methods for openchange directory
+def directory_migrate(lp, uri=None, version=None, extra=None):
+    provisioned = False
+    try:
+        check_not_provisioned(extra['names'], lp, extra['creds'])
+    except:
+        provisioned = True
+    if not provisioned:
+        raise Exception("OpenChange is not provisioned, provision it instead of upgrading it")
+
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        directory = mailbox.Directory(uri)
+        if directory.migrate(version, extra):
+            print "Migration of openchange directory done"
+        else:
+            print "Nothing to migrate"
+    else:
+        print "We need MySQL to manage directory migrations"
+
+
+def directory_list_migrations(lp, uri):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchange_directory = mailbox.Directory(uri)
+        migrations = openchange_directory.list_migrations()
+        print_migrations(migrations)
+    else:
+        print "Only Openchange_Directory with MySQL as backend has migration capability"
+
+
+def directory_fake_migration(lp, uri, target_version):
+    if uri is None:
+        uri = openchangedb_url(lp)
+    if uri.startswith('mysql:'):
+        openchange_directory = mailbox.Directory(uri)
+        if openchange_directory.fake_migration(target_version):
+            print "%d is now the current version" % target_version
+    else:
+        print "Only OpenchangeDB with MySQL as backend has migration capability"
 
 
 def openchangedb_migrate(lp, uri=None, version=None):

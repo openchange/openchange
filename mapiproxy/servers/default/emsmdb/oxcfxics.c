@@ -2866,18 +2866,6 @@ end:
 	return MAPI_E_SUCCESS;
 }
 
-/**
-   \details EcDoRpc SyncImportMessageMove (0x78) Rop.
-
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider context
-   \param mapi_req pointer to the SyncImportMessageMove EcDoRpc_MAPI_REQ
-   \param mapi_repl pointer to the SyncImportMessageMove EcDoRpc_MAPI_REPL
-   \param handles pointer to the MAPI handles array
-   \param size pointer to the mapi_response size to update
-
-   \return MAPI_E_SUCCESS on success, otherwise MAPI error
- */
 static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint32_t size, uint64_t *fmidP)
 {
 	struct GUID	guid;
@@ -2906,6 +2894,18 @@ static bool convertIdToFMID(const struct GUID *replica_guid, uint8_t *data, uint
 	return true;
 }
 
+/**
+   \details EcDoRpc SyncImportMessageMove (0x78) Rop.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb provider context
+   \param mapi_req pointer to the SyncImportMessageMove EcDoRpc_MAPI_REQ
+   \param mapi_repl pointer to the SyncImportMessageMove EcDoRpc_MAPI_REPL
+   \param handles pointer to the MAPI handles array
+   \param size pointer to the mapi_response size to update
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error
+ */
 _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 							  struct emsmdbp_context *emsmdbp_ctx,
 							  struct EcDoRpc_MAPI_REQ *mapi_req,
@@ -2926,7 +2926,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSyncImportMessageMove(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS				retval;
 	bool					mapistore;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SyncImportMessageMove (0x78)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXCFXICS] SyncImportMessageMove (0x78)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

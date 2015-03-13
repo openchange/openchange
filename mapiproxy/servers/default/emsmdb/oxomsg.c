@@ -121,7 +121,8 @@ static void oxomsg_mapistore_handle_message_relocation(struct emsmdbp_context *e
 			continue;
 		}
 
-		/* FIXME: (from oxomsg 3.2.5.1) PidTagMessageFlags: mfUnsent and mfRead must be cleared */
+		/* FIXME: (from oxomsg 3.2.5.1) PidTagMessageFlags: mfUnsent and mfRead must be cleared.
+		   Note: Property not managed by any current mapistore backend */
 		emsmdbp_object_copy_properties(emsmdbp_ctx, old_message_object, message_object, &excluded_tags, true);
 
 		mapistore_message_save(emsmdbp_ctx->mstore_ctx, contextID, message_object->backend_object, mem_ctx);
@@ -163,7 +164,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSubmitMessage(TALLOC_CTX *mem_ctx,
 	uint32_t		contextID;
 	uint8_t			flags;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SubmitMessage (0x32)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXOMSG] SubmitMessage (0x32)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -387,7 +388,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopTransportSend(TALLOC_CTX *mem_ctx,
 	bool				mapistore = false;
 	struct emsmdbp_object		*object;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] TransportSend (0x4a)\n"));
+	DEBUG(4, ("exchange_emsmdb: [OXOMSG] TransportSend (0x4a)\n"));
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

@@ -3446,7 +3446,12 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 	xml = talloc_asprintf_append(xml, "</Initiator>");
 	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
-	if ((sharing_flavour & 0x0310) == 0x0310) {  /* Invitation, See [MS-OXSHARE] Section 2.2.2.5 */
+	/* See [MS-OXSHARE] Section 2.2.2.5 */
+	if (sharing_flavour == 0x23310) {
+		/*** Accept Of Request */
+		xml = talloc_asprintf_append(xml, "<AcceptOfRequest>");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	} else if ((sharing_flavour & 0x310) == 0x310) {
 		/*** Invitation ***/
 		xml = talloc_asprintf_append(xml, "<Invitation>");
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
@@ -3499,7 +3504,7 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
 	/* PidLidSharingRemoteUid */
-	if (retvals[7] == MAPI_E_SUCCESS && (sharing_flavour & 0x0310) == 0x0310) {
+	if (retvals[7] == MAPI_E_SUCCESS && (sharing_flavour & 0x310) == 0x310) {
 		xml = talloc_asprintf_append(xml,
 					     "<FolderId xmlns=\"http://schemas.microsoft.com/exchange/sharing/2008\">%s</FolderId>",
 					     (char *)data_pointers[7]);
@@ -3514,7 +3519,10 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 	xml = talloc_asprintf_append(xml, "</Provider></Providers>");
 	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
-	if ((sharing_flavour & 0x310) == 0x310) {
+	if (sharing_flavour == 0x23310) {
+		xml = talloc_asprintf_append(xml, "</AcceptOfRequest>");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	} else	if ((sharing_flavour & 0x310) == 0x310) {
 		xml = talloc_asprintf_append(xml, "</Invitation>");
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	} else if (sharing_flavour == 0x20500) {

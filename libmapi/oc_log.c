@@ -38,9 +38,11 @@ void oc_logv(enum oc_log_level level, const char *fmt_string, va_list ap)
 
 	nwritten = vsnprintf(line, sizeof(line), fmt_string, ap);
 
-	if (level <= 0) {
-		samba_level = -level;
+	if (level >= 0) {
+		samba_level = level;
 	} else {
+		/* Log OC_LOG_FATAL, OC_LOG_ERROR, OC_LOG_WARNING and OC_LOG_INFO
+		 * all at samba debug level 0 */
 		samba_level = 0;
 	}
 

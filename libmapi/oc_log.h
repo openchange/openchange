@@ -27,12 +27,26 @@
 
 #define OC_LOG_MAX_LINE 1024
 
+/* There are two ways of logging messages in OpenChange.
+ *
+ * oc_log() should be used for all messages that are intended to be seen by users.
+ * It does not include file/lineno information. The first arugment to oc_log()
+ * indicates the kind of message: FATAL, ERROR, WARNING, INFO or DEBUG.
+ *
+ * OC_DEBUG() should be used for anything that is relevant to developers, i.e.
+ * helpful messages during debugging. OC_DEBUG() takes a priority argument,
+ * and by default these messages will *not* be shown to users unless they
+ * explicitly pass a flag to get more debugging information.
+ * OC_DEBUG() is a macro and will include file/lineno information. OC_DEBUG()
+ * statements might be compiled out on some platforms for performance reasons.
+ */
+
 enum oc_log_level {
-	OC_LOG_FATAL=4,
-	OC_LOG_ERROR=3,
-	OC_LOG_WARNING=2,
-	OC_LOG_INFO=1,
-	OC_LOG_DEBUG=0,
+	OC_LOG_FATAL=-3,
+	OC_LOG_ERROR=-2,
+	OC_LOG_WARNING=-1,
+	OC_LOG_INFO=0,
+	OC_LOG_DEBUG=1,
 	/* Anything with a log level of zero or lower is considered a debug message,
 	   in other words: not meant to be understood by end users.
 	*/
@@ -42,7 +56,7 @@ enum oc_log_level {
  * This macro is a simple wrapper around oc_log() that adds the
  * source file name and line number to the message. */
 #define OC_DEBUG(priority, format, ...) \
-	oc_log (OC_LOG_DEBUG-(priority), __location__ "(%s): " format, __PRETTY_FUNCTION__, ## __VA_ARGS__)
+	oc_log (OC_LOG_DEBUG+(priority), __location__ "(%s): " format, __PRETTY_FUNCTION__, ## __VA_ARGS__)
 
 /* Write a log message.
  * Like in syslog, a trailing newline is *not* required. The library will add it

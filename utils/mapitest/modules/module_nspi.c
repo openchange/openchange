@@ -41,7 +41,7 @@ _PUBLIC_ bool mapitest_nspi_UpdateStat(struct mapitest *mt)
 	TALLOC_CTX		*mem_ctx;
 	enum MAPISTATUS		retval;
 	struct nspi_context	*nspi_ctx;
-	uint32_t       		plDelta = 1;
+	int32_t       		plDelta = 1;
 	struct PropertyRowSet_r	*RowSet;
 
 	mem_ctx = talloc_named(NULL, 0, "mapitest_nspi_UpdateStat");

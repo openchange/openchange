@@ -252,17 +252,12 @@ static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat 
 	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
 
 	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
-        if (!mids) {
-                DCESRV_NSP_RETURN(r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-        }
+        DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	ret = emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
+	DCESRV_NSP_RETURN_IF(ret == MAPI_E_CALL_FAILED, r, ret, local_mem_ctx);
 	if (ret != MAPI_E_SUCCESS) {
 		row_max = 0;
-		if (ret == MAPI_E_CALL_FAILED) {
-			retval = ret;
-			goto end;
-		}
 	} else {
 		row_max = mids->cValues - 1;
 	}
@@ -313,7 +308,7 @@ static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat 
 			}
 		}
 	}
-	
+
 	if (row == row_max) {
 		/* even if row = 0 we should return MID_END_OF_TABLE */
 		r->out.pStat->CurrentRec = MID_END_OF_TABLE;
@@ -409,9 +404,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.lpETable == NULL && r->in.pStat->ContainerID) {
@@ -470,12 +463,12 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 				start_pos = r->in.pStat->NumPos - abs(r->in.pStat->Delta);
 			}
 		}
-		
+
 		count = ldb_res->count - start_pos;
 		if (r->in.Count < count) {
 			count = r->in.Count;
 		}
-		
+
 		if (count) {
 			pRows->cRows = count;
 			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, count);
@@ -505,7 +498,6 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			DEBUG(1, ("NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result));
 			r->out.result = MAPI_E_SUCCESS;
 		}
-
 	} else {
 		/* Step 2.2 Fill ppRows for supplied table of MIds */
 		j = 0;
@@ -562,9 +554,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID) {
@@ -582,8 +572,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 
 	if (r->in.lpETable) {
 		all_mids = r->in.lpETable;
-	}
-	else {
+	} else {
 		all_mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 		emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
 	}
@@ -671,9 +660,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Retrieve MIds array given search criterias */
 	ppOutMIds = talloc_zero(mem_ctx, struct PropertyTagArray_r);
@@ -762,10 +749,8 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
-	
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
+
 	r->out.ppMIds = talloc_array(mem_ctx, struct PropertyTagArray_r *, 2);
 	r->out.ppMIds[0] = talloc_zero(mem_ctx, struct PropertyTagArray_r);
 	r->out.ppMIds[0]->cValues = r->in.pNames->Count;
@@ -773,9 +758,9 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 
 	for (i = 0; i < r->in.pNames->Count; i++) {
 		/* Step 1. Check if the input legacyDN exists */
-	  retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
+		retval = emsabp_search_legacyExchangeDN(emsabp_ctx, r->in.pNames->Strings[i], &msg, &pbUseConfPartition);
 		if (retval != MAPI_E_SUCCESS) {
-		  r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) 0;
+			r->out.ppMIds[0]->aulPropTag[i] = (enum MAPITAGS) 0;
 		} else {
 			TDB_CONTEXT *tdb_ctx = (pbUseConfPartition ? emsabp_ctx->tdb_ctx : emsabp_ctx->ttdb_ctx);
 			dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
@@ -839,14 +824,11 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	MId = r->in.pStat->CurrentRec;
-	
-	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 
+	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.pStat->ContainerID) {
 		container_exists = emsabp_tdb_lookup_MId(emsabp_ctx->tdb_ctx, r->in.pStat->ContainerID);
 		DCESRV_NSP_RETURN_IF(!container_exists, r, MAPI_E_INVALID_BOOKMARK, NULL);
@@ -976,9 +958,7 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN_IF(unsupported_codepage, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. (FIXME) We arbitrary set lpVersion to 0x1 */
 	r->out.lpVersion = talloc_zero(mem_ctx, uint32_t);
@@ -1156,10 +1136,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DEBUG(5, ("[nspi][%s:%d] emsabp_context not found\n", __FUNCTION__, __LINE__));
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
@@ -1302,10 +1279,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	}
 
 	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	if (!emsabp_ctx) {
-		DEBUG(5, ("[nspi][%s:%d] emsabp_context not found\n", __FUNCTION__, __LINE__));
-		DCESRV_NSP_RETURN(r, MAPI_E_CALL_FAILED, NULL);
-	}
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);

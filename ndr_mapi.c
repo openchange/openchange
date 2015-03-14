@@ -1152,7 +1152,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->in.pulTimeStamp));
 		{
 			/* Encode contents to temporary buffer to determine size */
-			uint32_t 	size_rgbAuxIn_0 = 0;			
+			uint32_t 	size_rgbAuxIn_0 = 0;
 			uint32_t	_flags_save_mapi2k7_AuxInfo = ndr->flags;
 			struct ndr_push	*_ndr_rgbAuxIn;
 
@@ -1172,7 +1172,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 			/* Push conformant array of encoded size bytes */
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxIn, 4, -1));
 			ndr->flags = _flags_save_mapi2k7_AuxInfo;
-			
+
 			/* Value in cbAuxIn is not used, size was calculated when rgbAuxIn was pushed above */ 
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxIn_0));
 		}

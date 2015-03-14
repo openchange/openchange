@@ -19,6 +19,7 @@
 #
 
 import os
+import sys
 import signal
 import subprocess
 import logging
@@ -49,7 +50,10 @@ def getSambaProcess(logger):
 def runGdb(pid, logger):
 	signal.signal(signal.SIGINT, signal.SIG_IGN)
 	try:
-		subprocess.call(['gdb', '--pid' , pid])
+		cmd = ['gdb', '--pid', pid]
+		for arg in sys.argv[1:]:
+		    cmd.append('--directory=' + arg)
+		subprocess.call(cmd)
 	except OSError as e:
 		if e.errno == os.errno.ENOENT:
 			logger.critical('GDB not found in path')

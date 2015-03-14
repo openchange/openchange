@@ -3459,6 +3459,10 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 		/*** Request ***/
 		xml = talloc_asprintf_append(xml, "<Request>");
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	} else if (sharing_flavour == 0x25100) {
+		/*** Deny of Request ***/
+		xml = talloc_asprintf_append(xml, "<DenyOfRequest>");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	} else {
 		/* TODO: Implement all flavours */
 		DEBUG(0, ("Sharing flavour 0x%x not implemented", sharing_flavour));
@@ -3527,6 +3531,9 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	} else if (sharing_flavour == 0x20500) {
 		xml = talloc_asprintf_append(xml, "</Request>");
+		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	} else if (sharing_flavour == 0x25100) {
+		xml = talloc_asprintf_append(xml, "</DenyOfRequest>");
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	}
 

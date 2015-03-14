@@ -491,74 +491,31 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 {
 	NTSTATUS		status;
 	struct EcDoRpcExt2	r;
-	struct mapi2k7_response	mapi2k7_response;
-	struct ndr_push		*ndr_uncomp_rgbIn;
-	struct ndr_push		*ndr_comp_rgbIn;
-	struct ndr_push		*ndr_rgbIn;
-	struct ndr_pull		*ndr_pull = NULL;
+	struct ndr_push		*ndr_push;
 	uint32_t		pulFlags = 0x0;
 	uint32_t		pcbOut = 0x8007;
 	uint32_t		pcbAuxOut = 0x1008;
 	uint32_t		pulTransTime = 0;
-	DATA_BLOB		rgbOut;
-	struct RPC_HEADER_EXT	RPC_HEADER_EXT;
-	enum ndr_err_code ndr_err;
 
 	r.in.handle = r.out.handle = &emsmdb_ctx->handle;
 	r.in.pulFlags = r.out.pulFlags = &pulFlags;
 
-	/* Step 1. Push mapi_request in a data blob */
-	ndr_uncomp_rgbIn = ndr_push_init_ctx(mem_ctx);
-	ndr_set_flags(&ndr_uncomp_rgbIn->flags, LIBNDR_FLAG_NOALIGN);
-	ndr_push_mapi_request(ndr_uncomp_rgbIn, NDR_SCALARS|NDR_BUFFERS, req);
+	/* Step 1. Push mapi_request to determine sizes of packed requests */
+	ndr_push = ndr_push_init_ctx(mem_ctx);
+	ndr_set_flags(&ndr_push->flags, LIBNDR_FLAG_NOALIGN);
+	ndr_push_mapi_request(ndr_push, NDR_SCALARS|NDR_BUFFERS, req);
 
-	/* Step 2. Compress the blob */
-	/* 	ndr_comp_rgbIn = ndr_push_init_ctx(mem_ctx); */
-	/* 	ndr_push_lzxpress_compress(ndr_comp_rgbIn, ndr_uncomp_rgbIn); */
+	/* Step 2. Setup request structure */
+	r.in.pRequest = talloc_zero(mem_ctx, struct mapi2k7_request);
+	r.in.pRequest->header.Version = 0x0000;
+	r.in.pRequest->header.Flags = RHEF_XorMagic|RHEF_Last;
+	r.in.pRequest->header.Size = ndr_push->offset;
+	r.in.pRequest->header.SizeActual = ndr_push->offset;
+	r.in.pRequest->mapi_request = req;
 
-	/* If the compressed blob is larger than the uncompressed one, use obfuscation */
-	/* 	if (ndr_comp_rgbIn->offset > ndr_uncomp_rgbIn->offset) { */
-	/* 		talloc_free(ndr_comp_rgbIn); */
-	ndr_comp_rgbIn = ndr_uncomp_rgbIn;
-	obfuscate_data(ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset, 0xA5);
-		
-	RPC_HEADER_EXT.Version = 0x0000;
-	RPC_HEADER_EXT.Flags = RHEF_XorMagic|RHEF_Last;
-	RPC_HEADER_EXT.Size = ndr_comp_rgbIn->offset;
-	RPC_HEADER_EXT.SizeActual = ndr_comp_rgbIn->offset;
-
-	ndr_rgbIn = ndr_push_init_ctx(mem_ctx);
-	ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN);
-	ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT);
-	ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset);
-		/* 	} else { */
-		/* 		RPC_HEADER_EXT.Version = 0x0000; */
-		/* 		RPC_HEADER_EXT.Flags = RHEF_Compressed|RHEF_Last; */
-		/* 		RPC_HEADER_EXT.Size = ndr_comp_rgbIn->offset; */
-		/* 		RPC_HEADER_EXT.SizeActual = ndr_uncomp_rgbIn->offset; */
-
-		/* 		ndr_rgbIn = ndr_push_init_ctx(mem_ctx); */
-		/* 		ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN); */
-		/* 		ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT); */
-		/* 		ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset); */
-		/* 	} */
-
-		/* Plain request (no obfuscation or compression) */
-		/* ndr_comp_rgbIn = ndr_uncomp_rgbIn; */
-		/* RPC_HEADER_EXT.Version = 0x0000; */
-		/* RPC_HEADER_EXT.Flags = RHEF_Last; */
-		/* RPC_HEADER_EXT.Size = ndr_uncomp_rgbIn->offset; */
-		/* RPC_HEADER_EXT.SizeActual = ndr_uncomp_rgbIn->offset; */
-
-		/* Pull the complete rgbIn */
-		/* ndr_rgbIn = ndr_push_init_ctx(mem_ctx); */
-		/* ndr_set_flags(&ndr_rgbIn->flags, LIBNDR_FLAG_NOALIGN); */
-		/* ndr_push_RPC_HEADER_EXT(ndr_rgbIn, NDR_SCALARS|NDR_BUFFERS, &RPC_HEADER_EXT); */
-		/* ndr_push_bytes(ndr_rgbIn, ndr_comp_rgbIn->data, ndr_comp_rgbIn->offset); */
-
-	r.in.rgbIn = ndr_rgbIn->data;
-	r.in.cbIn = ndr_rgbIn->offset;
-	r.in.pcbOut = r.out.pcbOut = &pcbOut;
+	/* Size of bytes isn't known yet, it will be calculated during encoding */
+	r.in.cbRequest = 0;
+	r.in.pcbResponse = r.out.pcbResponse = &pcbOut;
 
 	r.in.rgbAuxIn = NULL;
 	r.in.cbAuxIn = 0;
@@ -568,8 +525,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 	r.out.pulTransTime = &pulTransTime;
 
 	status = dcerpc_EcDoRpcExt2_r(emsmdb_ctx->rpc_connection->binding_handle, mem_ctx, &r);
-	talloc_free(ndr_rgbIn);
-	talloc_free(ndr_comp_rgbIn);
+	talloc_free(ndr_push);
 
 	if (!NT_STATUS_IS_OK(status)) {
 		return status;
@@ -577,18 +533,7 @@ _PUBLIC_ NTSTATUS emsmdb_transaction_ext2(struct emsmdb_context *emsmdb_ctx,
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 
-	/* Pull MAPI response form rgbOut */
-	rgbOut.data = r.out.rgbOut;
-	rgbOut.length = *r.out.pcbOut;
-	ndr_pull = ndr_pull_init_blob(&rgbOut, mem_ctx);
-	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
-
-	ndr_err = ndr_pull_mapi2k7_response(ndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
-	if (ndr_err != NDR_ERR_SUCCESS) {
-		return ndr_map_error2ntstatus(ndr_err);
-	}
-
-	*repl = mapi2k7_response.mapi_response;
+	*repl = r.out.pResponse->mapi_response;
 
 	return status;
 }

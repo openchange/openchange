@@ -4655,28 +4655,28 @@ System Attendant Private Interface
 		pulFlags_Chain		= 0x00000004
 	} pulFlags;
 
-	typedef [public,nopull] struct {
+	typedef [public,nopull,nopush] struct {
 		RPC_HEADER_EXT							header;
 		[subcontext(0),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_request	*mapi_request;
 	} mapi2k7_request;
 
-	typedef [public,nopull] struct {
+	typedef [public,nopull,nopush] struct {
 		RPC_HEADER_EXT							header;
 		[subcontext(0),flag(NDR_REMAINING|NDR_NOALIGN)] mapi_response	*mapi_response;
 	} mapi2k7_response;
 
-	[public,noprint] MAPISTATUS EcDoRpcExt2(
-		[in,out]					policy_handle	*handle,
-		[in,out]					uint32		*pulFlags,
-		[in, size_is(cbIn)]				uint8		rgbIn[],
-		[in]						uint32		cbIn,
-		[out, length_is(*pcbOut), size_is(*pcbOut)]	uint8		rgbOut[],
-		[in,out][range(0x0,0x40000)]			uint32		*pcbOut,
-		[in, size_is(cbAuxIn)]				uint8		rgbAuxIn[],
-		[in]						uint32		cbAuxIn,
-		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint8		rgbAuxOut[],
-		[in,out][range(0x0,0x1008)]			uint32		*pcbAuxOut,
-		[out]						uint32		*pulTransTime
+	[public,nopull,nopush,noprint] MAPISTATUS EcDoRpcExt2(
+		[in,out]					policy_handle		*handle,
+		[in,out]					uint32			*pulFlags,
+		[in, size_is(cbIn)]				mapi2k7_request		*rgbIn,
+		[in]						uint32			cbIn,
+		[out, length_is(*pcbOut), size_is(*pcbOut)]	mapi2k7_response	*rgbOut,
+		[in,out][range(0x0,0x40000)]			uint32			*pcbOut,
+		[in, size_is(cbAuxIn)]				uint8			rgbAuxIn[],
+		[in]						uint32			cbAuxIn,
+		[out, length_is(*pcbAuxOut), size_is(*pcbAuxOut)] uint8			rgbAuxOut[],
+		[in,out][range(0x0,0x1008)]			uint32			*pcbAuxOut,
+		[out]						uint32			*pulTransTime
 		);
 
 	/*****************/

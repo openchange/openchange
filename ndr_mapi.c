@@ -536,7 +536,7 @@ _PUBLIC_ enum ndr_err_code ndr_pull_mapi2k7_AuxInfo(struct ndr_pull *ndr, int nd
 _PUBLIC_ enum ndr_err_code ndr_push_mapi2k7_AuxInfo(struct ndr_push *ndr, int ndr_flags, const struct mapi2k7_AuxInfo *r)
 {
 	uint32_t	i;
-	
+
 	NDR_PUSH_CHECK_FLAGS(ndr, ndr_flags);
 	if (ndr_flags & NDR_SCALARS) {
 		NDR_CHECK(ndr_push_align(ndr, 5));
@@ -544,13 +544,13 @@ _PUBLIC_ enum ndr_err_code ndr_push_mapi2k7_AuxInfo(struct ndr_push *ndr, int nd
 		if ((r->RPC_HEADER_EXT.Flags & RHEF_Last) == 0) {
 			return ndr_push_error(ndr, NDR_ERR_VALIDATE, "RPC_HEADER_EXT.Flags indicates this isn't the last header block.");
 		}
-		
+
 		/* Make a local copy so the flags can be reset, compression and obfuscation are not currently supported. */
 		struct RPC_HEADER_EXT tempRPC_HEADER_EXT;
 		tempRPC_HEADER_EXT = r->RPC_HEADER_EXT;
 		tempRPC_HEADER_EXT.Size = tempRPC_HEADER_EXT.SizeActual;  /* Original size is not valid, use actual size */
 		tempRPC_HEADER_EXT.Flags = RHEF_Last;
-		
+
 		NDR_CHECK(ndr_push_RPC_HEADER_EXT(ndr, NDR_SCALARS, &tempRPC_HEADER_EXT));
 
 		if (r->AUX_HEADER) {
@@ -559,7 +559,7 @@ _PUBLIC_ enum ndr_err_code ndr_push_mapi2k7_AuxInfo(struct ndr_push *ndr, int nd
 			for (i = 0; r->AUX_HEADER[i].Size; i++) {
 				NDR_CHECK(ndr_push_AUX_HEADER(_ndr_AUX_HEADER, NDR_SCALARS,  &r->AUX_HEADER[i]));
 			}
-			
+
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_AUX_HEADER, 0, tempRPC_HEADER_EXT.Size));
 		}
 	}
@@ -1165,10 +1165,10 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 				}
 				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxIn, NDR_SCALARS|NDR_BUFFERS, r->in.rgbAuxIn));
 			}
-			
+
 			/* Extract encoded size */
 			size_rgbAuxIn_0 = _ndr_rgbAuxIn->offset;
-			
+
 			/* Push conformant array of encoded size bytes */
 			NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxIn, 4, -1));
 			ndr->flags = _flags_save_mapi2k7_AuxInfo;
@@ -1235,14 +1235,14 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 		NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, *r->out.pulTimeStamp));
 
 		{
-			uint32_t 	size_rgbAuxOut_0 = 0;			
-			
+			uint32_t 	size_rgbAuxOut_0 = 0;
+
 			/* Does rgbAuxOut exist (it is optional) */
 			if (r->out.rgbAuxOut == NULL) {
 				/* No, push empty conformant-varying array */
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
-				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));		
+				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 			}
 			else {
 				/* Yes, encode contents to temporary buffer to determine size */
@@ -1251,24 +1251,24 @@ _PUBLIC_ enum ndr_err_code ndr_push_EcDoConnectEx(struct ndr_push *ndr, int flag
 
 				ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REMAINING);
 				NDR_CHECK(ndr_push_subcontext_start(ndr, &_ndr_rgbAuxOut, 4, -1));
-				
+
 				NDR_CHECK(ndr_push_mapi2k7_AuxInfo(_ndr_rgbAuxOut, NDR_SCALARS|NDR_BUFFERS, r->out.rgbAuxOut));
 
 				/* Extract encoded size */
 				size_rgbAuxOut_0 = _ndr_rgbAuxOut->offset;
-				
+
 				/* Push conformant-varying array of encoded size bytes */
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 				NDR_CHECK(ndr_push_uint3264(ndr, NDR_SCALARS, 0));
 				NDR_CHECK(ndr_push_subcontext_end(ndr, _ndr_rgbAuxOut, 4, -1));
-			
+
 				ndr->flags = _flags_save_mapi2k7_AuxInfo;
 			}
-			
-			/* Value in pcbAuxOut is not used, size was calculated when rgbAuxOut was pushed above */ 
+
+			/* Value in pcbAuxOut is not used, size was calculated when rgbAuxOut was pushed above */
 			NDR_CHECK(ndr_push_uint32(ndr, NDR_SCALARS, size_rgbAuxOut_0));
 		}
-		
+
 		NDR_CHECK(ndr_push_MAPISTATUS(ndr, NDR_SCALARS, r->out.result));
 	}
 	return NDR_ERR_SUCCESS;

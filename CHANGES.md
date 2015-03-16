@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 The descriptions should be useful and understandable for end users of OpenChange.
 Unreleased changes refer to our current [master branch](https://github.com/openchange/openchange/).
 
-## [Unreleased]
+## [2.3-zentyal9] - 2015-03-16
 
 ### Added
 * Sharing request and invitation of folders among different Outlook versions
@@ -20,5 +20,6 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 
 [//]: # (unreleased compare link should be changed to the latest release)
 [//]: # (the current hash was master when this CHANGES.md file was created)
-[unreleased]: https://github.com/openchange/openchange/compare/0460ace70d03de001de11d8fb54f0571128b0b2f...HEAD
+[unreleased]: https://github.com/Zentyal/openchange/compare/2.3-zentyal9...HEAD
+[2.3-zentyal9]: https://github.com/Zentyal/openchange/compare/2.3-zentyal8...2.3-zentyal9
 

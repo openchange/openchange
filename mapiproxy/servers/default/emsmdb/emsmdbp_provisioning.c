@@ -437,6 +437,21 @@ FolderId: 0x67ca828f02000001      Display Name: "                        ";  Con
 		openchangedb_create_mailbox(emsmdbp_ctx->oc_ctx, username, organization_name, group_name, mailbox_fid, current_name);
 		openchangedb_set_locale(emsmdbp_ctx->oc_ctx, username, emsmdbp_ctx->userLanguage);
 	}
+	/* east egg #SundayNightHacking :-) */
+	{
+		const char		*srvtype = NULL;
+		struct SPropValue	lpProp;
+
+		srvtype = lpcfg_parm_string(emsmdbp_ctx->lp_ctx, NULL, "openchange", "srvtype");
+		if (srvtype) {
+			lpProp.ulPropTag = 0x341d001f;
+			lpProp.value.lpszW = srvtype;
+			property_row.cValues = 1;
+			property_row.lpProps = &lpProp;
+			openchangedb_set_folder_properties(emsmdbp_ctx->oc_ctx, username,
+							   mailbox_fid, &property_row);
+		}
+	}
 
 	property_row.lpProps = talloc_array(mem_ctx, struct SPropValue, 4); /* allocate max needed until the end of the function */
 	property_row.cValues = 1;

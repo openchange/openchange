@@ -362,6 +362,7 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
+	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
 	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	if (r->in.pStat->ContainerID) {

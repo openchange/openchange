@@ -37,6 +37,7 @@ void oc_logv(enum oc_log_level level, const char *fmt_string, va_list ap)
 	int nwritten;
 
 	nwritten = vsnprintf(line, sizeof(line), fmt_string, ap);
+	if (nwritten < 0) return;
 
 	if (level >= 0) {
 		samba_level = level;

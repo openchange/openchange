@@ -94,13 +94,13 @@ class ImapCleaner(object):
         connection_url = self._get_connection_url()
 
         # imap[s]://127.0.0.1:143
-        m = re.search('(?P<scheme>.+)://(?P<host>.+):(?P<port>\d+)',
+        m = re.search('((?P<scheme>.+)://)?(?P<host>.+):(?P<port>\d+)',
                       connection_url)
         if not m:
             raise Exception("ERROR Unable to parse IMAPServer: %s" %
                             connection_url)
         group_dict = m.groupdict()
-        if group_dict['scheme'] not in ('imaps', 'imap'):
+        if group_dict['scheme'] not in (None, 'imaps', 'imap'):
             raise Exception("IMAPServer should start with imap[s]:// "
                             "(we got %s)", group_dict['scheme'])
 

@@ -522,14 +522,6 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 	case PR_ADDRTYPE_UNICODE:
 		data = (void *) talloc_strdup(mem_ctx, EMSABP_ADDRTYPE /* "SMTP" */);
 		return data;
-	case PR_OBJECT_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = MAPI_MAILUSER;
-		return data;
-	case PR_DISPLAY_TYPE:
-		data = talloc_zero(mem_ctx, uint32_t);
-		*((uint32_t *)data) = DT_MAILUSER;
-		return data;
 	case PR_SEND_RICH_INFO:
 		data = talloc_zero(mem_ctx, uint8_t);
 		*((uint8_t *)data) = false;
@@ -633,6 +625,13 @@ _PUBLIC_ void *emsabp_query(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_c
 			mvszA->lppszA[i] = talloc_strdup(mem_ctx, (char *)ldb_element->values[i].data);
 		}
 		data = (void *) mvszA;
+		break;
+	case PT_LONG:
+		ldb_val = ldb_msg_find_ldb_val(msg2, attribute);
+		if (!ldb_val) return NULL;
+		/*  There is duplication of code between ldb_msg_find_ldb_val and ldb_msg_find_attr_as_uint but we cannot afford to not discriminate between null value and default 0 value */
+		data = talloc_zero(mem_ctx, uint32_t);
+		*((uint32_t *)data) = ldb_msg_find_attr_as_uint(msg2, attribute, 0);
 		break;
 	default:
 		DEBUG(3, ("[%s:%d]: Unsupported property type: 0x%x\n", __FUNCTION__, __LINE__,
@@ -819,6 +818,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 	uint32_t			containerID = 0;
 	const char			*dn = NULL;
 
+
+
 	/* Step 1. Build the array of properties to fetch and map */
 	if (child == false) {
 		SPropTagArray = set_SPropTagArray(mem_ctx, 0x6,
@@ -865,7 +866,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				lpProps.value.l = 0x0;
 				break;
 			case PidTagDisplayName:
-				lpProps.value.lpszW = NULL;
+				/* This value is temporal to workaround PropertyRow_addprop internals */
+				/* It will be set to NULL aftr the call to PropertyRow_addprop */
+				lpProps.value.lpszW = "t";
 				break;
 			case PR_EMS_AB_IS_MASTER:
 				lpProps.value.b = false;
@@ -874,7 +877,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				break;
 			}
 			PropertyRow_addprop(aRow, lpProps);
-			/* PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
+
 			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME || 
 			    SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME_UNICODE) {
 				aRow->lpProps[aRow->cValues - 1].value.lpszA = NULL;
@@ -891,23 +894,14 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 				emsabp_PermanentEntryID_to_Binary_r(mem_ctx, permEntryID, &(lpProps.value.bin));
 				break;
 			case PR_CONTAINER_FLAGS:
-			  switch ((int)child) {
-				case true:
-					lpProps.value.l = AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;
-					break;
-				case false:
+				if (child) {
 					lpProps.value.l = AB_RECIPIENTS | AB_UNMODIFIABLE;
+				} else {
+					lpProps.value.l = AB_RECIPIENTS | AB_SUBCONTAINERS | AB_UNMODIFIABLE;					
 				}
 				break;
 			case PR_DEPTH:
-			  switch ((int)child) {
-				case true:
-					lpProps.value.l = 0x1;
-					break;
-				case false:
-					lpProps.value.l = 0x0;
-					break;
-				}
+				lpProps.value.l = child ? 0x1 : 0x0;
 				break;
 			case PR_EMS_AB_CONTAINERID:
 				dn = ldb_msg_find_attr_as_string(msg, "distinguishedName", NULL);
@@ -1200,7 +1194,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}
 	} else {
-		fmt_str = talloc_strdup(mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		ret = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, pStat->ContainerID, &fmt_str);
 		attr = NULL;
 	}
 

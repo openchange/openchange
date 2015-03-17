@@ -30,7 +30,7 @@ class InitialIndexingMigration(Migration):
     description = 'initial'
 
     @classmethod
-    def apply(cls, cur):
+    def apply(cls, cur, extra=None):
         try:
             cur.execute('SELECT COUNT(*) FROM `named_properties`')
             return False

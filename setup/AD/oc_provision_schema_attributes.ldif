@@ -23771,10 +23771,8 @@ isMemberOfPartialAttributeSet: FALSE
 objectCategory: CN=Attribute-Schema,${SCHEMADN}
 
 
-
-
 #
-# ms-Exch-XMIT-Timeout-Urgent		   
+# ms-Exch-XMIT-Timeout-Urgent	   
 #
 dn: CN=ms-Exch-XMIT-Timeout-Urgent,${SCHEMADN}
 objectClass: top
@@ -23815,3 +23813,59 @@ attributeSecurityGuid: e48d0154-bcf8-11d1-8702-00c04fb96050
 isMemberOfPartialAttributeSet: TRUE
 systemFlags: FLAG_SCHEMA_BASE_OBJECT
 schemaFlagsEx: FLAG_ATTR_IS_CRITICAL
+
+
+#
+#  ms-Exch-Recipient-Display-Type
+# 
+dn: CN=ms-Exch-Recipient-Display-Type,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Recipient-Display-Type
+distinguishedName: CN=ms-Exch-Recipient-Display-Type,${SCHEMADN}
+instanceType: 4
+uSNCreated: 43689
+attributeID: 1.2.840.113556.1.4.7000.102.50730
+attributeSyntax: 2.5.5.9
+isSingleValued: TRUE
+mAPIID: 14597
+uSNChanged: 43689
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Recipient-Display-Type
+adminDescription: ms-Exch-Recipient-Display-Type
+oMSyntax: 2
+searchFlags: 1
+lDAPDisplayName: msExchRecipientDisplayType
+name: ms-Exch-Recipient-Display-Type
+schemaIDGUID:: sKuTuH52IE+RXzhXu8lq/g==
+attributeSecurityGUID:: iYopH5jeuEe1zVcq1T0mfg==
+isMemberOfPartialAttributeSet: TRUE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}
+
+#
+#  ms-Exch-Recipient-Type-Details
+# 
+dn: CN=ms-Exch-Recipient-Type-Details,${SCHEMADN}
+objectClass: top
+objectClass: attributeSchema
+cn: ms-Exch-Recipient-Type-Details
+distinguishedName: CN=ms-Exch-Recipient-Type-Details,${SCHEMADN}
+instanceType: 4
+whenCreated: 20140829141013.0Z
+whenChanged: 20140829141013.0Z
+uSNCreated: 43693
+attributeID: 1.2.840.113556.1.4.7000.102.50855
+attributeSyntax: 2.5.5.16
+isSingleValued: TRUE
+uSNChanged: 43693
+showInAdvancedViewOnly: TRUE
+adminDisplayName: ms-Exch-Recipient-Type-Details
+adminDescription: ms-Exch-Recipient-Type-Details
+oMSyntax: 65
+searchFlags: 1
+lDAPDisplayName: msExchRecipientTypeDetails
+name: ms-Exch-Recipient-Type-Details
+schemaIDGUID:: +KGbBgpUqUK/JqfdNUdTRg==
+attributeSecurityGUID:: iYopH5jeuEe1zVcq1T0mfg==
+isMemberOfPartialAttributeSet: TRUE
+objectCategory: CN=Attribute-Schema,${SCHEMADN}

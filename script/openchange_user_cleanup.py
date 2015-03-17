@@ -3,6 +3,7 @@
 import imaplib
 import optparse
 import MySQLdb
+import memcache
 import ldb
 import os
 import re
@@ -163,6 +164,56 @@ class ImapCleaner(object):
         finally:
             client.logout()
 
+class MemcachedCleaner(object):
+    def __init__(self, samba_helper=SambaOCHelper(), dry_run=False):
+        self.samba_helper = samba_helper
+        self.dry_run = dry_run
+
+    def cleanup(self, username):
+        print "===== Memcached cleanup ====="
+
+        mc = self._connect_to_memcached()
+        if all(s.connect() == 0 for s in mc.servers):
+            print " [Memcached] No memcached servers"
+            return
+
+        keys = self._get_all_keys(mc)
+        if not keys:
+            print " [Memcached] There are no keys to delete"
+            return
+
+        print "WARNING: All data from memcached will be deleted"
+        if not self.dry_run:
+            for key in keys:
+                mc.delete(key)
+        print " [Memcached] Deleted %d keys" % len(keys)
+
+    def _connect_to_memcached(self):
+        # FIXME read from openchange conf
+        host = "127.0.0.1:11211"
+        return memcache.Client([host])
+
+    def _get_all_keys(self, mc):
+        keys = []
+        # FIXME support several memcached servers
+        if len(mc.servers) > 1:
+            print "WARNING: More than one server, you must restart them manually"
+        server = mc.servers[0]
+        slabs = mc.get_slabs()[0][1].keys()
+        item_re = re.compile('^ITEM (?P<key>\S+) \[\d+ b; \d+ s\]$')
+        for slab in slabs:
+            server.send_cmd("stats cachedump %s 0" % slab)
+            line = server.readline()
+            eof = False
+            while not eof:
+                m = item_re.match(line)
+                if m:
+                    keys.append(m.groupdict()['key'])
+
+                line = server.readline()
+                eof = line == 'END'
+        return keys
+
 
 class OpenchangeCleaner(object):
     def __init__(self, samba_helper=SambaOCHelper(), dry_run=False):
@@ -278,7 +329,7 @@ class SOGoCleaner(object):
 if __name__ == "__main__":
 
     def cleanup(username, samba_helper, ignore=[], dry_run=False):
-        for klass in (OpenchangeCleaner, SOGoCleaner, ImapCleaner):
+        for klass in (OpenchangeCleaner, SOGoCleaner, ImapCleaner, MemcachedCleaner):
             if klass.__name__.split('Cleaner')[0].lower() in ignore:
                 continue
             cleaner = klass(dry_run=dry_run, samba_helper=samba_helper)
@@ -295,7 +346,8 @@ if __name__ == "__main__":
     parser.add_option("--users", action="store_true", help="List active openchange users")
     parser.add_option("--dry-run", action="store_true", help="Do not perform any action")
     parser.add_option("--ignore", action="append", default=[], help=("Ignore to perform "
-                      "some cleaner actions. The ones that exist are: openchange, sogo, imap"))
+                      "some cleaner actions. The ones that exist are: openchange, sogo, "
+                      "imap, memcached"))
     opts, args = parser.parse_args()
 
     samba_helper = SambaOCHelper()

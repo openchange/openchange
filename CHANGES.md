@@ -7,6 +7,7 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [Unreleased]
 
 ### Added
+* Calendar sharing request among different Outlook versions
 * Calendar sharing invitation among different Outlook versions
 
 ### Fixes

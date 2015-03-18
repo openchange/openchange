@@ -38,6 +38,9 @@ struct mapiadmin_ctx;
 #include <talloc.h>
 #include <ldb.h>
 #include <tevent.h>
+#ifndef _PUBLIC_
+#define _PUBLIC_
+#endif
 
 /* OpenChange includes */
 #include "libmapi/libmapi.h"
@@ -115,7 +118,6 @@ enum MAPISTATUS mapiadmin_user_mod(struct mapiadmin_ctx *);
 __END_DECLS
 
 #define	DEFAULT_PROFDB_PATH	"%s/.openchange/profiles.ldb"
-#define	MAPIADMIN_DEBUG_STR	"[%s:%d]: %s %s\n", __FUNCTION__, __LINE__
 
 #undef _PRINTF_ATTRIBUTE
 #define _PRINTF_ATTRIBUTE(a1, a2)

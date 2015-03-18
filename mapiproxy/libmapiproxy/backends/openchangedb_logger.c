@@ -44,11 +44,11 @@ static enum MAPISTATUS get_SpecialFolderID(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s], system_idx=[0x%08"PRIx32"]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient, system_idx));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s], system_idx=[0x%08"PRIx32"]",
+					priv_data->log_prefix, recipient, system_idx);
 	retval = priv_data->backend->get_SpecialFolderID(priv_data->backend, recipient, system_idx, folder_id);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *folder_id));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *folder_id);
 
 	return retval;
 }
@@ -60,11 +60,11 @@ static enum MAPISTATUS get_SystemFolderID(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s], system_idx=[0x%08"PRIx32"]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient, SystemIdx));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s], system_idx=[0x%08"PRIx32"]",
+					priv_data->log_prefix, recipient, SystemIdx);
 	retval = priv_data->backend->get_SystemFolderID(priv_data->backend, recipient, SystemIdx, FolderId);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *FolderId));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *FolderId);
 
 	return retval;
 }
@@ -77,11 +77,11 @@ static enum MAPISTATUS get_PublicFolderID(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], system_idx=[0x%08"PRIx32"]\n",
-					priv_data->log_prefix, __FUNCTION__, username, SystemIdx));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], system_idx=[0x%08"PRIx32"]",
+					priv_data->log_prefix, username, SystemIdx);
 	retval = priv_data->backend->get_PublicFolderID(priv_data->backend, username, SystemIdx, FolderId);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *FolderId));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], folder_id=[0x%016"PRIx64"]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *FolderId);
 
 	return retval;
 }
@@ -94,11 +94,11 @@ static enum MAPISTATUS get_distinguishedName(TALLOC_CTX *parent_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: system_idx=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, fid));
+	OC_DEBUG(priv_data->log_level, "%s[in]: system_idx=[0x%016"PRIx64"]",
+					priv_data->log_prefix, fid);
 	retval = priv_data->backend->get_distinguishedName(parent_ctx, priv_data->backend, fid, distinguishedName);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], distinguishedName=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *distinguishedName));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], distinguishedName=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *distinguishedName);
 
 	return retval;
 }
@@ -110,11 +110,11 @@ static enum MAPISTATUS get_MailboxGuid(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_MailboxGuid(priv_data->backend, recipient, MailboxGUID);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -126,11 +126,11 @@ static enum MAPISTATUS get_MailboxReplica(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_MailboxReplica(priv_data->backend, recipient, ReplID, ReplGUID);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -143,11 +143,11 @@ static enum MAPISTATUS get_PublicFolderReplica(struct openchangedb_context *self
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+				     priv_data->log_prefix, username);
 	retval = priv_data->backend->get_PublicFolderReplica(priv_data->backend, username, ReplID, ReplGUID);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -161,12 +161,12 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], fid=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, username, fid));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], fid=[0x%016"PRIx64"]",
+					priv_data->log_prefix, username, fid);
 	retval = priv_data->backend->get_mapistoreURI(parent_ctx, priv_data->backend, username, fid, mapistoreURL, mailboxstore);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], mapistoreURL=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval),
-					retval == MAPI_E_SUCCESS ? *mapistoreURL : "undefined"));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], mapistoreURL=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval),
+					retval == MAPI_E_SUCCESS ? *mapistoreURL : "undefined");
 
 	return retval;
 }
@@ -178,11 +178,11 @@ static enum MAPISTATUS set_mapistoreURI(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], fid=[0x%016"PRIx64"], mapistoreURL=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username, fid, mapistoreURL));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], fid=[0x%016"PRIx64"], mapistoreURL=[%s]",
+					priv_data->log_prefix, username, fid, mapistoreURL);
 	retval = priv_data->backend->set_mapistoreURI(priv_data->backend, username, fid, mapistoreURL);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -194,11 +194,11 @@ static enum MAPISTATUS get_parent_fid(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], fid=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, username, fid));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], fid=[0x%016"PRIx64"]",
+					priv_data->log_prefix, username, fid);
 	retval = priv_data->backend->get_parent_fid(priv_data->backend, username, fid, parent_fidp, mailboxstore);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], parent_fid=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *parent_fidp));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], parent_fid=[0x%016"PRIx64"]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *parent_fidp);
 
 	return retval;
 }
@@ -209,11 +209,11 @@ static enum MAPISTATUS get_fid(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: mapistoreURL=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapistoreURL));
+	OC_DEBUG(priv_data->log_level, "%s[in]: mapistoreURL=[%s]",
+					priv_data->log_prefix, mapistoreURL);
 	retval = priv_data->backend->get_fid(priv_data->backend, mapistoreURL, fidp);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], fid=[0x%016"PRIx64"]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *fidp));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], fid=[0x%016"PRIx64"]",
+					priv_data->log_prefix, mapi_get_errstr(retval), *fidp);
 
 	return retval;
 }
@@ -226,11 +226,11 @@ static enum MAPISTATUS get_MAPIStoreURIs(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_MAPIStoreURIs(priv_data->backend, username, mem_ctx, urisP);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -245,11 +245,11 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_ReceiveFolder(parent_ctx, priv_data->backend, recipient, MessageClass, fid, ExplicitMessageClass);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -261,11 +261,11 @@ static enum MAPISTATUS get_TransportFolder(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->get_TransportFolder(priv_data->backend, recipient, FolderId);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -277,11 +277,11 @@ static enum MAPISTATUS get_folder_count(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_folder_count(priv_data->backend, username, fid, RowCount);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -292,11 +292,11 @@ static enum MAPISTATUS lookup_folder_property(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: \n",
-					priv_data->log_prefix, __FUNCTION__));
+	OC_DEBUG(priv_data->log_level, "%s[in]: ",
+					priv_data->log_prefix);
 	retval = priv_data->backend->lookup_folder_property(priv_data->backend, proptag, fid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -307,11 +307,11 @@ static enum MAPISTATUS get_new_changeNumber(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_new_changeNumber(priv_data->backend, username, cn);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -325,11 +325,11 @@ static enum MAPISTATUS get_new_changeNumbers(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], max=[0x%016"PRIx64"]\n",
-				     priv_data->log_prefix, __FUNCTION__, username, max));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], max=[0x%016"PRIx64"]",
+				     priv_data->log_prefix, username, max);
 	retval = priv_data->backend->get_new_changeNumbers(priv_data->backend, mem_ctx, username, max, cns_p);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+				     priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -341,11 +341,11 @@ static enum MAPISTATUS get_next_changeNumber(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+				     priv_data->log_prefix, username);
 	retval = priv_data->backend->get_next_changeNumber(priv_data->backend, username, cn);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], cn=[0x%016"PRIx64"]\n",
-				     priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval), *cn));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], cn=[0x%016"PRIx64"]",
+				     priv_data->log_prefix, mapi_get_errstr(retval), *cn);
 
 	return retval;
 }
@@ -359,11 +359,11 @@ static enum MAPISTATUS get_folder_property(TALLOC_CTX *parent_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_folder_property(parent_ctx, priv_data->backend, username, proptag, fid, data);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -375,11 +375,11 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->set_folder_properties(priv_data->backend, username, fid, row);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -406,11 +406,11 @@ static enum MAPISTATUS get_fid_by_name(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], parent_fid=[0x%016"PRIx64"], foldername=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username, parent_fid, foldername));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], parent_fid=[0x%016"PRIx64"], foldername=[%s]",
+					priv_data->log_prefix, username, parent_fid, foldername);
 	retval = priv_data->backend->get_fid_by_name(priv_data->backend, username, parent_fid, foldername, fid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -424,11 +424,11 @@ static enum MAPISTATUS get_mid_by_subject(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_mid_by_subject(priv_data->backend, username, parent_fid, subject, mailboxstore, mid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -439,11 +439,11 @@ static enum MAPISTATUS delete_folder(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->delete_folder(priv_data->backend, username, fid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -455,11 +455,11 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: recipient=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, recipient));
+	OC_DEBUG(priv_data->log_level, "%s[in]: recipient=[%s]",
+					priv_data->log_prefix, recipient);
 	retval = priv_data->backend->set_ReceiveFolder(priv_data->backend, recipient, MessageClass, fid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -500,16 +500,16 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s], org_name=[%s], groupo_name=[%s],"
-				     "systemIdx=[%d], fid=[0x%016"PRIx64"], display_name=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__,
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s], org_name=[%s], groupo_name=[%s],"
+				     "systemIdx=[%d], fid=[0x%016"PRIx64"], display_name=[%s]",
+				     priv_data->log_prefix,
 				     username, organization_name, groupo_name,
-				     systemIdx, fid, display_name));
+				     systemIdx, fid, display_name);
 	retval = priv_data->backend->create_mailbox(priv_data->backend, username,
 						    organization_name, groupo_name,
 						    systemIdx, fid, display_name);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+				     priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -523,11 +523,11 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->create_folder(priv_data->backend, username, parentFolderID, fid, changeNumber, MAPIStoreURI, systemIdx);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -539,11 +539,11 @@ static enum MAPISTATUS get_message_count(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_message_count(priv_data->backend, username, fid, RowCount, fai);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -555,11 +555,11 @@ static enum MAPISTATUS get_system_idx(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_system_idx(priv_data->backend, username, fid, system_idx_p);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -591,11 +591,11 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->get_new_public_folderID(priv_data->backend, username, fid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -617,12 +617,12 @@ static enum MAPISTATUS get_indexing_url(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+				     priv_data->log_prefix, username);
 	retval = priv_data->backend->get_indexing_url(priv_data->backend, username, indexing_url);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s], indexing_url=[%s]\n",
-				     priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval),
-				     *indexing_url));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s], indexing_url=[%s]",
+				     priv_data->log_prefix, mapi_get_errstr(retval),
+				     *indexing_url);
 
 	return retval;
 }
@@ -632,11 +632,11 @@ static bool set_locale(struct openchangedb_context *self, const char *username, 
 	bool ret;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	ret = priv_data->backend->set_locale(priv_data->backend, username, lcid);
-	DEBUG(priv_data->log_level, ("%s%s[out]: ret=[%d]\n",
-					priv_data->log_prefix, __FUNCTION__, ret));
+	OC_DEBUG(priv_data->log_level, "%s[out]: ret=[%d]",
+					priv_data->log_prefix, ret);
 
 	return ret;
 }
@@ -663,11 +663,11 @@ static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->table_init(mem_ctx, priv_data->backend, username, table_type, folderID, table_object);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -723,11 +723,11 @@ static enum MAPISTATUS message_create(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]",
+					priv_data->log_prefix, username);
 	retval = priv_data->backend->message_create(mem_ctx, priv_data->backend, username, messageID, folderID, fai, message_object);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]",
+					priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -738,11 +738,9 @@ static enum MAPISTATUS message_save(struct openchangedb_context *self,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: \n",
-					priv_data->log_prefix, __FUNCTION__));
+	OC_DEBUG(priv_data->log_level, "%s[in]: ", priv_data->log_prefix);
 	retval = priv_data->backend->message_save(priv_data->backend, _msg, SaveFlags);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]", priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -756,11 +754,9 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: username=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, username));
+	OC_DEBUG(priv_data->log_level, "%s[in]: username=[%s]", priv_data->log_prefix, username);
 	retval = priv_data->backend->message_open(mem_ctx, priv_data->backend, username, messageID, folderID, message_object, msgp);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]", priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -773,11 +769,9 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: \n",
-					priv_data->log_prefix, __FUNCTION__));
+	OC_DEBUG(priv_data->log_level, "%s[in]", priv_data->log_prefix);
 	retval = priv_data->backend->message_get_property(mem_ctx, priv_data->backend, message_object, proptag, data);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]", priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }
@@ -790,11 +784,9 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS retval;
 	struct ocdb_logger_data *priv_data = _ocdb_logger_data_get(self);
 
-	DEBUG(priv_data->log_level, ("%s%s[in]: \n",
-					priv_data->log_prefix, __FUNCTION__));
+	OC_DEBUG(priv_data->log_level, "%s[in]", priv_data->log_prefix);
 	retval = priv_data->backend->message_set_properties(mem_ctx, priv_data->backend, message_object, row);
-	DEBUG(priv_data->log_level, ("%s%s[out]: retval=[%s]\n",
-					priv_data->log_prefix, __FUNCTION__, mapi_get_errstr(retval)));
+	OC_DEBUG(priv_data->log_level, "%s[out]: retval=[%s]", priv_data->log_prefix, mapi_get_errstr(retval));
 
 	return retval;
 }

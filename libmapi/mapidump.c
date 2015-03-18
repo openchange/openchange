@@ -981,7 +981,7 @@ _PUBLIC_ void mapidump_freebusy_date(uint32_t t, const char *sep)
 	time *= 10000000;
 
 	date = nt_time_string(mem_ctx, time);
-	DEBUG(0, ("%s %-30s\n", sep, date));
+	OC_DEBUG(0, "%s %-30s", sep, date);
 	talloc_free((char *)date);
 	talloc_free(mem_ctx);
 }
@@ -1017,24 +1017,24 @@ _PUBLIC_ void mapidump_freebusy_event(struct Binary_r *bin, uint32_t month, uint
 				minutes = (event_start - (60 * hour)) % 1440;
 				last = event_end - event_start;
 #if defined (__FreeBSD__)
-				DEBUG(0, ("%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour, minutes));
+				OC_DEBUG(0, "%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour, minutes);
 #else
-				DEBUG(0, ("%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour + daylight, minutes));
+				OC_DEBUG(0, "%s %u %s %u at %.2u%.2u hrs and lasts ", sep ? sep : "", day, month_name, year, hour + daylight, minutes);
 #endif
 				if (last < 60) {
-					DEBUG(0, ("%u mins\n", last));
+					OC_DEBUG(0, "%u mins", last);
 				} else {
 					hours = last / 60;
 					minutes = last - hours * 60;
 					if (minutes > 0) {
-						DEBUG(0, ("%u hrs %u mins\n", hours, minutes));
+						OC_DEBUG(0, "%u hrs %u mins", hours, minutes);
 					} else {
-						DEBUG(0, ("%u hrs\n", hours));
+						OC_DEBUG(0, "%u hrs", hours);
 					}
 				}
 			}
 		}
-	}	
+	}
 }
 
 /**

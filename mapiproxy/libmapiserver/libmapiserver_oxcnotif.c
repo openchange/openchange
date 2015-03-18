@@ -27,7 +27,6 @@
 
 
 #include "libmapiserver.h"
-#include <util/debug.h>
 
 /**
    \details Calculate RegisterNotification Rop size
@@ -216,7 +215,7 @@ _PUBLIC_ uint16_t libmapiserver_RopNotify_size(struct EcDoRpc_MAPI_REPL *respons
         /*         size += sizeof(struct SearchMessageModifiedNotification); */
         /*         break; */
         default:
-                DEBUG(0, (__location__": unhandled size case %.4x, expect buffer errors soon\n", response->u.mapi_Notify.NotificationType));
+                OC_DEBUG(0, "unhandled size case %.4x, expect buffer errors soon", response->u.mapi_Notify.NotificationType);
         }
 
         return size;

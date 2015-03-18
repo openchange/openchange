@@ -69,11 +69,11 @@ static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		break;
 	default:
 		dl = 0;
-	}		
+	}
 
 	if (ptr != NULL) {
 		const char *name = tdb_name(tdb);
-		DEBUG(dl, ("tdb(%s): %s", name ? name : "unnamed", ptr));
+		OC_DEBUG(dl, "tdb(%s): %s", name ? name : "unnamed", ptr);
 		free(ptr);
 	}
 }

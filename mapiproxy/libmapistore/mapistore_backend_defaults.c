@@ -32,7 +32,7 @@
 
 static enum mapistore_error mapistore_op_defaults_init(void)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));	
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -40,7 +40,7 @@ static enum mapistore_error mapistore_op_defaults_list_contexts(const char *owne
 								TALLOC_CTX *mem_ctx, 
 								struct mapistore_contexts_list **contexts_listp)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -49,7 +49,7 @@ static enum mapistore_error mapistore_op_defaults_create_context(TALLOC_CTX *mem
 								 struct indexing_context *indexing_ctx,
 								 const char *uri, void **ctx)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -60,14 +60,14 @@ static enum mapistore_error mapistore_op_defaults_create_root_folder(const char 
 								     TALLOC_CTX *mem_ctx,
 								     char **mapistore_urip)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_get_path(void *ctx_obj, TALLOC_CTX *mem_ctx,
 							   uint64_t fmid, char **path)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -76,7 +76,7 @@ static enum mapistore_error mapistore_op_defaults_get_root_folder(void *backend_
 								  uint64_t fid,
 								  void **root_folder_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -85,7 +85,7 @@ static enum mapistore_error mapistore_op_defaults_open_folder(void *folder_objec
 							      uint64_t fid,
 							      void **child_folder_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -95,13 +95,13 @@ static enum mapistore_error mapistore_op_defaults_create_folder(void *folder_obj
 								struct SRow *aRow,
 								void **child_folder_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_delete_folder(void *folder_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -111,7 +111,7 @@ static enum mapistore_error mapistore_op_defaults_open_message(void *folder_obje
 							       bool rw,
 							       void **message_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -121,7 +121,7 @@ static enum mapistore_error mapistore_op_defaults_create_message(void *folder_ob
 								 uint8_t associated,
 								 void **message_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -129,7 +129,7 @@ static enum mapistore_error mapistore_op_defaults_delete_message(void *folder_ob
 								 uint64_t mid,
 								 uint8_t flags)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -142,7 +142,7 @@ static enum mapistore_error mapistore_op_defaults_move_copy_messages(void *targe
 								     struct Binary_r **target_change_keys,
 								     uint8_t want_copy)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -153,7 +153,7 @@ static enum mapistore_error mapistore_op_defaults_get_deleted_fmids(void *folder
 								    struct UI8Array_r **fmidsp,
 								    uint64_t *cnp)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -161,7 +161,7 @@ static enum mapistore_error mapistore_op_defaults_get_child_count(void *folder_o
 								  enum mapistore_table_type table_type,
 								  uint32_t *RowCount)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -172,7 +172,7 @@ static enum mapistore_error mapistore_op_defaults_open_table(void *folder_object
 							     void **table_object,
 							     uint32_t *row_count)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -181,7 +181,7 @@ static enum mapistore_error mapistore_op_defaults_modify_permissions(void *folde
 								     uint16_t pcount,
 								     struct PermissionData *permissions)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -189,7 +189,7 @@ static enum mapistore_error mapistore_op_defaults_get_message_data(void *message
 								   TALLOC_CTX *mem_ctx,
 								   struct mapistore_message **msg)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -198,25 +198,25 @@ static enum mapistore_error mapistore_op_defaults_modify_recipients(void *messag
 								    uint16_t count,
 								    struct mapistore_message_recipient *recipients)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_set_read_flag(void *message_object, uint8_t flag)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_save(void *message_object, TALLOC_CTX *mem_ctx)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_submit(void *message_object, enum SubmitFlags flags)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -225,7 +225,7 @@ static enum mapistore_error mapistore_op_defaults_open_attachment(void *message_
 								  uint32_t aid,
 								  void **attachment_object)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -234,7 +234,7 @@ static enum mapistore_error mapistore_op_defaults_create_attachment(void *messag
 								    void **attachment_object,
 								    uint32_t *aid)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -243,7 +243,7 @@ static enum mapistore_error mapistore_op_defaults_get_attachment_table(void *mes
 								       void **table_object,
 								       uint32_t *row_count)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -253,7 +253,7 @@ static enum mapistore_error mapistore_op_defaults_open_embedded_message(void *me
 									uint64_t *mid,
 									struct mapistore_message **msg)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -261,7 +261,7 @@ static enum mapistore_error mapistore_op_defaults_get_available_properties(void 
 									   TALLOC_CTX *mem_ctx,
 									   struct SPropTagArray **propertiesp)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -269,7 +269,7 @@ static enum mapistore_error mapistore_op_defaults_set_columns(void *table_object
 							      uint16_t count,
 							      enum MAPITAGS *properties)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -277,7 +277,7 @@ static enum mapistore_error mapistore_op_defaults_set_restrictions(void *table_o
 								   struct mapi_SRestriction *restrictions,
 								   uint8_t *table_status)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -285,7 +285,7 @@ static enum mapistore_error mapistore_op_defaults_set_sort_order(void *table_obj
 								 struct SSortOrderSet *sort_order,
 								 uint8_t *table_status)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -295,7 +295,7 @@ static enum mapistore_error mapistore_op_defaults_get_row(void *table_object,
 							  uint32_t rowid,
 							  struct mapistore_property_data **data)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -303,14 +303,14 @@ static enum mapistore_error mapistore_op_defaults_get_row_count(void *table_obje
 								enum mapistore_query_type query_type,
 								uint32_t *row_countp)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_handle_destructor(void *table_object,
 								    uint32_t handle_id)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -320,14 +320,14 @@ static enum mapistore_error mapistore_op_defaults_get_properties(void *x_object,
 								 enum MAPITAGS *properties,
 								 struct mapistore_property_data *data)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
 static enum mapistore_error mapistore_op_defaults_set_properties(void *x_object,
 								 struct SRow *aRow)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 
@@ -338,7 +338,7 @@ static enum mapistore_error mapistore_op_defaults_generate_uri(TALLOC_CTX *mem_c
 							       const char *root_uri,
 							       char **uri)
 {
-	DEBUG(3, ("[%s:%d] MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(3, "MAPISTORE defaults - MAPISTORE_ERR_NOT_IMPLEMENTED");
 	return MAPISTORE_ERR_NOT_IMPLEMENTED;
 }
 

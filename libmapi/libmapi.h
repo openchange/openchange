@@ -43,7 +43,6 @@
 /* Samba4 includes */
 #include <talloc.h>
 #include <dcerpc.h>
-#include <util/debug.h>
 #include <param.h>
 
 /* OpenChange includes */
@@ -51,6 +50,7 @@
 #include <gen_ndr/property.h>
 
 #include "libmapi/version.h"
+#include "libmapi/oc_log.h"
 #include "libmapi/nspi.h"
 #include "libmapi/emsmdb.h"
 #include "libmapi/mapi_context.h"

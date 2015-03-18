@@ -89,7 +89,7 @@ static const const struct ndr_interface_table *load_exchange_emsmdb_dso(const ch
 
 	p = (const struct ndr_interface_table *) dlsym(handle, "ndr_table_exchange_emsmdb");
 	if (!p) {
-		DEBUG(0, ("%s: Unable to find DCE/RPC interface table for 'ndr_table_exchange_emsmdb': %s\n", plugin, dlerror()));
+		OC_DEBUG(0, "%s: Unable to find DCE/RPC interface table for 'ndr_table_exchange_emsmdb': %s", plugin, dlerror());
 		dlclose(handle);
 		return NULL;
 	}
@@ -119,7 +119,7 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
-		DEBUG(0, ("Unable to allocate %d bytes\n", (int)f->struct_size));
+		OC_DEBUG(0, "Unable to allocate %d bytes", (int)f->struct_size);
 		return NULL;
 	}
 
@@ -140,7 +140,7 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = f->ndr_pull(ndr_pull, NDR_IN, st);
 	if (ndr_err) {
-		DEBUG(0, ("Unable to pull request, ndr_err = 0x%x\n", ndr_err));
+		OC_DEBUG(0, "Unable to pull request, ndr_err = 0x%x", ndr_err);
 		talloc_free(ndr_pull);
 		return NULL;
 	}
@@ -159,7 +159,7 @@ static struct SPropTagArray *process_request(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_mapi2k7_request(sndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_request);
 	talloc_free(ndr_pull);
 	if (ndr_err) {
-		DEBUG(0, ("Unable to pull mapi2k7_request, ndr_err = 0x%x\n", ndr_err));
+		OC_DEBUG(0, "Unable to pull mapi2k7_request, ndr_err = 0x%x", ndr_err);
 		talloc_free(sndr_pull);
 		return NULL;
 	}
@@ -220,7 +220,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 
 	st = talloc_zero_size(mem_ctx, f->struct_size);
 	if (!st) {
-		DEBUG(0, ("Unable to allocate %d bytes\n", (int)f->struct_size));
+		OC_DEBUG(0, "Unable to allocate %d bytes", (int)f->struct_size);
 		return -1;
 	}
 
@@ -241,7 +241,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	ndr_pull->flags |= LIBNDR_FLAG_REF_ALLOC;
 	ndr_err = f->ndr_pull(ndr_pull, NDR_OUT, st);
 	if (ndr_err) {
-		DEBUG(0, ("Unable to pull response, ndr_err = 0x%x\n", ndr_err));
+		OC_DEBUG(0, "Unable to pull response, ndr_err = 0x%x", ndr_err);
 		return -1;
 	}
 
@@ -258,7 +258,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	ndr_err = ndr_pull_mapi2k7_response(sndr_pull, NDR_SCALARS|NDR_BUFFERS, &mapi2k7_response);
 	talloc_free(ndr_pull);
 	if (ndr_err) {
-		DEBUG(0, ("Unable to pull response, ndr_err = 0x%x\n", ndr_err));
+		OC_DEBUG(0, "Unable to pull response, ndr_err = 0x%x", ndr_err);
 		talloc_free(sndr_pull);
 		return -1;
 	}
@@ -269,7 +269,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	case op_MAPI_GetProps:
 	case op_MAPI_ModifyRecipients:
 		if (mapi_response->mapi_repl[index].opnum != opnum) {
-			DEBUG(0, ("Mismatching request vs reply\n"));
+			OC_DEBUG(0, "Mismatching request vs reply");
 			talloc_free(sndr_pull);
 			return -1;
 		}
@@ -285,7 +285,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 			}
 		}
 		if (index_out == -1) {
-			DEBUG(0, ("Unable to find ROP QueryRows, FindRow or ExpandRow in the reply\n"));
+			OC_DEBUG(0, "Unable to find ROP QueryRows, FindRow or ExpandRow in the reply");
 			talloc_free(sndr_pull);
 			return -1;
 		}
@@ -308,7 +308,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 	break;
 	case op_MAPI_ModifyRecipients:
 	case op_MAPI_ExpandRow:
-		DEBUG(0, ("Not implemented!\n"));
+		OC_DEBUG(0, "Not implemented!");
 		return -1;
 		break;
 	case op_MAPI_FindRow:
@@ -338,7 +338,7 @@ static int process_response(TALLOC_CTX *mem_ctx,
 		for (i = 0; i < repl->RowCount; i++) {
 			if (!emsmdb_get_SPropValue_offset(mem_ctx, &repl->RowData, SPropTagArray,
 							  &lpProps, &cn_propvals, &offset)) {
-				DEBUG(0, ("\nrow %d:\n", i));
+				OC_DEBUG(0, "\nrow %d:", i);
 				for (j = 0; j < SPropTagArray->cValues; j++) {
 					mapidump_SPropValue(lpProps[j], "\t");
 				}
@@ -390,7 +390,7 @@ int main(int argc, const char *argv[])
 
 	/* Sanity checks on options */
 	if (!opt_reqfile || !opt_replfile) {
-		DEBUG(0, ("Request and Response files required\n"));
+		OC_DEBUG(0, "Request and Response files required");
 		exit (1);
 	}
 

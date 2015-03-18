@@ -25,7 +25,6 @@
 #include <talloc.h>
 #include <popt.h>
 #include <param.h>
-#include <util/debug.h>
 
 
 static void popt_openchange_version_callback(poptContext con,

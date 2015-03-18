@@ -62,7 +62,7 @@ static void add_interface(TALLOC_CTX *mem_ctx, struct in_addr ip, struct in_addr
 	struct in_addr bcast;
 
 	if (iface_find(*interfaces, ip, false)) {
-		DEBUG(3,("not adding duplicate interface %s\n",inet_ntoa(ip)));
+		OC_DEBUG(3, "not adding duplicate interface %s", inet_ntoa(ip));
 		return;
 	}
 
@@ -87,7 +87,7 @@ static void add_interface(TALLOC_CTX *mem_ctx, struct in_addr ip, struct in_addr
 
 	DLIST_ADD_END(*interfaces, iface, struct interface *);
 
-	DEBUG(2,("added interface ip=%s nmask=%s\n", iface->ip_s, iface->nmask_s));
+	OC_DEBUG(2, "added interface ip=%s nmask=%s", iface->ip_s, iface->nmask_s);
 }
 
 
@@ -144,7 +144,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 				return;
 			}
 		}
-		DEBUG(2,("can't determine netmask for %s\n", token));
+		OC_DEBUG(2, "can't determine netmask for %s", token);
 		return;
 	}
 
@@ -173,7 +173,7 @@ static void interpret_interface(TALLOC_CTX *mem_ctx,
 				return;
 			}
 		}
-		DEBUG(2,("Can't determine ip for broadcast address %s\n", address));
+		OC_DEBUG(2, "Can't determine ip for broadcast address %s", address);
 		talloc_free(address);
 		return;
 	}
@@ -205,7 +205,7 @@ void openchange_load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, st
 	   except loopback */
 	if (!ptr || !*ptr || !**ptr) {
 		if (total_probed <= 0) {
-			DEBUG(0,("ERROR: Could not determine network interfaces, you must use a interfaces config line\n"));
+			oc_log(OC_LOG_ERROR, "Could not determine network interfaces, you must use a interfaces config line");
 		}
 		for (i=0;i<total_probed;i++) {
 			if (ifaces[i].ip.s_addr != loopback_ip.s_addr) {
@@ -221,7 +221,7 @@ void openchange_load_interfaces(TALLOC_CTX *mem_ctx, const char **interfaces, st
 	}
 
 	if (!*local_interfaces) {
-		DEBUG(0,("WARNING: no network interfaces found\n"));
+		oc_log(OC_LOG_WARNING, "no network interfaces found");
 	}
 }
 

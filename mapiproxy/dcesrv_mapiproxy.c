@@ -782,11 +782,13 @@ NTSTATUS samba_init_module(void)
 	status = dcerpc_server_mapiproxy_init();
 	NT_STATUS_NOT_OK_RETURN(status);
 
-	/* TODO: #ifdef around this block to only use this on Samba versions that support it. */
+	/* Configuration hooks are only supported in Samba >= 4.3 */
+#if SAMBA_VERSION_MAJOR >= 4 && SAMBA_VERSION_MINOR > 3
 	/* Step4. Register configuration default hook */
 	if (!lpcfg_register_defaults_hook("dcesrv_mapiproxy", dcesrv_mapiproxy_lp_defaults)) {
 		return NT_STATUS_UNSUCCESSFUL;
 	}
+#endif
 
 	return NT_STATUS_OK;
 }

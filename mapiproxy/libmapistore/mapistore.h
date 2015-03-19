@@ -50,7 +50,6 @@
 #include <tdb.h>
 #include <ldb.h>
 #include <talloc.h>
-#include <util/debug.h>
 
 #include "libmapi/libmapi.h"
 

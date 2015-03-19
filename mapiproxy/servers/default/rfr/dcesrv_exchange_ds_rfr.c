@@ -26,6 +26,7 @@
  */
 
 #include "mapiproxy/dcesrv_mapiproxy.h"
+#include "libmapi/oc_log.h"
 #include "dcesrv_exchange_ds_rfr.h"
 
 /**
@@ -48,11 +49,11 @@ static enum MAPISTATUS dcesrv_RfrGetNewDSA(struct dcesrv_call_state *dce_call,
 	const char		*realm = NULL;
 	char			*fqdn = NULL;
 
-	DEBUG(5, ("exchange_ds_rfr: RfrGetNewDSA (0x0)\n"));
+	OC_DEBUG(5, "exchange_ds_rfr: RfrGetNewDSA (0x0)");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 
 		r->out.ppszUnused = NULL;
 		r->out.ppszServer = NULL;
@@ -98,10 +99,10 @@ static enum MAPISTATUS dcesrv_RfrGetFQDNFromLegacyDN(struct dcesrv_call_state *d
 	const char	*netbiosname = NULL;
 	const char	*realm = NULL;
 
-	DEBUG(3, ("exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)\n"));
+	OC_DEBUG(3, "exchange_ds_rfr: RfrGetFQDNFromLegacyDN (0x1)");
 
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 
 	failure:
 		r->out.ppszServerFQDN = talloc_array(mem_ctx, const char *, 2);
@@ -220,7 +221,7 @@ NTSTATUS samba_init_module(void)
 	/* Register ourselves with the MAPIPROXY server subsystem */
 	ret = mapiproxy_server_register(&server);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Failed to register the 'exchange_ds_rfr' default mapiproxy server!\n"));
+		OC_DEBUG(0, "Failed to register the 'exchange_ds_rfr' default mapiproxy server!");
 		return ret;
 	}
 

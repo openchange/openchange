@@ -159,9 +159,9 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	session = dcesrv_find_nsp_session(&handle->wire_handle.uuid);
 	if (session) {
 		mpm_session_increment_ref_count(session->session);
-		DEBUG(5, ("  [unexpected]: existing nsp_session: %p; session: %p (ref++)\n", session, session->session));
+		OC_DEBUG(5, "  [unexpected]: existing nsp_session: %p; session: %p (ref++)", session, session->session);
 	} else {
-		DEBUG(5, ("%s: Creating new session\n", __func__));
+		OC_DEBUG(5, "Creating new session");
 
 		/* Step 6. Associate this emsabp context to the session */
 		session = talloc((TALLOC_CTX *)nsp_session, struct exchange_nsp_session);
@@ -791,7 +791,7 @@ static void dcesrv_NspiGetPropList(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
 					      struct NspiGetPropList *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetPropList (0x8) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetPropList (0x8) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -816,11 +816,11 @@ static void dcesrv_NspiGetProps(struct dcesrv_call_state *dce_call,
 	struct SPropTagArray		*pPropTags;
 	bool				container_exists;
 
-	DEBUG(3, ("exchange_nsp: NspiGetProps (0x9)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetProps (0x9)");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -897,7 +897,7 @@ static void dcesrv_NspiCompareMIds(struct dcesrv_call_state *dce_call,
 					      TALLOC_CTX *mem_ctx,
 					      struct NspiCompareMIds *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiCompareMIds (0xA) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiCompareMIds (0xA) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -916,7 +916,7 @@ static void dcesrv_NspiModProps(struct dcesrv_call_state *dce_call,
 					   TALLOC_CTX *mem_ctx,
 					   struct NspiModProps *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiModProps (0xB) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiModProps (0xB) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -944,11 +944,11 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	bool				nspi_unicode_strings;
 	bool				unsupported_codepage;
 
-	DEBUG(3, ("exchange_nsp: NspiGetSpecialTable (0xC)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetSpecialTable (0xC)");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -976,10 +976,10 @@ static void dcesrv_NspiGetSpecialTable(struct dcesrv_call_state *dce_call,
 	}
 
 	if (nspi_address_creation_templates) {
-		DEBUG(5, ("CreationTemplates Table requested\n"));
+		OC_DEBUG(5, "CreationTemplates Table requested");
 		r->out.result = emsabp_get_CreationTemplatesTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
 	} else {
-		DEBUG(5, ("Hierarchy Table requested\n"));
+		OC_DEBUG(5, "Hierarchy Table requested");
 		r->out.result = emsabp_get_HierarchyTable(mem_ctx, emsabp_ctx, r->in.dwFlags, r->out.ppRows);
 	}
 }
@@ -999,7 +999,7 @@ static void dcesrv_NspiGetTemplateInfo(struct dcesrv_call_state *dce_call,
 				       TALLOC_CTX *mem_ctx,
 				       struct NspiGetTemplateInfo *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetTemplateInfo (0xD) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetTemplateInfo (0xD) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1018,7 +1018,7 @@ static void dcesrv_NspiModLinkAtt(struct dcesrv_call_state *dce_call,
 				  TALLOC_CTX *mem_ctx,
 				  struct NspiModLinkAtt *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiModLinkAtt (0xE) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiModLinkAtt (0xE) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1037,7 +1037,7 @@ static void dcesrv_NspiDeleteEntries(struct dcesrv_call_state *dce_call,
 				     TALLOC_CTX *mem_ctx,
 				     struct NspiDeleteEntries *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiDeleteEntries (0xF) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiDeleteEntries (0xF) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1056,7 +1056,7 @@ static void dcesrv_NspiQueryColumns(struct dcesrv_call_state *dce_call,
 				    TALLOC_CTX *mem_ctx,
 				    struct NspiQueryColumns *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiQueryColumns (0x10) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiQueryColumns (0x10) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1075,7 +1075,7 @@ static void dcesrv_NspiGetNamesFromIDs(struct dcesrv_call_state *dce_call,
 				       TALLOC_CTX *mem_ctx,
 				       struct NspiGetNamesFromIDs *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetNamesFromIDs (0x11) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetNamesFromIDs (0x11) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1094,7 +1094,7 @@ static void dcesrv_NspiGetIDsFromNames(struct dcesrv_call_state *dce_call,
 				       TALLOC_CTX *mem_ctx,
 				       struct NspiGetIDsFromNames *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiGetIDsFromNames (0x12) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetIDsFromNames (0x12) not implemented");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -1127,10 +1127,10 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 							  "displayName", "givenName", 
 							  "sAMAccountName", "proxyAddresses" };
 
-	DEBUG(3, ("exchange_nsp: NspiResolveNames (0x13)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiResolveNames (0x13)");
 
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -1142,7 +1142,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(5, ("[nspi][%s:%d] ab_fetch_filter failed\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(5, "[nspi] ab_fetch_filter failed");
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
@@ -1223,7 +1223,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
 							     ldb_res->msgs[0], 0, 0, pPropTags);
 			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(5, ("[nspi][%s:%d] emsabp_fetch_attrs_from_msg failed\n", __FUNCTION__, __LINE__));
+				OC_DEBUG(5, "[nspi] emsabp_fetch_attrs_from_msg failed");
 				goto error;
 			}
 			pRows->cRows++;
@@ -1237,7 +1237,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 
 	DCESRV_NSP_RETURN(r, retval, NULL);
 error:
-	DEBUG(5, ("[nspi][%s:%d] unexpected error %d\n", __FUNCTION__, __LINE__, retval));
+	OC_DEBUG(5, "[nspi] unexpected error %d", retval);
 	talloc_free(pMIds);
 	talloc_free(pRows);
 	DCESRV_NSP_RETURN(r, retval, NULL);
@@ -1271,11 +1271,11 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	const char * const		search_attr[] = { "mailNickName", "mail", "name", 
 							  "displayName", "givenName", "sAMAccountName" };
 
-	DEBUG(3, ("exchange_nsp: NspiResolveNamesW (0x14)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiResolveNamesW (0x14)");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -1285,7 +1285,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	/* Step 1. Prepare in/out data */
 	retval = emsabp_ab_fetch_filter(mem_ctx, emsabp_ctx, r->in.pStat->ContainerID, &filter_search);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(5, ("[nspi][%s:%d] ab_fetch_filter failed\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(5, "[nspi] ab_fetch_filter failed");
 		DCESRV_NSP_RETURN(r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
@@ -1366,7 +1366,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, &pRows->aRow[pRows->cRows],
 							     ldb_res->msgs[0], 0, 0, pPropTags);
 			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(5, ("[nspi][%s:%d] emsabp_fetch_attrs_from_msg failed\n", __FUNCTION__, __LINE__));
+				OC_DEBUG(5, "[nspi] emsabp_fetch_attrs_from_msg failed");
 				goto error;
 			}
 			pRows->cRows++;
@@ -1380,7 +1380,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 
 	DCESRV_NSP_RETURN(r, retval, NULL);
 error:
-	DEBUG(5, ("[nspi][%s:%d] unexpected error %d\n", __FUNCTION__, __LINE__, retval));
+	OC_DEBUG(5, "[nspi] unexpected error %d", retval);
 	talloc_free(pMIds);
 	talloc_free(pRows);
 	DCESRV_NSP_RETURN(r, retval, NULL);
@@ -1406,7 +1406,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
 	const struct ndr_interface_table	*table;
 	uint16_t				opnum;
 
-	DEBUG (5, ("dcesrv_exchange_nsp_dispatch opnum: %u\n",  dce_call->pkt.u.request.opnum));
+	OC_DEBUG(5, "dcesrv_exchange_nsp_dispatch opnum: %u",  dce_call->pkt.u.request.opnum);
 
 	table = (const struct ndr_interface_table *) dce_call->context->iface->private_data;
 	opnum = dce_call->pkt.u.request.opnum;
@@ -1494,7 +1494,7 @@ static NTSTATUS dcesrv_exchange_nsp_dispatch(struct dcesrv_call_state *dce_call,
  */
 static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
 {
-	DEBUG (0, ("dcesrv_exchange_nsp_init\n"));
+	OC_DEBUG(0, "dcesrv_exchange_nsp_init");
 	/* Initialize exchange_nsp session */
 	nsp_session = talloc_zero(dce_ctx, struct exchange_nsp_session);
 	if (!nsp_session) return NT_STATUS_NO_MEMORY;
@@ -1523,7 +1523,7 @@ static NTSTATUS dcesrv_exchange_nsp_init(struct dcesrv_context *dce_ctx)
  */
 static NTSTATUS dcesrv_exchange_nsp_unbind(struct server_id server_id, uint32_t context_id)
 {
-	DEBUG (0, ("dcesrv_exchange_nsp_unbind\n"));
+	OC_DEBUG(0, "dcesrv_exchange_nsp_unbind");
 	return NT_STATUS_OK;
 }
 
@@ -1555,7 +1555,7 @@ NTSTATUS samba_init_module(void)
 	/* Register ourselves with the MAPIPROXY server subsystem */
 	ret = mapiproxy_server_register(&server);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Failed to register the 'exchange_nsp' default mapiproxy server!\n"));
+		OC_DEBUG(0, "Failed to register the 'exchange_nsp' default mapiproxy server!");
 		return ret;
 	}
 

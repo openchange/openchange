@@ -3513,12 +3513,13 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_providers_node(struct ems
 static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *sharing_object, struct Binary_r **attach_bin, TALLOC_CTX *mem_ctx)
 {
 	struct Binary_r		       *bin;
+	const char		       *data_type;
 	char			       *providers_node;
 	char			       *prop_value;
 	char			       *recipients_attr;
 	char			       *remote_uid;
 	char			       *remote_store_uid;
-	char			       *sharing_type;
+	const char                     *sharing_type;
 	char			       *xml;
 	int			       i;
 	enum MAPISTATUS		       *retvals = NULL, retval;
@@ -3559,9 +3560,20 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 		OPENCHANGE_RETVAL_IF(retvals[i] != MAPI_E_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 	}
 
-	/* TODO: We do only support calendar by now. Checks on PidLidSharingLocalType */
-	sharing_type = (char *)get_emsmdbp_data(PidLidSharingLocalType, sharing_properties, data_pointers, retvals);
-	if (strncmp(sharing_type, "IPF.Appointment", strlen("IPF.Appointment")) != 0) {
+	/* Check data_type on PidLidSharingLocalType */
+	sharing_type = (const char *)get_emsmdbp_data(PidLidSharingLocalType, sharing_properties, data_pointers, retvals);
+	if (strncmp(sharing_type, "IPF.Appointment", strlen("IPF.Appointment")) == 0) {
+		data_type = "calendar";
+	} else if (strncmp(sharing_type, "IPF.Contact", strlen("IPF.Contact")) == 0) {
+		data_type = "contacts";
+	} else if (strncmp(sharing_type, "IPF.Task", strlen("IPF.Task")) == 0) {
+		data_type = "tasks";
+	} else if (strncmp(sharing_type, "IPF.StickyNote", strlen("IPF.StickyNote")) == 0) {
+		data_type = "notes";
+	} else if (strncmp(sharing_type, "IPF.Journal", strlen("IPF.Journal")) == 0) {
+		data_type = "journals";
+	} else {
+		OC_DEBUG(1, "Sharing type %s not supported", sharing_type);
 		talloc_free(local_mem_ctx);
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -3591,8 +3603,8 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 	xml = talloc_asprintf(local_mem_ctx,
 			      "<?xml version=\"1.0\"?> "
 			      "<SharingMessage xmlns=\"http://schemas.microsoft.com/sharing/2008\">"
-			      "<DataType>calendar</DataType>"
-			      "<Initiator>");
+			      "<DataType>%s</DataType>"
+			      "<Initiator>", data_type);
 	OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
 	/*** Initiator ***/

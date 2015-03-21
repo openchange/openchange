@@ -59,7 +59,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXORULE] GetRulesTable (0x3f) -- stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXORULE] GetRulesTable (0x3f) -- stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -78,21 +78,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetRulesTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(parent, &data);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	object = (struct emsmdbp_object *) data;
 	if (object->type != EMSMDBP_OBJECT_FOLDER) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  unhandled object type: %d\n", object->type));
+		OC_DEBUG(5, "  unhandled object type: %d\n", object->type);
 		goto end;
 	}
 
@@ -143,7 +143,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRules(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXORULE] ModifyRules (0x41)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXORULE] ModifyRules (0x41)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

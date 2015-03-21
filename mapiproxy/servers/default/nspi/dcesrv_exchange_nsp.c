@@ -108,11 +108,11 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	struct exchange_nsp_session	*session;
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 
-	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
+	OC_DEBUG(5, "exchange_nsp: NspiBind (0x0)\n");
 
 	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
 	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		retval = MAPI_E_FAILONEPROVIDER;
 		goto failure;
 	}
@@ -204,7 +204,7 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle		*h;
 	struct exchange_nsp_session	*session;
 
-	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
+	OC_DEBUG(5, "exchange_nsp: NspiUnbind (0x1)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {

@@ -123,7 +123,7 @@ static struct ldb_context *mapistore_ldb_wrap_connect(TALLOC_CTX *mem_ctx,
 
 	DLIST_ADD(ldb_wrap_list, w);
 
-	DEBUG(3,("ldb_wrap open of %s\n", url));
+	OC_DEBUG(3, "ldb_wrap open of %s\n", url);
 
 	talloc_set_destructor(w, mapistore_ldb_wrap_destructor);
 
@@ -257,7 +257,7 @@ static enum mapistore_error create_id(struct namedprops_context *self,
 		abort();
 	}
 
-	DEBUG(5, ("inserting record:\n%s\n", ldif_record));
+	OC_DEBUG(5, "inserting record:\n%s\n", ldif_record);
 
 	const char *ldif_records[] = { NULL, NULL };
 	ldif_records[0] = ldif_record;

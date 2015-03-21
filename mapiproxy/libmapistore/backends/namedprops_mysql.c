@@ -164,7 +164,7 @@ static enum mapistore_error create_id(struct namedprops_context *self,
 	char *fields_sql = str_list_join(mem_ctx, fields, ',');
 	char *sql = talloc_asprintf(mem_ctx,
 		"INSERT INTO " NAMEDPROPS_MYSQL_TABLE " SET %s", fields_sql);
-	DEBUG(5, ("Inserting record:\n%s\n", sql));
+	OC_DEBUG(5, "Inserting record:\n%s\n", sql);
 	MYSQL *conn = self->data;
 	if (mysql_query(conn, sql) != 0) {
 		MAPISTORE_RETVAL_IF(true, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
@@ -266,13 +266,12 @@ static enum mapistore_error transaction_commit(struct namedprops_context *self)
 
 static int mapistore_namedprops_mysql_destructor(struct namedprops_context *self)
 {
-	DEBUG(5, ("[%s:%d] Destroying namedprops mysql context\n", __FUNCTION__, __LINE__));
+	OC_DEBUG(5, "Destroying namedprops mysql context\n");
 	if (self && self->data) {
 		MYSQL *conn = self->data;
 		release_connection(conn);
 	} else {
-		DEBUG(0, ("[%s:%d] Error: tried to destroy corrupted namedprops mysql context\n",
-			  __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error: tried to destroy corrupted namedprops mysql context\n");
 	}
 	return 0;
 }
@@ -354,8 +353,7 @@ static bool add_field_from_ldif(TALLOC_CTX *mem_ctx, struct ldb_message *ldif,
 	const char *val = ldb_msg_find_attr_as_string(ldif, field, "");
 	if (strlen(val) == 0) {
 		if (mandatory) {
-			DEBUG(0, ("%s value hasn't been found! malformed ldif?",
-				  field));
+			OC_DEBUG(0, "%s value hasn't been found! malformed ldif?", field);
 		}
 		return false;
 	}
@@ -415,7 +413,7 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 	} else if (strcmp(val, "MNID_ID") == 0) {
 		type = MNID_ID;
 	} else {
-		DEBUG(0, ("Invalid objectClass %s", val));
+		OC_DEBUG(0, "Invalid objectClass %s", val);
 		return false;
 	}
 	fields = str_list_add(fields, talloc_asprintf(mem_ctx, "type=%d", type));
@@ -423,14 +421,14 @@ static bool insert_ldif_msg(MYSQL *conn, struct ldb_message *ldif)
 	//           to store it as an integer
 	val = ldb_msg_find_attr_as_string(ldif, "propType", "");
 	if (strlen(val) == 0) {
-		DEBUG(0, ("propType value hasn't been found! malformed ldif?"));
+		OC_DEBUG(0, "propType value hasn't been found! malformed ldif?");
 		return false;
 	}
 	int propType;
 	if (isalpha(val[0])) {
 		propType = mapistore_namedprops_prop_type_from_string(val);
 		if (propType == -1) {
-			DEBUG(0, ("Invalid propType %s", val));
+			OC_DEBUG(0, "Invalid propType %s", val);
 			return false;
 		}
 	} else {
@@ -477,8 +475,8 @@ static enum mapistore_error initialize_database(MYSQL *conn, const char *schema_
 
 	schema_created_ret = migrate_named_properties_schema(mem_ctx, connection_string);
 	if (schema_created_ret) {
-		DEBUG(1, ("Failed named properties schema creation using migration framework: %d\n",
-			  schema_created_ret));
+		OC_DEBUG(1, "Failed named properties schema creation using migration framework: %d\n",
+			  schema_created_ret);
 		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, mem_ctx);
 	}
 
@@ -563,9 +561,9 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	/* Retrieve smb.conf arguments */
 	retval = mapistore_namedprops_mysql_parameters(lp_ctx, &parms);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d] ERROR: parsing MySQL named properties "
+		OC_DEBUG(0, "ERROR: parsing MySQL named properties "
 			  "parametric option failed with %s\n",
-			  __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+			  mapistore_errstr(retval));
 		MAPISTORE_RETVAL_ERR(retval, NULL);
 	}
 
@@ -574,7 +572,7 @@ enum mapistore_error mapistore_namedprops_mysql_init(TALLOC_CTX *mem_ctx,
 	MAPISTORE_RETVAL_IF(!connection_string, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	if (parms.sock) {
 		// FIXME
-		DEBUG(0, ("Not implemented connect through unix socket to mysql"));
+		OC_DEBUG(0, "Not implemented connect through unix socket to mysql");
 		MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_DATABASE_INIT, NULL);
 	} else {
 		create_connection(connection_string, &conn);

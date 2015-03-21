@@ -93,7 +93,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	memcached_return	rc;
 	uint32_t		i;
 
-	DEBUG(5, ("[INFO] _memcached_setup for '%s'\n", username));
+	OC_DEBUG(5, "[INFO] _memcached_setup for '%s'\n", username);
 
 	/* Sanity checks */
 	if (!ictx) return NULL;
@@ -114,7 +114,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 		servers = memcached_server_list_append(servers, "127.0.0.1", 11211, &rc);
 		rc = memcached_server_push(memc, servers);
 		if (rc != MEMCACHED_SUCCESS) {
-			DEBUG(0, ("[ERR]: Unable to add server to memcached list\n"));
+			OC_DEBUG(0, "[ERR]: Unable to add server to memcached list\n");
 			return NULL;
 		}
 	}
@@ -132,7 +132,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 	}
 
 	num_rows = mysql_num_rows(res);
-	DEBUG(5, ("[INFO] _memcached_setup: %d values to index\n", num_rows));
+	OC_DEBUG(5, "[INFO] _memcached_setup: %d values to index\n", num_rows);
 
 	/* store records into memcached */
 	for (i = 0; i < num_rows; i++) {
@@ -147,7 +147,7 @@ static memcached_st *_memcached_setup(struct indexing_context *ictx,
 						   row[0], strlen(row[0]), 0, 0);
 				talloc_free(hashstr);
 				if (rc != MEMCACHED_SUCCESS) {
-					DEBUG(8, ("[ERR] Key %s not stored\n", row[1]));
+					OC_DEBUG(8, "[ERR] Key %s not stored\n", row[1]);
 				}
 			}
 		}
@@ -769,16 +769,13 @@ static int mapistore_indexing_mysql_destructor(struct indexing_context *ictx)
 			memcached_free((memcached_st *)ictx->cache);
 		}
 		if (ictx->url) {
-			DEBUG(5, ("[%s:%d] Destroying indexing context `%s`\n",
-				  __FUNCTION__, __LINE__, ictx->url));
+			OC_DEBUG(5, "Destroying indexing context `%s`\n", ictx->url);
 		} else {
-			DEBUG(5, ("[%s:%d] Destroying unknown indexing context\n",
-				  __FUNCTION__, __LINE__));
+			OC_DEBUG(5, "Destroying unknown indexing context\n");
 		}
 		release_connection(conn);
 	} else {
-		DEBUG(0, ("[%s:%d] Error: tried to destroy corrupted indexing mysql context\n",
-			  __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error: tried to destroy corrupted indexing mysql context\n");
 	}
 	return 0;
 }
@@ -821,13 +818,13 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_mysql_init(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!ictx->data, MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 
 	if (!table_exists(conn, INDEXING_TABLE)) {
-		DEBUG(3, ("Creating schema for indexing on mysql %s\n",
-			  connection_string));
+		OC_DEBUG(3, "Creating schema for indexing on mysql %s\n",
+			  connection_string);
 
 		schema_created_ret = migrate_indexing_schema(mstore_ctx, connection_string);
 		if (schema_created_ret) {
-			DEBUG(1, ("Failed indexing schema creation using migration framework: %d\n",
-                                  schema_created_ret));
+			OC_DEBUG(1, "Failed indexing schema creation using migration framework: %d\n",
+                                  schema_created_ret);
 			MAPISTORE_RETVAL_ERR(MAPISTORE_ERR_NOT_INITIALIZED, ictx);
 		}
 	}

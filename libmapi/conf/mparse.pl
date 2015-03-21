@@ -323,7 +323,7 @@ sub mapitags_interface($)
     deindent;
     mparse "}";
     mparse "";
-    mparse "DEBUG(5, (\"%s: type for property '%x' could not be deduced\\n\", __FUNCTION__, untypedtag));";
+    mparse "OC_DEBUG(5, \"type for property '%x' could not be deduced\\n\", untypedtag);";
     mparse "";
     mparse "return 0;";
     deindent;
@@ -684,7 +684,7 @@ sub openchangedb_property($)
     mparse "}";
     deindent;
     mparse "}";
-    mparse "DEBUG(0, (\"[%s:%d]: Unsupported property tag '0x%.8x'\\n\", __FUNCTION__, __LINE__, proptag));";
+    mparse "OC_DEBUG(0, \"Unsupported property tag '0x%.8x'\\n\", proptag);";
     mparse "";
     mparse "return NULL;";
     deindent;

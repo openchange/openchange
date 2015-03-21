@@ -160,13 +160,13 @@ static NTSTATUS cache_exec_sync_cmd(struct mpm_stream *stream)
 	args[i] = NULL;
 
 	for (i = 0; args[i]; i++){
-		DEBUG(0, ("'%s' ", args[i]));
+		OC_DEBUG(0, "'%s' ", args[i]);
 	}
-	DEBUG(0, ("\n"));
+	OC_DEBUG(0, "\n");
 
 	switch(pid = fork()) {
 	case -1:
-		DEBUG(0, ("Failed to fork\n"));
+		OC_DEBUG(0, "Failed to fork\n");
 		break;
 	case 0:
 		ret = execve(args[0], args, NULL);
@@ -188,8 +188,8 @@ static NTSTATUS cache_exec_sync_cmd(struct mpm_stream *stream)
 	}
 
 	if (sb.st_size != stream->StreamSize) {
-		DEBUG(0, ("Sync'd file size is 0x%x and 0x%x was expected\n",
-			  (uint32_t)sb.st_size, stream->StreamSize));
+		OC_DEBUG(0, "Sync'd file size is 0x%x and 0x%x was expected\n",
+			  (uint32_t)sb.st_size, stream->StreamSize);
 		return NT_STATUS_INVALID_PARAMETER;
 	}
 

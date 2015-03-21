@@ -30,9 +30,9 @@
 #include "fault_util.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
+#include <util/debug.h>
 
 #include <samba/version.h>
-#include <util/debug.h>
 
 #include <execinfo.h>
 

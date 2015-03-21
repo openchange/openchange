@@ -56,7 +56,7 @@ int main(int argc, const char *argv[])
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_test");
 	lp_ctx = loadparm_init_global(true);
-	setup_logging(NULL, DEBUG_STDOUT);
+	oc_log_init_stdout();
 
 	pc = poptGetContext("mapistore_test", argc, argv, long_options, 0);
 	while ((opt = poptGetNextOpt(pc)) != -1) {

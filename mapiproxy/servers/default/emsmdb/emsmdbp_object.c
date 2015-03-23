@@ -2062,6 +2062,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX
 	}
 end:
 	if (current_fid) {
+		talloc_free(table);
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 		talloc_free(folder);
 	}

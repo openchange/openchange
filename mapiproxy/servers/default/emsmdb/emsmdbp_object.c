@@ -1240,6 +1240,81 @@ enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_
 	return retval;
 }
 
+
+/**
+   \details Return the full number of folders within specified
+   folder's hierarchy
+
+   \param emsmdbp_ctx pointer to the emsmdbp context
+   \param folder pointer to the emsmdb folder to start the count from
+   \param row_countp pointer on the number of folders to return
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_ERROR
+ */
+enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context *emsmdbp_ctx,
+							  struct emsmdbp_object *folder,
+							  uint32_t *row_countp)
+{
+	enum MAPISTATUS		retval = MAPI_E_SUCCESS;
+	struct emsmdbp_object	*table_object;
+	uint32_t		count = 0;
+	struct mapi_handles	*rec = NULL;
+	uint32_t		i;
+	struct SPropTagArray	*SPropTagArray = NULL;
+	uint32_t		handle = 0;
+
+	retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, folder, &count);
+	if ((retval == MAPI_E_SUCCESS) && count) {
+		*row_countp += count;
+
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		table_object = emsmdbp_folder_open_table(rec, folder, MAPISTORE_FOLDER_TABLE, rec->handle);
+		if (!table_object) {
+			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+			retval = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
+
+		table_object->object.table->prop_count = 1;
+		table_object->object.table->properties = talloc_array(table_object, enum MAPITAGS, 1);
+		table_object->object.table->properties[0] = PidTagFolderId;
+
+		SPropTagArray = set_SPropTagArray(table_object, 1, PidTagFolderId);
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table_object),
+					    table_object->backend_object, SPropTagArray->cValues,
+					    SPropTagArray->aulPropTag);
+		for (i = 0; i < count; i++) {
+			void		**data_pointers = NULL;
+			enum MAPISTATUS	*retvals = NULL;
+
+			data_pointers = emsmdbp_object_table_get_row_props(table_object, emsmdbp_ctx, table_object,
+									   i, MAPISTORE_PREFILTERED_QUERY, &retvals);
+
+			if (data_pointers && retvals[0] == MAPI_E_SUCCESS) {
+				struct emsmdbp_object	*sfolder = NULL;
+
+				retval = emsmdbp_object_open_folder_by_fid(table_object, emsmdbp_ctx, folder,
+									   *((uint64_t *)data_pointers[0]), &sfolder);
+				if (retval == MAPI_E_SUCCESS) {
+					uint32_t scount = 0;
+
+					retval = emsmdbp_folder_get_recursive_folder_count(emsmdbp_ctx, sfolder, &scount);
+					*row_countp += scount;
+					talloc_free(sfolder);
+				}
+				talloc_free(data_pointers);
+				talloc_free(retvals);
+			}
+		}
+		talloc_free(table_object->object.table->properties);
+		talloc_free(SPropTagArray);
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+	}
+end:
+	return retval;
+}
+
+
 static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *folder, struct emsmdbp_object *parent_folder, const char *new_name)
 {
 	uint64_t		parent_fid, fid, test_folder_id, change_number;
@@ -1599,6 +1674,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
 	object->object.table->subscription_list = NULL;
+	object->object.table->flags = 0;
 
 	return object;
 }
@@ -1881,6 +1957,121 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 
         return data_pointers;
 }
+
+
+
+/**
+   \details This function process the hierarchy of folders recursively
+   and fill requested rows.
+
+   \param mem_ctx pointer to the memory context
+   \param emsmdbp_ctx pointer to the emsmdb context
+   \param context_object pointer to the context object
+   \param datablob pointer to the DATA blob to fill
+   \param properties pointer to the array of properties used to fill a
+   row of the table
+   \param current_fid the FolderID of the folder to open and process
+   \param remaining pointer on the remaining rows to process
+   \param count pointer on the number of rows processed to return
+
+   \note This implementation is very preliminary and lacks several use cases:
+   1. It does not handle backward read
+   2. It does not handle positioning of the folder object and rewind
+   of the hierarchy when position != 0
+
+   We currently rely on Outlook asking for 4096 rows to fill this
+   buffer in one operation.
+
+   \return MAPI_E_SUCCESS on success, otherwise MAPI error.
+*/
+_PUBLIC_ enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
+								      struct emsmdbp_object *context_object,
+								      DATA_BLOB *datablob, struct SPropTagArray *properties,
+								      uint64_t current_fid, int64_t *remaining, uint32_t *count)
+{
+	enum MAPISTATUS		retval;
+	struct emsmdbp_object	*folder = NULL;
+	struct emsmdbp_object	*table = NULL;
+	struct mapi_handles	*rec = NULL;
+	enum MAPISTATUS		*retvals;
+	void			**data_pointers = NULL;
+	uint32_t		handle = 0;
+	uint32_t		i = 0;
+	uint32_t		j;
+
+	/* Sanity checks */
+	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!remaining, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!*remaining, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
+
+	/* open current folder */
+	if (current_fid) {
+		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, current_fid, &folder);
+		if (retval) {
+			return MAPI_E_INVALID_OBJECT;
+		}
+		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		if (retval) {
+			talloc_free(folder);
+			return MAPI_E_INVALID_OBJECT;
+		}
+		table = emsmdbp_folder_open_table(rec, folder, MAPISTORE_FOLDER_TABLE, rec->handle);
+		table->object.table->prop_count = properties->cValues;
+		table->object.table->properties = properties->aulPropTag;
+		mapistore_table_set_columns(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(table),
+					    table->backend_object, properties->cValues,
+					    properties->aulPropTag);
+		if (!table) {
+			retval = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
+	} else {
+		/* otherwise reuse existing context object */
+		table = context_object;
+		folder = table->parent_object;
+	}
+
+	if (!table->object.table->denominator) {
+		retval = MAPI_E_SUCCESS;
+		goto end;
+	}
+
+	mapidump_SPropTagArray(properties);
+	for (i = 0; i < table->object.table->denominator || !*remaining; i++) {
+		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
+		if (data_pointers) {
+			uint64_t	fid = 0;
+
+			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx, datablob, properties->cValues,
+						    properties->aulPropTag, data_pointers, retvals);
+			*remaining = *remaining - 1;
+			*count = *count + 1;
+
+			for (j = 0; j < properties->cValues; j++) {
+				if ((properties->aulPropTag[j] == PidTagFolderId) && (retvals[j] == MAPI_E_SUCCESS)) {
+					fid = *(uint64_t *)data_pointers[j];
+					retval = emsmdbp_object_table_get_recursive_row_props(mem_ctx, emsmdbp_ctx,
+											      folder, datablob, properties,
+											      fid, remaining, count);
+					break;
+				}
+			}
+
+			talloc_free(data_pointers);
+			talloc_free(retvals);
+		}
+	}
+end:
+	if (current_fid) {
+		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+		talloc_free(folder);
+	}
+	return retval;
+}
+
+
 
 _PUBLIC_ void emsmdbp_fill_table_row_blob(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx,
 					  DATA_BLOB *table_row, uint16_t num_props,

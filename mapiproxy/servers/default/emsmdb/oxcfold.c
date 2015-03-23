@@ -146,6 +146,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	void			*data;
 	uint64_t		folderID;
 	uint32_t		handle;
+	uint32_t		count = 0;
 
 	DEBUG(4, ("exchange_emsmdb: [OXCFOLD] GetHierarchyTable (0x04)\n"));
 
@@ -200,7 +201,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
+
+	object->object.table->flags = mapi_req->u.mapi_GetHierarchyTable.TableFlags;
+
 	mapi_handles_set_private_data(rec, object);
+
+	if (object->object.table->flags & TableFlags_Depth) {
+		emsmdbp_folder_get_recursive_folder_count(emsmdbp_ctx, parent_object, &count);
+		object->object.table->denominator = count;
+	}
 	mapi_repl->u.mapi_GetHierarchyTable.RowCount = object->object.table->denominator;
 
 	/* notifications */

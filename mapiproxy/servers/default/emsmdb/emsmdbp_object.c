@@ -1769,9 +1769,16 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
         num_props = table_object->object.table->prop_count;
 
 	data_pointers = talloc_zero_array(mem_ctx, void *, num_props);
-	OPENCHANGE_RETVAL_IF(data_pointers == NULL, 0, NULL);
+	if (!data_pointers) {
+		OC_DEBUG(0, "No more memory");
+		return NULL;
+	}
 	retvals = talloc_zero_array(mem_ctx, enum MAPISTATUS, num_props);
-	OPENCHANGE_RETVAL_IF(retvals == NULL, 0, NULL);
+	if (!retvals) {
+		OC_DEBUG(0, "No more memory");
+		talloc_free(data_pointers);
+		return NULL;
+	}
 
 	if (emsmdbp_is_mapistore(table_object)) {
 		contextID = emsmdbp_get_contextID(table_object);
@@ -1813,22 +1820,12 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 		}
 
 		odb_ctx = talloc_zero(NULL, void);
-
-		/* Setup table_filter for openchangedb */
-		/* switch (table_object->object.table->ulType) { */
-		/* case MAPISTORE_MESSAGE_TABLE: */
-		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=*))", folderID); */
-		/* 	break; */
-		/* case MAPISTORE_FOLDER_TABLE: */
-		/* 	table_filter = talloc_asprintf(odb_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagFolderId=*))", folderID); */
-		/* 	break; */
-		/* default: */
-		/* 	DEBUG(5, ("[%s:%d]: Unsupported table type for openchangedb: %d\n", __FUNCTION__, __LINE__,  */
-		/* 		      table_object->object.table->ulType)); */
-		/* 	talloc_free(retvals); */
-		/* 	talloc_free(data_pointers); */
-		/* 	return NULL; */
-		/* } */
+		if (!odb_ctx) {
+			OC_DEBUG(0, "No more memory");
+			talloc_free(retvals);
+			talloc_free(data_pointers);
+			return NULL;
+		}
 
 		/* 1. retrieve the object id from odb */
 		switch (table_object->object.table->ulType) {

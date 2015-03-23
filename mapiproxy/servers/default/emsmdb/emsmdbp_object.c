@@ -2043,7 +2043,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX
 	}
 
 	mapidump_SPropTagArray(properties);
-	for (i = 0; i < table->object.table->denominator || !*remaining; i++) {
+	for (i = 0; i < table->object.table->denominator && *remaining > 0; i++) {
 		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, table, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 		if (data_pointers) {
 			uint64_t	fid = 0;

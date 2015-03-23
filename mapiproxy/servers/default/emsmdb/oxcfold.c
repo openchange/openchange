@@ -207,7 +207,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	mapi_handles_set_private_data(rec, object);
 
 	if (object->object.table->flags & TableFlags_Depth) {
-		emsmdbp_folder_get_recursive_folder_count(emsmdbp_ctx, parent_object, &count);
+		retval = emsmdbp_folder_get_recursive_folder_count(emsmdbp_ctx, parent_object, &count);
+		if (retval != MAPI_E_SUCCESS) {
+			mapi_repl->error_code = MAPI_E_CALL_FAILED;
+			goto end;
+		}
 		object->object.table->denominator = count;
 	}
 	mapi_repl->u.mapi_GetHierarchyTable.RowCount = object->object.table->denominator;

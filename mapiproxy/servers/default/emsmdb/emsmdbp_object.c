@@ -2009,14 +2009,11 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX
 	/* open current folder */
 	if (current_fid) {
 		retval = emsmdbp_object_open_folder_by_fid(mem_ctx, emsmdbp_ctx, context_object, current_fid, &folder);
-		if (retval) {
-			return MAPI_E_INVALID_OBJECT;
-		}
+		OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_OBJECT, NULL);
+
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
-		if (retval) {
-			talloc_free(folder);
-			return MAPI_E_INVALID_OBJECT;
-		}
+		OPENCHANGE_RETVAL_IF(retval, MAPI_E_INVALID_OBJECT, folder);
+
 		table = emsmdbp_folder_open_table(rec, folder, MAPISTORE_FOLDER_TABLE, rec->handle);
 		table->object.table->prop_count = properties->cValues;
 		table->object.table->properties = properties->aulPropTag;

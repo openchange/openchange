@@ -458,6 +458,10 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			count = 0;
 			retval = emsmdbp_object_table_get_recursive_row_props(mem_ctx, emsmdbp_ctx, object, &response->RowData,
 									      &SPropTagArray, 0, &end, &count);
+			if (retval != MAPI_E_SUCCESS) {
+				OC_DEBUG(OC_LOG_WARNING, "Unable to retrieve recursive folder rows");
+				count = 0;
+			}
 			break;
 		default:
 			OC_DEBUG(OC_LOG_WARNING, "Can not move cursor with Depth flag enabled");

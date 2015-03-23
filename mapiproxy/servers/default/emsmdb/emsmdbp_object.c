@@ -1924,10 +1924,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 										 row_id,
 										 (query_type == MAPISTORE_LIVEFILTERED_QUERY),
 										 data_pointers + i);
-					/* retval = openchangedb_get_table_property(data_pointers, emsmdbp_ctx->oc_ctx,  */
-					/* 					 emsmdbp_ctx->username, */
-					/* 					 table_filter, table->properties[i],  */
-					/* 					 row_id, data_pointers + i); */
 				}
 			}
 			else {
@@ -1939,7 +1935,6 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 									 data_pointers + i);
 			}
 
-			/* DEBUG(5, ("  %.8x: %d", table->properties[j], retval)); */
 			if (retval == MAPI_E_INVALID_OBJECT) {
 				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
 				talloc_free(retvals);

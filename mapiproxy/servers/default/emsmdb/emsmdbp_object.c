@@ -1277,6 +1277,12 @@ enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context
 
 		table_object->object.table->prop_count = 1;
 		table_object->object.table->properties = talloc_array(table_object, enum MAPITAGS, 1);
+		if (!table_object->object.table->properties) {
+			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
+			talloc_free(table_object);
+			retval = MAPI_E_INVALID_OBJECT;
+			goto end;
+		}
 		table_object->object.table->properties[0] = PidTagFolderId;
 
 		SPropTagArray = set_SPropTagArray(table_object, 1, PidTagFolderId);
@@ -1308,6 +1314,7 @@ enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context
 		}
 		talloc_free(table_object->object.table->properties);
 		talloc_free(SPropTagArray);
+		talloc_free(table_object);
 		mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);
 	}
 end:

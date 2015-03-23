@@ -1309,5 +1309,6 @@ typedef [v1_enum, flag(NDR_PAHEX)] enum {
 	PidTagGenerateExchangeViews                                          = 0x36e9000b,
 	PidTagLatestDeliveryTime                                             = 0x00190040,
 	PidTagMailPermission                                                 = 0x3a0e000b,
+	PidTagFolderFlags                                                    = 0x66a80003,
 	MAPI_PROP_RESERVED                                                   = 0xFFFFFFFF
 } MAPITAGS;

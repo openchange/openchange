@@ -1268,6 +1268,7 @@ enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context
 		*row_countp += count;
 
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &rec);
+		OPENCHANGE_RETVAL_IF(retval, retval, NULL);
 		table_object = emsmdbp_folder_open_table(rec, folder, MAPISTORE_FOLDER_TABLE, rec->handle);
 		if (!table_object) {
 			mapi_handles_delete(emsmdbp_ctx->handles_ctx, rec->handle);

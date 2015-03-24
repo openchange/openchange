@@ -88,11 +88,11 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	const char			*userDN;
 	char				*dnprefix;
 
-	DEBUG(3, ("exchange_emsmdb: EcDoConnect (0x0)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoConnect (0x0)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 	failure:
 		wire_handle.handle_type = EXCHANGE_HANDLE_EMSMDB;
 		wire_handle.uuid = GUID_zero();
@@ -202,12 +202,12 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 	r->out.result = MAPI_E_SUCCESS;
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-        session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
-        if (session) {
-                DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
-                          session->session->context_id));
-                mpm_session_increment_ref_count(session->session);
-        }
+	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+	if (session) {
+		OC_DEBUG(0, "[exchange_emsmdb]: Increment session ref count for %d\n",
+				 session->session->context_id);
+		mpm_session_increment_ref_count(session->session);
+	}
 	else {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
@@ -222,7 +222,7 @@ static enum MAPISTATUS dcesrv_EcDoConnect(struct dcesrv_call_state *dce_call,
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
 
-		DEBUG(0, ("[exchange_emsmdb]: New session added: %d\n", session->session->context_id));
+		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->session->context_id);
 
 		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
 	}
@@ -248,32 +248,29 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 	struct exchange_emsmdb_session	*session;
 	bool				ret;
 
-	DEBUG(3, ("exchange_emsmdb: EcDoDisconnect (0x1)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoDisconnect (0x1)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		return MAPI_E_LOGON_FAILED;
 	}
 
 	/* Step 1. Retrieve handle and free if emsmdbp context and session are available */
 	h = dcesrv_handle_fetch(dce_call->context, r->in.handle, DCESRV_HANDLE_ANY);
 	if (h) {
-                session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
-                if (session) {
-                        ret = mpm_session_release(session->session);
-                        if (ret == true) {
-                                DLIST_REMOVE(emsmdb_session, session);
-                                DEBUG(5, ("[%s:%d]: Session found and released\n", 
-                                          __FUNCTION__, __LINE__));
-                        } else {
-                                DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
-                                          __FUNCTION__, __LINE__));
-                        }
+		session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+		if (session) {
+			ret = mpm_session_release(session->session);
+			if (ret == true) {
+				DLIST_REMOVE(emsmdb_session, session);
+				OC_DEBUG(5, "Session found and released\n");
+			} else {
+				OC_DEBUG(5, "Session found and ref_count decreased\n");
+			}
+		} else {
+			OC_DEBUG(5, "  emsmdb_session NOT found\n");
 		}
-                else {
-                        DEBUG(5, ("  emsmdb_session NOT found\n"));
-                }
 	}
 
 	r->out.handle->handle_type = 0;
@@ -311,13 +308,13 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, subscription->handle, &handle_object_handle);
 	if (retval) {
 		reply->NotificationType = fnevCriticalError;
-		DEBUG(5, ("notification handle not found\n"));
+		OC_DEBUG(5, "notification handle not found\n");
 		goto end;
 	}
 	retval = mapi_handles_get_private_data(handle_object_handle, (void **) &handle_object);
 	if (retval) {
 		reply->NotificationType = fnevCriticalError;
-		DEBUG(5, ("object not found for notification handle\n"));
+		OC_DEBUG(5, "object not found for notification handle\n");
 		goto end;
 	}
 
@@ -342,7 +339,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                 break;
         default:
                 reply->NotificationType = fnevCriticalError;
-                DEBUG(5, ("unknown value for notification object type: %d\n", notification->object_type));
+                OC_DEBUG(5, "unknown value for notification object type: %d\n", notification->object_type);
                 goto end;
         }
 
@@ -403,7 +400,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 				}
 				else {
 					success = false;
-					DEBUG(5, (__location__": no data returned for row, notification ignored\n"));
+					OC_DEBUG(5, "no data returned for row, notification ignored\n");
 				}
                         }
 
@@ -429,7 +426,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                         /*         break; */
                         /* default: */
                         /*         reply->NotificationType = fnevCriticalError; */
-                        /*         DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
+                        /*         OC_DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
                         /*         goto end; */
                         }
                 }
@@ -482,7 +479,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 				}
 				else {
 					success = false;
-					DEBUG(5, (__location__": no data returned for row, notification ignored\n"));
+					OC_DEBUG(5, "no data returned for row, notification ignored\n");
 				}
                         }
 
@@ -508,7 +505,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
                         /*         break; */
                         /* default: */
                         /*         reply->NotificationType = fnevCriticalError; */
-                        /*         DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
+                        /*         OC_DEBUG(5, ("unknown value for notification event: %d\n", notification->event)); */
                         /*         goto end; */
 			case MAPISTORE_OBJECT_MODIFIED:
 			case MAPISTORE_OBJECT_DELETED:
@@ -541,7 +538,7 @@ static bool emsmdbp_fill_notification(TALLOC_CTX *mem_ctx,
 			break;
                 default:
                         reply->NotificationType = fnevCriticalError;
-                        DEBUG(5, ("unknown value for notification event: %d\n", notification->event));
+                        OC_DEBUG(5, "unknown value for notification event: %d\n", notification->event);
                         goto end;
                 }
                 if (notification->object_type == MAPISTORE_MESSAGE) {
@@ -680,7 +677,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	/* Step 2. Process serialized MAPI requests */
 	mapi_response->mapi_repl = talloc_zero(mem_ctx, struct EcDoRpc_MAPI_REPL);
 	for (i = 0, idx = 0, size = 0; mapi_request->mapi_req[i].opnum != 0; i++) {
-		DEBUG(0, ("MAPI Rop: 0x%.2x (%d)\n", mapi_request->mapi_req[i].opnum, size));
+		OC_DEBUG(0, "MAPI Rop: 0x%.2x (%d)\n", mapi_request->mapi_req[i].opnum, size);
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
 			mapi_response->mapi_repl = talloc_realloc(mem_ctx, mapi_response->mapi_repl,
@@ -1246,8 +1243,8 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 						  mapi_response->handles, &size);
 			break;
 		default:
-			DEBUG(1, ("MAPI Rop: 0x%.2x not implemented!\n",
-				  mapi_request->mapi_req[i].opnum));
+			OC_DEBUG(1, "MAPI Rop: 0x%.2x not implemented!\n",
+				  mapi_request->mapi_req[i].opnum);
 		}
 
 		if (mapi_request->mapi_req[i].opnum != op_MAPI_Release) {
@@ -1255,7 +1252,7 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 		}
 
 		if (retval) {
-			DEBUG(5, ("MAPI Rop: 0x%.2x [retval=0x%.8x]\n", mapi_request->mapi_req[i].opnum, retval));
+			OC_DEBUG(5, "MAPI Rop: 0x%.2x [retval=0x%.8x]\n", mapi_request->mapi_req[i].opnum, retval);
 		}
 	}
 
@@ -1282,15 +1279,15 @@ notif:
 	{
 		enum mapistore_error	mretval;
 
-		DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
+		OC_DEBUG(0, ("subscriptions: %p\n", emsmdbp_ctx->mstore_ctx->subscriptions));
 		/* Process notifications available on subscriptions queues */
 		for (sel = emsmdbp_ctx->mstore_ctx->subscriptions; sel; sel = sel->next) {
-			DEBUG(0, ("subscription = %p\n", sel->subscription));
+			OC_DEBUG(0, ("subscription = %p\n", sel->subscription));
 			if (sel->subscription) {
-				DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
-				DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
-				DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
-				DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
+				OC_DEBUG(0, ("subscription: handle = 0x%x\n", sel->subscription->handle));
+				OC_DEBUG(0, ("subscription: types = 0x%x\n", sel->subscription->notification_types));
+				OC_DEBUG(0, ("subscription: mqueue = %d\n", sel->subscription->mqueue));
+				OC_DEBUG(0, ("subscription: mqueue name = %s\n", sel->subscription->mqueue_name));
 			}
 			mretval = mapistore_get_queued_notifications(emsmdbp_ctx->mstore_ctx, sel->subscription, &nlist);
 			if (mretval == MAPISTORE_SUCCESS) {
@@ -1340,11 +1337,11 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 	struct mapi_request		*mapi_request;
 	struct mapi_response		*mapi_response;
 
-	DEBUG(3, ("exchange_emsmdb: EcDoRpc (0x2)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoRpc (0x2)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
@@ -1394,7 +1391,7 @@ static void dcesrv_EcGetMoreRpc(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct EcGetMoreRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcGetMoreRpc (0x3) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcGetMoreRpc (0x3) not implemented\n");
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1416,10 +1413,10 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 	struct exchange_emsmdb_session	*session;
 	/* struct emsmdbp_context		*emsmdbp_ctx = NULL; */
 
-	DEBUG(3, ("exchange_emsmdb: EcRRegisterPushNotification (0x4)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcRRegisterPushNotification (0x4)\n");
 
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
@@ -1443,7 +1440,7 @@ static enum MAPISTATUS dcesrv_EcRRegisterPushNotification(struct dcesrv_call_sta
 	*/
 	retval = MAPI_E_SUCCESS;
 
-	/* DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval)); */
+	/* OC_DEBUG(0, ("[%s:%d]: retval = 0x%x\n", __FUNCTION__, __LINE__, retval)); */
 	if (retval == MAPI_E_SUCCESS) {
 		r->out.handle = r->in.handle;
 		/* FIXME: Create a notification object and return associated handle */
@@ -1467,7 +1464,7 @@ static enum MAPISTATUS dcesrv_EcRUnregisterPushNotification(struct dcesrv_call_s
 							    TALLOC_CTX *mem_ctx,
 							    struct EcRUnregisterPushNotification *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcRUnregisterPushNotification (0x5) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcRUnregisterPushNotification (0x5) not implemented\n");
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1485,7 +1482,7 @@ static enum MAPISTATUS dcesrv_EcDummyRpc(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct EcDummyRpc *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDummyRpc (0x6)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDummyRpc (0x6)\n");
 	return MAPI_E_SUCCESS;
 }
 
@@ -1503,7 +1500,7 @@ static void dcesrv_EcRGetDCName(struct dcesrv_call_state *dce_call,
 				TALLOC_CTX *mem_ctx,
 				struct EcRGetDCName *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcRGetDCName (0x7) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcRGetDCName (0x7) not implemented\n");
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1521,7 +1518,7 @@ static void dcesrv_EcRNetGetDCName(struct dcesrv_call_state *dce_call,
 				   TALLOC_CTX *mem_ctx,
 				   struct EcRNetGetDCName *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcRNetGetDCName (0x8) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcRNetGetDCName (0x8) not implemented\n");
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1539,7 +1536,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt(struct dcesrv_call_state *dce_call,
 					 TALLOC_CTX *mem_ctx,
 					 struct EcDoRpcExt *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt (0x9) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoRpcExt (0x9) not implemented\n");
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1577,11 +1574,11 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	char				*dnprefix;
 	char				*tmp = "";
 
-	DEBUG(3, ("exchange_emsmdb: EcDoConnectEx (0xA)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoConnectEx (0xA)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 	failure:
 		wire_handle.handle_type = 0;
 		wire_handle.uuid = GUID_zero();
@@ -1610,13 +1607,13 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	if (r->in.cbAuxIn < 0x8) {
-	  DEBUG(5, ("[ERR][%s:%d]: r->in.cbAuxIn is > 0x0 and < 0x8\n", __FILE__, __LINE__));
+	  OC_DEBUG(5, "r->in.cbAuxIn is > 0x0 and < 0x8\n");
 		r->out.result = ecRpcFailed;
 		goto failure;
 	}
 
 	if (!r->in.szUserDN || strlen(r->in.szUserDN) == 0) {
-	  DEBUG(5, ("[ERR][%s:%d]: r->in.szUserDN is NULL or empty\n", __FILE__, __LINE__));
+	  OC_DEBUG(5, "r->in.szUserDN is NULL or empty\n");
 		r->out.result = MAPI_E_NO_ACCESS;
 		goto failure;
 	}
@@ -1626,7 +1623,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 				   dcesrv_call_account_name(dce_call),
 				   openchange_db_ctx);
 	if (!emsmdbp_ctx) {
-		DEBUG(0, ("FATAL: unable to initialize emsmdbp context"));
+		OC_DEBUG(0, "FATAL: unable to initialize emsmdbp context");
 		r->out.result = MAPI_E_LOGON_FAILED;
 		goto failure;
 	}
@@ -1710,12 +1707,12 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	}
 
 	/* Search for an existing session and increment ref_count, otherwise create it */
-        session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
-        if (session) {
-                DEBUG(0, ("[exchange_emsmdb]: Increment session ref count for %d\n", 
-                          session->session->context_id));
-                mpm_session_increment_ref_count(session->session);
-        }
+	session = dcesrv_find_emsmdb_session(&handle->wire_handle.uuid);
+	if (session) {
+		OC_DEBUG(0, "[exchange_emsmdb]: Increment session ref count for %d\n",
+				 session->session->context_id);
+		mpm_session_increment_ref_count(session->session);
+	}
 	else {
 		/* Step 7. Associate this emsmdbp context to the session */
 		session = talloc((TALLOC_CTX *)emsmdb_session, struct exchange_emsmdb_session);
@@ -1730,7 +1727,7 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 		mpm_session_set_private_data(session->session, (void *) emsmdbp_ctx);
 		mpm_session_set_destructor(session->session, emsmdbp_destructor);
 
-		DEBUG(0, ("[exchange_emsmdb]: New session added: %d\n", session->session->context_id));
+		OC_DEBUG(0, "[exchange_emsmdb]: New session added: %d\n", session->session->context_id);
 
 		DLIST_ADD_END(emsmdb_session, session, struct exchange_emsmdb_session *);
 	}
@@ -1765,7 +1762,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 	uint32_t			pulTransTime = 0;
 	DATA_BLOB			rgbIn;
 
-	DEBUG(3, ("exchange_emsmdb: EcDoRpcExt2 (0xB)\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoRpcExt2 (0xB)\n");
 
 	r->out.rgbOut = NULL;
 	*r->out.pcbOut = 0;
@@ -1774,7 +1771,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		r->out.handle->handle_type = 0;
 		r->out.handle->uuid = GUID_zero();
 		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
@@ -1873,7 +1870,7 @@ static void dcesrv_EcUnknown0xC(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
 				      struct EcUnknown0xC *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcUnknown0xC (0xc) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcUnknown0xC (0xc) not implemented\n");
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1891,7 +1888,7 @@ static void dcesrv_EcUnknown0xD(struct dcesrv_call_state *dce_call,
 				      TALLOC_CTX *mem_ctx,
 				      struct EcUnknown0xD *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcUnknown0xC (0xd) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcUnknown0xC (0xd) not implemented\n");
 	DCESRV_FAULT_VOID(DCERPC_FAULT_OP_RNG_ERROR);
 }
 
@@ -1909,7 +1906,7 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 TALLOC_CTX *mem_ctx,
 						 struct EcDoAsyncConnectEx *r)
 {
-	DEBUG(3, ("exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n"));
+	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n");
 	r->out.result = ecRejected;
 	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
 
@@ -2037,17 +2034,17 @@ static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32
 	/* struct exchange_emsmdb_session	*session; */
 	/* bool ret; */
 
-	DEBUG (0, ("dcesrv_exchange_emsmdb_unbind\n"));
+	OC_DEBUG(0, "dcesrv_exchange_emsmdb_unbind\n");
 
 	/* session = dcesrv_find_emsmdb_session_by_server_id(&server_id, context_id); */
 	/* if (session) { */
 	/* 	ret = mpm_session_release(session->session); */
 	/* 	if (ret == true) { */
 	/* 		DLIST_REMOVE(emsmdb_session, session); */
-	/* 		DEBUG(5, ("[%s:%d]: Session found and released\n",  */
+	/* 		OC_DEBUG(5, ("[%s:%d]: Session found and released\n",  */
 	/* 			  __FUNCTION__, __LINE__)); */
 	/* 	} else { */
-	/* 		DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n", */
+	/* 		OC_DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n", */
 	/* 			  __FUNCTION__, __LINE__)); */
 	/* 	} */
 	/* } */
@@ -2083,7 +2080,7 @@ NTSTATUS samba_init_module(void)
 	/* Register ourselves with the MAPIPROXY server subsystem */
 	ret = mapiproxy_server_register(&server);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Failed to register the 'exchange_emsmdb' default mapiproxy server!\n"));
+		OC_DEBUG(0, "Failed to register the 'exchange_emsmdb' default mapiproxy server!\n");
 		return ret;
 	}
 

@@ -64,7 +64,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
         struct mapistore_object_subscription_parameters subscription_parameters;
         void                    *data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -81,14 +81,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent_rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
         retval = mapi_handles_get_private_data(parent_rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 	parent_object = (struct emsmdbp_object *) data;

@@ -122,7 +122,7 @@ enum mapistore_error mapistore_mgmt_send_udp_notification(struct mapistore_mgmt_
 
 /* 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command); */
 /* 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) { */
-/* 		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", */
+/* 		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", */
 /* 			  __FUNCTION__, __LINE__, __FUNCTION__)); */
 /* 		mq_close(mqfd); */
 /* 		talloc_free(mem_ctx); */
@@ -162,8 +162,7 @@ static enum mapistore_error mapistore_mgmt_push_send(TALLOC_CTX *mem_ctx, mqd_t 
 	/* Prepare DATA_BLOB with data pushed */
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
-			  __FUNCTION__, __LINE__, __FUNCTION__));
+		OC_DEBUG(0, "Failed to push mapistore_mgmt_command into NDR blob\n");
 		mq_close(mqfd);
 		return MAPISTORE_ERR_INVALID_DATA;
 	}

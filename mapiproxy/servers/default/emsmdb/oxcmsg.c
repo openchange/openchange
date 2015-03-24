@@ -68,22 +68,22 @@ static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context
 			 ldb_binary_encode_string(mem_ctx, recipient->username));
 	/* If the search failed, build an external recipient: very basic for the moment */
 	if (ret != LDB_SUCCESS || !res->count) {
-		DEBUG(0, ("record not found for %s\n", recipient->username));
+		OC_DEBUG(0, "record not found for %s\n", recipient->username);
 		goto smtp_recipient;
 	}
 	full_name = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "displayName", NULL);
 	if (!full_name) {
-		DEBUG(0, ("record found but displayName is missing for %s\n", recipient->username));
+		OC_DEBUG(0, "record found but displayName is missing for %s\n", recipient->username);
 		goto smtp_recipient;
 	}
 	simple_name = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "mailNickname", NULL);
 	if (!simple_name) {
-		DEBUG(0, ("record found but mailNickname is missing for %s\n", recipient->username));
+		OC_DEBUG(0, "record found but mailNickname is missing for %s\n", recipient->username);
 		goto smtp_recipient;
 	}
 	legacyExchangeDN = (char *) ldb_msg_find_attr_as_string(res->msgs[0], "legacyExchangeDN", NULL);
 	if (!legacyExchangeDN) {
-		DEBUG(0, ("record found but legacyExchangeDN is missing for %s\n", recipient->username));
+		OC_DEBUG(0, "record found but legacyExchangeDN is missing for %s\n", recipient->username);
 		goto smtp_recipient;
 	}
 
@@ -195,7 +195,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -354,7 +354,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	struct FILETIME			ft;
 	NTTIME				time;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] CreateMessage (0x06)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] CreateMessage (0x06)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -372,14 +372,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &context_handle);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 	/* With CreateMessage, the parent object may NOT BE the direct parent folder of the message */
 	retval = mapi_handles_get_private_data(context_handle, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 	context_object = data;
@@ -437,7 +437,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 						     messageID, folderID,
 						     mapi_req->u.mapi_CreateMessage.AssociatedFlag,
 						     &message_object->backend_object);
-		DEBUG(5, ("openchangedb_create_message returned 0x%.8x\n", retval));
+		OC_DEBUG(5, "openchangedb_create_message returned 0x%.8x\n", retval);
 		break;
 	}
 
@@ -521,7 +521,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateMessage(TALLOC_CTX *mem_ctx,
 	/* TODO: some required properties are not set: PidTagSearchKey, PidTagMessageSize, PidTagSecurityDescriptor */
 	emsmdbp_object_set_properties(emsmdbp_ctx, message_object, &aRow);
 
-	DEBUG(0, ("CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false"));
+	OC_DEBUG(0, "CreateMessage: 0x%.16"PRIx64": mapistore = %s\n", folderID, mapistore ? "true" : "false");
 
 end:
 
@@ -565,7 +565,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	uint8_t			flags;
 	enum mapistore_error	ret;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] SaveChangesMessage (0x0c)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -598,7 +598,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesMessage(TALLOC_CTX *mem_ctx,
 	switch ((int)mapistore) {
 	case false:
 		retval = openchangedb_message_save(emsmdbp_ctx->oc_ctx, object->backend_object, flags);
-		DEBUG(0, ("[%s:%d]: openchangedb_save_message: retval = 0x%x\n", __FUNCTION__, __LINE__, retval));
+		OC_DEBUG(0, "openchangedb_save_message: retval = 0x%x\n", retval);
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(object);
@@ -652,7 +652,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 	uint32_t		contextID;
 	struct SPropTagArray	columns;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] RemoveAllRecipients (0x0d)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] RemoveAllRecipients (0x0d)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -687,7 +687,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRemoveAllRecipients(TALLOC_CTX *mem_ctx,
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, &columns, 0, NULL);
 	}
 	else {
-		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implement yet - shouldn't occur\n");
 	}
 
 end:
@@ -727,8 +727,8 @@ static enum MAPISTATUS oxcmsg_resolve_partial_x500name(TALLOC_CTX *mem_ctx,
 		/* sanity check for DNPrefix valid length */
 		OPENCHANGE_RETVAL_IF(!emsmdbp_ctx->szDNPrefix, MAPI_E_INVALID_PARAMETER, NULL);
 		if (prefix_size > strlen(emsmdbp_ctx->szDNPrefix)) {
-			DEBUG(0, ("Requested x500name prefix is beyond what we have for DNPrefix=[%s]\n",
-					emsmdbp_ctx->szDNPrefix));
+			OC_DEBUG(0, "Requested x500name prefix is beyond what we have for DNPrefix=[%s]\n",
+					emsmdbp_ctx->szDNPrefix);
 			return MAPI_E_INVALID_PARAMETER;
 		}
 
@@ -824,9 +824,8 @@ static enum MAPISTATUS oxcmsg_parse_ModifyRecipientRow(TALLOC_CTX *mem_ctx, stru
 		prop_value = pull_emsmdb_property(recipient->data, &data_pos, properties[i],
 						  &recipient_row->RecipientRow.prop_values);
 		if (prop_value == NULL) {
-			DEBUG(0, ("%s: Failed to convert RecipientProperty with tag [%s]. "
-				  "We are going to save it as-is.\n",
-				  __PRETTY_FUNCTION__, get_proptag_name(properties[i])));
+			OC_DEBUG(0, "Failed to convert RecipientProperty with tag [%s]. "
+				  "We are going to save it as-is.\n", get_proptag_name(properties[i]));
 			TALLOC_FREE(recipient->data);
 			return MAPI_E_TYPE_NO_SUPPORT;
 		}
@@ -874,7 +873,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 	struct SPropTagArray			*columns;
 	int					i;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ModifyRecipients (0x0e)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] ModifyRecipients (0x0e)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -921,7 +920,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 								 mapi_req->u.mapi_ModifyRecipients.properties,
 								 recipients + i);
 			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(0, ("Failed to parse RecipientRow. [%s]\n", mapi_get_errstr(retval)));
+				OC_DEBUG(0, "Failed to parse RecipientRow. [%s]\n", mapi_get_errstr(retval));
 				mapi_repl->error_code = retval;
 				goto end;
 			}
@@ -929,7 +928,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyRecipients(TALLOC_CTX *mem_ctx,
 		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, columns, mapi_req->u.mapi_ModifyRecipients.cValues, recipients);
 	}
 	else {
-		DEBUG(0, ("Not implement yet - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implement yet - shouldn't occur\n");
 	}
 
 end:
@@ -971,7 +970,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] ReloadCachedInformation (0x10)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] ReloadCachedInformation (0x10)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1001,7 +1000,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	mapistore = emsmdbp_is_mapistore(object);
 	switch ((int)mapistore) {
 	case false:
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implemented yet - shouldn't occur\n");
 		break;
 	case true:
 		contextID = emsmdbp_get_contextID(object);
@@ -1085,7 +1084,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 	uint32_t			contextID;
 	void				*data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] SetMessageReadFlag (0x11)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1105,27 +1104,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetMessageReadFlag(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	message_object = (struct emsmdbp_object *) data;
 	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
-		DEBUG(5, ("  no object or object is not a message\n"));
+		OC_DEBUG(5, "  no object or object is not a message\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
 
 	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
-		DEBUG(0, ("Not implemented yet\n"));
+		OC_DEBUG(0, "Not implemented yet\n");
 		break;
 	case true:
                 contextID = emsmdbp_get_contextID(message_object);
@@ -1172,7 +1171,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object	*folder_object = NULL;
 	void			*folder_private_data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] GetMessageStatus (0x1c)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] GetMessageStatus (0x1c)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1189,27 +1188,27 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetMessageStatus(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = ecNullObject;
-		DEBUG(5, ("[ERR][RopGetMessageStatus]: handle 0x%x not found\n", handle));
+		OC_DEBUG(5, "[ERR][RopGetMessageStatus]: handle 0x%x not found\n", handle);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &folder_private_data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("[ERR][RopGetMessageStatus]: data associated to handle 0x%x not found\n", handle));
+		OC_DEBUG(5, "[ERR][RopGetMessageStatus]: data associated to handle 0x%x not found\n", handle);
 		goto end;
 	}
 
 	folder_object = (struct emsmdbp_object *) folder_private_data;
 	if (!folder_object || folder_object->type != EMSMDBP_OBJECT_FOLDER) {
 		mapi_repl->error_code = ecNullObject;
-		DEBUG(5, ("[ERR][RopGetMessageStatus]: Invalid or NULL folder object\n"));
+		OC_DEBUG(5, "[ERR][RopGetMessageStatus]: Invalid or NULL folder object\n");
 		goto end;
 	}
 
 	switch ((int)emsmdbp_is_mapistore(folder_object)) {
 	case false:
-		DEBUG(0, ("[WARN][GetMessageStatus]: Not implemented\n"));
+		OC_DEBUG(0, "[WARN][GetMessageStatus]: Not implemented\n");
 		mapi_repl->error_code = ecNullObject;
 		break;
 	case true:
@@ -1253,7 +1252,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*table_object = NULL;
 	void				*data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] GetAttachmentTable (0x21)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] GetAttachmentTable (0x21)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1270,20 +1269,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAttachmentTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	message_object = (struct emsmdbp_object *) data;
 	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
-		DEBUG(5, ("  no object or object is not a message\n"));
+		OC_DEBUG(5, "  no object or object is not a message\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -1337,7 +1336,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*attachment_object = NULL;
 	void				*data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenAttach (0x22)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] OpenAttach (0x22)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1354,20 +1353,20 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	message_object = (struct emsmdbp_object *) data;
 	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
-		DEBUG(5, ("  no object or object is not a message\n"));
+		OC_DEBUG(5, "  no object or object is not a message\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -1375,11 +1374,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implemented yet - shouldn't occur\n");
 		break;
 	case true:
-                contextID = emsmdbp_get_contextID(message_object);
-                attachmentID = mapi_req->u.mapi_OpenAttach.AttachmentID;
+		contextID = emsmdbp_get_contextID(message_object);
+		attachmentID = mapi_req->u.mapi_OpenAttach.AttachmentID;
 
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &attachment_rec);
 		handles[mapi_repl->handle_idx] = attachment_rec->handle;
@@ -1391,7 +1390,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenAttach(TALLOC_CTX *mem_ctx,
 								    attachment_object, attachmentID, &attachment_object->backend_object);
 			if (mretval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
-				DEBUG(5, ("could not open nor create mapistore message\n"));
+				OC_DEBUG(5, "could not open nor create mapistore message\n");
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			}
 			retval = mapi_handles_set_private_data(attachment_rec, attachment_object);
@@ -1436,7 +1435,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object		*attachment_object = NULL;
 	void				*data;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] CreateAttach (0x23)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] CreateAttach (0x23)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1453,26 +1452,26 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	message_object = (struct emsmdbp_object *) data;
 	if (!message_object || message_object->type != EMSMDBP_OBJECT_MESSAGE) {
-		DEBUG(5, ("  no object or object is not a message\n"));
+		OC_DEBUG(5, "  no object or object is not a message\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
 
 	if (!message_object->object.message->read_write) {
-		DEBUG(5, ("  parent message object is not open read/write\n"));
+		OC_DEBUG(5, "  parent message object is not open read/write\n");
 		mapi_repl->error_code = MAPI_E_NO_ACCESS;
 		goto end;
 	}
@@ -1480,15 +1479,15 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
-		DEBUG(0, ("Not implemented yet - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implemented yet - shouldn't occur\n");
 		break;
 	case true:
-                messageID = message_object->object.message->messageID;
-                contextID = emsmdbp_get_contextID(message_object);
+		messageID = message_object->object.message->messageID;
+		contextID = emsmdbp_get_contextID(message_object);
 
 		retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, 0, &attachment_rec);
 		handles[mapi_repl->handle_idx] = attachment_rec->handle;
-		
+
 		attachment_object = emsmdbp_object_attachment_init((TALLOC_CTX *)attachment_rec, emsmdbp_ctx,
 								   messageID, message_object);
 		if (attachment_object) {
@@ -1496,7 +1495,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopCreateAttach(TALLOC_CTX *mem_ctx,
 								      attachment_object, &attachment_object->backend_object, &mapi_repl->u.mapi_CreateAttach.AttachmentID);
 			if (mretval) {
 				mapi_handles_delete(emsmdbp_ctx->handles_ctx, attachment_rec->handle);
-				DEBUG(5, ("could not open nor create mapistore message\n"));
+				OC_DEBUG(5, "could not open nor create mapistore message\n");
 				mapi_repl->error_code = MAPI_E_NOT_FOUND;
 			}
 			retval = mapi_handles_set_private_data(attachment_rec, attachment_object);
@@ -1530,7 +1529,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSaveChangesAttachment(TALLOC_CTX *mem_ctx,
                                                           struct EcDoRpc_MAPI_REPL *mapi_repl,
                                                           uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25) -- valid stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] SaveChangesAttachment (0x25) -- valid stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1586,7 +1585,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCMSG] OpenEmbeddedMessage (0x46)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] OpenEmbeddedMessage (0x46)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1605,33 +1604,33 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	handle = handles[mapi_req->handle_idx];
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &attachment_rec);
 	if (retval) {
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(attachment_rec, (void *) &attachment_object);
 	if (!attachment_object || attachment_object->type != EMSMDBP_OBJECT_ATTACHMENT) {
-		DEBUG(5, ("  no object or object is not an attachment\n"));
+		OC_DEBUG(5, "  no object or object is not an attachment\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
 
-        memset(response, 0, sizeof(struct OpenEmbeddedMessage_repl));
+	memset(response, 0, sizeof(struct OpenEmbeddedMessage_repl));
 
 	mapistore = emsmdbp_is_mapistore(attachment_object);
 	switch ((int)mapistore) {
 	case false:
-		DEBUG(0, ("Not implemented - shouldn't occur\n"));
+		OC_DEBUG(0, "Not implemented - shouldn't occur\n");
 		break;
 	case true:
 		contextID = emsmdbp_get_contextID(attachment_object);
-                if (request->OpenModeFlags == MAPI_CREATE) {
-                        ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
-                        if (ret) {
-                                mapi_repl->error_code = MAPI_E_NO_SUPPORT;
-                                goto end;
-                        }
+		if (request->OpenModeFlags == MAPI_CREATE) {
+			ret = mapistore_indexing_get_new_folderID(emsmdbp_ctx->mstore_ctx, &messageID);
+			if (ret) {
+				mapi_repl->error_code = MAPI_E_NO_SUPPORT;
+				goto end;
+			}
 
 			ret = mapistore_message_attachment_create_embedded_message(emsmdbp_ctx->mstore_ctx, contextID, attachment_object->backend_object,
 										   NULL, &backend_attachment_message, &msg);

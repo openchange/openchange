@@ -151,7 +151,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 /* 	mstore_ctx->replica_mapping_ctx = tdb_wrap_open(mstore_ctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600); */
 /* 	talloc_free(dbpath); */
 /* 	if (!mstore_ctx->replica_mapping_ctx) { */
-/* 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno))); */
+/* 		OC_DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno))); */
 /* 		talloc_free(mem_ctx); */
 /* 		return MAPISTORE_ERR_DATABASE_INIT; */
 /* 	} */

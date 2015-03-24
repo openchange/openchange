@@ -39,7 +39,7 @@
 
 
 static enum MAPISTATUS _not_implemented(const char *caller) {
-	DEBUG(0, ("Called not implemented function `%s` from mysql backend", caller));
+	OC_DEBUG(0, "Called not implemented function `%s` from mysql backend", caller);
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 #define not_implemented() _not_implemented(__PRETTY_FUNCTION__)
@@ -511,8 +511,8 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 		row = mysql_fetch_row(res);
 		if (row == NULL || row[0] == NULL) {
-			DEBUG(0, ("[ERR][%s]: Error getting row %d of `%s`: %s", __location__,
-				  (int) i, sql, mysql_error(conn)));
+			OC_DEBUG(0, "Error getting row %d of `%s`: %s",
+				  (int) i, sql, mysql_error(conn));
 			mysql_free_result(res);
 			return MAPI_E_CALL_FAILED;
 		}
@@ -593,8 +593,8 @@ static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *parent_ctx,
 	for (i = 0; i < nrows; i++) {
 		row = mysql_fetch_row(res);
 		if (row == NULL) {
-			DEBUG(0, ("Error getting row %d of `%s`: %s\n",
-				  (int)i, sql, mysql_error(conn)));
+			OC_DEBUG(0, "Error getting row %d of `%s`: %s\n",
+				  (int)i, sql, mysql_error(conn));
 			mysql_free_result(res);
 			OPENCHANGE_RETVAL_IF(row == NULL, MAPI_E_CALL_FAILED, mem_ctx);
 		}
@@ -604,8 +604,8 @@ static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *parent_ctx,
 
 		rcvfolders[i].flag = 0;
 		if (!convert_string_to_ull(row[0], &rcvfolders[i].fid)) {
-			DEBUG(0, ("Failed conversion of folder_id "
-				  "from row %d of `%s`\n", (int)i, sql));
+			OC_DEBUG(0, "Failed conversion of folder_id "
+				  "from row %d of `%s`\n", (int)i, sql);
 			mysql_free_result(res);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 		}
@@ -617,8 +617,8 @@ static enum MAPISTATUS get_ReceiveFolderTable(TALLOC_CTX *parent_ctx,
 		}
 
 		if (!convert_string_to_ull(row[2], &nt)) {
-			DEBUG(0, ("Failed conversion of PidTagLastModificationTime "
-				  "from row %d of `%s`\n", (int)i, sql));
+			OC_DEBUG(0, "Failed conversion of PidTagLastModificationTime "
+				  "from row %d of `%s`\n", (int)i, sql);
 			mysql_free_result(res);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 		}
@@ -672,8 +672,8 @@ static enum MAPISTATUS get_mailbox_ids_by_name(MYSQL *conn,
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, mem_ctx);
 	row = mysql_fetch_row(res);
 	if (row == NULL) {
-		DEBUG(0, ("Error getting user's mailbox `%s`: %s", sql,
-			  mysql_error(conn)));
+		OC_DEBUG(0, "Error getting user's mailbox `%s`: %s", sql,
+			  mysql_error(conn));
 		retval = MAPI_E_NOT_FOUND;
 		goto end;
 	}
@@ -1054,7 +1054,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 	case PT_I8:
 		ll = talloc_zero(mem_ctx, uint64_t);
 		if (!convert_string_to_ull(value, ll)) {
-			DEBUG(0, ("Error converting PT_I8 value %s\n", value));
+			OC_DEBUG(0, "Error converting PT_I8 value %s\n", value);
 		}
 		data = (void *)ll;
 		break;
@@ -1066,7 +1066,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 		ft = talloc_zero(mem_ctx, struct FILETIME);
 		ll = talloc_zero(mem_ctx, uint64_t);
 		if (!convert_string_to_ull(value, ll)) {
-			DEBUG(0, ("Error converting PT_SYSTIME value %s\n", value));
+			OC_DEBUG(0, "Error converting PT_SYSTIME value %s\n", value);
 		}
 		ft->dwLowDateTime = (*ll & 0xffffffff);
 		ft->dwHighDateTime = *ll >> 32;
@@ -1093,7 +1093,7 @@ static void *get_property_data(TALLOC_CTX *mem_ctx, uint32_t proptag, const char
 		data = (void *)long_array;
 		break;
 	default:
-		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		OC_DEBUG(0, "Property Type 0x%.4x not supported\n", (proptag & 0xFFFF));
 		abort();
 		return NULL;
 	}
@@ -1290,7 +1290,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY || tag == PR_PARENT_SOURCE_KEY ||
 		    tag == PR_CREATION_TIME || tag == PR_LAST_MODIFICATION_TIME ||
 		    tag == PidTagChangeNumber) {
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", tag));
+			OC_DEBUG(5, "Ignored attempt to set handled property %.8x\n", tag);
 			continue;
 		}
 
@@ -1301,7 +1301,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 
 		str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 		if (!str_value) {
-			DEBUG(5, ("Ignored property of unhandled type %.4x\n", (tag & 0xffff)));
+			OC_DEBUG(5, "Ignored property of unhandled type %.4x\n", (tag & 0xffff));
 			continue;
 		}
 
@@ -1317,7 +1317,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 	value->ulPropTag = PR_LAST_MODIFICATION_TIME;
 	unix_time = time(NULL);
 	if (unix_time == -1) {
-		DEBUG(0, ("[%s:%d] Error getting current local time\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error getting current local time\n");
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	unix_to_nt_time(&nt_time, unix_time);
@@ -1696,7 +1696,7 @@ static enum MAPISTATUS create_mailbox(struct openchangedb_context *self,
 
 	unix_time = time(NULL);
 	if (unix_time == -1) {
-		DEBUG(0, ("[%s:%d] Error getting current local time\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error getting current local time\n");
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	unix_to_nt_time(&now, unix_time);
@@ -1801,7 +1801,7 @@ static enum MAPISTATUS create_folder(struct openchangedb_context *self,
 
 	unix_time = time(NULL);
 	if (unix_time == -1) {
-		DEBUG(0, ("[%s:%d] Error getting current local time\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error getting current local time\n");
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	unix_to_nt_time(&now, unix_time);
@@ -2173,8 +2173,8 @@ static bool set_locale(struct openchangedb_context *self, const char *username,
 
 	locale = mapi_get_locale_from_lcid(lcid);
 	if (locale == NULL) {
-		DEBUG(0, ("Unknown locale (lcid) %"PRIu32" for mailbox %s\n",
-			  lcid, username));
+		OC_DEBUG(0, "Unknown locale (lcid) %"PRIu32" for mailbox %s\n",
+			  lcid, username);
 		return false;
 	}
 	mem_ctx = talloc_named(NULL, 0, "set_locale");
@@ -2185,7 +2185,7 @@ static bool set_locale(struct openchangedb_context *self, const char *username,
 	if (!sql) return false;
 	ret = select_first_string(mem_ctx, conn, sql, &current_locale);
 	if (ret != MYSQL_SUCCESS) {
-		DEBUG(0, ("Error getting locale of mailbox %s\n", username));
+		OC_DEBUG(0, "Error getting locale of mailbox %s\n", username);
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -2200,7 +2200,7 @@ static bool set_locale(struct openchangedb_context *self, const char *username,
 	if (!sql) return false;
 	ret = execute_query(conn, sql);
 	if (ret != MYSQL_SUCCESS) {
-		DEBUG(0, ("Error updating locale %s of mailbox %s\n", locale, username));
+		OC_DEBUG(0, "Error updating locale %s of mailbox %s\n", locale, username);
 		talloc_free(mem_ctx);
 		return false;
 	}
@@ -2292,7 +2292,7 @@ static enum MAPISTATUS table_init(TALLOC_CTX *mem_ctx,
 	table->username = _sql(table, username);
 	retval = get_mailbox_ids_by_name(self->data, username, NULL, NULL, &table->ou_id);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(0, ("Error initializing table, we couldn't fetch mailbox for user %s", username));
+		OC_DEBUG(0, "Error initializing table, we couldn't fetch mailbox for user %s", username);
 		return retval;
 	}
 	table->table_type = table_type;
@@ -2356,7 +2356,7 @@ static enum MAPISTATUS table_set_restrictions(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(!table->restrictions, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	if (res->rt != RES_PROPERTY) {
-		DEBUG(5, ("Unsupported restriction type: 0x%x\n", res->rt));
+		OC_DEBUG(5, "Unsupported restriction type: 0x%x\n", res->rt);
 		return MAPI_E_INVALID_PARAMETER;
 	}
 
@@ -2377,7 +2377,7 @@ static enum MAPISTATUS table_set_restrictions(struct openchangedb_context *self,
 		OPENCHANGE_RETVAL_IF(!table->restrictions->res.resProperty.lpProp.value.lpszW, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 		break;
 	default:
-		DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
+		OC_DEBUG(0, "Unsupported property type for RES_PROPERTY restriction\n");
 		return MAPI_E_INVALID_PARAMETER;
 	}
 
@@ -2398,8 +2398,8 @@ static enum MAPISTATUS _table_get_attr_and_value_from_restrictions(
 			*value = _sql(mem_ctx, restrictions->res.resProperty.lpProp.value.lpszW);
 			break;
 		default:
-			DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n",
-				  (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+			OC_DEBUG(0, "Unsupported RES_PROPERTY property type: 0x%.4x\n",
+				  (restrictions->res.resProperty.ulPropTag & 0xFFFF));
 			return MAPI_E_TOO_COMPLEX;
 		}
 	}
@@ -2462,7 +2462,7 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 			table->folder_id, table->ou_id, msg_type);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagMid) {
 		if (!convert_string_to_ull(value, &id)) {
-			DEBUG(0, ("Invalid MessageId, conversion failed\n"));
+			OC_DEBUG(0, "Invalid MessageId, conversion failed\n");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
@@ -2576,12 +2576,12 @@ static enum MAPISTATUS _table_fetch_messages(MYSQL *conn,
 		row = mysql_fetch_row(res);
 
 		if (!convert_string_to_ull(row[0], &msg_row->id)) {
-			DEBUG(0, ("Error converting id of msg row\n"));
+			OC_DEBUG(0, "Error converting id of msg row\n");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
 		if (!convert_string_to_ull(row[1], &msg_row->mid)) {
-			DEBUG(0, ("Error converting mid of msg row\n"));
+			OC_DEBUG(0, "Error converting mid of msg row\n");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
@@ -2644,7 +2644,7 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 			table->folder_id, table->ou_id);
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagFolderId) {
 		if (!convert_string_to_ull(value, &id)) {
-			DEBUG(0, ("Invalid FolderId, conversion failed\n"));
+			OC_DEBUG(0, "Invalid FolderId, conversion failed\n");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
@@ -2721,12 +2721,12 @@ static enum MAPISTATUS _table_fetch_folders(MYSQL *conn,
 		row = mysql_fetch_row(res);
 
 		if (!convert_string_to_ull(row[0], &folder_row->id)) {
-			DEBUG(0, ("Error converting id of folder row"));
+			OC_DEBUG(0, "Error converting id of folder row");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
 		if (!convert_string_to_ull(row[1], &folder_row->fid)) {
-			DEBUG(0, ("Error converting fid of folder row"));
+			OC_DEBUG(0, "Error converting fid of folder row");
 			retval = MAPI_E_CALL_FAILED;
 			goto end;
 		}
@@ -2782,7 +2782,7 @@ static bool _table_check_message_match_restrictions(MYSQL *conn,
 		if (convert_string_to_ull(value, &id)) {
 			ret = row->mid == id;
 		} else {
-			DEBUG(0, ("Invalid TagMid, conversion failed\n"));
+			OC_DEBUG(0, "Invalid TagMid, conversion failed\n");
 		}
 		goto end;
 	} else if (restrictions->res.resProperty.ulPropTag == PidTagNormalizedSubject) {
@@ -2860,7 +2860,7 @@ static bool _table_check_folder_match_restrictions(MYSQL *conn,
 		if (convert_string_to_ull(value, &id)) {
 			ret = row->fid == id;
 		} else {
-			DEBUG(0, ("Invalid TagFolderId, conversion failed\n"));
+			OC_DEBUG(0, "Invalid TagFolderId, conversion failed\n");
 		}
 		goto end;
 	}
@@ -3218,7 +3218,7 @@ static char *_message_type(TALLOC_CTX *mem_ctx, enum openchangedb_message_type m
 	} else if (msg_type == OPENCHANGEDB_MESSAGE_FAI) {
 		return talloc_strdup(mem_ctx, "faiMessage");
 	} else {
-		DEBUG(0, ("Bug: Unknown message_type"));
+		OC_DEBUG(0, "Bug: Unknown message_type");
 		return NULL;
 	}
 }
@@ -3424,12 +3424,12 @@ static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 
 	row = mysql_fetch_row(res);
 	if (!convert_string_to_ull(row[0], &msg->id)) {
-		DEBUG(0, ("Failed conversion of message's id"));
+		OC_DEBUG(0, "Failed conversion of message's id");
 		mysql_free_result(res);
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	if (!convert_string_to_ull(row[1], &msg->ou_id)) {
-		DEBUG(0, ("Failed conversion of message's ou_id"));
+		OC_DEBUG(0, "Failed conversion of message's ou_id");
 		mysql_free_result(res);
 		OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 	}
@@ -3440,14 +3440,14 @@ static enum MAPISTATUS message_open(TALLOC_CTX *parent_ctx,
 	}
 	if (row[3]) {
 		if (!convert_string_to_ull(row[3], &msg->mailbox_id)) {
-			DEBUG(0, ("Failed conversion of message's mailbox_id"));
+			OC_DEBUG(0, "Failed conversion of message's mailbox_id");
 			mysql_free_result(res);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 		}
 	}
 	if (row[4]) {
 		if (!convert_string_to_ull(row[4], &msg->folder_id)) {
-			DEBUG(0, ("Failed conversion of message's folder_id"));
+			OC_DEBUG(0, "Failed conversion of message's folder_id");
 			mysql_free_result(res);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_CALL_FAILED, mem_ctx);
 		}
@@ -3550,8 +3550,7 @@ static enum MAPISTATUS message_get_property(TALLOC_CTX *parent_ctx,
 				"WHERE m.id = %"PRIu64,
 				msg->mailbox_id);
 		} else {
-			DEBUG(5, ("Message without neither folder_id nor "
-				  "mailbox_id"));
+			OC_DEBUG(5, "Message without neither folder_id nor mailbox_id");
 			retval = MAPI_E_CORRUPT_DATA;
 			goto end;
 		}
@@ -3622,7 +3621,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 		tag = value->ulPropTag;
 		if (tag == PR_DEPTH || tag == PR_SOURCE_KEY ||
 		    tag == PR_PARENT_SOURCE_KEY || tag == PR_CHANGE_KEY) {
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", tag));
+			OC_DEBUG(5, "Ignored attempt to set handled property %.8x\n", tag);
 			continue;
 		}
 		attr = openchangedb_property_get_attribute(tag);
@@ -3632,8 +3631,8 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *parent_ctx,
 
 		str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 		if (!str_value) {
-			DEBUG(5, ("Ignored property of unhandled type %.4x\n",
-				  (tag & 0xffff)));
+			OC_DEBUG(5, "Ignored property of unhandled type %.4x\n",
+				  (tag & 0xffff));
 			continue;
 		}
 
@@ -3680,13 +3679,12 @@ static const char *openchangedb_data_dir(void)
 
 static int openchangedb_mysql_destructor(struct openchangedb_context *self)
 {
-	DEBUG(5, ("Destroying openchangedb mysql context\n"));
+	OC_DEBUG(5, "Destroying openchangedb mysql context\n");
 	if (self && self->data) {
 		MYSQL *conn = self->data;
 		release_connection(conn);
 	} else {
-		DEBUG(0, ("[%s:%d] Error: tried to destroy corrupted openchangedb mysql context\n",
-			  __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Error: tried to destroy corrupted openchangedb mysql context\n");
 	}
 	return 0;
 }
@@ -3762,8 +3760,7 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 
 	connection_string = lpcfg_parm_string(lp_ctx, NULL, "mapiproxy", "openchangedb");
 	if (!connection_string) {
-		DEBUG(0, ("[%s:%d] mapiproxy:openchangedb must be defined",
-			  __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "mapiproxy:openchangedb must be defined");
 		OPENCHANGE_RETVAL_ERR(MAPI_E_INVALID_PARAMETER, oc_ctx);
 	}
 	// Connect to mysql
@@ -3772,12 +3769,12 @@ enum MAPISTATUS openchangedb_mysql_initialize(TALLOC_CTX *mem_ctx,
 	oc_ctx->data = conn;
 	talloc_set_destructor(oc_ctx, openchangedb_mysql_destructor);
 	if (!table_exists(oc_ctx->data, "folders")) {
-		DEBUG(3, ("Creating schema for openchangedb on mysql %s\n",
-			  connection_string));
+		OC_DEBUG(3, "Creating schema for openchangedb on mysql %s\n",
+			  connection_string);
 		schema_created_ret = migrate_openchangedb_schema(mem_ctx, connection_string);
 		if (schema_created_ret) {
-			DEBUG(1, ("Failed openchangedb schema creation using migration framework: %d\n",
-				  schema_created_ret));
+			OC_DEBUG(1, "Failed openchangedb schema creation using migration framework: %d\n",
+				  schema_created_ret);
 			OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_INITIALIZED, oc_ctx);
 		}
 	}

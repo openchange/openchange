@@ -39,13 +39,13 @@ static enum mapistore_error mapistore_mgmt_message_user_command_add(struct mapis
 
 	el = talloc_zero((TALLOC_CTX *)mgmt_ctx, struct mapistore_mgmt_users);
 	if (!el) {
-		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Not enough memory\n");
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
 	el->info = talloc_zero((TALLOC_CTX *)el, struct mapistore_mgmt_user_cmd);
 	if (!el->info) {
 		talloc_free(el);
-		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Not enough memory\n");
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
 	if (populated == true) {
@@ -79,8 +79,7 @@ enum mapistore_error mapistore_mgmt_message_user_command(struct mapistore_mgmt_c
 		if (user_cmd.status == MAPISTORE_MGMT_REGISTER) {
 			return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd, true);
 		} else {
-			DEBUG(0, ("[%s:%d]: Trying to unregister user %s in empty list\n", 
-				  __FUNCTION__, __LINE__, user_cmd.username));
+			OC_DEBUG(0, "Trying to unregister user %s in empty list\n", user_cmd.username);
 			return MAPISTORE_SUCCESS;
 		}
 	} else {
@@ -127,8 +126,7 @@ enum mapistore_error mapistore_mgmt_message_user_command(struct mapistore_mgmt_c
 					}
 					break;
 				default:
-					DEBUG(0, ("[%s:%d]: Invalid user command status: %d\n",
-						  __FUNCTION__, __LINE__, user_cmd.status));
+					OC_DEBUG(0, "Invalid user command status: %d\n", user_cmd.status);
 					break;
 				}
 			}
@@ -140,12 +138,10 @@ enum mapistore_error mapistore_mgmt_message_user_command(struct mapistore_mgmt_c
 				return mapistore_mgmt_message_user_command_add(mgmt_ctx, user_cmd, true);
 				break;
 			case MAPISTORE_MGMT_UNREGISTER:
-				DEBUG(0, ("[%s:%d]: Trying to unregister non-existing users %s\n",
-					  __FUNCTION__, __LINE__, user_cmd.username));
+				OC_DEBUG(0, "Trying to unregister non-existing users %s\n", user_cmd.username);
 				break;
 			default:
-				DEBUG(0, ("[%s:%d]: Invalid user command status: %d\n",
-					  __FUNCTION__, __LINE__, user_cmd.status));
+				OC_DEBUG(0, "Invalid user command status: %d\n", user_cmd.status);
 				break;
 			}
 		}
@@ -223,7 +219,7 @@ static enum mapistore_error mapistore_mgmt_message_notification_command_add(stru
 
 	el = talloc_zero((TALLOC_CTX *)user_cmd, struct mapistore_mgmt_notif);
 	if (!el) {
-		DEBUG(0, ("[%s:%d]: Not enough memory\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Not enough memory\n");
 		return MAPISTORE_ERR_NO_MEMORY;
 	}
 	el->WholeStore = notif.WholeStore;
@@ -268,15 +264,14 @@ static bool mapistore_mgmt_message_notification_wholestore(struct mapistore_mgmt
 			    (el->NotificationFlags == notif.NotificationFlags)) {
 				el->ref_count -= 1;
 				if (!el->ref_count) {
-					DEBUG(0, ("[%s:%d]: Deleting WholeStore subscription\n", 
-						  __FUNCTION__, __LINE__));
+					OC_DEBUG(0, "Deleting WholeStore subscription\n");
 					DLIST_REMOVE(user_cmd->notifications, el);
 					talloc_free(el);
 					return true;
 				}
 			}
 		}
-		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Unregistered subscription found\n");
 		break;
 	case MAPISTORE_MGMT_SEND:
 		break;
@@ -313,15 +308,14 @@ static bool mapistore_mgmt_message_notification_message(struct mapistore_mgmt_us
 			    (el->NotificationFlags == notif.NotificationFlags)) {
 				el->ref_count -= 1;
 				if (!el->ref_count) {
-					DEBUG(0, ("[%s:%d]: Deleting Message subscription\n", 
-						  __FUNCTION__, __LINE__));
+					OC_DEBUG(0, "Deleting Message subscription\n");
 					DLIST_REMOVE(user_cmd->notifications, el);
 					talloc_free(el);
 					return true;
 				}
 			}
 		}
-		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Unregistered subscription found\n");
 		break;
 	case MAPISTORE_MGMT_SEND:
 		break;
@@ -358,15 +352,14 @@ static bool mapistore_mgmt_message_notification_folder(struct mapistore_mgmt_use
 			    (el->NotificationFlags == notif.NotificationFlags)) {
 				el->ref_count -= 1;
 				if (!el->ref_count) {
-					DEBUG(0, ("[%s:%d]: Deleting Folder subscription\n", 
-						  __FUNCTION__, __LINE__));
+					OC_DEBUG(0, "Deleting Folder subscription\n");
 					DLIST_REMOVE(user_cmd->notifications, el);
 					talloc_free(el);
 					return true;
 				}
 			}
 		}
-		DEBUG(0, ("[%s:%d]: Unregistered subscription found\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Unregistered subscription found\n");
 		break;
 	case MAPISTORE_MGMT_SEND:
 		break;

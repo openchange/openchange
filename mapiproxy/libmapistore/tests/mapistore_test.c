@@ -56,8 +56,8 @@ int main(int argc, const char *argv[])
 
 	mem_ctx = talloc_named(NULL, 0, "mapistore_test");
 	lp_ctx = loadparm_init_global(true);
-	setup_logging(NULL, DEBUG_STDOUT);
-	
+	oc_log_init_stdout();
+
 	pc = poptGetContext("mapistore_test", argc, argv, long_options, 0);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
@@ -75,7 +75,7 @@ int main(int argc, const char *argv[])
 	
 	retval = mapistore_set_mapping_path("/tmp");
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		OC_DEBUG(0, "%s\n", mapistore_errstr(retval));
 		exit (1);
 	}
 
@@ -86,22 +86,21 @@ int main(int argc, const char *argv[])
 
 	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test.db", -1, &context_id, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		OC_DEBUG(0, "%s\n", mapistore_errstr(retval));
 		exit (1);
 	}
 
 	retval = mapistore_add_context(mstore_ctx, "openchange", "sqlite:///tmp/test2.db", -1, &context_id2, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		OC_DEBUG(0, "%s\n", mapistore_errstr(retval));
 		exit (1);
 	}
 
-	DEBUG(0, ("Context ID: [1] = %d and [2] = %d\n", context_id, context_id2));
-
+	OC_DEBUG(0, "Context ID: [1] = %d and [2] = %d\n", context_id, context_id2);
 
 	retval = mapistore_add_context(mstore_ctx, "openchange", "fsocpf:///tmp/fsocpf", -1, &context_id3, &root_folder);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
+		OC_DEBUG(0, "%s\n", mapistore_errstr(retval));
 		exit (1);
 	}
 
@@ -111,8 +110,8 @@ int main(int argc, const char *argv[])
 
 	retval = mapistore_release(mstore_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("%s\n", mapistore_errstr(retval)));
-		exit (1);
+		OC_DEBUG(0, "%s\n", mapistore_errstr(retval));
+		exit(1);
 	}
 
 	return 0;

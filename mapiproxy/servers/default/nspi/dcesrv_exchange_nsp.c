@@ -108,11 +108,11 @@ static void dcesrv_NspiBind(struct dcesrv_call_state *dce_call,
 	struct exchange_nsp_session	*session;
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 
-	DEBUG(5, ("exchange_nsp: NspiBind (0x0)\n"));
+	OC_DEBUG(5, "exchange_nsp: NspiBind (0x0)\n");
 
 	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
 	if (!dcesrv_call_authenticated(dce_call) && (r->in.dwFlags & fAnonymousLogin)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		retval = MAPI_E_FAILONEPROVIDER;
 		goto failure;
 	}
@@ -204,11 +204,11 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 	struct dcesrv_handle		*h;
 	struct exchange_nsp_session	*session;
 
-	DEBUG(5, ("exchange_nsp: NspiUnbind (0x1)\n"));
+	OC_DEBUG(5, "exchange_nsp: NspiUnbind (0x1)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -219,15 +219,13 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 		if (session) {
 			if (mpm_session_release(session->session)) {
 				DLIST_REMOVE(nsp_session, session);
-				DEBUG(5, ("[%s:%d]: Session found and released\n",
-					  __FUNCTION__, __LINE__));
+				OC_DEBUG(5, "Session found and released\n");
 			} else {
-				DEBUG(5, ("[%s:%d]: Session found and ref_count decreased\n",
-					  __FUNCTION__, __LINE__));
+				OC_DEBUG(5, "Session found and ref_count decreased\n");
 			}
 		}
 		else {
-			DEBUG(5, ("  nsp_session NOT found\n"));
+			OC_DEBUG(5, "  nsp_session NOT found\n");
 		}
 	}
 
@@ -348,10 +346,10 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 	struct emsabp_context		*emsabp_ctx = NULL;
 	bool				container_exists;
 
-	DEBUG(3, ("exchange_nsp: NspiUpdateStat (0x2)"));
+	OC_DEBUG(3, "exchange_nsp: NspiUpdateStat (0x2)");
 	/* Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -394,11 +392,11 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 	struct NspiUpdateStat		r_UpdateStat;
 	bool				container_exists;
 
-	DEBUG(3, ("exchange_nsp: NspiQueryRows (0x3)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiQueryRows (0x3)\n");
 
 	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -496,7 +494,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		dcesrv_do_NspiUpdateStat(mem_ctx, &r_UpdateStat, emsabp_ctx);
 		if (r_UpdateStat.out.result != MAPI_E_SUCCESS) {
 			/* Not clear in the spec what to do if updateStat fails, ignoring it and logging error for the moment */
-			DEBUG(1, ("NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result));
+			OC_DEBUG(1, "NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result);
 			r->out.result = MAPI_E_SUCCESS;
 		}
 	} else {
@@ -550,7 +548,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 	struct Restriction_r		*seek_restriction;
 	bool				container_exists;
 
-	DEBUG(3, ("exchange_nsp: NspiSeekEntries (0x4)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiSeekEntries (0x4)\n");
 
 	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
 
@@ -617,7 +615,7 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		if (ret) {
 			talloc_free(r->out.pRows);
 			retval = ret;
-			DEBUG(5, ("failure looking up value %d\n", row));
+			OC_DEBUG(5, "failure looking up value %d\n", row);
 			goto failure;
 		}
 	}
@@ -650,11 +648,11 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	struct PropertyTagArray_r	*ppOutMIds = NULL;
 	uint32_t			i;
 
-	DEBUG(3, ("exchange_nsp: NspiGetMatches (0x5)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiGetMatches (0x5)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 
@@ -690,7 +688,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 
 					    ppOutMIds->aulPropTag[i], fEphID, r->in.pPropTags);
 		if (retval) {
-			DEBUG(5, ("failure looking up value %d\n", i));
+			OC_DEBUG(5, "failure looking up value %d\n", i);
 			goto failure;
 		}
 	}
@@ -712,7 +710,7 @@ static void dcesrv_NspiResortRestriction(struct dcesrv_call_state *dce_call,
 						    TALLOC_CTX *mem_ctx,
 						    struct NspiResortRestriction *r)
 {
-	DEBUG(3, ("exchange_nsp: NspiResortRestriction (0x6) not implemented\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiResortRestriction (0x6) not implemented\n");
 	DCESRV_NSP_RETURN(r, DCERPC_FAULT_OP_RNG_ERROR, NULL);
 }
 
@@ -741,11 +739,11 @@ static void dcesrv_NspiDNToMId(struct dcesrv_call_state *dce_call,
 	const char			*dn;
 	bool				pbUseConfPartition;
 
-	DEBUG(3, ("exchange_nsp: NspiDNToMId (0x7)\n"));
+	OC_DEBUG(3, "exchange_nsp: NspiDNToMId (0x7)\n");
 
 	/* Step 0. Ensure incoming user is authenticated */
 	if (!dcesrv_call_authenticated(dce_call)) {
-		DEBUG(1, ("No challenge requested by client, cannot authenticate\n"));
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
 		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
 	}
 

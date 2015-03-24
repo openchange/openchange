@@ -114,7 +114,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 #if 0
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {
-		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
+		OC_DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -353,7 +353,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 		if (backend_list->ctx->context_id == context_id) {
 			found = true;
 			break;
-		}		
+		}
 	}
 	if (found == false) {
 		return MAPISTORE_ERROR;
@@ -363,7 +363,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	/* if (backend_ctx->indexing) {
 		mapistore_indexing_del_ref_count(backend_ctx->indexing);
 		if (backend_ctx->indexing->ref_count == 0) {
-			DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
+			OC_DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
 			DLIST_REMOVE(mstore_ctx->indexing_list, backend_ctx->indexing);
 			talloc_unlink(mstore_ctx->indexing_list, backend_ctx->indexing);
 			backend_ctx->indexing = NULL;

@@ -105,8 +105,8 @@ static enum mapistore_error tdb_record_add(struct indexing_context *ictx,
 	talloc_free(dbuf.dptr);
 
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to create 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
-			  fmid, mapistore_URI));
+		OC_DEBUG(3, "Unable to create 0x%.16"PRIx64" record: %s\n", fmid,
+				 mapistore_URI);
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 
@@ -140,8 +140,8 @@ static enum mapistore_error tdb_record_update(struct indexing_context *ictx,
 	talloc_free(dbuf.dptr);
 
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to update 0x%.16"PRIx64" record: %s\n", __FUNCTION__, __LINE__,
-			  fmid, mapistore_URI));
+		OC_DEBUG(3, "Unable to update 0x%.16"PRIx64" record: %s\n",
+			  fmid, mapistore_URI);
 		return MAPISTORE_ERR_NOT_FOUND;
 	}
 
@@ -382,7 +382,7 @@ static enum mapistore_error tdb_record_get_fmid(struct indexing_context *ictx,
 			tdb_data.startswith = talloc_strndup(NULL, uri, strlen(uri) - strlen(tdb_data.endswith) - 1);
 			break;
 		default:
-			DEBUG(0, ("[%s:%d]: Too many wildcards found (1 maximum)\n", __FUNCTION__, __LINE__));
+			OC_DEBUG(0, "Too many wildcards found (1 maximum)\n");
 			talloc_free(tdb_data.uri);
 			return MAPISTORE_ERR_NOT_FOUND;
 		}
@@ -446,8 +446,8 @@ static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *i
 	talloc_free(data.dptr);
 
 	if (ret == -1) {
-		DEBUG(3, ("[%s:%d]: Unable to create %s record: 0x%.16"PRIx64" \n", __FUNCTION__, __LINE__,
-			  key.dptr, GlobalCount));
+		OC_DEBUG(3, "Unable to create %s record: 0x%.16"PRIx64" \n",
+			  key.dptr, GlobalCount);
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}
 
@@ -500,7 +500,7 @@ _PUBLIC_ enum mapistore_error mapistore_indexing_tdb_init(struct mapistore_conte
 	ictx->data = mapistore_tdb_wrap_open(ictx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(dbpath);
 	if (!TDB_WRAP(ictx)) {
-		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		OC_DEBUG(3, "%s\n", strerror(errno));
 		talloc_free(ictx);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;

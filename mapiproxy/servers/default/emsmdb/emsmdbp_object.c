@@ -196,7 +196,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_get_fid_by_name(struct emsmdbp_cont
 	else {
 		struct emsmdbp_object *mailbox_object = emsmdbp_get_mailbox(parent_folder);
 		if (mailbox_object == NULL) {
-			DEBUG(0, ("%s: Failed to find mailbox object for parent_folder.\n", __FUNCTION__));
+			OC_DEBUG(0, "Failed to find mailbox object for parent_folder.\n");
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 
@@ -262,11 +262,11 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		role = emsmdbp_container_class_to_role(value->value.lpszW);
 	}
 	else if (force_container_class) {
-		DEBUG(5, (__location__": forcing folder backend role to 'fallback'\n"));
+		OC_DEBUG(5, "forcing folder backend role to 'fallback'\n");
 		role = MAPISTORE_FALLBACK_ROLE;
 	}
 	else {
-		DEBUG(5, (__location__": container class not set yet\n"));
+		OC_DEBUG(5, "container class not set yet\n");
 		goto end;
 	}
 
@@ -275,7 +275,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		value = get_SPropValue_SRow(new_folder->object.folder->postponed_props, PR_DISPLAY_NAME);
 	}
 	if (!value) {
-		DEBUG(5, (__location__": display name not set yet\n"));
+		OC_DEBUG(5, "display name not set yet\n");
 		goto end;
 	}
 
@@ -313,7 +313,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 		else {
 			ret = MAPISTORE_ERR_NOT_FOUND;
 		}
-		DEBUG(0, (__location__": openchangedb folder creation failed: 0x%.8x\n", retval));
+		OC_DEBUG(0, "openchangedb folder creation failed: 0x%.8x\n", retval);
 		goto end;
 	}
 
@@ -326,7 +326,7 @@ static enum mapistore_error emsmdbp_object_folder_commit_creation(struct emsmdbp
 	talloc_unlink(new_folder, new_folder->object.folder->postponed_props);
 	new_folder->object.folder->postponed_props = NULL;
 
-	DEBUG(5, ("new mapistore context created at uri: %s\n", mapistore_uri));
+	OC_DEBUG(5, "new mapistore context created at uri: %s\n", mapistore_uri);
 
 end:
 	talloc_free(mem_ctx);
@@ -368,7 +368,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_create_folder(struct emsmdbp_context *em
 		if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parentFolderID,
 						 value->value.lpszW, &testFolderID) == MAPI_E_SUCCESS) {
 			/* this folder already exists */
-			DEBUG(4, ("emsmdbp_object: CreateFolder Duplicate Folder error\n"));
+			OC_DEBUG(4, "emsmdbp_object: CreateFolder Duplicate Folder error\n");
 			talloc_free(new_folder);
 			return MAPI_E_COLLISION;
 		}
@@ -410,7 +410,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 
 	folder_object = emsmdbp_object_folder_init(mem_ctx, emsmdbp_ctx, fid, parent);
 	if (emsmdbp_is_mapistore(parent)) {
-		DEBUG(5, ("%s: opening child mapistore folder\n", __FUNCTION__));
+		OC_DEBUG(5, "opening child mapistore folder\n");
 		retval = mapistore_folder_open_folder(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(parent), parent->backend_object, folder_object, fid, &folder_object->backend_object);
 		if (retval != MAPISTORE_SUCCESS) {
 			talloc_free(folder_object);
@@ -422,7 +422,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 	
 		mailbox_object = emsmdbp_get_mailbox(parent);
 		if (mailbox_object == NULL) {
-			DEBUG(0, ("%s: Failed to find mailbox object for parent passed.\n", __FUNCTION__));
+			OC_DEBUG(0, "Failed to find mailbox object for parent passed.\n");
 			return MAPISTORE_ERR_INVALID_PARAMETER;
 		}
 
@@ -430,7 +430,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 		if (retval == MAPISTORE_SUCCESS && path) {
 			folder_object->object.folder->mapistore_root = true;
 			/* system/special folder */
-			DEBUG(5, ("%s: opening base mapistore folder\n", __FUNCTION__));
+			OC_DEBUG(5, "opening base mapistore folder\n");
 
 			retval = mapistore_search_context_by_uri(emsmdbp_ctx->mstore_ctx, path, &contextID, &folder_object->backend_object);
 			if (retval == MAPISTORE_SUCCESS) {
@@ -463,18 +463,18 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_open_folder(TALLOC_CTX *mem_ctx, st
 			}
 			ret = openchangedb_get_parent_fid(emsmdbp_ctx->oc_ctx, mailbox_object->object.mailbox->owner_username, fid, &oc_parent_fid, mailbox_object->object.mailbox->mailboxstore);
 			if (ret != MAPI_E_SUCCESS) {
-				DEBUG(0, ("folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid));
+				OC_DEBUG(0, "folder %.16"PRIx64" or %.16"PRIx64" does not exist\n", parent_fid, fid);
 				talloc_free(local_ctx);
 				talloc_free(folder_object);
 				return MAPISTORE_ERR_NOT_FOUND;
 			}
 			if (oc_parent_fid != parent_fid) {
-				DEBUG(0, ("parent folder mismatch: expected %.16"PRIx64" but got %.16"PRIx64"\n", parent_fid, oc_parent_fid));
+				OC_DEBUG(0, "parent folder mismatch: expected %.16"PRIx64" but got %.16"PRIx64"\n", parent_fid, oc_parent_fid);
 				talloc_free(local_ctx);
 				talloc_free(folder_object);
 				return MAPISTORE_ERR_NOT_FOUND;
 			}
-			DEBUG(5, ("%s: opening openchangedb folder\n", __FUNCTION__));
+			OC_DEBUG(5, "opening openchangedb folder\n");
 		}
 		talloc_free(local_ctx);
 	}
@@ -705,8 +705,7 @@ static int emsmdbp_object_destructor(void *data)
 	if (!data) return -1;
 	if (!emsmdbp_is_mapistore(object)) goto nomapistore;
 
-	DEBUG(4, ("[%s:%d]: emsmdbp %s object released\n", __FUNCTION__, __LINE__,
-		  emsmdbp_getstr_type(object)));
+	OC_DEBUG(4, "emsmdbp %s object released\n", emsmdbp_getstr_type(object));
 
 	contextID = emsmdbp_get_contextID(object);
 	switch (object->type) {
@@ -714,7 +713,7 @@ static int emsmdbp_object_destructor(void *data)
 		if (object->object.folder->mapistore_root) {
 			ret = mapistore_del_context(object->emsmdbp_ctx->mstore_ctx, contextID);
 		}
-		DEBUG(4, ("[%s:%d] mapistore folder context retval = %d\n", __FUNCTION__, __LINE__, ret));
+		OC_DEBUG(4, "mapistore folder context retval = %d\n", ret);
 		break;
 	case EMSMDBP_OBJECT_TABLE:
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
@@ -746,8 +745,8 @@ static int emsmdbp_object_destructor(void *data)
 			request_delta.tv_usec = request_end.tv_usec - object->object.synccontext->request_start.tv_usec;
 		}
 		missing_objects = (object->object.synccontext->total_objects - object->object.synccontext->skipped_objects - object->object.synccontext->sent_objects);
-		DEBUG(5, ("free synccontext: sent: %u, skipped: %u, total: %u -> missing: %u\n", object->object.synccontext->sent_objects, object->object.synccontext->skipped_objects, object->object.synccontext->total_objects, missing_objects));
-		DEBUG(5, ("  time taken for transmitting entire data: %lu.%.6lu\n", request_delta.tv_sec, request_delta.tv_usec));
+		OC_DEBUG(5, "free synccontext: sent: %u, skipped: %u, total: %u -> missing: %u\n", object->object.synccontext->sent_objects, object->object.synccontext->skipped_objects, object->object.synccontext->total_objects, missing_objects);
+		OC_DEBUG(5, "  time taken for transmitting entire data: %lu.%.6lu\n", request_delta.tv_sec, request_delta.tv_usec);
 		break;
 	case EMSMDBP_OBJECT_UNDEF:
 	case EMSMDBP_OBJECT_MAILBOX:
@@ -810,7 +809,7 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	if (emsmdbp_object_get_available_properties(mem_ctx, emsmdbp_ctx, source_object, &properties) == MAPISTORE_ERROR) {
-		DEBUG(0, ("["__location__"] - mapistore support not implemented yet - shouldn't occur\n"));
+		OC_DEBUG(0, "mapistore support not implemented yet - shouldn't occur\n");
 		talloc_free(mem_ctx);
 		return MAPI_E_NO_SUPPORT;
 	}
@@ -995,7 +994,7 @@ static inline int emsmdbp_copy_message_attachments_mapistore(struct emsmdbp_cont
 		}
 		if (retvals[0] != MAPI_E_SUCCESS) {
 			talloc_free(mem_ctx);
-			DEBUG(5, ("cannot copy attachments without PR_ATTACH_NUM\n"));
+			OC_DEBUG(5, "cannot copy attachments without PR_ATTACH_NUM\n");
 			return MAPISTORE_ERROR;
 		}
 		attach_nums[i] = *(uint32_t *) data_pointers[0];
@@ -1048,15 +1047,15 @@ _PUBLIC_ int emsmdbp_object_copy_properties(struct emsmdbp_context *emsmdbp_ctx,
 	      || source_object->type == EMSMDBP_OBJECT_MAILBOX
 	      || source_object->type == EMSMDBP_OBJECT_MESSAGE
 	      || source_object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type));
+		OC_DEBUG(0, "object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", source_object->type);
 		ret = MAPI_E_NO_SUPPORT;
-                goto end;
-        }
+		goto end;
+	}
 	if (target_object->type != source_object->type) {
-		DEBUG(0, ("source and destination objects type must match (type =  %d)\n", target_object->type));
+		OC_DEBUG(0, "source and destination objects type must match (type =  %d)\n", target_object->type);
 		ret = MAPI_E_NO_SUPPORT;
-                goto end;
-        }
+		goto end;
+	}
 
 	/* copy properties (common to all object types) */
 	ret = emsmdbp_copy_properties(emsmdbp_ctx, source_object, target_object, excluded_properties);
@@ -1080,12 +1079,12 @@ _PUBLIC_ int emsmdbp_object_copy_properties(struct emsmdbp_context *emsmdbp_ctx,
 			}
 		}
 		else {
-			DEBUG(0, ("Cannot copy recipients or attachments to or from non-mapistore messages\n"));
+			OC_DEBUG(0, "Cannot copy recipients or attachments to or from non-mapistore messages\n");
 		}
 		break;
 	default:
 		if (deep_copy) {
-			DEBUG(0, ("Cannot deep copy non-message objects\n"));
+			OC_DEBUG(0, "Cannot deep copy non-message objects\n");
 		}
 	}
 
@@ -1230,7 +1229,7 @@ enum MAPISTATUS emsmdbp_folder_get_folder_count(struct emsmdbp_context *emsmdbp_
 			folderID = folder->object.folder->folderID;
 		}
 		else {
-			DEBUG(5, ("unsupported object type\n"));
+			OC_DEBUG(5, "unsupported object type\n");
 			return MAPI_E_INVALID_OBJECT;
 		}
 		printf("emsmdbp_folder_get_folder_count: folderID = %"PRIu64"\n", folderID);
@@ -1348,7 +1347,7 @@ static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struc
 
 	if (openchangedb_get_fid_by_name(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, parent_fid,
 					 new_name, &test_folder_id) == MAPI_E_SUCCESS) {
-		DEBUG(4, ("emsmdbp_object: move_folder_to_mapistore_root duplicate folder error\n"));
+		OC_DEBUG(4, "emsmdbp_object: move_folder_to_mapistore_root duplicate folder error\n");
 		retval = MAPI_E_COLLISION;
 		goto end;
 	}
@@ -1357,13 +1356,13 @@ static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struc
 
 	retval = emsmdbp_get_uri_from_fid(mem_ctx, emsmdbp_ctx, fid, &mapistore_uri);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(0, ("Cannot locate folder id: %"PRIu64" on indexing database\n", fid));
+		OC_DEBUG(0, "Cannot locate folder id: %"PRIu64" on indexing database\n", fid);
 		goto end;
 	}
 
 	retval = openchangedb_get_new_changeNumber(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, &change_number);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(0, ("Cannot get a new change number: %s\n", mapi_get_errstr(retval)));
+		OC_DEBUG(0, "Cannot get a new change number: %s\n", mapi_get_errstr(retval));
 		goto end;
 	}
 
@@ -1371,7 +1370,7 @@ static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struc
 					    parent_fid, fid, change_number,
 					    mapistore_uri, -1);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(0, ("OpenChangeDB folder creation failed: 0x%.8x\n", retval));
+		OC_DEBUG(0, "OpenChangeDB folder creation failed: 0x%.8x\n", retval);
 		goto end;
 	}
 
@@ -1382,7 +1381,7 @@ static inline enum MAPISTATUS emsmdbp_object_move_folder_to_mapistore_root(struc
 
 	folder->object.folder->mapistore_root = true;
 
-	DEBUG(5, ("New MAPIStore root folder moved at URI: %s\n", mapistore_uri));
+	OC_DEBUG(5, "New MAPIStore root folder moved at URI: %s\n", mapistore_uri);
 	retval = MAPI_E_SUCCESS;
 
 end:
@@ -1440,19 +1439,19 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context 
 		if (ret == MAPISTORE_SUCCESS) {
 			retval = emsmdbp_object_move_folder_to_mapistore_root(emsmdbp_ctx, move_folder, target_folder, new_name);
 			if (retval != MAPI_E_SUCCESS) {
-				DEBUG(5, ("Move folder to MAPIStore root failed: %s\n", mapi_get_errstr(retval)));
+				OC_DEBUG(5, "Move folder to MAPIStore root failed: %s\n", mapi_get_errstr(retval));
 				return MAPISTORE_ERROR;
 			}
 		}
 	} else {
 		ret = mapistore_folder_move_folder(emsmdbp_ctx->mstore_ctx, contextID, move_folder->backend_object, target_folder->backend_object, mem_ctx, new_name);
 		if (move_folder->object.folder->mapistore_root) {
-                        retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
-                        if (retval != MAPI_E_SUCCESS) {
-                                DEBUG(0, ("an error occurred during the deletion of the folder entry in the openchange db: %d\n", retval));
-                        }
-                }
-        }
+			retval = openchangedb_delete_folder(emsmdbp_ctx->oc_ctx, emsmdbp_ctx->username, move_folder->object.folder->folderID);
+			if (retval != MAPI_E_SUCCESS) {
+				OC_DEBUG(0, "an error occurred during the deletion of the folder entry in the openchange db: %d\n", retval);
+			}
+		}
+	}
 
 	return ret;
 }
@@ -1472,7 +1471,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *emsm
 
 	mailboxstore = emsmdbp_is_mailboxstore(parent_folder);
 	if (emsmdbp_is_mapistore(parent_folder)) {	/* fid is not a mapistore root */
-		DEBUG(0, ("Deleting mapistore folder\n"));
+		OC_DEBUG(0, "Deleting mapistore folder\n");
 		/* handled by mapistore */
 		context_id = emsmdbp_get_contextID(parent_folder);
 
@@ -1537,14 +1536,14 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 	int			ret;
 
 	if (!(parent_object->type != EMSMDBP_OBJECT_FOLDER || parent_object->type != EMSMDBP_OBJECT_MAILBOX)) {
-		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type));
+		OC_DEBUG(0, "parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type =  %d)\n", parent_object->type);
 		return NULL;
 	}
 
 	if (parent_object->type == EMSMDBP_OBJECT_FOLDER && parent_object->object.folder->postponed_props) {
 		ret = emsmdbp_object_folder_commit_creation(parent_object->emsmdbp_ctx, parent_object, true);
 		if (ret != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("folder_commit_creatin failed with error: 0x%.8X", ret));
+			OC_DEBUG(0, "folder_commit_creatin failed with error: 0x%.8X", ret);
 			return NULL;
 		}
 	}
@@ -1594,7 +1593,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 					folderID = parent_object->object.mailbox->folderID;
 					break;
 				default:
-					DEBUG(5, ("Unsupported object type"));
+					OC_DEBUG(5, "Unsupported object type");
 					table_object->object.table->denominator = 0;
 					return table_object;
 				}
@@ -1631,11 +1630,11 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *mem_ctx,
 					folderID = parent_object->object.mailbox->folderID;
 					break;
 				default:
-					DEBUG(5, ("Unsupported object type"));
+					OC_DEBUG(5, "Unsupported object type");
 					table_object->object.table->denominator = 0;
 					return table_object;
 				}
-				DEBUG(5, ("Initializing openchangedb table\n"));
+				OC_DEBUG(5, "Initializing openchangedb table\n");
 				openchangedb_table_init((TALLOC_CTX *)table_object, parent_object->emsmdbp_ctx->oc_ctx, parent_object->emsmdbp_ctx->username, table_type, folderID, &table_object->backend_object);
 			}
 		}
@@ -1808,7 +1807,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			}
 		}
 		else {
-			DEBUG(5, ("%s: invalid object (likely due to a restriction)\n", __location__));
+			OC_DEBUG(5, "invalid object (likely due to a restriction)\n");
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 			return NULL;
@@ -1821,7 +1820,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			parentFolderId = table_object->parent_object->object.mailbox->folderID;
 		}
 		else {
-			DEBUG(5, ("%s: non-mapistore tables can only be client of folder objects\n", __location__));
+			OC_DEBUG(5, "non-mapistore tables can only be client of folder objects\n");
 			talloc_free(retvals);
 			talloc_free(data_pointers);
 			return NULL;
@@ -1848,7 +1847,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			   PR_MID, row_id, (query_type == MAPISTORE_LIVEFILTERED_QUERY), (void **) &rowFMId);
 			   break; */
 		default:
-			DEBUG(5, ("table type %d not supported for non-mapistore table\n", table_object->object.table->ulType));
+			OC_DEBUG(5, "table type %d not supported for non-mapistore table\n", table_object->object.table->ulType);
 			retval = MAPI_E_INVALID_OBJECT;
 		}
 		/* printf("openchangedb_table_get_property retval = 0x%.8x\n", retval); */
@@ -1937,7 +1936,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			}
 
 			if (retval == MAPI_E_INVALID_OBJECT) {
-				DEBUG(5, ("%s: invalid object in non-mapistore folder, count set to 0\n", __location__));
+				OC_DEBUG(5, "invalid object in non-mapistore folder, count set to 0\n");
 				talloc_free(retvals);
 				talloc_free(data_pointers);
 				talloc_free(odb_ctx);
@@ -2139,7 +2138,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *mem_ctx,
 	if (!emsmdbp_ctx) return NULL;
 	if (!parent) return NULL;
         if (parent->type != EMSMDBP_OBJECT_FOLDER && parent->type != EMSMDBP_OBJECT_MAILBOX && parent->type != EMSMDBP_OBJECT_ATTACHMENT) {
-		DEBUG(5, ("expecting EMSMDBP_OBJECT_FOLDER/_MAILBOX/_ATTACHMENT as type of parent object\n"));
+		OC_DEBUG(5, "expecting EMSMDBP_OBJECT_FOLDER/_MAILBOX/_ATTACHMENT as type of parent object\n");
 		return NULL;
 	}
 
@@ -2187,7 +2186,7 @@ static enum MAPISTATUS mapiserver_get_administrative_group_legacyexchangedn(TALL
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {
-		DEBUG(1, ("[emsmdbp_object][%s:%d]: ldb_search failure.\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(1, "[emsmdbp_object]: ldb_search failure.\n");
 		return MAPI_E_NOT_FOUND;
 	}
 
@@ -2269,8 +2268,7 @@ static enum MAPISTATUS emsmdbp_fetch_freebusy(TALLOC_CTX *mem_ctx,
 	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
 	if (!emsmdbp_is_mapistore(calendar)) {
-		DEBUG(5, ("[emsmdbp_object][%s:%d]: non-mapistore calendars are not supported for freebusy\n",
-			  __FUNCTION__, __LINE__));
+		OC_DEBUG(5, "[emsmdbp_object]: non-mapistore calendars are not supported for freebusy\n");
 		OPENCHANGE_RETVAL_ERR(MAPI_E_NOT_IMPLEMENTED, local_mem_ctx);
 	}
 
@@ -2373,8 +2371,7 @@ _PUBLIC_ enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *mem_ctx, s
 
 		retval = emsmdbp_object_message_fill_freebusy_properties(message_object);
 		if (retval != MAPI_E_SUCCESS) {
-			DEBUG(5, ("[emsmdbp_object][%s:%d]: Error filling freebusy properties on %"PRIu64"\n",
-				  __FUNCTION__, __LINE__, messageID));
+			OC_DEBUG(5, "[emsmdbp_object]: Error filling freebusy properties on %"PRIu64"\n", messageID);
 			ret = MAPISTORE_ERROR;
 		}
 		break;
@@ -2416,7 +2413,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TAL
 	switch ((int)emsmdbp_is_mapistore(message_object)) {
 	case false:
 		/* system/special folder */
-		DEBUG(0, ("[%s] not implemented yet - shouldn't occur\n", __location__));
+		OC_DEBUG(0, "not implemented yet - shouldn't occur\n");
 		table_object = NULL;
 		break;
 	case true:
@@ -2551,12 +2548,12 @@ _PUBLIC_ int emsmdbp_object_get_available_properties(TALLOC_CTX *mem_ctx, struct
 	      || object->type == EMSMDBP_OBJECT_MAILBOX
 	      || object->type == EMSMDBP_OBJECT_MESSAGE
 	      || object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type));
+		OC_DEBUG(0, "object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type =  %d)\n", object->type);
 		return MAPISTORE_ERROR;
 	}
 	
 	if (!emsmdbp_is_mapistore(object)) {
-		DEBUG(5, (__location__": only mapistore is supported at this time\n"));
+		OC_DEBUG(5, "only mapistore is supported at this time\n");
 		return MAPISTORE_ERROR;
 	}
 
@@ -2936,7 +2933,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 		if (object->object.folder->postponed_props) {
 			retval = emsmdbp_object_folder_commit_creation(emsmdbp_ctx, object, true);
 			if (retval != MAPISTORE_SUCCESS) {
-				DEBUG(0, ("folder_commit_creation() failed with 0x%.8X", retval));
+				OC_DEBUG(0, "folder_commit_creation() failed with 0x%.8X", retval);
 				goto end;
 			}
 		}
@@ -2946,7 +2943,7 @@ _PUBLIC_ void **emsmdbp_object_get_properties(TALLOC_CTX *mem_ctx, struct emsmdb
 		mapistore = emsmdbp_is_mapistore(object);
 		/* Nasty hack */
 		if (!object) {
-			DEBUG(5, ("[%s] what's that hack!??\n", __location__));
+			OC_DEBUG(5, "what's that hack!??\n");
 			mapistore = true;
 		}
 
@@ -3009,7 +3006,7 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 	      || object->type == EMSMDBP_OBJECT_MAILBOX
 	      || object->type == EMSMDBP_OBJECT_MESSAGE
 	      || object->type == EMSMDBP_OBJECT_ATTACHMENT)) {
-		DEBUG(0, (__location__": object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type = %d)\n", object->type));
+		OC_DEBUG(0, "object must be EMSMDBP_OBJECT_FOLDER, EMSMDBP_OBJECT_MAILBOX, EMSMDBP_OBJECT_MESSAGE or EMSMDBP_OBJECT_ATTACHMENT (type = %d)\n", object->type);
 		return MAPI_E_NO_SUPPORT;
 	}
 
@@ -3089,7 +3086,7 @@ _PUBLIC_ int emsmdbp_object_set_properties(struct emsmdbp_context *emsmdbp_ctx, 
 								    object->backend_object, rowp);
 			}
 			else {
-				DEBUG(0, ("Setting properties on openchangedb not implemented yet for non-folder object type\n"));
+				OC_DEBUG(0, "Setting properties on openchangedb not implemented yet for non-folder object type\n");
 				return MAPI_E_NO_SUPPORT;
 			}
 			break;
@@ -3207,7 +3204,7 @@ _PUBLIC_ void emsmdbp_stream_write_buffer(TALLOC_CTX *mem_ctx, struct emsmdbp_st
 			old_data = stream->buffer.data;
 			stream->buffer.data = talloc_realloc(mem_ctx, stream->buffer.data, uint8_t, stream->buffer.length);
 			if (!stream->buffer.data) {
-				DEBUG(5, ("WARNING: [bug] lost buffer pointer (data = NULL)\n"));
+				OC_DEBUG(5, "WARNING: [bug] lost buffer pointer (data = NULL)\n");
 				stream->buffer.data = talloc_array(mem_ctx, uint8_t, stream->buffer.length);
 				memcpy(stream->buffer.data, old_data, old_length);
 			}
@@ -3227,7 +3224,7 @@ _PUBLIC_ struct emsmdbp_stream_data *emsmdbp_object_get_stream_data(struct emsmd
 
 	for (current_data = object->stream_data; current_data; current_data = current_data->next) {
 		if (current_data->prop_tag == prop_tag) {
-			DEBUG(5, ("[%s]: found data for tag %.8x\n", __FUNCTION__, prop_tag));
+			OC_DEBUG(5, "found data for tag %.8x\n", prop_tag);
 			return current_data;
 		}
 	}
@@ -3255,7 +3252,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_synccontext_init(TALLOC_CTX *mem_
 	if (!emsmdbp_ctx) return NULL;
 	if (!parent_object) return NULL;
 	if (!(parent_object->type == EMSMDBP_OBJECT_FOLDER || parent_object->type == EMSMDBP_OBJECT_MAILBOX)) {
-		DEBUG(0, (__location__": parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type = %d)\n", parent_object->type));
+		OC_DEBUG(0, "parent_object must be EMSMDBP_OBJECT_FOLDER or EMSMDBP_OBJECT_MAILBOX (type = %d)\n", parent_object->type);
 		return NULL;
 	}
 

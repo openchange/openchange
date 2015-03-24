@@ -59,7 +59,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	void			*data = NULL;
 	uint32_t		handle;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCPERM] GetPermissionsTable (0x3e)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -77,21 +77,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPermissionsTable(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &parent);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(parent, &data);
 	if (retval || !data) {
 		mapi_repl->error_code = MAPI_E_NOT_FOUND;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	parent_object = (struct emsmdbp_object *) data;
 	if (parent_object->type != EMSMDBP_OBJECT_FOLDER) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  unhandled object type: %d\n", parent_object->type));
+		OC_DEBUG(5, "  unhandled object type: %d\n", parent_object->type);
 		goto end;
 	}
 
@@ -148,7 +148,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	struct ModifyPermissions_req	*request;
 
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ModifyPermissions (0x40)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] ModifyPermissions (0x40)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -166,21 +166,21 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &folder);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 
 	retval = mapi_handles_get_private_data(folder, &data);
 	if (retval || !data) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 
 	folder_object = (struct emsmdbp_object *) data;
 	if (folder_object->type != EMSMDBP_OBJECT_FOLDER) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  unhandled object type: %d\n", folder_object->type));
+		OC_DEBUG(5, "  unhandled object type: %d\n", folder_object->type);
 		goto end;
 	}
 
@@ -191,8 +191,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopModifyPermissions(TALLOC_CTX *mem_ctx,
 							      folder_object->backend_object, request->rowList.ModifyFlags,
 							      request->rowList.ModifyCount, request->rowList.PermissionsData);
 		if (mretval != MAPISTORE_SUCCESS) {
-			DEBUG(5, ("[%s:%d] mapistore_folder_modify_permissions: %s\n", __FUNCTION__, __LINE__,
-				  mapistore_errstr(mretval)));
+			OC_DEBUG(5, "mapistore_folder_modify_permissions: %s\n", mapistore_errstr(mretval));
 			mapi_repl->error_code = mapistore_error_to_mapi(mretval);
 		}
 	}

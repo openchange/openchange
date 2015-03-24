@@ -210,7 +210,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLogon(TALLOC_CTX *mem_ctx,
 	bool				mailboxstore = true;
 	const char			*essDN = NULL;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] Logon (0xFE)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -288,11 +288,11 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRelease(TALLOC_CTX *mem_ctx,
 next:
 	for (el = emsmdbp_ctx->mstore_ctx->subscriptions; el; el = el->next) {
 		if (handle == el->subscription->handle) {
-			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
-			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
-			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
-			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
-			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
+			OC_DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
+			OC_DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
+			OC_DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			OC_DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
+			OC_DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
 			DLIST_REMOVE(emsmdbp_ctx->mstore_ctx->subscriptions, el);
 			goto next;
 		}
@@ -309,11 +309,11 @@ next:
 /* 	        subscription = subscription_holder->subscription; */
 		  
 /* 		if (handle == subscription->handle) { */
-/* 			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n")); */
-/* 			DEBUG(0, ("subscription: handle = 0x%x\n", subscription->handle)); */
-/* 			DEBUG(0, ("subscription: types = 0x%x\n", subscription->notification_types)); */
-/* 			DEBUG(0, ("subscription: mqueue = %d\n", subscription->mqueue)); */
-/* 			DEBUG(0, ("subscription: mqueue name = %s\n", subscription->mqueue_name)); */
+/* 			OC_DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n")); */
+/* 			OC_DEBUG(0, ("subscription: handle = 0x%x\n", subscription->handle)); */
+/* 			OC_DEBUG(0, ("subscription: types = 0x%x\n", subscription->notification_types)); */
+/* 			OC_DEBUG(0, ("subscription: mqueue = %d\n", subscription->mqueue)); */
+/* 			OC_DEBUG(0, ("subscription: mqueue name = %s\n", subscription->mqueue_name)); */
 /* 			DLIST_REMOVE(subscription_list, subscription_holder); */
 /* 			talloc_free(subscription_holder); */
 /* 			goto retry; */
@@ -446,7 +446,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopSetReceiveFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] SetReceiveFolder (0x26)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] SetReceiveFolder (0x26)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -557,7 +557,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolder(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReceiveFolder (0x27)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] GetReceiveFolder (0x27)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -651,7 +651,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetReceiveFolderTable(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetReceiveFolderTable (0x68)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] GetReceiveFolderTable (0x68)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -705,7 +705,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 	uint64_t			id;
 	uint8_t				i;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] LongTermIdFromId (0x43)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] LongTermIdFromId (0x43)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -727,19 +727,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopLongTermIdFromId(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 	object = (struct emsmdbp_object *) data;
 	if (!object || object->type != EMSMDBP_OBJECT_MAILBOX) {
 		abort();
-		DEBUG(5, ("  no object or object is not a mailbox\n"));
+		OC_DEBUG(5, "  no object or object is not a mailbox\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -796,7 +796,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 	uint64_t			fmid, base;
 	uint8_t				i, ctr_byte;
 
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] RopIdFromLongTermId (0x44)\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] RopIdFromLongTermId (0x44)\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -831,19 +831,19 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopIdFromLongTermId(TALLOC_CTX *mem_ctx,
 	retval = mapi_handles_search(emsmdbp_ctx->handles_ctx, handle, &rec);
 	if (retval) {
 		mapi_repl->error_code = MAPI_E_INVALID_OBJECT;
-		DEBUG(5, ("  handle (%x) not found: %x\n", handle, mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle (%x) not found: %x\n", handle, mapi_req->handle_idx);
 		goto end;
 	}
 	retval = mapi_handles_get_private_data(rec, &data);
 	if (retval) {
 		mapi_repl->error_code = retval;
-		DEBUG(5, ("  handle data not found, idx = %x\n", mapi_req->handle_idx));
+		OC_DEBUG(5, "  handle data not found, idx = %x\n", mapi_req->handle_idx);
 		goto end;
 	}
 	object = (struct emsmdbp_object *) data;
 	if (!object || object->type != EMSMDBP_OBJECT_MAILBOX) {
 		abort();
-		DEBUG(5, ("  no object or object is not a mailbox\n"));
+		OC_DEBUG(5, "  no object or object is not a mailbox\n");
 		mapi_repl->error_code = MAPI_E_NO_SUPPORT;
 		goto end;
 	}
@@ -886,7 +886,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserLongTermIds(TALLOC_CTX *mem_ctx,
 							  struct EcDoRpc_MAPI_REPL *mapi_repl,
 							  uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserLongTermIds (0x60) - valid stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] GetPerUserLongTermIds (0x60) - valid stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -935,7 +935,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetPerUserGuid(TALLOC_CTX *mem_ctx,
 						   struct EcDoRpc_MAPI_REPL *mapi_repl,
 						   uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetPerUserGuid (0x61) - stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] GetPerUserGuid (0x61) - stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -980,7 +980,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReadPerUserInformation(TALLOC_CTX *mem_ctx,
 							   struct EcDoRpc_MAPI_REPL *mapi_repl,
 							   uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] ReadPerUserInformation (0x63) - stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] ReadPerUserInformation (0x63) - stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);
@@ -1023,7 +1023,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetStoreState(TALLOC_CTX *mem_ctx,
 						  struct EcDoRpc_MAPI_REPL *mapi_repl,
 						  uint32_t *handles, uint16_t *size)
 {
-	DEBUG(4, ("exchange_emsmdb: [OXCSTOR] GetStoreState (0x63) - stub\n"));
+	OC_DEBUG(4, "exchange_emsmdb: [OXCSTOR] GetStoreState (0x63) - stub\n");
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_NOT_INITIALIZED, NULL);

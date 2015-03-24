@@ -170,6 +170,57 @@ _PUBLIC_ enum MAPISTATUS SPropTagArray_find(struct SPropTagArray SPropTagArray,
 	return MAPI_E_NOT_FOUND;
 }
 
+/**
+   \details Return the index of the email address in a properties array.
+
+   It looks for PR_EMAIL_ADDRESS_UNICODE or PR_SMTP_ADDRESS_UNICODE in this order.
+
+   \param SPropTagArray existing properties array to look for
+
+   \return the index in case of success, -1 otherwise
+*/
+_PUBLIC_ int get_email_address_index_SPropTagArray(struct SPropTagArray *properties)
+{
+	uint32_t idx;
+
+	/* Sanity checks */
+	if (!properties) return -1;
+
+	if (SPropTagArray_find(*properties, PR_EMAIL_ADDRESS_UNICODE, &idx) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_SMTP_ADDRESS_UNICODE, &idx) == MAPI_E_NOT_FOUND) {
+		return -1;
+	}
+
+	return (int) idx;
+}
+
+/**
+   \details Return the index of the display in the properties array.
+
+   It looks for PR_DISPLAY_NAME_UNICODE, then for
+   PR_7BIT_DISPLAY_NAME_UNICODE or finally for
+   PR_RECIPIENT_DISPLAY_NAME_UNICODE in this order.
+
+   \param SPropTagArray existing properties array to look for
+
+   \return the index in case of success, -1 otherwise
+*/
+_PUBLIC_ int get_display_name_index_SPropTagArray(struct SPropTagArray *properties)
+{
+	uint32_t idx;
+
+	/* Sanity checks */
+	if (!properties) return -1;
+
+	if (SPropTagArray_find(*properties, PR_DISPLAY_NAME_UNICODE, &idx) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_7BIT_DISPLAY_NAME_UNICODE, &idx) == MAPI_E_NOT_FOUND
+	    && SPropTagArray_find(*properties, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &idx) == MAPI_E_NOT_FOUND) {
+		return -1;
+	}
+
+	return (int) idx;
+}
+
 _PUBLIC_ const void *get_SPropValue(struct SPropValue *lpProps, 
 				    enum MAPITAGS ulPropTag)
 {

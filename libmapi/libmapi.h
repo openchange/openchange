@@ -248,6 +248,8 @@ struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
 enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, enum MAPITAGS);
 enum MAPISTATUS		SPropTagArray_delete(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
 enum MAPISTATUS		SPropTagArray_find(struct SPropTagArray, enum MAPITAGS, uint32_t *);
+int                     get_email_address_index_SPropTagArray(struct SPropTagArray*);
+int                     get_display_name_index_SPropTagArray(struct SPropTagArray*);
 const void		*get_SPropValue(struct SPropValue *, enum MAPITAGS);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);

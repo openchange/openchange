@@ -1297,7 +1297,7 @@ enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context
 			data_pointers = emsmdbp_object_table_get_row_props(table_object, emsmdbp_ctx, table_object,
 									   i, MAPISTORE_PREFILTERED_QUERY, &retvals);
 
-			if (data_pointers && retvals[0] == MAPI_E_SUCCESS) {
+			if (data_pointers) {
 				struct emsmdbp_object	*sfolder = NULL;
 
 				retval = emsmdbp_object_open_folder_by_fid(table_object, emsmdbp_ctx, folder,
@@ -2003,7 +2003,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX
 	OPENCHANGE_RETVAL_IF(!emsmdbp_ctx, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!context_object, MAPI_E_INVALID_PARAMETER, NULL);
 	OPENCHANGE_RETVAL_IF(!remaining, MAPI_E_INVALID_PARAMETER, NULL);
-	OPENCHANGE_RETVAL_IF(!*remaining, MAPI_E_INVALID_PARAMETER, NULL);
+	OPENCHANGE_RETVAL_IF(!*remaining, MAPI_E_SUCCESS, NULL);
 	OPENCHANGE_RETVAL_IF(!count, MAPI_E_INVALID_PARAMETER, NULL);
 
 	/* open current folder */

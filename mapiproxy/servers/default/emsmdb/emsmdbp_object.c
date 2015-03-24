@@ -875,6 +875,7 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
 {
 	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error		ret;
 	struct mapistore_message	*msg_data;
 	uint32_t			contextID, i;
 	int				email_address_idx, display_name_idx;
@@ -891,14 +892,17 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	contextID = emsmdbp_get_contextID(source_object);
-	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	ret = mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), mem_ctx);
 
 	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each values array */
 	if (msg_data->recipients_count > 0
 	    && (msg_data->columns->cValues < 2 || msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE || msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
 		new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
+		OPENCHANGE_RETVAL_IF(!new_columns, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		new_columns->cValues = msg_data->columns->cValues + 2;
 		new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS, new_columns->cValues);
+		OPENCHANGE_RETVAL_IF(!new_columns->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag, sizeof(enum MAPITAGS) * msg_data->columns->cValues);
 		new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
 		new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
@@ -908,6 +912,7 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 
 		for (i = 0; i < msg_data->recipients_count; i++) {
 			new_data = talloc_array(mem_ctx, void *, new_columns->cValues);
+			OPENCHANGE_RETVAL_IF(!new_data, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 			memcpy(new_data + 2, msg_data->recipients[i].data, sizeof(void *) * msg_data->columns->cValues);
 			if (display_name_idx != -1) {
 				new_data[0] = msg_data->recipients[i].data[display_name_idx];
@@ -926,7 +931,8 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 		msg_data->columns = new_columns;
 
 		/* Copy data into dest message */
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		ret = mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), mem_ctx);
 	}
 
 	talloc_free(mem_ctx);

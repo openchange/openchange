@@ -1,0 +1,84 @@
+OpenChange Configuration file
+=============================
+
+TL;DR
+-----
+Move OpenChange-specific configuration from Samba's smb.conf file to
+a OpenChange-specific configuration file in /etc/openchange/openchange.conf.
+
+Introduction
+------------
+OpenChange has so far used Samba's configuration file (smb.conf) for its
+configuration. This was the right choice, since it helped OpenChange focus on
+what really mattered (implementing MAPI) when it was still a young project.
+
+Now that OpenChange is becoming more mature, we would like to
+move our settings to a OpenChange-specific configuration file.
+
+This:
+
+* sets us up for a future in which Samba is optional
+* is easier to autogenerate from scratch (no need to preserve existing
+    smb.conf settings); e.g. openchange_provision can generate it.
+* is easier to understand for users (as hopefully they won't need to
+   touch smb.conf at all)
+
+Requirements
+------------
+* Avoid dependency on Samba-specific directories/files, as they may not be present
+* Simple configuration file format, ideally something users are already familiar with
+  (like .ini files)
+* Avoid silently breaking users currently using smb.conf for OpenChange configuration - don't
+  fail silently if configuration is not yet in openchange.conf
+* Easy to understand
+* Autogeneratable
+* Validatable (e.g. with a testparm-like tool for OpenChange)
+
+Plan
+----
+Add a mandatory configuration file for OpenChange in /etc/openchange/openchange.conf, which
+uses a ini-style syntax. For now, keep the option names the same to easy migration from
+/etc/samba/openchange.conf.
+
+Have provision generate this file rather than instruct the user to update smb.conf
+with the relevant openchange-related settings.
+
+If this file does not exist during startup, do the following
+(first check listed that triggers)
+
+ * Check if /etc/samba/openchange.conf exists. If it does, tell the user to:
+  - remove the relevant include from /etc/samba/smb.conf
+  - run 'mkdir -p /etc/openchange; mv /etc/samba/openchange.conf /etc/openchange'
+  (possibly have a script that does this for them)
+ * check if /etc/samba.smb.conf has openchange-related settings. If it does,
+   instruct the user to create a /etc/openchange/openchange.conf file and
+   move the relevant settings there
+   (possibly have a script that does this for them)
+ * tell them to run provision
+
+Add a 'mapitool check' that validates the contents of the configuration file,
+and possibly more, like the database.
+
+Implementation
+--------------
+Pick a ini parser library. For simplicity, we could possibly just start off
+with Samba's underlying parser and migrate to something else later when necessary.
+
+Add libmapi/openchangeconf.h and libmapi/openchangeconf.cc::
+
+   struct openchangeconf_context;
+
+   struct openchangeconf_context *openchangeconf_init(TALLOC_CTX *mem_ctx);
+   bool openchangeconf_load(struct openchangeconf_context *occ_ctx, const char *path);
+   bool openchangeconf_load_default(struct openchangeconf_context *occ_ctx);
+
+   const char *openchangeconf_get_string(struct openchangeconf_context *occ_ctx, const char *section, const char *name, const char *default);
+
+This mimicks the current lp_ctx interface for easy migration. We can extend it later.
+
+Further considerations
+----------------------
+- It might be useful to rename and simplify some of the existing configuration parameters,
+  or move them into ini sections.
+
+- Some of the current defaults might need tweaking

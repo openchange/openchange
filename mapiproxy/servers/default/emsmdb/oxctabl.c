@@ -446,22 +446,45 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 			end = table->numerator - request->RowCount;
 		}
 	}
-	i = table->numerator;
-	while (i != end) {
-		data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
-		if (data_pointers) {
-			emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
-						    &response->RowData, table->prop_count,
-						    table->properties, data_pointers, retvals);
-			talloc_free(retvals);
-			talloc_free(data_pointers);
-			count++;
-		}
-		else {
+
+	if (table->flags & TableFlags_Depth) {
+		struct SPropTagArray		SPropTagArray;
+
+		SPropTagArray.cValues = table->prop_count;
+		SPropTagArray.aulPropTag = table->properties;
+
+		switch (table->numerator) {
+		case 0x0:
 			count = 0;
-			goto finish;
+			retval = emsmdbp_object_table_get_recursive_row_props(mem_ctx, emsmdbp_ctx, object, &response->RowData,
+									      &SPropTagArray, 0, &end, &count);
+			if (retval != MAPI_E_SUCCESS) {
+				OC_DEBUG(OC_LOG_WARNING, "Unable to retrieve recursive folder rows");
+				count = 0;
+			}
+			break;
+		default:
+			OC_DEBUG(OC_LOG_WARNING, "Can not move cursor with Depth flag enabled");
+			count = 0;
+			break;
 		}
-		i = (request->ForwardRead) ? i + 1 : i - 1;
+	} else {
+		i = table->numerator;
+		while (i != end) {
+			data_pointers = emsmdbp_object_table_get_row_props(mem_ctx, emsmdbp_ctx, object, i, MAPISTORE_PREFILTERED_QUERY, &retvals);
+			if (data_pointers) {
+				emsmdbp_fill_table_row_blob(mem_ctx, emsmdbp_ctx,
+							    &response->RowData, table->prop_count,
+							    table->properties, data_pointers, retvals);
+				talloc_free(retvals);
+				talloc_free(data_pointers);
+				count++;
+			} else {
+				count = 0;
+				goto finish;
+			}
+			i = (request->ForwardRead) ? i + 1 : i - 1;
+		}
 	}
 
 finish:

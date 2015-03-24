@@ -446,7 +446,7 @@ static enum mapistore_error tdb_record_allocate_fmids(struct indexing_context *i
 	talloc_free(data.dptr);
 
 	if (ret == -1) {
-		OC_DEBUG(3, "Unable to create %s record: 0x%.16"PRIx64" \n", 
+		OC_DEBUG(3, "Unable to create %s record: 0x%.16"PRIx64" \n",
 			  key.dptr, GlobalCount);
 		return MAPISTORE_ERR_DATABASE_OPS;
 	}

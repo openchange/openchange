@@ -643,7 +643,7 @@ _PUBLIC_ enum MAPISTATUS emsmdbp_get_org_dn(struct emsmdbp_context *emsmdbp_ctx,
 
 	/* If the search failed */
 	if (ret != LDB_SUCCESS) {
-	  	OC_DEBUG(1, "emsmdbp_get_org_dn ldb_search failure.\n");
+		OC_DEBUG(1, "emsmdbp_get_org_dn ldb_search failure.\n");
 		return MAPI_E_NOT_FOUND;
 	}
 

@@ -291,7 +291,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 	mem_ctx = talloc_new(NULL);
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;
@@ -650,7 +650,7 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 	mem_ctx = talloc_new(NULL);
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;

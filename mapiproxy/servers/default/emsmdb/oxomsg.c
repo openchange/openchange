@@ -337,7 +337,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetAddressTypes(TALLOC_CTX *mem_ctx,
 	}
 	/* If we didn't get at least one address type, things are probably bad. It _could_ be allowable though. */
 	if (res->msgs[0]->elements[0].num_values < 1) {
-	  	OC_DEBUG(1, "exchange_emsmdb: [OXOMSG] AddressTypes unexpected values count: %i (expected 1).\n", res->msgs[0]->num_elements);
+		OC_DEBUG(1, "exchange_emsmdb: [OXOMSG] AddressTypes unexpected values count: %i (expected 1).\n", res->msgs[0]->num_elements);
 	}
 
 	/* If we got to here, it looks sane. Build the reply message. */

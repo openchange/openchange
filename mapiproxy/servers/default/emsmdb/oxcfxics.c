@@ -1786,7 +1786,7 @@ static inline void oxcfxics_fill_synccontext_fasttransfer_response(struct FastTr
 		response->TransferStatus = TransferStatus_Partial;
 		response->InProgressCount = synccontext->steps;
 	}
- 	OC_DEBUG(5, "  end syncstream: position = %zu, size = %zu", synccontext->stream.position, synccontext->stream.buffer.length);
+	OC_DEBUG(5, "  end syncstream: position = %zu, size = %zu", synccontext->stream.position, synccontext->stream.buffer.length);
 }
 
 

@@ -413,7 +413,7 @@ _PUBLIC_ enum mapistore_error mapistore_get_queued_notifications(struct mapistor
 		*nl = nlist;
 	}
 
-	OC_DEBUG(0, ("mapistore_get_queued_notification: found = %s\n", 
+	OC_DEBUG(0, ("mapistore_get_queued_notification: found = %s\n",
 		  (found == false) ? "MAPISTORE_ERR_NOT_FOUND" : "MAPISTORE_SUCCESS"));
 #endif
 	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;

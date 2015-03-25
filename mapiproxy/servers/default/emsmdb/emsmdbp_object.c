@@ -1890,6 +1890,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 			if (mapistore_folder) {
 				/* a hack to avoid fetching dynamic fields from openchange.ldb */
 				switch (table->properties[i]) {
+				case PidTagParentFolderId:
 				case PR_CONTENT_COUNT:
 				case PidTagAssociatedContentCount:
 				case PR_CONTENT_UNREAD:
@@ -1898,6 +1899,9 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				case PidTagDeletedCountTotal:
 				case PidTagAccess:
 				case PidTagAccessLevel:
+				case PidTagFolderFlags:
+				case 0x40820040:
+				case PidTagLocalCommitTimeMax:
 				case PidTagRights: {
 					struct SPropTagArray props;
 					void **local_data_pointers;
@@ -2735,17 +2739,43 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 	uint32_t			contextID;
         uint32_t                        *obj_count;
 	uint8_t				*has_subobj;
-	/* time_t				unix_time; */
-	/* NTTIME				nt_time; */
-	/* struct FILETIME			*ft; */
+	uint32_t			*folder_flags;
+	uint64_t			*fid;
 
 	contextID = emsmdbp_get_contextID(object);
 
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {
-                if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
+		if (properties->aulPropTag[i] == PidTagFolderFlags) {
+			/* Folder flags / yet undocumented */
+			folder_flags = talloc_zero(data_pointers, uint32_t);
+			*folder_flags = 0x5;
+			data_pointers[i] = folder_flags;
+		} else if (properties->aulPropTag[i] == PidTagParentFolderId) {
+			switch (object->parent_object->type) {
+			case EMSMDBP_OBJECT_MAILBOX:
+				fid = talloc_zero(data_pointers, uint64_t);
+				OPENCHANGE_RETVAL_IF(!fid, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+				*fid = object->parent_object->object.mailbox->folderID;
+				retval = MAPI_E_SUCCESS;
+				data_pointers[i] = fid;
+				break;
+			case EMSMDBP_OBJECT_FOLDER:
+				fid = talloc_zero(data_pointers, uint64_t);
+				OPENCHANGE_RETVAL_IF(!fid, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+				*fid = object->parent_object->object.folder->folderID;
+				data_pointers[i] = fid;
+				retval = MAPI_E_SUCCESS;
+				break;
+			default:
+				retval = MAPI_E_NOT_FOUND;
+				break;
+			}
+		}
+		else if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
                         /* a hack to avoid fetching dynamic fields from openchange.ldb */
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
@@ -2753,6 +2783,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 }
                 else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
@@ -2760,16 +2791,19 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 }
                 else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
 			if (retval == MAPI_E_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
-			obj_count = talloc_zero(NULL, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
 			if (retval == MAPI_E_SUCCESS) {
 				has_subobj = talloc_zero(data_pointers, uint8_t);
+				OPENCHANGE_RETVAL_IF(!has_subobj, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 				*has_subobj = (*obj_count > 0) ? 1 : 0;
 				data_pointers[i] = has_subobj;
 			}
@@ -2783,6 +2817,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		}
 		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
 			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			*obj_count = FOLDER_GENERIC;
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
@@ -2790,6 +2825,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
 			/* TODO: temporary hack */
 			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			*obj_count = 0;
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
@@ -2823,6 +2859,9 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 			if (!owner) {
 				/* Public folder? Then, use logged user */
 				owner = emsmdbp_ctx->username;
+			}
+			if (properties->aulPropTag[i] == 0x40820040) {
+				properties->aulPropTag[i] = PidTagCreationTime;
 			}
 			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, owner, properties->aulPropTag[i], folder->folderID, data_pointers + i);
                 }

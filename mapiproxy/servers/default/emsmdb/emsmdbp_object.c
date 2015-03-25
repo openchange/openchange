@@ -871,31 +871,13 @@ static int emsmdbp_copy_properties(struct emsmdbp_context *emsmdbp_ctx, struct e
 	return MAPI_E_SUCCESS;
 }
 
-/* FIXME: this function is already present in oxcmsg... */
-struct emsmdbp_prop_index {
-	uint32_t display_name; /* PR_DISPLAY_NAME_UNICODE or PR_7BIT_DISPLAY_NAME_UNICODE or PR_RECIPIENT_DISPLAY_NAME_UNICODE */
-	uint32_t email_address; /* PR_EMAIL_ADDRESS_UNICODE or PR_SMTP_ADDRESS_UNICODE */
-};
-
-static inline void emsmdbp_fill_prop_index(struct emsmdbp_prop_index *prop_index, struct SPropTagArray *properties)
-{
-	if (SPropTagArray_find(*properties, PR_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_7BIT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND) {
-		prop_index->display_name = (uint32_t) -1;
-	}
-	if (SPropTagArray_find(*properties, PR_EMAIL_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_SMTP_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND) {
-		prop_index->email_address = (uint32_t) -1;
-	}
-}
-
 static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_context *emsmdbp_ctx, struct emsmdbp_object *source_object, struct emsmdbp_object *dest_object)
 {
 	TALLOC_CTX			*mem_ctx;
+	enum mapistore_error		ret;
 	struct mapistore_message	*msg_data;
 	uint32_t			contextID, i;
-	struct emsmdbp_prop_index	prop_index;
+	int				email_address_idx, display_name_idx;
 	struct SPropTagArray		*new_columns;
 	void				**new_data;
 
@@ -909,31 +891,36 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 	OPENCHANGE_RETVAL_IF(!mem_ctx, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 
 	contextID = emsmdbp_get_contextID(source_object);
-	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	ret = mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, source_object->backend_object, mem_ctx, &msg_data);
+	OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), mem_ctx);
 
 	/* By convention, we pass PR_DISPLAY_NAME_UNICODE and PR_EMAIL_ADDRESS_UNICODE to the backend, so we prepend them to each values array */
 	if (msg_data->recipients_count > 0
 	    && (msg_data->columns->cValues < 2 || msg_data->columns->aulPropTag[0] != PR_DISPLAY_NAME_UNICODE || msg_data->columns->aulPropTag[1] != PR_EMAIL_ADDRESS_UNICODE)) {
-		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
-
 		new_columns = talloc_zero(mem_ctx, struct SPropTagArray);
+		OPENCHANGE_RETVAL_IF(!new_columns, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		new_columns->cValues = msg_data->columns->cValues + 2;
 		new_columns->aulPropTag = talloc_array(new_columns, enum MAPITAGS, new_columns->cValues);
+		OPENCHANGE_RETVAL_IF(!new_columns->aulPropTag, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 		memcpy(new_columns->aulPropTag + 2, msg_data->columns->aulPropTag, sizeof(enum MAPITAGS) * msg_data->columns->cValues);
 		new_columns->aulPropTag[0] = PR_DISPLAY_NAME_UNICODE;
 		new_columns->aulPropTag[1] = PR_EMAIL_ADDRESS_UNICODE;
 
+		email_address_idx = get_email_address_index_SPropTagArray(msg_data->columns);
+		display_name_idx = get_display_name_index_SPropTagArray(msg_data->columns);
+
 		for (i = 0; i < msg_data->recipients_count; i++) {
 			new_data = talloc_array(mem_ctx, void *, new_columns->cValues);
+			OPENCHANGE_RETVAL_IF(!new_data, MAPI_E_NOT_ENOUGH_MEMORY, mem_ctx);
 			memcpy(new_data + 2, msg_data->recipients[i].data, sizeof(void *) * msg_data->columns->cValues);
-			if (prop_index.display_name != (uint32_t) -1) {
-				new_data[0] = msg_data->recipients[i].data[prop_index.display_name];
+			if (display_name_idx != -1) {
+				new_data[0] = msg_data->recipients[i].data[display_name_idx];
 			}
 			else {
 				new_data[0] = NULL;
 			}
-			if (prop_index.email_address != (uint32_t) -1) {
-				new_data[1] = msg_data->recipients[i].data[prop_index.email_address];
+			if (email_address_idx != -1) {
+				new_data[1] = msg_data->recipients[i].data[email_address_idx];
 			}
 			else {
 				new_data[1] = NULL;
@@ -943,7 +930,8 @@ static inline int emsmdbp_copy_message_recipients_mapistore(struct emsmdbp_conte
 		msg_data->columns = new_columns;
 
 		/* Copy data into dest message */
-		mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		ret = mapistore_message_modify_recipients(emsmdbp_ctx->mstore_ctx, contextID, dest_object->backend_object, msg_data->columns, msg_data->recipients_count, msg_data->recipients);
+		OPENCHANGE_RETVAL_IF(ret != MAPISTORE_SUCCESS, mapistore_error_to_mapi(ret), mem_ctx);
 	}
 
 	talloc_free(mem_ctx);
@@ -3380,7 +3368,6 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 {
 	struct Binary_r		       *bin;
 	char			       *xml;
-	struct emsmdbp_prop_index      prop_index;
 	int			       i;
 	enum MAPISTATUS		       *retvals = NULL;
 	struct mapistore_message       *msg_data = NULL;
@@ -3465,13 +3452,14 @@ static enum MAPISTATUS emsmdbp_object_sharing_metadata_property(struct emsmdbp_c
 	contextID = emsmdbp_get_contextID(sharing_object);
 	mapistore_message_get_message_data(emsmdbp_ctx->mstore_ctx, contextID, sharing_object->backend_object, local_mem_ctx, &msg_data);
 	if (msg_data && msg_data->recipients_count > 0) {
+		int	 email_address_idx;
+
 		xml = talloc_asprintf_append(xml, "TargetRecipients=\"");
 		OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
-
-		emsmdbp_fill_prop_index(&prop_index, msg_data->columns);
+		email_address_idx = get_email_address_index_SPropTagArray(msg_data->columns);
 		for (i = 0; i < msg_data->recipients_count; i++) {
-			if (prop_index.email_address != (uint32_t) -1) {
-				xml = talloc_asprintf_append(xml, "%s", (char *)msg_data->recipients[i].data[prop_index.email_address]);
+			if (email_address_idx != -1) {
+				xml = talloc_asprintf_append(xml, "%s", (char *)msg_data->recipients[i].data[email_address_idx]);
 				OPENCHANGE_RETVAL_IF(!xml, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 				if (i + 1 < msg_data->recipients_count) {
 					/* ; separated */

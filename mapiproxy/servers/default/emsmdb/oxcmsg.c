@@ -32,29 +32,12 @@
 #include "mapiproxy/libmapiserver/libmapiserver.h"
 #include "dcesrv_exchange_emsmdb.h"
 
-struct oxcmsg_prop_index {
-	uint32_t display_name; /* PR_DISPLAY_NAME_UNICODE or PR_7BIT_DISPLAY_NAME_UNICODE or PR_RECIPIENT_DISPLAY_NAME_UNICODE */
-	uint32_t email_address; /* PR_EMAIL_ADDRESS_UNICODE or PR_SMTP_ADDRESS_UNICODE */
-};
-
-static inline void oxcmsg_fill_prop_index(struct oxcmsg_prop_index *prop_index, struct SPropTagArray *properties)
-{
-	if (SPropTagArray_find(*properties, PR_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_7BIT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_RECIPIENT_DISPLAY_NAME_UNICODE, &prop_index->display_name) == MAPI_E_NOT_FOUND) {
-		prop_index->display_name = (uint32_t) -1;;
-	}
-	if (SPropTagArray_find(*properties, PR_EMAIL_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND
-	    && SPropTagArray_find(*properties, PR_SMTP_ADDRESS_UNICODE, &prop_index->email_address) == MAPI_E_NOT_FOUND) {
-		prop_index->email_address = (uint32_t) -1;;
-	}
-}
-
-static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct RecipientRow *row, struct mapistore_message_recipient *recipient, struct oxcmsg_prop_index *prop_index)
+static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct RecipientRow *row, struct mapistore_message_recipient *recipient, struct SPropTagArray *properties)
 {
 	struct ldb_result	*res = NULL;
 	const char * const	recipient_attrs[] = { "*", NULL };
 	int			ret;
+	int			idx;
 	char			*full_name, *email_address, *simple_name, *legacyExchangeDN;
 
 	if (!recipient->username) {
@@ -99,8 +82,10 @@ static void oxcmsg_fill_RecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context
 smtp_recipient:
 	row->RecipientFlags = 0x303; /* type = SMTP, no rich text, unicode */
 	row->RecipientFlags |= 0x80; /* from doc: a different transport is responsible for delivery to this recipient. */
-	if (prop_index->display_name != (uint32_t) -1) {
-		full_name = recipient->data[prop_index->display_name];
+
+	idx = get_display_name_index_SPropTagArray(properties);
+	if (idx != -1) {
+		full_name = recipient->data[idx];
 		if (full_name) {
 			row->RecipientFlags |= 0x10;
 			row->DisplayName.lpszW = talloc_strdup(mem_ctx, full_name);
@@ -109,8 +94,9 @@ smtp_recipient:
 			row->SimpleDisplayName.lpszW = row->DisplayName.lpszW;
 		}
 	}
-	if (prop_index->email_address != (uint32_t) -1) {
-		email_address = recipient->data[prop_index->email_address];
+	idx = get_email_address_index_SPropTagArray(properties);
+	if (idx != -1) {
+		email_address = recipient->data[idx];
 		if (email_address) {
 			row->RecipientFlags |= 0x08;
 			row->EmailAddress.lpszW = talloc_strdup(mem_ctx, email_address);
@@ -148,13 +134,13 @@ static void oxcmsg_fill_RecipientRow_data(TALLOC_CTX *mem_ctx, struct emsmdbp_co
 	}
 }
 
-static void oxcmsg_fill_OpenRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct OpenRecipientRow *row, struct SPropTagArray *properties, struct mapistore_message_recipient *recipient, struct oxcmsg_prop_index *prop_index)
+static void oxcmsg_fill_OpenRecipientRow(TALLOC_CTX *mem_ctx, struct emsmdbp_context *emsmdbp_ctx, struct OpenRecipientRow *row, struct SPropTagArray *properties, struct mapistore_message_recipient *recipient)
 {
 	row->CodePageId = CP_USASCII;
 	row->Reserved = 0;
 	row->RecipientType = recipient->type;
 
-	oxcmsg_fill_RecipientRow(mem_ctx, emsmdbp_ctx, &row->RecipientRow, recipient, prop_index);
+	oxcmsg_fill_RecipientRow(mem_ctx, emsmdbp_ctx, &row->RecipientRow, recipient, properties);
 	oxcmsg_fill_RecipientRow_data(mem_ctx, emsmdbp_ctx, &row->RecipientRow, properties, recipient);
 }
 
@@ -192,7 +178,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 	void				*data;
 	uint64_t			folderID;
 	uint64_t			messageID = 0;
-	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] OpenMessage (0x03)\n");
@@ -296,9 +281,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenMessage(TALLOC_CTX *mem_ctx,
 		response->RecipientRows = talloc_array(mem_ctx,
 						       struct OpenRecipientRow,
 						       msg->recipients_count + 1);
-		oxcmsg_fill_prop_index(&prop_index, msg->columns);
 		for (i = 0; i < msg->recipients_count; i++) {
-			oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
+			oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i);
 		}
 	}
 	else {
@@ -967,7 +951,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 	struct mapistore_message	*msg;
 	struct emsmdbp_object		*object;
 	uint32_t			contextID;
-	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] ReloadCachedInformation (0x10)\n");
@@ -1038,9 +1021,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopReloadCachedInformation(TALLOC_CTX *mem_ctx,
 			mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows = talloc_array(mem_ctx, 
 											       struct OpenRecipientRow, 
 											       msg->recipients_count + 1);
-			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(mapi_repl->u.mapi_ReloadCachedInformation.RecipientRows[i]), msg->columns, msg->recipients + i);
 			}
 		}
 		break;
@@ -1582,7 +1564,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 	struct emsmdbp_object           *attachment_object = NULL;
 	struct emsmdbp_object           *message_object = NULL;
         bool                            mapistore;
-	struct oxcmsg_prop_index	prop_index;
 	int				i;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCMSG] OpenEmbeddedMessage (0x46)\n");
@@ -1676,9 +1657,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopOpenEmbeddedMessage(TALLOC_CTX *mem_ctx,
 		response->RowCount = msg->recipients_count;
 		if (msg->recipients_count > 0) {
                         response->RecipientRows = talloc_array(mem_ctx, struct OpenRecipientRow, msg->recipients_count + 1);
-			oxcmsg_fill_prop_index(&prop_index, msg->columns);
 			for (i = 0; i < msg->recipients_count; i++) {
-				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i, &prop_index);
+				oxcmsg_fill_OpenRecipientRow(mem_ctx, emsmdbp_ctx, &(response->RecipientRows[i]), msg->columns, msg->recipients + i);
 			}
                 }
 

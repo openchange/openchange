@@ -387,7 +387,7 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 					   uint64_t fmid,
 					   const char *mapistore_URI)
 {
-	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	enum mapistore_error	retval;
 	TALLOC_CTX		*mem_ctx;
 	int			ret;
 	bool			IsSoftDeleted = false;
@@ -415,9 +415,13 @@ static enum mapistore_error mysql_record_add(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	retval = _memcached_add_record(ictx, mapistore_URI, fmid);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[indexing] Failed to add record `%s: %"PRIu64"` on memcached (%s)",
+			 (mapistore_URI, fmid, mapistore_errstr(retval)));
+	}
 
 	talloc_free(mem_ctx);
-	return retval;
+	return MAPISTORE_SUCCESS;
 }
 
 /**
@@ -439,7 +443,7 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 						uint64_t fmid,
 						const char *mapistore_URI)
 {
-	enum mapistore_error	retval = MAPISTORE_SUCCESS;
+	enum mapistore_error	retval;
 	int			ret;
 	char			*sql;
 	TALLOC_CTX		*mem_ctx;
@@ -463,7 +467,6 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
-
 	/* did we updated anything? */
 	/* TODO: Move mysql_affected_rows() in execute_query() */
 	if (mysql_affected_rows(MYSQL(ictx)) == 0) {
@@ -472,10 +475,14 @@ static enum mapistore_error mysql_record_update(struct indexing_context *ictx,
 	}
 
 	retval = _memcached_update_record(ictx, mapistore_URI, fmid);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[indexing] Failed to update record `%s` with `%"PRIu64"` on memcached (%s)",
+			 (mapistore_URI, fmid, mapistore_errstr(retval)));
+	}
 
 end:
 	talloc_free(mem_ctx);
-	return retval;
+	return MAPISTORE_SUCCESS;
 }
 
 
@@ -601,7 +608,10 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	retval = _memcached_delete_record(ictx, uri);
-	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[indexing] Failed to delete record `%s` on memcached (%s)",
+			 (uri, mapistore_errstr(retval)));
+	}
 
 	talloc_free(mem_ctx);
 	return MAPISTORE_SUCCESS;

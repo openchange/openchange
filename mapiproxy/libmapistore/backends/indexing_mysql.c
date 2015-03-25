@@ -598,9 +598,9 @@ static enum mapistore_error mysql_record_del(struct indexing_context *ictx,
 	}
 
 	retval = mysql_record_get_uri(ictx, username, mem_ctx, fmid, &uri, &IsSoftDeleted);
-	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+	MAPISTORE_RETVAL_IF(retval != MAPISTORE_SUCCESS, retval, mem_ctx);
 
-	execute_query(MYSQL(ictx), sql);
+	ret = execute_query(MYSQL(ictx), sql);
 	MAPISTORE_RETVAL_IF(ret != MYSQL_SUCCESS, MAPISTORE_ERR_DATABASE_OPS, mem_ctx);
 
 	retval = _memcached_delete_record(ictx, uri);

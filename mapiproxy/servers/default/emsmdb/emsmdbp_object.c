@@ -2743,6 +2743,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 if (properties->aulPropTag[i] == PR_CONTENT_COUNT) {
                         /* a hack to avoid fetching dynamic fields from openchange.ldb */
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, contextID, object->backend_object, MAPISTORE_MESSAGE_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
@@ -2750,6 +2751,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 }
                 else if (properties->aulPropTag[i] == PidTagAssociatedContentCount) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         mretval = mapistore_folder_get_child_count(emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, MAPISTORE_FAI_TABLE, obj_count);
 			if (mretval == MAPISTORE_SUCCESS) {
 				data_pointers[i] = obj_count;
@@ -2757,16 +2759,19 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
                 }
                 else if (properties->aulPropTag[i] == PR_FOLDER_CHILD_COUNT) {
                         obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
                         retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
 			if (retval == MAPI_E_SUCCESS) {
 				data_pointers[i] = obj_count;
 			}
                 }
 		else if (properties->aulPropTag[i] == PR_SUBFOLDERS) {
-			obj_count = talloc_zero(NULL, uint32_t);
+			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			retval = emsmdbp_folder_get_folder_count(emsmdbp_ctx, object, obj_count);
 			if (retval == MAPI_E_SUCCESS) {
 				has_subobj = talloc_zero(data_pointers, uint8_t);
+				OPENCHANGE_RETVAL_IF(!has_subobj, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 				*has_subobj = (*obj_count > 0) ? 1 : 0;
 				data_pointers[i] = has_subobj;
 			}
@@ -2780,6 +2785,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		}
 		else if (properties->aulPropTag[i] == PR_FOLDER_TYPE) {
 			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			*obj_count = FOLDER_GENERIC;
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;
@@ -2787,6 +2793,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 		else if (properties->aulPropTag[i] == PR_CONTENT_UNREAD || properties->aulPropTag[i] == PR_DELETED_COUNT_TOTAL) {
 			/* TODO: temporary hack */
 			obj_count = talloc_zero(data_pointers, uint32_t);
+			OPENCHANGE_RETVAL_IF(!obj_count, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
 			*obj_count = 0;
 			data_pointers[i] = obj_count;
 			retval = MAPI_E_SUCCESS;

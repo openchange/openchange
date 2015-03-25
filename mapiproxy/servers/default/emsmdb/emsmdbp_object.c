@@ -1890,7 +1890,7 @@ _PUBLIC_ void **emsmdbp_object_table_get_row_props(TALLOC_CTX *mem_ctx, struct e
 				case PidTagAccess:
 				case PidTagAccessLevel:
 				case PidTagFolderFlags:
-				case 0x40820040:
+				case PidTagHierRev:
 				case PidTagLocalCommitTimeMax:
 				case PidTagRights: {
 					struct SPropTagArray props;
@@ -2850,7 +2850,7 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 				/* Public folder? Then, use logged user */
 				owner = emsmdbp_ctx->username;
 			}
-			if (properties->aulPropTag[i] == 0x40820040) {
+			if (properties->aulPropTag[i] == PidTagHierRev) {
 				properties->aulPropTag[i] = PidTagCreationTime;
 			}
 			retval = openchangedb_get_folder_property(data_pointers, emsmdbp_ctx->oc_ctx, owner, properties->aulPropTag[i], folder->folderID, data_pointers + i);

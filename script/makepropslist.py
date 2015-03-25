@@ -828,6 +828,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	f.write("\t" + string.ljust("PidTagLatestDeliveryTime", 68) + " = 0x00190040,\n")
 	f.write("\t" + string.ljust("PidTagMailPermission", 68) + " = 0x3a0e000b,\n")
         f.write("\t" + string.ljust("PidTagFolderFlags", 68) + " = 0x66a80003,\n")
+        f.write("\t" + string.ljust("PidTagHierRev", 68) + " = 0x40820040,\n")
 
 	f.write("\tMAPI_PROP_RESERVED                                                   = 0xFFFFFFFF\n")
 	f.write("} MAPITAGS;\n")

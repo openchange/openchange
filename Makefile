@@ -136,7 +136,7 @@ re:: clean install
 # IDL compilation rules
 #################################################################
 
-idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h
+idl: gen_ndr gen_ndr/ndr_exchange.h gen_ndr/ndr_property.h gen_ndr/ndr_asyncemsmdb.h
 
 exchange.idl: properties_enum.h mapicodes_enum.h
 
@@ -191,7 +191,9 @@ ifneq ($(SNAPSHOT), no)
 	rm -f mapicodes_enum.h
 endif
 	rm -f gen_ndr/ndr_exchange*
+	rm -f gen_ndr/ndr_asyncemsmdb*
 	rm -f gen_ndr/exchange.h
+	rm -f gen_ndr/asyncemsmdb.h
 	rm -f gen_ndr/ndr_property*
 	rm -f gen_ndr/property.h
 	rm -f ndr_mapi.o ndr_mapi.po
@@ -251,6 +253,8 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 gen_ndr/property.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/ndr_exchange.h $(DESTDIR)$(includedir)/gen_ndr/
 	$(INSTALL) -m 0644 gen_ndr/ndr_property.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/asyncemsmdb.h $(DESTDIR)$(includedir)/gen_ndr/
+	$(INSTALL) -m 0644 gen_ndr/ndr_asyncemsmdb.h $(DESTDIR)$(includedir)/gen_ndr/
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/*.h
 	@$(SED) $(DESTDIR)$(includedir)/libmapi/socket/*.h
 	@$(SED) $(DESTDIR)$(includedir)/gen_ndr/*.h
@@ -268,6 +272,7 @@ libmapi-uninstalllib:
 libmapi-uninstallheader:
 	rm -rf $(DESTDIR)$(includedir)/libmapi
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/exchange.h
+	rm -f $(DESTDIR)$(includedir)/gen_ndr/asyncemsmdb.h
 	rm -f $(DESTDIR)$(includedir)/gen_ndr/property.h
 
 libmapi-uninstallscript:
@@ -315,6 +320,8 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\
+	gen_ndr/ndr_asyncemsmdb.po			\
+	gen_ndr/ndr_asyncemsmdb_c.po			\
 	gen_ndr/ndr_property.po				\
 	libmapi/socket/interface.po			\
 	libmapi/socket/netif.po				
@@ -328,9 +335,9 @@ libmapi.$(SHLIBEXT).$(LIBMAPI_SO_VERSION): libmapi.$(SHLIBEXT).$(PACKAGE_VERSION
 libmapi/version.h: VERSION
 	@./script/mkversion.sh VERSION libmapi/version.h $(PACKAGE_VERSION) $(top_builddir)/
 
-libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+libmapi/emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h gen_ndr/ndr_asyncemsmdb_c.h
 
-libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h
+libmapi/async_emsmdb.c: libmapi/emsmdb.h gen_ndr/ndr_exchange_c.h gen_ndr/ndr_asyncemsmdb_c.h
 
 libmapi/mapicode.c mapicodes_enum.h: libmapi/conf/mparse.pl libmapi/conf/mapi-codes
 	libmapi/conf/mparse.pl --parser=mapicodes --outputdir=libmapi/ libmapi/conf/mapi-codes
@@ -688,6 +695,7 @@ mapiproxy: 		idl 					\
 			libmapiserver				\
 			libmapistore				\
 			mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) 	\
+			mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT)\
 			mapiproxy-modules			\
 			mapiproxy-servers
 
@@ -700,6 +708,7 @@ mapiproxy-install: 	mapiproxy				\
 			libmapistore-install
 	$(INSTALL) -d $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 	$(INSTALL) -m 0755 mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
+	$(INSTALL) -m 0755 mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT) $(DESTDIR)$(DCERPC_SERVER_MODULESDIR)
 
 mapiproxy-uninstall: 	mapiproxy-modules-uninstall		\
 			mapiproxy-servers-uninstall		\
@@ -718,6 +727,7 @@ mapiproxy-clean:: 	mapiproxy-modules-clean			\
 	rm -f mapiproxy/*.o mapiproxy/*.po
 	rm -f mapiproxy/*.gcno mapiproxy/*.gcda
 	rm -f mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT)
+	rm -f mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT)
 
 clean:: mapiproxy-clean
 
@@ -734,6 +744,14 @@ mapiproxy/dcesrv_mapiproxy.$(SHLIBEXT): 	mapiproxy/dcesrv_mapiproxy.po		\
 
 mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 
+
+mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT):	mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.po	\
+						gen_ndr/ndr_asyncemsmdb.po
+	@echo "Linking $@"
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+
+
+mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.c: gen_ndr/ndr_asyncemsmdb_s.c gen_ndr/ndr_asyncemsmdb.c
 
 ###############
 # libmapiproxy

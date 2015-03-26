@@ -1906,9 +1906,14 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 TALLOC_CTX *mem_ctx,
 						 struct EcDoAsyncConnectEx *r)
 {
-	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe) not implemented\n");
-	r->out.result = ecRejected;
-	DCESRV_FAULT(DCERPC_FAULT_OP_RNG_ERROR);
+	struct dcesrv_handle		*handle;
+
+	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe)\n");
+
+	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_ASYNCEMSMDB);
+
+	*r->out.async_handle = handle->wire_handle;
+	r->out.result = MAPI_E_SUCCESS;
 
 	return MAPI_E_SUCCESS;
 }

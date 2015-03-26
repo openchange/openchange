@@ -33,7 +33,6 @@
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/fault_util.h"
 #include "mapiproxy/libmapiserver/libmapiserver.h"
-#include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_nameid.h"
 #include "libmapi/property_tags.h"
 #include "libmapi/property_altnames.h"

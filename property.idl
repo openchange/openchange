@@ -392,4 +392,11 @@ interface property
 		[switch_is(OneOffEntryIdFlags & 0x8000)] OneOffEntryId_String	EmailAddress;
 	} OneOffEntryId;
 
+	typedef [bitmap32bit] bitmap {
+		FolderFlags_IPM		= 0x00000001,
+		FolderFlags_Search	= 0x00000002,
+		FolderFlags_Normal	= 0x00000004,
+		FolderFlags_Rules	= 0x00000008
+	} FolderFlags;
+
 }

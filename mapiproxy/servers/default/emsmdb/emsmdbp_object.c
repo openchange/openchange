@@ -2737,9 +2737,8 @@ static int emsmdbp_object_get_properties_mapistore_root(TALLOC_CTX *mem_ctx, str
 	folder = (struct emsmdbp_object_folder *) object->object.folder;
         for (i = 0; i < properties->cValues; i++) {
 		if (properties->aulPropTag[i] == PidTagFolderFlags) {
-			/* Folder flags / yet undocumented */
 			folder_flags = talloc_zero(data_pointers, uint32_t);
-			*folder_flags = 0x5;
+			*folder_flags = FolderFlags_IPM|FolderFlags_Normal;
 			data_pointers[i] = folder_flags;
 		} else if (properties->aulPropTag[i] == PidTagParentFolderId) {
 			switch (object->parent_object->type) {

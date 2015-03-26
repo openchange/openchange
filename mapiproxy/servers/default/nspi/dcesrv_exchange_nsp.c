@@ -447,7 +447,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 			goto failure;
 		}
 
-		if (r->in.pStat->Delta >= 0 && r->in.pStat->NumPos < ldb_res->count) {
+		if (r->in.pStat->Delta >= 0) {
 			start_pos = r->in.pStat->NumPos + r->in.pStat->Delta;
 			if (start_pos != 0 && start_pos >= ldb_res->count) {
 				/* inexistent position */

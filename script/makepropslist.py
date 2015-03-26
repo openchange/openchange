@@ -763,7 +763,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 		}
 	}
 
-	OC_DEBUG(5, "type for property '%x' could not be deduced\\n", untypedtag);
+	OC_DEBUG(5, "type for property '%x' could not be deduced", untypedtag);
 	return 0;
 }
 
@@ -965,7 +965,7 @@ _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
 			return pidtags[i].pidtag;
 		}
 	}
-	OC_DEBUG(0, "Unsupported property tag '0x%.8x'\\n", proptag);
+	OC_DEBUG(0, "Unsupported property tag '0x%.8x'", proptag);
 
 	return NULL;
 }

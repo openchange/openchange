@@ -255,6 +255,7 @@ static NTSTATUS mapiproxy_op_bind(struct dcesrv_call_state *dce_call, const stru
 	private->ndrdump = ndrdump;
 
 	dce_call->context->private_data = private;
+	dce_call->state_flags |= DCESRV_CALL_STATE_FLAG_MULTIPLEXED;
 
 	if (server_mode == false) {
 	  return mapiproxy_op_bind_proxy(dce_call, iface, if_version);

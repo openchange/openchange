@@ -113,18 +113,6 @@ struct mapistore_property_data {
         int error; /* basically MAPISTORE_SUCCESS or MAPISTORE_ERR_NOT_FOUND */
 };
 
-/* See [MS-OXSHARE] Section 2.2.2.5 */
-enum sharing_flavor_type {
-        SHARING_INVITATION_SPECIAL_FOLDER = 0x20310,
-        SHARING_INVITATION_FOLDER = 0x310,
-        SHARING_REQUEST_SPECIAL_FOLDER = 0x20500,
-        SHARING_INVITATION_REQUEST_FOLDER = 0x20710,
-        SHARING_DENY_REQUEST = 0x25100,
-        SHARING_ACCEPT_REQUEST = 0x23310,
-        /* Union of flavours to match as a request */
-        SHARING_REQUEST = 0x20400,
-};
-
 struct mapistore_connection_info {
 	char				*username;
 	struct GUID			replica_guid;

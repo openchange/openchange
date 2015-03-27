@@ -56,8 +56,6 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "stream";
 	case EMSMDBP_OBJECT_ATTACHMENT:
 		return "attachment";
-	case EMSMDBP_OBJECT_SUBSCRIPTION:
-		return "subscription";
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		return "synccontext";
 	case EMSMDBP_OBJECT_FTCONTEXT:
@@ -720,20 +718,9 @@ static int emsmdbp_object_destructor(void *data)
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
 			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
 		}
-                if (object->object.table->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.table->subscription_list);
-			talloc_free(object->object.table->subscription_list);
-			/* talloc_unlink(object->emsmdbp_ctx, object->object.table->subscription_list); */
-                }
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
-		break;
-        case EMSMDBP_OBJECT_SUBSCRIPTION:
-                if (object->object.subscription->subscription_list) {
-                        DLIST_REMOVE(object->emsmdbp_ctx->mstore_ctx->subscriptions, object->object.subscription->subscription_list);
-			talloc_free(object->object.subscription->subscription_list);
-                }
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		gettimeofday(&request_end, NULL);
@@ -1669,7 +1656,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->denominator = 0;
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
-	object->object.table->subscription_list = NULL;
 	object->object.table->flags = 0;
 
 	return object;
@@ -2494,41 +2480,6 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 
 	object->type = EMSMDBP_OBJECT_ATTACHMENT;
 	object->object.attachment->attachmentID = -1;
-
-	return object;
-}
-
-/**
-   \details Initialize a notification subscription object
-
-   \param mem_ctx pointer to the memory context
-   \param emsmdbp_ctx pointer to the emsmdb provider cotnext
-   \param whole_store whether the subscription applies to the specified change on the entire store or stricly on the specified folder/message
-   \param folderID the folder identifier
-   \param messageID the message identifier
-   \param parent emsmdbp object of the parent
- */
-_PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
-                                                                 struct emsmdbp_context *emsmdbp_ctx,
-                                                                 struct emsmdbp_object *parent)
-{
-	struct emsmdbp_object	*object;
-
-	/* Sanity checks */
-	if (!emsmdbp_ctx) return NULL;
-	if (!parent) return NULL;
-
-	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx, parent);
-	if (!object) return NULL;
-
-	object->object.subscription = talloc_zero(object, struct emsmdbp_object_subscription);
-	if (!object->object.subscription) {
-		talloc_free(object);
-		return NULL;
-	}
-
-	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
-        object->object.subscription->subscription_list = NULL;
 
 	return object;
 }

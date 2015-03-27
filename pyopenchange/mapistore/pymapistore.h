@@ -25,7 +25,6 @@
 #include <Python.h>
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
-#include "mapiproxy/libmapistore/mgmt/mapistore_mgmt.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_ldb.h"
 #include "mapiproxy/libmapiproxy/backends/openchangedb_mysql.h"
@@ -43,13 +42,6 @@ typedef struct {
 	TALLOC_CTX			*mem_ctx;
 	struct mapistore_context	*mstore_ctx;
 } PyMAPIStoreObject;
-
-typedef struct {
-	PyObject_HEAD
-	TALLOC_CTX			*mem_ctx;
-	struct mapistore_mgmt_context	*mgmt_ctx;
-	PyMAPIStoreObject		*parent;
-} PyMAPIStoreMGMTObject;
 
 typedef struct {
 	PyObject_HEAD
@@ -90,7 +82,6 @@ typedef struct {
 } PyMAPIStoreTableObject;
 
 PyAPI_DATA(PyTypeObject)	PyMAPIStore;
-PyAPI_DATA(PyTypeObject)	PyMAPIStoreMGMT;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreContext;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreFolder;
 PyAPI_DATA(PyTypeObject)	PyMAPIStoreTable;
@@ -114,7 +105,6 @@ PyMAPIStoreGlobals *get_PyMAPIStoreGlobals(void);
 
 void initmapistore_context(PyObject *);
 void initmapistore_folder(PyObject *);
-void initmapistore_mgmt(PyObject *);
 void initmapistore_freebusy_properties(PyObject *);
 void initmapistore_table(PyObject *);
 void initmapistore_errors(PyObject *);

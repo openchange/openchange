@@ -140,9 +140,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object = NULL;
-	struct mapistore_subscription_list *subscription_list;
-	struct mapistore_subscription *subscription;
-	struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
 	uint64_t		folderID;
 	uint32_t		handle;
@@ -220,21 +217,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetHierarchyTable(TALLOC_CTX *mem_ctx,
 	if ((mapi_req->u.mapi_GetHierarchyTable.TableFlags & TableFlags_NoNotifications)) {
 		OC_DEBUG(5, "  notifications skipped\n");
 	}
-	else {
-		/* we attach the subscription to the session object */
-		subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-		DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-
-		subscription_parameters.table_type = MAPISTORE_FOLDER_TABLE;
-		subscription_parameters.folder_id = folderID;
-
-		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-							  emsmdbp_ctx->username,
-							  rec->handle, fnevTableModified, &subscription_parameters);
-		subscription_list->subscription = subscription;
-		object->object.table->subscription_list = subscription_list;
-	}
 
 end:
 	*size += libmapiserver_RopGetHierarchyTable_size(mapi_repl);
@@ -268,9 +250,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*parent;
 	struct mapi_handles	*rec = NULL;
 	struct emsmdbp_object	*object = NULL, *parent_object;
-        struct mapistore_subscription_list *subscription_list;
-        struct mapistore_subscription *subscription;
-        struct mapistore_table_subscription_parameters subscription_parameters;
 	void			*data;
 	uint64_t		folderID;
 	uint32_t		handle;
@@ -350,26 +329,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopGetContentsTable(TALLOC_CTX *mem_ctx,
 	if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_NoNotifications)) {
 		OC_DEBUG(5, "  notifications skipped\n");
 	}
-	else {
-		/* we attach the subscription to the session object */
-		subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-		DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-		
-		if ((mapi_req->u.mapi_GetContentsTable.TableFlags & TableFlags_Associated)) {
-			subscription_parameters.table_type = MAPISTORE_FAI_TABLE;
-		}
-		else {
-			subscription_parameters.table_type = MAPISTORE_MESSAGE_TABLE;
-		}
-		subscription_parameters.folder_id = folderID; 
-                
-		/* note that a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-		subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-							  emsmdbp_ctx->username,
-							  rec->handle, fnevTableModified, &subscription_parameters);
-		subscription_list->subscription = subscription;
-		object->object.table->subscription_list = subscription_list;
-        }
 
 end:
 	

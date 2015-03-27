@@ -58,10 +58,6 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	struct mapi_handles	*subscription_rec = NULL;
 	uint32_t		handle;
         struct emsmdbp_object   *parent_object;
-        struct emsmdbp_object   *subscription_object;
-        struct mapistore_subscription *subscription;
-        struct mapistore_subscription_list *subscription_list;
-        struct mapistore_object_subscription_parameters subscription_parameters;
         void                    *data;
 
 	OC_DEBUG(4, "exchange_emsmdb: [OXCNOTIF] RegisterNotification (0x29)\n");
@@ -100,27 +96,7 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	}
 	handles[mapi_repl->handle_idx] = subscription_rec->handle;
 
-        /* emsmdb_object */
-        subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
-        mapi_handles_set_private_data(subscription_rec, subscription_object);
-
-        /* we attach the subscription to the session object.
-           note: a mapistore_subscription can exist without a corresponding emsmdbp_object (tables) */
-        subscription_list = talloc_zero(emsmdbp_ctx->mstore_ctx, struct mapistore_subscription_list);
-        DLIST_ADD(emsmdbp_ctx->mstore_ctx->subscriptions, subscription_list);
-
-        subscription_parameters.folder_id = mapi_req->u.mapi_RegisterNotification.FolderId.ID;
-        subscription_parameters.object_id = mapi_req->u.mapi_RegisterNotification.MessageId.ID;
-        subscription_parameters.whole_store = mapi_req->u.mapi_RegisterNotification.WantWholeStore;
-
-        subscription = mapistore_new_subscription(subscription_list, emsmdbp_ctx->mstore_ctx,
-						  emsmdbp_ctx->username, 
-						  subscription_rec->handle,
-						  mapi_req->u.mapi_RegisterNotification.NotificationFlags,
-						  &subscription_parameters);
-        subscription_list->subscription = subscription;
-
-        subscription_object->object.subscription->subscription_list = subscription_list;
+	/* TODO: handling of notification subscriptions */
 
 end:
 	*size += libmapiserver_RopRegisterNotification_size();

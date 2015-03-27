@@ -722,19 +722,7 @@ dnl ##########################################################################
 dnl libmapistore dependencies
 dnl ##########################################################################
 
-AC_CHECK_LIB([rt], [mq_open],
-	    [
-		 	RT_LIBS="-lrt"
-			AC_SUBST(RT_LIBS)
-		],
-		[
-			AC_CHECK_FUNCS(mq_open, [
-				RT_LIBS=""
-				AC_SUBST(RT_LIBS)
-			], [
-				AC_MSG_ERROR([unable to find mq_open])
-		 	])
-		])
+
 
 dnl ##########################################################################
 dnl libmapistore backends dependencies

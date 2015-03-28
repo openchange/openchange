@@ -57,6 +57,7 @@ struct emsmdbp_context {
 	struct mapi_handles_context		*handles_ctx;
 
 	TALLOC_CTX				*mem_ctx;
+	struct GUID				session_uuid;
 };
 
 struct exchange_emsmdb_session {
@@ -288,6 +289,7 @@ struct ldb_context *samdb_connect_url(TALLOC_CTX *, struct tevent_context *, str
 
 /* definitions from emsmdbp.c */
 struct emsmdbp_context	*emsmdbp_init(struct loadparm_context *, const char *, void *);
+bool			emsmdbp_set_session_uuid(struct emsmdbp_context *, struct GUID);
 void			*emsmdbp_openchangedb_init(struct loadparm_context *);
 bool			emsmdbp_destructor(void *);
 bool			emsmdbp_verify_user(struct dcesrv_call_state *, struct emsmdbp_context *);

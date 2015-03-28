@@ -175,6 +175,11 @@ enum mapistore_error {
 	MAPISTORE_ERR_DENIED = 21,
 
 /**
+   The function failed to initiate remote connection
+*/
+	MAPISTORE_ERR_CONN_REFUSED = 22,
+
+/**
    The function is not implemented
 */
 	MAPISTORE_ERR_NOT_IMPLEMENTED

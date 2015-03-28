@@ -48,6 +48,8 @@
 #include <ldb.h>
 #include <talloc.h>
 
+#include <libmemcached/memcached.h>
+
 #include "libmapi/libmapi.h"
 
 /* forward declarations */
@@ -272,6 +274,10 @@ struct backend_context_list {
 
 struct processing_context;
 
+struct mapistore_notification_context {
+	memcached_st				*memc_ctx;
+};
+
 struct mapistore_context {
 	struct processing_context		*processing_ctx;
 	struct backend_context_list		*context_list;
@@ -282,6 +288,7 @@ struct mapistore_context {
 	struct namedprops_context		*nprops_ctx;
 	struct mapistore_connection_info	*conn_info;
 	const char				*cache;
+	struct mapistore_notification_context	*notification_ctx;
 };
 
 struct mapistore_freebusy_properties {
@@ -418,6 +425,13 @@ enum mapistore_error mapistore_namedprops_get_nameid(struct namedprops_context *
 enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedprops_context *, uint16_t, uint16_t *);
 enum mapistore_error mapistore_namedprops_transaction_start(struct namedprops_context *);
 enum mapistore_error mapistore_namedprops_transaction_commit(struct namedprops_context *);
+
+
+/* definitions from mapistore_notification.c */
+enum mapistore_error mapistore_notification_session_add(struct mapistore_context *, struct GUID, struct GUID, const char *);
+enum mapistore_error mapistore_notification_session_delete(struct mapistore_context *, struct GUID);
+enum mapistore_error mapistore_notification_session_exist(struct mapistore_context *, struct GUID);
+enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *, struct mapistore_context *, struct GUID, struct GUID *, char **);
 
 __END_DECLS
 

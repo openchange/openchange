@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Julien Kerihuel 2009-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -96,6 +96,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->notifications = NULL;
 	mstore_ctx->subscriptions = NULL;
 	mstore_ctx->conn_info = NULL;
+	mstore_ctx->notification_ctx = NULL;
 
 	indexing_url = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "indexing_backend");
 	mapistore_set_default_indexing_url(indexing_url);
@@ -104,6 +105,13 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	retval = mapistore_namedprops_init(mstore_ctx, lp_ctx, &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
 		OC_DEBUG(0, "ERROR: %s", mapistore_errstr(retval));
+		talloc_free(mstore_ctx);
+		return NULL;
+	}
+
+	retval = mapistore_notification_init(mstore_ctx, lp_ctx, &(mstore_ctx->notification_ctx));
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[mapistore]: Unable to initialize mapistore notification subsystem: %s\n", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}

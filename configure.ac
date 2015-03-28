@@ -290,6 +290,13 @@ AC_SUBST(CHECK_LIBS)
 OC_RULE_ADD(testsuite, TESTSUITE)
 
 dnl ---------------------------------------------------------------------------
+dnl Check for nanomsg library (server notification)
+dnl ---------------------------------------------------------------------------
+PKG_CHECK_MODULES(NANOMSG, libnanomsg, [], [AC_MSG_ERROR(Install nanomsg library >= 0.5)])
+AC_SUBST(NANOMSG_CFLAGS)
+AC_SUBST(NANO_LIBS)
+
+dnl ---------------------------------------------------------------------------
 dnl Set up the right compiler options
 dnl ---------------------------------------------------------------------------
 AC_LANG_COMPILER_SUNCC 

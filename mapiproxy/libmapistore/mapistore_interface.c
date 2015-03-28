@@ -443,6 +443,8 @@ _PUBLIC_ const char *mapistore_errstr(enum mapistore_error mapistore_err)
 		return "Insufficient rights to perform the operation";
 	case MAPISTORE_ERR_CONN_REFUSED:
 		return "Connection refused";
+	case MAPISTORE_ERR_NOT_AVAILABLE:
+		return "Not available";
 	case MAPISTORE_ERR_NOT_IMPLEMENTED:
 		return "Not implemented";
 	}

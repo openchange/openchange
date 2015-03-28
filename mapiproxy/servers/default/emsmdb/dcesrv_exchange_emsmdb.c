@@ -291,7 +291,6 @@ static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx,
 	uint16_t		size = 0;
 	uint32_t		i;
 	uint32_t		idx;
-	bool			needs_realloc = true;
 
 	/* Sanity checks */
 	if (!emsmdbp_ctx) return NULL;

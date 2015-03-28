@@ -748,7 +748,7 @@ mapiproxy/dcesrv_mapiproxy.c: gen_ndr/ndr_exchange_s.c gen_ndr/ndr_exchange.c
 mapiproxy/dcesrv_asyncemsmdb.$(SHLIBEXT):	mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.po	\
 						gen_ndr/ndr_asyncemsmdb.po
 	@echo "Linking $@"
-	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@$(CC) -o $@ $(DSOOPT) $^ -L. $(LDFLAGS) $(LIBS) $(SAMBASERVER_LIBS) $(SAMDB_LIBS) $(NANOMSG_LIBS) -Lmapiproxy mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION) libmapi.$(SHLIBEXT).$(PACKAGE_VERSION) mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)
 
 
 mapiproxy/servers/default/asyncemsmdb/dcesrv_asyncemsmdb.c: gen_ndr/ndr_asyncemsmdb_s.c gen_ndr/ndr_asyncemsmdb.c

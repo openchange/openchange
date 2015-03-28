@@ -3,7 +3,7 @@
 
    OpenChange Project
 
-   Copyright (C) Julien Kerihuel 2009-2014
+   Copyright (C) Julien Kerihuel 2009-2015
 
    This program is free software; you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -283,7 +283,8 @@ static enum MAPISTATUS dcesrv_EcDoDisconnect(struct dcesrv_call_state *dce_call,
 
 static struct mapi_response *EcDoRpc_process_transaction(TALLOC_CTX *mem_ctx, 
 							 struct emsmdbp_context *emsmdbp_ctx,
-							 struct mapi_request *mapi_request)
+							 struct mapi_request *mapi_request,
+							 struct GUID uuid)
 {
 	enum MAPISTATUS		retval;
 	struct mapi_response	*mapi_response;
@@ -948,7 +949,7 @@ static enum MAPISTATUS dcesrv_EcDoRpc(struct dcesrv_call_state *dce_call,
 
 	/* Step 1. Process EcDoRpc requests */
 	mapi_request = r->in.mapi_request;
-	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi_request);
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi_request, r->in.handle->uuid);
 
 	/* Step 2. Fill EcDoRpc reply */
 	r->out.handle = r->in.handle;
@@ -1250,6 +1251,12 @@ static enum MAPISTATUS dcesrv_EcDoConnectEx(struct dcesrv_call_state *dce_call,
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_EMSMDB);
 	OPENCHANGE_RETVAL_IF(!handle, MAPI_E_NOT_ENOUGH_RESOURCES, emsmdbp_ctx);
 
+	if (emsmdbp_set_session_uuid(emsmdbp_ctx, handle->wire_handle.uuid) == false) {
+		talloc_free(emsmdbp_ctx);
+		r->out.result = MAPI_E_LOGON_FAILED;
+		goto failure;
+	}
+
 	handle->data = (void *) emsmdbp_ctx;
 	*r->out.handle = handle->wire_handle;
 
@@ -1395,7 +1402,7 @@ static enum MAPISTATUS dcesrv_EcDoRpcExt2(struct dcesrv_call_state *dce_call,
 		return ecRpcFormat;
 	}
 
-	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request);
+	mapi_response = EcDoRpc_process_transaction(mem_ctx, emsmdbp_ctx, mapi2k7_request.mapi_request, r->in.handle->uuid);
 	talloc_free(mapi2k7_request.mapi_request);
 
 	/* Fill EcDoRpcExt2 reply */
@@ -1487,11 +1494,55 @@ static enum MAPISTATUS dcesrv_EcDoAsyncConnectEx(struct dcesrv_call_state *dce_c
 						 TALLOC_CTX *mem_ctx,
 						 struct EcDoAsyncConnectEx *r)
 {
+	struct exchange_emsmdb_session	*session;
+	enum mapistore_error		retval;
+	struct emsmdbp_context		*emsmdbp_ctx;
 	struct dcesrv_handle		*handle;
 
 	OC_DEBUG(3, "exchange_emsmdb: EcDoAsyncConnectEx (0xe)\n");
 
+	/* Step 0. Ensure incoming user is authenticated */
+	if (!dcesrv_call_authenticated(dce_call)) {
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate");
+		r->out.async_handle->handle_type = 0;
+		r->out.async_handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 1. Retrieve the existing session */
+	session = dcesrv_find_emsmdb_session(&r->in.handle->uuid);
+	if (session) {
+		emsmdbp_ctx = (struct emsmdbp_context *) session->session->private_data;
+	} else {
+		OC_DEBUG(0, "[EcDoAsyncConnectEx]: emsmdb session not found");
+		r->out.async_handle->handle_type = 0;
+		r->out.async_handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 2. Create the new session for async pipe */
 	handle = dcesrv_handle_new(dce_call->context, EXCHANGE_HANDLE_ASYNCEMSMDB);
+	if (!handle) {
+		OC_DEBUG(0, "[EcDoAsyncConnectEx] Unable to create new handle");
+		r->out.async_handle->handle_type = 0;
+		r->out.async_handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
+
+	/* Step 3. Register the global session */
+	retval = mapistore_notification_session_add(emsmdbp_ctx->mstore_ctx, r->in.handle->uuid,
+						    handle->wire_handle.uuid, dcesrv_call_account_name(dce_call));
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[EcDoAsyncConnectEx]: session registration failed with '%s'\n",
+			 mapistore_errstr(retval));
+		r->out.async_handle->handle_type = 0;
+		r->out.async_handle->uuid = GUID_zero();
+		r->out.result = DCERPC_FAULT_CONTEXT_MISMATCH;
+		return MAPI_E_LOGON_FAILED;
+	}
 
 	*r->out.async_handle = handle->wire_handle;
 	r->out.result = MAPI_E_SUCCESS;

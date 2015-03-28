@@ -872,11 +872,26 @@ mapiproxy/libmapiserver.$(SHLIBEXT).$(LIBMAPISERVER_SO_VERSION): libmapiserver.$
 ################
 LIBMAPISTORE_SO_VERSION = 0
 
-libmapistore: 	mapiproxy/libmapistore/mapistore_nameid.h		\
-		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
-		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)	\
-		setup/mapistore/mapistore_namedprops.ldif		\
-		$(OC_MAPISTORE)						\
+mapiproxy/libmapistore/mapistore_notification.idl: mapiproxy/libmapistore/gen_ndr
+
+mapiproxy/libmapistore/gen_ndr/%.h: mapiproxy/libmapistore/mapistore_notification.idl
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/gen_ndr --header -- $<
+
+mapiproxy/libmapistore/gen_ndr:
+	@echo "Creating gen_ndr directory for libmapistore IDL"
+	@mkdir -p mapiproxy/libmapistore/gen_ndr
+
+mapiproxy/libmapistore/gen_ndr/ndr_%.h mapiproxy/libmapistore/gen_ndr/ndr_%.c: mapiproxy/libmapistore/%.idl mapiproxy/libmapistore/gen_ndr/%.h
+	@echo "Generating $@"
+	@$(PIDL) --outputdir=mapiproxy/libmapistore/gen_ndr --ndr-parser -- $<
+
+libmapistore:	mapiproxy/libmapistore/gen_ndr/mapistore_notification.h		\
+		mapiproxy/libmapistore/mapistore_nameid.h			\
+		mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)		\
+		libmapistore.$(SHLIBEXT).$(LIBMAPISTORE_SO_VERSION)		\
+		setup/mapistore/mapistore_namedprops.ldif			\
+		$(OC_MAPISTORE)							\
 		$(MAPISTORE_TEST)
 
 mapiproxy/libmapistore/mapistore_nameid.h: libmapi/conf/mparse.pl libmapi/conf/mapi-named-properties
@@ -915,6 +930,7 @@ libmapistore-clean:	$(OC_MAPISTORE_CLEAN)
 	rm -f setup/mapistore/mapistore_namedprops_v2.ldif
 	-rmdir setup/mapistore
 	rm -f mapiproxy/libmapistore/mapistore_nameid.h
+	rm -rf mapiproxy/libmapistore/gen_ndr
 
 libmapistore-uninstall:	$(OC_MAPISTORE_UNINSTALL)
 	rm -f $(DESTDIR)$(libdir)/libmapistore.*
@@ -935,6 +951,8 @@ mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION):  mapiproxy/libmapistore/m
 							mapiproxy/libmapistore/mapistore_indexing.po			\
 							mapiproxy/libmapistore/mapistore_replica_mapping.po		\
 							mapiproxy/libmapistore/mapistore_namedprops.po			\
+							mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.po	\
+							mapiproxy/libmapistore/mapistore_notification.po		\
 							mapiproxy/libmapistore/backends/namedprops_ldb.po		\
 							mapiproxy/libmapistore/backends/namedprops_mysql.po		\
 							mapiproxy/libmapistore/backends/indexing_tdb.po			\
@@ -1382,18 +1400,19 @@ testsuite-clean:
 clean:: testsuite-clean
 
 bin/openchange-testsuite: 	testsuite/testsuite.o					\
-				testsuite/testsuite_common.o						\
+				testsuite/testsuite_common.o				\
 				testsuite/libmapistore/mapistore_namedprops.c		\
 				testsuite/libmapistore/mapistore_namedprops_mysql.c	\
 				testsuite/libmapistore/mapistore_namedprops_tdb.c	\
-				testsuite/libmapistore/mapistore_indexing.c			\
-				testsuite/libmapiproxy/openchangedb.c				\
+				testsuite/libmapistore/mapistore_indexing.c		\
+				testsuite/libmapistore/mapistore_notification.c		\
+				testsuite/libmapiproxy/openchangedb.c			\
 				testsuite/libmapiproxy/openchangedb_multitenancy.c	\
-				testsuite/mapiproxy/util/mysql.c					\
+				testsuite/mapiproxy/util/mysql.c			\
 				testsuite/mapiproxy/util/schema_migration.c		\
 				testsuite/libmapiproxy/openchangedb_logger.c		\
-				mapiproxy/libmapiproxy/backends/openchangedb_logger.c \
-				testsuite/libmapi/mapi_property.c					\
+				mapiproxy/libmapiproxy/backends/openchangedb_logger.c	\
+				testsuite/libmapi/mapi_property.c			\
 				mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
 				mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)
 	@echo "Linking $@"
@@ -1768,7 +1787,7 @@ etags:
 ctags:
 	ctags `find $(srcdir) -name "*.[ch]"`
 
-.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h
+.PRECIOUS: exchange.h gen_ndr/ndr_exchange.h gen_ndr/ndr_exchange.c gen_ndr/ndr_exchange_c.c gen_ndr/ndr_exchange_c.h mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.c mapiproxy/libmapistore/gen_ndr/mapistore_notification.h
 
 test:: check
 

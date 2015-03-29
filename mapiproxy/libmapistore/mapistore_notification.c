@@ -313,6 +313,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 								 struct GUID *uuid,
 								 char **cnp)
 {
+	TALLOC_CTX				*local_mem_ctx;
 	enum mapistore_error			retval;
 	enum ndr_err_code			ndr_err_code;
 	struct ndr_pull				*ndr;
@@ -331,30 +332,35 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
 
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	/* Retrieve key/value */
-	retval = mapistore_notification_session_set_key(mem_ctx, async_uuid, &key);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	retval = mapistore_notification_session_set_key(local_mem_ctx, async_uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, local_mem_ctx);
 
 	value = memcached_get(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), &value_len,
 			      &flags, &rc);
 	talloc_free(key);
-	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), NULL);
+	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
 
 	/* Unpack session structure */
 	blob.data = (uint8_t *) value;
 	blob.length = value_len;
 
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
-	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, NULL);
+	ndr = ndr_pull_init_blob(&blob, local_mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 
 	ndr_err_code = ndr_pull_mapistore_notification_session(ndr, NDR_SCALARS, &r);
 	talloc_free(ndr);
-	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
 
 	*uuid = r.v.v1.uuid;
 	*cnp = talloc_strdup(mem_ctx, r.v.v1.cn);
-	MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+
+	talloc_free(local_mem_ctx);
 
 	return MAPISTORE_SUCCESS;
 }

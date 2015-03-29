@@ -269,7 +269,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_exist(struct mapist
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval;
-	char			*key;
+	char			*key = NULL;
 	memcached_return	rc;
 
 	/* Sanity checks */

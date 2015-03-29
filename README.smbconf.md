@@ -68,7 +68,7 @@ mapistore indexing backend
 mapiproxy openchangedb backend
 ------------------------------
 
-- __mapiproxy:openchangedb = STRING__ This option specified the
+- __mapiproxy:openchangedb = STRING__ This option specifies the
   database URL to be used for openchangedb backend. If not present LDB
-  backend will be use. The URL must have a format like:
+  backend will be used. The URL must have a format like:
   mysql://user:pass@hostname/database

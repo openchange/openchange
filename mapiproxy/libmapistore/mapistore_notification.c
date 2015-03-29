@@ -303,6 +303,8 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_exist(struct mapist
    \param uuidp pointer to the GUID of the emsmdb session
    \param cnp pointer on pointer to the common name to return
 
+   \note calling function is responsible for freeing cnp
+
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem_ctx,

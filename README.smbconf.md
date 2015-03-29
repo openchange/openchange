@@ -65,6 +65,17 @@ mapistore indexing backend
   example, `--SERVER=127.0.0.1:11211` would use memcached server
   located on 127.0.0.1 and running on port 11211.
 
+mapistore notification
+----------------------
+
+- __mapistore:notification_cache = STRING__ This option specifies the
+  connection string to use to connect to the memcached server used for
+  transitory notification data storage between emsmdb/asyncemsmdb
+  endpoints. The format of the string must be compliant with
+  http://docs.libmemcached.org/libmemcached_configuration.html. For
+  example, `--SERVER=127.0.0.1:11211` would use memcached server
+  located on 127.0.0.1 and running on port 11211.
+
 mapiproxy openchangedb backend
 ------------------------------
 

@@ -38,6 +38,7 @@ interface mapistore_notification
 		MAPISTORE_NOTIFICATION_V1	= 1
 	} interface_vnum;
 
+	/* session */
 	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
 		GUID								uuid;
 		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string	cn;
@@ -52,4 +53,22 @@ interface mapistore_notification
 		interface_vnum			vnum;
 		[switch_is(vnum)] session_ver	v;
 	} mapistore_notification_session;
+
+
+	/* resolver */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[range(0, 100000)] uint32 count;
+		[size_is(count),flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string hosts[];
+	} resolver_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] resolver_v1 v1;
+		[default];
+	} resolver_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum			vnum;
+		[switch_is(vnum)] resolver_ver	v;
+	} mapistore_notification_resolver;
+
 }

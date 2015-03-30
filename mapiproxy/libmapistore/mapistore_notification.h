@@ -31,5 +31,6 @@
 
 /* Define format strings used for key storage in memcached */
 #define	MSTORE_MEMC_FMT_SESSION	"session:%s"
+#define	MSTORE_MEMC_FMT_RESOLVER "resolver:%s"
 
 #endif /* MAPISTORE_NOTIFICATION_H */

@@ -250,7 +250,17 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}
+
+		/* Register the address to the resolver */
+		retval = mapistore_notification_resolver_add(p->mstore_ctx, cn, bind_addr);
 		talloc_free(bind_addr);
+		if (retval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "[asyncemsmdb] unable to add record to the resolver: %s",
+				 mapistore_errstr(retval));
+			talloc_free(p);
+			talloc_free(mstore_ctx);
+			return NT_STATUS_OK;
+		}
 
 		sz = sizeof(p->fd);
 		nn_retval = nn_getsockopt(p->sock, NN_SOL_SOCKET, NN_RCVFD, &p->fd, &sz);

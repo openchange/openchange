@@ -1212,6 +1212,32 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 # rpcextract
 ###################
 
+ocnotify: bin/ocnotify
+
+ocnotify-install: ocnotify
+	$(INSTALL) -d $(DESTDIR)$(bindir)
+	$(INSTALL) -m 0755 bin/ocnotify $(DESTDIR)$(bindir)
+
+ocnotify-uninstall:
+	rm -f $(DESTDIR)$(bindir)/ocnotify
+
+ocnotify-clean::
+	rm -f bin/ocnotify
+	rm -f utils/ocnotify.o
+
+clean:: ocnotify-clean
+
+bin/ocnotify:		utils/ocnotify.o					\
+			mapiproxy/libmapistore.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			mapiproxy/libmapiproxy.$(SHLIBEXT).$(PACKAGE_VERSION)	\
+			libmapi.$(SHLIBEXT).$(PACKAGE_VERSION)
+	@echo "Linking $@"
+	@$(CC) $(CFLAGS) $(NANOMSG_CFLAGS) -o $@ $^ $(LDFLAGS) $(NANOMSG_LIBS) $(LIBS) -lpopt
+
+###################
+# rpcextract
+###################
+
 rpcextract: bin/rpcextract
 
 rpcextract-install: rpcextract

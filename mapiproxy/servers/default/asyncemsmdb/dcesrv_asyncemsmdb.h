@@ -46,9 +46,33 @@ struct asyncemsmdb_private_data {
 struct exchange_asyncemsmdb_session {
 	struct asyncemsmdb_private_data		*data;
 	struct GUID				uuid;
+	struct mapistore_context		*mstore_ctx;
+	char					*cn;
+	char					*bind_addr;
 	struct exchange_asyncemsmdb_session	*prev;
 	struct exchange_asyncemsmdb_session	*next;
 };
+
+#ifndef __BEGIN_DECLS
+#ifdef __cplusplus
+#define __BEGIN_DECLS		extern "C" {
+#define __END_DECLS		}
+#else
+#define __BEGIN_DECLS
+#define __END_DECLS
+#endif
+#endif
+
+#define	DCESRV_INTERFACE_ASYNCEMSMDB_BIND	dcerpc_server_asyncemsmdb_bind
+#define	DCESRV_INTERFACE_ASYNCEMSMDB_UNBIND	dcerpc_server_asyncemsmdb_unbind
+
+__BEGIN_DECLS
+
+NTSTATUS dcerpc_server_asyncemsmdb_init(void);
+NTSTATUS ndr_table_register(const struct ndr_interface_table *);
+NTSTATUS samba_init_module(void);
+
+__END_DECLS
 
 #define	ASYNCEMSMDB_FALLBACK_ADDR	"127.0.0.1"
 

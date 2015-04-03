@@ -10,12 +10,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -195,7 +195,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_account_info(TALLOC_CTX *mem_ctx,
 	default: /* Unknown value for msExchUserAccountControl attribute */
 		return MAPI_E_CORRUPT_STORE;
 	}
-	
+
 	/* We should never get here anyway */
 	return MAPI_E_CORRUPT_STORE;
 }
@@ -379,8 +379,8 @@ _PUBLIC_ enum MAPISTATUS emsabp_EphemeralEntryID_to_Binary_r(TALLOC_CTX *mem_ctx
    \return MAPI_E_SUCCESS on success, otherwise
    MAPI_E_NOT_ENOUGH_RESOURCES or MAPI_E_CORRUPT_STORE
  */
-_PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsabp_ctx, 
-						     uint32_t DisplayType, struct ldb_message *msg, 
+_PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsabp_ctx,
+						     uint32_t DisplayType, struct ldb_message *msg,
 						     struct PermanentEntryID *permEntryID)
 {
 	struct GUID		*guid = (struct GUID *) NULL;
@@ -389,7 +389,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 
 	/* Sanity checks */
 	OPENCHANGE_RETVAL_IF(!permEntryID, MAPI_E_NOT_ENOUGH_RESOURCES, NULL);
-	
+
 
 	permEntryID->ID_type = 0x0;
 	permEntryID->R1 = 0x0;
@@ -409,7 +409,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_set_PermanentEntryID(struct emsabp_context *emsa
 
 		guid = talloc_zero(emsabp_ctx->mem_ctx, struct GUID);
 		GUID_from_data_blob(ldb_value, guid);
-		permEntryID->dn = talloc_asprintf(emsabp_ctx->mem_ctx, EMSABP_DN, 
+		permEntryID->dn = talloc_asprintf(emsabp_ctx->mem_ctx, EMSABP_DN,
 						  guid->time_low, guid->time_mid,
 						  guid->time_hi_and_version,
 						  guid->clock_seq[0],
@@ -699,7 +699,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_fetch_attrs_from_msg(TALLOC_CTX *mem_ctx,
 		if (!data) {
 			ulPropTag = (ulPropTag & 0xFFFF0000) | PT_ERROR;
 		}
-		
+
 		aRow->lpProps[i].ulPropTag = (enum MAPITAGS) ulPropTag;
 		aRow->lpProps[i].dwAlignPad = 0x0;
 		set_PropertyValue(&(aRow->lpProps[i]), data);
@@ -873,7 +873,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_table_fetch_attrs(TALLOC_CTX *mem_ctx, struct em
 			}
 			PropertyRow_addprop(aRow, lpProps);
 			/* PropertyRow_addprop internals overwrite with MAPI_E_NOT_FOUND when data is NULL */
-			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME || 
+			if (SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME ||
 			    SPropTagArray->aulPropTag[i] == PR_DISPLAY_NAME_UNICODE) {
 				aRow->lpProps[aRow->cValues - 1].value.lpszA = NULL;
 				aRow->lpProps[aRow->cValues - 1].value.lpszW = NULL;
@@ -1011,7 +1011,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 	OPENCHANGE_RETVAL_IF(!ldb_dn_validate(ldb_dn), MAPI_E_CORRUPT_STORE, aRow);
 
 	scope = LDB_SCOPE_BASE;
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn, 
+	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res, ldb_dn,
 			 scope, recipient_attrs, NULL);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count || res->count != 1, MAPI_E_CORRUPT_STORE, aRow);
 
@@ -1041,7 +1041,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
 		ret = ldb_wait(req->handle, LDB_WAIT_ALL);
 	}
 	talloc_free(req);
-	
+
 	if (ret != LDB_SUCCESS || !res->count) {
 		talloc_free(res);
 		talloc_free(aRow);
@@ -1078,7 +1078,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_get_HierarchyTable(TALLOC_CTX *mem_ctx, struct e
    or not
    \param SRowSet pointer on pointer to the output SRowSet array
 
-   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE 
+   \return MAPI_E_SUCCESS on success, otherwise MAPI_E_CORRUPT_STORE
  */
 _PUBLIC_ enum MAPISTATUS emsabp_get_CreationTemplatesTable(TALLOC_CTX *mem_ctx, struct emsabp_context *emsabp_ctx,
 							   uint32_t dwFlags, struct PropertyRowSet_r **SRowSet)
@@ -1135,16 +1135,19 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 				       struct PropertyTagArray_r *MIds, struct Restriction_r *restriction,
 				       struct STAT *pStat, uint32_t limit)
 {
+	TALLOC_CTX			*local_mem_ctx;
 	enum MAPISTATUS			retval;
-	struct ldb_result		*res = NULL;
+	struct ldb_result		*ldb_res = NULL;
 	struct PropertyRestriction_r	*res_prop = NULL;
 	const char * const		recipient_attrs[] = { "*", NULL };
-	int				ret;
 	uint32_t			i;
 	const char			*dn;
-	char				*fmt_str, *expression = NULL;
+	char				*fmt_str, *search_filter = NULL;
 	const char			*fmt_attr;
 	char				*attr;
+	int				ldb_ret;
+	struct ldb_server_sort_control	**ldb_sort_controls = NULL;
+	struct ldb_request		*ldb_req;
 
 	/* Step 0. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (pStat->SortType == SortTypePhoneticDisplayName) {
@@ -1156,28 +1159,40 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		return MAPI_E_INVALID_BOOKMARK;
 	}
 
-	if (restriction && (pStat->SortType != SortTypeDisplayName) && 
+	if (restriction && (pStat->SortType != SortTypeDisplayName) &&
 	    (pStat->SortType != SortTypePhoneticDisplayName)) {
 		return MAPI_E_CALL_FAILED;
 	}
 
-	/* Step 1. Apply restriction and retrieve results from AD */
+	local_mem_ctx = talloc_new(NULL);
+	OPENCHANGE_RETVAL_IF(local_mem_ctx == NULL, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+
+	/* Step 1. Apply sort type, restriction and retrieve results from AD */
+
+	/* We sort only for displayName because phoneticDisplayName is not yet supported */
+	if (pStat->SortType == SortTypeDisplayName) {
+		ldb_sort_controls = talloc_zero_array(local_mem_ctx, struct ldb_server_sort_control *, 2);
+		OPENCHANGE_RETVAL_IF(ldb_sort_controls == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		ldb_sort_controls[0] = talloc(local_mem_ctx, struct ldb_server_sort_control);
+		OPENCHANGE_RETVAL_IF(ldb_sort_controls[0] == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		ldb_sort_controls[0]->attributeName = talloc_strdup(local_mem_ctx, "displayName");
+		OPENCHANGE_RETVAL_IF(ldb_sort_controls[0]->attributeName == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+
+		ldb_sort_controls[0]->orderingRule = NULL;
+	}
+
 	if (restriction) {
 		/* FIXME: We only support RES_PROPERTY restriction */
-		if ((uint32_t)restriction->rt != RES_PROPERTY) {
-			return MAPI_E_TOO_COMPLEX;
-		}
+		OPENCHANGE_RETVAL_IF((uint32_t)restriction->rt != RES_PROPERTY, MAPI_E_TOO_COMPLEX, local_mem_ctx);
 
 		res_prop = (struct PropertyRestriction_r *)&(restriction->res.resProperty);
 		fmt_attr = emsabp_property_get_attribute(res_prop->ulPropTag);
-		if (fmt_attr == NULL) {
-			return MAPI_E_NO_SUPPORT;
-		} 
+		OPENCHANGE_RETVAL_IF(fmt_attr == NULL, MAPI_E_NO_SUPPORT, local_mem_ctx);
 
 		attr = (char *)get_PropertyValue_data(res_prop->lpProp);
-		if (attr == NULL) {
-			return MAPI_E_NO_SUPPORT;
-		}
+		OPENCHANGE_RETVAL_IF(attr == NULL, MAPI_E_NO_SUPPORT, local_mem_ctx);
 
 		if ((res_prop->ulPropTag & 0xFFFF) == 0x101e) {
 			struct StringArray_r *attr_ml = (struct StringArray_r *) get_PropertyValue_data(res_prop->lpProp);
@@ -1185,61 +1200,72 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		} else {
 			attr = (char *)get_PropertyValue_data(res_prop->lpProp);
 		}
-		if (attr == NULL) {
-			return MAPI_E_NO_SUPPORT;
-		}
+		OPENCHANGE_RETVAL_IF(attr == NULL, MAPI_E_NO_SUPPORT, local_mem_ctx);
 
 		/* Special case: anr doesn't return correct result with partial search */
 		if (!strcmp(fmt_attr, "anr")) {
-			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(userPrincipalName=%s))(!(objectClass=computer)))", fmt_attr, attr, attr);
+			fmt_str = talloc_asprintf(local_mem_ctx, "(&(objectClass=user)(|(%s=%s)(userPrincipalName=%s))(!(objectClass=computer)))", fmt_attr, attr, attr);
 		} else if (!strcmp(fmt_attr, "legacyExchangeDN")) {
-			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(|(%s=%s)(%s%s)(anr=%s))(!(objectClass=computer)))", fmt_attr, attr, fmt_attr, attr, attr);
+			fmt_str = talloc_asprintf(local_mem_ctx, "(&(objectClass=user)(|(%s=%s)(%s%s)(anr=%s))(!(objectClass=computer)))", fmt_attr, attr, fmt_attr, attr, attr);
 		} else {
-			fmt_str = talloc_asprintf(mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
+			fmt_str = talloc_asprintf(local_mem_ctx, "(&(objectClass=user)(%s=*%s*)(!(objectClass=computer)))", fmt_attr, attr);
 		}
+		OPENCHANGE_RETVAL_IF(fmt_str == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 	} else {
-		fmt_str = talloc_strdup(mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		fmt_str = talloc_strdup(local_mem_ctx, "(&(objectClass=user)(displayName=*)(!(objectClass=computer)))");
+		OPENCHANGE_RETVAL_IF(fmt_str == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 		attr = NULL;
 	}
 
-	retval = emsabp_include_organization_restriction(emsabp_ctx, fmt_str, &expression);
-	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, fmt_str);
+	retval = emsabp_include_organization_restriction(emsabp_ctx, fmt_str, &search_filter);
+	OPENCHANGE_RETVAL_IF(retval != MAPI_E_SUCCESS, retval, local_mem_ctx);
 
-	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx, &res,
-			 ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
-			 LDB_SCOPE_SUBTREE, recipient_attrs, expression, attr);
-	talloc_free(fmt_str);
-	talloc_free(expression);
+	ldb_res = talloc_zero(local_mem_ctx, struct ldb_result);
+	OPENCHANGE_RETVAL_IF(ldb_res == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
-	if (ret != LDB_SUCCESS) {
-		return MAPI_E_NOT_FOUND;
-	}
-	if (res == NULL) {
-		return MAPI_E_INVALID_OBJECT;
-	}
-	if (!res->count) {
-		return MAPI_E_NOT_FOUND;
+	ldb_req = NULL;
+	ldb_ret = ldb_build_search_req(&ldb_req, emsabp_ctx->samdb_ctx, local_mem_ctx,
+				       ldb_get_default_basedn(emsabp_ctx->samdb_ctx),
+				       LDB_SCOPE_SUBTREE,
+				       search_filter,
+				       recipient_attrs,
+				       NULL,
+				       ldb_res,
+				       ldb_search_default_callback,
+				       NULL);
+	OPENCHANGE_RETVAL_IF(ldb_ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+
+	if (ldb_sort_controls) {
+		ldb_request_add_control(ldb_req, LDB_CONTROL_SERVER_SORT_OID, false, ldb_sort_controls);
 	}
 
-	if (limit && res->count > limit) {
-		return MAPI_E_TABLE_TOO_BIG;
-	}
+	ldb_ret = ldb_request(emsabp_ctx->samdb_ctx, ldb_req);
+	OPENCHANGE_RETVAL_IF(ldb_ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
 
-	MIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, res->count);
-	MIds->cValues = res->count;
+	ldb_ret = ldb_wait(ldb_req->handle, LDB_WAIT_ALL);
+	OPENCHANGE_RETVAL_IF(ldb_ret != LDB_SUCCESS, MAPI_E_NOT_FOUND, local_mem_ctx);
+	OPENCHANGE_RETVAL_IF(ldb_res == NULL, MAPI_E_INVALID_OBJECT, local_mem_ctx);
+	OPENCHANGE_RETVAL_IF(ldb_res->count == 0, MAPI_E_NOT_FOUND, local_mem_ctx);
+	OPENCHANGE_RETVAL_IF(limit && ldb_res->count > limit, MAPI_E_TABLE_TOO_BIG, local_mem_ctx);
+
+	MIds->aulPropTag = (uint32_t *) talloc_array(mem_ctx, uint32_t, ldb_res->count);
+	OPENCHANGE_RETVAL_IF(MIds->aulPropTag == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
+	MIds->cValues = ldb_res->count;
 
 	/* Step 2. Create session MId for all fetched records */
-	for (i = 0; i < res->count; i++) {
-		dn = ldb_msg_find_attr_as_string(res->msgs[i], "distinguishedName", NULL);
+
+	for (i = 0; i < ldb_res->count; i++) {
+		dn = ldb_msg_find_attr_as_string(ldb_res->msgs[i], "distinguishedName", NULL);
 		retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, (uint32_t *)&(MIds->aulPropTag[i]));
-		if (retval) {
+		if (retval != MAPI_E_SUCCESS) {
 			retval = emsabp_tdb_insert(emsabp_ctx->ttdb_ctx, dn);
-			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, local_mem_ctx);
 			retval = emsabp_tdb_fetch_MId(emsabp_ctx->ttdb_ctx, dn, (uint32_t *) &(MIds->aulPropTag[i]));
-			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, NULL);
+			OPENCHANGE_RETVAL_IF(retval, MAPI_E_CORRUPT_STORE, local_mem_ctx);
 		}
 	}
 
+	talloc_free(local_mem_ctx);
 	return MAPI_E_SUCCESS;
 }
 
@@ -1255,7 +1281,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 
    \return MAPI_E_SUCCESS on success, otherwise MAPI error
  */
-_PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, const char *dn, 
+_PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, const char *dn,
 					  struct ldb_message **ldb_res)
 {
 	struct ldb_dn		*ldb_dn = NULL;
@@ -1286,7 +1312,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_dn(struct emsabp_context *emsabp_ctx, con
 
    \param emsabp_ctx pointer to the EMSABP context
    \param legacyDN pointer to the legacyDN attribute value to lookup
-   \param ldb_res pointer on pointer to the LDB message returned by 
+   \param ldb_res pointer on pointer to the LDB message returned by
    the function
    \param pbUseConfPartition pointer on boolean specifying whether the
    legacyExchangeDN was retrieved from the Configuration parition or
@@ -1308,7 +1334,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_search_legacyExchangeDN(struct emsabp_context *e
 
 	*pbUseConfPartition = true;
 	ret = ldb_search(emsabp_ctx->samdb_ctx, emsabp_ctx->mem_ctx, &res,
-			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx), 
+			 ldb_get_config_basedn(emsabp_ctx->samdb_ctx),
 			 LDB_SCOPE_SUBTREE, recipient_attrs, "(legacyExchangeDN=%s)",
 			 ldb_binary_encode_string(emsabp_ctx->mem_ctx, legacyDN));
 
@@ -1427,12 +1453,9 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 				       NULL);
 	if (ldb_ret != LDB_SUCCESS) goto done;
 
-	ldb_sort_controls = talloc_array(filter_search, struct ldb_server_sort_control *, 2);
+	ldb_sort_controls = talloc_zero_array(filter_search, struct ldb_server_sort_control *, 2);
 	ldb_sort_controls[0] = talloc(ldb_sort_controls, struct ldb_server_sort_control);
 	ldb_sort_controls[0]->attributeName = talloc_strdup(ldb_sort_controls, "displayName");
-	ldb_sort_controls[0]->orderingRule = NULL;
-	ldb_sort_controls[0]->reverse = 0;
-	ldb_sort_controls[1] = NULL;
 	ldb_request_add_control(ldb_req, LDB_CONTROL_SERVER_SORT_OID, false, ldb_sort_controls);
 
 	ldb_ret = ldb_request(emsabp_ctx->samdb_ctx, ldb_req);

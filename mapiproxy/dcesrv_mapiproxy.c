@@ -287,8 +287,6 @@ static void mapiproxy_op_unbind(struct dcesrv_connection_context *context, const
 		talloc_free(private);
 	}
 
-	talloc_free(context);
-
 	return;
 }
 

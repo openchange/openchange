@@ -113,8 +113,9 @@ enum emsmdbp_object_type {
 	EMSMDBP_OBJECT_TABLE		= 0x4,
 	EMSMDBP_OBJECT_STREAM		= 0x5,
 	EMSMDBP_OBJECT_ATTACHMENT	= 0x6,
-	EMSMDBP_OBJECT_FTCONTEXT	= 0x7, /* Fast Transfer */
-	EMSMDBP_OBJECT_SYNCCONTEXT	= 0x8
+	EMSMDBP_OBJECT_SUBSCRIPTION	= 0x7,
+	EMSMDBP_OBJECT_FTCONTEXT	= 0x8, /* Fast Transfer */
+	EMSMDBP_OBJECT_SYNCCONTEXT	= 0x9
 };
 
 struct emsmdbp_object_mailbox {
@@ -148,6 +149,7 @@ struct emsmdbp_object_table {
 	uint32_t				numerator;
 	uint32_t				denominator;
 	uint8_t					flags;
+	bool					subscription;
 };
 
 struct emsmdbp_object_stream {
@@ -166,6 +168,10 @@ struct emsmdbp_stream_data {
 
 struct emsmdbp_object_attachment {
 	uint32_t			attachmentID;
+};
+
+struct emsmdbp_object_subscription {
+	uint32_t			handle;
 };
 
 struct emsmdbp_object_synccontext {
@@ -218,6 +224,7 @@ union emsmdbp_objects {
 	struct emsmdbp_object_table	*table;
 	struct emsmdbp_object_stream	*stream;
 	struct emsmdbp_object_attachment *attachment;
+	struct emsmdbp_object_subscription *subscription;
 	struct emsmdbp_object_synccontext *synccontext;
 	struct emsmdbp_object_ftcontext *ftcontext;
 };
@@ -346,6 +353,7 @@ struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *
 struct emsmdbp_object *emsmdbp_object_stream_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_stream_commit(struct emsmdbp_object *);
 struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
+struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 int emsmdbp_object_set_properties(struct emsmdbp_context *, struct emsmdbp_object *, struct SRow *);
 void **emsmdbp_object_get_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray *, enum MAPISTATUS **);

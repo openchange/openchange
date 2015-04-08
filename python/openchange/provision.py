@@ -560,7 +560,7 @@ def get_schema_master(db):
 def get_dns_owner(db, ntds_owner):
     res = db.search(base=ntds_owner, scope=ldb.SCOPE_BASE, attrs=["dnsHostname"])
     dns_hostname = res[0]['dnsHostname'][0]
-    return dns_hostname
+    return dns_hostname.lower()
 
 
 def get_schema_master_samdb(names, lp, creds):
@@ -568,6 +568,7 @@ def get_schema_master_samdb(names, lp, creds):
     ntds_owner = get_schema_master(local_db)
     dns_owner = get_dns_owner(local_db, ntds_owner)
     fqdn = names.hostname + '.' + names.dnsdomain
+    fqdn = fqdn.lower()
     if dns_owner == fqdn:
         return local_db
 

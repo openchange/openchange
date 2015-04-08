@@ -56,6 +56,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 {
 	enum MAPISTATUS		retval;
 	enum mapistore_error	mretval;
+	struct emsmdbp_object	*parent_object;
+	struct emsmdbp_object	*subscription_object;
 	struct mapi_handles	*parent_rec = NULL;
 	struct mapi_handles	*subscription_rec = NULL;
 	uint32_t		handle;
@@ -92,12 +94,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 		goto end;
 	}
 
+	parent_object = (struct emsmdbp_object *) data;
+
 	retval = mapi_handles_add(emsmdbp_ctx->handles_ctx, handle, &subscription_rec);
 	if (retval) {
 		mapi_repl->error_code = retval;
 		goto end;
 	}
-	/* TODO: handling of notification subscriptions */
+	/* Notification subscriptions */
 	flags = mapi_req->u.mapi_RegisterNotification.NotificationFlags;
 	if (mapi_req->u.mapi_RegisterNotification.WantWholeStore) {
 		flags |= sub_WholeStore;
@@ -118,6 +122,14 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopRegisterNotification(TALLOC_CTX *mem_ctx,
 	}
 
 	handles[mapi_repl->handle_idx] = subscription_rec->handle;
+
+	/* Create emsmdbp subscription object */
+	subscription_object = emsmdbp_object_subscription_init(subscription_rec, emsmdbp_ctx, parent_object);
+	if (!subscription_object) {
+		OC_DEBUG(0, "Unable to create subscription object");
+	}
+	mapi_handles_set_private_data(subscription_rec, subscription_object);
+	subscription_object->object.subscription->handle = subscription_rec->handle;
 
 end:
 	*size += libmapiserver_RopRegisterNotification_size();

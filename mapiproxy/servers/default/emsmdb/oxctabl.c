@@ -539,6 +539,8 @@ finish:
 								  table->properties);
 		if (mretval != MAPISTORE_SUCCESS) {
 			OC_DEBUG(0, "Failed to add subscription");
+		} else {
+			table->subscription = true;
 		}
 	}
 

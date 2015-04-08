@@ -376,6 +376,8 @@ _PUBLIC_ enum MAPISTATUS EcDoRpc_RopQueryRows(TALLOC_CTX *mem_ctx,
 	enum MAPISTATUS			retval;
 	void				*data;
 	enum MAPISTATUS			*retvals;
+	enum mapistore_error		mretval;
+	uint64_t			folderID;
 	void				**data_pointers;
 	uint32_t			count;
 	uint32_t			handle;
@@ -517,6 +519,27 @@ finish:
 		response->RowData.length = 0;
 		response->RowData.data = NULL;
 		OC_DEBUG(5, "returning empty data set\n");
+	}
+
+	/* Add notification TableModified subscription */
+	switch (object->parent_object->type) {
+	case EMSMDBP_OBJECT_MAILBOX:
+		folderID = object->parent_object->object.mailbox->folderID;
+		break;
+	case EMSMDBP_OBJECT_FOLDER:
+		folderID = object->parent_object->object.folder->folderID;
+		break;
+	default:
+		folderID = 0;
+		break;
+	}
+	if (folderID) {
+		mretval = mapistore_notification_subscription_add(emsmdbp_ctx->mstore_ctx, emsmdbp_ctx->session_uuid,
+								  handle, fnevTableModified, folderID, 0, table->prop_count,
+								  table->properties);
+		if (mretval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "Failed to add subscription");
+		}
 	}
 
 end:

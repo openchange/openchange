@@ -714,3 +714,376 @@ _PUBLIC_ enum mapistore_error mapistore_notification_resolver_exist(struct mapis
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Generate the subscription key
+
+   \param mem_ctx pointer to the memory context
+   \param uuid the uuid of the session to compute
+   \param pointer on pointer to the key to return
+
+   \note the caller is responsible for freeing _key
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_notification_subscription_set_key(TALLOC_CTX *mem_ctx,
+									struct GUID uuid,
+									char **_key)
+{
+	char	*guid = NULL;
+	char	*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!_key, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	guid = GUID_string(mem_ctx, (const struct GUID *)&uuid);
+	MAPISTORE_RETVAL_IF(!guid, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_SUBSCRIPTION, guid);
+	talloc_free(guid);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	*_key = key;
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Retrieve all the subscriptions associated to a uuid
+
+   \param mem_ctx pointer to the memory context
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the UUID session to lookup
+   \param r pointer to the mapistore_notification_subscription to return
+
+   \note the caller is responsible for freeing memory associated to
+   mapistore_notification_subscription
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+enum mapistore_error mapistore_notification_subscription_get(TALLOC_CTX *mem_ctx,
+							     struct mapistore_context *mstore_ctx,
+							     struct GUID uuid,
+							     struct mapistore_notification_subscription *_r)
+{
+	TALLOC_CTX					*local_mem_ctx;
+	enum mapistore_error				retval;
+	enum ndr_err_code				ndr_err_code;
+	struct ndr_pull					*ndr;
+	DATA_BLOB					blob;
+	struct mapistore_notification_subscription	r;
+	char						*key;
+	char						*value = NULL;
+	size_t						value_len = 0;
+	memcached_return_t				rc;
+	uint32_t					flags;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!_r, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Retrieve key/value */
+	retval = mapistore_notification_subscription_set_key(local_mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, local_mem_ctx);
+
+	value = memcached_get(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), &value_len,
+			      &flags, &rc);
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
+
+	/* Unpack subscription structure */
+	blob.data = (uint8_t *) value;
+	blob.length = value_len;
+
+	ndr = ndr_pull_init_blob(&blob, mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+
+	ndr_err_code = ndr_pull_mapistore_notification_subscription(ndr, NDR_SCALARS, &r);
+	talloc_free(ndr);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
+
+	*_r = r;
+
+	talloc_free(local_mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Add a subscription entry for a MAPI object
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session UUID
+   \param handle the handle to associate this subscription with
+   \param flags the notification bitmask to associate to this subscription
+   \param fid the FolderID where relevant
+   \param mid the MessageId where relevant
+   \param count the number of properties when subscribing for a table events
+   \param properties pointer on an array of MAPI properties to add for table events
+
+   \note subscription are uniquely identified by the com
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_subscription_add(struct mapistore_context *mstore_ctx,
+								      struct GUID uuid,
+								      uint32_t handle,
+								      uint16_t flags,
+								      uint64_t fid,
+								      uint64_t mid,
+								      uint32_t count,
+								      enum MAPITAGS *properties)
+{
+	TALLOC_CTX					*mem_ctx;
+	enum mapistore_error				retval;
+	struct mapistore_notification_subscription	r;
+	struct ndr_push					*ndr;
+	enum ndr_err_code				ndr_err_code;
+	memcached_return				rc = MEMCACHED_ERROR;
+	char						*key = NULL;
+
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(count && !properties, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare key */
+	retval = mapistore_notification_subscription_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Create subscription v1 blob */
+	ndr = ndr_push_init_ctx(mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	ndr->offset = 0;
+
+	retval = mapistore_notification_subscription_exist(mstore_ctx, uuid);
+	if (retval == MAPISTORE_SUCCESS) {
+		uint32_t	i = 0;
+		uint32_t	last = 0;
+
+		retval = mapistore_notification_subscription_get(mem_ctx, mstore_ctx, uuid, &r);
+		MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+		/* Check if the subscription does not already exist */
+		for (i = 0; i < r.v.v1.count; i++) {
+			if (r.v.v1.subscription[i].handle == handle) {
+				OC_DEBUG(0, "subscription with handle=0x%x already exist", handle);
+				talloc_free(mem_ctx);
+				return MAPISTORE_ERR_EXIST;
+			}
+		}
+
+		r.vnum = 1;
+		last = r.v.v1.count;
+		r.v.v1.count = r.v.v1.count + 1;
+		r.v.v1.subscription = talloc_realloc(mem_ctx, r.v.v1.subscription, struct subscription_object_v1, r.v.v1.count + 1);
+		r.v.v1.subscription[last].handle = handle;
+		r.v.v1.subscription[last].flags = flags;
+		r.v.v1.subscription[last].fid = fid;
+		r.v.v1.subscription[last].mid = mid;
+		r.v.v1.subscription[last].count = count;
+		r.v.v1.subscription[last].properties = (uint32_t *)properties;
+
+		ndr_err_code = ndr_push_mapistore_notification_subscription(ndr, NDR_SCALARS, &r);
+		MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+		/* Add the key/value record */
+		rc = memcached_set(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *) ndr->data, ndr->offset, 0, 0);
+
+	} else {
+		r.vnum = 1;
+		r.v.v1.count = 1;
+		r.v.v1.subscription = talloc_array(mem_ctx, struct subscription_object_v1, 1);
+		MAPISTORE_RETVAL_IF(!r.v.v1.subscription, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+		r.v.v1.subscription[0].handle = handle;
+		r.v.v1.subscription[0].flags = flags;
+		r.v.v1.subscription[0].fid = fid;
+		r.v.v1.subscription[0].mid = mid;
+		r.v.v1.subscription[0].count = count;
+		r.v.v1.subscription[0].properties = (uint32_t *)properties;
+
+		ndr_err_code = ndr_push_mapistore_notification_subscription(ndr, NDR_SCALARS, &r);
+		MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+		/* Add the key/value record */
+		rc = memcached_add(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *)ndr->data, ndr->offset, 0, 0);
+	}
+
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \detaild Check if a subscription record exist for the given session UUID
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session UUID to lookup
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERR_NOT_FOUND
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_subscription_exist(struct mapistore_context *mstore_ctx,
+									struct GUID uuid)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	char			*key = NULL;
+	memcached_return	rc;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare subscription key */
+	retval = mapistore_notification_subscription_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	rc = memcached_exist(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key));
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Delete the subscription record associated to specified session UUID
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session UUID
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_subscription_delete(struct mapistore_context *mstore_ctx,
+									 struct GUID uuid)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	char			*key;
+	memcached_return	rc;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare the subscription key */
+	retval = mapistore_notification_subscription_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Delete the key */
+	rc = memcached_delete(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Delete the subscription record associated to specified
+   session UUID and referenced by specified handle
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session uuid
+   \param handle the handle of the entry to delete
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_subscription_delete_by_handle(struct mapistore_context *mstore_ctx,
+										   struct GUID uuid,
+										   uint32_t handle)
+{
+	TALLOC_CTX					*mem_ctx;
+	memcached_return				rc;
+	struct mapistore_notification_subscription	r, _r;
+	enum mapistore_error				retval;
+	enum ndr_err_code				ndr_err_code;
+	struct ndr_push					*ndr;
+	char						*key;
+	uint32_t					i, j;
+	int						index = -1;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Get the record */
+	retval = mapistore_notification_subscription_get(mem_ctx, mstore_ctx, uuid, &r);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	for (i = 0; i < r.v.v1.count; i++) {
+		if (r.v.v1.subscription[i].handle == handle) {
+			index = i;
+			break;
+		}
+	}
+	MAPISTORE_RETVAL_IF(index == -1, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	/* Prepare the subscription key */
+	retval = mapistore_notification_subscription_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* If we only have one entry left, delete the record */
+	if (r.v.v1.count == 1) {
+		rc = memcached_delete(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), 0);
+		MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+		goto end;
+	}
+
+	/* Otherwise remove the entry from the array and update record */
+	ndr = ndr_push_init_ctx(mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	ndr->offset = 0;
+
+	_r.vnum = 1;
+	_r.v.v1.count = r.v.v1.count - 1;
+	_r.v.v1.subscription = talloc_array(mem_ctx, struct subscription_object_v1, _r.v.v1.count + 1);
+	MAPISTORE_RETVAL_IF(!_r.v.v1.subscription, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	for (i = 0, j = 0; i < r.v.v1.count; i++) {
+		if (i != index) {
+			_r.v.v1.subscription[j] = r.v.v1.subscription[i];
+			j++;
+		}
+	}
+
+	ndr_err_code = ndr_push_mapistore_notification_subscription(ndr, NDR_SCALARS, &_r);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+	rc = memcached_set(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+			   (char *)ndr->data, ndr->offset, 0, 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+end:
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+

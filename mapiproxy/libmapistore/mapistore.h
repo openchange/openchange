@@ -426,6 +426,11 @@ enum mapistore_error mapistore_notification_resolver_exist(struct mapistore_cont
 enum mapistore_error mapistore_notification_resolver_get(TALLOC_CTX *, struct mapistore_context *, const char *, uint32_t *, const char ***);
 enum mapistore_error mapistore_notification_resolver_delete(struct mapistore_context *, const char *, const char *);
 
+enum mapistore_error mapistore_notification_subscription_add(struct mapistore_context *, struct GUID, uint32_t, uint16_t, uint64_t, uint64_t, uint32_t, enum MAPITAGS *);
+enum mapistore_error mapistore_notification_subscription_exist(struct mapistore_context *, struct GUID);
+enum mapistore_error mapistore_notification_subscription_delete(struct mapistore_context *, struct GUID);
+enum mapistore_error mapistore_notification_subscription_delete_by_handle(struct mapistore_context *, struct GUID, uint32_t);
+
 __END_DECLS
 
 #endif	/* ! __MAPISTORE_H */

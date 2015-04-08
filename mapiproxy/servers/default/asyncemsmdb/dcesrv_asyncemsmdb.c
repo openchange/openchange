@@ -23,9 +23,10 @@
 #include "utils/dlinklist.h"
 
 /**
-   \file dcesrv_exchange_emsmdb.c
+   \file dcesrv_asyncemsmdb.c
 
-   \brief OpenChange EMSMDB Server implementation
+   \brief Asynchronous EMSMDB server implementation
+
  */
 
 struct exchange_asyncemsmdb_session	*asyncemsmdb_session = NULL;
@@ -250,7 +251,17 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}
-		talloc_free(bind_addr);
+
+		/* Register the address to the resolver */
+		retval = mapistore_notification_resolver_add(p->mstore_ctx, cn, bind_addr);
+		if (retval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "[asyncemsmdb] unable to add record to the resolver: %s",
+				 mapistore_errstr(retval));
+			talloc_free(p);
+			talloc_free(mstore_ctx);
+			talloc_free(bind_addr);
+			return NT_STATUS_OK;
+		}
 
 		sz = sizeof(p->fd);
 		nn_retval = nn_getsockopt(p->sock, NN_SOL_SOCKET, NN_RCVFD, &p->fd, &sz);
@@ -258,6 +269,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 			OC_DEBUG(0, "[asyncemsmdb] nn_getsockopt failed: %s", nn_strerror(errno));
 			talloc_free(p);
 			talloc_free(mstore_ctx);
+			talloc_free(bind_addr);
 			return NT_STATUS_OK;
 		}
 	}
@@ -279,12 +291,29 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 	if (!session) {
 		session = talloc(asyncemsmdb_session, struct exchange_asyncemsmdb_session);
 		if (!session) {
+		failure:
 			OC_DEBUG(0, "[asyncemsmdb][ERR]: No more memory");
 			*r->out.pulFlagsOut = 0x1;
 			return NT_STATUS_OK;
 		}
 		session->uuid = r->in.async_handle->uuid;
 		session->data = talloc_steal(session, p);
+		session->cn = talloc_strdup(session, cn);
+		talloc_free(cn);
+		if (!session->cn) {
+			talloc_free(session);
+			goto failure;
+		}
+		session->bind_addr = talloc_strdup(session, bind_addr);
+		talloc_free(bind_addr);
+		if (!session->bind_addr) {
+			talloc_free(session);
+			goto failure;
+		}
+		session->mstore_ctx = mstore_ctx;
+
+		/* Add the session to the dcesrv_connection_context */
+		dce_call->context->private_data = session;
 
 		OC_DEBUG(5, "[asyncemsmdb]: New session added: %s", session->data->emsmdb_session_str);
 		DLIST_ADD_END(asyncemsmdb_session, session, struct exchange_asyncemsmdb_session *);
@@ -293,9 +322,35 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 	return NT_STATUS_OK;
 }
 
-NTSTATUS dcerpc_server_asyncemsmdb_init(void);
-NTSTATUS ndr_table_register(const struct ndr_interface_table *);
+static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_context *context, const struct dcesrv_interface *iface)
+{
+	enum mapistore_error			retval;
+	struct exchange_asyncemsmdb_session	*session = (struct exchange_asyncemsmdb_session *) context->private_data;
 
+	OC_DEBUG(0, "dcerpc_server_asyncemsmdb_unbind");
+
+	if (!session) {
+		return NT_STATUS_OK;
+	}
+
+	OC_DEBUG(0, "[asyncemsmdb] unbind %s", session->bind_addr);
+	retval = mapistore_notification_resolver_delete(session->mstore_ctx, session->cn, session->bind_addr);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "[asyncemsmdb] unable to delete resolver entry %s from record %s", session->bind_addr, session->cn);
+	}
+
+	mapistore_release(session->mstore_ctx);
+	DLIST_REMOVE(asyncemsmdb_session, session);
+
+	context->iface = NULL;
+
+	return NT_STATUS_OK;
+}
+
+static NTSTATUS dcerpc_server_asyncemsmdb_bind(struct dcesrv_call_state *dce_call, const struct dcesrv_interface *iface)
+{
+	return NT_STATUS_OK;
+}
 
 NTSTATUS samba_init_module(void)
 {

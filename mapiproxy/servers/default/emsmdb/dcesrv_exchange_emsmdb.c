@@ -1671,7 +1671,7 @@ static NTSTATUS dcesrv_exchange_emsmdb_unbind(struct server_id server_id, uint32
 	/* struct exchange_emsmdb_session	*session; */
 	/* bool ret; */
 
-	OC_DEBUG(0, "dcesrv_exchange_emsmdb_unbind\n");
+	OC_DEBUG(0, "dcesrv_exchange_emsmdb_unbind: server_id=%d, context_id=0x%x", server_id, context_id);
 
 	/* session = dcesrv_find_emsmdb_session_by_server_id(&server_id, context_id); */
 	/* if (session) { */

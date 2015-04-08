@@ -269,7 +269,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_exist(struct mapist
 {
 	TALLOC_CTX		*mem_ctx;
 	enum mapistore_error	retval;
-	char			*key;
+	char			*key = NULL;
 	memcached_return	rc;
 
 	/* Sanity checks */
@@ -303,6 +303,8 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_exist(struct mapist
    \param uuidp pointer to the GUID of the emsmdb session
    \param cnp pointer on pointer to the common name to return
 
+   \note calling function is responsible for freeing cnp
+
    \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
  */
 _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem_ctx,
@@ -311,6 +313,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 								 struct GUID *uuid,
 								 char **cnp)
 {
+	TALLOC_CTX				*local_mem_ctx;
 	enum mapistore_error			retval;
 	enum ndr_err_code			ndr_err_code;
 	struct ndr_pull				*ndr;
@@ -329,30 +332,385 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
 	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
 
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
 	/* Retrieve key/value */
-	retval = mapistore_notification_session_set_key(mem_ctx, async_uuid, &key);
-	MAPISTORE_RETVAL_IF(retval, retval, NULL);
+	retval = mapistore_notification_session_set_key(local_mem_ctx, async_uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, local_mem_ctx);
 
 	value = memcached_get(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), &value_len,
 			      &flags, &rc);
 	talloc_free(key);
-	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), NULL);
+	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
 
 	/* Unpack session structure */
 	blob.data = (uint8_t *) value;
 	blob.length = value_len;
 
-	ndr = ndr_pull_init_blob(&blob, mem_ctx);
-	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, NULL);
+	ndr = ndr_pull_init_blob(&blob, local_mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
 
 	ndr_err_code = ndr_pull_mapistore_notification_session(ndr, NDR_SCALARS, &r);
 	talloc_free(ndr);
-	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, NULL);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERROR, local_mem_ctx);
 
 	*uuid = r.v.v1.uuid;
 	*cnp = talloc_strdup(mem_ctx, r.v.v1.cn);
-	MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, NULL);
+	MAPISTORE_RETVAL_IF(!*cnp, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+
+	talloc_free(local_mem_ctx);
 
 	return MAPISTORE_SUCCESS;
 }
+
+
+/**
+   \details Generate the resolver key
+
+   \param mem_ctx pointer to the memory context
+   \param cn the common name to compute
+   \param _key pointer on pointer to the key to return
+
+   \note the caller is responsible for freeing _key
+
+   \return MAPISTORE_SUCCES on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_notification_resolver_set_key(TALLOC_CTX *mem_ctx,
+								    const char *cn,
+								    char **_key)
+{
+	char	*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!strlen(cn), MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!_key, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_RESOLVER, cn);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	*_key = key;
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Add a record to the resolver
+
+   \param mstore_ctx pointer to the mapistore context
+   \param cn the common name (key) to use for host registration
+   \param host the host to register
+
+   \note This function acts as a wrapper and manages both the creation
+   of a new key/value pair and the update of an existing record. The
+   following logic is implemented:
+
+   [START] Does the key exist?
+	If yes: Update record
+	If no: Insert key
+
+   \todo Note that a race condition is possible between the exist
+   check and the addition of the record, where the same key could have
+   been created by another instance, leading to the failure of the add
+   operation. While this scenario is very unlikely to happen in real
+   world, a retry with a counter should be implemented in further
+   iterations to reasonably circumvent this use case.
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_resolver_add(struct mapistore_context *mstore_ctx,
+								  const char *cn,
+								  const char *host)
+{
+	TALLOC_CTX				*mem_ctx;
+	enum mapistore_error			retval;
+	struct mapistore_notification_resolver	r;
+	struct ndr_push				*ndr;
+	enum ndr_err_code			ndr_err_code;
+	memcached_return			rc = MEMCACHED_ERROR;
+	char					*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!host, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	/* memcached does not allow key with space */
+	if (strchr(cn, ' ')) {
+		OC_DEBUG(0, "space not allowed in cn field: '%s'", cn);
+		return MAPISTORE_ERR_INVALID_DATA;
+	}
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare key */
+	retval = mapistore_notification_resolver_set_key(mem_ctx, cn, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Create resolver v1 value */
+	ndr = ndr_push_init_ctx(mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	ndr->offset = 0;
+
+	/* If the key already exist: update if no duplicate */
+	retval = mapistore_notification_resolver_exist(mstore_ctx, cn);
+	if (retval == MAPISTORE_SUCCESS) {
+		uint32_t	count = 0;
+		uint32_t	i = 0;
+		const char	**hosts = NULL;
+
+		retval = mapistore_notification_resolver_get(mem_ctx, mstore_ctx, cn, &count, &hosts);
+		MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+		for (i = 0; i < count; i++) {
+			if (hosts[i] && !strncmp(hosts[i], host, strlen(host))) {
+				OC_DEBUG(0, "host '%s' is already registered for cn '%s'", host, cn);
+				talloc_free(mem_ctx);
+				return MAPISTORE_ERR_EXIST;
+			}
+		}
+
+		r.vnum = 1;
+		r.v.v1.count = count + 1;
+		r.v.v1.hosts = talloc_array(mem_ctx, const char *, r.v.v1.count);
+		for (i = 0; i < count; i++) {
+			r.v.v1.hosts[i] = talloc_strdup(r.v.v1.hosts, hosts[i]);
+			MAPISTORE_RETVAL_IF(!r.v.v1.hosts[i], MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+		}
+		r.v.v1.hosts[count] = talloc_strdup(r.v.v1.hosts, host);
+		MAPISTORE_RETVAL_IF(!r.v.v1.hosts[count], MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+		ndr_err_code = ndr_push_mapistore_notification_resolver(ndr, NDR_SCALARS, &r);
+		MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+		/* Add the key/value record */
+		rc = memcached_set(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *)ndr->data, ndr->offset, 0, 0);
+	} else if (retval == MAPISTORE_ERR_NOT_FOUND) {
+		r.vnum = 1;
+		r.v.v1.count = 1;
+		r.v.v1.hosts = talloc_array(mem_ctx, const char *, 1);
+		MAPISTORE_RETVAL_IF(!r.v.v1.hosts, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+		r.v.v1.hosts[0] = talloc_strdup(r.v.v1.hosts, host);
+		MAPISTORE_RETVAL_IF(!r.v.v1.hosts[0], MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+		ndr_err_code = ndr_push_mapistore_notification_resolver(ndr, NDR_SCALARS, &r);
+		MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+		/* Add the key/value record */
+		rc = memcached_add(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *)ndr->data, ndr->offset, 0, 0);
+	}
+
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Get resolver data for a given resolver entry
+
+   \param mem_ctx pointer to the memory context
+   \param mstore_ctx pointer to the mapistore context
+   \param cn the resolver key to lookup
+   \param countp pointer on the number of hosts returned
+   \param hostsp pointer on the list of host to return
+
+   \note calling function is responsible for freeing hostsp
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_resolver_get(TALLOC_CTX *mem_ctx,
+								  struct mapistore_context *mstore_ctx,
+								  const char *cn, uint32_t *countp,
+								  const char ***hostsp)
+{
+	TALLOC_CTX				*local_mem_ctx;
+	enum mapistore_error			retval;
+	enum ndr_err_code			ndr_err_code;
+	struct ndr_pull				*ndr;
+	struct mapistore_notification_resolver	r;
+	DATA_BLOB				blob;
+	char					*key = NULL;
+	char					*value = NULL;
+	size_t					value_len = 0;
+	memcached_return_t			rc;
+	uint32_t				flags;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!countp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!hostsp, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	retval = mapistore_notification_resolver_set_key(local_mem_ctx, cn, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, local_mem_ctx);
+
+	value = memcached_get(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), &value_len,
+			      &flags, &rc);
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
+
+	/* Unpack resolver structure */
+	blob.data = (uint8_t *) value;
+	blob.length = value_len;
+
+	ndr = ndr_pull_init_blob(&blob, local_mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+
+	ndr_err_code = ndr_pull_mapistore_notification_resolver(ndr, NDR_SCALARS, &r);
+	talloc_free(ndr);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, local_mem_ctx);
+
+	*countp = r.v.v1.count;
+	*hostsp = talloc_steal(mem_ctx, r.v.v1.hosts);
+	MAPISTORE_RETVAL_IF(!hostsp, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+
+	talloc_free(local_mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Unregister a host from a resolver entry
+
+   \param mstore_ctx pointer to the mapistore context
+   \param cn the resolver key to lookup
+   \param host the host entry to delete within record
+
+   \note If the record has no longer host entry, the function deletes
+   the record
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_resolver_delete(struct mapistore_context *mstore_ctx,
+								     const char *cn, const char *host)
+{
+	TALLOC_CTX				*mem_ctx;
+	memcached_return			rc;
+	struct mapistore_notification_resolver	r;
+	enum mapistore_error			retval;
+	enum ndr_err_code			ndr_err_code;
+	struct ndr_push				*ndr;
+	char					*key;
+	uint32_t				count;
+	const char				**hosts = NULL;
+	uint32_t				i, j;
+	int					index = -1;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!host, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Get the record and fetch host entry index */
+	retval = mapistore_notification_resolver_get(mem_ctx, mstore_ctx, cn, &count, &hosts);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	for (i = 0; i < count; i++) {
+		if (hosts[i] && !strncmp(hosts[i], host, strlen(host))) {
+			index = i;
+			break;
+		}
+	}
+	MAPISTORE_RETVAL_IF(index == -1, MAPISTORE_ERR_NOT_FOUND, mem_ctx);
+
+	/* Prepare the resolver key */
+	retval = mapistore_notification_resolver_set_key(mem_ctx, cn, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* If host is the only entry, delete the record */
+	if (count == 1) {
+		rc = memcached_delete(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), 0);
+		MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+		goto end;
+	}
+
+	/* Otherwise remove the entry from the array and update record */
+	ndr = ndr_push_init_ctx(mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+	ndr->offset = 0;
+
+	r.vnum = 1;
+	r.v.v1.count = count - 1;
+	r.v.v1.hosts = talloc_array(mem_ctx, const char *, r.v.v1.count);
+
+	MAPISTORE_RETVAL_IF(!r.v.v1.hosts, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+
+	for (i = 0, j = 0; i < count; i++) {
+		if (i != index) {
+			r.v.v1.hosts[j] = talloc_strdup(r.v.v1.hosts, hosts[i]);
+			MAPISTORE_RETVAL_IF(!r.v.v1.hosts[j], MAPISTORE_ERR_NO_MEMORY, mem_ctx);
+			j++;
+		}
+	}
+
+	ndr_err_code = ndr_push_mapistore_notification_resolver(ndr, NDR_SCALARS, &r);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, mem_ctx);
+
+	rc = memcached_set(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+			   (char *)ndr->data, ndr->offset, 0, 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+end:
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Check if the resolver entry pointer by cn exist
+
+   \param mstore_ctx pointer to the mapistore context
+   \param cn the common name to lookup
+
+   \return MAPISTORE_SUCCESS on success, otherwise
+   MAPISTORE_ERR_NOT_FOUND or MAPISTORE generic error upon other
+   failures.
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_resolver_exist(struct mapistore_context *mstore_ctx,
+								    const char *cn)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	char			*key = NULL;
+	memcached_return	rc;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!cn, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare the resolver key */
+	retval = mapistore_notification_resolver_set_key(mem_ctx, cn, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	rc = memcached_exist(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key));
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+

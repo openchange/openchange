@@ -27,7 +27,10 @@
 /* Global variables */
 static struct GUID	gl_async_uuid;
 static struct GUID	gl_uuid;
-static const char	*gl_cn = "Foo Bar";
+static const char	*gl_cn = "FooBar";
+static const char	*gl_host1 = "tcp://host1:9005";
+static const char	*gl_host2 = "tcp://host2:9006";
+static const char	*gl_host3 = "tcp://host3:9007";
 
 START_TEST(test_initialization) {
 	TALLOC_CTX				*mem_ctx = NULL;
@@ -271,11 +274,274 @@ START_TEST(session_delete) {
 
 } END_TEST
 
+
+START_TEST(resolver_add) {
+	TALLOC_CTX				*mem_ctx;
+	struct mapistore_context		mstore_ctx;
+	enum mapistore_error			retval;
+	struct loadparm_context			*lp_ctx;
+	struct mapistore_notification_context	*ctx = NULL;
+	struct mapistore_notification_context	_ctx;
+
+	/* Check sanity check compliance */
+	retval = mapistore_notification_resolver_add(NULL, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	retval = mapistore_notification_resolver_add(&mstore_ctx, NULL, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	mstore_ctx.notification_ctx = NULL;
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	mstore_ctx.notification_ctx = &_ctx;
+	mstore_ctx.notification_ctx->memc_ctx = NULL;
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	/* Initialize mapistore notification system */
+	mem_ctx = talloc_named(NULL, 0, "resolver_add");
+	ck_assert(mem_ctx != NULL);
+
+	lp_ctx = loadparm_init(mem_ctx);
+	ck_assert(lp_ctx != NULL);
+
+	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* check when cn has space */
+	mstore_ctx.notification_ctx = ctx;
+	retval = mapistore_notification_resolver_add(&mstore_ctx, "Foo Bar", gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_DATA);
+
+	/* add record */
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* check if record now exists */
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* try to register gl_host1 twice */
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_EXIST);
+
+	/* add 2nd host to gl_cn record */
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host2);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* add 3rd host to gl_cn record */
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host3);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* try to add 2nd host again to gl_cn record */
+	retval = mapistore_notification_resolver_add(&mstore_ctx, gl_cn, gl_host2);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_EXIST);
+
+	talloc_free(lp_ctx);
+	talloc_free(mem_ctx);
+
+} END_TEST
+
+START_TEST(resolver_exist) {
+	TALLOC_CTX				*mem_ctx;
+	struct mapistore_context		mstore_ctx;
+	enum mapistore_error			retval;
+	struct loadparm_context			*lp_ctx;
+	struct mapistore_notification_context	*ctx = NULL;
+	struct mapistore_notification_context	_ctx;
+
+	/* Check sanity check compliance */
+	retval = mapistore_notification_resolver_exist(NULL, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	mstore_ctx.notification_ctx = NULL;
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	mstore_ctx.notification_ctx = &_ctx;
+	mstore_ctx.notification_ctx->memc_ctx = NULL;
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	/* Initialize mapistore notification system */
+	mem_ctx = talloc_named(NULL, 0, "resolver_exist");
+	ck_assert(mem_ctx != NULL);
+
+	lp_ctx = loadparm_init(mem_ctx);
+	ck_assert(lp_ctx != NULL);
+
+	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	mstore_ctx.notification_ctx = ctx;
+
+	/* Test gl_cn existence */
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, gl_cn);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* Test non existent key */
+	retval = mapistore_notification_resolver_exist(&mstore_ctx, "nonexistent");
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+
+	talloc_free(lp_ctx);
+	talloc_free(mem_ctx);
+
+} END_TEST
+
+START_TEST(resolver_get) {
+	TALLOC_CTX				*mem_ctx;
+	struct mapistore_context		mstore_ctx;
+	enum mapistore_error			retval;
+	struct loadparm_context			*lp_ctx;
+	struct mapistore_notification_context	*ctx = NULL;
+	struct mapistore_notification_context	_ctx;
+	uint32_t				count = 0;
+	const char				**hosts;
+
+	/* Check sanity check compliance */
+	retval = mapistore_notification_resolver_get(NULL, NULL, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	retval = mapistore_notification_resolver_get(NULL, &mstore_ctx, NULL, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_resolver_get(NULL, &mstore_ctx, gl_cn, NULL, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_resolver_get(NULL, &mstore_ctx, gl_cn, &count, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	mstore_ctx.notification_ctx = NULL;
+	retval = mapistore_notification_resolver_get(NULL, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	mstore_ctx.notification_ctx = &_ctx;
+	mstore_ctx.notification_ctx->memc_ctx = NULL;
+	retval = mapistore_notification_resolver_get(NULL, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	/* Initialize mapistore notification system */
+	mem_ctx = talloc_named(NULL, 0, "resolver_exist");
+	ck_assert(mem_ctx != NULL);
+
+	lp_ctx = loadparm_init(mem_ctx);
+	ck_assert(lp_ctx != NULL);
+
+	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	mstore_ctx.notification_ctx = ctx;
+
+	/* Retrieve non existent record */
+	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, "nonexistent", &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+
+	/* Retrieve gl_cn record data */
+	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	ck_assert_int_eq(count, 3);
+	ck_assert_str_eq(hosts[0], gl_host1);
+	ck_assert_str_eq(hosts[1], gl_host2);
+	ck_assert_str_eq(hosts[2], gl_host3);
+	talloc_free(hosts);
+
+	talloc_free(lp_ctx);
+	talloc_free(mem_ctx);
+
+} END_TEST
+
+START_TEST(resolver_delete) {
+	TALLOC_CTX				*mem_ctx;
+	struct mapistore_context		mstore_ctx;
+	enum mapistore_error			retval;
+	struct loadparm_context			*lp_ctx;
+	struct mapistore_notification_context	*ctx = NULL;
+	struct mapistore_notification_context	_ctx;
+	uint32_t				count = 0;
+	const char				**hosts = NULL;
+
+	/* Check sanity check compliance */
+	retval = mapistore_notification_resolver_delete(NULL, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_INITIALIZED);
+
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, NULL, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	mstore_ctx.notification_ctx = NULL;
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	mstore_ctx.notification_ctx = &_ctx;
+	mstore_ctx.notification_ctx->memc_ctx = NULL;
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_AVAILABLE);
+
+	/* Initialize mapistore notification system */
+	mem_ctx = talloc_named(NULL, 0, "session_delete");
+	ck_assert(mem_ctx != NULL);
+
+	lp_ctx = loadparm_init(mem_ctx);
+	ck_assert(lp_ctx != NULL);
+
+	retval = mapistore_notification_init(mem_ctx, lp_ctx, &ctx);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	mstore_ctx.notification_ctx = ctx;
+
+	/* Try to delete non existent key */
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, "nonexistent", gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+
+	/* Try to delete gl_host1 from gl_cn */
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	/* Try to delete gl_host1 twice */
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host1);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+
+	/* Check that record now only have gl_host2 and gl_host3 */
+	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	ck_assert_int_eq(count, 2);
+	ck_assert_str_eq(hosts[0], gl_host2);
+	ck_assert_str_eq(hosts[1], gl_host3);
+	talloc_free(hosts);
+
+	/* Try to delete gl_host2 */
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host2);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+	ck_assert_int_eq(count, 1);
+	ck_assert_str_eq(hosts[0], gl_host3);
+	talloc_free(hosts);
+
+	/* Try to delete gl_host3 */
+	retval = mapistore_notification_resolver_delete(&mstore_ctx, gl_cn, gl_host3);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, gl_cn, &count, &hosts);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_NOT_FOUND);
+
+} END_TEST
+
 Suite *mapistore_notification_suite(void)
 {
 	Suite	*s;
 	TCase	*tc_config;
 	TCase	*tc_session;
+	TCase	*tc_resolver;
 
 	s = suite_create("libmapistore notification");
 
@@ -294,6 +560,14 @@ Suite *mapistore_notification_suite(void)
 	tcase_add_test(tc_session, session_get);
 	tcase_add_test(tc_session, session_delete);
 	suite_add_tcase(s, tc_session);
+
+	/* Resolver */
+	tc_resolver = tcase_create("resolver API");
+	tcase_add_test(tc_resolver, resolver_add);
+	tcase_add_test(tc_resolver, resolver_exist);
+	tcase_add_test(tc_resolver, resolver_get);
+	tcase_add_test(tc_resolver, resolver_delete);
+	suite_add_tcase(s, tc_resolver);
 
 	return s;
 }

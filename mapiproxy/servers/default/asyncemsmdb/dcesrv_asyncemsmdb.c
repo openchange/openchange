@@ -21,6 +21,8 @@
 
 #include "dcesrv_asyncemsmdb.h"
 #include "utils/dlinklist.h"
+#include "mapiproxy/libmapistore/mapistore_private.h"
+#include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
 
 /**
    \file dcesrv_asyncemsmdb.c
@@ -86,12 +88,15 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 				    uint16_t flags,
 				    void *private_data)
 {
-	struct asyncemsmdb_private_data *p = talloc_get_type(private_data,
-							     struct asyncemsmdb_private_data);
-	enum mapistore_error		retval;
-	char				*str = NULL;
-	int				bytes = 0;
-	NTSTATUS			status;
+	struct asyncemsmdb_private_data			*p = talloc_get_type(private_data,
+									     struct asyncemsmdb_private_data);
+	TALLOC_CTX					*mem_ctx;
+	enum mapistore_error				retval;
+	char						*str = NULL;
+	int						bytes = 0;
+	NTSTATUS					status;
+	struct mapistore_notification_subscription	r;
+	struct ndr_print				*ndr;
 
 	if (!p) {
 		OC_DEBUG(0, "[asyncemsmdb]: private_data is NULL");
@@ -107,6 +112,32 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	str[bytes] = '\0';
 	OC_DEBUG(0, "[asyncemsmdb] received message: %s", str);
 	nn_freemsg(str);
+
+	OC_DEBUG(0, "Notification received for session: %s", p->emsmdb_session_str);
+
+	mem_ctx = talloc_new(NULL);
+	if (!mem_ctx) {
+		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		return;
+	}
+
+	retval = mapistore_notification_subscription_get(mem_ctx, p->mstore_ctx, p->emsmdb_uuid, &r);
+	if (retval != MAPISTORE_SUCCESS) {
+		OC_DEBUG(0, "no subscription to process");
+		return;
+	}
+
+	OC_DEBUG(0, "%d subscriptions available:", r.v.v1.count);
+	ndr = talloc_zero(mem_ctx, struct ndr_print);
+	if (!ndr) {
+		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		return;
+	}
+	ndr->depth = 1;
+	ndr->print = ndr_print_debug_helper;
+	ndr->no_newline = false;
+	ndr_print_mapistore_notification_subscription(ndr, "subscriptions", &r);
+	talloc_free(mem_ctx);
 
 	p->r->out.pulFlagsOut = talloc_zero(p->dce_call, uint32_t);
 	*p->r->out.pulFlagsOut = 0x1;
@@ -199,6 +230,7 @@ static NTSTATUS dcesrv_EcDoAsyncWaitEx(struct dcesrv_call_state *dce_call,
 
 		p->dce_call = dce_call;
 		p->mstore_ctx = talloc_steal(p, mstore_ctx);
+		p->emsmdb_uuid = uuid;
 		p->emsmdb_session_str = GUID_string(p, (const struct GUID *)&uuid);
 		if (!p->emsmdb_session_str) {
 			OC_DEBUG(0, "[asyncemsmdb]: no more memory");
@@ -342,7 +374,8 @@ static NTSTATUS dcerpc_server_asyncemsmdb_unbind(struct dcesrv_connection_contex
 	mapistore_release(session->mstore_ctx);
 	DLIST_REMOVE(asyncemsmdb_session, session);
 
-	context->iface = NULL;
+	/* flush pending call on connection */
+	context->conn->pending_call_list = NULL;
 
 	return NT_STATUS_OK;
 }

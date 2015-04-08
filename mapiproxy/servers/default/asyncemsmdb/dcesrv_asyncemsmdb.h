@@ -28,6 +28,7 @@
 
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
+#include "mapiproxy/libmapistore/gen_ndr/mapistore_notification.h"
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
@@ -37,6 +38,7 @@ struct asyncemsmdb_private_data {
 	struct EcDoAsyncWaitEx			*r;
 	struct mapistore_context		*mstore_ctx;
 	char					*emsmdb_session_str;
+	struct GUID				emsmdb_uuid;
 	struct tevent_fd			*fd_event;
 	int					sock;
 	int					fd;

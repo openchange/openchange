@@ -25,6 +25,7 @@
 #include <talloc.h>
 #include "backends/namedprops_backend.h"
 #include "utils/dlinklist.h"
+#include "mapiproxy/libmapistore/gen_ndr/mapistore_notification.h"
 
 #ifndef	ISDOT
 #define ISDOT(path) ( \
@@ -194,6 +195,7 @@ enum mapistore_error mapistore_indexing_record_del_fmid(struct mapistore_context
 
 /* definitions from mapistore_notification.c */
 enum mapistore_error mapistore_notification_init(TALLOC_CTX *, struct loadparm_context *, struct mapistore_notification_context **);
+enum mapistore_error mapistore_notification_subscription_get(TALLOC_CTX *, struct mapistore_context *, struct GUID, struct mapistore_notification_subscription *);
 
 __END_DECLS
 

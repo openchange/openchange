@@ -1212,7 +1212,7 @@ bin/mapiprofile: 	utils/mapiprofile.o 			\
 # rpcextract
 ###################
 
-ocnotify: bin/ocnotify
+ocnotify: libmapistore bin/ocnotify
 
 ocnotify-install: ocnotify
 	$(INSTALL) -d $(DESTDIR)$(bindir)

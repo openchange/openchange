@@ -1302,6 +1302,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_deliver_delete(struct mapis
 	return MAPISTORE_SUCCESS;
 }
 
+/**
    \details Generate a newmail notification payload to be consumed by
    the service referenced by resolver entries.
 

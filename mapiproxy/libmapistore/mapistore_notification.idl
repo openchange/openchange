@@ -127,6 +127,7 @@ interface mapistore_notification
 
 	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
 		[case(MAPISTORE_NOTIFICATION_V1)] notification_v1 v1;
+		[default];
 	} notification_ver;
 
 	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {

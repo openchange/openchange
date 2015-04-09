@@ -1087,3 +1087,46 @@ end:
 	return MAPISTORE_SUCCESS;
 }
 
+
+/**
+   \details Generate a newmail notification payload to be consumed by
+   the service referenced by resolver entries.
+
+   \param mem_ctx pointer to the memory context
+   \param eml the eml message to index
+   \param data pointer on pointer to the generated blob to return
+   \param length pointer to the length of the generated blob returned
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERROR
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_payload_newmail(TALLOC_CTX *mem_ctx,
+								     char *eml,
+								     uint8_t **data,
+								     size_t *length)
+{
+	struct mapistore_notification	r;
+	struct ndr_push			*ndr;
+	enum ndr_err_code		ndr_err_code;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!eml, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!data, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!length, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	ndr = ndr_push_init_ctx(mem_ctx);
+	MAPISTORE_RETVAL_IF(!ndr, MAPISTORE_ERR_NO_MEMORY, NULL);
+	ndr->offset = 0;
+
+	r.vnum = 1;
+	r.v.v1.flags = sub_NewMail;
+	r.v.v1.u.newmail.eml = eml;
+
+	ndr_err_code = ndr_push_mapistore_notification(ndr, NDR_SCALARS, &r);
+	MAPISTORE_RETVAL_IF(ndr_err_code != NDR_ERR_SUCCESS, MAPISTORE_ERR_INVALID_DATA, ndr);
+
+	*data = talloc_memdup(mem_ctx, ndr->data, ndr->offset);
+	*length = ndr->offset;
+	talloc_free(ndr);
+	return MAPISTORE_SUCCESS;
+}
+

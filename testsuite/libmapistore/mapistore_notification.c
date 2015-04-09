@@ -24,6 +24,7 @@
 #include "mapiproxy/libmapistore/mapistore_private.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/gen_ndr/mapistore_notification.h"
+#include "mapiproxy/libmapistore/gen_ndr/ndr_mapistore_notification.h"
 
 /* Global variables */
 static struct GUID	gl_async_uuid;
@@ -880,6 +881,47 @@ START_TEST(subscription_delete_by_handle) {
 
 } END_TEST
 
+START_TEST(payload_newmail) {
+	enum mapistore_error		retval;
+	TALLOC_CTX			*mem_ctx;
+	DATA_BLOB			payload;
+	char				*eml = "123456.eml";
+	struct ndr_pull			*ndr;
+	enum ndr_err_code		ndr_err_code;
+	struct mapistore_notification	r;
+
+	mem_ctx = talloc_named(NULL, 0, "payload_newmail");
+	ck_assert(mem_ctx != NULL);
+
+	/* Check sanity check compliance */
+	retval = mapistore_notification_payload_newmail(mem_ctx, NULL, &payload.data, &payload.length);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, eml, NULL, &payload.length);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, eml, &payload.data, NULL);
+	ck_assert_int_eq(retval, MAPISTORE_ERR_INVALID_PARAMETER);
+
+	/* Build newmail payload */
+	retval = mapistore_notification_payload_newmail(mem_ctx, eml, &payload.data, &payload.length);
+	ck_assert_int_eq(retval, MAPISTORE_SUCCESS);
+
+	ndr = ndr_pull_init_blob(&payload, mem_ctx);
+	ck_assert(ndr != NULL);
+	ndr_set_flags(&ndr->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+	ndr_err_code = ndr_pull_mapistore_notification(ndr, NDR_SCALARS, &r);
+	ck_assert_int_eq(ndr_err_code, NDR_ERR_SUCCESS);
+
+	/* newmail v1 checks */
+	ck_assert_int_eq(r.vnum, 1);
+	ck_assert_int_eq(r.v.v1.flags, sub_NewMail);
+	ck_assert_str_eq(r.v.v1.u.newmail.eml, eml);
+
+	talloc_free(mem_ctx);
+
+} END_TEST
+
 Suite *mapistore_notification_suite(void)
 {
 	Suite	*s;
@@ -887,6 +929,7 @@ Suite *mapistore_notification_suite(void)
 	TCase	*tc_session;
 	TCase	*tc_resolver;
 	TCase	*tc_subscription;
+	TCase	*tc_payload;
 
 	s = suite_create("libmapistore notification");
 
@@ -922,6 +965,11 @@ Suite *mapistore_notification_suite(void)
 	tcase_add_test(tc_subscription, subscription_delete_by_handle);
 	tcase_add_test(tc_subscription, subscription_delete);
 	suite_add_tcase(s, tc_subscription);
+
+	/* Payload */
+	tc_payload = tcase_create("notification payloads");
+	tcase_add_test(tc_payload, payload_newmail);
+	suite_add_tcase(s, tc_payload);
 
 	return s;
 }

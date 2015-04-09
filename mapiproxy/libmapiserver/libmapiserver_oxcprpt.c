@@ -29,7 +29,6 @@
 #include "libmapi/libmapi.h"
 #include "libmapi/mapidefs.h"
 #include "gen_ndr/ndr_exchange.h"
-#include <util/debug.h>
 
 /**
    \details Calculate GetPropertiesSpecific Rop size
@@ -525,7 +524,7 @@ _PUBLIC_ int libmapiserver_push_property(TALLOC_CTX *mem_ctx,
 		break;
 	default:
 		if (property != 0) {
-			DEBUG(5, ("unsupported type: %.4x\n", (property & 0xffff)));
+			OC_DEBUG(5, "unsupported type: %.4x", (property & 0xffff));
 			abort();
 		}
 		break;
@@ -589,7 +588,7 @@ _PUBLIC_ struct SRow *libmapiserver_ROP_request_to_properties(TALLOC_CTX *mem_ct
 		
 		break;
 	default:
-		DEBUG(0, ("[%s:%d]: opnum %d not implemented yet\n", __FUNCTION__, __LINE__, opnum));
+		OC_DEBUG(0, "opnum %d not implemented yet", opnum);
 		talloc_free(aRow);
 		return NULL;
 	}

@@ -19,10 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "libmapiproxy.h"
 #include "utils/dlinklist.h"
-#include <util/debug.h>
 
 /**
    \file dcesrv_mapiproxy_server.c
@@ -95,7 +95,7 @@ extern NTSTATUS mapiproxy_server_register(const void *_server_module)
 
 	num_server_modules++;
 
-	DEBUG(3, ("MAPIPROXY server '%s' registered\n", server_module->name));
+	OC_DEBUG(3, "MAPIPROXY server '%s' registered", server_module->name);
 
 	return NT_STATUS_OK;
 }
@@ -129,13 +129,13 @@ static NTSTATUS mapiproxy_server_overwrite(TALLOC_CTX *mem_ctx, const char *name
 	server_load = talloc_zero(mem_ctx, struct mapiproxy_module_list);
 	server_load->module = mapiproxy_server_byname(name);
 	if (!server_load->module) {
-		DEBUG(0, ("MAPIPROXY ERROR: couldn't load server '%s'\n", name));
+		oc_log(OC_LOG_ERROR, "MAPIPROXY ERROR: couldn't load server '%s'", name);
 		talloc_free(server_load);
 		return NT_STATUS_NOT_FOUND;
 	} else {
 		if (strcmp(server_load->module->endpoint, endpoint)) {
-			DEBUG(0, ("MAPIPROXY ERROR: %s endpoint expected for %s but %s found!\n",
-				  endpoint, server_load->module->name, server_load->module->endpoint));
+			OC_DEBUG(0, "MAPIPROXY ERROR: %s endpoint expected for %s but %s found!",
+				  endpoint, server_load->module->name, server_load->module->endpoint);
 			talloc_free(server_load);
 			return NT_STATUS_NOT_FOUND;
 		}
@@ -145,7 +145,7 @@ static NTSTATUS mapiproxy_server_overwrite(TALLOC_CTX *mem_ctx, const char *name
 	for (server = server_list; server; server = server->next) {
 		if (!strcmp(server->module->name, name) &&
 		    !strcmp(server->module->endpoint, endpoint)) {
-			DEBUG(0, ("MAPIPROXY: server '%s' already loaded - skipped\n", name));
+			oc_log(OC_LOG_WARNING, "MAPIPROXY: server '%s' already loaded - skipped", name);
 			talloc_free(server_load);
 			return NT_STATUS_OK;
 		}
@@ -181,10 +181,10 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 
 	/* Check server mode */
 	server_mode = lpcfg_parm_bool(dce_ctx->lp_ctx, NULL, "dcerpc_mapiproxy", "server", true);
-	DEBUG(0, ("MAPIPROXY server mode %s\n", (server_mode == false) ? "disabled" : "enabled"));
+	oc_log(OC_LOG_INFO, "MAPIPROXY server mode %s\n", (server_mode == false) ? "disabled" : "enabled");
 
 	if (server_mode == true) {
-		DEBUG(0, ("MAPIPROXY proxy mode disabled\n"));
+		OC_DEBUG(0, "MAPIPROXY proxy mode disabled\n");
 
 		for (i = 0; server_name[i]; i++) {
 			server = talloc_zero(dce_ctx, struct mapiproxy_module_list);
@@ -192,7 +192,7 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 			if (server->module) {
 				DLIST_ADD_END(server_list, server, struct mapiproxy_module_list *);
 			} else {
-				DEBUG(0, ("MAPIPROXY ERROR: couldn't load server '%s'\n", server_name[i]));
+				oc_log(OC_LOG_ERROR, "MAPIPROXY ERROR: couldn't load server '%s'", server_name[i]);
 			}
 		}
 	}
@@ -210,8 +210,8 @@ static NTSTATUS mapiproxy_server_load(struct dcesrv_context *dce_ctx)
 	mapiproxy_server_overwrite(dce_ctx, rfr, NDR_EXCHANGE_DS_RFR_NAME);
 
 	for (server = server_list; server; server = server->next) {
-		DEBUG(3, ("mapiproxy_server_load '%s' (%s)\n", 
-			  server->module->name, server->module->description));
+		OC_DEBUG(3, "mapiproxy_server_load '%s' (%s)", 
+			  server->module->name, server->module->description);
 		if (server->module->init) {
 			status = server->module->init(dce_ctx);
 			NT_STATUS_NOT_OK_RETURN(status);
@@ -309,7 +309,7 @@ _PUBLIC_ TDB_CONTEXT *mapiproxy_server_emsabp_tdb_init(struct loadparm_context *
 	emsabp_tdb_ctx = tdb_open(tdb_path, 0, 0, O_RDWR|O_CREAT, 0600);
 	talloc_free(tdb_path);
 	if (!emsabp_tdb_ctx) {
-		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno)));
+		OC_DEBUG(3, "tdb_open: %s", strerror(errno));
 		talloc_free(mem_ctx);
 		return NULL;
 	}

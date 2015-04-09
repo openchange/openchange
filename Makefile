@@ -242,6 +242,7 @@ libmapi-installheader:
 	$(INSTALL) -m 0644 libmapi/mapi_profile.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapi_nameid.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapidefs.h $(DESTDIR)$(includedir)/libmapi/
+	$(INSTALL) -m 0644 libmapi/oc_log.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/version.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/mapicode.h $(DESTDIR)$(includedir)/libmapi/
 	$(INSTALL) -m 0644 libmapi/idset.h $(DESTDIR)$(includedir)/libmapi/
@@ -313,6 +314,7 @@ libmapi.$(SHLIBEXT).$(PACKAGE_VERSION): 		\
 	libmapi/fxparser.po				\
 	libmapi/notif.po				\
 	libmapi/idset.po				\
+	libmapi/oc_log.po			\
 	ndr_mapi.po					\
 	gen_ndr/ndr_exchange.po				\
 	gen_ndr/ndr_exchange_c.po			\

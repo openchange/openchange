@@ -64,7 +64,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	private_dir = lpcfg_private_dir(lp_ctx);
 	if (!private_dir) {
-		DEBUG(5, ("private directory was not returned from configuration\n"));
+		OC_DEBUG(5, "private directory was not returned from configuration");
 		return NULL;
 	}
 
@@ -78,14 +78,14 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 
 	retval = mapistore_init_mapping_context(mstore_ctx->processing_ctx);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		OC_DEBUG(0, "mapistore_init_mapping_context: %s", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
 
 	retval = mapistore_backend_init(mstore_ctx, path);
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		OC_DEBUG(0, "mapistore_backend_init: %s", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -103,7 +103,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 	mstore_ctx->nprops_ctx = NULL;
 	retval = mapistore_namedprops_init(mstore_ctx, lp_ctx, &(mstore_ctx->nprops_ctx));
 	if (retval != MAPISTORE_SUCCESS) {
-		DEBUG(0, ("[%s:%d] ERROR: %s\n", __FUNCTION__, __LINE__, mapistore_errstr(retval)));
+		OC_DEBUG(0, "ERROR: %s", mapistore_errstr(retval));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -114,7 +114,7 @@ _PUBLIC_ struct mapistore_context *mapistore_init(TALLOC_CTX *mem_ctx, struct lo
 #if 0
 	mstore_ctx->mq_ipc = mq_open(MAPISTORE_MQUEUE_IPC, O_WRONLY|O_NONBLOCK|O_CREAT, 0755, NULL);
 	if (mstore_ctx->mq_ipc == -1) {
-		DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
+		OC_DEBUG(0, ("[%s:%d]: Failed to open mqueue for %s\n", __FUNCTION__, __LINE__, MAPISTORE_MQUEUE_IPC));
 		talloc_free(mstore_ctx);
 		return NULL;
 	}
@@ -140,7 +140,7 @@ _PUBLIC_ enum mapistore_error mapistore_release(struct mapistore_context *mstore
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 
-	DEBUG(5, ("freeing up mstore_ctx ref: %p\n", mstore_ctx));
+	OC_DEBUG(5, "freeing up mstore_ctx ref: %p", mstore_ctx);
 
 	talloc_free(mstore_ctx->nprops_ctx);
 	talloc_free(mstore_ctx->processing_ctx);
@@ -210,7 +210,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 	namespace_start = namespace;
 	namespace = strchr(namespace, ':');
 	if (!namespace) {
-		DEBUG(0, ("[%s:%d]: Error - Invalid namespace '%s'\n", __FUNCTION__, __LINE__, namespace_start));
+		OC_DEBUG(0, "Error - Invalid namespace '%s'", namespace_start);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
@@ -242,7 +242,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context(struct mapistore_context *ms
 		*backend_object = backend_list->ctx->root_folder_object;
 		DLIST_ADD_END(mstore_ctx->context_list, backend_list, struct backend_context_list *);
 	} else {
-		DEBUG(0, ("[%s:%d]: Error - Invalid URI '%s'\n", __FUNCTION__, __LINE__, uri));
+		OC_DEBUG(0, "Error - Invalid URI '%s'\n", uri);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_NAMESPACE;
 	}
@@ -273,7 +273,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_c
 	if (context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(0, ("mapistore_add_context_ref_count: context_is to increment is %d\n", context_id));
+	OC_DEBUG(0, "mapistore_add_context_ref_count: context_is to increment is %d", context_id);
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -284,7 +284,7 @@ _PUBLIC_ enum mapistore_error mapistore_add_context_ref_count(struct mapistore_c
 	if (backend_ctx->indexing) {
 		/* mapistore_indexing_add_ref_count(backend_ctx->indexing); */
 	} else {
-		DEBUG(0, ("[%s:%d]: This should never occur\n", __FUNCTION__, __LINE__));
+		oc_log(OC_LOG_FATAL, "mapistore_add_context_ref_count: This should never occur");
 		abort();
 	}
 
@@ -344,7 +344,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	if (context_id == -1) return MAPISTORE_ERROR;
 
 	/* Step 0. Ensure the context exists */
-	DEBUG(5, ("mapistore_del_context: context_id to del is %d\n", context_id));
+	OC_DEBUG(5, "mapistore_del_context: context_id to del is %d", context_id);
 	backend_ctx = mapistore_backend_lookup(mstore_ctx->context_list, context_id);
 	MAPISTORE_RETVAL_IF(!backend_ctx, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
@@ -353,7 +353,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 		if (backend_list->ctx->context_id == context_id) {
 			found = true;
 			break;
-		}		
+		}
 	}
 	if (found == false) {
 		return MAPISTORE_ERROR;
@@ -363,7 +363,7 @@ _PUBLIC_ enum mapistore_error mapistore_del_context(struct mapistore_context *ms
 	/* if (backend_ctx->indexing) {
 		mapistore_indexing_del_ref_count(backend_ctx->indexing);
 		if (backend_ctx->indexing->ref_count == 0) {
-			DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
+			OC_DEBUG(5, ("freeing up mapistore_indexing ctx: %p\n", backend_ctx->indexing));
 			DLIST_REMOVE(mstore_ctx->indexing_list, backend_ctx->indexing);
 			talloc_unlink(mstore_ctx->indexing_list, backend_ctx->indexing);
 			backend_ctx->indexing = NULL;
@@ -1823,7 +1823,7 @@ _PUBLIC_ enum MAPISTATUS mapistore_error_to_mapi(enum mapistore_error mapistore_
 		mapi_err = MAPI_E_NOT_IMPLEMENTED;
 		break;
 	default:
-		DEBUG (4, ("[%s] unknown mapistore error: %.8x\n", __PRETTY_FUNCTION__, mapistore_err));
+		OC_DEBUG (4, "unknown mapistore error: %.8x", mapistore_err);
 		mapi_err = MAPI_E_INVALID_PARAMETER;
 	}
 
@@ -1880,7 +1880,7 @@ _PUBLIC_ enum mapistore_error mapi_error_to_mapistore(enum MAPISTATUS mapi_err)
                 mapistore_err = MAPISTORE_ERR_INVALID_PARAMETER;
                 break;
         default:
-                DEBUG(4, ("Using default mapistore error for %s\n", mapi_get_errstr(mapi_err)));
+                OC_DEBUG(4, "Using default mapistore error for %s", mapi_get_errstr(mapi_err));
                 mapistore_err = MAPISTORE_ERROR;
         }
 

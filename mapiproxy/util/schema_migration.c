@@ -20,11 +20,11 @@
  */
 
 #include "schema_migration.h"
+#include "libmapi/libmapi.h"
 
 #include <stdbool.h>
 #include <talloc.h>
 #include <util/data_blob.h>
-#include <util/debug.h>
 #include <Python.h>
 
 
@@ -42,7 +42,7 @@ static int migrate_schema(const char *connection_string, const char *schema_back
 
         if (mailbox_mod == NULL) {
                 PyErr_Print();
-                DEBUG(0, ("Unable to import mailbox Python module.\n"));
+                OC_DEBUG(0, "Unable to import mailbox Python module.");
                 Py_Finalize();
                 return -1;
         }
@@ -51,7 +51,7 @@ static int migrate_schema(const char *connection_string, const char *schema_back
                                           "(s)", connection_string);
         if (mailbox_obj == NULL) {
                 PyErr_Print();
-                DEBUG(0, ("Call to %s constructor failed\n", schema_backend_class_name));
+                OC_DEBUG(0, "Call to %s constructor failed", schema_backend_class_name);
                 retval = 1;
                 goto end;
         }
@@ -59,11 +59,11 @@ static int migrate_schema(const char *connection_string, const char *schema_back
         py_ret_value = PyObject_CallMethod(mailbox_obj, "migrate", NULL);
         if (py_ret_value == NULL) {
                 PyErr_Print();
-                DEBUG(0, ("Call to %s.migrate failed\n", schema_backend_class_name));
+                OC_DEBUG(0, "Call to %s.migrate failed", schema_backend_class_name);
                 retval = 1;
         } else {
                 Py_DECREF(py_ret_value);
-                DEBUG(5, ("Call to %s.migrate succeeded\n", schema_backend_class_name));
+                OC_DEBUG(5, "Call to %s.migrate succeeded", schema_backend_class_name);
         }
 
 end:

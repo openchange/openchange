@@ -112,7 +112,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 	MAPISTORE_RETVAL_IF(!rmctx, MAPISTORE_ERR_NO_MEMORY, mem_ctx);
 	rmctx->tdb = tdb_open(dbpath, 0, 0, O_RDWR|O_CREAT, 0600);
 	if (!rmctx->tdb) {
-		DEBUG(3, ("[%s:%d]: %s (%s)\n", __FUNCTION__, __LINE__, strerror(errno), dbpath));
+		OC_DEBUG(3, "%s (%s)", strerror(errno), dbpath);
 		talloc_free(rmctx);
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_DATABASE_INIT;
@@ -151,7 +151,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_add(struct mapistore_con
 /* 	mstore_ctx->replica_mapping_ctx = tdb_wrap_open(mstore_ctx, dbpath, 0, 0, O_RDWR|O_CREAT, 0600); */
 /* 	talloc_free(dbpath); */
 /* 	if (!mstore_ctx->replica_mapping_ctx) { */
-/* 		DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno))); */
+/* 		OC_DEBUG(3, ("[%s:%d]: %s\n", __FUNCTION__, __LINE__, strerror(errno))); */
 /* 		talloc_free(mem_ctx); */
 /* 		return MAPISTORE_ERR_DATABASE_INIT; */
 /* 	} */
@@ -284,7 +284,7 @@ _PUBLIC_ enum mapistore_error mapistore_replica_mapping_guid_to_replid(struct ma
 
 	new_replid = mapistore_replica_mapping_get_next_replid(list->tdb);
 	if (new_replid == 0xffff) { /* should never occur */
-		DEBUG(0, ("%s: FATAL: next replica id is not configured for this database\n", __FUNCTION__));
+		oc_log(OC_LOG_FATAL, "next replica id is not configured for this database");
 		return MAPISTORE_ERROR;
 	}
 

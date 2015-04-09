@@ -405,7 +405,7 @@ int main(int argc, const char *argv[])
 
 		mretval = mapistore_add_context(output_ctx.mstore_ctx, "openchange", root_folder, output_ctx.root_fid, &(output_ctx.mapistore_context_id), &output_ctx.root_folder);
 		if (mretval != MAPISTORE_SUCCESS) {
-			DEBUG(0, ("%s\n", mapistore_errstr(mretval)));
+			OC_DEBUG(0, "%s", mapistore_errstr(mretval));
 			exit (1);
 		}
 		

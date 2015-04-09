@@ -127,7 +127,7 @@ uint32_t ocb_record_commit(struct ocb_context *ocb_ctx)
 
 	ret = ldb_add(ocb_ctx->ldb_ctx, ocb_ctx->msg);
 	if (ret != LDB_SUCCESS) {
-		DEBUG(3, ("LDB operation failed: %s\n", ldb_errstring(ocb_ctx->ldb_ctx)));
+		OC_DEBUG(3, "LDB operation failed: %s", ldb_errstring(ocb_ctx->ldb_ctx));
 		return -1;
 	}
 

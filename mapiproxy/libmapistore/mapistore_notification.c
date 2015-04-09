@@ -33,18 +33,18 @@ static int mapistore_subscription_destructor(void *data)
 {
 	struct mapistore_subscription	*subscription = (struct mapistore_subscription *) data;
 
-	DEBUG(0, ("#### DELETING SUBSCRIPTION ###\n"));
+	OC_DEBUG(0, ("#### DELETING SUBSCRIPTION ###\n"));
 
 	if (!data) return -1;
 
-	DEBUG(0, ("### 1. NotificationFlags = 0x%x\n", subscription->notification_types));
-	DEBUG(0, ("### 2. handle = 0x%x\n", subscription->handle));
+	OC_DEBUG(0, ("### 1. NotificationFlags = 0x%x\n", subscription->notification_types));
+	OC_DEBUG(0, ("### 2. handle = 0x%x\n", subscription->handle));
 
 	if (subscription->mqueue != -1) {
 		if (mq_unlink(subscription->mqueue_name) == -1) {
 			perror("mq_unlink");
 		}
-		DEBUG(0, ("%s unlinked\n", subscription->mqueue_name));
+		OC_DEBUG(0, ("%s unlinked\n", subscription->mqueue_name));
 		talloc_free(subscription->mqueue_name);
 	}
 	return 0;
@@ -130,7 +130,7 @@ struct mapistore_subscription *mapistore_new_subscription(TALLOC_CTX *mem_ctx,
 			c.mstore_ctx = mstore_ctx;
 			
 			ret = mapistore_mgmt_interface_register_subscription(&c, &n);
-			DEBUG(0, ("[%s:%d]: registering notification: %d\n", __FUNCTION__, __LINE__, ret));
+			OC_DEBUG(0, ("[%s:%d]: registering notification: %d\n", __FUNCTION__, __LINE__, ret));
 		}
 	}
 
@@ -197,13 +197,13 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 	}
 
 	if (command.type != MAPISTORE_MGMT_NOTIF) {
-		DEBUG(0, ("[%s:%d]: Invalid command type received: 0x%x\n",
+		OC_DEBUG(0, ("[%s:%d]: Invalid command type received: 0x%x\n",
 			  __FUNCTION__, __LINE__, command.type));
 		return NULL;
 	}
 
 	if (command.command.notification.status != MAPISTORE_MGMT_SEND) {
-		DEBUG(0, ("[%s:%d]: Invalid notification status: 0x%x\n",
+		OC_DEBUG(0, ("[%s:%d]: Invalid notification status: 0x%x\n",
 			  __FUNCTION__, __LINE__, command.command.notification.status));
 		return NULL;
 	}
@@ -264,7 +264,7 @@ static struct mapistore_notification_list *mapistore_notification_process_mqueue
 		nl->notification->parameters.object_parameters.message_count = command.command.notification.TotalNumberOfMessages;
 		break;
 	default:
-		DEBUG(3, ("Unsupported Notification Type: 0x%x\n", command.command.notification.NotificationFlags));
+		OC_DEBUG(3, ("Unsupported Notification Type: 0x%x\n", command.command.notification.NotificationFlags));
 		break;
 
 		/* TODO: Finir de faire les notifications
@@ -376,15 +376,15 @@ _PUBLIC_ enum mapistore_error mapistore_get_queued_notifications(struct mapistor
 	struct mq_attr				attr;
 	DATA_BLOB				data;
 
-	DEBUG(0, ("mapistore_get_queued_notifications: queue name = %s\n", s->mqueue_name));
-	DEBUG(0, ("mapistore_get_queued_notifications: before sanity checks\n"));
+	OC_DEBUG(0, ("mapistore_get_queued_notifications: queue name = %s\n", s->mqueue_name));
+	OC_DEBUG(0, ("mapistore_get_queued_notifications: before sanity checks\n"));
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!s, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 	MAPISTORE_RETVAL_IF(!nl, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
 
 	MAPISTORE_RETVAL_IF(s->mqueue == -1, MAPISTORE_ERR_NOT_FOUND, NULL);
-	DEBUG(0, ("mapistore_get_queued_notifications: after sanity checks\n"));
+	OC_DEBUG(0, ("mapistore_get_queued_notifications: after sanity checks\n"));
 
 	/* Retrieve queue attributes */
 	ret = mq_getattr(s->mqueue, &attr);
@@ -413,7 +413,7 @@ _PUBLIC_ enum mapistore_error mapistore_get_queued_notifications(struct mapistor
 		*nl = nlist;
 	}
 
-	DEBUG(0, ("mapistore_get_queued_notification: found = %s\n", 
+	OC_DEBUG(0, ("mapistore_get_queued_notification: found = %s\n",
 		  (found == false) ? "MAPISTORE_ERR_NOT_FOUND" : "MAPISTORE_SUCCESS"));
 #endif
 	return (found == false) ? MAPISTORE_ERR_NOT_FOUND : MAPISTORE_SUCCESS;
@@ -465,7 +465,7 @@ static bool notification_matches_subscription(struct mapistore_notification *not
                                                       || n_object_parameters->object_id == s_object_parameters->object_id));
                                 }
                                 else {
-                                        DEBUG(5, ("[%s] warning: considering notification for unhandled object: %d...\n",
+                                        OC_DEBUG(5, ("[%s] warning: considering notification for unhandled object: %d...\n",
                                                   __PRETTY_FUNCTION__, notification->object_type));
                                 }
                         }
@@ -487,12 +487,12 @@ _PUBLIC_ enum mapistore_error mapistore_delete_subscription(struct mapistore_con
 	for (el = mstore_ctx->subscriptions; el; el = el->next) {
 		if ((el->subscription->handle == identifier) &&
 		    (el->subscription->notification_types == NotificationFlags)) {
-			DEBUG(0, ("*** DELETING SUBSCRIPTION ***\n"));
-			DEBUG(0, ("subscription: handle = 0x%x\n", el->subscription->handle));
-			DEBUG(0, ("subscription: types = 0x%x\n", el->subscription->notification_types));
+			OC_DEBUG(0, "*** DELETING SUBSCRIPTION ***");
+			OC_DEBUG(0, "subscription: handle = 0x%x", el->subscription->handle);
+			OC_DEBUG(0, "subscription: types = 0x%x", el->subscription->notification_types);
 #if 0
-			DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
-			DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
+			OC_DEBUG(0, ("subscription: mqueue = %d\n", el->subscription->mqueue));
+			OC_DEBUG(0, ("subscription: mqueue name = %s\n", el->subscription->mqueue_name));
 #endif
 			DLIST_REMOVE(mstore_ctx->subscriptions, el);
 			talloc_free(el);

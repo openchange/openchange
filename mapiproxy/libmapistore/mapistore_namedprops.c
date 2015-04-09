@@ -64,8 +64,8 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 
 	backend = lpcfg_parm_string(lp_ctx, NULL, "mapistore", "namedproperties");
 	if (!backend) {
-		DEBUG(3, ("[WARN][%s]: Missing mapistore:namedproperties option\n", __location__));
-		DEBUG(3, ("[WARN][%s]: Assigned by default to '%s'\n", __location__, NAMEDPROPS_BACKEND_LDB));
+		oc_log(OC_LOG_WARNING, "Missing mapistore:namedproperties option");
+		oc_log(OC_LOG_WARNING, "Assigned by default to '%s'", NAMEDPROPS_BACKEND_LDB);
 		backend = NAMEDPROPS_BACKEND_LDB;
 	}
 	if (!strncmp(backend, NAMEDPROPS_BACKEND_LDB, strlen(NAMEDPROPS_BACKEND_LDB))) {
@@ -73,8 +73,7 @@ enum mapistore_error mapistore_namedprops_init(TALLOC_CTX *mem_ctx,
 	} else if (!strncmp(backend, NAMEDPROPS_BACKEND_MYSQL, strlen(NAMEDPROPS_BACKEND_MYSQL))) {
 		return mapistore_namedprops_mysql_init(mem_ctx, lp_ctx, nprops);
 	} else {
-		DEBUG(1, ("[%s:%d] ERROR: Invalid namedproperties backend type '%s'\n",
-			  __FUNCTION__, __LINE__, backend));
+		oc_log(OC_LOG_ERROR, "Invalid namedproperties backend type '%s'", backend);
 	}
 
 	return MAPISTORE_ERR_INVALID_PARAMETER;
@@ -102,7 +101,7 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_next_unused_id(struct namedpr
 	retval = nprops->next_unused_id(nprops, &nid);
 	if (retval == MAPISTORE_SUCCESS) {
 		*highest_id = nid;
-		DEBUG(5, ("[%s:%d] next unused id: 0x%x\n", __FUNCTION__, __LINE__, *highest_id));
+		OC_DEBUG(5, "next unused id: 0x%x", *highest_id);
 	}
 
 	return retval;
@@ -224,8 +223,8 @@ _PUBLIC_ enum mapistore_error mapistore_namedprops_get_nameid_type(struct namedp
 	case PT_MV_BINARY:
 		break;
 	default:
-		DEBUG(0, ("%d is not a valid type for a named property (%.4x)\n",
-			  *propTypeP, propID));
+		OC_DEBUG(0, "%d is not a valid type for a named property (%.4x)",
+			  *propTypeP, propID);
 		abort();
 	}
 

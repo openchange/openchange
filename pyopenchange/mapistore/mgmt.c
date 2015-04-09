@@ -202,7 +202,7 @@ static PyObject *py_MAPIStoreMGMT_registered_subscription(PyMAPIStoreMGMTObject 
 		return PyBool_FromLong((ret == MAPISTORE_SUCCESS) ? true : false);
 		break;
 	case MAPISTORE_MESSAGE:
-		DEBUG(0, ("[%s:%d]: Unsupported subscription type\n", __FUNCTION__, __LINE__));
+		OC_DEBUG(0, "Unsupported subscription type");
 		return PyBool_FromLong(false);
 		break;
 	}

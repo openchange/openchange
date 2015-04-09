@@ -763,7 +763,7 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 		}
 	}
 
-	DEBUG(5, ("%s: type for property '%x' could not be deduced\\n", __FUNCTION__, untypedtag));
+	OC_DEBUG(5, "type for property '%x' could not be deduced", untypedtag);
 	return 0;
 }
 
@@ -827,6 +827,8 @@ _PUBLIC_ uint16_t get_property_type(uint16_t untypedtag)
 	f.write("\t" + string.ljust("PidTagGenerateExchangeViews", 68) + " = 0x36e9000b,\n")
 	f.write("\t" + string.ljust("PidTagLatestDeliveryTime", 68) + " = 0x00190040,\n")
 	f.write("\t" + string.ljust("PidTagMailPermission", 68) + " = 0x3a0e000b,\n")
+        f.write("\t" + string.ljust("PidTagFolderFlags", 68) + " = 0x66a80003,\n")
+        f.write("\t" + string.ljust("PidTagHierRev", 68) + " = 0x40820040,\n")
 
 	f.write("\tMAPI_PROP_RESERVED                                                   = 0xFFFFFFFF\n")
 	f.write("} MAPITAGS;\n")
@@ -963,8 +965,8 @@ _PUBLIC_ const char *openchangedb_property_get_attribute(uint32_t proptag)
 			return pidtags[i].pidtag;
 		}
 	}
-	DEBUG(0, ("[%s:%d]: Unsupported property tag '0x%.8x'\\n", __FUNCTION__, __LINE__, proptag));
-	
+	OC_DEBUG(0, "Unsupported property tag '0x%.8x'", proptag);
+
 	return NULL;
 }
 """)
@@ -1440,6 +1442,8 @@ def fix_problems(propsfilename):
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_REJECT_PERMS//",
 				   "-e", "s/.Alternate names: PR_EMS_AB_DL_MEM_SUBMIT_PERMS//",
 				   "-e", "s/.General Message Properties Defining reference/General Message Properties\\nDefining reference/",
+				   "-e", "s/.Data type: PtypString8, 0x001E; PtypEmbeddedTable, 0x000D/Data type: PtypString8, 0x001E/",
+				   "-e", "s/.Data type: PtypString, 0x001F; PtypMultipleBinary, 0x1102/Data type: PtypString, 0x001F/",
 				   propsfilename])
 	if retcode != 0:
 		print "Could not fix problem:", retcode

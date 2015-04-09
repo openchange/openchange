@@ -209,7 +209,7 @@ _PUBLIC_ enum MAPISTATUS nspi_unbind(struct nspi_context *nspi_ctx)
  */
 _PUBLIC_ enum MAPISTATUS nspi_UpdateStat(struct nspi_context *nspi_ctx, 
 					 TALLOC_CTX *mem_ctx,
-					 uint32_t *plDelta)
+					 int32_t *plDelta)
 {
 	struct NspiUpdateStat		r;
 	NTSTATUS			status;

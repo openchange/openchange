@@ -29,7 +29,6 @@
 #include <ldb_errors.h>
 #include <tevent.h>
 #include <fcntl.h>
-#include <util/debug.h>
 
 #ifndef	__BEGIN_DECLS
 #ifdef	__cplusplus

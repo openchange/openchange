@@ -20,6 +20,7 @@
 #ifndef	__OCPF_PRIVATE_H_
 #define	__OCPF_PRIVATE_H_
 
+#include "libocpf/ocpf.h"
 #include "config.h"
 #include <stdlib.h>
 #include <libocpf/ocpf.tab.h>

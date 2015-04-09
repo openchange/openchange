@@ -241,7 +241,7 @@ _PUBLIC_ enum MAPISTATUS MAPIInitialize(struct mapi_context **_mapi_ctx, const c
 	mapi_ctx->lp_ctx = loadparm_init_global(true);
 
 	/* Enable logging on stdout */
-	setup_logging(NULL, DEBUG_STDOUT);
+	oc_log_init_stdout();
 
 	/* profile store */
 	retval = OpenProfileStore(mapi_ctx, &mapi_ctx->ldb_ctx, profiledb);
@@ -278,7 +278,7 @@ _PUBLIC_ void MAPIUninitialize(struct mapi_context *mapi_ctx)
 
 	session = mapi_ctx->session;
 	if (session && session->notify_ctx && session->notify_ctx->fd != -1) {
-		DEBUG(3, ("emsmdb_disconnect_dtor: unbind udp\n"));
+		OC_DEBUG(3, "emsmdb_disconnect_dtor: unbind udp");
 		shutdown(session->notify_ctx->fd, SHUT_RDWR);
 		close(session->notify_ctx->fd);
 	}

@@ -1,5 +1,5 @@
-deb http://archive.zentyal.org/zentyal 4.0 main
-deb-src http://archive.zentyal.org/zentyal 4.0 main
+deb http://archive.zentyal.org/zentyal 4.1 main
+deb-src http://archive.zentyal.org/zentyal 4.1 main
 deb http://gb.archive.ubuntu.com/ubuntu/ trusty main universe multiverse restricted
 deb-src http://gb.archive.ubuntu.com/ubuntu/ trusty main universe multiverse restricted
 deb http://gb.archive.ubuntu.com/ubuntu/ trusty-updates main universe multiverse restricted

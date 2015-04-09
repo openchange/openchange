@@ -1,5 +1,6 @@
 #include "idl_types.h"
 
+cpp_quote("#include <util/debug.h>")
 cpp_quote("#include <gen_ndr/ndr_misc.h>")
 
 /*
@@ -40,7 +41,7 @@ cpp_quote("#include <gen_ndr/ndr_misc.h>")
 
 [
   uuid("1544f5e0-613c-11d1-93df-00c04fd7bd09"),
-  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:[]"),
+  endpoint("ncacn_ip_tcp:"),
   authservice("exchangeRFR"),
   pointer_default(unique),
   version(1.0),
@@ -179,7 +180,7 @@ System Attendant Private Interface
 
 [
   uuid("f5cc5a18-4264-101a-8c59-08002b2f8426"),
-  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:[]"),
+  endpoint("ncacn_ip_tcp:"),
   authservice("exchangeAB"),
   pointer_default(unique),
   version(56.0),
@@ -538,7 +539,7 @@ System Attendant Private Interface
 		[in] policy_handle	*handle,
 		[in] uint32		Reserved,
 		[in,out] STAT		*pStat,
-		[in,out,unique] uint32	*plDelta
+		[in,out,unique] int32	*plDelta
 		);
 
 	/*****************/
@@ -764,7 +765,7 @@ System Attendant Private Interface
 [
   uuid("a4f1db00-ca47-1067-b31f-00dd010662da"),
   pointer_default(unique),
-  endpoint("ncacn_np:[\\pipe\\lsass]","ncacn_np:[\\pipe\\protected_storage]","ncacn_ip_tcp:"),
+  endpoint("ncacn_ip_tcp:"),
   authservice("exchangeMDB"),
   //version(0.81),
   version(5308416),

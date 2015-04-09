@@ -329,7 +329,7 @@ static enum MAPISTATUS get_mapistoreURI(TALLOC_CTX *parent_ctx,
 		ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
 				 LDB_SCOPE_SUBTREE, attrs, "(PidTagFolderId=%"PRIu64")", fid);
 	} else {
-		DEBUG(1, ("Called get_mapistoreURI with mailboxstore=false!\n"));
+		OC_DEBUG(1, "Called get_mapistoreURI with mailboxstore=false!\n");
 		talloc_free(mem_ctx);
 		return MAPI_E_NOT_IMPLEMENTED;
 		//ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_root_basedn(ldb_ctx),
@@ -507,8 +507,8 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 
 	mem_ctx = talloc_named(NULL, 0, "get_ReceiveFolder");
 
-	DEBUG(5, ("openchangedb_ldb get_ReceiveFolder, recipient: %s\n", recipient));
-	DEBUG(5, ("openchangedb_ldb get_ReceiveFolder, MessageClass: %s\n", MessageClass));
+	OC_DEBUG(5, "openchangedb_ldb get_ReceiveFolder, recipient: %s\n", recipient);
+	OC_DEBUG(5, "openchangedb_ldb get_ReceiveFolder, MessageClass: %s\n", MessageClass);
 
 	/* Step 1. Find mailbox DN for the recipient */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
@@ -529,8 +529,8 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || (res->count != 1), MAPI_E_NOT_FOUND, mem_ctx);
 	*fid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
 	*ExplicitMessageClass = "";
-	DEBUG(5, ("openchangedb_ldb get_ReceiveFolder (All target), class: %s, fid: %.16"PRIx64"\n",
-		  *ExplicitMessageClass, *fid));
+	OC_DEBUG(5, "openchangedb_ldb get_ReceiveFolder (All target), class: %s, fid: %.16"PRIx64"\n",
+		  *ExplicitMessageClass, *fid);
 	if (strcmp(MessageClass, "All") == 0) {
 		/* we're done here */
 		talloc_free(mem_ctx);
@@ -545,10 +545,10 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 	/* Step 3. Find the message class that has the longest matching string entry */
 	for (j = 0; j < res->count; ++j) {
 		ldb_element = ldb_msg_find_element(res->msgs[j], "PidTagMessageClass");
-		DEBUG(6, ("openchangedb_ldb get_ReceiveFolder, checking fid: %.16"PRIx64"\n",
-			  ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0)));
+		OC_DEBUG(6, "openchangedb_ldb get_ReceiveFolder, checking fid: %.16"PRIx64"\n",
+			  ldb_msg_find_attr_as_uint64(res->msgs[j], "PidTagFolderId", 0x0));
 		for (i = 0, length = 0; i < ldb_element->num_values; i++) {
-			DEBUG(6, ("openchangedb_ldb get_ReceiveFolder, element %i, data: %s\n", i, (char *)ldb_element->values[i].data));
+			OC_DEBUG(6, "openchangedb_ldb get_ReceiveFolder, element %i, data: %s\n", i, (char *)ldb_element->values[i].data);
 			if (MessageClass &&
 			    !strncasecmp(MessageClass, (char *)ldb_element->values[i].data, strlen((char *)ldb_element->values[i].data)) &&
 			    strlen((char *)ldb_element->values[i].data) > length) {
@@ -568,7 +568,7 @@ static enum MAPISTATUS get_ReceiveFolder(TALLOC_CTX *parent_ctx,
 		}
 	}
 	OPENCHANGE_RETVAL_IF(!*ExplicitMessageClass, MAPI_E_NOT_FOUND, mem_ctx);
-	DEBUG(5, ("openchangedb_ldb get_ReceiveFolder, fid: %.16"PRIx64"\n", *fid));
+	OC_DEBUG(5, "openchangedb_ldb get_ReceiveFolder, fid: %.16"PRIx64"\n", *fid);
 
 	talloc_free(mem_ctx);
 
@@ -829,7 +829,7 @@ static void *get_property_data_message(TALLOC_CTX *mem_ctx, struct ldb_message *
 		data = (void *)long_array;
 		break;
 	default:
-		DEBUG(0, ("[%s:%d] Property Type 0x%.4x not supported\n", __FUNCTION__, __LINE__, (proptag & 0xFFFF)));
+		OC_DEBUG(0, "Property Type 0x%.4x not supported\n", (proptag & 0xFFFF));
 		abort();
 		return NULL;
 	}
@@ -1125,7 +1125,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 		case PR_PARENT_SOURCE_KEY:
 		case PR_CREATION_TIME:
 		case PR_LAST_MODIFICATION_TIME:
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value->ulPropTag));
+			OC_DEBUG(5, "Ignored attempt to set handled property %.8x\n", value->ulPropTag);
 			break;
 		default:
 			/* Step 2. Convert proptag into PidTag attribute */
@@ -1136,7 +1136,7 @@ static enum MAPISTATUS set_folder_properties(struct openchangedb_context *self,
 
 			str_value = openchangedb_set_folder_property_data(mem_ctx, value);
 			if (!str_value) {
-				DEBUG(5, ("Ignored property of unhandled type %.4x\n", (value->ulPropTag & 0xffff)));
+				OC_DEBUG(5, "Ignored property of unhandled type %.4x\n", (value->ulPropTag & 0xffff));
 				continue;
 			}
 
@@ -1333,9 +1333,9 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 
 	mem_ctx = talloc_named(NULL, 0, "set_ReceiveFolder");
 
-	DEBUG(5, ("openchangedb_ldb set_ReceiveFolder, recipient: %s\n", recipient));
-	DEBUG(5, ("openchangedb_ldb set_ReceiveFolder, MessageClass: %s\n", MessageClass));
-	DEBUG(5, ("openchangedb_ldb set_ReceiveFolder, fid: 0x%.16"PRIx64"\n", fid));
+	OC_DEBUG(5, "openchangedb_ldb set_ReceiveFolder, recipient: %s\n", recipient);
+	OC_DEBUG(5, "openchangedb_ldb set_ReceiveFolder, MessageClass: %s\n", MessageClass);
+	OC_DEBUG(5, "openchangedb_ldb set_ReceiveFolder, fid: 0x%.16"PRIx64"\n", fid);
 
 	/* Step 1. Find mailbox DN for the recipient */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, ldb_get_default_basedn(ldb_ctx),
@@ -1343,7 +1343,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !res->count, MAPI_E_NOT_FOUND, mem_ctx);
 
 	dnstr = talloc_strdup(mem_ctx, ldb_msg_find_attr_as_string(res->msgs[0], "distinguishedName", NULL));
-	DEBUG(5, ("openchangedb_ldb set_ReceiveFolder, dnstr: %s\n", dnstr));
+	OC_DEBUG(5, "openchangedb_ldb set_ReceiveFolder, dnstr: %s\n", dnstr);
 
 	OPENCHANGE_RETVAL_IF(!dnstr, MAPI_E_NOT_FOUND, mem_ctx);
 
@@ -1355,7 +1355,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 	/* Step 2. Search for the MessageClass within user's mailbox */
 	ret = ldb_search(ldb_ctx, mem_ctx, &res, dn, LDB_SCOPE_SUBTREE, attrs,
 			 "(PidTagMessageClass=%s)", ldb_binary_encode_string(mem_ctx, MessageClass));
-	DEBUG(5, ("openchangedb_ldb get_ReceiveFolder, res->count: %i\n", res->count));
+	OC_DEBUG(5, "openchangedb_ldb get_ReceiveFolder, res->count: %i\n", res->count);
 
 	/* We should never have more than one record with a specific MessageClass */
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || (res->count > 1), MAPI_E_CORRUPT_STORE, mem_ctx);
@@ -1367,10 +1367,10 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 		struct ldb_message	*msg;
 
 		uint64_t folderid = ldb_msg_find_attr_as_uint64(res->msgs[0], "PidTagFolderId", 0x0);
-		DEBUG(6, ("openchangedb_ldb set_ReceiveFolder, fid to delete from: 0x%.16"PRIx64"\n", folderid));
+		OC_DEBUG(6, "openchangedb_ldb set_ReceiveFolder, fid to delete from: 0x%.16"PRIx64"\n", folderid);
 
 		get_distinguishedName(mem_ctx, self, folderid, &distinguishedName);
-		DEBUG(6, ("openchangedb_ldb set_ReceiveFolder, dn to delete from: %s\n", distinguishedName));
+		OC_DEBUG(6, "openchangedb_ldb set_ReceiveFolder, dn to delete from: %s\n", distinguishedName);
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
 		talloc_free(distinguishedName);
 
@@ -1381,7 +1381,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 
 		ret = ldb_modify(ldb_ctx, msg);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed to delete old message class entry: %s\n", ldb_strerror(ret)));
+			OC_DEBUG(0, "Failed to delete old message class entry: %s\n", ldb_strerror(ret));
 			talloc_free(mem_ctx);
 			return MAPI_E_NO_SUPPORT;
 		}
@@ -1393,7 +1393,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 		struct ldb_message	*msg;
 
 		get_distinguishedName(mem_ctx, self, fid, &distinguishedName);
-		DEBUG(6, ("openchangedb_ldb set_ReceiveFolder, dn to create in: %s\n", distinguishedName));
+		OC_DEBUG(6, "openchangedb_ldb set_ReceiveFolder, dn to create in: %s\n", distinguishedName);
 
 		dn = ldb_dn_new(mem_ctx, ldb_ctx, distinguishedName);
 		talloc_free(distinguishedName);
@@ -1405,7 +1405,7 @@ static enum MAPISTATUS set_ReceiveFolder(struct openchangedb_context *self,
 
 		ret = ldb_modify(ldb_ctx, msg);
 		if (ret != LDB_SUCCESS) {
-			DEBUG(0, ("Failed to add message class entry: %s\n", ldb_strerror(ret)));
+			OC_DEBUG(0, "Failed to add message class entry: %s\n", ldb_strerror(ret));
 			talloc_free(mem_ctx);
 			return MAPI_E_NO_SUPPORT;
 		}
@@ -1716,8 +1716,8 @@ static enum MAPISTATUS get_new_public_folderID(struct openchangedb_context *self
 					       const char *username,
 					       uint64_t *fid)
 {
-	DEBUG(0, ("get_new_public_folderID called on openchangedb ldb backend. "
-		  "This should never happen because the folder ids are global"));
+	OC_DEBUG(0, "get_new_public_folderID called on openchangedb ldb backend. "
+		  "This should never happen because the folder ids are global");
 	return MAPI_E_NOT_IMPLEMENTED;
 }
 
@@ -1839,12 +1839,12 @@ static enum MAPISTATUS table_set_restrictions(struct openchangedb_context *self,
 			table->restrictions->res.resProperty.lpProp.value.lpszW = talloc_strdup((TALLOC_CTX *)table->restrictions, res->res.resProperty.lpProp.value.lpszW);
 			break;
 		default:
-			DEBUG(0, ("Unsupported property type for RES_PROPERTY restriction\n"));
+			OC_DEBUG(0, "Unsupported property type for RES_PROPERTY restriction\n");
 			break;
 		}
 		break;
 	default:
-		DEBUG(0, ("Unsupported restriction type: 0x%x\n", res->rt));
+		OC_DEBUG(0, "Unsupported restriction type: 0x%x\n", res->rt);
 	}
 
 	return MAPI_E_SUCCESS;
@@ -1893,7 +1893,7 @@ static char *_table_build_filter(TALLOC_CTX *mem_ctx, struct openchangedb_table 
 				filter = talloc_asprintf_append(filter, "%s)", restrictions->res.resProperty.lpProp.value.lpszW);
 				break;
 			default:
-				DEBUG(0, ("Unsupported RES_PROPERTY property type: 0x%.4x\n", (restrictions->res.resProperty.ulPropTag & 0xFFFF)));
+				OC_DEBUG(0, "Unsupported RES_PROPERTY property type: 0x%.4x\n", (restrictions->res.resProperty.ulPropTag & 0xFFFF));
 				talloc_free(filter);
 				return NULL;
 			}
@@ -1926,11 +1926,11 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 		/* Build ldb filter */
 		if (live_filtered) {
 			ldb_filter = _table_build_filter(NULL, table, 0, NULL);
-			DEBUG(5, ("(live-filtered) ldb_filter = %s\n", ldb_filter));
+			OC_DEBUG(5, "(live-filtered) ldb_filter = %s\n", ldb_filter);
 		}
 		else {
 			ldb_filter = _table_build_filter(NULL, table, 0, table->restrictions);
-			DEBUG(5, ("(pre-filtered) ldb_filter = %s\n", ldb_filter));
+			OC_DEBUG(5, "(pre-filtered) ldb_filter = %s\n", ldb_filter);
 		}
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
 		ret = ldb_search(ldb_ctx, (TALLOC_CTX *)table_object, &table->res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
@@ -1955,12 +1955,12 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 			childIdAttr = "PidTagFolderId";
 			break;
 		default:
-			DEBUG(5, ("unsupported table type for openchangedb: %d\n", table->table_type));
+			OC_DEBUG(5, "unsupported table type for openchangedb: %d\n", table->table_type);
 			abort();
 		}
 		row_fmid = get_property_data(mem_ctx, res, pos, PR_MID, childIdAttr);
 		if (!row_fmid || !*row_fmid) {
-			DEBUG(5, ("ldb object must have a '%s' field\n", childIdAttr));
+			OC_DEBUG(5, "ldb object must have a '%s' field\n", childIdAttr);
 			abort();
 		}
 
@@ -1968,7 +1968,7 @@ static enum MAPISTATUS table_get_property(TALLOC_CTX *mem_ctx,
 
 		ldb_filter = _table_build_filter(local_mem_ctx, table, *row_fmid, table->restrictions);
 		OPENCHANGE_RETVAL_IF(!ldb_filter, MAPI_E_TOO_COMPLEX, NULL);
-		DEBUG(5, ("  row ldb_filter = %s\n", ldb_filter));
+		OC_DEBUG(5, "  row ldb_filter = %s\n", ldb_filter);
 		ret = ldb_search(ldb_ctx, local_mem_ctx, &live_res, ldb_get_default_basedn(ldb_ctx), LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
 		OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || live_res->count == 0, MAPI_E_INVALID_OBJECT, local_mem_ctx);
 		talloc_free(local_mem_ctx);
@@ -2168,7 +2168,7 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	if (!msg) {
 		return MAPI_E_NOT_ENOUGH_MEMORY;
 	}
-	DEBUG(5, ("openchangedb_ldb message_open: folderID=%"PRIu64" messageID=%"PRIu64"\n", folderID, messageID));
+	OC_DEBUG(5, "openchangedb_ldb message_open: folderID=%"PRIu64" messageID=%"PRIu64"\n", folderID, messageID);
 
 	msg->status = OPENCHANGEDB_MESSAGE_OPEN;
 	msg->folderID = folderID;
@@ -2181,7 +2181,7 @@ static enum MAPISTATUS message_open(TALLOC_CTX *mem_ctx,
 	ldb_filter = talloc_asprintf(mem_ctx, "(&(PidTagParentFolderId=%"PRIu64")(PidTagMessageId=%"PRIu64"))", folderID, messageID);
 	ret = ldb_search(ldb_ctx, (TALLOC_CTX *)msg, &msg->res, ldb_get_default_basedn(ldb_ctx),
 			 LDB_SCOPE_SUBTREE, attrs, ldb_filter, NULL);
-	DEBUG(5, ("We have found: %d messages for ldb_filter = %s\n", msg->res->count, ldb_filter));
+	OC_DEBUG(5, "We have found: %d messages for ldb_filter = %s\n", msg->res->count, ldb_filter);
 	talloc_free(ldb_filter);
 	OPENCHANGE_RETVAL_IF(ret != LDB_SUCCESS || !msg->res->count, MAPI_E_NOT_FOUND, msg);
 	*message_object = (void *)msg;
@@ -2257,7 +2257,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 	int				i;
 	bool				tofree = false;
 
-	DEBUG(5, ("openchangedb_ldb message_set_properties\n"));
+	OC_DEBUG(5, "openchangedb_ldb message_set_properties\n");
 
 	/* Get results from correct location */
 	switch (msg->status) {
@@ -2280,7 +2280,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 		case PR_SOURCE_KEY:
 		case PR_PARENT_SOURCE_KEY:
 		case PR_CHANGE_KEY:
-			DEBUG(5, ("Ignored attempt to set handled property %.8x\n", value.ulPropTag));
+			OC_DEBUG(5, "Ignored attempt to set handled property %.8x\n", value.ulPropTag);
 			break;
 		default:
 			/* Convert proptag into PidTag attribute */
@@ -2292,7 +2292,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 
 			str_value = openchangedb_set_folder_property_data((TALLOC_CTX *)message, &value);
 			if (!str_value) {
-				DEBUG(5, ("Ignored property of unhandled type %.4x\n", (value.ulPropTag & 0xFFFF)));
+				OC_DEBUG(5, "Ignored property of unhandled type %.4x\n", (value.ulPropTag & 0xFFFF));
 				continue;
 			} else {
 				element = ldb_msg_find_element(message, PidTagAttr);
@@ -2328,7 +2328,7 @@ static enum MAPISTATUS message_set_properties(TALLOC_CTX *mem_ctx,
 		}
 	}
 
-	DEBUG(5, ("openchangedb_ldb message_set_properties end\n"));
+	OC_DEBUG(5, "openchangedb_ldb message_set_properties end\n");
 	return MAPI_E_SUCCESS;
 }
 

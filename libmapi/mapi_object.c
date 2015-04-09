@@ -96,7 +96,7 @@ _PUBLIC_ void mapi_object_release(mapi_object_t *obj)
 
 	retval = Release(obj);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(1, ("Release has failed"));
+		OC_DEBUG(1, "Release has failed");
 	}
 
 	if (obj->private_data) {
@@ -292,10 +292,10 @@ void mapi_object_set_handle(mapi_object_t *obj, mapi_handle_t handle)
 */
 _PUBLIC_ void mapi_object_debug(mapi_object_t *obj)
 {
-	DEBUG(0, ("mapi_object {\n"));
-	DEBUG(0, (" .handle == 0x%x\n", obj->handle));
-	DEBUG(0, (" .id     == 0x%"PRIx64"\n", obj->id));
-	DEBUG(0, ("};\n"));
+	OC_DEBUG(0, "mapi_object {");
+	OC_DEBUG(0, " .handle == 0x%x", obj->handle);
+	OC_DEBUG(0, " .id     == 0x%"PRIx64, obj->id);
+	OC_DEBUG(0, "};");
 }
 
 
@@ -410,10 +410,10 @@ _PUBLIC_ enum MAPISTATUS mapi_object_bookmark_debug(mapi_object_t *obj_table)
 	OPENCHANGE_RETVAL_IF(!bookmark, MAPI_E_NOT_INITIALIZED, NULL);
 	
 	while (bookmark) {
-		DEBUG(0, ("mapi_object_bookmark {\n"));
-		DEBUG(0, (".index == %u\n", bookmark->index));
+		OC_DEBUG(0, "mapi_object_bookmark {");
+		OC_DEBUG(0, ".index == %u", bookmark->index);
 		dump_data(0, bookmark->bin.lpb, bookmark->bin.cb);
-		DEBUG(0, ("};\n"));
+		OC_DEBUG(0, "};");
 
 		bookmark = bookmark->next;
 	}	

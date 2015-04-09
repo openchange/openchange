@@ -171,7 +171,7 @@ static void GLOBSET_parser_do_range(struct GLOBSET_parser *parser)
 	}
 
 	DLIST_ADD_END(parser->ranges, range, void);
-	/* DEBUG(5, ("  added range: [%.16"PRIx64":%.16"PRIx64"] %p  %p %p\n", range->low, range->high, range, range->prev, range->next)); */
+	/* OC_DEBUG(5, "  added range: [%.16"PRIx64":%.16"PRIx64"] %p  %p %p", range->low, range->high, range, range->prev, range->next); */
 	parser->range_count++;
 
 	if (!parser->ranges) {
@@ -250,8 +250,8 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 
 	while (!end && !parser->error) {
 		if (parser->buffer_position >= parser->buffer.length) {
-			DEBUG(4, ("%s: end of buffer reached unexpectedly at position %Ld\n", __FUNCTION__,
-				  (unsigned long long) parser->buffer_position));
+			OC_DEBUG(4, "end of buffer reached unexpectedly at position %Ld",
+				  (unsigned long long) parser->buffer_position);
 			parser->error = true;
 		}
 		else {
@@ -280,7 +280,7 @@ _PUBLIC_ struct globset_range *GLOBSET_parse(TALLOC_CTX *mem_ctx, DATA_BLOB buff
 				break;
 			default:
 				parser->error = true;
-				DEBUG(4, ("%s: invalid command in blockset: %.2x\n", __FUNCTION__, command));
+				OC_DEBUG(4, "invalid command in blockset: %.2x", command);
 				abort();
 			}
 		}
@@ -319,7 +319,7 @@ static void check_idset(const struct idset *idset)
 
 	while (idset) {
 		if (!idset->idbased && GUID_all_zero(&idset->repl.guid)) {
-			DEBUG(5, ("idset: invalid guid\n"));
+			OC_DEBUG(5, "idset: invalid guid");
 			abort();
 		}
 
@@ -327,9 +327,9 @@ static void check_idset(const struct idset *idset)
 		if (idset->ranges) {
 			range = idset->ranges;
 			while (range) {
-				/* DEBUG(5, ("range %d: [%.16Lx:%.16Lx] prev: %p; next: %p\n", i, range->low, range->high, range->prev, range->next)); */
+				/* OC_DEBUG(5, ("range %d: [%.16Lx:%.16Lx] prev: %p; next: %p", i, range->low, range->high, range->prev, range->next)); */
 				if (range->prev == NULL) {
-					DEBUG(5, ("range %d has a NULL prev\n", i));
+					OC_DEBUG(5, "range %d has a NULL prev", i);
 					abort();
 				}
 				i++;
@@ -338,13 +338,13 @@ static void check_idset(const struct idset *idset)
 			}
 			
 			if (idset->ranges->prev != last_range) {
-				DEBUG(5, ("idset: last element of linked list is not the expected one\n"));
+				OC_DEBUG(5, "idset: last element of linked list is not the expected one");
 				abort();
 			}
 		}
 
 		if (i != idset->range_count) {
-			DEBUG(5, ("idset: elements count does not match the reported value (%d and %d)\n", i, idset->range_count));
+			OC_DEBUG(5, "idset: elements count does not match the reported value (%d and %d)", i, idset->range_count);
 			abort();
 		}
 		idset = idset->next;
@@ -494,9 +494,9 @@ static struct idset *IDSET_make(TALLOC_CTX *mem_ctx, bool idbased, uint16_t base
 	qsort(work_array, length, sizeof(uint64_t), IDSET_globcnt_compar);
 
 	if (length == 2) {
-		DEBUG(5, ("work_array[0]: %.16Lx, %.16Lx\n", (unsigned long long) work_array[0], (unsigned long long) work_array[1]));
+		OC_DEBUG(5, "work_array[0]: %.16Lx, %.16Lx", (unsigned long long) work_array[0], (unsigned long long) work_array[1]);
 		if (work_array[0] != array[0]) {
-			DEBUG(5, ("elements were reordered\n"));
+			OC_DEBUG(5, "elements were reordered");
 		}
 	}
 
@@ -996,7 +996,7 @@ _PUBLIC_ void IDSET_remove_rawidset(struct idset *idset, const struct rawidset *
 	}
 
 	if (rawidset->next) {
-		DEBUG(5, (__location__ ": warning, only first rawidset will be taken into account\n"));
+		OC_DEBUG(5, "warning, only first rawidset will be taken into account");
 	}
 
 	current_idset = idset;
@@ -1032,23 +1032,23 @@ _PUBLIC_ void IDSET_dump(const struct idset *idset, const char *label)
 	uint32_t i;
 	char *guid_str;
 
-	DEBUG(0, ("[%s] Dump of idset\n", label));
+	OC_DEBUG(0, "[%s] Dump of idset", label);
 	while (idset) {
 		if (idset->idbased) {
-			DEBUG(0, ("  %.4x: %d elements\n", idset->repl.id, idset->range_count));
+			OC_DEBUG(0, "  %.4x: %d elements", idset->repl.id, idset->range_count);
 		}
 		else {
 			guid_str = GUID_string(NULL, &idset->repl.guid);
-			DEBUG(0, ("  %s: %d elements\n", guid_str, idset->range_count));
+			OC_DEBUG(0, "  %s: %d elements", guid_str, idset->range_count);
 			talloc_free(guid_str);
 		}
 
 		range = idset->ranges;
 		for (i = 0; i < idset->range_count; i++) {
 			if (exchange_globcnt(range->low) > exchange_globcnt(range->high)) {
-				DEBUG(0, ("ERROR: Incorrect GLOBCNT range as high value is larger than low value\n"));
+				oc_log(OC_LOG_ERROR, "Incorrect GLOBCNT range as high value is larger than low value");
 			}
-			DEBUG(0, ("  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]\n", range->low, range->high));
+			OC_DEBUG(0, "  [0x%.12" PRIx64 ":0x%.12" PRIx64 "]", range->low, range->high);
 			range = range->next;
 		}
 
@@ -1203,15 +1203,15 @@ _PUBLIC_ void RAWIDSET_push_guid_glob(struct rawidset *rawidset, const struct GU
 
 	if (!rawidset) return;
 
-	/* DEBUG(0, ("pushing %.16"PRIx64" into idset...\n", globcnt)); */
+	/* OC_DEBUG(0, "pushing %.16"PRIx64" into idset...", globcnt); */
 
 	if (globcnt == 0) {
-		DEBUG(0, ("attempting to push a null globcnt\n"));
+		oc_log(OC_LOG_FATAL, "attempting to push a null globcnt");
 		abort();
 	}
 
 	if ((globcnt & 0xffff000000000000)) {
-		DEBUG(0, ("attempting to push a globcnt that has not been shifted by 16 bits beforehand\n"));
+		oc_log(OC_LOG_FATAL, "attempting to push a globcnt that has not been shifted by 16 bits beforehand");
 		abort();
 	}
 

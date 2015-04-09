@@ -31,7 +31,6 @@
 #include <ldb.h>
 #include <ldb_errors.h>
 #include <tevent.h>
-#include <util/debug.h>
 #include <time.h>
 #include <inttypes.h>
 
@@ -149,6 +148,7 @@ struct emsmdbp_object_table {
 	uint32_t				numerator;
 	uint32_t				denominator;
         struct mapistore_subscription_list	*subscription_list;
+	uint8_t					flags;
 };
 
 struct emsmdbp_object_stream {
@@ -338,12 +338,14 @@ int emsmdbp_object_copy_properties(struct emsmdbp_context *, struct emsmdbp_obje
 struct emsmdbp_object *emsmdbp_object_mailbox_init(TALLOC_CTX *, struct emsmdbp_context *, const char *, bool);
 struct emsmdbp_object *emsmdbp_object_folder_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 enum MAPISTATUS      emsmdbp_folder_get_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
+enum MAPISTATUS emsmdbp_folder_get_recursive_folder_count(struct emsmdbp_context *, struct emsmdbp_object *, uint32_t *);
 enum mapistore_error emsmdbp_folder_delete(struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint8_t);
 enum mapistore_error emsmdbp_folder_move_folder(struct emsmdbp_context *, struct emsmdbp_object *, struct emsmdbp_object *, TALLOC_CTX *, const char *);
 struct emsmdbp_object *emsmdbp_folder_open_table(TALLOC_CTX *, struct emsmdbp_object *, uint32_t, uint32_t);
 struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);
 int emsmdbp_object_table_get_available_properties(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, struct SPropTagArray **);
 void **emsmdbp_object_table_get_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint32_t, enum mapistore_query_type, enum MAPISTATUS **);
+enum MAPISTATUS emsmdbp_object_table_get_recursive_row_props(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, DATA_BLOB *, struct SPropTagArray *, uint64_t, int64_t *, uint32_t *);
 struct emsmdbp_object *emsmdbp_object_message_init(TALLOC_CTX *, struct emsmdbp_context *, uint64_t, struct emsmdbp_object *);
 enum mapistore_error emsmdbp_object_message_open(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *, uint64_t, uint64_t, bool, struct emsmdbp_object **, struct mapistore_message **);
 struct emsmdbp_object *emsmdbp_object_message_open_attachment_table(TALLOC_CTX *, struct emsmdbp_context *, struct emsmdbp_object *);

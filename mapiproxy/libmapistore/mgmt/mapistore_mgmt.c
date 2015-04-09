@@ -65,8 +65,7 @@ static void mgmt_ipc_process_notif(struct mapistore_mgmt_context *mgmt_ctx,
 		mapistore_mgmt_message_notification_command(mgmt_ctx, command.command.notification);
 		break;
 	default:
-		DEBUG(0, ("[%s:%d]: Invalid command type: %d\n",
-			  __FUNCTION__, __LINE__, command.type));
+		OC_DEBUG(0, "Invalid command type: %d\n", command.type);
 		break;
 	}
 
@@ -292,7 +291,7 @@ static int mgmt_user_registration_cmd(enum mapistore_mgmt_status status,
 	mem_ctx = talloc_new(NULL);
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;
@@ -531,7 +530,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_register_message(struct mapistore_m
 	ret = mapistore_mgmt_generate_uri(mgmt_ctx, backend, NULL, NULL, messageID, rootURI, &uri);
 	MAPISTORE_RETVAL_IF(ret, ret, NULL);
 
-	DEBUG(0, ("mapistore_mgmt_register_message: %s for user %s\n", uri, sysuser));
+	OC_DEBUG(0, "mapistore_mgmt_register_message: %s for user %s\n", uri, sysuser);
 
 	ret = mapistore_indexing_add(mgmt_ctx->mstore_ctx, sysuser, &ictxp);
 	MAPISTORE_RETVAL_IF(ret, ret, uri);
@@ -562,7 +561,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 	struct mapistore_mgmt_notif	*el;
 	bool				found = false;
 
-	DEBUG(5, ("Looking for notification flags 0x%x\n", NotificationFlags));
+	OC_DEBUG(5, "Looking for notification flags 0x%x\n", NotificationFlags);
 	/* Sanity checks */
 	MAPISTORE_RETVAL_IF(!mgmt_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
 	MAPISTORE_RETVAL_IF(!mgmt_ctx->users, MAPISTORE_ERR_NOT_FOUND, NULL);
@@ -576,7 +575,7 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 					for (el = uel->notifications; el; el = el->next) {
 						if ((el->WholeStore == true) && 
 						    (el->NotificationFlags & NotificationFlags)) {
-						  DEBUG(0, ("[%s:%d]: WholeStore matching subscription found for 0x%x\n", __FUNCTION__, __LINE__, NotificationFlags));
+							OC_DEBUG(0, "WholeStore matching subscription found for 0x%x\n", NotificationFlags);
 							found = true;
 							goto end;
 						}
@@ -593,12 +592,12 @@ _PUBLIC_ enum mapistore_error mapistore_mgmt_registered_folder_subscription(stru
 					if (!el->MessageID && el->MAPIStoreURI &&
 					    !strcmp(el->MAPIStoreURI, folderURI) &&
 					    (el->NotificationFlags & NotificationFlags)) {
-						DEBUG(0, ("[%s:%d]: Subscription found\n", __FUNCTION__, __LINE__));
+						OC_DEBUG(0, "Subscription found\n");
 						found = true;
 						goto end;
-					} else if ((el->WholeStore == true) && 
+					} else if ((el->WholeStore == true) &&
 						   (el->NotificationFlags & NotificationFlags)) {
-						DEBUG(0, ("[%s:%d]: WholeStore matching subscription found\n", __FUNCTION__, __LINE__));
+						OC_DEBUG(0, "WholeStore matching subscription found\n");
 						found = true;
 						goto end;
 					}
@@ -651,7 +650,7 @@ static int mgmt_notification_registration_cmd(enum mapistore_mgmt_status status,
 	mem_ctx = talloc_new(NULL);
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n", 
+		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;
@@ -736,7 +735,7 @@ static enum mapistore_error mgmt_bind_registration_command(enum mapistore_mgmt_s
 
 	ndr_err = ndr_push_struct_blob(&data, mem_ctx, &cmd, (ndr_push_flags_fn_t)ndr_push_mapistore_mgmt_command);
 	if (!NDR_ERR_CODE_IS_SUCCESS(ndr_err)) {
-		DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
+		OC_DEBUG(0, ("! [%s:%d][%s]: Failed to push mapistore_mgmt_command into NDR blob\n",
 			  __FILE__, __LINE__, __FUNCTION__));
 		talloc_free(mem_ctx);
 		return MAPISTORE_ERR_INVALID_DATA;

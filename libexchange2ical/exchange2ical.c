@@ -617,7 +617,7 @@ icalcomponent * _Exchange2Ical(mapi_object_t *obj_folder, struct exchange2ical_c
 		return NULL;
 	}
 	
-	DEBUG(0, ("MAILBOX (%d appointments)\n", count));
+	OC_DEBUG(0, "MAILBOX (%d appointments)", count);
 	if (count == 0) {
 		talloc_free(mem_ctx);
 		return NULL;

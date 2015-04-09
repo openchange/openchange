@@ -74,7 +74,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 	mapiadmin_ctx->user_ctx = talloc_zero(mem_ctx, struct test_join);
 	MAPI_RETVAL_IF(!mapiadmin_ctx->user_ctx, MAPI_E_NOT_ENOUGH_RESOURCES ,NULL);
 
-	DEBUG(3, ("Connecting to SAMR\n"));
+	OC_DEBUG(3, "Connecting to SAMR");
 
 	ev = tevent_context_init(mem_ctx);
 
@@ -100,11 +100,11 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 		if (NT_STATUS_EQUAL(status, NT_STATUS_NET_WRITE_FAULT)) {
 			errstr = dcerpc_errstr(mapiadmin_ctx->user_ctx, mapiadmin_ctx->user_ctx->p->last_fault_code);
 		}
-		DEBUG(3, ("samr_Connect failed - %s\n", errstr));
+		OC_DEBUG(3, "samr_Connect failed - %s", errstr);
 		return MAPI_E_CALL_FAILED;
 	}
 
-	DEBUG(3, ("Opening domain %s\n", profile->domain));
+	OC_DEBUG(3, "Opening domain %s", profile->domain);
 
 	name.string = profile->domain;
 	l.in.connect_handle = &handle;
@@ -115,7 +115,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 
 	status = dcerpc_samr_LookupDomain_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &l);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("LookupDomain failed - %s\n", nt_errstr(status)));
+		OC_DEBUG(3, "LookupDomain failed - %s", nt_errstr(status));
 		return MAPI_E_CALL_FAILED;
 	}
 
@@ -130,7 +130,7 @@ static enum MAPISTATUS mapiadmin_samr_connect(struct mapiadmin_ctx *mapiadmin_ct
 
 	status = dcerpc_samr_OpenDomain_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &o);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("OpenDomain failed - %s\n", nt_errstr(status)));
+		OC_DEBUG(3, "OpenDomain failed - %s", nt_errstr(status));
 		return MAPI_E_CALL_FAILED;
 	}
 
@@ -149,29 +149,29 @@ static int tce_search_callback(struct ldb_request *req, struct ldb_reply *ares)
 {
 	struct tce_async_context	*actx = talloc_get_type(req->context, struct tce_async_context);
 
-        switch (ares->type) {
+	switch (ares->type) {
 
-        case LDB_REPLY_ENTRY:
+	case LDB_REPLY_ENTRY:
 		if (ldb_msg_find_element(ares->message, "msExchMailboxGuid") != NULL) {
-			DEBUG(3, ("[%s:%d]: msExchMailboxGuid found!\n", __FUNCTION__, __LINE__));
+			OC_DEBUG(3, "msExchMailboxGuid found!");
 			actx->found = 1;
 			talloc_free(ares);
 			return ldb_request_done(req, LDB_SUCCESS);
 		}
-                break;
-        case LDB_REPLY_DONE:
-                break;
-        default:
-		DEBUG(3, ("[%s:%d]: unknown Reply Type ignore it\n", __FUNCTION__, __LINE__));
+		break;
+	case LDB_REPLY_DONE:
+		break;
+	default:
+		OC_DEBUG(3, "unknown Reply Type ignore it");
 		talloc_free(ares);
-                return LDB_ERR_OTHER;
-        }
+		return LDB_ERR_OTHER;
+	}
 
-        if (talloc_free(ares) == -1) {
-		DEBUG(3, ("[%s:%d]: talloc_free failed\n", __FUNCTION__, __LINE__));
-                return LDB_ERR_OPERATIONS_ERROR;
-        }
-	
+	if (talloc_free(ares) == -1) {
+		OC_DEBUG(3, "talloc_free failed");
+		return LDB_ERR_OPERATIONS_ERROR;
+	}
+
 	return LDB_SUCCESS;
 }
 
@@ -311,22 +311,22 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 				   (void *)tce_ctx, 
 				   tce_search_callback, 
 				   NULL);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_build_search_req", ldb_strerror(ret)));
+	OC_DEBUG(3, "ldb_build_search_req: %s", ldb_strerror(ret));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 
 	ldb_set_timeout(mem_ctx, req, 60);
 
 	ret = ldb_request(remote_ldb, req);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_request", ldb_strerror(ret)));
+	OC_DEBUG(3, "ldb_request: %s", ldb_strerror(ret));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 
 	ret = ldb_modify(remote_ldb, msg);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_modify", ldb_strerror(ret)));
+	OC_DEBUG(3, "ldb_modify: %s", ldb_strerror(ret));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CORRUPT_DATA, mem_ctx);
 
 	/* async search */
 	ret = ldb_wait(req->handle, LDB_WAIT_ALL);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_wait", ldb_strerror(ret)));
+	OC_DEBUG(3, "ldb_wait: %s", ldb_strerror(ret));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CALL_FAILED, mem_ctx);
 	MAPI_RETVAL_IF(!tce_ctx->found, MAPI_E_CALL_FAILED, mem_ctx);
 	
@@ -344,7 +344,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_extend(struct mapiadmin_ctx *mapiadmin_c
 	msg->elements[0].flags = LDB_FLAG_MOD_REPLACE;
 
 	ret = ldb_modify(remote_ldb, msg);
-	DEBUG(3, (MAPIADMIN_DEBUG_STR, "ldb_modify", ldb_strerror(ret)));
+	OC_DEBUG(3, "ldb_modify: %s", ldb_strerror(ret));
 	MAPI_RETVAL_IF((ret != LDB_SUCCESS), MAPI_E_CORRUPT_DATA, mem_ctx);
 
 	/* reset errno before leaving */
@@ -377,7 +377,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_add(struct mapiadmin_ctx *mapiadmin_ctx)
 	retval = mapiadmin_samr_connect(mapiadmin_ctx, mem_ctx);
 	MAPI_RETVAL_IF(retval, retval, mem_ctx);
 
-	DEBUG(3, ("Creating account %s\n", mapiadmin_ctx->username));
+	OC_DEBUG(3, "Creating account %s", mapiadmin_ctx->username);
 
 	mapi_ctx = mapiadmin_ctx->session->mapi_ctx;
 	MAPI_RETVAL_IF(!mapi_ctx, MAPI_E_NOT_INITIALIZED, mem_ctx);
@@ -404,7 +404,7 @@ again:
 	}
 
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("CreateUser2 failed - %s\n", nt_errstr(status)));
+		OC_DEBUG(3, "CreateUser2 failed - %s", nt_errstr(status));
 	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
@@ -417,15 +417,15 @@ again:
 	if (NT_STATUS_IS_OK(status)) {
 		policy_min_pw_len = pwp.out.info->min_password_length;
 	} else {
-		DEBUG(3, ("GetUserPwInfo failed - %s\n", nt_errstr(status)));
-	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
-        }
+		OC_DEBUG(3, "GetUserPwInfo failed - %s", nt_errstr(status));
+		MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
+	}
 
 	if (!mapiadmin_ctx->password) {
 		mapiadmin_ctx->password = generate_random_str(mapiadmin_ctx->user_ctx, MAX(8, policy_min_pw_len));
 	}
 
-	DEBUG(3, ("Setting account password '%s'\n", mapiadmin_ctx->password));
+	OC_DEBUG(3, "Setting account password '%s'", mapiadmin_ctx->password);
 
 	ZERO_STRUCT(u);
 	s.in.user_handle = &mapiadmin_ctx->user_ctx->user_handle;
@@ -437,17 +437,17 @@ again:
 
 	status = dcerpc_fetch_session_key(mapiadmin_ctx->user_ctx->p, &session_key);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SetUserInfo level %d - no session key - %s\n",
-			  s.in.level, nt_errstr(status)));
+		OC_DEBUG(3, "SetUserInfo level %d - no session key - %s",
+			  s.in.level, nt_errstr(status));
 		mapiadmin_user_del(mapiadmin_ctx);
-	        MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
+		MAPI_RETVAL_IF(1,MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
 	arcfour_crypt_blob(u.info24.password.data, 516, &session_key);
 
 	status = dcerpc_samr_SetUserInfo_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
+		OC_DEBUG(3, "SetUserInfo failed - %s", nt_errstr(status));
 		if (NT_STATUS_EQUAL(status, NT_STATUS_PASSWORD_RESTRICTION)) {
 		        MAPI_RETVAL_IF(1, MAPI_E_BAD_VALUE, mem_ctx);
 		} else {
@@ -482,18 +482,18 @@ again:
 					 lpcfg_netbios_name(mapi_ctx->lp_ctx), 
 					 timestring(mapiadmin_ctx->user_ctx, time(NULL)));
 
-	DEBUG(3, ("Resetting ACB flags, force pw change time\n"));
+	OC_DEBUG(3, "Resetting ACB flags, force pw change time");
 
 	status = dcerpc_samr_SetUserInfo_r(mapiadmin_ctx->user_ctx->p->binding_handle, mapiadmin_ctx->user_ctx, &s);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("SetUserInfo failed - %s\n", nt_errstr(status)));
-	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED, mem_ctx);
+		OC_DEBUG(3, "SetUserInfo failed - %s", nt_errstr(status));
+		MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED, mem_ctx);
 	}
 	retval = mapiadmin_user_extend(mapiadmin_ctx);
 	if (retval != MAPI_E_SUCCESS) {
-		DEBUG(3, ("mapiadmin_user_extend: 0x%x\n", GetLastError()));
+		OC_DEBUG(3, "mapiadmin_user_extend: 0x%x", GetLastError());
 	        mapiadmin_user_del(mapiadmin_ctx);
-	        MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED,mem_ctx);
+		MAPI_RETVAL_IF(1, MAPI_E_CALL_FAILED,mem_ctx);
 	}
 
 	talloc_free(mem_ctx);
@@ -550,7 +550,7 @@ _PUBLIC_ enum MAPISTATUS mapiadmin_user_del(struct mapiadmin_ctx *mapiadmin_ctx)
 
 	status = dcerpc_samr_OpenUser_r(mapiadmin_ctx->user_ctx->p->binding_handle, mem_ctx, &r);
 	if (!NT_STATUS_IS_OK(status)) {
-		DEBUG(3, ("OpenUser(%s) failed - %s\n", mapiadmin_ctx->username, nt_errstr(status)));
+		OC_DEBUG(3, "OpenUser(%s) failed - %s", mapiadmin_ctx->username, nt_errstr(status));
 		MAPI_RETVAL_IF(!NT_STATUS_IS_OK(status), MAPI_E_NOT_FOUND, mem_ctx);
 	}
 

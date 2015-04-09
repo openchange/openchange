@@ -7,11 +7,12 @@ Unreleased changes refer to our current [master branch](https://github.com/openc
 ## [Unreleased]
 
 ### Added
-* Calendar sharing invitation among different Outlook versions
+* Sharing request and invitation of folders among different Outlook versions
 
 ### Fixes
 * Fixed `Too many connections to ldap` when openchange runs on samba as member of a domain.
 * Fixed `Mark All as Read` feature regression bug introduced by 7737bdf6
+* Address book working much better than before
 
 ### Performances
 * Fixed performance issue affecting initial synchronization of business size mailbox contents

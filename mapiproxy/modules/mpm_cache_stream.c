@@ -30,7 +30,6 @@
 #include "mapiproxy/modules/mpm_cache.h"
 #include "libmapi/libmapi.h"
 #include "libmapi/libmapi_private.h"
-#include <util/debug.h>
 
 #include <sys/stat.h>
 #include <sys/types.h>
@@ -74,7 +73,7 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 				       mpm->dbpath, stream->message->FolderId,
 				       stream->message->MessageId);
 
-		DEBUG(2, ("* [%s:%d]: Opening Message stream %s\n", MPM_LOCATION, file));
+		OC_DEBUG(2, "* Opening Message stream %s", file);
 		stream->filename = talloc_strdup(mem_ctx, file);
 		stream->fp = fopen(file, "w+");
 		stream->offset = 0;
@@ -104,7 +103,7 @@ NTSTATUS mpm_cache_stream_open(struct mpm_cache *mpm, struct mpm_stream *stream)
 				       stream->attachment->message->MessageId,
 				       stream->attachment->AttachmentID);
 
-		DEBUG(2, ("* [%s:%d]: Opening Attachment stream %s\n", MPM_LOCATION, file));
+		OC_DEBUG(2, "* Opening Attachment stream %s", file);
 		stream->filename = talloc_strdup(mem_ctx, file);
 		stream->fp = fopen(file, "w+");
 		stream->offset = 0;
@@ -153,8 +152,7 @@ NTSTATUS mpm_cache_stream_read(struct mpm_stream *stream, size_t input_size, siz
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	*length = fread(*data, sizeof (uint8_t), input_size, stream->fp);
 	stream->offset += *length;
-	DEBUG(5, ("* [%s:%d]: Current offset: 0x%zx\n", MPM_LOCATION,
-		  stream->offset));
+	OC_DEBUG(5, "* Current offset: 0x%zx", stream->offset);
 
 	return NT_STATUS_OK;
 }
@@ -176,7 +174,7 @@ NTSTATUS mpm_cache_stream_write(struct mpm_stream *stream, uint16_t length, uint
 	fseek(stream->fp, stream->offset, SEEK_SET);
 	WrittenSize = fwrite(data, sizeof (uint8_t), length, stream->fp);
 	if (WrittenSize != length) {
-		DEBUG(0, ("* [%s:%d] WrittenSize != length\n", MPM_LOCATION));
+		OC_DEBUG(0, "* WrittenSize != length");
 		return NT_STATUS_UNSUCCESSFUL;
 	}
 

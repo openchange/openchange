@@ -19,10 +19,10 @@
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "utils/dlinklist.h"
 #include "libmapiproxy.h"
-#include <util/debug.h>
 
 /**
    \file dcesrv_mapiproxy_module.c
@@ -165,7 +165,7 @@ extern NTSTATUS mapiproxy_module_register(const void *_mp_module)
 
 	num_mp_modules++;
 
-	DEBUG(3, ("MAPIPROXY module '%s' registered\n", mp_module->name));
+	OC_DEBUG(3, "MAPIPROXY module '%s' registered", mp_module->name);
 
 	return NT_STATUS_OK;
 }
@@ -187,18 +187,18 @@ static NTSTATUS mapiproxy_module_load(struct dcesrv_context *dce_ctx)
 		module->module = mapiproxy_module_byname(modules[i]);
 		if (module->module) {
 			DLIST_ADD_END(mpm_list, module, struct mapiproxy_module_list *);
-			DEBUG(3, ("MAPIPROXY module '%s' loaded\n", modules[i]));
+			oc_log(OC_LOG_INFO, "MAPIPROXY module '%s' loaded", modules[i]);
 			if (module->module->init) {
 				status = module->module->init(dce_ctx);
 				NT_STATUS_NOT_OK_RETURN(status);
 			}
 		} else {
-			DEBUG(0, ("MAPIPROXY module '%s' not found\n", modules[i]));
+			oc_log(OC_LOG_WARNING, "MAPIPROXY module '%s' not found", modules[i]);
 		}
 	}
 
 	for (module = mpm_list; module; module = module->next) {
-		DEBUG(3, ("mapiproxy_module_load '%s' (%s)\n", module->module->name, module->module->description));
+		OC_DEBUG(3, "mapiproxy_module_load '%s' (%s)", module->module->name, module->module->description);
 	}
 
 	return NT_STATUS_OK;

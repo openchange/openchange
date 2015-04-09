@@ -25,9 +25,9 @@
    \brief Pack/Unpack specified MAPI calls into/from a custom MAPI call
  */
 
+#include "libmapi/libmapi.h"
 #include "mapiproxy/dcesrv_mapiproxy.h"
 #include "mapiproxy/libmapiproxy/libmapiproxy.h"
-#include <util/debug.h>
 
 #define	MPM_NAME	"mpm_pack"
 #define	MPM_PACK_ERROR	"[ERROR] mpm_pack:"
@@ -193,13 +193,14 @@ static bool pack(TALLOC_CTX *mem_ctx, struct EcDoRpc *EcDoRpc)
 		return false;
 	}
 
-	DEBUG(3, ("============ non packed =============\n"));
+	OC_DEBUG(3, "============ non packed =============");
 	dump_data(3, nopack_ndr->data, nopack_ndr->offset);
-	DEBUG(3, ("=====================================\n"));
+	OC_DEBUG(3, "=====================================");
 
-	DEBUG(3, ("\n============ packed =============\n"));
+	OC_DEBUG(3, "");
+	OC_DEBUG(3, "============ packed =============");
 	dump_data(3, ndr->data, ndr->offset);
-	DEBUG(3, ("=================================\n"));
+	OC_DEBUG(3, "=================================");
 
 
 	/* Fill in the proxypack operation */
@@ -303,14 +304,14 @@ static NTSTATUS pack_init(struct dcesrv_context *dce_ctx)
 	for (i = 0; calls[i]; i++) {
 		opnum = strtol(calls[i], NULL, 16);
 		if (opnum <= 0 || opnum >= 0xFF) {
-			DEBUG(0, ("%s: invalid MAPI opnum 0x%.2x\n", MPM_PACK_ERROR, (uint32_t)opnum));
+			OC_DEBUG(0, "%s: invalid MAPI opnum 0x%.2x", MPM_PACK_ERROR, (uint32_t)opnum);
 			talloc_free(mpm);
 			return NT_STATUS_INVALID_PARAMETER;
 		}
 		/* avoid duplicated opnums */
 		for (j = 0; j < i; j++) {
 			if (opnum == mpm->mapi_calls[j]) {
-				DEBUG(0, ("%s: duplicated opnum: 0x%.2x\n", MPM_PACK_ERROR, (uint32_t)opnum));
+				OC_DEBUG(0, "%s: duplicated opnum: 0x%.2x", MPM_PACK_ERROR, (uint32_t)opnum);
 				talloc_free(mpm);
 				return NT_STATUS_INVALID_PARAMETER;
 			}
@@ -357,7 +358,7 @@ NTSTATUS samba_init_module(void)
 	/* Register ourselves with the MAPIPROXY subsystem */
 	ret = mapiproxy_module_register(&module);
 	if (!NT_STATUS_IS_OK(ret)) {
-		DEBUG(0, ("Failed to register the 'pack' mapiproxy module!\n"));;
+		OC_DEBUG(0, "Failed to register the 'pack' mapiproxy module!");
 		return ret;
 	}
 

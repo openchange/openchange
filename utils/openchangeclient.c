@@ -559,7 +559,7 @@ static char **get_cmdline_recipients(TALLOC_CTX *mem_ctx, const char *recipients
 	}
 
 	if ((tmp = strtok((char *)recipients, ",")) == NULL) {
-		DEBUG(2, ("Invalid recipient string format\n"));
+		OC_DEBUG(2, "Invalid recipient string format");
 		return NULL;
 	}
 	
@@ -1984,20 +1984,20 @@ static bool openchangeclient_updateitem(TALLOC_CTX *mem_ctx, mapi_object_t *obj_
 	item = oclient->update;
 
 	if (!item) {
-		DEBUG(0, ("Missing ID\n"));
+		OC_DEBUG(0, "Missing ID");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
 
 	if (!container_class) {
-		DEBUG(0, ("Missing container class\n"));
+		OC_DEBUG(0, "Missing container class");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
 
 	fid_str = strsep((char **)&item, "/");
 	if (!fid_str || !item) {
-		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
+		OC_DEBUG(0, "    Invalid ID: %s", fid_str ? fid_str : "null");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
@@ -2059,14 +2059,14 @@ static bool openchangeclient_deleteitems(TALLOC_CTX *mem_ctx, mapi_object_t *obj
 	item = oclient->delete;
 
 	if (!item) {
-		DEBUG(0, ("Missing ID\n"));
+		OC_DEBUG(0, "Missing ID");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
 	
 	fid_str = strsep((char **)&item, "/");
 	if (!fid_str || !item) {
-		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
+		OC_DEBUG(0, "    Invalid ID: %s", fid_str ? fid_str : "null");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
@@ -2194,131 +2194,128 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 	switch(NotificationType) {
 	case fnevNewMail:
 	case fnevNewMail|fnevMbit:
-		DEBUG(0, ("[+] New mail Received\n"));
+		OC_DEBUG(0, "[+] New mail Received");
 		newmail = (struct NewMailNotification *) NotificationData;
 		mapidump_newmail(newmail, "\t");
 		openchangeclient_findmail((mapi_object_t *)private_data, newmail->MID);
 		mapi_errstr("openchangeclient_findmail", GetLastError());
 		break;
 	case fnevObjectCreated:
-		DEBUG(0, ("[+] Folder Created\n"));
+		OC_DEBUG(0, "[+] Folder Created");
 		break;
 	case fnevObjectDeleted:
-		DEBUG(0, ("[+] Folder Deleted\n"));
+		OC_DEBUG(0, "[+] Folder Deleted");
 		break;
 	case fnevObjectModified:
 	case fnevTbit|fnevObjectModified:
 	case fnevUbit|fnevObjectModified:
 	case fnevTbit|fnevUbit|fnevObjectModified:
-		DEBUG(0, ("[+] Folder Modified\n"));
+		OC_DEBUG(0, "[+] Folder Modified");
 		break;
 	case fnevObjectMoved:
-		DEBUG(0, ("[+] Folder Moved\n"));
+		OC_DEBUG(0, "[+] Folder Moved");
 		break;
 	case fnevObjectCopied:
-		DEBUG(0, ("[+] Folder Copied\n"));
+		OC_DEBUG(0, "[+] Folder Copied");
 		break;
 	case fnevSearchComplete:
-		DEBUG(0, ("[+] Search complete in search folder\n"));
+		OC_DEBUG(0, "[+] Search complete in search folder");
 		break;
 	case fnevTableModified:
 		htable = (struct HierarchyTableChange *) NotificationData;
-		DEBUG(0, ("[+] Hierarchy Table: "));
 		switch (htable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Hierarchy Table: ");
 			break;
 		}
 		break;
 	case fnevStatusObjectModified:
-		DEBUG(0, ("[+] ICS Notification\n"));
+		OC_DEBUG(0, "[+] ICS Notification");
 		break;
 	case fnevMbit|fnevObjectCreated:
-		DEBUG(0, ("[+] Message created\n"));
+		OC_DEBUG(0, "[+] Message created");
 		break;
 	case fnevMbit|fnevObjectDeleted:
-		DEBUG(0, ("[+] Message deleted\n"));
+		OC_DEBUG(0, "[+] Message deleted");
 		break;
 	case fnevMbit|fnevObjectModified:
-		DEBUG(0, ("[+] Message modified\n"));
+		OC_DEBUG(0, "[+] Message modified");
 		break;
 	case fnevMbit|fnevObjectMoved:
-		DEBUG(0, ("[+] Message moved\n"));
+		OC_DEBUG(0, "[+] Message moved");
 		break;
 	case fnevMbit|fnevObjectCopied:
-		DEBUG(0, ("[+] Message copied\n"));
+		OC_DEBUG(0, "[+] Message copied");
 		break;
 	case fnevMbit|fnevTableModified:
 		ctable = (struct ContentsTableChange *) NotificationData;
-		DEBUG(0, ("[+] Contents Table: "));
 		switch (ctable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Contents Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Contents Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Contents Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Contents Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Contents Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Contents Table: ");
 			break;
 		}
 		break;
 	case fnevMbit|fnevSbit|fnevObjectDeleted:
-		DEBUG(0, ("[+] A message is no longer part of a search folder\n"));
+		OC_DEBUG(0, "[+] A message is no longer part of a search folder");
 		break;
 	case fnevMbit|fnevSbit|fnevObjectModified:
-		DEBUG(0, ("[+] A property on a message in a search folder has changed\n"));
+		OC_DEBUG(0, "[+] A property on a message in a search folder has changed");
 		break;
 	case fnevMbit|fnevSbit|fnevTableModified:
 		stable = (struct ContentsTableChange *) NotificationData;
-		DEBUG(0, ("[+] Search Table: "));
 		switch (stable->TableEvent) {
 		case TABLE_CHANGED:
-			DEBUG(0, (" changed\n"));
+			OC_DEBUG(0, "[+] Search Table:  changed");
 			break;
 		case TABLE_ROW_ADDED:
-			DEBUG(0, ("row added\n"));
+			OC_DEBUG(0, "[+] Search Table: row added");
 			break;
 		case TABLE_ROW_DELETED:
-			DEBUG(0, ("row deleted\n"));
+			OC_DEBUG(0, "[+] Search Table: row deleted");
 			break;
 		case TABLE_ROW_MODIFIED:
-			DEBUG(0, ("row modified\n"));
+			OC_DEBUG(0, "[+] Search Table: row modified");
 			break;
 		case TABLE_RESTRICT_DONE:
-			DEBUG(0, ("restriction done\n"));
+			OC_DEBUG(0, "[+] Search Table: restriction done");
 			break;
 		default:
-			DEBUG(0, ("\n"));
+			OC_DEBUG(0, "[+] Search Table: ");
 			break;
 		}
 		break;
 	default:
-		printf("[+] Unsupported notification (0x%x)\n", NotificationType);
+		OC_DEBUG(0, "[+] Unsupported notification (0x%x)", NotificationType);
 		break;
 	}
 
@@ -2552,7 +2549,7 @@ static bool openchangeclient_ocpf_syntax(struct oclient *oclient)
 		}
 		ret = ocpf_parse(context_id);
 		if (ret == -1) {
-			DEBUG(0, ("ocpf_parse failed ...\n"));
+			OC_DEBUG(0, "ocpf_parse failed ...");
 			errno = MAPI_E_INVALID_PARAMETER;
 			return false;
 		}
@@ -2669,7 +2666,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 
 	fid_str = strsep((char **)&item, "/");
 	if (!fid_str || !item) {
-		DEBUG(0, ("    Invalid ID: %s\n", fid_str ? fid_str : "null"));
+		OC_DEBUG(0, "    Invalid ID: %s", fid_str ? fid_str : "null");
 		errno = MAPI_E_INVALID_PARAMETER;
 		return false;
 	}
@@ -2697,7 +2694,7 @@ static bool openchangeclient_ocpf_dump(TALLOC_CTX *mem_ctx, mapi_object_t *obj_s
 	ret = ocpf_init();
 
 	filename = talloc_asprintf(mem_ctx, "%"PRIx64".ocpf", mid);
-	DEBUG(0, ("OCPF output file: %s\n", filename));
+	OC_DEBUG(0, "OCPF output file: %s", filename);
 
 	ret = ocpf_new_context(filename, &context_id, OCPF_FLAGS_CREATE);
 	talloc_free(filename);
@@ -2753,37 +2750,37 @@ static bool openchangeclient_freebusy(mapi_object_t *obj_store, struct oclient *
 
 	year = GetFreeBusyYear(publish_start);
 
-	DEBUG(0, ("FreeBusy (%s):\n", message_name));
+	OC_DEBUG(0, "FreeBusy (%s):", message_name);
 	mapidump_date_SPropValue(aRow.lpProps[1], "* FreeBusy Last Modification Time", "\t");
 	mapidump_freebusy_date(*publish_start, "\t* FreeBusy Publishing Start:");
 	mapidump_freebusy_date(*publish_end, "\t *FreeBusy Publishing End:  ");
 
 	if (busy_months && ((*(const uint32_t *) busy_months) != MAPI_E_NOT_FOUND) &&
 	    busy_events && ((*(const uint32_t *) busy_events) != MAPI_E_NOT_FOUND)) {
-		DEBUG(0, ("\t* Busy Events:\n"));
+		OC_DEBUG(0, "\t* Busy Events:");
 		for (i = 0; i < busy_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(busy_months->lpl[i], year);
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(busy_months->lpl[i], event_year), event_year)); 
+			OC_DEBUG(0, "\t\t* %s %u:", mapidump_freebusy_month(busy_months->lpl[i], event_year), event_year);
 			mapidump_freebusy_event(&busy_events->lpbin[i], busy_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}
 
 	if (tentative_months && ((*(const uint32_t *) tentative_months) != MAPI_E_NOT_FOUND) &&
 	    tentative_events && ((*(const uint32_t *) tentative_events) != MAPI_E_NOT_FOUND)) {
-		DEBUG(0, ("\t* Tentative Events:\n"));
+		OC_DEBUG(0, "\t* Tentative Events:");
 		for (i = 0; i < tentative_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(tentative_months->lpl[i], year);
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(tentative_months->lpl[i], event_year), event_year));
+			OC_DEBUG(0, "\t\t* %s %u:", mapidump_freebusy_month(tentative_months->lpl[i], event_year), event_year);
 			mapidump_freebusy_event(&tentative_events->lpbin[i], tentative_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}
 
 	if (oof_months && ((*(const uint32_t *) oof_months) != MAPI_E_NOT_FOUND) &&
 	    oof_events && ((*(const uint32_t *) oof_events) != MAPI_E_NOT_FOUND)) {
-		DEBUG(0, ("\t* Out Of Office Events:\n"));
+		OC_DEBUG(0, "\t* Out Of Office Events:");
 		for (i = 0; i < oof_months->cValues; i++) {
 			event_year = mapidump_freebusy_year(oof_months->lpl[i], year);
-			DEBUG(0, ("\t\t* %s %u:\n", mapidump_freebusy_month(oof_months->lpl[i], event_year), event_year));
+			OC_DEBUG(0, "\t\t* %s %u:", mapidump_freebusy_month(oof_months->lpl[i], event_year), event_year);
 			mapidump_freebusy_event(&oof_events->lpbin[i], oof_months->lpl[i], event_year, "\t\t\t* ");
 		}
 	}

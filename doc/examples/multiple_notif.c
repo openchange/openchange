@@ -48,7 +48,7 @@ static int callback(uint16_t NotificationType, void *NotificationData, void *pri
 	switch (NotificationType) {
 	case fnevNewMail:
 	case fnevNewMail|fnevMbit:
-		DEBUG(0, ("%s: New mail Received\n", (const char *)private_data));
+		OC_DEBUG(0, "%s: New mail Received", (const char *)private_data));
 		break;
 	default:
 		break;

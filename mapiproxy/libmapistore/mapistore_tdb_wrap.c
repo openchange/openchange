@@ -38,7 +38,7 @@ static int mapistore_tdb_wrap_destructor(struct tdb_wrap *w)
 }
 
 /*
- Log tdb messages via DEBUG().
+ Log tdb messages via OC_DEBUG().
 */
 static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level, 
 				   const char *format, ...) PRINTF_ATTRIBUTE(3,4);
@@ -53,7 +53,7 @@ static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 	va_start(ap, format);
 	vasprintf(&ptr, format, ap);
 	va_end(ap);
-	
+
 	switch (level) {
 	case TDB_DEBUG_FATAL:
 		dl = 0;
@@ -69,11 +69,11 @@ static void mapistore_tdb_wrap_log(TDB_CONTEXT *tdb, enum tdb_debug_level level,
 		break;
 	default:
 		dl = 0;
-	}		
+	}
 
 	if (ptr != NULL) {
 		const char *name = tdb_name(tdb);
-		DEBUG(dl, ("tdb(%s): %s", name ? name : "unnamed", ptr));
+		OC_DEBUG(dl, "tdb(%s): %s", name ? name : "unnamed", ptr);
 		free(ptr);
 	}
 }

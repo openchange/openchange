@@ -43,7 +43,6 @@
 /* Samba4 includes */
 #include <talloc.h>
 #include <dcerpc.h>
-#include <util/debug.h>
 #include <param.h>
 
 /* OpenChange includes */
@@ -51,6 +50,7 @@
 #include <gen_ndr/property.h>
 
 #include "libmapi/version.h"
+#include "libmapi/oc_log.h"
 #include "libmapi/nspi.h"
 #include "libmapi/emsmdb.h"
 #include "libmapi/mapi_context.h"
@@ -89,7 +89,7 @@ __BEGIN_DECLS
 /* The following public definitions come from libmapi/nspi.c */
 struct nspi_context	*nspi_bind(TALLOC_CTX *, struct dcerpc_pipe *, struct cli_credentials *, uint32_t, uint32_t, uint32_t);
 enum MAPISTATUS		nspi_unbind(struct nspi_context *);
-enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, uint32_t *);
+enum MAPISTATUS		nspi_UpdateStat(struct nspi_context *, TALLOC_CTX *, int32_t *);
 enum MAPISTATUS		nspi_QueryRows(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct PropertyTagArray_r *MIds, uint32_t, struct PropertyRowSet_r **);
 enum MAPISTATUS		nspi_SeekEntries(struct nspi_context *, TALLOC_CTX *, enum TableSortOrders, struct PropertyValue_r *, struct SPropTagArray *, struct PropertyTagArray_r *pMIds, struct PropertyRowSet_r **);
 enum MAPISTATUS		nspi_GetMatches(struct nspi_context *, TALLOC_CTX *, struct SPropTagArray *, struct Restriction_r *, uint32_t ulRequested, struct PropertyRowSet_r **, struct PropertyTagArray_r **ppOutMIds);
@@ -248,6 +248,8 @@ struct SPropTagArray	*set_SPropTagArray(TALLOC_CTX *, uint32_t, ...);
 enum MAPISTATUS		SPropTagArray_add(TALLOC_CTX *, struct SPropTagArray *, enum MAPITAGS);
 enum MAPISTATUS		SPropTagArray_delete(TALLOC_CTX *, struct SPropTagArray *, uint32_t);
 enum MAPISTATUS		SPropTagArray_find(struct SPropTagArray, enum MAPITAGS, uint32_t *);
+int                     get_email_address_index_SPropTagArray(struct SPropTagArray*);
+int                     get_display_name_index_SPropTagArray(struct SPropTagArray*);
 const void		*get_SPropValue(struct SPropValue *, enum MAPITAGS);
 struct SPropValue	*get_SPropValue_SRowSet(struct SRowSet *, uint32_t);
 const void		*get_SPropValue_SRowSet_data(struct SRowSet *, uint32_t);

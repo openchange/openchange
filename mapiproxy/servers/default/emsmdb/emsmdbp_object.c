@@ -56,6 +56,8 @@ const char *emsmdbp_getstr_type(struct emsmdbp_object *object)
 		return "stream";
 	case EMSMDBP_OBJECT_ATTACHMENT:
 		return "attachment";
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		return "subscription";
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		return "synccontext";
 	case EMSMDBP_OBJECT_FTCONTEXT:
@@ -696,6 +698,7 @@ _PUBLIC_ int emsmdbp_object_stream_commit(struct emsmdbp_object *stream_object)
 static int emsmdbp_object_destructor(void *data)
 {
 	struct emsmdbp_object	*object = (struct emsmdbp_object *) data;
+	enum mapistore_error	mretval;
 	int			ret = MAPISTORE_SUCCESS;
 	uint32_t		contextID;
 	unsigned int		missing_objects;
@@ -716,11 +719,30 @@ static int emsmdbp_object_destructor(void *data)
 		break;
 	case EMSMDBP_OBJECT_TABLE:
 		if (emsmdbp_is_mapistore(object) && object->backend_object && object->object.table->handle > 0) {
-			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object), object->backend_object, object->object.table->handle);
+			mapistore_table_handle_destructor(object->emsmdbp_ctx->mstore_ctx, emsmdbp_get_contextID(object),
+							  object->backend_object, object->object.table->handle);
+		}
+		if (object->object.table->handle && (object->object.table->subscription == true)) {
+			mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+										       object->emsmdbp_ctx->session_uuid,
+										       object->object.table->handle);
+			if (mretval != MAPISTORE_SUCCESS) {
+				OC_DEBUG(0, "Unable to delete table notification subscription with handle=0x%x",
+					 object->object.table->handle);
+			}
 		}
 		break;
 	case EMSMDBP_OBJECT_STREAM:
 		emsmdbp_object_stream_commit(object);
+		break;
+	case EMSMDBP_OBJECT_SUBSCRIPTION:
+		mretval = mapistore_notification_subscription_delete_by_handle(object->emsmdbp_ctx->mstore_ctx,
+								     object->emsmdbp_ctx->session_uuid,
+								     object->object.subscription->handle);
+		if (mretval != MAPISTORE_SUCCESS) {
+			OC_DEBUG(0, "Unable to delete notification subscription with handle=0x%x",
+				 object->object.subscription->handle);
+		}
 		break;
 	case EMSMDBP_OBJECT_SYNCCONTEXT:
 		gettimeofday(&request_end, NULL);
@@ -773,6 +795,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_init(TALLOC_CTX *mem_ctx, struct 
 	object->object.folder = NULL;
 	object->object.message = NULL;
 	object->object.stream = NULL;
+	object->object.subscription = NULL;
 	object->backend_object = NULL;
 	object->parent_object = parent_object;
 	(void) talloc_reference(object, parent_object);
@@ -1657,6 +1680,7 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_table_init(TALLOC_CTX *mem_ctx,
 	object->object.table->ulType = 0;
 	object->object.table->restricted = false;
 	object->object.table->flags = 0;
+	object->object.table->subscription = false;
 
 	return object;
 }
@@ -2480,6 +2504,32 @@ _PUBLIC_ struct emsmdbp_object *emsmdbp_object_attachment_init(TALLOC_CTX *mem_c
 
 	object->type = EMSMDBP_OBJECT_ATTACHMENT;
 	object->object.attachment->attachmentID = -1;
+
+	return object;
+}
+
+
+_PUBLIC_ struct emsmdbp_object *emsmdbp_object_subscription_init(TALLOC_CTX *mem_ctx,
+								 struct emsmdbp_context *emsmdbp_ctx,
+								 struct emsmdbp_object *parent)
+{
+	struct emsmdbp_object	*object;
+
+	/* Sanity checks */
+	if (!emsmdbp_ctx) return NULL;
+	if (!parent) return NULL;
+
+	object = emsmdbp_object_init(mem_ctx, emsmdbp_ctx, parent);
+	if (!object) return NULL;
+
+	object->object.subscription = talloc_zero(object, struct emsmdbp_object_subscription);
+	if (!object->object.subscription) {
+		talloc_free(object);
+		return NULL;
+	}
+
+	object->type = EMSMDBP_OBJECT_SUBSCRIPTION;
+	object->object.subscription->handle = 0;
 
 	return object;
 }

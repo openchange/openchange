@@ -71,4 +71,67 @@ interface mapistore_notification
 		[switch_is(vnum)] resolver_ver	v;
 	} mapistore_notification_resolver;
 
+
+	/* subscriptions */
+	typedef [public,bitmap16bit] bitmap {
+		sub_WholeStore		= 0x0001,
+		sub_NewMail		= 0x0002,
+		sub_ObjectCreated	= 0x0004,
+		sub_ObjectDeleted	= 0x0008,
+		sub_ObjectModified	= 0x0010,
+		sub_ObjectMoved		= 0x0020,
+		sub_ObjectCopied	= 0x0040,
+		sub_SearchCompleted	= 0x0080,
+		sub_TableModified	= 0x0100,
+		sub_Reserved		= 0x0400
+	} sub_NotificationFlags;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		uint32			handle;
+		sub_NotificationFlags	flags;
+		hyper			fid;
+		hyper			mid;
+		uint16			count;
+		uint32			properties[count];
+	} subscription_object_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[range(0, 100)] uint32				count;
+		[size_is(count)] subscription_object_v1		subscription[];
+	} subscription_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] subscription_v1 v1;
+		[default];
+	} subscription_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum				vnum;
+		[switch_is(vnum)] subscription_ver	v;
+	} mapistore_notification_subscription;
+
+	/* External notifications */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string eml;
+	} newmail_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(sub_NewMail)] newmail_v1		newmail;
+		[default];
+	} notification_data_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		sub_NotificationFlags			flags;
+		[switch_is(flags)] notification_data_v1	u;
+	} notification_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] notification_v1 v1;
+		[default];
+	} notification_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum				vnum;
+		[switch_is(vnum)] notification_ver	v;
+	} mapistore_notification;
 }

@@ -35,23 +35,42 @@
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
 
-static void ocnotify_newmail(TALLOC_CTX *mem_ctx, uint32_t count,
-			     const char **hosts, const char *data)
-{
-	int	sock;
-	int	endpoint;
-	char	*msg = NULL;
-	int	i;
-	int	bytes;
-	size_t	msglen;
+struct ocnotify_private {
+	struct mapistore_context	mstore_ctx;
+	const char			*username;
+	bool				flush;
+};
 
-	if (data) {
-		msg = talloc_asprintf(mem_ctx, "newmail:%s", data);
-	} else {
-		msg = talloc_strdup(mem_ctx, "newmail:<fake>");
+static void ocnotify_flush(struct ocnotify_private ocnotify, const char *host)
+{
+	enum mapistore_error	retval;
+
+	if (ocnotify.flush) {
+		retval = mapistore_notification_resolver_delete(&ocnotify.mstore_ctx, ocnotify.username, host);
+		if (retval == MAPISTORE_SUCCESS) {
+			oc_log(0, "* [OK]   %s resolver entry for user %s deleted", host, ocnotify.username);
+		} else {
+			oc_log(0, "* [ERR]  %s resolver entry for user %s not deleted", host, ocnotify.username);
+		}
 	}
-	if (!msg) {
-		oc_log(OC_LOG_FATAL, "unable to allocate memory");
+}
+
+static void ocnotify_newmail(TALLOC_CTX *mem_ctx, struct ocnotify_private ocnotify,
+			     uint32_t count, const char **hosts, const char *data)
+{
+	enum mapistore_error	retval;
+	int			sock;
+	int			endpoint;
+	int			i;
+	int			bytes;
+	int			timeout;
+	int			rc;
+	uint8_t			*blob = NULL;
+	size_t			msglen;
+
+	retval = mapistore_notification_payload_newmail(mem_ctx, (char *)data, &blob, &msglen);
+	if (retval != MAPISTORE_SUCCESS) {
+		oc_log(OC_LOG_ERROR, "unable to generate newmail payload");
 		exit (1);
 	}
 
@@ -61,16 +80,23 @@ static void ocnotify_newmail(TALLOC_CTX *mem_ctx, uint32_t count,
 		exit (1);
 	}
 
+	timeout = 200;
+	rc = nn_setsockopt(sock, NN_SOL_SOCKET, NN_SNDTIMEO, &timeout, sizeof(timeout));
+	if (rc < 0) {
+		oc_log(OC_LOG_WARNING, "unable to set timeout on socket send");
+	}
+
 	for (i = 0; i < count; i++) {
 		endpoint = nn_connect(sock, hosts[i]);
 		if (endpoint < 0) {
 			oc_log(OC_LOG_ERROR, "unable to connect to %s", hosts[i]);
+			ocnotify_flush(ocnotify, hosts[i]);
+			continue;
 		}
-		msglen = strlen(msg) + 1;
-		bytes = nn_send(sock, msg, msglen, 0);
+		bytes = nn_send(sock, (char *)blob, msglen, 0);
 		if (bytes != msglen) {
-			oc_log(OC_LOG_WARNING, "Error sending msg '%s': %d sent but %d expected",
-			       msg, bytes, msglen);
+			oc_log(OC_LOG_WARNING, "Error sending msg: %d sent but %d expected",
+			       bytes, msglen);
 		}
 		oc_log(OC_LOG_INFO, "message sent to %s", hosts[i]);
 		nn_shutdown(sock, endpoint);
@@ -84,29 +110,27 @@ int main(int argc, const char *argv[])
 	poptContext				pc;
 	int					opt;
 	struct loadparm_context			*lp_ctx;
-	struct mapistore_context		mstore_ctx;
+	struct ocnotify_private			ocnotify;
 	struct mapistore_notification_context	*ctx;
-	const char				*opt_username = NULL;
 	const char				*opt_server = NULL;
-	bool					opt_newmail = false;
+	const char				*opt_newmail = NULL;
 	bool					opt_list_server = false;
 	bool					ret;
-	const char				*opt_data = NULL;
 	int					verbosity = 0;
 	char					*debuglevel = NULL;
 	uint32_t				i = 0;
 	uint32_t				count = 0;
 	const char				**hosts = NULL;
 
-	enum { OPT_USERNAME=1000, OPT_SERVER, OPT_DATA, OPT_SERVER_LIST, OPT_NEWMAIL, OPT_VERBOSE };
+	enum { OPT_USERNAME=1000, OPT_SERVER, OPT_SERVER_LIST, OPT_FLUSH, OPT_NEWMAIL, OPT_VERBOSE };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
 		{ "username", 'U', POPT_ARG_STRING, NULL, OPT_USERNAME, "set the username", NULL },
 		{ "server", 'H', POPT_ARG_STRING, NULL, OPT_SERVER, "set the resolver address", NULL },
 		{ "list", 0, POPT_ARG_NONE, NULL, OPT_SERVER_LIST, "list notification service instances", NULL },
-		{ "newmail", 'n', POPT_ARG_NONE, NULL, OPT_NEWMAIL, "send newmail notification", NULL },
-		{ "data", 'D', POPT_ARG_STRING, NULL, OPT_DATA, "user-specified data to send", NULL },
+		{ "flush", 0, POPT_ARG_NONE, NULL, OPT_FLUSH, "flush notification cache for the user", NULL },
+		{ "newmail", 'n', POPT_ARG_STRING, NULL, OPT_NEWMAIL, "send newmail notification and specify .eml", NULL },
 		{ "verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE, "Add one or more -v to increase verbosity", NULL },
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
@@ -119,11 +143,13 @@ int main(int argc, const char *argv[])
 
 	oc_log_init_stdout();
 
+	memset(&ocnotify, 0, sizeof (struct ocnotify_private));
+
 	pc = poptGetContext("ocnotify", argc, argv, long_options, 0);
 	while ((opt = poptGetNextOpt(pc)) != -1) {
 		switch (opt) {
 		case OPT_USERNAME:
-			opt_username = poptGetOptArg(pc);
+			ocnotify.username = poptGetOptArg(pc);
 			break;
 		case OPT_SERVER:
 			opt_server = poptGetOptArg(pc);
@@ -131,11 +157,11 @@ int main(int argc, const char *argv[])
 		case OPT_SERVER_LIST:
 			opt_list_server = true;
 			break;
-		case OPT_DATA:
-			opt_data = poptGetOptArg(pc);
+		case OPT_FLUSH:
+			ocnotify.flush = true;
 			break;
 		case OPT_NEWMAIL:
-			opt_newmail = true;
+			opt_newmail = poptGetOptArg(pc);
 			break;
 		case OPT_VERBOSE:
 			verbosity += 1;
@@ -143,7 +169,7 @@ int main(int argc, const char *argv[])
 		}
 	}
 
-	if (!opt_username) {
+	if (!ocnotify.username) {
 		fprintf(stderr, "[ERR] username not specified\n");
 		exit (1);
 	}
@@ -169,17 +195,17 @@ int main(int argc, const char *argv[])
 		oc_log(OC_LOG_FATAL, "[ERR] unable to initialize mapistore notification");
 		exit(1);
 	}
-	mstore_ctx.notification_ctx = ctx;
+	ocnotify.mstore_ctx.notification_ctx = ctx;
 
 	/* Check if the user is registered */
-	retval = mapistore_notification_resolver_exist(&mstore_ctx, opt_username);
+	retval = mapistore_notification_resolver_exist(&ocnotify.mstore_ctx, ocnotify.username);
 	if (retval) {
 		oc_log(OC_LOG_ERROR, "[ERR] resolver session: '%s'", mapistore_errstr(retval));
 		exit(1);
 	}
 
 	/* Retrieve server instances */
-	retval = mapistore_notification_resolver_get(mem_ctx, &mstore_ctx, opt_username,
+	retval = mapistore_notification_resolver_get(mem_ctx, &ocnotify.mstore_ctx, ocnotify.username,
 						     &count, &hosts);
 	if (retval) {
 		oc_log(OC_LOG_ERROR, "[ERR] resolver record: '%s'", mapistore_errstr(retval));
@@ -187,7 +213,7 @@ int main(int argc, const char *argv[])
 	}
 
 	if (opt_list_server) {
-		oc_log(0, "%d servers found for '%s'\n", count, opt_username);
+		oc_log(0, "%d servers found for '%s'\n", count, ocnotify.username);
 		for (i = 0; i < count; i++) {
 			oc_log(0, "\t* %s\n", hosts[i]);
 		}
@@ -195,7 +221,14 @@ int main(int argc, const char *argv[])
 
 	/* Send mail notification */
 	if (opt_newmail) {
-		ocnotify_newmail(mem_ctx, count, hosts, opt_data);
+		ocnotify_newmail(mem_ctx, ocnotify, count, hosts, opt_newmail);
+	}
+
+	/* Flush invalid data */
+	if (ocnotify.flush) {
+		for (i = 0; i < count; i++) {
+			retval = mapistore_notification_resolver_delete(&ocnotify.mstore_ctx, ocnotify.username, hosts[i]);
+		}
 	}
 
 	talloc_free(ctx);

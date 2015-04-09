@@ -9,12 +9,12 @@
    it under the terms of the GNU General Public License as published by
    the Free Software Foundation; either version 3 of the License, or
    (at your option) any later version.
-   
+
    This program is distributed in the hope that it will be useful,
    but WITHOUT ANY WARRANTY; without even the implied warranty of
    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
    GNU General Public License for more details.
-   
+
    You should have received a copy of the GNU General Public License
    along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -235,68 +235,86 @@ static void dcesrv_NspiUnbind(struct dcesrv_call_state *dce_call,
 
 	DCESRV_NSP_RETURN(r, 1, NULL);
 }
+
 /**
-This method does the work of NspiUpdateStat, it is separated from dcesrv_NspiUpdateStat to be 
-able to be called from NspiQueryRows without doing again the same sanity checks and reusing the emsabp_ctx
-*/
-static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r, struct emsabp_context *emsabp_ctx)
+   \details Get the current position and the last row position as defined by the pStat argument.
+   In the case of a empty table it return 0 for both positions. The caller can discriminate between empty tables and one-row tables looking at the cValues of the PropertyTagArray_r
+
+
+   \param pStat pointer to struct STAT which will be used to get the positions
+   \param mids pointer to struct PropertyTagArray_r which contains the table as MIDs array
+   \param[out] out_row pointer to the uint32_t which will cotaint the current row
+   \param[out] out_last_row pointer to the uint32_t which will cotaint the last row in table
+ */
+static void position_in_table(struct STAT *pStat,
+			      struct PropertyTagArray_r *mids,
+			      uint32_t *out_row, uint32_t *out_last_row)
 {
-	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
-	enum MAPISTATUS                 ret;
-	uint32_t			row, row_max;
-	TALLOC_CTX			*local_mem_ctx;
-	struct PropertyTagArray_r	*mids;
+	bool		found;
+	uint32_t	row;
+	uint32_t	last_row;
 
-	local_mem_ctx = talloc_zero(NULL, TALLOC_CTX);
-
-	mids = talloc_zero(local_mem_ctx, struct PropertyTagArray_r);
-        DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
-
-	ret = emsabp_search(local_mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
-	DCESRV_NSP_RETURN_IF(ret == MAPI_E_CALL_FAILED, r, ret, local_mem_ctx);
-	if (ret != MAPI_E_SUCCESS) {
-		row_max = 0;
+	if (mids->cValues > 0) {
+		last_row = mids->cValues - 1;
 	} else {
-		row_max = mids->cValues - 1;
+		last_row = 0;
 	}
 
-	if (r->in.pStat->CurrentRec == MID_CURRENT) {
+	if (pStat->CurrentRec == MID_CURRENT) {
 		/* Fractional positioning (3.1.4.5.2) */
-		row = r->in.pStat->NumPos * row_max / r->in.pStat->TotalRecs;
-		if (row > row_max) {
-			row = row_max;
+		row = pStat->NumPos * (last_row+1) / pStat->TotalRecs;
+		if (row > last_row) {
+			row = last_row;
 		}
 	} else {
 		/* Absolute positioning (3.1.4.5.1) */
-		if (r->in.pStat->CurrentRec == MID_BEGINNING_OF_TABLE) {
+		if (pStat->CurrentRec == MID_BEGINNING_OF_TABLE) {
 			row = 0;
 		}
-		else if (r->in.pStat->CurrentRec == MID_END_OF_TABLE) {
-			row = row_max;
+		else if (pStat->CurrentRec == MID_END_OF_TABLE) {
+			row = last_row;
 		} else {
-			retval = MAPI_E_NOT_FOUND;
+			found = false;
 			row = 0;
-			while (row <= row_max) {
-				if ((uint32_t) mids->aulPropTag[row] == (uint32_t) r->in.pStat->CurrentRec) {
-					retval = MAPI_E_SUCCESS;
+			while (row <= last_row) {
+				if (mids->aulPropTag[row] == pStat->CurrentRec) {
+					found = true;
 					break;
-				}
-				else {
+				} else {
 					row++;
 				}
 			}
-			if (retval == MAPI_E_NOT_FOUND) {
-				goto end;
+			if (!found) {
+				/* In this case the position is undefined. To avoid problems we will use first row */
+				row = 0;
 			}
 		}
 	}
+
+	*out_row = row;
+	*out_last_row = last_row;
+}
+
+/**
+   \details This method does the main work of NspiUpdateStat. It is separated from dcesrv_NspiUpdateStat to be called from NspiQueryRows to update correctly the pStat struct. Also is called from NspiUpdateStat to avoid repeating code.
+
+   \param[in,out] r pointer to the NspiUpdateStat request data
+   \param mids pointer to struct PropertyTagArray_r which contains the table as MIDs array
+*/
+static void dcesrv_do_NspiUpdateStat(struct NspiUpdateStat *r,
+				     struct PropertyTagArray_r *mids)
+{
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	uint32_t			row, last_row;
+
+	position_in_table(r->in.pStat, mids, &row, &last_row);
 
 	if (r->in.pStat->Delta != 0) {
 		/* Adjust row  by Delta */
 		if (r->in.pStat->Delta > 0) {
 			row += r->in.pStat->Delta;
-			if (row > row_max) {
-				row = row_max;
+			if (row > last_row) {
+				row = last_row;
 			}
 		} else {
 			if (abs(r->in.pStat->Delta) >= row) {
@@ -307,10 +325,10 @@ static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat 
 		}
 	}
 
-	if (row == row_max) {
+	if (row == last_row) {
 		/* even if row = 0 we should return MID_END_OF_TABLE */
 		r->out.pStat->CurrentRec = MID_END_OF_TABLE;
-        } else if (row == 0) {
+	} else if (row == 0) {
 		r->out.pStat->CurrentRec = MID_BEGINNING_OF_TABLE;
 	} else {
 		r->out.pStat->CurrentRec = mids->aulPropTag[row];
@@ -318,14 +336,13 @@ static void dcesrv_do_NspiUpdateStat(TALLOC_CTX *mem_ctx, struct NspiUpdateStat 
 
 	r->out.pStat->Delta = 0;
 	r->out.pStat->NumPos = row;
-	r->out.pStat->TotalRecs = row_max + 1;
+	r->out.pStat->TotalRecs = mids->cValues;
 	r->out.plDelta = r->in.plDelta;
 	if (r->in.plDelta != NULL) {
 		*(r->out.plDelta) = r->out.pStat->NumPos - r->in.pStat->NumPos;
 	}
 
-end:
-	DCESRV_NSP_RETURN(r, retval, local_mem_ctx);
+	DCESRV_NSP_RETURN(r, retval, NULL);
 }
 
 /**
@@ -333,18 +350,19 @@ end:
 
    \param dce_call pointer to the session context
    \param mem_ctx pointer to the memory context
-   \param r pointer to the NspiUpdateStat request data
+   \param[in,out] r pointer to the NspiUpdateStat request data
 
    \return MAPI_E_SUCCESS on success
 */
 /* TODO:
- - Use SortType. sortLocale and ContainerId
-- Check CodePage first
+ - Use SortType. sortLocale and ContainerId. (This should be done in emsabp_seach. There is already partial SortType support)
  */
 static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx, struct NspiUpdateStat *r)
 {
 	struct emsabp_context		*emsabp_ctx = NULL;
 	bool				container_exists;
+	struct PropertyTagArray_r	*mids;
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 
 	OC_DEBUG(3, "exchange_nsp: NspiUpdateStat (0x2)");
 	/* Ensure incoming user is authenticated */
@@ -363,47 +381,36 @@ static void dcesrv_NspiUpdateStat(struct dcesrv_call_state *dce_call, TALLOC_CTX
 		DCESRV_NSP_RETURN_IF(!container_exists, r, MAPI_E_INVALID_BOOKMARK, NULL);
 	}
 
-	/* After the checks do the update stat */
-	dcesrv_do_NspiUpdateStat(mem_ctx, r, emsabp_ctx);
+	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+	DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	retval = emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
+	DCESRV_NSP_RETURN_IF(retval != MAPI_E_SUCCESS, r, retval, NULL);
 
-	DCESRV_NSP_RETURN(r, MAPI_E_SUCCESS, NULL);
+	/* After the checks and the retrieval do the update stat */
+	dcesrv_do_NspiUpdateStat(r, mids);
 }
 
-
 /**
-   \details exchange_nsp NspiQueryRows (0x3) function
+   \details This method does the main work of NspiQueryRows.
+   It is separated from dcesrv_NspiQueryRows to be called from NspiSeekEntries to get the rows. Aslo is called from NspiQueryRows itself to avoid duplication.
 
-   \param dce_call pointer to the session context
    \param mem_ctx pointer to the memory context
-   \param r pointer to the NspiQueryRows request data
-
-   \return MAPI_E_SUCCESS on success
- */
-static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
-				 TALLOC_CTX *mem_ctx,
-				 struct NspiQueryRows *r)
+   \param[in,out] r pointer to the NspiQueryRows request data
+   \param emsabp_ctx pointer to the emsabp context
+   \param mids pointer to struct PropertyTagArray_r which contains the table as MIDs array
+   \param updateStat update the out stat struct inside the NspiQueryRows request data. The update is not necessary when called from NspiSeekEntries
+*/
+static void dcesrv_do_NspiQueryRows(TALLOC_CTX *mem_ctx, struct NspiQueryRows *r,
+				    struct emsabp_context *emsabp_ctx,  struct PropertyTagArray_r *mids,
+				    bool updateStat)
 {
 	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
-	struct emsabp_context		*emsabp_ctx = NULL;
 	struct SPropTagArray		*pPropTags;
 	struct PropertyRowSet_r		*pRows;
 	uint32_t			count = 0;
 	uint32_t			i, j;
 	struct NspiUpdateStat		r_UpdateStat;
 	bool				container_exists;
-
-	OC_DEBUG(3, "exchange_nsp: NspiQueryRows (0x3)\n");
-
-	/* Step 0. Ensure incoming user is authenticated and code page is correct*/
-	if (!dcesrv_call_authenticated(dce_call)) {
-		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
-		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
-	}
-
-	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
-
-	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
-	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
 
 	/* Step 1. Sanity Checks (MS-NSPI Server Processing Rules) */
 	if (r->in.lpETable == NULL && r->in.pStat->ContainerID) {
@@ -414,7 +421,7 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		}
 	}
 
-	if (r->in.Count == 0) {
+	if (r->in.lpETable == NULL && r->in.Count == 0) {
 		retval = MAPI_E_INVALID_PARAMETER;
 		goto failure;
 	}
@@ -434,13 +441,19 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 
 	/* Allocate RowSet to be filled in */
 	pRows = talloc_zero(mem_ctx, struct PropertyRowSet_r);
+	if (pRows == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto failure;
+	}
 
 	/* Step 2. Fill ppRows  */
 	if (r->in.lpETable == NULL) {
 		/* Step 2.1 Fill ppRows for supplied Container ID */
 		struct ldb_result	*ldb_res;
 		uint32_t		start_pos;
+		uint32_t		last_row;
 
+		position_in_table(r->in.pStat, mids, &start_pos, &last_row);
 		retval = emsabp_ab_container_enum(mem_ctx, emsabp_ctx,
 						  r->in.pStat->ContainerID, &ldb_res);
 		if (retval != MAPI_E_SUCCESS)  {
@@ -448,18 +461,15 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		}
 
 		if (r->in.pStat->Delta >= 0) {
-			start_pos = r->in.pStat->NumPos + r->in.pStat->Delta;
-			if (start_pos != 0 && start_pos >= ldb_res->count) {
-				/* inexistent position */
-				retval = MAPI_E_INVALID_PARAMETER;
-				goto failure;
+			start_pos = start_pos + r->in.pStat->Delta;
+			if (start_pos >= ldb_res->count) {
+				start_pos = ldb_res->count;
 			}
 		} else {
 			if (abs(r->in.pStat->Delta) > r->in.pStat->NumPos) {
-				retval = MAPI_E_INVALID_PARAMETER;
-				goto failure;
+				start_pos = 0;
 			} else {
-				start_pos = r->in.pStat->NumPos - abs(r->in.pStat->Delta);
+				start_pos = start_pos - abs(r->in.pStat->Delta);
 			}
 		}
 
@@ -471,38 +481,52 @@ static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call,
 		if (count) {
 			pRows->cRows = count;
 			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, count);
+			if (pRows->aRow == NULL) {
+				retval = MAPI_E_NOT_ENOUGH_MEMORY;
+				goto failure;
+			}
+
+			/* fetch required attributes for every entry found */
+			for (i = 0; i < count; i++) {
+				retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
+								     ldb_res->msgs[start_pos+i], 0, r->in.dwFlags, pPropTags);
+				if (retval != MAPI_E_SUCCESS) {
+					goto failure;
+				}
+			}
+		} else {
+			*r->out.ppRows = NULL;
 		}
 
-		/* fetch required attributes for every entry found */
-		for (i = 0; i < count; i++) {
-			retval = emsabp_fetch_attrs_from_msg(mem_ctx, emsabp_ctx, pRows->aRow + i,
-							     ldb_res->msgs[start_pos+i], 0, r->in.dwFlags, pPropTags);
-			if (retval != MAPI_E_SUCCESS) {
-				goto failure;
+		if (updateStat) {
+			/* Prepare call to  NspiUpdateStat */
+			r_UpdateStat.in.handle = r->in.handle;
+			r_UpdateStat.in.Reserved = 0;
+			r_UpdateStat.in.pStat = r->in.pStat;
+			r_UpdateStat.in.pStat->Delta += pRows->cRows;
+			r_UpdateStat.in.plDelta = NULL;
+			r_UpdateStat.in.pStat->TotalRecs = ldb_res->count;
+			r_UpdateStat.out.pStat = r->out.pStat;
+			dcesrv_do_NspiUpdateStat(&r_UpdateStat, mids);
+			if (r_UpdateStat.out.result != MAPI_E_SUCCESS) {
+				/* Not clear in the spec what to do if updateStat fails, ignoring it and logging error for the moment */
+				OC_DEBUG(1, "NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result);
+				r->out.result = MAPI_E_SUCCESS;
 			}
 		}
 
-		/* Prepare call to  NspiUpdateStat */
-		r_UpdateStat.in.handle = r->in.handle;
-		r_UpdateStat.in.Reserved = 0;
-		r_UpdateStat.in.pStat = r->in.pStat;
-		r_UpdateStat.in.pStat->Delta += pRows->cRows;
-		r_UpdateStat.in.plDelta = NULL;
-		r_UpdateStat.in.pStat->TotalRecs = ldb_res->count;
-		r_UpdateStat.out.pStat = r->out.pStat;
-		/* dce_call is only used to check the auth so we can reuse it */
-		dcesrv_do_NspiUpdateStat(mem_ctx, &r_UpdateStat, emsabp_ctx);
-		if (r_UpdateStat.out.result != MAPI_E_SUCCESS) {
-			/* Not clear in the spec what to do if updateStat fails, ignoring it and logging error for the moment */
-			OC_DEBUG(1, "NSPI UpdateStat after GetRows failed: %u\n", r_UpdateStat.out.result);
-			r->out.result = MAPI_E_SUCCESS;
-		}
+		r->out.result = MAPI_E_SUCCESS;
 	} else {
 		/* Step 2.2 Fill ppRows for supplied table of MIds */
 		j = 0;
 		if (r->in.pStat->NumPos < r->in.dwETableCount) {
 			pRows->cRows = r->in.dwETableCount - r->in.pStat->NumPos;
 			pRows->aRow = talloc_array(mem_ctx, struct PropertyRow_r, pRows->cRows);
+			if (pRows->aRow == NULL) {
+				retval = MAPI_E_NOT_ENOUGH_MEMORY;
+				goto failure;
+			}
+
 			for (i = r->in.pStat->NumPos; i < r->in.dwETableCount; i++) {
 				retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(pRows->aRow[j]), r->in.lpETable[i], r->in.dwFlags, pPropTags);
 				if (retval != MAPI_E_SUCCESS) {
@@ -529,24 +553,64 @@ failure:
 
 
 /**
+   \details exchange_nsp NspiQueryRows (0x3) function
+
+   \param dce_call pointer to the session context
+   \param mem_ctx pointer to the memory context
+   \param[in,out] r pointer to the NspiQueryRows request data
+
+   \return MAPI_E_SUCCESS on success
+ */
+static void dcesrv_NspiQueryRows(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				 struct NspiQueryRows *r)
+{
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
+	struct emsabp_context		*emsabp_ctx = NULL;
+	struct PropertyTagArray_r	*mids;
+
+	OC_DEBUG(3, "exchange_nsp: NspiQueryRows (0x3)\n");
+
+	/* Ensure incoming user is authenticated and code page is correct*/
+	if (!dcesrv_call_authenticated(dce_call)) {
+		OC_DEBUG(1, "No challenge requested by client, cannot authenticate\n");
+		DCESRV_NSP_RETURN(r, MAPI_E_LOGON_FAILED, NULL);
+	}
+
+	DCESRV_NSP_RETURN_IF(r->in.pStat->CodePage == CP_UNICODE, r, MAPI_E_NO_SUPPORT, NULL);
+
+	emsabp_ctx = dcesrv_find_emsabp_context(&r->in.handle->uuid);
+	DCESRV_NSP_RETURN_IF(!emsabp_ctx, r, MAPI_E_CALL_FAILED, NULL);
+
+	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+	DCESRV_NSP_RETURN_IF(!mids, r, MAPI_E_NOT_ENOUGH_MEMORY, NULL);
+	retval = emsabp_search(mem_ctx, emsabp_ctx, mids, NULL, r->in.pStat, 0);
+	DCESRV_NSP_RETURN_IF(retval != MAPI_E_SUCCESS, r, retval, NULL);
+
+	/* Now we have passed session verifications and have the data we can do the operation */
+	dcesrv_do_NspiQueryRows(mem_ctx, r, emsabp_ctx, mids, true);
+}
+
+
+/**
    \details exchange_nsp NspiSeekEntries (0x4) function
 
    \param dce_call pointer to the session context
    \param mem_ctx pointer to the memory context
-   \param r pointer to the NspiSeekEntries request data
+   \param[in,out] r pointer to the NspiSeekEntries request data
 
    \return MAPI_E_SUCCESS on success
  */
-static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
-					      TALLOC_CTX *mem_ctx,
-					      struct NspiSeekEntries *r)
+static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call, TALLOC_CTX *mem_ctx,
+				   struct NspiSeekEntries *r)
 {
-	enum MAPISTATUS			retval = MAPI_E_SUCCESS, ret;
+	enum MAPISTATUS			retval = MAPI_E_SUCCESS;
 	struct emsabp_context		*emsabp_ctx = NULL;
 	uint32_t			row;
 	struct PropertyTagArray_r	*mids, *all_mids;
 	struct Restriction_r		*seek_restriction;
 	bool				container_exists;
+	struct NspiQueryRows		r_QueryRows;
+	struct STAT			r_QueryRowsStatOut;
 
 	OC_DEBUG(3, "exchange_nsp: NspiSeekEntries (0x4)\n");
 
@@ -573,24 +637,41 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		all_mids = r->in.lpETable;
 	} else {
 		all_mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
-		emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
+		if (all_mids == NULL) {
+			retval = MAPI_E_NOT_ENOUGH_MEMORY;
+			goto failure;
+		}
+
+		retval = emsabp_search(mem_ctx, emsabp_ctx, all_mids, NULL, r->in.pStat, 0);
+		if (retval != MAPI_E_SUCCESS) {
+			goto failure;
+		}
 	}
 
 	/* find the records matching the qualifier */
 	seek_restriction = talloc_zero(mem_ctx, struct Restriction_r);
+	if (seek_restriction == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto failure;
+	}
 	seek_restriction->rt = RES_PROPERTY;
 	seek_restriction->res.resProperty.relop = RELOP_GE;
 	seek_restriction->res.resProperty.ulPropTag = r->in.pTarget->ulPropTag;
 	seek_restriction->res.resProperty.lpProp = r->in.pTarget;
 
 	mids = talloc_zero(mem_ctx, struct PropertyTagArray_r);
+	if (mids == NULL) {
+		retval = MAPI_E_NOT_ENOUGH_MEMORY;
+		goto failure;
+	}
 	if (emsabp_search(mem_ctx, emsabp_ctx, mids, seek_restriction, r->in.pStat, 0) != MAPI_E_SUCCESS) {
 		mids = all_mids;
 		retval = MAPI_E_NOT_FOUND;
 	}
 
 	r->out.pStat->CurrentRec = MID_END_OF_TABLE;
-	r->out.pStat->NumPos = r->in.pStat->TotalRecs = all_mids->cValues;
+	r->out.pStat->NumPos = all_mids->cValues - 1;
+	r->out.pStat->TotalRecs = all_mids->cValues;
 	for (row = 0; row < all_mids->cValues; row++) {
 		if (all_mids->aulPropTag[row] == mids->aulPropTag[0]) {
 			r->out.pStat->CurrentRec = mids->aulPropTag[0];
@@ -605,21 +686,51 @@ static void dcesrv_NspiSeekEntries(struct dcesrv_call_state *dce_call,
 		goto end;
 	}
 
-	r->out.pRows = talloc_zero(mem_ctx, struct PropertyRowSet_r *);
-	r->out.pRows[0] = talloc_zero(r->out.pRows, struct PropertyRowSet_r);
-	r->out.pRows[0]->cRows = mids->cValues;
-	r->out.pRows[0]->aRow = talloc_array(r->out.pRows, struct PropertyRow_r, mids->cValues);
-	for (row = 0; row < mids->cValues; row++) {
-		ret = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.pRows[0]->aRow[row]), 
-					    mids->aulPropTag[row], fEphID, r->in.pPropTags);
-		if (ret) {
-			talloc_free(r->out.pRows);
-			retval = ret;
-			OC_DEBUG(5, "failure looking up value %d\n", row);
+	r->out.pStat->SortType = r->in.pStat->SortType;
+	r->out.pStat->ContainerID = r->in.pStat->ContainerID;
+	r->out.pStat->CodePage = r->in.pStat->CodePage;
+	r->out.pStat->TemplateLocale = r->in.pStat->TemplateLocale;
+	r->out.pStat->SortLocale = r->in.pStat->SortLocale;
+	r->out.pStat->Delta = 0;
+
+	r_QueryRows.in.pStat = r->out.pStat; /* assummed it will be unchanged */
+	r_QueryRows.out.pStat = &r_QueryRowsStatOut; /* this return values is to be ignored */
+	r_QueryRows.in.handle = r->in.handle;
+	r_QueryRows.in.dwFlags = fEphID;
+
+	/* MS_OXNSPI 3.1.4.1.9 Server Processing Rules 15 */
+	if (r->in.lpETable) {
+		/* Use r->in.lpEtable to construct a explicit table to feed QueryRows */
+		uint32_t i;
+		uint32_t *row_table;
+		uint32_t row_table_size;
+
+		row_table_size = r->in.lpETable->cValues - r->out.pStat->NumPos;
+		row_table = talloc_array(mem_ctx, uint32_t, row_table_size);
+		if (row_table == NULL) {
+			retval = MAPI_E_NOT_ENOUGH_MEMORY;
 			goto failure;
 		}
+		for (i = r->out.pStat->NumPos; i < row_table_size; i++) {
+			row_table[i] = r->in.lpETable->aulPropTag[i];
+		}
+		r_QueryRows.in.dwETableCount = row_table_size;
+		r_QueryRows.in.lpETable = row_table;
+	} else {
+		/* Use table from pStat in QueryRows */
+		r_QueryRows.in.dwETableCount = 0;
+		r_QueryRows.in.lpETable = NULL;
+		r_QueryRows.in.Count = 20; /* server can choose any value > 0 */
 	}
+	r_QueryRows.in.pPropTags = r->in.pPropTags;
+	/* The returned rows from QueryRows are used as returned value */
+	r_QueryRows.out.ppRows = r->out.pRows;
 
+	dcesrv_do_NspiQueryRows(mem_ctx, &r_QueryRows, emsabp_ctx, all_mids, false);
+	if (r_QueryRows.out.result != MAPI_E_SUCCESS) {
+		retval = r_QueryRows.out.result;
+		goto failure;
+	}
 end:
 	DCESRV_NSP_RETURN(r, retval, NULL);
 failure:
@@ -685,7 +796,7 @@ static void dcesrv_NspiGetMatches(struct dcesrv_call_state *dce_call,
 	r->out.ppRows[0]->aRow = talloc_array(mem_ctx, struct PropertyRow_r, ppOutMIds->cValues);
 
 	for (i = 0; i < ppOutMIds->cValues; i++) {
-		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]), 
+		retval = emsabp_fetch_attrs(mem_ctx, emsabp_ctx, &(r->out.ppRows[0]->aRow[i]),
 					    ppOutMIds->aulPropTag[i], fEphID, r->in.pPropTags);
 		if (retval) {
 			OC_DEBUG(5, "failure looking up value %d\n", i);
@@ -1122,7 +1233,7 @@ static void dcesrv_NspiResolveNames(struct dcesrv_call_state *dce_call,
 	int				ret;
 	const char * const		recipient_attrs[] = { "*", NULL };
 	const char * const		search_attr[] = { "mailNickName", "mail", "name",
-							  "displayName", "givenName", 
+							  "displayName", "givenName",
 							  "sAMAccountName", "proxyAddresses" };
 
 	OC_DEBUG(3, "exchange_nsp: NspiResolveNames (0x13)");
@@ -1266,7 +1377,7 @@ static void dcesrv_NspiResolveNamesW(struct dcesrv_call_state *dce_call,
 	uint32_t			i;
 	int				ret;
 	const char * const		recipient_attrs[] = { "*", NULL };
-	const char * const		search_attr[] = { "mailNickName", "mail", "name", 
+	const char * const		search_attr[] = { "mailNickName", "mail", "name",
 							  "displayName", "givenName", "sAMAccountName" };
 
 	OC_DEBUG(3, "exchange_nsp: NspiResolveNamesW (0x14)");
@@ -1392,7 +1503,7 @@ error:
    \param dce_call pointer to the session context
    \param mem_ctx pointer to the memory context
    \param r generic pointer on NSPI data
-   \param mapiproxy pointer to the mapiproxy structure controlling 
+   \param mapiproxy pointer to the mapiproxy structure controlling
    mapiproxy behavior
 
    \return NT_STATUS_OK

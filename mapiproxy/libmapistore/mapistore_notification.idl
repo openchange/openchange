@@ -109,4 +109,28 @@ interface mapistore_notification
 		interface_vnum				vnum;
 		[switch_is(vnum)] subscription_ver	v;
 	} mapistore_notification_subscription;
+
+	/* External notifications */
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		[flag(LIBNDR_FLAG_STR_ASCII|LIBNDR_FLAG_STR_NULLTERM)] string eml;
+	} newmail_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(sub_NewMail)] newmail_v1		newmail;
+		[default];
+	} notification_data_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		sub_NotificationFlags			flags;
+		[switch_is(flags)] notification_data_v1	u;
+	} notification_v1;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN), nodiscriminant] union {
+		[case(MAPISTORE_NOTIFICATION_V1)] notification_v1 v1;
+	} notification_ver;
+
+	typedef [public, flag(LIBNDR_FLAG_NOALIGN)] struct {
+		interface_vnum				vnum;
+		[switch_is(vnum)] notification_ver	v;
+	} mapistore_notification;
 }

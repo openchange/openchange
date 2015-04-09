@@ -92,11 +92,15 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 									     struct asyncemsmdb_private_data);
 	TALLOC_CTX					*mem_ctx;
 	enum mapistore_error				retval;
+	DATA_BLOB					blob;
 	char						*str = NULL;
 	int						bytes = 0;
 	NTSTATUS					status;
 	struct mapistore_notification_subscription	r;
-	struct ndr_print				*ndr;
+	struct mapistore_notification			n;
+	struct ndr_print				*ndr_print;
+	struct ndr_pull					*ndr_pull;
+	enum ndr_err_code				ndr_err_code;
 
 	if (!p) {
 		OC_DEBUG(0, "[asyncemsmdb]: private_data is NULL");
@@ -109,17 +113,44 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 		return;
 	}
 
-	str[bytes] = '\0';
-	OC_DEBUG(0, "[asyncemsmdb] received message: %s", str);
-	nn_freemsg(str);
-
-	OC_DEBUG(0, "Notification received for session: %s", p->emsmdb_session_str);
-
 	mem_ctx = talloc_new(NULL);
 	if (!mem_ctx) {
 		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
 		return;
 	}
+
+	blob.data = (uint8_t *) str;
+	blob.length = bytes;
+	ndr_pull = ndr_pull_init_blob(&blob, mem_ctx);
+	if (!ndr_pull) {
+		nn_freemsg(str);
+		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		return;
+	}
+	ndr_set_flags(&ndr_pull->flags, LIBNDR_FLAG_NOALIGN|LIBNDR_FLAG_REF_ALLOC);
+
+	ndr_err_code = ndr_pull_mapistore_notification(ndr_pull, NDR_SCALARS, &n);
+	nn_freemsg(str);
+	if (ndr_err_code != NDR_ERR_SUCCESS) {
+		OC_DEBUG(0, "[asyncemsmdb]: Invalid mapistore_notification structure");
+		talloc_free(mem_ctx);
+		return;
+	}
+
+	ndr_print = talloc_zero(mem_ctx, struct ndr_print);
+	if (!ndr_print) {
+		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
+		talloc_free(mem_ctx);
+		return;
+	}
+	ndr_print->depth = 1;
+	ndr_print->print = ndr_print_debug_helper;
+	ndr_print->no_newline = false;
+
+	ndr_print_mapistore_notification(ndr_print, "notification", &n);
+	talloc_free(ndr_pull);
+
+	OC_DEBUG(0, "Notification received for session: %s", p->emsmdb_session_str);
 
 	retval = mapistore_notification_subscription_get(mem_ctx, p->mstore_ctx, p->emsmdb_uuid, &r);
 	if (retval != MAPISTORE_SUCCESS) {
@@ -128,15 +159,9 @@ static void EcDoAsyncWaitEx_handler(struct tevent_context *ev,
 	}
 
 	OC_DEBUG(0, "%d subscriptions available:", r.v.v1.count);
-	ndr = talloc_zero(mem_ctx, struct ndr_print);
-	if (!ndr) {
-		OC_DEBUG(0, "[asyncemsmdb]: No more memory");
-		return;
-	}
-	ndr->depth = 1;
-	ndr->print = ndr_print_debug_helper;
-	ndr->no_newline = false;
-	ndr_print_mapistore_notification_subscription(ndr, "subscriptions", &r);
+	ndr_print_mapistore_notification_subscription(ndr_print, "subscriptions", &r);
+	talloc_free(ndr_print);
+
 	talloc_free(mem_ctx);
 
 	p->r->out.pulFlagsOut = talloc_zero(p->dce_call, uint32_t);

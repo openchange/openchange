@@ -58,22 +58,19 @@ static void ocnotify_flush(struct ocnotify_private ocnotify, const char *host)
 static void ocnotify_newmail(TALLOC_CTX *mem_ctx, struct ocnotify_private ocnotify,
 			     uint32_t count, const char **hosts, const char *data)
 {
-	int	sock;
-	int	endpoint;
-	char	*msg = NULL;
-	int	i;
-	int	bytes;
-	int	timeout;
-	int	rc;
-	size_t	msglen;
+	enum mapistore_error	retval;
+	int			sock;
+	int			endpoint;
+	int			i;
+	int			bytes;
+	int			timeout;
+	int			rc;
+	uint8_t			*blob = NULL;
+	size_t			msglen;
 
-	if (data) {
-		msg = talloc_asprintf(mem_ctx, "newmail:%s", data);
-	} else {
-		msg = talloc_strdup(mem_ctx, "newmail:<fake>");
-	}
-	if (!msg) {
-		oc_log(OC_LOG_FATAL, "unable to allocate memory");
+	retval = mapistore_notification_payload_newmail(mem_ctx, (char *)data, &blob, &msglen);
+	if (retval != MAPISTORE_SUCCESS) {
+		oc_log(OC_LOG_ERROR, "unable to generate newmail payload");
 		exit (1);
 	}
 
@@ -96,11 +93,10 @@ static void ocnotify_newmail(TALLOC_CTX *mem_ctx, struct ocnotify_private ocnoti
 			ocnotify_flush(ocnotify, hosts[i]);
 			continue;
 		}
-		msglen = strlen(msg) + 1;
-		bytes = nn_send(sock, msg, msglen, 0);
+		bytes = nn_send(sock, (char *)blob, msglen, 0);
 		if (bytes != msglen) {
-			oc_log(OC_LOG_WARNING, "Error sending msg '%s': %d sent but %d expected",
-			       msg, bytes, msglen);
+			oc_log(OC_LOG_WARNING, "Error sending msg: %d sent but %d expected",
+			       bytes, msglen);
 		}
 		oc_log(OC_LOG_INFO, "message sent to %s", hosts[i]);
 		nn_shutdown(sock, endpoint);
@@ -117,17 +113,16 @@ int main(int argc, const char *argv[])
 	struct ocnotify_private			ocnotify;
 	struct mapistore_notification_context	*ctx;
 	const char				*opt_server = NULL;
-	bool					opt_newmail = false;
+	const char				*opt_newmail = NULL;
 	bool					opt_list_server = false;
 	bool					ret;
-	const char				*opt_data = NULL;
 	int					verbosity = 0;
 	char					*debuglevel = NULL;
 	uint32_t				i = 0;
 	uint32_t				count = 0;
 	const char				**hosts = NULL;
 
-	enum { OPT_USERNAME=1000, OPT_SERVER, OPT_DATA, OPT_SERVER_LIST, OPT_FLUSH, OPT_NEWMAIL, OPT_VERBOSE };
+	enum { OPT_USERNAME=1000, OPT_SERVER, OPT_SERVER_LIST, OPT_FLUSH, OPT_NEWMAIL, OPT_VERBOSE };
 
 	struct poptOption long_options[] = {
 		POPT_AUTOHELP
@@ -135,8 +130,7 @@ int main(int argc, const char *argv[])
 		{ "server", 'H', POPT_ARG_STRING, NULL, OPT_SERVER, "set the resolver address", NULL },
 		{ "list", 0, POPT_ARG_NONE, NULL, OPT_SERVER_LIST, "list notification service instances", NULL },
 		{ "flush", 0, POPT_ARG_NONE, NULL, OPT_FLUSH, "flush notification cache for the user", NULL },
-		{ "newmail", 'n', POPT_ARG_NONE, NULL, OPT_NEWMAIL, "send newmail notification", NULL },
-		{ "data", 'D', POPT_ARG_STRING, NULL, OPT_DATA, "user-specified data to send", NULL },
+		{ "newmail", 'n', POPT_ARG_STRING, NULL, OPT_NEWMAIL, "send newmail notification and specify .eml", NULL },
 		{ "verbose", 'v', POPT_ARG_NONE, NULL, OPT_VERBOSE, "Add one or more -v to increase verbosity", NULL },
 		{ NULL, 0, 0, NULL, 0, NULL, NULL }
 	};
@@ -166,11 +160,8 @@ int main(int argc, const char *argv[])
 		case OPT_FLUSH:
 			ocnotify.flush = true;
 			break;
-		case OPT_DATA:
-			opt_data = poptGetOptArg(pc);
-			break;
 		case OPT_NEWMAIL:
-			opt_newmail = true;
+			opt_newmail = poptGetOptArg(pc);
 			break;
 		case OPT_VERBOSE:
 			verbosity += 1;
@@ -230,7 +221,7 @@ int main(int argc, const char *argv[])
 
 	/* Send mail notification */
 	if (opt_newmail) {
-		ocnotify_newmail(mem_ctx, ocnotify, count, hosts, opt_data);
+		ocnotify_newmail(mem_ctx, ocnotify, count, hosts, opt_newmail);
 	}
 
 	/* Flush invalid data */

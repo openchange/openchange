@@ -1174,13 +1174,11 @@ _PUBLIC_ enum MAPISTATUS emsabp_search(TALLOC_CTX *mem_ctx, struct emsabp_contex
 		ldb_sort_controls = talloc_zero_array(local_mem_ctx, struct ldb_server_sort_control *, 2);
 		OPENCHANGE_RETVAL_IF(ldb_sort_controls == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
-		ldb_sort_controls[0] = talloc(local_mem_ctx, struct ldb_server_sort_control);
+		ldb_sort_controls[0] = talloc_zero(local_mem_ctx, struct ldb_server_sort_control);
 		OPENCHANGE_RETVAL_IF(ldb_sort_controls[0] == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
 
 		ldb_sort_controls[0]->attributeName = talloc_strdup(local_mem_ctx, "displayName");
 		OPENCHANGE_RETVAL_IF(ldb_sort_controls[0]->attributeName == NULL, MAPI_E_NOT_ENOUGH_MEMORY, local_mem_ctx);
-
-		ldb_sort_controls[0]->orderingRule = NULL;
 	}
 
 	if (restriction) {
@@ -1454,7 +1452,7 @@ _PUBLIC_ enum MAPISTATUS emsabp_ab_container_enum(TALLOC_CTX *mem_ctx,
 	if (ldb_ret != LDB_SUCCESS) goto done;
 
 	ldb_sort_controls = talloc_zero_array(filter_search, struct ldb_server_sort_control *, 2);
-	ldb_sort_controls[0] = talloc(ldb_sort_controls, struct ldb_server_sort_control);
+	ldb_sort_controls[0] = talloc_zero(ldb_sort_controls, struct ldb_server_sort_control);
 	ldb_sort_controls[0]->attributeName = talloc_strdup(ldb_sort_controls, "displayName");
 	ldb_request_add_control(ldb_req, LDB_CONTROL_SERVER_SORT_OID, false, ldb_sort_controls);
 

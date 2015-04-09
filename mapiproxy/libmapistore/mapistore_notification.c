@@ -345,7 +345,9 @@ _PUBLIC_ enum mapistore_error mapistore_notification_session_get(TALLOC_CTX *mem
 	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
 
 	/* Unpack session structure */
-	blob.data = (uint8_t *) value;
+	blob.data = talloc_memdup(local_mem_ctx, (uint8_t *) value, value_len);
+	free(value);
+	MAPISTORE_RETVAL_IF(!blob.data, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 	blob.length = value_len;
 
 	ndr = ndr_pull_init_blob(&blob, local_mem_ctx);
@@ -563,7 +565,9 @@ _PUBLIC_ enum mapistore_error mapistore_notification_resolver_get(TALLOC_CTX *me
 	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
 
 	/* Unpack resolver structure */
-	blob.data = (uint8_t *) value;
+	blob.data = talloc_memdup(local_mem_ctx, (uint8_t *) value, value_len);
+	free(value);
+	MAPISTORE_RETVAL_IF(!blob.data, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 	blob.length = value_len;
 
 	ndr = ndr_pull_init_blob(&blob, local_mem_ctx);
@@ -797,7 +801,9 @@ enum mapistore_error mapistore_notification_subscription_get(TALLOC_CTX *mem_ctx
 	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
 
 	/* Unpack subscription structure */
-	blob.data = (uint8_t *) value;
+	blob.data = talloc_memdup(local_mem_ctx, (uint8_t *) value, value_len);
+	free(value);
+	MAPISTORE_RETVAL_IF(!blob.data, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
 	blob.length = value_len;
 
 	ndr = ndr_pull_init_blob(&blob, mem_ctx);

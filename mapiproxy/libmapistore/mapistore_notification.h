@@ -33,5 +33,6 @@
 #define	MSTORE_MEMC_FMT_SESSION	"session:%s"
 #define	MSTORE_MEMC_FMT_RESOLVER "resolver:%s"
 #define	MSTORE_MEMC_FMT_SUBSCRIPTION "subscription:%s"
+#define	MSTORE_MEMC_FMT_DELIVER "deliver:%s"
 
 #endif /* MAPISTORE_NOTIFICATION_H */

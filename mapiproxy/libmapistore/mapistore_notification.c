@@ -1095,6 +1095,213 @@ end:
 
 
 /**
+   \details Generate the deliver key
+
+   \param mem_ctx pointer to the memory context
+   \param uuid the uuid of the session to compute
+   \param _key pointer on pointer to the key to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+static enum mapistore_error mapistore_notification_deliver_set_key(TALLOC_CTX *mem_ctx,
+								   struct GUID uuid,
+								   char **_key)
+{
+	char	*guid = NULL;
+	char	*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!_key, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+
+	guid = GUID_string(mem_ctx, (const struct GUID *)&uuid);
+	MAPISTORE_RETVAL_IF(!guid, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	key = talloc_asprintf(mem_ctx, MSTORE_MEMC_FMT_DELIVER, guid);
+	talloc_free(guid);
+	MAPISTORE_RETVAL_IF(!key, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	*_key = key;
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Add or update a deliver key
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session UUID
+   \param payload the payload data to add to the key
+   \param length the length of the payload data
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_deliver_add(struct mapistore_context *mstore_ctx,
+								 struct GUID uuid, uint8_t *payload,
+								 size_t length)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	char			*key = NULL;
+	memcached_return	rc;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!payload, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!length, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare key */
+	retval = mapistore_notification_deliver_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Create deliver v1 blob */
+	retval = mapistore_notification_deliver_exist(mstore_ctx, uuid);
+	if (retval == MAPISTORE_SUCCESS) {
+		/* Update the key/value record */
+		rc = memcached_append(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *) payload, length, 0, 0);
+
+	} else {
+		/* Add the key/value record */
+		rc = memcached_add(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key),
+				   (char *)payload, length, 0, 0);
+	}
+
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+	talloc_free(mem_ctx);
+
+	return MAPISTORE_SUCCESS;
+}
+
+
+/**
+   \details Check if a deliver key exist for current session
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the session UUID to compute
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE_ERR_NOT_FOUND
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_deliver_exist(struct mapistore_context *mstore_ctx,
+								   struct GUID uuid)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	memcached_return	rc;
+	char			*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare deliver key */
+	retval = mapistore_notification_deliver_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	rc = memcached_exist(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key));
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Retrieve the deliver payload
+
+   \param mem_ctx the memory context to use for data allocation
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the UUID of the session
+   \param payload pointer on pointer to the data to return
+   \param length pointer on the length of the payload data to return
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_deliver_get(TALLOC_CTX *mem_ctx,
+								 struct mapistore_context *mstore_ctx,
+								 struct GUID uuid, uint8_t **payload,
+								 size_t *length)
+{
+	TALLOC_CTX		*local_mem_ctx;
+	enum mapistore_error	retval;
+	char			*key = NULL;
+	char			*value;
+	size_t			value_len = 0;
+	memcached_return_t	rc;
+	uint32_t		flags;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!payload, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!length, MAPISTORE_ERR_INVALID_PARAMETER, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	local_mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!local_mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Retrieve key/value */
+	retval = mapistore_notification_deliver_set_key(local_mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, local_mem_ctx);
+
+	value = memcached_get(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), &value_len,
+			      &flags, &rc);
+	talloc_free(key);
+	MAPISTORE_RETVAL_IF(!value, ret_to_mapistore(rc), local_mem_ctx);
+
+	*payload = talloc_memdup(mem_ctx, value, value_len);
+	free(value);
+	MAPISTORE_RETVAL_IF(!payload, MAPISTORE_ERR_NO_MEMORY, local_mem_ctx);
+	*length = value_len;
+
+	talloc_free(local_mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
+/**
+   \details Delete the deliver key
+
+   \param mstore_ctx pointer to the mapistore context
+   \param uuid the uuid of the session to delete content from
+
+   \return MAPISTORE_SUCCESS on success, otherwise MAPISTORE error
+ */
+_PUBLIC_ enum mapistore_error mapistore_notification_deliver_delete(struct mapistore_context *mstore_ctx,
+								    struct GUID uuid)
+{
+	TALLOC_CTX		*mem_ctx;
+	enum mapistore_error	retval;
+	memcached_return	rc;
+	char			*key = NULL;
+
+	/* Sanity checks */
+	MAPISTORE_RETVAL_IF(!mstore_ctx, MAPISTORE_ERR_NOT_INITIALIZED, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+	MAPISTORE_RETVAL_IF(!mstore_ctx->notification_ctx->memc_ctx, MAPISTORE_ERR_NOT_AVAILABLE, NULL);
+
+	mem_ctx = talloc_new(NULL);
+	MAPISTORE_RETVAL_IF(!mem_ctx, MAPISTORE_ERR_NO_MEMORY, NULL);
+
+	/* Prepare the deliver key */
+	retval = mapistore_notification_deliver_set_key(mem_ctx, uuid, &key);
+	MAPISTORE_RETVAL_IF(retval, retval, mem_ctx);
+
+	/* Delete the key */
+	rc = memcached_delete(mstore_ctx->notification_ctx->memc_ctx, key, strlen(key), 0);
+	MAPISTORE_RETVAL_IF(rc != MEMCACHED_SUCCESS, ret_to_mapistore(rc), mem_ctx);
+
+	talloc_free(mem_ctx);
+	return MAPISTORE_SUCCESS;
+}
+
    \details Generate a newmail notification payload to be consumed by
    the service referenced by resolver entries.
 

@@ -724,7 +724,7 @@ _PUBLIC_ enum mapistore_error mapistore_notification_resolver_exist(struct mapis
 
    \param mem_ctx pointer to the memory context
    \param uuid the uuid of the session to compute
-   \param pointer on pointer to the key to return
+   \param _key pointer on pointer to the key to return
 
    \note the caller is responsible for freeing _key
 

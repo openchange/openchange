@@ -173,7 +173,6 @@ static enum mapistore_error mapistore_data_from_pyobject(TALLOC_CTX *mem_ctx,
 			retval = MAPISTORE_SUCCESS;
 			break;
 		case PT_SYSTIME:
-			MAPISTORE_RETVAL_IF(!PyFloat_Check(value), MAPISTORE_ERR_NOT_FOUND, NULL);
 			unix_to_nt_time(&nt, PyFloat_AsDouble(value));
 			ft = talloc_zero(mem_ctx, struct FILETIME);
 			MAPISTORE_RETVAL_IF(!ft, MAPISTORE_ERR_NOT_FOUND, NULL);

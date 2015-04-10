@@ -394,7 +394,7 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     sam_db = get_schema_master_samdb(names, lp, creds)
 
-    # Step 1. Extending the prefixmap attribute of the schema DN record
+    # Step 1. Extending the prefixMap attribute of the schema DN record
 
     reporter.reportNextStep("Register Exchange OIDs")
 
@@ -416,11 +416,9 @@ def install_schemas(setup_path, names, lp, creds, reporter):
             prefixmap_ldif += "dn:\nchangetype: modify\nreplace: schemaupdatenow\nschemaupdatenow: 1\n\n"
             dsdb._dsdb_set_schema_from_ldif(sam_db, prefixmap_ldif, schema_ldif, schemadn)
     except RuntimeError as err:
-        print ("[!] error while provisioning the prefixMap: %s"
-               % str(err))
+        print ("[!] error while provisioning the prefixMap: %s" % err)
     except LdbError as err:
-        print ("[!] error while provisioning the prefixMap: %s"
-               % str(err))
+        print ("[!] error while provisioning the prefixMap: %s" % err)
 
     schemas = [{'path': 'AD/oc_provision_schema_attributes.ldif',
                 'description': 'Add Exchange attributes to Samba schema',
@@ -457,7 +455,8 @@ def install_schemas(setup_path, names, lp, creds, reporter):
 
     for schema in schemas:
         try:
-            provision_schema(sam_db, setup_path, names, reporter, schema['path'], schema['description'], schema['modify_mode'])
+            provision_schema(sam_db, setup_path, names, reporter, schema['path'],
+                             schema['description'], schema['modify_mode'])
         except LdbError, ldb_error:
             print ("[!] error while provisioning the Exchange"
                    " schema classes (%d): %s"
@@ -465,7 +464,9 @@ def install_schemas(setup_path, names, lp, creds, reporter):
             raise
 
     try:
-        provision_schema(sam_db, setup_path, names, reporter, "AD/oc_provision_configuration.ldif", "Generic Exchange configuration objects")
+        provision_schema(sam_db, setup_path, names, reporter,
+                         "AD/oc_provision_configuration.ldif",
+                         "Generic Exchange configuration objects")
     except LdbError, ldb_error:
         print ("[!] error while provisioning the Exchange configuration"
                " objects (%d): %s" % ldb_error.args)

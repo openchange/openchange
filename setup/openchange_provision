@@ -40,7 +40,7 @@ def check_incompatible_options(parser, opts):
                     continue
                 else:
                     # for the error msg put the options in their command line shape
-                    active_option = '--' + active_option.replace('_', '-')                    
+                    active_option = '--' + active_option.replace('_', '-')
                     option_name   = '--' + option_name.replace('_', '-')
                     parser.error("The options " + active_option + " and " + option_name + " are mutually exclusive")
             else:

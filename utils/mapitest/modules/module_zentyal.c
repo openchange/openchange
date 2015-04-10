@@ -63,7 +63,7 @@ _PUBLIC_ bool mapitest_zentyal_1872(struct mapitest *mt)
 	retval = nspi_QueryRows(nspi_ctx, mem_ctx, NULL, MIds, 1, &RowSet);
 	MAPIFreeBuffer(RowSet);
 	mapitest_print_retval_clean(mt, "1872", retval);
-	if (retval != MAPI_E_INVALID_PARAMETER) {
+	if (retval != MAPI_E_SUCCESS) {
 		MAPIFreeBuffer(MIds);
 		talloc_free(mem_ctx);
 		return false;

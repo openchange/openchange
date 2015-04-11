@@ -183,7 +183,7 @@ static enum MAPISTATUS get_properties_systemspecialfolder(TALLOC_CTX *mem_ctx, s
 		retvals[i] = retval;
 	}
 
-	return MAPISTORE_SUCCESS;
+	return MAPI_E_SUCCESS;
 }
 
 

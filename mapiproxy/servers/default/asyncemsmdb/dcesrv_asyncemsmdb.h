@@ -29,6 +29,7 @@
 #include "mapiproxy/libmapistore/mapistore.h"
 #include "mapiproxy/libmapistore/mapistore_errors.h"
 #include "mapiproxy/libmapistore/gen_ndr/mapistore_notification.h"
+#include "mapiproxy/libmapiserver/libmapiserver.h"
 
 #include <nanomsg/nn.h>
 #include <nanomsg/pipeline.h>
@@ -37,6 +38,7 @@ struct asyncemsmdb_private_data {
 	struct dcesrv_call_state		*dce_call;
 	struct EcDoAsyncWaitEx			*r;
 	struct mapistore_context		*mstore_ctx;
+	char					*username;
 	char					*emsmdb_session_str;
 	struct GUID				emsmdb_uuid;
 	struct tevent_fd			*fd_event;
@@ -74,8 +76,15 @@ NTSTATUS dcerpc_server_asyncemsmdb_init(void);
 NTSTATUS ndr_table_register(const struct ndr_interface_table *);
 NTSTATUS samba_init_module(void);
 
+
+/* Expose samdb_connect prototype */
+struct ldb_context *samdb_connect(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, unsigned int);
+struct ldb_context *samdb_connect_url(TALLOC_CTX *, struct tevent_context *, struct loadparm_context *, struct auth_session_info *, unsigned int, const char *);
+void tevent_loop_allow_nesting(struct tevent_context *);
+
 __END_DECLS
 
 #define	ASYNCEMSMDB_FALLBACK_ADDR	"127.0.0.1"
+#define	ASYNCEMSMDB_INBOX_SYSTEMIDX	13
 
 #endif /* !DCESRV_ASYNCEMSMDB_H */
